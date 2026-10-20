@@ -51,11 +51,11 @@ jobs:
       - name: Migrations drift
         run: pnpm db:check
 
-      # packages/db and packages/storage integration tests use the compose Postgres and SeaweedFS
-      # with the .env.example values.
-      - name: Start Postgres and SeaweedFS
+      # packages/db, packages/storage and apps/api integration tests use the compose Postgres,
+      # SeaweedFS and Mailpit (magic-link emails) with the .env.example values.
+      - name: Start Postgres, SeaweedFS and Mailpit
         run: |
-          docker compose -f infra/docker-compose.yml up -d --wait postgres seaweedfs
+          docker compose -f infra/docker-compose.yml up -d --wait postgres seaweedfs mailpit
           docker compose -f infra/docker-compose.yml run --rm seaweedfs-init
 
       # The root scripts fan out through Turborepo; for services/ml they run
