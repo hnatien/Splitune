@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { contracts } from '../registry.ts'
 
-// Error codes of 04-api-contract.md plus the URL-import codes of 25-personal-mode.md §4.
+// Error codes of 04-api-contract.md plus the URL-import codes of 25-personal-mode.md §4, and
+// internal_error for unexpected failures (the message never carries exception text).
 export const ERROR_STATUS = {
   invalid_input: 400,
   unauthenticated: 401,
@@ -16,6 +17,7 @@ export const ERROR_STATUS = {
   url_unsupported: 422,
   rate_limited: 429,
   taken_down: 451,
+  internal_error: 500,
   url_download_failed: 502,
   pipeline_unavailable: 503,
 } as const

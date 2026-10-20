@@ -117,6 +117,7 @@ type ErrorCode = Literal[
     "url_unsupported",
     "rate_limited",
     "taken_down",
+    "internal_error",
     "url_download_failed",
     "pipeline_unavailable",
 ]
