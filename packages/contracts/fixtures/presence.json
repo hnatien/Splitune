@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "artefact": "presence",
+  "artefact_version": 1,
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "user_id": "usr_01JB7Q3K9W2F",
+  "audio_hash": "f6ea3271a3f5d48649cb7c1741eafdaad1c65e7879536b91dc998068277be630",
+  "sample_rate": 44100,
+  "duration_s": 20.5,
+  "models": [
+    {
+      "model_id": "efficientat/mn10_as",
+      "version": "1.0.0",
+      "weights_sha256": "0735a96ba6fc1b6b9ac4cdc48cd2c97d88db7a59dc22699c786144399413b033",
+      "provider": "self_hosted",
+      "register_tier": "green"
+    }
+  ],
+  "params": {
+    "gate_db": -40
+  },
+  "created_at": "2026-10-20T12:01:02Z",
+  "instruments": [
+    {
+      "instrument": "guitar",
+      "present_prob": 0.97,
+      "activity": [
+        {
+          "t0": 0.46,
+          "t1": 19.72,
+          "energy_ratio": 0.58
+        }
+      ],
+      "bleed_suspected": false,
+      "subtype": "electric_guitar"
+    },
+    {
+      "instrument": "drums",
+      "present_prob": 0.93,
+      "activity": [
+        {
+          "t0": 0.48,
+          "t1": 19.4,
+          "energy_ratio": 0.31
+        }
+      ],
+      "bleed_suspected": false
+    },
+    {
+      "instrument": "bass",
+      "present_prob": 0.08,
+      "activity": [],
+      "bleed_suspected": true
+    }
+  ]
+}

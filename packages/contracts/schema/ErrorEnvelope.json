@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/ErrorEnvelope",
+  "$defs": {
+    "ErrorEnvelope": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "retry_after_s": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "ErrorCode": {
+      "type": "string",
+      "enum": [
+        "invalid_input",
+        "unauthenticated",
+        "analysis_cap_reached",
+        "forbidden",
+        "not_found",
+        "conflict",
+        "file_too_large",
+        "too_long",
+        "unsupported_media",
+        "rights_warranty_required",
+        "url_unsupported",
+        "rate_limited",
+        "taken_down",
+        "url_download_failed",
+        "pipeline_unavailable"
+      ]
+    }
+  },
+  "title": "ErrorEnvelope"
+}

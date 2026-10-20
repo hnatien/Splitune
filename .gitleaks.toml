@@ -1,0 +1,10 @@
+# Default gitleaks rules plus narrow allowlists for known false positives.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Contract fixtures: cache_key is a sha256 hex digest, not a credential"
+condition = "AND"
+paths = ['''^packages/contracts/fixtures/''']
+regexTarget = "line"
+regexes = ['''"cache_key": "[0-9a-f]{64}"''']

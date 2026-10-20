@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/JobEvent",
+  "$defs": {
+    "JobEvent": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/StageStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/StageCompletedEvent"
+        },
+        {
+          "$ref": "#/$defs/StageFailedEvent"
+        },
+        {
+          "$ref": "#/$defs/ProgressEvent"
+        },
+        {
+          "$ref": "#/$defs/AnalysisDoneEvent"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "type"
+      }
+    },
+    "StageStartedEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "stage.started"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageName"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        }
+      },
+      "required": [
+        "type",
+        "stage",
+        "at"
+      ]
+    },
+    "StageName": {
+      "type": "string",
+      "enum": [
+        "url_import",
+        "decode",
+        "beats",
+        "tag",
+        "separate",
+        "stem_post",
+        "chords",
+        "notes.guitar",
+        "notes.bass",
+        "notes.piano",
+        "notes.drums",
+        "notes.vocals",
+        "notes.other",
+        "f0.vocals",
+        "sections",
+        "lyrics",
+        "finalize"
+      ]
+    },
+    "StageCompletedEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "stage.completed"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageName"
+        },
+        "artefact": {
+          "$ref": "#/$defs/ArtefactRef"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        }
+      },
+      "required": [
+        "type",
+        "stage",
+        "at"
+      ]
+    },
+    "ArtefactRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "kind": {
+          "$ref": "#/$defs/ArtefactKind"
+        },
+        "version": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "version"
+      ]
+    },
+    "ArtefactKind": {
+      "type": "string",
+      "pattern": "^(manifest|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
+    },
+    "StageFailedEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "stage.failed"
+        },
+        "stage": {
+          "$ref": "#/$defs/StageName"
+        },
+        "error_code": {
+          "$ref": "#/$defs/MachineCode"
+        },
+        "fallback": {
+          "type": "string"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        }
+      },
+      "required": [
+        "type",
+        "stage",
+        "error_code",
+        "at"
+      ]
+    },
+    "MachineCode": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_.]*$"
+    },
+    "ProgressEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "progress"
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ]
+    },
+    "AnalysisDoneEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "analysis.done"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "done",
+            "partial",
+            "failed"
+          ]
+        },
+        "summary_artefact_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "type",
+        "status"
+      ]
+    }
+  },
+  "title": "JobEvent"
+}

@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/StageRequest",
+  "$defs": {
+    "StageRequest": {
+      "type": "object",
+      "properties": {
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "$ref": "#/$defs/StageName"
+        },
+        "cache_key": {
+          "$ref": "#/$defs/Sha256Hex"
+        },
+        "inputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ObjectKey"
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ObjectKey"
+          }
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "presigned": {
+          "$ref": "#/$defs/PresignedUrls"
+        },
+        "callback": {
+          "$ref": "#/$defs/StageCallback"
+        }
+      },
+      "required": [
+        "analysis_id",
+        "user_id",
+        "stage",
+        "cache_key",
+        "inputs",
+        "outputs",
+        "params"
+      ]
+    },
+    "StageName": {
+      "type": "string",
+      "enum": [
+        "url_import",
+        "decode",
+        "beats",
+        "tag",
+        "separate",
+        "stem_post",
+        "chords",
+        "notes.guitar",
+        "notes.bass",
+        "notes.piano",
+        "notes.drums",
+        "notes.vocals",
+        "notes.other",
+        "f0.vocals",
+        "sections",
+        "lyrics",
+        "finalize"
+      ]
+    },
+    "Sha256Hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ObjectKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "PresignedUrls": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/HttpUrl"
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/HttpUrl"
+          }
+        }
+      },
+      "required": [
+        "inputs",
+        "outputs"
+      ]
+    },
+    "HttpUrl": {
+      "type": "string",
+      "pattern": "^https?:\\/\\/"
+    },
+    "StageCallback": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "$ref": "#/$defs/HttpUrl"
+        },
+        "nonce": {
+          "type": "string",
+          "minLength": 16
+        }
+      },
+      "required": [
+        "url",
+        "nonce"
+      ]
+    }
+  },
+  "title": "StageRequest"
+}

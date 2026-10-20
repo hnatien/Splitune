@@ -1,0 +1,17 @@
+[
+  {
+    "op": "nudge_beat",
+    "beat_id": "b0005",
+    "delta_s": -0.012
+  },
+  {
+    "op": "set_chord",
+    "segment_id": "c0004",
+    "label": "G:maj",
+    "bass": "B"
+  },
+  {
+    "op": "transpose",
+    "semitones": 2
+  }
+]

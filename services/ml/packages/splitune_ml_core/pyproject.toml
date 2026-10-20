@@ -3,7 +3,9 @@ name = "splitune-ml-core"
 version = "0.0.0"
 description = "Shared contracts, StageResult, callback client, presigned I/O, logging"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pydantic==2.14.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.3,<0.14"]

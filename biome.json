@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/.venv", "!**/.turbo"]
+    "includes": ["**", "!**/.venv", "!**/.turbo", "!packages/contracts/schema"]
   },
   "formatter": {
     "enabled": true,

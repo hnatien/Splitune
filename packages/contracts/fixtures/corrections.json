@@ -1,0 +1,64 @@
+[
+  {
+    "op": "nudge_beat",
+    "beat_id": "b0005",
+    "delta_s": -0.012
+  },
+  {
+    "op": "set_chord",
+    "segment_id": "c0004",
+    "label": "G:maj",
+    "bass": "B"
+  },
+  {
+    "op": "split_chord",
+    "segment_id": "c0003",
+    "at_s": 12.5,
+    "label": "E:min"
+  },
+  {
+    "op": "set_note",
+    "note_id": "n000013",
+    "patch": {
+      "pitch_midi": 57,
+      "string": 3,
+      "fret": 2
+    }
+  },
+  {
+    "op": "delete_note",
+    "note_id": "n000027"
+  },
+  {
+    "op": "add_note",
+    "note": {
+      "id": "u000001",
+      "onset_s": 16.7,
+      "offset_s": 16.95,
+      "pitch_midi": 62,
+      "stem_id": "guitar"
+    }
+  },
+  {
+    "op": "set_section",
+    "segment_id": "s0002",
+    "label": "outro"
+  },
+  {
+    "op": "mark_correct",
+    "entity_id": "c0001"
+  },
+  {
+    "op": "report_wrong",
+    "entity_id": "n000020",
+    "comment": "Sounds like a hammer-on from the open string."
+  },
+  {
+    "op": "tempo_octave",
+    "factor": "double"
+  },
+  {
+    "op": "shift_downbeat",
+    "by_beats": -1
+  }
+]

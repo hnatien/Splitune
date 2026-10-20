@@ -1,0 +1,140 @@
+{
+  "schema_version": "1.0.0",
+  "artefact": "chords",
+  "artefact_version": 1,
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "user_id": "usr_01JB7Q3K9W2F",
+  "audio_hash": "f6ea3271a3f5d48649cb7c1741eafdaad1c65e7879536b91dc998068277be630",
+  "sample_rate": 44100,
+  "duration_s": 20.5,
+  "models": [
+    {
+      "model_id": "madmom/cnn_chord_crf",
+      "version": "0.17.0",
+      "weights_sha256": "f1da5d02bdfe9c13b0ae74fd65d8c2d8deadd1e56c8facdbeb83cb8ef0e7487f",
+      "provider": "self_hosted",
+      "register_tier": "amber"
+    }
+  ],
+  "params": {
+    "vocabulary": "majmin",
+    "fps": 10
+  },
+  "created_at": "2026-10-20T12:01:15Z",
+  "vocabulary": "majmin",
+  "segments": [
+    {
+      "id": "c0000",
+      "confidence": 0.95,
+      "confidence_raw": 0.97,
+      "t0": 0.0,
+      "t1": 0.5,
+      "label": "N",
+      "top_k": [
+        {
+          "label": "N",
+          "prob": 0.97
+        }
+      ],
+      "beat_aligned": false
+    },
+    {
+      "id": "c0001",
+      "confidence": 0.91,
+      "confidence_raw": 0.96,
+      "t0": 0.5,
+      "t1": 5.3,
+      "label": "A:min",
+      "top_k": [
+        {
+          "label": "A:min",
+          "prob": 0.94
+        },
+        {
+          "label": "C:maj",
+          "prob": 0.054
+        },
+        {
+          "label": "A:min7",
+          "prob": 0.027
+        }
+      ],
+      "beat_aligned": true
+    },
+    {
+      "id": "c0002",
+      "confidence": 0.84,
+      "confidence_raw": 0.89,
+      "t0": 5.3,
+      "t1": 10.1,
+      "label": "F:maj",
+      "top_k": [
+        {
+          "label": "F:maj",
+          "prob": 0.87
+        },
+        {
+          "label": "A:min",
+          "prob": 0.096
+        },
+        {
+          "label": "F:maj7",
+          "prob": 0.048
+        }
+      ],
+      "beat_aligned": true
+    },
+    {
+      "id": "c0003",
+      "confidence": 0.88,
+      "confidence_raw": 0.93,
+      "t0": 10.1,
+      "t1": 14.9,
+      "label": "C:maj",
+      "top_k": [
+        {
+          "label": "C:maj",
+          "prob": 0.91
+        },
+        {
+          "label": "A:min",
+          "prob": 0.072
+        },
+        {
+          "label": "E:min",
+          "prob": 0.036
+        }
+      ],
+      "beat_aligned": true
+    },
+    {
+      "id": "c0004",
+      "confidence": 0.62,
+      "confidence_raw": 0.67,
+      "t0": 14.9,
+      "t1": 19.7,
+      "label": "G:maj",
+      "top_k": [
+        {
+          "label": "G:maj",
+          "prob": 0.65
+        },
+        {
+          "label": "E:min",
+          "prob": 0.228
+        },
+        {
+          "label": "G:7",
+          "prob": 0.114
+        }
+      ],
+      "beat_aligned": true
+    }
+  ],
+  "key": {
+    "tonic": "A",
+    "mode": "minor",
+    "confidence": 0.81
+  },
+  "inputs_fused": ["mixture", "no_drums"]
+}

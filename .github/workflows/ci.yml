@@ -43,6 +43,10 @@ jobs:
         working-directory: services/ml
         run: uv sync --locked
 
+      # Regenerates JSON Schema and Pydantic models into a temp dir; fails if the committed ones differ.
+      - name: Contracts drift
+        run: pnpm contracts:check
+
       # The root scripts fan out through Turborepo; for services/ml they run
       # `uv run ruff check`, `uv run pyright` and `uv run pytest`.
       - name: Lint (Biome, ruff)

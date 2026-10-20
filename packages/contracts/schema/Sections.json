@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Sections",
+  "$defs": {
+    "Sections": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/SchemaVersion"
+        },
+        "artefact": {
+          "type": "string",
+          "const": "sections"
+        },
+        "artefact_version": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audio_hash": {
+          "$ref": "#/$defs/Sha256Hex"
+        },
+        "sample_rate": {
+          "type": "number",
+          "const": 44100
+        },
+        "duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModelRef"
+          }
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SectionSegment"
+          }
+        }
+      },
+      "required": [
+        "schema_version",
+        "artefact",
+        "artefact_version",
+        "analysis_id",
+        "user_id",
+        "audio_hash",
+        "sample_rate",
+        "duration_s",
+        "models",
+        "params",
+        "created_at",
+        "segments"
+      ]
+    },
+    "SchemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.\\d+\\.\\d+$"
+    },
+    "Sha256Hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ModelRef": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "weights_sha256": {
+          "$ref": "#/$defs/Sha256Hex"
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "self_hosted",
+            "vendor"
+          ]
+        },
+        "register_tier": {
+          "type": "string",
+          "enum": [
+            "green",
+            "amber",
+            "red"
+          ]
+        }
+      },
+      "required": [
+        "model_id",
+        "version",
+        "weights_sha256",
+        "provider",
+        "register_tier"
+      ]
+    },
+    "SectionSegment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "t0": {
+          "type": "number",
+          "minimum": 0
+        },
+        "t1": {
+          "type": "number",
+          "minimum": 0
+        },
+        "label": {
+          "$ref": "#/$defs/SectionLabel"
+        },
+        "boundary_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "id",
+        "t0",
+        "t1",
+        "label",
+        "boundary_confidence"
+      ]
+    },
+    "SectionLabel": {
+      "type": "string",
+      "enum": [
+        "intro",
+        "verse",
+        "prechorus",
+        "chorus",
+        "bridge",
+        "solo",
+        "inst",
+        "outro",
+        "break",
+        "unknown"
+      ]
+    }
+  },
+  "title": "Sections"
+}

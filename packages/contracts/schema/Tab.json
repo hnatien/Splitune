@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Tab",
+  "$defs": {
+    "Tab": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/SchemaVersion"
+        },
+        "artefact": {
+          "type": "string",
+          "pattern": "^tab\\.(guitar|bass|piano|vocals|other)$"
+        },
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "notes_ref": {
+          "$ref": "#/$defs/NotesRef"
+        },
+        "beats_ref": {
+          "$ref": "#/$defs/BeatsRef"
+        },
+        "ppq": {
+          "type": "number",
+          "const": 960
+        },
+        "tuning_midi": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 127
+          }
+        },
+        "capo": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "level": {
+          "$ref": "#/$defs/TabLevel"
+        },
+        "fingering_mode": {
+          "type": "string",
+          "enum": [
+            "easiest",
+            "as_played"
+          ]
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TabEvent"
+          }
+        },
+        "music_core_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "artefact",
+        "analysis_id",
+        "notes_ref",
+        "beats_ref",
+        "ppq",
+        "tuning_midi",
+        "capo",
+        "level",
+        "fingering_mode",
+        "events",
+        "music_core_version"
+      ]
+    },
+    "SchemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.\\d+\\.\\d+$"
+    },
+    "NotesRef": {
+      "type": "object",
+      "properties": {
+        "artefact": {
+          "type": "string",
+          "pattern": "^notes\\.(guitar|bass|piano|vocals|other)$"
+        },
+        "artefact_version": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "artefact",
+        "artefact_version"
+      ]
+    },
+    "BeatsRef": {
+      "type": "object",
+      "properties": {
+        "artefact_version": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "corrections_rev": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "artefact_version",
+        "corrections_rev"
+      ]
+    },
+    "TabLevel": {
+      "type": "string",
+      "enum": [
+        "chords_only",
+        "simplified",
+        "as_transcribed",
+        "roots",
+        "full"
+      ]
+    },
+    "TabEvent": {
+      "type": "object",
+      "properties": {
+        "note_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bar": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 9007199254740991
+        },
+        "beat": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 959
+        },
+        "duration_ticks": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "quantize_residual_ms": {
+          "type": "number"
+        },
+        "string": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "fret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "alt_fingerings": {
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AltFingering"
+          }
+        },
+        "hand": {
+          "type": "string",
+          "enum": [
+            "L",
+            "R"
+          ]
+        }
+      },
+      "required": [
+        "note_id",
+        "bar",
+        "beat",
+        "tick",
+        "duration_ticks",
+        "quantize_residual_ms"
+      ]
+    },
+    "AltFingering": {
+      "type": "object",
+      "properties": {
+        "string": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "fret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "string",
+        "fret",
+        "cost"
+      ]
+    }
+  },
+  "title": "Tab"
+}

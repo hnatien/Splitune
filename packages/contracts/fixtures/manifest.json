@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "artefact": "manifest",
+  "artefact_version": 1,
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "user_id": "usr_01JB7Q3K9W2F",
+  "audio_hash": "f6ea3271a3f5d48649cb7c1741eafdaad1c65e7879536b91dc998068277be630",
+  "sample_rate": 44100,
+  "duration_s": 20.5,
+  "models": [],
+  "params": {
+    "profile": "full",
+    "config_profile": "personal"
+  },
+  "created_at": "2026-10-20T12:00:00Z",
+  "source_kind": "upload",
+  "requested_instrument": "guitar",
+  "pipeline_version": "0.1.0",
+  "stages": {
+    "decode": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:01Z",
+      "finished_at": "2026-10-20T12:00:03Z"
+    },
+    "beats": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:03Z",
+      "finished_at": "2026-10-20T12:00:09Z",
+      "artefact_path": "beats.json"
+    },
+    "tag": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:03Z",
+      "finished_at": "2026-10-20T12:00:05Z"
+    },
+    "separate": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:05Z",
+      "finished_at": "2026-10-20T12:00:51Z"
+    },
+    "stem_post": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:51Z",
+      "finished_at": "2026-10-20T12:00:58Z",
+      "artefact_path": "stems.json"
+    },
+    "chords": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:58Z",
+      "finished_at": "2026-10-20T12:01:15Z",
+      "artefact_path": "chords.json"
+    },
+    "notes.guitar": {
+      "status": "done",
+      "started_at": "2026-10-20T12:00:58Z",
+      "finished_at": "2026-10-20T12:01:31Z",
+      "artefact_path": "notes/guitar.json"
+    },
+    "notes.drums": {
+      "status": "done",
+      "started_at": "2026-10-20T12:01:15Z",
+      "finished_at": "2026-10-20T12:01:36Z",
+      "artefact_path": "notes/drums.json"
+    },
+    "sections": {
+      "status": "done",
+      "started_at": "2026-10-20T12:01:15Z",
+      "finished_at": "2026-10-20T12:01:40Z",
+      "artefact_path": "sections.json"
+    },
+    "lyrics": {
+      "status": "skipped",
+      "fallback_reason": "no_vocals_detected"
+    },
+    "finalize": {
+      "status": "done",
+      "started_at": "2026-10-20T12:01:40Z",
+      "finished_at": "2026-10-20T12:01:42Z",
+      "artefact_path": "summary.json"
+    }
+  },
+  "progress": 1.0
+}

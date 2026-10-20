@@ -1,0 +1,27 @@
+{
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "stage": "notes.guitar",
+  "status": "done",
+  "artefacts": [
+    {
+      "kind": "notes.guitar",
+      "version": 1,
+      "key": "u/usr_01JB7Q3K9W2F/a/0192f6c4-8b00-7a00-8000-0000000000aa/v1/notes/guitar.json",
+      "sha256": "6f8261de8f9d2a2c80254a140ffd593d9806cb8a2a5126f2d102d7990615ea6c",
+      "bytes": 5686
+    }
+  ],
+  "model_refs": [
+    {
+      "model_id": "basic_pitch/nmp",
+      "version": "0.4.0",
+      "weights_sha256": "fbee5d0f193ec609d8bdd2be025b1426a5fc33505a658bc7f1d70c026558cba3",
+      "provider": "self_hosted",
+      "register_tier": "green"
+    }
+  ],
+  "metrics": {
+    "cpu_s": 3.8,
+    "audio_s": 20.5
+  }
+}

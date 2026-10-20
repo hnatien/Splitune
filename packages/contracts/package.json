@@ -8,7 +8,12 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "node scripts/build-schema.ts",
     "typecheck": "tsc -p .",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@orpc/contract": "1.15.7",
+    "zod": "4.6.7"
   }
 }

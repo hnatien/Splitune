@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "per_instrument": [
+    {
+      "instrument": "guitar",
+      "note_confidence_mean": 0.848,
+      "fraction_low_conf": 0.062,
+      "recommended_view": "tab",
+      "reasons": []
+    },
+    {
+      "instrument": "drums",
+      "note_confidence_mean": 0.82,
+      "fraction_low_conf": 0.031,
+      "recommended_view": "drum_grid",
+      "reasons": []
+    }
+  ],
+  "chords_confidence_mean": 0.84,
+  "rough_stems": ["drums", "bass"]
+}

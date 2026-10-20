@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/CorrectionOp",
+  "$defs": {
+    "CorrectionOp": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SetChordOp"
+        },
+        {
+          "$ref": "#/$defs/SplitChordOp"
+        },
+        {
+          "$ref": "#/$defs/SetNoteOp"
+        },
+        {
+          "$ref": "#/$defs/AddNoteOp"
+        },
+        {
+          "$ref": "#/$defs/DeleteNoteOp"
+        },
+        {
+          "$ref": "#/$defs/ShiftDownbeatOp"
+        },
+        {
+          "$ref": "#/$defs/TempoOctaveOp"
+        },
+        {
+          "$ref": "#/$defs/NudgeBeatOp"
+        },
+        {
+          "$ref": "#/$defs/SetSectionOp"
+        },
+        {
+          "$ref": "#/$defs/MarkCorrectOp"
+        },
+        {
+          "$ref": "#/$defs/ReportWrongOp"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "op"
+      }
+    },
+    "SetChordOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_chord"
+        },
+        "segment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bass": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "segment_id",
+        "label"
+      ]
+    },
+    "SplitChordOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "split_chord"
+        },
+        "segment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "at_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "op",
+        "segment_id",
+        "at_s",
+        "label"
+      ]
+    },
+    "SetNoteOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_note"
+        },
+        "note_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "patch": {
+          "$ref": "#/$defs/NotePatch"
+        }
+      },
+      "required": [
+        "op",
+        "note_id",
+        "patch"
+      ]
+    },
+    "NotePatch": {
+      "type": "object",
+      "properties": {
+        "pitch_midi": {
+          "type": "integer",
+          "minimum": 21,
+          "maximum": 108
+        },
+        "onset_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "offset_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "string": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "fret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        }
+      }
+    },
+    "AddNoteOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "add_note"
+        },
+        "note": {
+          "$ref": "#/$defs/NewNote"
+        }
+      },
+      "required": [
+        "op",
+        "note"
+      ]
+    },
+    "NewNote": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "onset_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "offset_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "pitch_midi": {
+          "type": "integer",
+          "minimum": 21,
+          "maximum": 108
+        },
+        "velocity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 127
+        },
+        "bend_cents": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "stem_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "onset_s",
+        "offset_s",
+        "pitch_midi",
+        "stem_id"
+      ]
+    },
+    "DeleteNoteOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "delete_note"
+        },
+        "note_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "op",
+        "note_id"
+      ]
+    },
+    "ShiftDownbeatOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "shift_downbeat"
+        },
+        "by_beats": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "op",
+        "by_beats"
+      ]
+    },
+    "TempoOctaveOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "tempo_octave"
+        },
+        "factor": {
+          "type": "string",
+          "enum": [
+            "double",
+            "half"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "factor"
+      ]
+    },
+    "NudgeBeatOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "nudge_beat"
+        },
+        "beat_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "delta_s": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "op",
+        "beat_id",
+        "delta_s"
+      ]
+    },
+    "SetSectionOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_section"
+        },
+        "segment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "$ref": "#/$defs/SectionLabel"
+        }
+      },
+      "required": [
+        "op",
+        "segment_id",
+        "label"
+      ]
+    },
+    "SectionLabel": {
+      "type": "string",
+      "enum": [
+        "intro",
+        "verse",
+        "prechorus",
+        "chorus",
+        "bridge",
+        "solo",
+        "inst",
+        "outro",
+        "break",
+        "unknown"
+      ]
+    },
+    "MarkCorrectOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "mark_correct"
+        },
+        "entity_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "op",
+        "entity_id"
+      ]
+    },
+    "ReportWrongOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "report_wrong"
+        },
+        "entity_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "op",
+        "entity_id"
+      ]
+    }
+  },
+  "title": "CorrectionOp"
+}

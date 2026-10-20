@@ -1,0 +1,349 @@
+{
+  "schema_version": "1.0.0",
+  "artefact": "notes.guitar",
+  "artefact_version": 1,
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "user_id": "usr_01JB7Q3K9W2F",
+  "audio_hash": "f6ea3271a3f5d48649cb7c1741eafdaad1c65e7879536b91dc998068277be630",
+  "sample_rate": 44100,
+  "duration_s": 20.5,
+  "models": [
+    {
+      "model_id": "basic_pitch/nmp",
+      "version": "0.4.0",
+      "weights_sha256": "fbee5d0f193ec609d8bdd2be025b1426a5fc33505a658bc7f1d70c026558cba3",
+      "provider": "self_hosted",
+      "register_tier": "green"
+    }
+  ],
+  "params": {
+    "onset_threshold": 0.5,
+    "frame_threshold": 0.3,
+    "min_note_ms": 58
+  },
+  "created_at": "2026-10-20T12:01:31Z",
+  "instrument": "guitar",
+  "notes": [
+    {
+      "id": "n000000",
+      "confidence": 0.93,
+      "confidence_raw": 0.97,
+      "onset_s": 0.504,
+      "offset_s": 1.024,
+      "pitch_midi": 45,
+      "velocity": 72,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000001",
+      "confidence": 0.88,
+      "confidence_raw": 0.92,
+      "onset_s": 1.094,
+      "offset_s": 1.614,
+      "pitch_midi": 52,
+      "velocity": 79,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000002",
+      "confidence": 0.9,
+      "confidence_raw": 0.94,
+      "onset_s": 1.709,
+      "offset_s": 2.229,
+      "pitch_midi": 57,
+      "velocity": 86,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000003",
+      "confidence": 0.86,
+      "confidence_raw": 0.9,
+      "onset_s": 2.298,
+      "offset_s": 2.818,
+      "pitch_midi": 60,
+      "velocity": 93,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000004",
+      "confidence": 0.92,
+      "confidence_raw": 0.96,
+      "onset_s": 2.907,
+      "offset_s": 3.427,
+      "pitch_midi": 45,
+      "velocity": 76,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000005",
+      "confidence": 0.81,
+      "confidence_raw": 0.85,
+      "onset_s": 3.489,
+      "offset_s": 4.009,
+      "pitch_midi": 52,
+      "velocity": 83,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000006",
+      "confidence": 0.87,
+      "confidence_raw": 0.91,
+      "onset_s": 4.103,
+      "offset_s": 4.623,
+      "pitch_midi": 57,
+      "velocity": 90,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000007",
+      "confidence": 0.85,
+      "confidence_raw": 0.89,
+      "onset_s": 4.705,
+      "offset_s": 5.225,
+      "pitch_midi": 60,
+      "velocity": 73,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000008",
+      "confidence": 0.93,
+      "confidence_raw": 0.97,
+      "onset_s": 5.296,
+      "offset_s": 5.816,
+      "pitch_midi": 41,
+      "velocity": 80,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000009",
+      "confidence": 0.88,
+      "confidence_raw": 0.92,
+      "onset_s": 5.908,
+      "offset_s": 6.428,
+      "pitch_midi": 48,
+      "velocity": 87,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000010",
+      "confidence": 0.9,
+      "confidence_raw": 0.94,
+      "onset_s": 6.493,
+      "offset_s": 7.013,
+      "pitch_midi": 53,
+      "velocity": 94,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000011",
+      "confidence": 0.86,
+      "confidence_raw": 0.9,
+      "onset_s": 7.102,
+      "offset_s": 7.622,
+      "pitch_midi": 57,
+      "velocity": 77,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000012",
+      "confidence": 0.92,
+      "confidence_raw": 0.96,
+      "onset_s": 7.712,
+      "offset_s": 8.232,
+      "pitch_midi": 41,
+      "velocity": 84,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000013",
+      "confidence": 0.31,
+      "confidence_raw": 0.44,
+      "onset_s": 8.297,
+      "offset_s": 8.817,
+      "pitch_midi": 48,
+      "velocity": 91,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000014",
+      "confidence": 0.87,
+      "confidence_raw": 0.91,
+      "onset_s": 8.906,
+      "offset_s": 9.426,
+      "pitch_midi": 53,
+      "velocity": 74,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000015",
+      "confidence": 0.85,
+      "confidence_raw": 0.89,
+      "onset_s": 9.491,
+      "offset_s": 10.011,
+      "pitch_midi": 57,
+      "velocity": 81,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000016",
+      "confidence": 0.93,
+      "confidence_raw": 0.97,
+      "onset_s": 10.104,
+      "offset_s": 10.624,
+      "pitch_midi": 48,
+      "velocity": 88,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000017",
+      "confidence": 0.88,
+      "confidence_raw": 0.92,
+      "onset_s": 10.694,
+      "offset_s": 11.214,
+      "pitch_midi": 52,
+      "velocity": 95,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000018",
+      "confidence": 0.9,
+      "confidence_raw": 0.94,
+      "onset_s": 11.309,
+      "offset_s": 11.829,
+      "pitch_midi": 55,
+      "velocity": 78,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000019",
+      "confidence": 0.86,
+      "confidence_raw": 0.9,
+      "onset_s": 11.898,
+      "offset_s": 12.418,
+      "pitch_midi": 60,
+      "velocity": 85,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000020",
+      "confidence": 0.92,
+      "confidence_raw": 0.96,
+      "onset_s": 12.507,
+      "offset_s": 13.027,
+      "pitch_midi": 48,
+      "velocity": 92,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000021",
+      "confidence": 0.81,
+      "confidence_raw": 0.85,
+      "onset_s": 13.089,
+      "offset_s": 13.609,
+      "pitch_midi": 52,
+      "velocity": 75,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000022",
+      "confidence": 0.87,
+      "confidence_raw": 0.91,
+      "onset_s": 13.703,
+      "offset_s": 14.223,
+      "pitch_midi": 55,
+      "velocity": 82,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000023",
+      "confidence": 0.85,
+      "confidence_raw": 0.89,
+      "onset_s": 14.305,
+      "offset_s": 14.825,
+      "pitch_midi": 60,
+      "velocity": 89,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000024",
+      "confidence": 0.93,
+      "confidence_raw": 0.97,
+      "onset_s": 14.896,
+      "offset_s": 15.416,
+      "pitch_midi": 43,
+      "velocity": 72,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000025",
+      "confidence": 0.88,
+      "confidence_raw": 0.92,
+      "onset_s": 15.508,
+      "offset_s": 16.028,
+      "pitch_midi": 50,
+      "velocity": 79,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000026",
+      "confidence": 0.9,
+      "confidence_raw": 0.94,
+      "onset_s": 16.093,
+      "offset_s": 16.613,
+      "pitch_midi": 55,
+      "velocity": 86,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000027",
+      "confidence": 0.42,
+      "confidence_raw": 0.53,
+      "onset_s": 16.702,
+      "offset_s": 17.222,
+      "pitch_midi": 59,
+      "velocity": 93,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000028",
+      "confidence": 0.92,
+      "confidence_raw": 0.96,
+      "onset_s": 17.312,
+      "offset_s": 17.832,
+      "pitch_midi": 43,
+      "velocity": 76,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000029",
+      "confidence": 0.81,
+      "confidence_raw": 0.85,
+      "onset_s": 17.897,
+      "offset_s": 18.417,
+      "pitch_midi": 50,
+      "velocity": 83,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000030",
+      "confidence": 0.87,
+      "confidence_raw": 0.91,
+      "onset_s": 18.506,
+      "offset_s": 19.026,
+      "pitch_midi": 55,
+      "velocity": 90,
+      "stem_id": "guitar"
+    },
+    {
+      "id": "n000031",
+      "confidence": 0.85,
+      "confidence_raw": 0.89,
+      "onset_s": 19.091,
+      "offset_s": 20.091,
+      "pitch_midi": 59,
+      "velocity": 73,
+      "stem_id": "guitar",
+      "bend_cents": [[0.0, 0.0], [0.25, 60.0], [0.5, 100.0]]
+    }
+  ]
+}

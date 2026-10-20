@@ -1,0 +1,99 @@
+{
+  "valid": [
+    {
+      "file": "manifest.json",
+      "type": "Manifest"
+    },
+    {
+      "file": "beats.json",
+      "type": "Beats"
+    },
+    {
+      "file": "presence.json",
+      "type": "Presence"
+    },
+    {
+      "file": "stems.json",
+      "type": "Stems"
+    },
+    {
+      "file": "sections.json",
+      "type": "Sections"
+    },
+    {
+      "file": "chords.json",
+      "type": "Chords"
+    },
+    {
+      "file": "notes.guitar.json",
+      "type": "Notes"
+    },
+    {
+      "file": "notes.drums.json",
+      "type": "DrumNotes"
+    },
+    {
+      "file": "tab.guitar.json",
+      "type": "Tab"
+    },
+    {
+      "file": "summary.json",
+      "type": "Summary"
+    },
+    {
+      "file": "corrections.json",
+      "type": "CorrectionOp",
+      "list": true
+    },
+    {
+      "file": "stage-request.json",
+      "type": "StageRequest"
+    },
+    {
+      "file": "stage-request.commercial.json",
+      "type": "StageRequest"
+    },
+    {
+      "file": "stage-result.json",
+      "type": "StageResult"
+    },
+    {
+      "file": "job-events.json",
+      "type": "JobEvent",
+      "list": true
+    }
+  ],
+  "invalid": [
+    {
+      "file": "invalid/notes.guitar.confidence-above-1.json",
+      "type": "Notes",
+      "reason": "calibrated confidence must be within [0, 1]"
+    },
+    {
+      "file": "invalid/manifest.major-2.json",
+      "type": "Manifest",
+      "reason": "a different major schema_version must be refused"
+    },
+    {
+      "file": "invalid/beats.bpm-as-string.json",
+      "type": "Beats",
+      "reason": "numbers are never coerced from strings"
+    },
+    {
+      "file": "invalid/beats.created-at-with-offset.json",
+      "type": "Beats",
+      "reason": "timestamps are UTC with a Z suffix"
+    },
+    {
+      "file": "invalid/corrections.unknown-op.json",
+      "type": "CorrectionOp",
+      "reason": "unknown correction ops are rejected",
+      "list": true
+    },
+    {
+      "file": "invalid/stage-result.raw-exception.json",
+      "type": "StageResult",
+      "reason": "error_code is a machine code, never raw exception text"
+    }
+  ]
+}

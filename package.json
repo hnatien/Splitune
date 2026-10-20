@@ -15,6 +15,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "e2e": "turbo run e2e",
+    "contracts:gen": "node scripts/contracts.mjs gen",
+    "contracts:check": "node scripts/contracts.mjs check",
     "secrets:scan": "gitleaks git --redact --verbose"
   },
   "devDependencies": {

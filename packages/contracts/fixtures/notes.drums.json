@@ -1,0 +1,634 @@
+{
+  "schema_version": "1.0.0",
+  "artefact": "notes.drums",
+  "artefact_version": 1,
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "user_id": "usr_01JB7Q3K9W2F",
+  "audio_hash": "f6ea3271a3f5d48649cb7c1741eafdaad1c65e7879536b91dc998068277be630",
+  "sample_rate": 44100,
+  "duration_s": 20.5,
+  "models": [
+    {
+      "model_id": "adtof/frame_rnn",
+      "version": "0.3.0",
+      "weights_sha256": "97651d3e5366e3a3465b946c5ef363130a07fb4b60f376c143790231f4f02617",
+      "provider": "self_hosted",
+      "register_tier": "amber"
+    }
+  ],
+  "params": {
+    "threshold": 0.35
+  },
+  "created_at": "2026-10-20T12:01:36Z",
+  "instrument": "drums",
+  "hits": [
+    {
+      "id": "d00000",
+      "confidence": 0.9,
+      "onset_s": 0.502,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00001",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 0.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00002",
+      "confidence": 0.86,
+      "onset_s": 1.102,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00003",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 1.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00004",
+      "confidence": 0.9,
+      "onset_s": 1.702,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00005",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 1.704,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00006",
+      "confidence": 0.86,
+      "onset_s": 2.302,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00007",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 2.304,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00008",
+      "confidence": 0.9,
+      "onset_s": 2.902,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00009",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 2.904,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00010",
+      "confidence": 0.86,
+      "onset_s": 3.502,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00011",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 3.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00012",
+      "confidence": 0.9,
+      "onset_s": 4.102,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00013",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 4.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00014",
+      "confidence": 0.86,
+      "onset_s": 4.702,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00015",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 4.704,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00016",
+      "confidence": 0.9,
+      "onset_s": 5.302,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00017",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 5.304,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00018",
+      "confidence": 0.86,
+      "onset_s": 5.902,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00019",
+      "confidence": 0.47,
+      "confidence_raw": 0.55,
+      "onset_s": 5.904,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00020",
+      "confidence": 0.9,
+      "onset_s": 6.502,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00021",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 6.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00022",
+      "confidence": 0.86,
+      "onset_s": 7.102,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00023",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 7.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00024",
+      "confidence": 0.9,
+      "onset_s": 7.702,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00025",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 7.704,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00026",
+      "confidence": 0.86,
+      "onset_s": 8.302,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00027",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 8.304,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00028",
+      "confidence": 0.9,
+      "onset_s": 8.902,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00029",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 8.904,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00030",
+      "confidence": 0.86,
+      "onset_s": 9.502,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00031",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 9.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00032",
+      "confidence": 0.9,
+      "onset_s": 10.102,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00033",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 10.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00034",
+      "confidence": 0.86,
+      "onset_s": 10.702,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00035",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 10.704,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00036",
+      "confidence": 0.9,
+      "onset_s": 11.302,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00037",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 11.304,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00038",
+      "confidence": 0.86,
+      "onset_s": 11.902,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00039",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 11.904,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00040",
+      "confidence": 0.9,
+      "onset_s": 12.502,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00041",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 12.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00042",
+      "confidence": 0.86,
+      "onset_s": 13.102,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00043",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 13.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00044",
+      "confidence": 0.9,
+      "onset_s": 13.702,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00045",
+      "confidence": 0.47,
+      "confidence_raw": 0.55,
+      "onset_s": 13.704,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00046",
+      "confidence": 0.86,
+      "onset_s": 14.302,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00047",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 14.304,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00048",
+      "confidence": 0.9,
+      "onset_s": 14.902,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00049",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 14.904,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00050",
+      "confidence": 0.86,
+      "onset_s": 15.502,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00051",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 15.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00052",
+      "confidence": 0.9,
+      "onset_s": 16.102,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00053",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 16.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00054",
+      "confidence": 0.86,
+      "onset_s": 16.702,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00055",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 16.704,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00056",
+      "confidence": 0.9,
+      "onset_s": 17.302,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 100,
+      "approximate": false
+    },
+    {
+      "id": "d00057",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 17.304,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00058",
+      "confidence": 0.86,
+      "onset_s": 17.902,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00059",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 17.904,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00060",
+      "confidence": 0.9,
+      "onset_s": 18.502,
+      "class5": "kick",
+      "gm_note": 36,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00061",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 18.504,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    },
+    {
+      "id": "d00062",
+      "confidence": 0.86,
+      "onset_s": 19.102,
+      "class5": "snare",
+      "gm_note": 38,
+      "velocity": 92,
+      "approximate": false
+    },
+    {
+      "id": "d00063",
+      "confidence": 0.78,
+      "confidence_raw": 0.83,
+      "onset_s": 19.104,
+      "class5": "hihat",
+      "gm_note": 42,
+      "velocity": 70,
+      "approximate": true
+    }
+  ]
+}

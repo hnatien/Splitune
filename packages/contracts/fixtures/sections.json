@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "artefact": "sections",
+  "artefact_version": 1,
+  "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+  "user_id": "usr_01JB7Q3K9W2F",
+  "audio_hash": "f6ea3271a3f5d48649cb7c1741eafdaad1c65e7879536b91dc998068277be630",
+  "sample_rate": 44100,
+  "duration_s": 20.5,
+  "models": [
+    {
+      "model_id": "allin1/harmonix_all",
+      "version": "1.1.0",
+      "weights_sha256": "bb74050dd550fd2e4e799701b235396defffb673e08d1f3fb0f8f1bf377ad343",
+      "provider": "self_hosted",
+      "register_tier": "amber"
+    }
+  ],
+  "params": {
+    "model": "harmonix-all"
+  },
+  "created_at": "2026-10-20T12:01:40Z",
+  "segments": [
+    {
+      "id": "s0000",
+      "t0": 0.0,
+      "t1": 10.1,
+      "label": "verse",
+      "boundary_confidence": 0.71
+    },
+    {
+      "id": "s0001",
+      "t0": 10.1,
+      "t1": 19.7,
+      "label": "chorus",
+      "boundary_confidence": 0.64
+    },
+    {
+      "id": "s0002",
+      "t0": 19.7,
+      "t1": 20.5,
+      "label": "outro",
+      "boundary_confidence": 0.52
+    }
+  ]
+}

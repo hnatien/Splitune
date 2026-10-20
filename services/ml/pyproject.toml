@@ -17,6 +17,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "datamodel-code-generator==0.86.0",
     "pyright==1.1.414",
     "pytest==9.1.1",
     "ruff==0.17.1",
@@ -47,8 +48,12 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "RUF", "PT"]
 
+[tool.ruff.lint.per-file-ignores]
+# Generated: long Literal unions and regex patterns can't be wrapped.
+"packages/splitune_ml_core/src/splitune_ml_core/contracts/_generated.py" = ["E501"]
+
 [tool.pyright]
-include = ["packages"]
+include = ["packages", "scripts"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 venvPath = "."

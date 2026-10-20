@@ -1,0 +1,33 @@
+[
+  {
+    "type": "stage.started",
+    "stage": "beats",
+    "at": "2026-10-20T12:00:03Z"
+  },
+  {
+    "type": "stage.completed",
+    "stage": "beats",
+    "artefact": {
+      "id": "0192f6c4-8b10-7a00-8000-0000000000b1",
+      "kind": "beats",
+      "version": 1
+    },
+    "at": "2026-10-20T12:00:09Z"
+  },
+  {
+    "type": "progress",
+    "value": 0.35
+  },
+  {
+    "type": "stage.failed",
+    "stage": "lyrics",
+    "error_code": "no_vocals_detected",
+    "fallback": "skipped",
+    "at": "2026-10-20T12:01:16Z"
+  },
+  {
+    "type": "analysis.done",
+    "status": "done",
+    "summary_artefact_id": "0192f6c4-8b10-7a00-8000-0000000000b9"
+  }
+]
