@@ -1,0 +1,24 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: htdemucs-6s
+kind: model
+name: "HT-Demucs v4 6-source (htdemucs_6s)"
+version: "4.0.1"
+repo_url: https://github.com/facebookresearch/demucs
+code_spdx: MIT
+weights:
+  licence: "MIT repo; weights licence not separately stated"
+  url: https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/5c90dfd2-34c22ccb.th
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "5a88a0acc079174ddb0acd057d0ce681f31471bd6a424b59153ec3d5c255cce5"
+  files:
+    - { name: htdemucs_6s.yaml, sha256: "207405151270af8fd81c2373c25d27950916682ac91dca7884a11ce13dad6f58", bytes: 21 }
+    - { name: 5c90dfd2-34c22ccb.th, sha256: "34c22ccb381c6f9fdbf324f04e1e2fe21aaaf293f5ded163a162697ff9a02ddd", bytes: 54996327 }
+training_data: [{ name: MUSDB18-HQ + internal Meta data (800 songs), licence: unknown, commercial_ok: false }]
+tier: amber
+tier_reason: "training data partly non-commercial / undisclosed"
+used_in: [separate]
+profiles: [personal]
+notes: >-
+  Demucs authors: guitar "okay", piano "a lot of bleeding and artifacts". MoisesDB: guitar 3.07 dB, piano 1.60 dB.
+reviewer: owner
+reviewed: 2026-10-21

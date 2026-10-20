@@ -1,0 +1,23 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: panns-cnn14
+kind: model
+name: "PANNs Cnn14 AudioSet tagger, exported to ONNX"
+version: "mAP=0.431"
+repo_url: https://github.com/qiuqiangkong/audioset_tagging_cnn
+code_spdx: MIT
+weights:
+  licence: "not separately stated (Zenodo record 3987831)"
+  url: https://zenodo.org/record/3987831/files/Cnn14_mAP%3D0.431.pth
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "9e3e9b72885f77020116a7d34810761e6eac0d65c4669068f62bf0537711c3af"
+  files:
+    - { name: cnn14.onnx, sha256: "6031a7cfcda816ff3f4d3e1b633b1f5a81f473bd3a3bf4716cb355269a237f2b", bytes: 327331902 }
+training_data: [{ name: AudioSet, licence: CC-BY-4.0 labels / YouTube audio, commercial_ok: false }]
+tier: amber
+tier_reason: "trained on YouTube audio (AudioSet)"
+used_in: [tag]
+profiles: [personal]
+notes: >-
+  Source checkpoint Cnn14_mAP=0.431.pth sha256 0dc499e40e9761ef5ea061ffc77697697f277f6a960894903df3ada000e34b31; exported with services/ml/scripts/export_tagger.py (torch 2.14.1, opset 17, log-mel front end in the graph). The register hashes the ONNX file the stage loads.
+reviewer: owner
+reviewed: 2026-10-21

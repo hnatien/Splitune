@@ -8,7 +8,7 @@ dependencies = [
     "stage-decode",
     "stage-beats",
     "stage-tagger",
-    "stage-separation",
+    "stage-separation[models]",
     "stage-chords",
     "stage-notes",
     "stage-sections",

@@ -8,6 +8,8 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "splitune-ml-core",
     "stage-decode",
+    "stage-separation",
+    "stage-tagger",
 ]
 
 [tool.uv]
@@ -17,3 +19,5 @@ required-version = ">=0.13,<0.14"
 [tool.uv.sources]
 splitune-ml-core = { path = "../../packages/splitune_ml_core", editable = true }
 stage-decode = { path = "../../packages/stage_decode", editable = true }
+stage-separation = { path = "../../packages/stage_separation", editable = true }
+stage-tagger = { path = "../../packages/stage_tagger", editable = true }

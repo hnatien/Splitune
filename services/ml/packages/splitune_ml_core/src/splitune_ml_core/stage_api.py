@@ -1,6 +1,7 @@
 """What a stage implementation receives and returns.
 
-Stage modules (e.g. `stage_beats.stage`) expose `describe(params) -> StageDescription` and
+Stage modules (e.g. `stage_beats.stage`) expose `describe(params, inputs) -> StageDescription`
+(`inputs` = the downloaded inputs, for stages whose cache key depends on an upstream artefact) and
 `run(job) -> StageOutput`. They work on local files only: the worker downloads inputs, uploads
 outputs and does all bookkeeping, so stages never see database or bucket credentials. These models
 travel over the island JSON-lines RPC (Python on both ends).
@@ -40,6 +41,9 @@ class StageJob(BaseModel):
 class StageOutput(BaseModel):
     status: Literal["done", "fallback"]
     files: dict[str, str]  # output name -> local path
+    # Binary objects referenced by the JSON outputs (stem audio): key relative to the outputs'
+    # directory (e.g. "stems/guitar.m4a") -> local path. Uploaded before the JSON artefacts.
+    blobs: dict[str, str] = Field(default_factory=dict[str, str])
     model_refs: list[ModelRef]
     metrics: dict[str, float] = Field(default_factory=dict[str, float])
     fallback_reason: str | None = None

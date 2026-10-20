@@ -25,7 +25,9 @@ log = logging.getLogger("splitune.island")
 
 
 class StageModule(Protocol):
-    def describe(self, params: dict[str, Any]) -> StageDescription: ...
+    def describe(
+        self, params: dict[str, Any], inputs: dict[str, str] | None = None
+    ) -> StageDescription: ...
 
     def run(self, job: StageJob) -> StageOutput: ...
 
@@ -51,7 +53,10 @@ def handle(method: str, params: dict[str, Any]) -> dict[str, Any]:
         return {"pid": os.getpid()}
     if method == "describe":
         stage = _stage(str(params["stage"]))
-        return stage.describe(cast(dict[str, Any], params["params"])).model_dump(mode="json")
+        inputs = cast(dict[str, str], params.get("inputs") or {})
+        return stage.describe(cast(dict[str, Any], params["params"]), inputs).model_dump(
+            mode="json"
+        )
     if method == "run":
         job = StageJob.model_validate(params["job"])
         return _stage(job.stage).run(job).model_dump(mode="json")

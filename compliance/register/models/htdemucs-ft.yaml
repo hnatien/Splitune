@@ -1,0 +1,27 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: htdemucs-ft
+kind: model
+name: "HT-Demucs v4 fine-tuned 4-source bag (htdemucs_ft)"
+version: "4.0.1"
+repo_url: https://github.com/facebookresearch/demucs
+code_spdx: MIT
+weights:
+  licence: "MIT repo; weights licence not separately stated"
+  url: https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "1b4b968b68408eddad4f83256bb9e2edb43ce5f4d9f8ae0c0c95f1275cd00e64"
+  files:
+    - { name: htdemucs_ft.yaml, sha256: "69470b8c1bbd674437b51bc9fb491327a10ab0396b702c93389b9cf750016346", bytes: 149 }
+    - { name: f7e0c4bc-ba3fe64a.th, sha256: "ba3fe64ae8ef66ac9a4857222ce48efbdc5eb3ad375cb79dd13debee5aaa4066", bytes: 84141271 }
+    - { name: d12395a8-e57c48e6.th, sha256: "e57c48e6b0e38af4f7118d7bd08c49f0a0c0edf7d09143bdd902ea0d237303e6", bytes: 84141271 }
+    - { name: 92cfc3b6-ef3bcb9c.th, sha256: "ef3bcb9c8b40d14ae5d51b6db2587339cc12c6b77c0be151ce6d69002e087bf2", bytes: 84141271 }
+    - { name: 04573f0d-f3cf25b2.th, sha256: "f3cf25b222c4eed7cd49dd8b2c9597d50c18bd154090f7b919cfa5f93cf22c49", bytes: 84141271 }
+training_data: [{ name: MUSDB18-HQ + internal Meta data (800 songs), licence: unknown, commercial_ok: false }]
+tier: amber
+tier_reason: "training data partly non-commercial / undisclosed"
+used_in: [separate]
+profiles: [personal]
+notes: >-
+  Four per-source models (vocals, drums, bass, other); about 4x slower than htdemucs.
+reviewer: owner
+reviewed: 2026-10-21

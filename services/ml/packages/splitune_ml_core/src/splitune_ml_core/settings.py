@@ -54,6 +54,13 @@ class Settings(BaseSettings):
 
     # Decoded FLAC intermediates and per-job scratch space stay on the Mac's disk.
     cache_dir: Path = Field(default=Path("~/.cache/splitune/ml"), validation_alias="ML_CACHE_DIR")
+    # Model weights fetched outside the torch hub cache (separation models, the tagger's ONNX),
+    # verified against compliance/register before loading.
+    models_dir: Path = Field(
+        default=Path("~/.cache/splitune/models"), validation_alias="ML_MODELS_DIR"
+    )
+    # Per-instrument separation model map; empty = services/ml/config/separation.personal.yaml.
+    separation_config: Path | None = Field(default=None, validation_alias="ML_SEPARATION_CONFIG")
     # Directory holding the ffmpeg/ffprobe binaries; empty = look them up on PATH.
     ffmpeg_bin_dir: Path | None = Field(default=None, validation_alias="FFMPEG_BIN_DIR")
     # Island venvs live in <islands_dir>/<name>/.venv (default services/ml/islands).

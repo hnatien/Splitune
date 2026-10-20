@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,8 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "manifest": contracts.Manifest,
     "probe": contracts.Probe,
     "beats": contracts.Beats,
+    "tags": contracts.Tags,
+    "separation": contracts.Separation,
     "presence": contracts.Presence,
     "stems": contracts.Stems,
     "sections": contracts.Sections,
@@ -63,6 +66,28 @@ def validate_artefact(kind: str, data: bytes) -> dict[str, Any]:
     return document
 
 
+# Binary objects an artefact points at, relative to its own directory (stems.json → stem audio).
+_BLOB = re.compile(r"^stems/[a-z0-9][a-z0-9_.-]{0,63}\.(m4a|webm)$")
+BLOB_TYPES = {".m4a": "audio/mp4", ".webm": "audio/webm"}
+
+
+def referenced_files(kind: str, document: dict[str, Any]) -> list[str]:
+    if kind != "stems":
+        return []
+    stems = contracts.Stems.model_validate(document)
+    paths = [f.path for stem in stems.stems for f in stem.files]
+    if not all(_BLOB.fullmatch(p) for p in paths) or len(set(paths)) != len(paths):
+        raise StageError("artefact_invalid", retry=False)
+    return paths
+
+
+def blob_key(artefact_key: str, relative: str) -> str:
+    """Bucket key of a file referenced by the artefact at `artefact_key`."""
+    if not _BLOB.fullmatch(relative):
+        raise StageError("artefact_invalid", retry=False)
+    return f"{artefact_key.rpartition('/')[0]}/{relative}"
+
+
 def rebrand(
     document: dict[str, Any], *, analysis_id: str, user_id: str, version: int, created_at: str
 ) -> dict[str, Any]:
@@ -88,18 +113,22 @@ class Written:
     bytes: int
 
 
-def upload(storage: Storage, key: str, path: Path, kind: str, version: int) -> Written:
+def put_atomic(storage: Storage, key: str, path: Path, content_type: str) -> None:
     """Uploads `path` to a temp key next to `key`, then copies it into place. Readers never see a
     partial object at the final key."""
-    data = path.read_bytes()
-    validate_artefact(kind, data)
     directory, _, name = key.rpartition("/")
     temp_key = f"{directory}/.tmp/{uuid.uuid4().hex}-{name}"
-    storage.put_file(temp_key, path, "application/json")
+    storage.put_file(temp_key, path, content_type)
     try:
         storage.copy(temp_key, key)
     finally:
         storage.delete(temp_key)
+
+
+def upload(storage: Storage, key: str, path: Path, kind: str, version: int) -> Written:
+    data = path.read_bytes()
+    validate_artefact(kind, data)
+    put_atomic(storage, key, path, "application/json")
     return Written(
         kind=kind,
         version=version,

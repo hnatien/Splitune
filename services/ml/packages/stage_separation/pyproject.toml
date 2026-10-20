@@ -3,7 +3,25 @@ name = "stage-separation"
 version = "0.0.0"
 description = "Source separation and stem post-processing"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "numpy==2.5.4",
+    "pyloudnorm==0.2.0",
+    "pyyaml==6.0.3",
+    "scipy==1.18.1",
+    "soundfile==0.14.0",
+    "splitune-ml-core",
+]
+
+[project.optional-dependencies]
+# `separate` runs in the torch island; `stem_post` (onnx-cpu island) needs only the base set.
+models = [
+    "audio-separator[cpu]==0.44.5",
+    # audio-separator 0.44.5 calls librosa.get_duration(filename=...), removed in librosa 1.0,
+    # and imports audioread, which librosa 1.0 no longer pulls in.
+    "audioread==3.1.0",
+    "librosa==0.11.0",
+    "torch==2.14.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.3,<0.14"]

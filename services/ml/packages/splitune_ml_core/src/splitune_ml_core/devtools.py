@@ -9,9 +9,18 @@ from typing import Any
 
 from .db import Connection
 from .keys import analysis_prefix
+from .stages import STAGES
 from .storage import Storage
 
-OUTPUT_FILES = {"decode": {"probe": "probe.json"}, "beats": {"beats": "beats.json"}}
+OUTPUT_FILES = {
+    "decode": {"probe": "probe.json"},
+    "beats": {"beats": "beats.json"},
+    "tag": {"tags": "tags.json"},
+    "separate": {"separation": "separation.json"},
+    "stem_post": {"stems": "stems.json", "presence": "presence.json"},
+}
+# Inputs that are upstream artefacts of the same analysis version.
+INPUT_FILES = {"probe": "probe.json", "tags": "tags.json", "separation": "separation.json"}
 
 
 def seed_analysis(owner: Connection, user_id: str, instrument: str = "guitar") -> tuple[str, str]:
@@ -56,9 +65,13 @@ def stage_request(
     params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     base = f"{analysis_prefix(user_id, analysis_id)}v{version}/"
+    spec = STAGES[stage]
     inputs = {"source": source_key}
-    if stage == "beats":
+    if spec.needs_audio:
         inputs["probe"] = f"{base}probe.json"
+    for name in spec.downloads:
+        if name in INPUT_FILES:
+            inputs[name] = base + INPUT_FILES[name]
     return {
         "analysis_id": analysis_id,
         "user_id": user_id,

@@ -33,7 +33,7 @@ def effective_params(params: dict[str, Any]) -> dict[str, Any]:
     return merged
 
 
-def describe(params: dict[str, Any]) -> StageDescription:
+def describe(params: dict[str, Any], inputs: dict[str, str] | None = None) -> StageDescription:
     """`params.model` is the requested model; `model_refs` name the one this island will run
     (small0 on the CPU fallback), so the cache key changes with it."""
     effective = effective_params(params)

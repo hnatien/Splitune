@@ -17,7 +17,7 @@ DEFAULT_MAX_DURATION_S = 20 * 60  # 06 §4: ≤20 min
 DECODE_TIMEOUT_S = 120.0  # 06 §2
 
 
-def describe(params: dict[str, Any]) -> StageDescription:
+def describe(params: dict[str, Any], inputs: dict[str, str] | None = None) -> StageDescription:
     max_duration = params.get("max_duration_s", DEFAULT_MAX_DURATION_S)
     if not isinstance(max_duration, int | float) or not 0 < max_duration <= DEFAULT_MAX_DURATION_S:
         max_duration = DEFAULT_MAX_DURATION_S

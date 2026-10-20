@@ -22,6 +22,9 @@ class StageSpec:
     # Resolves the decoded FLAC (and audio_hash) from the `probe` input, re-decoding `source`
     # when the local cache no longer has it.
     needs_audio: bool = False
+    # False: a cached `fallback` result is recomputed instead of reused (the failure that caused
+    # it, e.g. an MPS out-of-memory, may be gone by now).
+    reuse_fallback: bool = True
 
 
 STAGES: dict[str, StageSpec] = {
@@ -43,6 +46,39 @@ STAGES: dict[str, StageSpec] = {
         timeout_s=120,  # 60 s budget (06 §2) + cold model load
         outputs={"beats": "beats"},
         primary="beats",
+        needs_audio=True,
+    ),
+    "tag": StageSpec(
+        name="tag",
+        module="stage_tagger.stage",
+        island="onnx-cpu",
+        slot="cpu",
+        timeout_s=120,  # 60 s budget (06 §2) + cold model load
+        outputs={"tags": "tags"},
+        primary="tags",
+        needs_audio=True,
+    ),
+    "separate": StageSpec(
+        name="separate",
+        module="stage_separation.separate",
+        island="torch",
+        slot="mps",
+        timeout_s=1500,  # 600 s per model (06 §2) for up to two chain entries + model loads
+        outputs={"separation": "separation"},
+        primary="separation",
+        downloads=("tags",),
+        needs_audio=True,
+        reuse_fallback=False,
+    ),
+    "stem_post": StageSpec(
+        name="stem_post",
+        module="stage_separation.stem_post",
+        island="onnx-cpu",
+        slot="cpu",
+        timeout_s=300,  # 180 s budget (06 §2) + encodes of up to ~6 stems
+        outputs={"stems": "stems", "presence": "presence"},
+        primary="stems",
+        downloads=("separation", "tags"),
         needs_audio=True,
     ),
 }

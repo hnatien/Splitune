@@ -1,0 +1,24 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: mel-roformer-kim-vocals
+kind: model
+name: "Mel-Band RoFormer vocals (Kimberley Jensen)"
+version: "vocals_mel_band_roformer"
+repo_url: https://github.com/KimberleyJensen/Mel-Band-Roformer-Vocal-Model
+code_spdx: MIT
+weights:
+  licence: "HF repo tagged mit; training data undisclosed"
+  url: https://github.com/nomadkaraoke/python-audio-separator/releases/download/model-configs/vocals_mel_band_roformer.ckpt
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "33109bf43d52f3e737fc2d42b33c4858486d7e94ae13c0240cad9ac8fafe78f1"
+  files:
+    - { name: vocals_mel_band_roformer.ckpt, sha256: "87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e", bytes: 913106900 }
+    - { name: vocals_mel_band_roformer.yaml, sha256: "b958b29c8f7195f0d86bee6759a33980db675c4ecaf2fcaa80fa125828e6cd38", bytes: 944 }
+training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+tier: amber
+tier_reason: "permissive tag but undisclosed training data"
+used_in: [separate]
+profiles: [personal]
+notes: >-
+  Multisong vocals 10.98 dB (MSST list).
+reviewer: owner
+reviewed: 2026-10-21

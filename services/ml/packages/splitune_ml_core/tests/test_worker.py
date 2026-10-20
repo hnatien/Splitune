@@ -287,3 +287,150 @@ def test_local_chain_with_islands(
     jobs = wait_for(owner, [d2, b2], timeout_s=600)
     assert jobs[b2]["status"] == "done"
     assert flac.is_file()  # re-materialised from the source by the beats job
+
+
+def enqueue_separation(
+    owner: Connection,
+    storage: Storage,
+    user_id: str,
+    analysis_id: str,
+    source: Path,
+    instrument: str = "guitar",
+) -> dict[str, int]:
+    """decode → tag → separate → stem_post, with the step-09 dependency edges."""
+    source_key = devtools.upload_source(storage, user_id, source)
+    ids: dict[str, int] = {}
+    edges = {"decode": [], "tag": ["decode"], "separate": ["tag"], "stem_post": ["separate"]}
+    for stage, deps in edges.items():
+        params = {"instrument": instrument} if stage == "separate" else {}
+        ids[stage] = q.enqueue(
+            owner,
+            stage,
+            "python",
+            devtools.stage_request(
+                stage,
+                user_id=user_id,
+                analysis_id=analysis_id,
+                source_key=source_key,
+                params=params,
+            ),
+            analysis_id=analysis_id,
+            depends_on=[ids[d] for d in deps],
+        ).id
+    return ids
+
+
+def stems_document(storage: Storage, owner: Connection, analysis_id: str) -> tuple[str, Any]:
+    row = next(r for r in artefact_rows(owner, analysis_id) if r["kind"] == "stems")
+    data = storage.get_bytes(row["object_key"], max_bytes=1 << 24)
+    return str(row["object_key"]), contracts.Stems.model_validate(json.loads(data))
+
+
+def test_mock_separation_chain_uploads_stem_audio(
+    owner: Connection,
+    storage: Storage,
+    make_settings: SettingsFactory,
+    user_id: str,
+    click_track: Any,
+    running: list[Worker],
+) -> None:
+    _, analysis_id = devtools.seed_analysis(owner, user_id)
+    source = click_track()
+    ids = enqueue_separation(owner, storage, user_id, analysis_id, source)
+    start(running, Worker(make_settings(ML_MODE="mock")))
+    jobs = wait_for(owner, list(ids.values()))
+    assert {s: jobs[i]["status"] for s, i in ids.items()} == dict.fromkeys(ids, "done")
+    kinds = sorted(r["kind"] for r in artefact_rows(owner, analysis_id))
+    assert kinds == ["presence", "probe", "separation", "stems", "tags"]
+    key, stems = stems_document(storage, owner, analysis_id)
+    directory = key.rpartition("/")[0]
+    for stem in stems.stems:
+        for file in stem.files:
+            info = storage.head(f"{directory}/{file.path}")
+            assert info is not None, file.path
+    completed = [e for e in events(owner, analysis_id) if e["type"] == "stage.completed"]
+    assert [e["stage"] for e in completed] == ["decode", "tag", "separate", "stem_post"]
+
+    # Another analysis of the same audio reuses stem_post's result: the audio is copied over.
+    _, second = devtools.seed_analysis(owner, user_id)
+    again = enqueue_separation(owner, storage, user_id, second, source)
+    wait_for(owner, list(again.values()))
+    key2, stems2 = stems_document(storage, owner, second)
+    assert f"/a/{second}/" in key2
+    directory2 = key2.rpartition("/")[0]
+    assert [s.model_dump() for s in stems2.stems] == [s.model_dump() for s in stems.stems]
+    for stem in stems2.stems:
+        for file in stem.files:
+            assert storage.head(f"{directory2}/{file.path}") is not None
+
+
+def models_subset(tmp_path: Path, records: list[str]) -> Path:
+    """A models dir holding only these register entries (symlinks to the downloaded weights)."""
+    from splitune_ml_core import register
+
+    real = Path("~/.cache/splitune/models").expanduser()
+    for record_id in records:
+        record = register.model(record_id)
+        folder = "panns" if record_id == "panns-cnn14" else "audio-separator"
+        (tmp_path / "models" / folder).mkdir(parents=True, exist_ok=True)
+        for entry in record.weights.files:
+            (tmp_path / "models" / folder / entry.name).symlink_to(real / folder / entry.name)
+    return tmp_path / "models"
+
+
+@pytest.mark.models
+def test_local_separation_chain_falls_back_then_gives_up(
+    owner: Connection,
+    storage: Storage,
+    make_settings: SettingsFactory,
+    user_id: str,
+    click_track: Any,
+    running: list[Worker],
+    tmp_path: Path,
+) -> None:
+    """Real islands. Without BS-Roformer-SW's weights the guitar chain falls back to htdemucs_6s
+    and still yields aligned stems, mix-minus and presence; with no separation weights at all,
+    separate fails with stems_unavailable and stem_post is cancelled."""
+    source = click_track(bpm=100, seconds=12)
+    settings = make_settings(
+        ML_MODE="local",
+        ML_ISLAND_PYTHON=sys.executable,
+        ML_MODELS_DIR=str(models_subset(tmp_path, ["htdemucs-6s", "panns-cnn14"])),
+    )
+    worker = start(running, Worker(settings))
+    _, analysis_id = devtools.seed_analysis(owner, user_id)
+    ids = enqueue_separation(owner, storage, user_id, analysis_id, source)
+    jobs = wait_for(owner, list(ids.values()), timeout_s=900)
+    assert {s: jobs[i]["status"] for s, i in ids.items()} == dict.fromkeys(ids, "done")
+    runs = stage_runs(owner, analysis_id)
+    assert runs["separate"]["status"] == "fallback"
+    assert runs["tag"]["status"] == "done"
+    key, stems = stems_document(storage, owner, analysis_id)
+    assert {s.stem_id for s in stems.stems} >= {"guitar", "mix_minus_guitar"}
+    assert {s.provider for s in stems.stems} == {"htdemucs_6s"}
+    directory = key.rpartition("/")[0]
+    for stem in stems.stems:
+        for file in stem.files:
+            assert storage.head(f"{directory}/{file.path}") is not None
+    worker.shutdown(60)
+    running.remove(worker)
+
+    empty = make_settings(
+        ML_MODE="local",
+        ML_ISLAND_PYTHON=sys.executable,
+        ML_MODELS_DIR=str(models_subset(tmp_path / "none", ["panns-cnn14"])),
+    )
+    start(running, Worker(empty))
+    _, failed = devtools.seed_analysis(owner, user_id)
+    ids = enqueue_separation(owner, storage, user_id, failed, click_track("other.wav", seconds=6))
+    jobs = wait_for(owner, list(ids.values()), timeout_s=600)
+    outcome = {s: (jobs[i]["status"], jobs[i]["error_code"]) for s, i in ids.items()}
+    assert outcome == {
+        "decode": ("done", None),
+        "tag": ("done", None),
+        "separate": ("failed", "stems_unavailable"),
+        "stem_post": ("cancelled", "dependency_failed"),
+    }
+    assert stage_runs(owner, failed)["separate"]["error_code"] == "stems_unavailable"
+    failures = [e for e in events(owner, failed) if e["type"] == "stage.failed"]
+    assert [(e["stage"], e["error_code"]) for e in failures] == [("separate", "stems_unavailable")]

@@ -226,7 +226,9 @@ class Cached:
     rows: list[dict[str, Any]]  # artefact rows in output order
 
 
-def find_cached(conn: Connection, key: str, analysis_id: str, kinds: list[str]) -> Cached | None:
+def find_cached(
+    conn: Connection, key: str, analysis_id: str, kinds: list[str], *, reuse_fallback: bool = True
+) -> Cached | None:
     """A stage run with this cache key and its artefact rows, this analysis first. This analysis'
     own row counts while it is being re-run (mark_started keeps its key; `finish` writes the key
     and the artefact rows in one transaction, so a matching key means matching rows)."""
@@ -243,6 +245,8 @@ def find_cached(conn: Connection, key: str, analysis_id: str, kinds: list[str]) 
         return None
     source = str(row["analysis_id"])
     status = str(row["status"])
+    if status == "fallback" and not reuse_fallback:
+        return None
     rows = conn.execute(
         """
         select kind, version, object_key, sha256, bytes, model_refs from artefacts
@@ -285,6 +289,11 @@ def reuse_cached(
         data = services.storage.get_bytes(key, max_bytes=MAX_JSON_BYTES)
         if hashlib.sha256(data).hexdigest() != str(row["sha256"]):
             return None
+        document = artefacts.validate_artefact(kind, data)
+        if not local_files_present(services, kind, document):
+            return None
+        if not reuse_blobs(services, kind, document, key, target):
+            return None
         same = cached.analysis_id == analysis.id and int(row["version"]) == analysis.version
         if same and key == target:
             written.append(
@@ -297,7 +306,6 @@ def reuse_cached(
                 )
             )
             continue
-        document = artefacts.validate_artefact(kind, data)
         copy = artefacts.rebrand(
             document,
             analysis_id=analysis.id,
@@ -310,6 +318,55 @@ def reuse_cached(
         path.write_text(json.dumps(copy), encoding="utf-8")
         written.append(artefacts.upload(services.storage, target, path, kind, analysis.version))
     return written
+
+
+def separated_path(cache_dir: Path, file: str) -> Path:
+    """Worker-local raw stems written by `separate` (contracts `SeparatedStem.file`)."""
+    return cache_dir / "separated" / file
+
+
+def local_files_present(services: Services, kind: str, document: dict[str, Any]) -> bool:
+    """A cached `separation` is only usable while its raw stems are still on this Mac's disk."""
+    if kind != "separation":
+        return True
+    separation = contracts.Separation.model_validate(document)
+    cache_dir = services.settings.resolved_cache_dir
+    return all(separated_path(cache_dir, s.file).is_file() for s in separation.stems)
+
+
+def reuse_blobs(
+    services: Services, kind: str, document: dict[str, Any], source_key: str, target_key: str
+) -> bool:
+    """Files the cached artefact points at must still exist; for another analysis they are
+    copied next to its own artefact key first."""
+    for relative in artefacts.referenced_files(kind, document):
+        source = artefacts.blob_key(source_key, relative)
+        if services.storage.head(source) is None:
+            return False
+        target = artefacts.blob_key(target_key, relative)
+        if target != source:
+            services.storage.copy(source, target)
+    return True
+
+
+def upload_blobs(
+    services: Services, request: contracts.StageRequest, spec: StageSpec, out: StageOutput
+) -> None:
+    """Stem audio goes up before the JSON that points at it, so a reader that sees stems.json can
+    always fetch its files. The set must match the outputs' references exactly."""
+    referenced: set[str] = set()
+    for name, kind in spec.outputs.items():
+        document = cast(
+            dict[str, Any], json.loads(Path(out.files[name]).read_text(encoding="utf-8"))
+        )
+        referenced |= set(artefacts.referenced_files(kind, document))
+    if referenced != set(out.blobs):
+        raise StageError("stage_output_missing", retry=False)
+    anchor = request.outputs[spec.primary]
+    for relative, path in sorted(out.blobs.items()):
+        key = artefacts.blob_key(anchor, relative)
+        content_type = artefacts.BLOB_TYPES[Path(relative).suffix]
+        artefacts.put_atomic(services.storage, key, Path(path), content_type)
 
 
 def cached_facts(
@@ -506,12 +563,12 @@ def run_stage(
     workdir: Path,
 ) -> tuple[str, Outcome]:
     prepared = prepare(services, backend, request, spec, analysis, workdir)
-    description = backend.describe(spec, request.params)
+    description = backend.describe(spec, request.params, prepared.inputs)
     key = compute_key(services, request, analysis, prepared, description)
     kinds = list(spec.outputs.values())
 
     with services.pool.connection() as conn:
-        cached = find_cached(conn, key, analysis.id, kinds)
+        cached = find_cached(conn, key, analysis.id, kinds, reuse_fallback=spec.reuse_fallback)
     if cached is not None:
         written = reuse_cached(services, request, spec, analysis, workdir, cached)
         if written is not None:
@@ -546,6 +603,7 @@ def run_stage(
     )
     if set(out.files) != set(spec.outputs):
         raise StageError("stage_output_missing", retry=False)
+    upload_blobs(services, request, spec, out)
     written = [
         artefacts.upload(
             services.storage, request.outputs[name], Path(out.files[name]), kind, analysis.version

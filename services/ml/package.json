@@ -3,9 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "description": "Turborepo bridge for the uv workspace: lets pnpm lint/typecheck/test run ruff, pyright and pytest",
+  "type": "module",
   "scripts": {
     "lint": "uv run ruff check && uv run ruff format --check",
-    "typecheck": "uv run pyright",
-    "test": "uv run pytest"
+    "typecheck": "uv run pyright && tsc -p tsconfig.json",
+    "test": "uv run pytest",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@types/node": "24.19.2"
   }
 }

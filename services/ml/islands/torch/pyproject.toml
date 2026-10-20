@@ -8,6 +8,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "splitune-ml-core",
     "stage-beats",
+    "stage-separation[models]",
 ]
 
 [tool.uv]
@@ -17,6 +18,7 @@ required-version = ">=0.13,<0.14"
 [tool.uv.sources]
 splitune-ml-core = { path = "../../packages/splitune_ml_core", editable = true }
 stage-beats = { path = "../../packages/stage_beats", editable = true }
+stage-separation = { path = "../../packages/stage_separation", editable = true }
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 

@@ -1,0 +1,24 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: bs-roformer-sw
+kind: model
+name: "BS-RoFormer SW 6-stem (community checkpoint by jarredou)"
+version: "BS-Roformer-SW"
+repo_url: https://github.com/nomadkaraoke/python-audio-separator
+code_spdx: MIT
+weights:
+  licence: "not stated"
+  url: https://github.com/nomadkaraoke/python-audio-separator/releases/download/model-configs/BS-Roformer-SW.ckpt
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "7fdc760ba5ea760ba6aa6c4920e1c4c1526614f3e865dcd224fdbbbff03af875"
+  files:
+    - { name: BS-Roformer-SW.ckpt, sha256: "24e7d35ee9c64415673d3fd33e06a67cac2c103c5df6267ba1576459c775916e", bytes: 699412152 }
+    - { name: BS-Roformer-SW.yaml, sha256: "b558996f1e25eb48798bd6502505a5de94c4f966d6edfb1a0420f06cc40b501a", bytes: 4653 }
+training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+tier: red
+tier_reason: "community checkpoint, weights licence and training data undisclosed"
+used_in: [separate]
+profiles: [personal]
+notes: >-
+  MVSep Multisong: bass 14.62, drums 14.11, vocals 11.30, guitar 9.05, piano 7.83 dB (tier-2, self-reported).
+reviewer: owner
+reviewed: 2026-10-21
