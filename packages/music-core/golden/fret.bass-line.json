@@ -1,0 +1,201 @@
+{
+  "command": "fret",
+  "input": {
+    "notes": [
+      {
+        "id": "b0",
+        "onset_s": 0,
+        "pitch_midi": 33
+      },
+      {
+        "id": "b1",
+        "onset_s": 0.25,
+        "pitch_midi": 40
+      },
+      {
+        "id": "b2",
+        "onset_s": 0.5,
+        "pitch_midi": 45
+      },
+      {
+        "id": "b3",
+        "onset_s": 0.75,
+        "pitch_midi": 40
+      },
+      {
+        "id": "b4",
+        "onset_s": 1,
+        "pitch_midi": 38
+      },
+      {
+        "id": "b5",
+        "onset_s": 1.25,
+        "pitch_midi": 45
+      },
+      {
+        "id": "b6",
+        "onset_s": 1.5,
+        "pitch_midi": 50
+      },
+      {
+        "id": "b7",
+        "onset_s": 1.75,
+        "pitch_midi": 45
+      }
+    ],
+    "config": {
+      "instrument": "bass"
+    }
+  },
+  "expected": {
+    "assignments": [
+      {
+        "note_id": "b0",
+        "string": 3,
+        "fret": 0,
+        "sounding_pitch": 33,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 4,
+            "fret": 5,
+            "cost": 2.7
+          }
+        ]
+      },
+      {
+        "note_id": "b1",
+        "string": 2,
+        "fret": 2,
+        "sounding_pitch": 40,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 3,
+            "fret": 7,
+            "cost": 3.8
+          },
+          {
+            "string": 4,
+            "fret": 12,
+            "cost": 9.2
+          }
+        ]
+      },
+      {
+        "note_id": "b2",
+        "string": 1,
+        "fret": 2,
+        "sounding_pitch": 45,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 7,
+            "cost": 4.1
+          },
+          {
+            "string": 3,
+            "fret": 12,
+            "cost": 10
+          }
+        ]
+      },
+      {
+        "note_id": "b3",
+        "string": 2,
+        "fret": 2,
+        "sounding_pitch": 40,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 3,
+            "fret": 7,
+            "cost": 4.2
+          },
+          {
+            "string": 4,
+            "fret": 12,
+            "cost": 10.4
+          }
+        ]
+      },
+      {
+        "note_id": "b4",
+        "string": 2,
+        "fret": 0,
+        "sounding_pitch": 38,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 3,
+            "fret": 5,
+            "cost": 2.7
+          },
+          {
+            "string": 4,
+            "fret": 10,
+            "cost": 8.8
+          }
+        ]
+      },
+      {
+        "note_id": "b5",
+        "string": 1,
+        "fret": 2,
+        "sounding_pitch": 45,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 7,
+            "cost": 2.5
+          },
+          {
+            "string": 3,
+            "fret": 12,
+            "cost": 9.2
+          }
+        ]
+      },
+      {
+        "note_id": "b6",
+        "string": 1,
+        "fret": 7,
+        "sounding_pitch": 50,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 12,
+            "cost": 7
+          },
+          {
+            "string": 3,
+            "fret": 17,
+            "cost": 14.2
+          }
+        ]
+      },
+      {
+        "note_id": "b7",
+        "string": 1,
+        "fret": 2,
+        "sounding_pitch": 45,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 7,
+            "cost": 0.5
+          },
+          {
+            "string": 3,
+            "fret": 12,
+            "cost": 6.2
+          }
+        ]
+      }
+    ]
+  }
+}

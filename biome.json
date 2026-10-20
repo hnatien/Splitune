@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/.venv", "!**/.turbo", "!packages/contracts/schema"]
+    "includes": [
+      "**",
+      "!**/.venv",
+      "!**/.turbo",
+      "!packages/contracts/schema",
+      "!packages/music-core/golden"
+    ]
   },
   "formatter": {
     "enabled": true,

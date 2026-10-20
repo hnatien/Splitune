@@ -1,0 +1,102 @@
+{
+  "command": "fret",
+  "input": {
+    "notes": [
+      {
+        "id": "too-low",
+        "onset_s": 0,
+        "pitch_midi": 30
+      },
+      {
+        "id": "span-a",
+        "onset_s": 1,
+        "pitch_midi": 41
+      },
+      {
+        "id": "span-b",
+        "onset_s": 1,
+        "pitch_midi": 79
+      },
+      {
+        "id": "pinned",
+        "onset_s": 2,
+        "pitch_midi": 64,
+        "string": 2,
+        "fret": 5
+      },
+      {
+        "id": "capo-line",
+        "onset_s": 3,
+        "pitch_midi": 69
+      }
+    ],
+    "config": {
+      "capo": 0,
+      "max_span": 4
+    }
+  },
+  "expected": {
+    "assignments": [
+      {
+        "note_id": "too-low",
+        "string": 6,
+        "fret": 2,
+        "sounding_pitch": 42,
+        "unplayable": true,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "span-a",
+        "string": 6,
+        "fret": 1,
+        "sounding_pitch": 41,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "span-b",
+        "sounding_pitch": 79,
+        "unplayable": true,
+        "alt_fingerings": [
+          {
+            "string": 1,
+            "fret": 15,
+            "cost": 10.8
+          },
+          {
+            "string": 2,
+            "fret": 20,
+            "cost": 16.1
+          }
+        ]
+      },
+      {
+        "note_id": "pinned",
+        "string": 2,
+        "fret": 5,
+        "sounding_pitch": 64,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "capo-line",
+        "string": 1,
+        "fret": 5,
+        "sounding_pitch": 69,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 10,
+            "cost": 3.5
+          },
+          {
+            "string": 3,
+            "fret": 14,
+            "cost": 6.3
+          }
+        ]
+      }
+    ]
+  }
+}

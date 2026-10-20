@@ -1,14 +1,25 @@
 {
   "name": "@splitune/music-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Music algorithms — docs/implementation/07-music-algorithms.md",
+  "description": "Music algorithms \u2014 docs/implementation/07-music-algorithms.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
+    "cli": "node src/cli.ts",
     "typecheck": "tsc -p .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "vitest bench --run --reporter=verbose",
+    "golden:update": "node scripts/update-golden.ts"
+  },
+  "devDependencies": {
+    "@coderline/alphatab": "1.8.4",
+    "fast-check": "4.10.2",
+    "zod": "4.6.7"
+  },
+  "dependencies": {
+    "@splitune/contracts": "workspace:*"
   }
 }

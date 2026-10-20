@@ -1,0 +1,287 @@
+{
+  "command": "build-tab",
+  "input": {
+    "notes": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "notes.bass",
+      "instrument": "bass",
+      "duration_s": 1,
+      "notes": [
+        {
+          "id": "n000000",
+          "onset_s": 0.5,
+          "offset_s": 0.75,
+          "pitch_midi": 33,
+          "confidence": 0.9,
+          "stem_id": "bass"
+        },
+        {
+          "id": "n000001",
+          "onset_s": 1,
+          "offset_s": 1.25,
+          "pitch_midi": 45,
+          "confidence": 0.9,
+          "stem_id": "bass"
+        },
+        {
+          "id": "n000002",
+          "onset_s": 1.5,
+          "offset_s": 1.75,
+          "pitch_midi": 40,
+          "confidence": 0.9,
+          "stem_id": "bass"
+        },
+        {
+          "id": "n000003",
+          "onset_s": 2,
+          "offset_s": 2.25,
+          "pitch_midi": 41,
+          "confidence": 0.9,
+          "stem_id": "bass"
+        },
+        {
+          "id": "n000004",
+          "onset_s": 2.5,
+          "offset_s": 2.75,
+          "pitch_midi": 36,
+          "confidence": 0.9,
+          "stem_id": "bass"
+        },
+        {
+          "id": "n000005",
+          "onset_s": 3,
+          "offset_s": 3.25,
+          "pitch_midi": 48,
+          "confidence": 0.9,
+          "stem_id": "bass"
+        }
+      ]
+    },
+    "beats": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "beats",
+      "duration_s": 5.5,
+      "beats": [
+        {
+          "id": "b0000",
+          "t": 0.5,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 0,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0001",
+          "t": 1,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0002",
+          "t": 1.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0003",
+          "t": 2,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0004",
+          "t": 2.5,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 1,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0005",
+          "t": 3,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0006",
+          "t": 3.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0007",
+          "t": 4,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 4
+        }
+      ],
+      "bpm": 120,
+      "meter": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "tempo_octave_ambiguous": false,
+      "first_downbeat_t": 0.5
+    },
+    "chords": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "chords",
+      "duration_s": 4.5,
+      "vocabulary": "majmin",
+      "segments": [
+        {
+          "id": "c0000",
+          "t0": 0.5,
+          "t1": 2.5,
+          "label": "A:min",
+          "confidence": 0.9,
+          "top_k": [],
+          "beat_aligned": true
+        },
+        {
+          "id": "c0001",
+          "t0": 2.5,
+          "t1": 4.5,
+          "label": "F:maj/3",
+          "confidence": 0.9,
+          "top_k": [],
+          "beat_aligned": true
+        }
+      ],
+      "key": {
+        "tonic": "C",
+        "mode": "major",
+        "confidence": 0.5
+      },
+      "inputs_fused": [
+        "mixture"
+      ]
+    },
+    "options": {
+      "level": "roots"
+    }
+  },
+  "expected": {
+    "tab": {
+      "schema_version": "1.1.0",
+      "artefact": "tab.bass",
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "notes_ref": {
+        "artefact": "notes.bass",
+        "artefact_version": 1
+      },
+      "beats_ref": {
+        "artefact_version": 1,
+        "corrections_rev": 0
+      },
+      "ppq": 960,
+      "tuning_midi": [
+        43,
+        38,
+        33,
+        28
+      ],
+      "capo": 0,
+      "level": "roots",
+      "fingering_mode": "easiest",
+      "events": [
+        {
+          "note_id": "root:c0000@0",
+          "bar": 0,
+          "beat": 1,
+          "tick": 0,
+          "duration_ticks": 3840,
+          "quantize_residual_ms": 0,
+          "string": 1,
+          "fret": 2,
+          "alt_fingerings": [
+            {
+              "string": 2,
+              "fret": 7,
+              "cost": 1.3
+            },
+            {
+              "string": 3,
+              "fret": 12,
+              "cost": 2.8
+            }
+          ]
+        },
+        {
+          "note_id": "root:c0001@1",
+          "bar": 1,
+          "beat": 1,
+          "tick": 0,
+          "duration_ticks": 3840,
+          "quantize_residual_ms": 0,
+          "string": 3,
+          "fret": 0,
+          "alt_fingerings": [
+            {
+              "string": 4,
+              "fret": 5,
+              "cost": 2.2
+            }
+          ]
+        }
+      ],
+      "music_core_version": "0.1.0"
+    },
+    "alphatex": "\\track \"Bass\"\n\\staff {tabs}\n\\tuning (G2 D2 A1 E1)\n\\ts (4 4) \\tempo 120 2.1.1 |\n0.3.1\n",
+    "note_map": [
+      {
+        "noteId": "root:c0000@0",
+        "bar": 0,
+        "voice": 0,
+        "beat": 0,
+        "note": 0,
+        "string": 1
+      },
+      {
+        "noteId": "root:c0001@1",
+        "bar": 1,
+        "voice": 0,
+        "beat": 0,
+        "note": 0,
+        "string": 3
+      }
+    ],
+    "warnings": []
+  }
+}

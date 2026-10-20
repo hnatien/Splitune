@@ -1,0 +1,422 @@
+{
+  "command": "fret",
+  "input": {
+    "notes": [
+      {
+        "id": "c0",
+        "onset_s": 0,
+        "offset_s": 1,
+        "pitch_midi": 48
+      },
+      {
+        "id": "c1",
+        "onset_s": 0,
+        "offset_s": 1,
+        "pitch_midi": 52
+      },
+      {
+        "id": "c2",
+        "onset_s": 0,
+        "offset_s": 1,
+        "pitch_midi": 55
+      },
+      {
+        "id": "c3",
+        "onset_s": 0,
+        "offset_s": 1,
+        "pitch_midi": 60
+      },
+      {
+        "id": "c4",
+        "onset_s": 0,
+        "offset_s": 1,
+        "pitch_midi": 64
+      },
+      {
+        "id": "a0",
+        "onset_s": 1,
+        "offset_s": 2,
+        "pitch_midi": 45
+      },
+      {
+        "id": "a1",
+        "onset_s": 1,
+        "offset_s": 2,
+        "pitch_midi": 52
+      },
+      {
+        "id": "a2",
+        "onset_s": 1,
+        "offset_s": 2,
+        "pitch_midi": 57
+      },
+      {
+        "id": "a3",
+        "onset_s": 1,
+        "offset_s": 2,
+        "pitch_midi": 60
+      },
+      {
+        "id": "a4",
+        "onset_s": 1,
+        "offset_s": 2,
+        "pitch_midi": 64
+      },
+      {
+        "id": "g0",
+        "onset_s": 2,
+        "offset_s": 3,
+        "pitch_midi": 43
+      },
+      {
+        "id": "g1",
+        "onset_s": 2,
+        "offset_s": 3,
+        "pitch_midi": 47
+      },
+      {
+        "id": "g2",
+        "onset_s": 2,
+        "offset_s": 3,
+        "pitch_midi": 50
+      },
+      {
+        "id": "g3",
+        "onset_s": 2,
+        "offset_s": 3,
+        "pitch_midi": 55
+      },
+      {
+        "id": "g4",
+        "onset_s": 2,
+        "offset_s": 3,
+        "pitch_midi": 59
+      },
+      {
+        "id": "g5",
+        "onset_s": 2,
+        "offset_s": 3,
+        "pitch_midi": 67
+      },
+      {
+        "id": "d0",
+        "onset_s": 3,
+        "offset_s": 4,
+        "pitch_midi": 50
+      },
+      {
+        "id": "d1",
+        "onset_s": 3,
+        "offset_s": 4,
+        "pitch_midi": 57
+      },
+      {
+        "id": "d2",
+        "onset_s": 3,
+        "offset_s": 4,
+        "pitch_midi": 62
+      },
+      {
+        "id": "d3",
+        "onset_s": 3,
+        "offset_s": 4,
+        "pitch_midi": 66
+      }
+    ],
+    "chords": [
+      {
+        "t0": 0,
+        "t1": 1,
+        "label": "C:maj"
+      },
+      {
+        "t0": 1,
+        "t1": 2,
+        "label": "A:min"
+      },
+      {
+        "t0": 2,
+        "t1": 3,
+        "label": "G:maj"
+      },
+      {
+        "t0": 3,
+        "t1": 4,
+        "label": "D:maj"
+      }
+    ]
+  },
+  "expected": {
+    "assignments": [
+      {
+        "note_id": "c0",
+        "string": 5,
+        "fret": 3,
+        "sounding_pitch": 48,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 6,
+            "fret": 8,
+            "cost": 4.94
+          }
+        ]
+      },
+      {
+        "note_id": "c1",
+        "string": 4,
+        "fret": 2,
+        "sounding_pitch": 52,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 5,
+            "fret": 7,
+            "cost": 4.94
+          }
+        ]
+      },
+      {
+        "note_id": "c2",
+        "string": 3,
+        "fret": 0,
+        "sounding_pitch": 55,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 4,
+            "fret": 5,
+            "cost": 4.94
+          }
+        ]
+      },
+      {
+        "note_id": "c3",
+        "string": 2,
+        "fret": 1,
+        "sounding_pitch": 60,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 3,
+            "fret": 5,
+            "cost": 4.94
+          },
+          {
+            "string": 4,
+            "fret": 10,
+            "cost": 5.24
+          }
+        ]
+      },
+      {
+        "note_id": "c4",
+        "string": 1,
+        "fret": 0,
+        "sounding_pitch": 64,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 5,
+            "cost": 5.74
+          }
+        ]
+      },
+      {
+        "note_id": "a0",
+        "string": 5,
+        "fret": 0,
+        "sounding_pitch": 45,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 6,
+            "fret": 5,
+            "cost": 5.34
+          }
+        ]
+      },
+      {
+        "note_id": "a1",
+        "string": 4,
+        "fret": 2,
+        "sounding_pitch": 52,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 5,
+            "fret": 7,
+            "cost": 5.34
+          }
+        ]
+      },
+      {
+        "note_id": "a2",
+        "string": 3,
+        "fret": 2,
+        "sounding_pitch": 57,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 4,
+            "fret": 7,
+            "cost": 5.34
+          }
+        ]
+      },
+      {
+        "note_id": "a3",
+        "string": 2,
+        "fret": 1,
+        "sounding_pitch": 60,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 3,
+            "fret": 5,
+            "cost": 5.34
+          }
+        ]
+      },
+      {
+        "note_id": "a4",
+        "string": 1,
+        "fret": 0,
+        "sounding_pitch": 64,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 5,
+            "cost": 5.44
+          }
+        ]
+      },
+      {
+        "note_id": "g0",
+        "string": 6,
+        "fret": 3,
+        "sounding_pitch": 43,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "g1",
+        "string": 5,
+        "fret": 2,
+        "sounding_pitch": 47,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "g2",
+        "string": 4,
+        "fret": 0,
+        "sounding_pitch": 50,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "g3",
+        "string": 3,
+        "fret": 0,
+        "sounding_pitch": 55,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "g4",
+        "string": 2,
+        "fret": 0,
+        "sounding_pitch": 59,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "g5",
+        "string": 1,
+        "fret": 3,
+        "sounding_pitch": 67,
+        "unplayable": false,
+        "alt_fingerings": []
+      },
+      {
+        "note_id": "d0",
+        "string": 4,
+        "fret": 0,
+        "sounding_pitch": 50,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 5,
+            "fret": 5,
+            "cost": 3.975
+          },
+          {
+            "string": 6,
+            "fret": 10,
+            "cost": 7.4
+          }
+        ]
+      },
+      {
+        "note_id": "d1",
+        "string": 3,
+        "fret": 2,
+        "sounding_pitch": 57,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 4,
+            "fret": 7,
+            "cost": 4.125
+          },
+          {
+            "string": 5,
+            "fret": 12,
+            "cost": 7.55
+          }
+        ]
+      },
+      {
+        "note_id": "d2",
+        "string": 2,
+        "fret": 3,
+        "sounding_pitch": 62,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 3,
+            "fret": 7,
+            "cost": 4.125
+          },
+          {
+            "string": 4,
+            "fret": 12,
+            "cost": 7.55
+          }
+        ]
+      },
+      {
+        "note_id": "d3",
+        "string": 1,
+        "fret": 2,
+        "sounding_pitch": 66,
+        "unplayable": false,
+        "alt_fingerings": [
+          {
+            "string": 2,
+            "fret": 7,
+            "cost": 4.125
+          },
+          {
+            "string": 3,
+            "fret": 11,
+            "cost": 7.55
+          }
+        ]
+      }
+    ]
+  }
+}
