@@ -1,0 +1,31 @@
+{
+  "name": "@splitune/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Postgres schema, migrations, RLS, repositories and job queue \u2014 docs/implementation/03-data-model-and-storage.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "node --env-file-if-exists=../../.env scripts/migrate.ts",
+    "check": "node scripts/check-migrations.ts",
+    "roles": "node --env-file-if-exists=../../.env scripts/roles.ts",
+    "seed": "node --env-file-if-exists=../../.env scripts/seed.ts",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@splitune/contracts": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11"
+  }
+}
