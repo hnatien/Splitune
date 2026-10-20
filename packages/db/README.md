@@ -37,7 +37,7 @@ Raw Drizzle queries are only allowed in `src/repo/`, `src/jobs/`, `src/client.ts
 
 ## Job queue protocol
 
-`src/jobs/queue.ts` is the TypeScript side; the Python consumer (step 06) must issue the same statements. All times are database time (`now()`), never the worker's clock.
+`src/jobs/queue.ts` is the TypeScript side; the Python consumer (`services/ml/packages/splitune_ml_core/src/splitune_ml_core/queue.py`) issues the same statements. All times are database time (`now()`), never the worker's clock.
 
 **Columns that matter:** `runner` (`python` | `node`), `status` (`queued` → `running` → `done` | `failed` | `cancelled`), `priority` (lower first), `attempts` (incremented on claim), `max_attempts`, `run_after`, `locked_by` (worker id), `heartbeat_at`, `depends_on bigint[]`, `error_code` (machine code, e.g. `model_oom`).
 

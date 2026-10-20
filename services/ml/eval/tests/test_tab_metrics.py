@@ -1,8 +1,9 @@
+import json
 from pathlib import Path
 from typing import Any
 
 import pytest
-from tab_metrics import (
+from splitune_eval.tab_metrics import (
     Assignment,
     GtNote,
     fretted_span,
@@ -15,7 +16,7 @@ from tab_metrics import (
     score,
 )
 
-CLI = Path(__file__).resolve().parents[3] / "packages" / "music-core" / "src" / "cli.ts"
+CLI = Path(__file__).resolve().parents[4] / "packages" / "music-core" / "src" / "cli.ts"
 
 
 def _note_annotation(source: int, rows: list[tuple[float, float, float]]) -> dict[str, Any]:
@@ -105,3 +106,29 @@ def test_music_core_cli_round_trip() -> None:
         assert a.string is not None
         assert a.fret is not None
         assert (40, 45, 50, 55, 59, 64)[6 - a.string] + a.fret == n.pitch_midi
+
+
+def test_tab_task_scores_through_the_shipped_dp(tmp_path: Path) -> None:
+    import yaml
+    from splitune_eval.registry import load_set
+    from splitune_eval.tasks import score as score_task
+
+    (tmp_path / "a.jams").write_text(json.dumps(JAMS))
+    (tmp_path / "set.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "id": "tab-tiny",
+                "description": "x",
+                "licence": "owned",
+                "provenance": "generated",
+                "root": str(tmp_path),
+                "tasks": ["tab"],
+                "items": [{"id": "a", "annotations": {"tab": "a.jams"}}],
+            }
+        )
+    )
+    result = score_task("tab", load_set(str(tmp_path / "set.yaml")), None)
+    assert result.pooled["notes"] == 3
+    assert 0 <= result.pooled["agreement"] <= 1
+    assert result.pooled["span_compliance"] == 1.0
+    assert "music-core" in result.variant

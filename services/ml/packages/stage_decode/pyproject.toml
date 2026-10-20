@@ -3,7 +3,11 @@ name = "stage-decode"
 version = "0.0.0"
 description = "ffmpeg decode, ffprobe, audio hash, loudness"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "numpy==2.5.4",
+    "pyloudnorm==0.2.0",
+    "splitune-ml-core",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.3,<0.14"]

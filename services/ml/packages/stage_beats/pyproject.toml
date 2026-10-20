@@ -3,7 +3,14 @@ name = "stage-beats"
 version = "0.0.0"
 description = "Beat tracking (beat_this)"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "beat-this==1.1.0",
+    "numpy==2.5.4",
+    "soundfile==0.14.0",
+    "splitune-ml-core",
+    "torch==2.14.1",
+    "torchaudio==2.11.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.3,<0.14"]

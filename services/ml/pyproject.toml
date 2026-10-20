@@ -13,14 +13,17 @@ dependencies = [
     "stage-notes",
     "stage-sections",
     "stage-lyrics",
+    "splitune-eval",
 ]
 
 [dependency-groups]
 dev = [
+    "boto3-stubs[s3]==1.43.115",
     "datamodel-code-generator==0.86.0",
     "pyright==1.1.414",
     "pytest==9.1.1",
     "ruff==0.17.1",
+    "types-pyyaml==6.0.12.20260906",
 ]
 
 [tool.uv]
@@ -28,7 +31,9 @@ package = false
 required-version = ">=0.13,<0.14"
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "eval"]
+# Each island is its own uv project and venv (06-ml-pipeline-service.md §0).
+exclude = ["islands/*"]
 
 [tool.uv.sources]
 splitune-ml-core = { workspace = true }
@@ -40,6 +45,15 @@ stage-chords = { workspace = true }
 stage-notes = { workspace = true }
 stage-sections = { workspace = true }
 stage-lyrics = { workspace = true }
+splitune-eval = { workspace = true }
+# Linux (CI) gets the CPU-only wheels instead of the CUDA build; macOS wheels come from PyPI.
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.ruff]
 line-length = 100
@@ -53,7 +67,7 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "RUF", "PT"]
 "packages/splitune_ml_core/src/splitune_ml_core/contracts/_generated.py" = ["E501"]
 
 [tool.pyright]
-include = ["packages", "scripts", "eval"]
+include = ["packages", "scripts", "eval", "conftest.py"]
 extraPaths = ["eval"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
@@ -61,6 +75,9 @@ venvPath = "."
 venv = ".venv"
 
 [tool.pytest.ini_options]
-testpaths = ["packages", "eval"]
+testpaths = ["packages", "eval/tests"]
 pythonpath = ["eval"]
 addopts = ["--strict-markers", "--strict-config", "--import-mode=importlib"]
+markers = [
+    "models: runs real model weights (beat_this checkpoints are downloaded on first use)",
+]

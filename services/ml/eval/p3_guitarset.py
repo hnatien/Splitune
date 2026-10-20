@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
-from tab_metrics import (
+from splitune_eval.tab_metrics import (
     Assignment,
     Chord,
     GtNote,

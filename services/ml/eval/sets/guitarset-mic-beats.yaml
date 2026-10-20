@@ -1,0 +1,21 @@
+id: guitarset-mic-beats
+description: GuitarSet mono mic, progression 1 of each style, all players (comp + solo)
+licence: CC-BY-4.0
+provenance: >-
+  GuitarSet v1.1.0, Zenodo record 3371780 (annotation.zip, audio_mono-mic.zip; md5 verified on
+  download). Players played to a click; beat_position is that click grid. beat_this final0 and
+  small0 were trained on GuitarSet's comping tracks (not the solos; Beat This! paper §4.1), so
+  comp scores are in-sample and solo scores are the fairer number.
+root: ~/datasets/guitarset
+split: test
+tasks: [beats, tab]
+tags: {genre: mixed, live: studio, codec: wav}
+item_template:
+  glob: annotation/*.jams
+  match: "^0[0-5]_[A-Za-z]+1-"
+  id: "{stem}"
+  audio: "audio_mono-mic/{stem}_mic.wav"
+  annotations:
+    beats: "annotation/{stem}.jams"
+    tab: "annotation/{stem}.jams"
+  tags: {style: "{suffix}"}

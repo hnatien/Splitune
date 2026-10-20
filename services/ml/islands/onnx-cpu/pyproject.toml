@@ -1,0 +1,19 @@
+# Island "onnx-cpu" (06-ml-pipeline-service.md §0): CPU stages (decode now; Basic Pitch ONNX,
+# taggers and stem post-processing later). Separate uv project and venv.
+#   uv sync --project islands/onnx-cpu
+[project]
+name = "splitune-island-onnx-cpu"
+version = "0.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "splitune-ml-core",
+    "stage-decode",
+]
+
+[tool.uv]
+package = false
+required-version = ">=0.13,<0.14"
+
+[tool.uv.sources]
+splitune-ml-core = { path = "../../packages/splitune_ml_core", editable = true }
+stage-decode = { path = "../../packages/stage_decode", editable = true }

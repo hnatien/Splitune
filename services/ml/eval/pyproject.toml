@@ -1,0 +1,21 @@
+[project]
+name = "splitune-eval"
+version = "0.0.0"
+description = "Evaluation harness: test-set registry, codec simulator, scoring CLI and reports"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "mir-eval==0.8.2",
+    "numpy==2.5.4",
+    "pyloudnorm==0.2.0",
+    "pyyaml==6.0.3",
+    "soundfile==0.14.0",
+    "splitune-ml-core",
+    "stage-beats",
+]
+
+[project.scripts]
+splitune-eval = "splitune_eval.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14"]
+build-backend = "uv_build"

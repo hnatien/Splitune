@@ -1,0 +1,26 @@
+# Island "torch" (06-ml-pipeline-service.md §0): PyTorch MPS stages, one warm process per worker
+# slot. Separate uv project and venv so heavy or conflicting model dependencies stay contained.
+#   uv sync --project islands/torch
+[project]
+name = "splitune-island-torch"
+version = "0.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "splitune-ml-core",
+    "stage-beats",
+]
+
+[tool.uv]
+package = false
+required-version = ">=0.13,<0.14"
+
+[tool.uv.sources]
+splitune-ml-core = { path = "../../packages/splitune_ml_core", editable = true }
+stage-beats = { path = "../../packages/stage_beats", editable = true }
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

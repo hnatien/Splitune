@@ -41,7 +41,16 @@ jobs:
 
       - name: Install Python dependencies
         working-directory: services/ml
-        run: uv sync --locked
+        run: |
+          uv sync --locked
+          uv lock --check --project islands/torch
+          uv lock --check --project islands/onnx-cpu
+
+      # The decode stage, codec simulator and their tests shell out to ffmpeg/ffprobe. The Mac
+      # pins FFmpeg 8.1 (Homebrew ffmpeg@8); Ubuntu's build is older, which only changes
+      # audio_hash values, and no test pins those.
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
       # Regenerates JSON Schema and Pydantic models into a temp dir; fails if the committed ones differ.
       - name: Contracts drift

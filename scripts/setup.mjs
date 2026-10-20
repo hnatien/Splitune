@@ -27,6 +27,9 @@ if (!hasCommand('uv')) {
 
 run('pnpm', ['install'])
 run('uv', ['sync'], join(root, 'services/ml'))
+// ML worker islands: one venv each (services/ml/islands/<name>, 06-ml-pipeline-service.md §0).
+for (const island of ['torch', 'onnx-cpu'])
+  run('uv', ['sync'], join(root, 'services/ml/islands', island))
 
 const envFile = join(root, '.env')
 if (existsSync(envFile)) {
