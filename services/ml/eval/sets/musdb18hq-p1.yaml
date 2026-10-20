@@ -1,0 +1,215 @@
+id: musdb18hq-p1
+description: 'Prototype 1: 20 x 30 s MUSDB18-HQ test windows (AAC 128 kb/s), one target instrument each'
+licence: MUSDB18-HQ research use (tracks under their own licences)
+provenance: Zenodo record 3338373, test split; windows cut by eval/p1_musdb.py at 30% of each track; chosen
+  by eval/p1.py select (most BS-Roformer-SW stem energy of the target among windows where PANNs hears
+  it; quota piano 4, guitar 8, vocals 3, bass 3, drums 2; each song once)
+root: ~/datasets/musdb18hq-p1
+split: test
+tasks:
+- sep
+tags:
+  genre: mixed
+  live: studio
+  codec: aac128
+items:
+- id: speak-softly-like-horses
+  audio: speak-softly-like-horses/mixture.aac128.wav
+  annotations:
+    sep: speak-softly-like-horses
+  tags:
+    target: piano
+    track: Speak Softly - Like Horses
+    start_s: '93.8'
+    sw_db: '-6.3'
+    tagger: '0.035'
+- id: speak-softly-broken-man
+  audio: speak-softly-broken-man/mixture.aac128.wav
+  annotations:
+    sep: speak-softly-broken-man
+  tags:
+    target: piano
+    track: Speak Softly - Broken Man
+    start_s: '75.948'
+    sw_db: '-6.7'
+    tagger: '0.014'
+- id: pr-oh-no
+  audio: pr-oh-no/mixture.aac128.wav
+  annotations:
+    sep: pr-oh-no
+  tags:
+    target: piano
+    track: PR - Oh No
+    start_s: '22.858'
+    sw_db: '-9.3'
+    tagger: '0.037'
+- id: sambasevam-shanmugam-kaathaadi
+  audio: sambasevam-shanmugam-kaathaadi/mixture.aac128.wav
+  annotations:
+    sep: sambasevam-shanmugam-kaathaadi
+  tags:
+    target: piano
+    track: Sambasevam Shanmugam - Kaathaadi
+    start_s: '95.364'
+    sw_db: '-12.7'
+    tagger: '0.012'
+- id: hollow-ground-ill-fate
+  audio: hollow-ground-ill-fate/mixture.aac128.wav
+  annotations:
+    sep: hollow-ground-ill-fate
+  tags:
+    target: guitar
+    track: Hollow Ground - Ill Fate
+    start_s: '42.502'
+    sw_db: '-2.0'
+    tagger: '0.223'
+- id: timboz-pony
+  audio: timboz-pony/mixture.aac128.wav
+  annotations:
+    sep: timboz-pony
+  tags:
+    target: guitar
+    track: Timboz - Pony
+    start_s: '75.915'
+    sw_db: '-2.5'
+    tagger: '0.523'
+- id: secretariat-borderline
+  audio: secretariat-borderline/mixture.aac128.wav
+  annotations:
+    sep: secretariat-borderline
+  tags:
+    target: guitar
+    track: Secretariat - Borderline
+    start_s: '86.054'
+    sw_db: '-3.4'
+    tagger: '0.415'
+- id: we-fell-from-the-sky-not-you
+  audio: we-fell-from-the-sky-not-you/mixture.aac128.wav
+  annotations:
+    sep: we-fell-from-the-sky-not-you
+  tags:
+    target: guitar
+    track: We Fell From The Sky - Not You
+    start_s: '62.369'
+    sw_db: '-3.7'
+    tagger: '0.450'
+- id: james-elder-mark-m-thompson-the-english-actor
+  audio: james-elder-mark-m-thompson-the-english-actor/mixture.aac128.wav
+  annotations:
+    sep: james-elder-mark-m-thompson-the-english-actor
+  tags:
+    target: guitar
+    track: James Elder & Mark M Thompson - The English Actor
+    start_s: '61.642'
+    sw_db: '-4.2'
+    tagger: '0.212'
+- id: signe-jakobsen-what-have-you-done-to-me
+  audio: signe-jakobsen-what-have-you-done-to-me/mixture.aac128.wav
+  annotations:
+    sep: signe-jakobsen-what-have-you-done-to-me
+  tags:
+    target: guitar
+    track: Signe Jakobsen - What Have You Done To Me
+    start_s: '53.219'
+    sw_db: '-4.5'
+    tagger: '0.290'
+- id: zeno-signs
+  audio: zeno-signs/mixture.aac128.wav
+  annotations:
+    sep: zeno-signs
+  tags:
+    target: guitar
+    track: Zeno - Signs
+    start_s: '70.315'
+    sw_db: '-4.9'
+    tagger: '0.165'
+- id: bobby-nobody-stitch-up
+  audio: bobby-nobody-stitch-up/mixture.aac128.wav
+  annotations:
+    sep: bobby-nobody-stitch-up
+  tags:
+    target: guitar
+    track: Bobby Nobody - Stitch Up
+    start_s: '66.375'
+    sw_db: '-5.3'
+    tagger: '0.295'
+- id: nerve-9-pray-for-the-rain
+  audio: nerve-9-pray-for-the-rain/mixture.aac128.wav
+  annotations:
+    sep: nerve-9-pray-for-the-rain
+  tags:
+    target: vocals
+    track: Nerve 9 - Pray For The Rain
+    start_s: '103.114'
+    sw_db: '-3.5'
+    tagger: '0.332'
+- id: little-chicago-s-finest-my-own
+  audio: little-chicago-s-finest-my-own/mixture.aac128.wav
+  annotations:
+    sep: little-chicago-s-finest-my-own
+  tags:
+    target: vocals
+    track: Little Chicago's Finest - My Own
+    start_s: '84.483'
+    sw_db: '-3.6'
+    tagger: '0.287'
+- id: lyndsey-ollard-catching-up
+  audio: lyndsey-ollard-catching-up/mixture.aac128.wav
+  annotations:
+    sep: lyndsey-ollard-catching-up
+  tags:
+    target: vocals
+    track: Lyndsey Ollard - Catching Up
+    start_s: '68.229'
+    sw_db: '-3.6'
+    tagger: '0.234'
+- id: arise-run-run-run
+  audio: arise-run-run-run/mixture.aac128.wav
+  annotations:
+    sep: arise-run-run-run
+  tags:
+    target: bass
+    track: Arise - Run Run Run
+    start_s: '65.818'
+    sw_db: '-2.1'
+    tagger: '0.061'
+- id: skelpolu-resurrection
+  audio: skelpolu-resurrection/mixture.aac128.wav
+  annotations:
+    sep: skelpolu-resurrection
+  tags:
+    target: bass
+    track: Skelpolu - Resurrection
+    start_s: '118.699'
+    sw_db: '-3.0'
+    tagger: '0.002'
+- id: punkdisco-oral-hygiene
+  audio: punkdisco-oral-hygiene/mixture.aac128.wav
+  annotations:
+    sep: punkdisco-oral-hygiene
+  tags:
+    target: bass
+    track: Punkdisco - Oral Hygiene
+    start_s: '66.479'
+    sw_db: '-3.7'
+    tagger: '0.005'
+- id: pr-happy-daze
+  audio: pr-happy-daze/mixture.aac128.wav
+  annotations:
+    sep: pr-happy-daze
+  tags:
+    target: drums
+    track: PR - Happy Daze
+    start_s: '48.811'
+    sw_db: '-0.1'
+    tagger: '0.095'
+- id: mu-too-bright
+  audio: mu-too-bright/mixture.aac128.wav
+  annotations:
+    sep: mu-too-bright
+  tags:
+    target: drums
+    track: Mu - Too Bright
+    start_s: '81.65'
+    sw_db: '-2.0'
+    tagger: '0.024'
