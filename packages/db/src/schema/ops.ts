@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { bigint, boolean, index, jsonb, pgTable, text } from 'drizzle-orm/pg-core'
+import { bigint, boolean, index, integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { timestamptz } from './columns.ts'
 import { users } from './users.ts'
 
@@ -41,4 +41,17 @@ export const auditLog = pgTable(
     at: timestamptz('at').notNull().defaultNow(),
   },
   (t) => [index('audit_log_subject_user_idx').on(t.subjectUserId, t.at)],
+)
+
+// Fixed-window request counters for the API's rate limits (17-security.md §5). Keys name the
+// policy and the subject, e.g. `uploads:user:<id>` or `auth:ip:<address>`; the table is used by the
+// table owner only and swept by maintenance.
+export const rateLimits = pgTable(
+  'rate_limits',
+  {
+    key: text('key').primaryKey(),
+    windowStart: timestamptz('window_start').notNull(),
+    count: integer('count').notNull(),
+  },
+  (t) => [index('rate_limits_window_start_idx').on(t.windowStart)],
 )

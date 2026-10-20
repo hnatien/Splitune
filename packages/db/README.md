@@ -15,7 +15,7 @@ pnpm --filter db test              # integration tests: fresh throwaway database
 
 ## Migrations
 
-- `migrations/0000_extensions.sql` (citext), `0001_schema.sql` (generated from `src/schema/`), `0002_roles_and_rls.sql` (hand-written roles, grants, policies). Custom SQL migrations are created with `drizzle-kit generate --custom --name <name>` so the journal stays consistent.
+- `migrations/0000_extensions.sql` (citext), `0001_schema.sql` (generated from `src/schema/`), `0002_roles_and_rls.sql` (hand-written roles, grants, policies), `0003_auth_and_uploads.sql` (generated: Better Auth tables and columns, upload multipart columns, `rate_limits`), `0004_auth_grants_and_cleanup_jobs.sql` (hand-written: maintenance grants, `jobs_owner_cleanup` policy). Custom SQL migrations are created with `drizzle-kit generate --custom --name <name>` so the journal stays consistent.
 - `db:migrate` applies every pending migration in **one transaction**: a failure leaves the database unchanged.
 - **Forward-only.** There are no down migrations. To undo a change, write a new migration that reverses it (expand → migrate → contract, `19-deployment-and-operations.md`); never edit or delete a migration that has been applied anywhere.
 - A migration that adds a table must grant it explicitly (see the header of `0002`) and, if it holds user data, enable RLS with a policy. The RLS tests fail on any table with a `user_id` column the API can reach without RLS, and on any table `maintenance` cannot modify.
@@ -29,7 +29,11 @@ pnpm --filter db test              # integration tests: fresh throwaway database
 | `ml_worker`, `node_worker` | Mac workers (log in with `DB_*_PASSWORD`) | jobs, job_events, stage_runs, artefacts, worker_heartbeats; read analyses and update their status columns; read songs' id/user/source/instrument/duration/audio_hash/status and update status, duration, audio_hash. No users, uploads, corrections, practice or billing data. |
 | `maintenance` | sweepers, deletion cascade | `BYPASSRLS`, full DML on every table. |
 
-The table owner (migrations, seeds, Better Auth) is not subject to RLS. Raw Drizzle queries are only allowed in `src/repo/`, `src/jobs/`, `src/client.ts`, `scripts/` and `test/`; `pnpm lint` runs `scripts/check-db-access.mjs` to enforce it.
+The table owner (migrations, seeds, Better Auth, the rate limiter) is not subject to RLS. Better Auth's tables (`auth_sessions`, `auth_accounts`, `auth_verifications`) and `rate_limits` are owner-only.
+
+**Object cleanup jobs.** `songs.delete(userId, songId, objectPrefixes)` deletes the rows and, in the same transaction, enqueues a `delete_prefix` job (`runner = 'node'`, no analysis) with payload `{ "user_id": "<id>", "prefixes": ["u/<id>/raw/<upload_id>/", "u/<id>/a/<analysis_id>/"] }`. Policy `jobs_owner_cleanup` only admits prefixes under the caller's `u/<user_id>/` ending in `/` without `.`/`..` segments; the node worker still re-checks each one (`deletePrefix` does).
+
+Raw Drizzle queries are only allowed in `src/repo/`, `src/jobs/`, `src/client.ts`, `src/rate-limit.ts`, `scripts/` and `test/`; `pnpm lint` runs `scripts/check-db-access.mjs` to enforce it.
 
 ## Job queue protocol
 

@@ -157,6 +157,54 @@ describe('row-level security for role app', () => {
   })
 })
 
+describe('cleanup jobs (jobs_owner_cleanup)', () => {
+  const enqueueAs = (userId: string, payload: unknown, kind = 'delete_prefix') =>
+    withUser(db, userId, (tx) =>
+      tx.execute(sql`insert into jobs (kind, runner, payload)
+        values (${kind}, 'node', ${JSON.stringify(payload)}::jsonb) returning id`),
+    )
+
+  it('lets app enqueue delete_prefix for its own prefixes and read it back', async () => {
+    const result = await enqueueAs(alice, {
+      user_id: alice,
+      prefixes: [`u/${alice}/raw/x/`, `u/${alice}/a/y/`],
+    })
+    expect(result.rows).toHaveLength(1)
+  })
+
+  it.each([
+    ['another user', (a: string, b: string) => ({ user_id: a, prefixes: [`u/${b}/raw/x/`] })],
+    [
+      'a payload for another user',
+      (_: string, b: string) => ({ user_id: b, prefixes: [`u/${b}/`] }),
+    ],
+    ['a traversal', (a: string) => ({ user_id: a, prefixes: [`u/${a}/../x/`] })],
+    ['a prefix without trailing slash', (a: string) => ({ user_id: a, prefixes: [`u/${a}/raw`] })],
+    ['no prefixes', (a: string) => ({ user_id: a, prefixes: [] })],
+    ['prefixes not an array', (a: string) => ({ user_id: a, prefixes: `u/${a}/` })],
+    ['a non-string prefix', (a: string) => ({ user_id: a, prefixes: [1] })],
+  ])('refuses %s', async (_, payload) => {
+    expect(await pgErrorCode(enqueueAs(alice, payload(alice, bob)))).toBe(INSUFFICIENT_PRIVILEGE)
+  })
+
+  it('refuses other job kinds without an analysis', async () => {
+    const code = await pgErrorCode(
+      enqueueAs(alice, { user_id: alice, prefixes: [`u/${alice}/`] }, 'sweep'),
+    )
+    expect(code).toBe(INSUFFICIENT_PRIVILEGE)
+  })
+})
+
+describe('auth and rate-limit tables', () => {
+  it.each(['app', 'ml_worker', 'node_worker'] as const)('are closed to %s', async (role) => {
+    for (const table of ['auth_sessions', 'auth_accounts', 'auth_verifications', 'rate_limits']) {
+      expect(await pgErrorCode(asRole(db, role, (tx) => count(tx, table))), table).toBe(
+        INSUFFICIENT_PRIVILEGE,
+      )
+    }
+  })
+})
+
 describe('worker and maintenance roles', () => {
   it.each(['ml_worker', 'node_worker'] as const)(
     '%s cannot read users or correction_ops',

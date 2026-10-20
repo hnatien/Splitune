@@ -1,5 +1,5 @@
 // pnpm seed — idempotent local seed: the system user (owner of example songs, 03 "Notes") and one
-// test user. Better Auth credentials for the test user arrive with step 04.
+// test user, who signs in with a magic link to test@splitune.localhost (email in Mailpit).
 import { createDb, users } from '../src/index.ts'
 import { requireEnv } from './env.ts'
 

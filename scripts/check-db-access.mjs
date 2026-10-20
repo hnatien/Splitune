@@ -13,8 +13,10 @@ const ALLOWED = [
   'packages/db/src/repo/',
   'packages/db/src/jobs/',
   'packages/db/src/client.ts', // withUser() itself
+  'packages/db/src/rate-limit.ts', // request counters, not user data
   'packages/db/scripts/', // migrate, roles, seed
   'packages/db/test/',
+  'apps/api/test/rls.test.ts', // bypasses the repositories on purpose to prove RLS holds
 ]
 const SOURCE = /\.(ts|tsx|mts|cts|js|mjs|cjs)$/
 const RAW_QUERY =

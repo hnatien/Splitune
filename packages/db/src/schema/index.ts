@@ -1,4 +1,5 @@
 export * from './analysis.ts'
+export * from './auth.ts'
 export * from './billing.ts'
 export * from './compliance.ts'
 export * from './library.ts'

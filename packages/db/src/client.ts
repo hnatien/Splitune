@@ -41,3 +41,8 @@ export async function withUser<T>(
     return fn(tx)
   })
 }
+
+// Readiness probe: one round trip on the pool.
+export async function ping(db: Database): Promise<void> {
+  await db.execute(sql`select 1`)
+}

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createRepositories } from '../src/index.ts'
+import { auditLog, createRepositories, hitRateLimit, jobs, type SongCursor } from '../src/index.ts'
 import { createUser, seedUserGraph, testDb } from './helpers.ts'
 
 const db = testDb(10)
@@ -34,7 +35,7 @@ describe('songs', () => {
 
     expect(await repo.songs.get(bob, song.id)).toBeUndefined()
     expect(await repo.songs.update(bob, song.id, { title: 'x' })).toBeUndefined()
-    expect(await repo.songs.delete(bob, song.id)).toBe(false)
+    expect(await repo.songs.delete(bob, song.id, () => [])).toBe(false)
     expect((await repo.songs.list(bob)).map((s) => s.id)).not.toContain(song.id)
 
     const updated = await repo.songs.update(alice, song.id, {
@@ -43,7 +44,7 @@ describe('songs', () => {
     })
     expect(updated?.playerState).toEqual({ speed_pct: 75 })
     expect((await repo.songs.list(alice))[0]?.id).toBe(song.id)
-    expect(await repo.songs.delete(alice, song.id)).toBe(true)
+    expect(await repo.songs.delete(alice, song.id, () => [])).toBe(true)
     expect(await repo.songs.get(alice, song.id)).toBeUndefined()
   })
 
@@ -58,6 +59,73 @@ describe('songs', () => {
     expect((await repo.songs.findByAudioHash(alice, audioHash, 'guitar'))?.id).toBe(song.id)
     expect(await repo.songs.findByAudioHash(alice, audioHash, 'bass')).toBeUndefined()
     expect(await repo.songs.findByAudioHash(bob, audioHash, 'guitar')).toBeUndefined()
+  })
+
+  it('pages the library in opened-then-created order', async () => {
+    const dave = await createUser(db)
+    const made = []
+    for (const title of ['a', 'b', 'c', 'd', 'e']) {
+      made.push(await repo.songs.create(dave, { title, sourceKind: 'upload', instrument: 'bass' }))
+    }
+    const [a, , c] = made as [(typeof made)[0], unknown, (typeof made)[0]]
+    await repo.songs.update(dave, a.id, { lastOpenedAt: new Date('2026-10-01T00:00:00Z') })
+    await repo.songs.update(dave, c.id, { lastOpenedAt: new Date('2026-10-02T00:00:00Z') })
+
+    const titles: string[] = []
+    let after: SongCursor | undefined
+    for (;;) {
+      const page = await repo.songs.list(dave, { limit: 2, ...(after ? { after } : {}) })
+      titles.push(...page.map((s) => s.title))
+      const last = page.at(-1)
+      if (page.length < 2 || !last) break
+      after = { lastOpenedAt: last.lastOpenedAt, createdAt: last.createdAt, id: last.id }
+    }
+    expect(titles).toEqual(['c', 'a', 'e', 'd', 'b'])
+  })
+
+  it('opens a song with its latest analysis and bumps last_opened_at', async () => {
+    const opened = await repo.songs.open(alice, graph.song.id)
+    expect(opened?.song.lastOpenedAt).toBeInstanceOf(Date)
+    expect(opened?.latestAnalysis?.id).toBe(graph.analysis.id)
+    expect(opened?.stages.map((s) => s.stage)).toEqual(['beats'])
+    expect(opened?.artefacts.map((a) => a.id)).toEqual([graph.artefact.id])
+    expect(opened?.youtube).toMatchObject({ videoId: 'dQw4w9WgXcQ', syncPoints: [{ idx: 0 }] })
+    expect(await repo.songs.open(bob, graph.song.id)).toBeUndefined()
+  })
+
+  it('deletes a song and enqueues cleanup of its object prefixes in one transaction', async () => {
+    const erin = await createUser(db)
+    const { song, analysis } = await seedUserGraph(db, erin)
+    const seen: unknown[] = []
+    const prefixes = (objects: { uploadIds: string[]; analysisIds: string[] }) => {
+      seen.push(objects)
+      return [
+        ...objects.uploadIds.map((id) => `u/${erin}/raw/${id}/`),
+        ...objects.analysisIds.map((id) => `u/${erin}/a/${id}/`),
+      ]
+    }
+    expect(await repo.songs.delete(bob, song.id, prefixes)).toBe(false)
+    expect(seen).toEqual([])
+    expect(await repo.songs.delete(erin, song.id, prefixes)).toBe(true)
+    expect(seen).toEqual([{ uploadIds: [expect.any(String)], analysisIds: [analysis.id] }])
+    const [job] = await db
+      .select()
+      .from(jobs)
+      .where(and(eq(jobs.kind, 'delete_prefix'), eq(jobs.runner, 'node')))
+      .orderBy(jobs.id)
+      .limit(1)
+    expect(job?.payload).toEqual({
+      user_id: erin,
+      prefixes: [expect.stringMatching(`^u/${erin}/raw/`), `u/${erin}/a/${analysis.id}/`],
+    })
+    expect(await repo.songs.get(erin, song.id)).toBeUndefined()
+  })
+
+  it('rolls back the song delete when the cleanup job is refused', async () => {
+    const frank = await createUser(db)
+    const { song } = await seedUserGraph(db, frank)
+    await expect(repo.songs.delete(frank, song.id, () => [`u/${alice}/raw/x/`])).rejects.toThrow()
+    expect((await repo.songs.get(frank, song.id))?.id).toBe(song.id)
   })
 })
 
@@ -262,5 +330,79 @@ describe('users', () => {
     })
     expect(updated).toMatchObject({ handedness: 'left', level: 'returning' })
     expect(await repo.users.get('nobody')).toBeUndefined()
+    expect(await repo.users.updateProfile('nobody', { level: 'returning' })).toBeUndefined()
+  })
+
+  it('audits training opt-in changes only', async () => {
+    const gina = await createUser(db)
+    const audits = () => db.select().from(auditLog).where(eq(auditLog.subjectUserId, gina))
+    await repo.users.updateProfile(gina, { trainingOptIn: false, level: 'returning' })
+    expect(await audits()).toEqual([])
+    await repo.users.updateProfile(gina, { trainingOptIn: true })
+    expect(await audits()).toMatchObject([
+      { actor: gina, action: 'training_opt_in.changed', subject: { from: false, to: true } },
+    ])
+  })
+
+  it('reads the profile with subscription and flags', async () => {
+    const profile = await repo.users.profile(alice)
+    expect(profile?.user.id).toBe(alice)
+    expect(profile?.subscription).toMatchObject({ plan: 'paid_monthly', status: 'active' })
+    expect(Array.isArray(profile?.flags)).toBe(true)
+    expect((await repo.users.profile(bob))?.subscription).toBeUndefined()
+    expect(await repo.users.profile('nobody')).toBeUndefined()
+  })
+})
+
+describe('uploads', () => {
+  const upload = (songId: string, fileSha256: string) => ({
+    id: randomUUID(),
+    songId,
+    objectKey: 'u/x/raw/y/source.mp3',
+    bytes: 1000,
+    mime: 'audio/mpeg',
+    fileSha256,
+    status: 'pending' as const,
+    expiresAt: new Date(Date.now() + 86_400_000),
+  })
+
+  it('moves status only from the expected state', async () => {
+    const row = await repo.uploads.create(alice, upload(graph.song.id, 'c'.repeat(64)))
+    expect(await repo.uploads.transition(bob, row.id, 'pending', { status: 'uploaded' })).toBe(
+      undefined,
+    )
+    const done = await repo.uploads.transition(alice, row.id, 'pending', { status: 'uploaded' })
+    expect(done?.status).toBe('uploaded')
+    expect(
+      await repo.uploads.transition(alice, row.id, 'pending', { status: 'deleted' }),
+    ).toBeUndefined()
+  })
+
+  it('reports duplicates only for completed uploads of the user', async () => {
+    const sha = 'd'.repeat(64)
+    const pending = await repo.uploads.create(alice, upload(graph.song.id, sha))
+    expect(await repo.uploads.findByFileSha256(alice, sha)).toBeUndefined()
+    await repo.uploads.transition(alice, pending.id, 'pending', { status: 'uploaded' })
+    expect((await repo.uploads.findByFileSha256(alice, sha))?.songId).toBe(graph.song.id)
+    expect(await repo.uploads.findByFileSha256(bob, sha)).toBeUndefined()
+  })
+})
+
+describe('rate limits', () => {
+  it('counts atomically within a fixed window', async () => {
+    const key = `test:${randomUUID()}`
+    const results = await Promise.all(Array.from({ length: 5 }, () => hitRateLimit(db, key, 3, 60)))
+    expect(results.map((r) => r.count).sort()).toEqual([1, 2, 3, 4, 5])
+    const refused = results.filter((r) => !r.allowed)
+    expect(refused).toHaveLength(2)
+    for (const r of refused) expect(r.retryAfterS).toBeGreaterThanOrEqual(1)
+  })
+
+  it('starts a new window after the old one expired', async () => {
+    const key = `test:${randomUUID()}`
+    expect((await hitRateLimit(db, key, 1, 1)).allowed).toBe(true)
+    expect((await hitRateLimit(db, key, 1, 1)).allowed).toBe(false)
+    await new Promise((resolve) => setTimeout(resolve, 1100))
+    expect(await hitRateLimit(db, key, 1, 1)).toEqual({ allowed: true, count: 1, retryAfterS: 0 })
   })
 })

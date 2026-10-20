@@ -67,6 +67,9 @@ export const uploads = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     songId: uuid('song_id').references(() => songs.id, { onDelete: 'cascade' }),
     objectKey: text('object_key').notNull(),
+    // S3 multipart upload id and part size while the browser uploads (POST /v1/uploads).
+    multipartUploadId: text('multipart_upload_id'),
+    partSize: integer('part_size'),
     bytes: bigint('bytes', { mode: 'number' }).notNull(),
     mime: text('mime').notNull(),
     fileSha256: text('file_sha256').notNull(),
