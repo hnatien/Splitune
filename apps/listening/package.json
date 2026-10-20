@@ -2,13 +2,20 @@
   "name": "@splitune/listening",
   "version": "0.0.0",
   "private": true,
-  "description": "Blind A/B listening test app — docs/implementation/08-evaluation-harness-and-prototypes.md",
+  "description": "Blind listening test app (Prototype 1) — docs/implementation/08-evaluation-harness-and-prototypes.md",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "scripts": {
+    "dev": "node --env-file-if-exists=../../.env src/server.ts",
     "typecheck": "tsc -p .",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.13",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
   }
 }
