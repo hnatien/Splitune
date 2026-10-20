@@ -1,0 +1,14 @@
+{
+  "name": "@splitune/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "API (Hono + oRPC + Better Auth) — docs/implementation/04-api-contract.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}

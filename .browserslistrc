@@ -1,0 +1,9 @@
+# Support floor from docs/implementation/24-browser-compatibility.md §2.
+# Safari 16.4 (WASM SIMD) is the binding constraint; Vite build.target is derived from this list.
+chrome >= 111
+edge >= 111
+safari >= 16.4
+ios_saf >= 16.4
+firefox >= 128
+samsung >= 23
+opera >= 97

@@ -1,0 +1,14 @@
+{
+  "name": "@splitune/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed event taxonomy — docs/implementation/16-observability-analytics-experiments.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}

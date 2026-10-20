@@ -1,0 +1,7 @@
+#!/bin/sh
+# Blocks commits that stage secrets. Installed by `pnpm run setup` (git config core.hooksPath .githooks).
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed. Install it with 'brew install gitleaks' and retry." >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --verbose

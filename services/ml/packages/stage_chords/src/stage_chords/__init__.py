@@ -1,0 +1,1 @@
+"""Chord and key recognition."""

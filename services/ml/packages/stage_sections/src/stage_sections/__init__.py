@@ -1,0 +1,1 @@
+"""Section analysis (allin1)."""

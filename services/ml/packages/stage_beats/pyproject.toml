@@ -1,0 +1,10 @@
+[project]
+name = "stage-beats"
+version = "0.0.0"
+description = "Beat tracking (beat_this)"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14"]
+build-backend = "uv_build"

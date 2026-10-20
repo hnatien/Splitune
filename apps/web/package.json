@@ -1,0 +1,14 @@
+{
+  "name": "@splitune/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web app (TanStack Start PWA) — docs/implementation/10-web-app-architecture.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}

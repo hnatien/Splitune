@@ -1,0 +1,14 @@
+{
+  "name": "@splitune/notation",
+  "version": "0.0.0",
+  "private": true,
+  "description": "alphaTab wrapper — docs/implementation/12-practice-screen-and-notation.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}

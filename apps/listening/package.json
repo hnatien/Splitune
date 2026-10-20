@@ -1,0 +1,14 @@
+{
+  "name": "@splitune/listening",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Blind A/B listening test app — docs/implementation/08-evaluation-harness-and-prototypes.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}

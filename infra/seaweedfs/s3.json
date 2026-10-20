@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "splitune-dev",
+      "credentials": [
+        {
+          "accessKey": "splitune-dev-access-key",
+          "secretKey": "splitune-dev-secret-key-not-a-real-secret"
+        }
+      ],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    }
+  ]
+}

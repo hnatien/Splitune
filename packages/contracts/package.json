@@ -1,0 +1,14 @@
+{
+  "name": "@splitune/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zod schemas shared across process boundaries — docs/implementation/05-analysis-schema.md",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}
