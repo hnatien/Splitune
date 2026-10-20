@@ -13,6 +13,14 @@
       "type": "Beats"
     },
     {
+      "file": "tags.json",
+      "type": "Tags"
+    },
+    {
+      "file": "separation.json",
+      "type": "Separation"
+    },
+    {
       "file": "presence.json",
       "type": "Presence"
     },

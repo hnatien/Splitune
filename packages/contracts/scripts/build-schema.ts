@@ -21,17 +21,21 @@ import {
   Probe,
   SCHEMA_VERSION,
   Sections,
+  Separation,
   StageRequest,
   StageResult,
   Stems,
   Summary,
   Tab,
+  Tags,
 } from '../src/index.ts'
 
 const DOCUMENTS = {
   Manifest,
   Probe,
   Beats,
+  Tags,
+  Separation,
   Presence,
   Stems,
   Sections,

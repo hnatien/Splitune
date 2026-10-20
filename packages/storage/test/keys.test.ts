@@ -23,6 +23,8 @@ describe('key builders', () => {
     expect(analysisPrefix(user, id)).toBe(`u/${user}/a/${id}/`)
     expect(artefactKey(user, id, 1, 'beats.json')).toBe(`u/${user}/a/${id}/v1/beats.json`)
     expect(artefactKey(user, id, 1, 'probe.json')).toBe(`u/${user}/a/${id}/v1/probe.json`)
+    expect(artefactKey(user, id, 1, 'tags.json')).toBe(`u/${user}/a/${id}/v1/tags.json`)
+    expect(artefactKey(user, id, 1, 'separation.json')).toBe(`u/${user}/a/${id}/v1/separation.json`)
     expect(artefactKey(user, id, 2, 'notes.guitar.json')).toBe(
       `u/${user}/a/${id}/v2/notes.guitar.json`,
     )

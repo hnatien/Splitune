@@ -10,15 +10,17 @@ export const ActivitySpan = z
   })
   .register(contracts, { id: 'ActivitySpan' })
 
+export const InstrumentSubtype = z
+  .enum(['acoustic_guitar', 'electric_guitar', 'piano', 'synth_keys', 'organ'])
+  .register(contracts, { id: 'InstrumentSubtype' })
+
 export const InstrumentPresence = z
   .object({
     instrument: Instrument,
     present_prob: z.number().min(0).max(1),
     activity: z.array(ActivitySpan),
     bleed_suspected: z.boolean(),
-    subtype: z
-      .enum(['acoustic_guitar', 'electric_guitar', 'piano', 'synth_keys', 'organ'])
-      .optional(),
+    subtype: InstrumentSubtype.optional(),
   })
   .register(contracts, { id: 'InstrumentPresence' })
 

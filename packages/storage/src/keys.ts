@@ -22,6 +22,8 @@ const ARTEFACT_FILES = new Set([
   'manifest.json',
   'probe.json',
   'beats.json',
+  'tags.json',
+  'separation.json',
   'presence.json',
   'stems.json',
   'sections.json',

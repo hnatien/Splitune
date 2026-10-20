@@ -34,7 +34,7 @@ class AnalysisDoneEvent(BaseModel):
 type ArtefactKind = Annotated[
     StrictStr,
     Field(
-        pattern="^(manifest|probe|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
+        pattern="^(manifest|probe|beats|tags|separation|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
     ),
 ]
 
@@ -168,14 +168,15 @@ type HttpUrl = Annotated[StrictStr, Field(pattern="^https?:\\/\\/")]
 type Instrument = Literal["guitar", "bass", "piano", "drums", "vocals", "other"]
 
 
-class InstrumentPresence(BaseModel):
+type InstrumentSubtype = Literal[
+    "acoustic_guitar", "electric_guitar", "piano", "synth_keys", "organ"
+]
+
+
+class InstrumentTag(BaseModel):
     instrument: Instrument
     present_prob: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
-    activity: list[ActivitySpan]
-    bleed_suspected: StrictBool
-    subtype: (
-        Literal["acoustic_guitar", "electric_guitar", "piano", "synth_keys", "organ"] | None
-    ) = None
+    subtype: InstrumentSubtype | None = None
 
 
 class Key(BaseModel):
@@ -286,6 +287,11 @@ class SectionSegment(BaseModel):
     t1: Annotated[StrictFloat, Field(ge=0.0)]
     label: SectionLabel
     boundary_confidence: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+
+
+class SeparationAttempt(BaseModel):
+    model: Annotated[StrictStr, Field(min_length=1)]
+    error_code: MachineCode
 
 
 class SetChordOp(BaseModel):
@@ -459,6 +465,14 @@ type CorrectionOp = Annotated[
 ]
 
 
+class InstrumentPresence(BaseModel):
+    instrument: Instrument
+    present_prob: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+    activity: list[ActivitySpan]
+    bleed_suspected: StrictBool
+    subtype: InstrumentSubtype | None = None
+
+
 class InstrumentSummary(BaseModel):
     instrument: Instrument
     note_confidence_mean: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
@@ -583,6 +597,47 @@ class Sections(BaseModel):
         ),
     ]
     segments: list[SectionSegment]
+
+
+class SeparatedStem(BaseModel):
+    name: Annotated[StrictStr, Field(pattern="^[a-z0-9][a-z0-9_.-]{0,63}$")]
+    instrument: Instrument | None = None
+    role: Literal["target", "complement", "extra"]
+    file: Annotated[
+        StrictStr, Field(pattern="^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.flac$")
+    ]
+    sha256: Sha256Hex
+    frames: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+
+
+class Separation(BaseModel):
+    schema_version: SchemaVersion
+    artefact: Literal["separation"]
+    artefact_version: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+    analysis_id: Annotated[
+        StrictStr,
+        Field(
+            pattern="^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        ),
+    ]
+    user_id: Annotated[StrictStr, Field(min_length=1)]
+    audio_hash: Sha256Hex
+    sample_rate: Literal[44100]
+    duration_s: Annotated[StrictFloat, Field(gt=0.0)]
+    models: list[ModelRef]
+    params: dict[StrictStr, Any]
+    created_at: Annotated[
+        StrictStr,
+        Field(
+            pattern="^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        ),
+    ]
+    target: Instrument
+    provider: Annotated[StrictStr, Field(min_length=1)]
+    mix_minus: Literal["subtract", "complement"]
+    device: Literal["mps", "cpu"]
+    stems: Annotated[list[SeparatedStem], Field(min_length=1)]
+    failed_attempts: list[SeparationAttempt]
 
 
 class StageCompletedEvent(BaseModel):
@@ -717,6 +772,34 @@ class Tab(BaseModel):
     events: list[TabEvent]
     swing_bars: list[SwingBar] | None = None
     music_core_version: Annotated[StrictStr, Field(min_length=1)]
+
+
+class Tags(BaseModel):
+    schema_version: SchemaVersion
+    artefact: Literal["tags"]
+    artefact_version: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+    analysis_id: Annotated[
+        StrictStr,
+        Field(
+            pattern="^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        ),
+    ]
+    user_id: Annotated[StrictStr, Field(min_length=1)]
+    audio_hash: Sha256Hex
+    sample_rate: Literal[44100]
+    duration_s: Annotated[StrictFloat, Field(gt=0.0)]
+    models: list[ModelRef]
+    params: dict[StrictStr, Any]
+    created_at: Annotated[
+        StrictStr,
+        Field(
+            pattern="^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        ),
+    ]
+    window_s: Annotated[StrictFloat, Field(gt=0.0)]
+    windows: Annotated[StrictInt, Field(ge=0, le=9007199254740991)]
+    instruments: list[InstrumentTag]
+    fallback_reason: MachineCode | None = None
 
 
 class ArtefactHeader(BaseModel):
@@ -862,4 +945,4 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.2.0"
+SCHEMA_VERSION = "1.3.0"
