@@ -5,6 +5,10 @@
       "type": "Manifest"
     },
     {
+      "file": "probe.json",
+      "type": "Probe"
+    },
+    {
       "file": "beats.json",
       "type": "Beats"
     },

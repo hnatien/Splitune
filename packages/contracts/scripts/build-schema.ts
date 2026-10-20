@@ -18,6 +18,7 @@ import {
   Manifest,
   Notes,
   Presence,
+  Probe,
   SCHEMA_VERSION,
   Sections,
   StageRequest,
@@ -29,6 +30,7 @@ import {
 
 const DOCUMENTS = {
   Manifest,
+  Probe,
   Beats,
   Presence,
   Stems,

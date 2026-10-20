@@ -8,8 +8,8 @@ import {
 } from './common.ts'
 
 describe('schema versioning', () => {
-  it('is semver 1.0.0', () => {
-    expect(SCHEMA_VERSION).toBe('1.1.0')
+  it('is semver 1.2.0', () => {
+    expect(SCHEMA_VERSION).toBe('1.2.0')
   })
 
   it.each(['1.0.0', '1.4.2', '1.10.0'])('accepts same-major version %s', (version) => {

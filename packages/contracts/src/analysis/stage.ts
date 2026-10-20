@@ -48,12 +48,15 @@ export const StageCallback = z
 
 // Personal mode: the worker reads this from `jobs.payload` and uses its own bucket credentials, so
 // only object keys are required. Output keys are fixed per stage, which makes re-runs idempotent.
+// `cache_key` is optional because the enqueuer cannot know `audio_hash` before decode has run; the
+// worker then computes it (03-data-model-and-storage.md "Keys") from the decoded audio, the model
+// refs and the params.
 export const StageRequest = z
   .object({
     analysis_id: z.uuid(),
     user_id: z.string().min(1),
     stage: StageName,
-    cache_key: Sha256Hex,
+    cache_key: Sha256Hex.optional(),
     inputs: z.record(z.string(), ObjectKey),
     outputs: z.record(z.string(), ObjectKey),
     params: z.record(z.string(), z.unknown()),

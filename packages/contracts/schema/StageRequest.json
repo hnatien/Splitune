@@ -56,7 +56,6 @@
         "analysis_id",
         "user_id",
         "stage",
-        "cache_key",
         "inputs",
         "outputs",
         "params"

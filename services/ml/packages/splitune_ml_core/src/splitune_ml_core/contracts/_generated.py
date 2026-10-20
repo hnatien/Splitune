@@ -34,7 +34,7 @@ class AnalysisDoneEvent(BaseModel):
 type ArtefactKind = Annotated[
     StrictStr,
     Field(
-        pattern="^(manifest|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
+        pattern="^(manifest|probe|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
     ),
 ]
 
@@ -249,6 +249,15 @@ class PresignedUrls(BaseModel):
     outputs: dict[StrictStr, HttpUrl]
 
 
+class ProbeStream(BaseModel):
+    codec: Annotated[StrictStr, Field(min_length=1)]
+    sample_rate: Annotated[StrictInt | None, Field(gt=0, le=9007199254740991)] = None
+    channels: Annotated[StrictInt | None, Field(gt=0, le=9007199254740991)] = None
+    channel_layout: StrictStr | None = None
+    bit_rate: Annotated[StrictInt | None, Field(ge=0, le=9007199254740991)] = None
+    duration_s: Annotated[StrictFloat | None, Field(ge=0.0)] = None
+
+
 class ProgressEvent(BaseModel):
     type: Literal["progress"]
     value: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
@@ -359,7 +368,7 @@ class StageRequest(BaseModel):
     ]
     user_id: Annotated[StrictStr, Field(min_length=1)]
     stage: StageName
-    cache_key: Sha256Hex
+    cache_key: Sha256Hex | None = None
     inputs: dict[StrictStr, ObjectKey]
     outputs: dict[StrictStr, ObjectKey]
     params: dict[StrictStr, Any]
@@ -516,6 +525,39 @@ class Presence(BaseModel):
         ),
     ]
     instruments: list[InstrumentPresence]
+
+
+class Probe(BaseModel):
+    schema_version: SchemaVersion
+    artefact: Literal["probe"]
+    artefact_version: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+    analysis_id: Annotated[
+        StrictStr,
+        Field(
+            pattern="^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        ),
+    ]
+    user_id: Annotated[StrictStr, Field(min_length=1)]
+    audio_hash: Sha256Hex
+    sample_rate: Literal[44100]
+    duration_s: Annotated[StrictFloat, Field(gt=0.0)]
+    models: list[ModelRef]
+    params: dict[StrictStr, Any]
+    created_at: Annotated[
+        StrictStr,
+        Field(
+            pattern="^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        ),
+    ]
+    container: Annotated[StrictStr, Field(min_length=1)]
+    source_bytes: Annotated[StrictInt, Field(ge=0, le=9007199254740991)]
+    source_sha256: Sha256Hex
+    source_duration_s: Annotated[StrictFloat | None, Field(ge=0.0)] = None
+    audio_streams: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+    audio_stream: ProbeStream
+    decoded_frames: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+    loudness_lufs: StrictFloat | None = None
+    peak_dbfs: StrictFloat | None = None
 
 
 class Sections(BaseModel):
@@ -820,4 +862,4 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.1.0"
+SCHEMA_VERSION = "1.2.0"

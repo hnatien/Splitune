@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Splitune contracts",
-  "x-schema-version": "1.1.0",
+  "x-schema-version": "1.2.0",
   "$defs": {
     "ActivitySpan": {
       "type": "object",
@@ -160,7 +160,7 @@
     },
     "ArtefactKind": {
       "type": "string",
-      "pattern": "^(manifest|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
+      "pattern": "^(manifest|probe|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
     },
     "ArtefactRef": {
       "type": "object",
@@ -1580,6 +1580,149 @@
         "outputs"
       ]
     },
+    "Probe": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/SchemaVersion"
+        },
+        "artefact": {
+          "type": "string",
+          "const": "probe"
+        },
+        "artefact_version": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audio_hash": {
+          "$ref": "#/$defs/Sha256Hex"
+        },
+        "sample_rate": {
+          "type": "number",
+          "const": 44100
+        },
+        "duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModelRef"
+          }
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        },
+        "container": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/Sha256Hex"
+        },
+        "source_duration_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "audio_streams": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "audio_stream": {
+          "$ref": "#/$defs/ProbeStream"
+        },
+        "decoded_frames": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "loudness_lufs": {
+          "type": "number"
+        },
+        "peak_dbfs": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "schema_version",
+        "artefact",
+        "artefact_version",
+        "analysis_id",
+        "user_id",
+        "audio_hash",
+        "sample_rate",
+        "duration_s",
+        "models",
+        "params",
+        "created_at",
+        "container",
+        "source_bytes",
+        "source_sha256",
+        "audio_streams",
+        "audio_stream",
+        "decoded_frames"
+      ]
+    },
+    "ProbeStream": {
+      "type": "object",
+      "properties": {
+        "codec": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sample_rate": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "channels": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "channel_layout": {
+          "type": "string"
+        },
+        "bit_rate": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "codec"
+      ]
+    },
     "ProgressEvent": {
       "type": "object",
       "properties": {
@@ -2053,7 +2196,6 @@
         "analysis_id",
         "user_id",
         "stage",
-        "cache_key",
         "inputs",
         "outputs",
         "params"

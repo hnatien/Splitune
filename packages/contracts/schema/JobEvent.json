@@ -118,7 +118,7 @@
     },
     "ArtefactKind": {
       "type": "string",
-      "pattern": "^(manifest|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
+      "pattern": "^(manifest|probe|beats|presence|stems|sections|chords|summary|(notes|tab|render)\\.(guitar|bass|piano|drums|vocals|other))$"
     },
     "StageFailedEvent": {
       "type": "object",

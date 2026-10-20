@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { contracts } from '../registry.ts'
 
-export const SCHEMA_VERSION = '1.1.0'
+export const SCHEMA_VERSION = '1.2.0'
 
 const SCHEMA_MAJOR = Number(SCHEMA_VERSION.split('.')[0])
 
@@ -57,7 +57,7 @@ export const SourceKind = z
 export const ArtefactKind = z
   .string()
   .regex(
-    /^(manifest|beats|presence|stems|sections|chords|summary|(notes|tab|render)\.(guitar|bass|piano|drums|vocals|other))$/,
+    /^(manifest|probe|beats|presence|stems|sections|chords|summary|(notes|tab|render)\.(guitar|bass|piano|drums|vocals|other))$/,
   )
   .register(contracts, { id: 'ArtefactKind' })
 

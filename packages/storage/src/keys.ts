@@ -20,6 +20,7 @@ function check(value: string, pattern: RegExp, what: string): string {
 
 const ARTEFACT_FILES = new Set([
   'manifest.json',
+  'probe.json',
   'beats.json',
   'presence.json',
   'stems.json',
