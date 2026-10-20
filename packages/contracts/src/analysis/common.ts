@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { contracts } from '../registry.ts'
 
-export const SCHEMA_VERSION = '1.0.0'
+export const SCHEMA_VERSION = '1.1.0'
 
 const SCHEMA_MAJOR = Number(SCHEMA_VERSION.split('.')[0])
 

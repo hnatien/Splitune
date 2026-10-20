@@ -56,6 +56,14 @@
             "$ref": "#/$defs/TabEvent"
           }
         },
+        "swing_bars": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 9007199254740991
+          }
+        },
         "music_core_version": {
           "type": "string",
           "minLength": 1
@@ -173,6 +181,9 @@
           "items": {
             "$ref": "#/$defs/AltFingering"
           }
+        },
+        "unplayable": {
+          "type": "boolean"
         },
         "hand": {
           "type": "string",

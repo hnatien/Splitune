@@ -67,6 +67,26 @@ class BeatsRef(BaseModel):
     corrections_rev: Annotated[StrictInt, Field(ge=0, le=9007199254740991)]
 
 
+type KnotItem = Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+
+
+type Knot = Annotated[tuple[StrictFloat, KnotItem], Field(max_length=2, min_length=2)]
+
+
+class Bands(BaseModel):
+    high: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+    medium: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+
+
+class CalibrationTable(BaseModel):
+    model_id: Annotated[StrictStr, Field(min_length=1)]
+    version: Annotated[StrictStr, Field(min_length=1)]
+    method: Literal["isotonic", "identity"]
+    knots: list[Knot]
+    bands: Bands
+    fitted_on: StrictStr | None = None
+
+
 class ChordCandidate(BaseModel):
     label: Annotated[StrictStr, Field(min_length=1)]
     prob: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
@@ -371,6 +391,9 @@ class StemFile(BaseModel):
 type TuningMidiItem = Annotated[StrictInt, Field(ge=0, le=127)]
 
 
+type SwingBar = Annotated[StrictInt, Field(ge=-1, le=9007199254740991)]
+
+
 class TabEvent(BaseModel):
     note_id: Annotated[StrictStr, Field(min_length=1)]
     bar: Annotated[StrictInt, Field(ge=-1, le=9007199254740991)]
@@ -381,6 +404,7 @@ class TabEvent(BaseModel):
     string: Annotated[StrictInt | None, Field(ge=1, le=7)] = None
     fret: Annotated[StrictInt | None, Field(ge=0, le=24)] = None
     alt_fingerings: Annotated[list[AltFingering] | None, Field(max_length=3)] = None
+    unplayable: StrictBool | None = None
     hand: Literal["L", "R"] | None = None
 
 
@@ -649,6 +673,7 @@ class Tab(BaseModel):
     level: TabLevel
     fingering_mode: Literal["easiest", "as_played"]
     events: list[TabEvent]
+    swing_bars: list[SwingBar] | None = None
     music_core_version: Annotated[StrictStr, Field(min_length=1)]
 
 
@@ -795,4 +820,4 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"

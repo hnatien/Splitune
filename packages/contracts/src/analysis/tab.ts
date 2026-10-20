@@ -22,6 +22,10 @@ export const TabEvent = z
     string: z.number().int().min(1).max(7).optional(), // 1 = highest-pitched string
     fret: z.number().int().min(0).max(24).optional(),
     alt_fingerings: z.array(AltFingering).max(3).optional(),
+    // Placement fact, not uncertainty (never a dashed outline, doc 26 §5): with string/fret the
+    // pitch was moved by octaves into the tuning's range ("8va"/"8vb" marker); without string/fret
+    // the note has no position within the span limit ("!" marker). Never dropped silently.
+    unplayable: z.boolean().optional(),
     hand: z.enum(['L', 'R']).optional(), // piano (v1)
   })
   .register(contracts, { id: 'TabEvent' })
@@ -57,6 +61,7 @@ export const Tab = z
     level: TabLevel,
     fingering_mode: z.enum(['easiest', 'as_played']),
     events: z.array(TabEvent),
+    swing_bars: z.array(z.number().int().min(-1)).optional(), // bars quantized on the triplet-1/8 grid
     music_core_version: z.string().min(1),
   })
   .register(contracts, { id: 'Tab' })

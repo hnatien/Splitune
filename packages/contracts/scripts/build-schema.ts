@@ -8,6 +8,7 @@ import { parseArgs } from 'node:util'
 import { z } from 'zod'
 import {
   Beats,
+  CalibrationTable,
   Chords,
   CorrectionOp,
   contracts,
@@ -38,6 +39,7 @@ const DOCUMENTS = {
   Tab,
   Summary,
   CorrectionOp,
+  CalibrationTable,
   StageRequest,
   StageResult,
   JobEvent,

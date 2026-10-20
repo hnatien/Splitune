@@ -69,7 +69,7 @@ def test_unknown_fields_are_ignored() -> None:
 
 def test_schema_version_matches_typescript() -> None:
     bundle = json.loads((FIXTURES.parent / "schema/contracts.json").read_text())
-    assert contracts.SCHEMA_VERSION == bundle["x-schema-version"] == "1.0.0"
+    assert contracts.SCHEMA_VERSION == bundle["x-schema-version"] == "1.1.0"
 
 
 @pytest.mark.parametrize("version", ["1.0.0", "1.4.2", "1.10.0"])
