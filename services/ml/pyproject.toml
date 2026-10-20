@@ -53,12 +53,14 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "RUF", "PT"]
 "packages/splitune_ml_core/src/splitune_ml_core/contracts/_generated.py" = ["E501"]
 
 [tool.pyright]
-include = ["packages", "scripts"]
+include = ["packages", "scripts", "eval"]
+extraPaths = ["eval"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "eval"]
+pythonpath = ["eval"]
 addopts = ["--strict-markers", "--strict-config", "--import-mode=importlib"]
