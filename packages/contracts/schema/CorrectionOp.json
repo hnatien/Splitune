@@ -204,6 +204,11 @@
         "stem_id": {
           "type": "string",
           "minLength": 1
+        },
+        "low_band_energy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "required": [

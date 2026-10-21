@@ -7,8 +7,17 @@ export const RecommendedView = z
   .register(contracts, { id: 'RecommendedView' })
 
 // Machine codes from the recommended_view rule (05-analysis-schema.md), shown as plain-language banners.
+// quality_gate_failed: the instrument failed its Prototype 2 gate (views.yaml); stems_unavailable:
+// notes were transcribed from the mixture because separation failed (informational).
 export const ViewReason = z
-  .enum(['notes_unavailable', 'notation_not_supported', 'rough_stem_low_conf', 'low_confidence'])
+  .enum([
+    'notes_unavailable',
+    'notation_not_supported',
+    'rough_stem_low_conf',
+    'low_confidence',
+    'quality_gate_failed',
+    'stems_unavailable',
+  ])
   .register(contracts, { id: 'ViewReason' })
 
 export const InstrumentSummary = z

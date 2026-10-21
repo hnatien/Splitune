@@ -209,6 +209,7 @@ class NewNote(BaseModel):
     velocity: Annotated[StrictInt | None, Field(ge=1, le=127)] = None
     bend_cents: list[BendCent] | None = None
     stem_id: Annotated[StrictStr, Field(min_length=1)]
+    low_band_energy: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
 
 
 class Note(BaseModel):
@@ -221,6 +222,7 @@ class Note(BaseModel):
     velocity: Annotated[StrictInt | None, Field(ge=1, le=127)] = None
     bend_cents: list[BendCent] | None = None
     stem_id: Annotated[StrictStr, Field(min_length=1)]
+    low_band_energy: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
 
 
 class NotePatch(BaseModel):
@@ -432,7 +434,12 @@ class TempoOctaveOp(BaseModel):
 
 
 type ViewReason = Literal[
-    "notes_unavailable", "notation_not_supported", "rough_stem_low_conf", "low_confidence"
+    "notes_unavailable",
+    "notation_not_supported",
+    "rough_stem_low_conf",
+    "low_confidence",
+    "quality_gate_failed",
+    "stems_unavailable",
 ]
 
 
@@ -945,4 +952,4 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.3.0"
+SCHEMA_VERSION = "1.4.0"

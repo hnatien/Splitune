@@ -10,6 +10,8 @@ export const Note = Confidence.extend({
   velocity: z.number().int().min(1).max(127).optional(),
   bend_cents: z.array(z.tuple([z.number(), z.number()])).optional(), // (t offset s, cents)
   stem_id: z.string().min(1),
+  // Bass: energy share of the stem at the f0 of pitch − 12 (octave correction, 07 §3).
+  low_band_energy: z.number().min(0).max(1).optional(),
 }).register(contracts, { id: 'Note' })
 
 // Vocals only. Frame i is at i * hop_s on the decoded-PCM timeline.

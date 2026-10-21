@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Splitune contracts",
-  "x-schema-version": "1.3.0",
+  "x-schema-version": "1.4.0",
   "$defs": {
     "ActivitySpan": {
       "type": "object",
@@ -1273,6 +1273,11 @@
         "stem_id": {
           "type": "string",
           "minLength": 1
+        },
+        "low_band_energy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "required": [
@@ -1336,6 +1341,11 @@
         "stem_id": {
           "type": "string",
           "minLength": 1
+        },
+        "low_band_energy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "required": [
@@ -2991,7 +3001,9 @@
         "notes_unavailable",
         "notation_not_supported",
         "rough_stem_low_conf",
-        "low_confidence"
+        "low_confidence",
+        "quality_gate_failed",
+        "stems_unavailable"
       ]
     }
   }

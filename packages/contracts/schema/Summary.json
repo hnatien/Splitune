@@ -105,7 +105,9 @@
         "notes_unavailable",
         "notation_not_supported",
         "rough_stem_low_conf",
-        "low_confidence"
+        "low_confidence",
+        "quality_gate_failed",
+        "stems_unavailable"
       ]
     }
   },
