@@ -57,6 +57,13 @@
       "when": 1792586386331,
       "tag": "0007_job_events_commit_order",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792606170352,
+      "tag": "0008_analysis_recommended_view",
+      "breakpoints": true
     }
   ]
 }

@@ -264,7 +264,14 @@ async function run(
     written,
     modelRefs: [],
     primaryKind: 'summary',
-    analysisDone: { status: result.status, summaryKind: 'summary' },
+    // The requested instrument comes first (the API plans `instruments: [requested]`).
+    analysisDone: {
+      status: result.status,
+      summaryKind: 'summary',
+      ...(result.summary.per_instrument[0] === undefined
+        ? {}
+        : { recommendedView: result.summary.per_instrument[0].recommended_view }),
+    },
   })
 }
 

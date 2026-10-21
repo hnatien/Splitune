@@ -67,7 +67,7 @@ describe('stage bookkeeping as node_worker', () => {
         written: [summary(key)],
         modelRefs: [],
         primaryKind: 'summary',
-        analysisDone: { status: 'partial', summaryKind: 'summary' },
+        analysisDone: { status: 'partial', summaryKind: 'summary', recommendedView: 'chords_only' },
       }),
     )
     expect(ok).toBe(true)
@@ -83,7 +83,7 @@ describe('stage bookkeeping as node_worker', () => {
     expect(run?.status).toBe('done')
     expect(run?.finishedAt).not.toBeNull()
     const [done] = await db.select().from(analyses).where(eq(analyses.id, analysisId))
-    expect(done).toMatchObject({ status: 'partial', progress: 1 })
+    expect(done).toMatchObject({ status: 'partial', progress: 1, recommendedView: 'chords_only' })
     const [jobRow] = await db.select().from(jobs).where(eq(jobs.id, job.id))
     expect(jobRow?.status).toBe('done')
     const events = await eventsOf()

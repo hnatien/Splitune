@@ -1,4 +1,10 @@
-import type { JobEvent, ModelRef, StageName, StageStatus } from '@splitune/contracts'
+import type {
+  JobEvent,
+  ModelRef,
+  RecommendedView,
+  StageName,
+  StageStatus,
+} from '@splitune/contracts'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 import type { Executor } from '../client.ts'
@@ -39,8 +45,13 @@ export interface StageFinish {
   written: WrittenArtefact[]
   modelRefs: z.infer<typeof ModelRef>[]
   primaryKind: string
-  // finalize: the analysis' end state, written with an `analysis.done` event.
-  analysisDone?: { status: 'done' | 'partial'; summaryKind: string }
+  // finalize: the analysis' end state, written with an `analysis.done` event, and the view the
+  // summary recommends for the requested instrument.
+  analysisDone?: {
+    status: 'done' | 'partial'
+    summaryKind: string
+    recommendedView?: z.infer<typeof RecommendedView>
+  }
 }
 
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
@@ -175,10 +186,15 @@ export async function finishStage(db: Executor, finish: StageFinish): Promise<bo
         at: now(),
       })
       if (finish.analysisDone !== undefined) {
-        const { status, summaryKind } = finish.analysisDone
+        const { status, summaryKind, recommendedView } = finish.analysisDone
         await tx
           .update(analyses)
-          .set({ status, progress: 1, finishedAt: sql`now()` })
+          .set({
+            status,
+            progress: 1,
+            finishedAt: sql`now()`,
+            ...(recommendedView === undefined ? {} : { recommendedView }),
+          })
           .where(eq(analyses.id, analysis.id))
         await setSongStatus(tx, analysis.id, status)
         const summaryId = ids.get(summaryKind)
@@ -297,6 +313,41 @@ export async function workerPresence(db: Executor): Promise<Record<JobRunner, Ru
       ]
     }),
   ) as Record<JobRunner, RunnerPresence>
+}
+
+export interface StageTiming {
+  stage: z.infer<typeof StageName>
+  medianS: number
+  runs: number
+}
+
+// Recent wall-clock time per stage (13 §4: the progress UI's ETA): the median over each stage's
+// latest 50 successful runs of the last 30 days, every user's runs (aggregates only). Cache hits
+// count too: they are what a re-analysis of known audio takes.
+export const TIMING_RUNS = 50
+export const TIMING_WINDOW_DAYS = 30
+
+export async function stageTimings(db: Executor): Promise<StageTiming[]> {
+  const result = await db.execute(sql`
+    select stage,
+           percentile_cont(0.5) within group (
+             order by extract(epoch from finished_at - started_at)
+           ) as median_s,
+           count(*)::int as runs
+    from (
+      select stage, started_at, finished_at,
+             row_number() over (partition by stage order by finished_at desc) as n
+      from stage_runs
+      where status in ('done', 'fallback') and started_at is not null and finished_at is not null
+        and finished_at >= started_at
+        and finished_at > now() - make_interval(days => ${TIMING_WINDOW_DAYS})
+    ) recent
+    where n <= ${TIMING_RUNS}
+    group by stage
+    order by stage
+  `)
+  const rows = result.rows as { stage: StageTiming['stage']; median_s: number; runs: number }[]
+  return rows.map((r) => ({ stage: r.stage, medianS: Number(r.median_s), runs: r.runs }))
 }
 
 // Worker presence (25 §5): `app` shows "processing machine offline" when this row is stale.

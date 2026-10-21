@@ -194,10 +194,10 @@ describe('node worker finalize', () => {
       'tab.guitar',
     ])
     const { rows: analysis } = await owner.query(
-      'select status, progress, finished_at from analyses where id = $1',
+      'select status, progress, finished_at, recommended_view from analyses where id = $1',
       [analysisId],
     )
-    expect(analysis[0]).toMatchObject({ status: 'done', progress: 1 })
+    expect(analysis[0]).toMatchObject({ status: 'done', progress: 1, recommended_view: 'tab' })
     const { rows: song } = await owner.query(
       'select s.status from songs s join analyses a on a.song_id = s.id where a.id = $1',
       [analysisId],
@@ -229,8 +229,11 @@ describe('node worker finalize', () => {
       recommended_view: 'chords_only',
       reasons: ['notes_unavailable'],
     })
-    const { rows } = await owner.query('select status from analyses where id = $1', [analysisId])
-    expect(rows[0]).toEqual({ status: 'partial' })
+    const { rows } = await owner.query(
+      'select status, recommended_view from analyses where id = $1',
+      [analysisId],
+    )
+    expect(rows[0]).toEqual({ status: 'partial', recommended_view: 'chords_only' })
   })
 
   it('finishes a Lite analysis with beats and chords as done', async () => {

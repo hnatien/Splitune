@@ -4,6 +4,7 @@ import {
   type CorrectionOp,
   Instrument,
   type ModelRef,
+  RecommendedView,
   StageName,
   StageStatus,
 } from '@splitune/contracts'
@@ -56,6 +57,9 @@ export const analyses = pgTable(
       onDelete: 'set null',
     }),
     costUsdEstimate: usd('cost_usd_estimate'),
+    // summary.json's recommended_view for the requested instrument, written by finalize, so the
+    // library can show "Chords only" without reading the artefact (27 §3.5).
+    recommendedView: text('recommended_view', { enum: values(RecommendedView) }),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     finishedAt: timestamptz('finished_at'),
   },
@@ -66,6 +70,7 @@ export const analyses = pgTable(
     check('analyses_analysis_type_check', oneOf(t.analysisType, values(AnalysisKind))),
     check('analyses_status_check', oneOf(t.status, values(AnalysisStatus))),
     check('analyses_progress_check', sql`${t.progress} between 0 and 1`),
+    check('analyses_recommended_view_check', oneOf(t.recommendedView, values(RecommendedView))),
   ],
 )
 
