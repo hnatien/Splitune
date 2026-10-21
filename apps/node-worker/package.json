@@ -1,0 +1,25 @@
+{
+  "name": "@splitune/node-worker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Mac Node worker: finalize (music-core tab, alphaTex, summary) \u2014 docs/implementation/06-ml-pipeline-service.md \u00a72",
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=../../.env.worker src/main.ts",
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@splitune/contracts": "workspace:*",
+    "@splitune/db": "workspace:*",
+    "@splitune/music-core": "workspace:*",
+    "@splitune/storage": "workspace:*",
+    "js-yaml": "5.5.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@coderline/alphatab": "1.8.4",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1"
+  }
+}

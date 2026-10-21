@@ -1,0 +1,32 @@
+# recommended_view rule of 05-analysis-schema.md, evaluated per instrument by the Node finalize
+# worker (apps/node-worker). Every threshold change is logged in `changes` with the model versions
+# it was tuned on.
+version: 1
+
+# D11: instruments with note-exact notation in the current release (MVP: guitar, bass).
+notation_supported: [guitar, bass]
+
+# Rule 3: rough stem and more than this share of low-band notes → chords_only.
+rough_stem_low_conf: 0.35
+# Rule 4: more than this share of low-band notes → chords_only.
+low_confidence: 0.5
+
+# Prototype 2 gate per instrument (08): `fail` → chords_only with reason quality_gate_failed.
+# Instruments not listed have no gate.
+quality_gate:
+  guitar: pass
+  bass: pass
+
+# Rule 5: the instrument default (D13).
+defaults:
+  guitar: tab
+  bass: tab
+  piano: roll
+  drums: drum_grid
+  vocals: f0
+  other: chords_only
+
+changes:
+  - date: 2026-10-21
+    change: initial proposal values from 05-analysis-schema.md
+    models: []

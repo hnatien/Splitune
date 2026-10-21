@@ -259,6 +259,37 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
 
+  apps/node-worker:
+    dependencies:
+      '@splitune/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@splitune/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@splitune/music-core':
+        specifier: workspace:*
+        version: link:../../packages/music-core
+      '@splitune/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      js-yaml:
+        specifier: 5.5.0
+        version: 5.5.0
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@coderline/alphatab':
+        specifier: 1.8.4
+        version: 1.8.4
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+
   apps/web: {}
 
   packages/analytics: {}
