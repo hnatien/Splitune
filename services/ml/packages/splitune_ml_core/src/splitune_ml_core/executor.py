@@ -79,6 +79,14 @@ def _now() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def lock_analysis(conn: Connection, analysis: Analysis) -> None:
+    """First statement of every transaction that writes the analysis' events. The job_events
+    trigger (migration 0007) takes this row lock anyway; an insert that references the analysis
+    before it (stage_runs, artefacts) holds the foreign key's share lock, so two such transactions
+    would each wait for the other's share lock to upgrade to the row lock: a deadlock."""
+    conn.execute("select 1 from analyses where id = %s for update", [analysis.id])
+
+
 def _event(conn: Connection, analysis: Analysis, event: dict[str, Any]) -> None:
     conn.execute(
         "insert into job_events (analysis_id, user_id, event) values (%s, %s, %s)",
@@ -408,6 +416,7 @@ def mark_started(
     conn: Connection, job: q.Job, analysis: Analysis, request: contracts.StageRequest
 ) -> None:
     with conn.transaction():
+        lock_analysis(conn, analysis)
         conn.execute(
             """
             insert into stage_runs (analysis_id, stage, status, model_refs, cache_key, attempts,
@@ -457,6 +466,7 @@ def finish(
     """Records the result and completes the job atomically. False = lock lost (rolled back)."""
     try:
         with conn.transaction():
+            lock_analysis(conn, analysis)
             ids: dict[str, str] = {}
             for w in outcome.written:
                 ids[w.kind] = artefacts.record(
@@ -562,6 +572,8 @@ def record_failure(
     """`fail` plus stage_runs/job_events in one transaction. Returns the new job status."""
     try:
         with conn.transaction():
+            if analysis is not None:
+                lock_analysis(conn, analysis)
             status = q.fail(conn, job.id, lock_id, error.code, retry=error.retry)
             if status is None:
                 raise _LockLostError

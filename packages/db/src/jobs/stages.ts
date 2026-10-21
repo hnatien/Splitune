@@ -71,6 +71,18 @@ async function setSongStatus(db: Executor, analysisId: string, status: keyof typ
   `)
 }
 
+// First statement of every transaction that writes the analysis' events. The job_events trigger
+// (migration 0007) takes this row lock anyway; an insert that references the analysis before it
+// (stage_runs, artefacts) holds the foreign key's share lock, so two such transactions would each
+// wait for the other's share lock to upgrade to the row lock: a deadlock.
+async function lockAnalysis(db: Executor, analysisId: string) {
+  await db
+    .select({ id: analyses.id })
+    .from(analyses)
+    .where(eq(analyses.id, analysisId))
+    .for('update')
+}
+
 async function addEvent(db: Executor, analysis: AnalysisRef, event: z.infer<typeof JobEvent>) {
   await db.insert(jobEvents).values({ analysisId: analysis.id, userId: analysis.userId, event })
 }
@@ -105,6 +117,7 @@ export async function markStageStarted(
   stage: z.infer<typeof StageName>,
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await lockAnalysis(tx, analysis.id)
     await tx
       .insert(stageRuns)
       .values({
@@ -141,6 +154,7 @@ export async function finishStage(db: Executor, finish: StageFinish): Promise<bo
   const { analysis, stage } = finish
   try {
     await db.transaction(async (tx) => {
+      await lockAnalysis(tx, analysis.id)
       const ids = new Map<string, string>()
       for (const w of finish.written) {
         const [row] = await tx
@@ -226,6 +240,7 @@ export async function recordStageFailure(
   { retry }: { retry: boolean },
 ): Promise<'queued' | 'failed' | undefined> {
   return db.transaction(async (tx) => {
+    if (analysis !== undefined) await lockAnalysis(tx, analysis.id)
     const status = await fail(tx, job.id, workerId, errorCode, { retry })
     if (status === undefined || analysis === undefined || stage === undefined) return status
     await tx
@@ -268,6 +283,7 @@ export async function finishAnalysisFailed(
 ): Promise<boolean> {
   try {
     await db.transaction(async (tx) => {
+      await lockAnalysis(tx, analysis.id)
       await tx
         .update(stageRuns)
         .set({ status: 'skipped', finishedAt: sql`now()` })

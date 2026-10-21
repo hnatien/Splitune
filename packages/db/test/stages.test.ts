@@ -45,6 +45,18 @@ async function claimedFinalize() {
   return { job, analysis }
 }
 
+async function waitForLockWaiters(count: number) {
+  for (let i = 0; i < 500; i++) {
+    const result = await db.execute(sql`
+      select count(*)::int as n from pg_stat_activity
+      where datname = current_database() and wait_event_type = 'Lock'
+    `)
+    if ((result.rows[0] as { n: number }).n >= count) return
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+  throw new Error(`expected ${count} transactions waiting for a lock`)
+}
+
 const summary = (key: string) => ({
   kind: 'summary',
   key,
@@ -94,6 +106,32 @@ describe('stage bookkeeping as node_worker', () => {
       status: 'partial',
       summary_artefact_id: row?.id,
     })
+  })
+
+  it('starts two stages of one analysis at the same moment without a deadlock', async () => {
+    const { job, analysis } = await claimedFinalize()
+    await db.delete(stageRuns).where(eq(stageRuns.stage, 'chords'))
+    await db.update(analyses).set({ status: 'queued' }).where(eq(analyses.id, analysisId))
+    // A third transaction holds the analysis row until both starts wait on it, then lets them go
+    // at once: the interleaving two workers otherwise hit by chance.
+    let starts: Promise<unknown> = Promise.resolve()
+    await db.transaction(async (blocker) => {
+      await blocker.execute(sql`select 1 from analyses where id = ${analysisId} for no key update`)
+      starts = Promise.all(
+        (['finalize', 'chords'] as const).map((stage) =>
+          asRole(db, 'node_worker', (tx) => markStageStarted(tx, job, analysis, stage)),
+        ),
+      )
+      await waitForLockWaiters(2)
+    })
+    await starts
+    const runs = await db.select().from(stageRuns).where(eq(stageRuns.analysisId, analysisId))
+    expect(runs.filter((r) => r.status === 'running').map((r) => r.stage)).toEqual(
+      expect.arrayContaining(['finalize', 'chords']),
+    )
+    const [row] = await db.select().from(analyses).where(eq(analyses.id, analysisId))
+    expect(row?.status).toBe('running')
+    expect((await eventsOf()).map((e) => e.type)).toEqual(['stage.started', 'stage.started'])
   })
 
   it('rolls everything back when the lock was lost', async () => {
