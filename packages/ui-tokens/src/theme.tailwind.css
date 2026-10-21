@@ -69,6 +69,11 @@
   --ease-enter: cubic-bezier(0, 0, 0, 1);
   --ease-exit: cubic-bezier(0.3, 0, 1, 1);
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Content widths (§7): app pages, reading/marketing column, bare shell (27 §1) */
+  --container-page: 1200px;
+  --container-reading: 72ch;
+  --container-bare: 480px;
 }
 
 @theme inline {

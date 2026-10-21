@@ -15,6 +15,8 @@ export type DisplayPreferences = {
   motion: 'system' | 'full' | 'reduce'
   /** Reading-size calibration factor, 0.8 … 1.4 in 0.1 steps (doc 26 §6.3). */
   calibration: number
+  /** Score surface (doc 26 §2): paper in every appearance, or matching the appearance. */
+  score: 'paper' | 'match'
 }
 
 export const DEFAULT_DISPLAY: DisplayPreferences = {
@@ -23,6 +25,7 @@ export const DEFAULT_DISPLAY: DisplayPreferences = {
   readingFont: 'inter',
   motion: 'system',
   calibration: 1,
+  score: 'paper',
 }
 
 export type ResolvedDisplay = {
@@ -32,6 +35,7 @@ export type ResolvedDisplay = {
   readingFont: 'inter' | 'hyperlegible'
   motion: 'full' | 'reduce'
   calibration: number
+  score: 'paper' | 'match'
 }
 
 /**
@@ -80,6 +84,7 @@ export function applyDisplay(
   const requested = Number(preferences.calibration)
   const calibration =
     Number.isFinite(requested) && requested > 0 ? Math.min(1.4, Math.max(0.8, requested)) : 1
+  const score = preferences.score === 'match' ? 'match' : 'paper'
 
   root.setAttribute('data-appearance', appearance)
   root.classList.toggle('dark', appearance !== 'light')
@@ -87,8 +92,9 @@ export function applyDisplay(
   root.setAttribute('data-motion', motion)
   root.setAttribute('data-distance', distance)
   root.setAttribute('data-reading-font', readingFont)
+  root.setAttribute('data-score', score)
   root.style.setProperty('--read-calibration', String(calibration))
-  return { appearance, contrast, distance, readingFont, motion, calibration }
+  return { appearance, contrast, distance, readingFont, motion, calibration, score }
 }
 
 /** Reads stored preferences; anything unreadable falls back to the defaults (System). */

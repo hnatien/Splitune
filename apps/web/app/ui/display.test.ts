@@ -42,6 +42,7 @@ describe('applyDisplay', () => {
       readingFont: 'inter',
       motion: 'reduce',
       calibration: 1,
+      score: 'paper',
     })
     expect(Object.fromEntries(attributes)).toEqual({
       'data-appearance': 'dark',
@@ -49,8 +50,20 @@ describe('applyDisplay', () => {
       'data-motion': 'reduce',
       'data-distance': 'desk',
       'data-reading-font': 'inter',
+      'data-score': 'paper',
     })
     expect(classes.has('dark')).toBe(true)
+  })
+
+  it('keeps the score on paper unless the user asks it to match the appearance', () => {
+    const score = (value: unknown) => {
+      const { root, attributes } = fakeRoot()
+      applyDisplay({ score: value as 'paper' }, root, mediaWith())
+      return attributes.get('data-score')
+    }
+    expect(score('match')).toBe('match')
+    expect(score('paper')).toBe('paper')
+    expect(score('junk')).toBe('paper')
   })
 
   it('a stored choice beats the OS, and Stage keeps the dark class for shadcn', () => {

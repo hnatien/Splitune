@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { Spinner } from '@/ui/spinner'
 
 // Doc 26 §12.1. Focus uses the global 2 px outline; disabled keeps a ≥3:1 boundary (no opacity fade).
-const buttonVariants = cva(
+const buttonStyles = cva(
   "group/button relative inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-colors select-none active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:border-input disabled:bg-muted disabled:text-muted-foreground aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
@@ -38,11 +38,19 @@ const buttonVariants = cva(
   },
 )
 
+/**
+ * Button classes, merged (variants override the base, e.g. outline's border colour), for links
+ * and other elements styled as buttons.
+ */
+function buttonVariants(...args: Parameters<typeof buttonStyles>): string {
+  return cn(buttonStyles(...args))
+}
+
 /** Delay before a loading button shows its spinner, so quick actions don't flash (§13). */
 export const SPINNER_DELAY_MS = 300
 
 type ButtonProps = ButtonPrimitive.Props &
-  VariantProps<typeof buttonVariants> & {
+  VariantProps<typeof buttonStyles> & {
     /** Keeps the width, blocks presses and shows a spinner after 300 ms. */
     loading?: boolean
   }

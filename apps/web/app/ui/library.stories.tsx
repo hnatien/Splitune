@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { EllipsisVerticalIcon } from 'lucide-react'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { Button } from './button.tsx'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './dropdown-menu.tsx'
 import { LONG_TITLE, SONGS } from './fixtures.ts'
 import { Skeleton } from './skeleton.tsx'
 import { SongCard, SongRow } from './song-card.tsx'
@@ -72,3 +80,71 @@ export const Dark: Story = { render: Grid, globals: { appearance: 'dark' } }
 export const Stage: Story = { render: Grid, globals: { appearance: 'stage' } }
 export const RowsDark: Story = { render: List, globals: { appearance: 'dark' } }
 export const IncreasedContrast: Story = { render: Grid, globals: { contrast: 'more' } }
+
+function Menu({ title }: { title: string }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={<Button variant="ghost" size="icon" aria-label={`More for ${title}`} />}
+      >
+        <EllipsisVerticalIcon aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem>Rename</DropdownMenuItem>
+        <DropdownMenuItem>Analyse again</DropdownMenuItem>
+        <DropdownMenuItem variant="destructive">Delete song</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+const Progress = () => (
+  <p className="text-sm text-muted-foreground tabular-nums">
+    Isolating your part · About 2 min left
+  </p>
+)
+
+const WithActions = ({ rows = false }: { rows?: boolean }) => (
+  <ul
+    className={
+      rows
+        ? 'max-w-md list-none rounded-xl border border-border bg-card p-0'
+        : 'grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4 p-0'
+    }
+  >
+    {SONGS.map((song, i) => {
+      const Entry = rows ? SongRow : SongCard
+      return (
+        <li key={song.href}>
+          <Entry
+            song={song}
+            actions={<Menu title={song.title} />}
+            progress={i === 1 ? <Progress /> : undefined}
+            className={rows ? undefined : 'h-full'}
+          />
+        </li>
+      )
+    })}
+  </ul>
+)
+
+export const CardsWithMenu: Story = {
+  render: () => <WithActions />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const [first] = SONGS
+    const trigger = canvas.getByRole('button', { name: `More for ${first?.title}` })
+    await userEvent.click(trigger)
+    const menu = await within(document.body).findByRole('menu')
+    // The popup fades in; wait for it rather than sampling mid-animation.
+    await waitFor(() =>
+      expect(within(menu).getByRole('menuitem', { name: 'Delete song' })).toBeVisible(),
+    )
+    await userEvent.keyboard('{Escape}')
+  },
+}
+export const RowsWithMenu: Story = { render: () => <WithActions rows /> }
+export const CardsWithMenuDark: Story = {
+  render: () => <WithActions />,
+  globals: { appearance: 'dark' },
+}
