@@ -34,6 +34,7 @@ from typing import Any, cast
 
 import mir_eval  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
+import yaml
 from p2 import GUITAR_BELOW_BAND_LU, MUSDB, SEPARATOR, fit_length, loudness, read, write
 from splitune_eval.local import LocalRun, write_json
 from splitune_eval.report import git_sha
@@ -41,6 +42,7 @@ from splitune_eval.report import git_sha
 ROOT = Path("~/datasets/p6").expanduser()
 GUITARSET = Path("~/datasets/guitarset").expanduser()
 RESULTS = Path(__file__).resolve().parent / "results" / "p6"
+CHORDS_CONFIG = Path(__file__).resolve().parents[1] / "config" / "chords.personal.yaml"
 GATE_MAJMIN = 0.75  # 08 §3 P6: majmin >= 0.75 on the best input
 SYSTEMS = {
     "consonance_ace": ("majmin", "sevenths"),
@@ -59,6 +61,7 @@ REPORTED = (
     "instructed_majmin_inv",
     "performed_majmin",
     "performed_sevenths",
+    "key_music_core",
 )
 MIR_EVAL = "0.8.2"
 
@@ -180,6 +183,12 @@ def mean(values: list[float]) -> float:
     return statistics.fmean(values) if values else float("nan")
 
 
+def defaults() -> str:
+    config = cast(dict[str, Any], yaml.safe_load(CHORDS_CONFIG.read_text(encoding="utf-8")))
+    keys = ("recognizer", "vocabulary", "inputs", "key", "bass_root_weight", "change_penalty")
+    return ", ".join(f"{k} `{config[k]}`" for k in keys)
+
+
 def cmd_report(_: argparse.Namespace) -> int:
     items = manifest()
     keys = cast(
@@ -236,8 +245,8 @@ def cmd_report(_: argparse.Namespace) -> int:
         f"beats stage · no-drums: mixture minus `{SEPARATOR}` drums",
         "",
         "| system | vocabulary | input | majmin | sevenths | majmin_inv | performed majmin "
-        "| performed sevenths |",
-        "|---|---|---|---|---|---|---|---|",
+        "| performed sevenths | key (music-core) |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     best: tuple[float, str] = (-1.0, "")
     for system, vocabs in SYSTEMS.items():
@@ -265,17 +274,12 @@ def cmd_report(_: argparse.Namespace) -> int:
         "## Key (mir_eval weighted score, GuitarSet key_mode)",
         "",
         f"- madmom CNN on the mixture: {mean([keys_by_item[i] for i in keys_by_item]):.3f}",
+        "- music-core over each system's chords: the table's last column",
+        "",
+        "## Defaults",
+        "",
+        f"`config/chords.personal.yaml`: {defaults()}",
     ]
-    for system in SYSTEMS:
-        sel = [
-            r
-            for r in rows
-            if r["system"] == system and r["vocabulary"] == "majmin" and r["input"] == "fusion"
-        ]
-        if sel:
-            out.append(
-                f"- music-core over {system} majmin fusion chords: {cell(sel, 'key_music_core')}"
-            )
     out += ["", f"Per-item rows: `{date}.csv`. Command: `{' '.join(sys.argv)}`", ""]
     (RESULTS / f"{date}.md").write_text("\n".join(out), encoding="utf-8")
     print("\n".join(out))

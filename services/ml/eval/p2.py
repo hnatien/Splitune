@@ -3,7 +3,8 @@
     uv run python eval/p2.py build-guitar        # GuitarSet excerpts + MUSDB18-HQ band → mixtures
     uv run python eval/p2.py build-bass          # BabySlakh windows (mix, bass stems, MIDI refs)
     uv run python eval/p2.py separate            # BS-Roformer-SW (the map's first choice)
-    uv run python eval/p2.py predict --transcriber basic_pitch|yourmt3 [--set guitar|bass]
+    uv run python eval/p2.py predict --transcriber basic_pitch|yourmt3 [--set guitar|slakh]
+    uv run python eval/p2.py sweep --instrument guitar|bass  # Basic Pitch thresholds on stems
     uv run python eval/p2.py calibrate           # isotonic fit, reliability diagram, ECE
     uv run python eval/p2.py report              # metrics + gates → eval/results/p2/<date>.md
 
@@ -64,6 +65,7 @@ TRANSCRIBERS = {"basic_pitch": "basic-pitch", "yourmt3": "yourmt3-moe"}  # → r
 GATE_F1 = {"guitar": 0.70, "bass": 0.70}
 FIT_PLAYERS = {"00", "01", "02"}  # calibration fit split; players 03-05 are held out
 SLAKH_WINDOW_S = 30.0
+ODD_HALF_SHARE = 0.3  # rendered_octave
 
 Audio = NDArray[np.float32]
 
@@ -165,28 +167,31 @@ def midi_notes(path: Path, t0: float, t1: float) -> list[tuple[float, float, int
     return sorted(notes)
 
 
+def band_energy(power: NDArray[np.float64], freqs: NDArray[np.float64], f: float) -> float:
+    return float(power[(freqs > f / 1.02) & (freqs < f * 1.02)].sum())
+
+
 def rendered_octave(audio: Audio, notes: list[tuple[float, float, int]]) -> int:
     """-12 when a Slakh stem sounds an octave below its MIDI (some rendering patches transpose),
-    else 0. Per note, the band at f0/2 or at f0 holding more energy over the note's first 0.5 s
-    votes; the shift is applied only when >= 80% of the notes agree. A correctly pitched harmonic
-    tone has no partial at f0/2; an upward transposition can't be told from a strong 2nd harmonic
-    (bright guitars), so it is never inferred."""
-    votes: list[int] = []
+    else 0. A tone at the MIDI pitch f0 has partials only at multiples of f0; one sounding at
+    f0/2 also has them at odd multiples of f0/2. Per note (first 0.5 s), the share of the energy
+    at f0/2, 3f0/2, 5f0/2 among those bands and f0, 2f0, 3f0; the stem is shifted when the median
+    share reaches ODD_HALF_SHARE. On BabySlakh, correctly pitched guitars stay below 0.26 (chord
+    fifths land on 3f0/2) and every bass stem is above 0.33. The fundamental alone is not enough:
+    bass patches often carry little energy at f0/2. An upward transposition can't be told from a
+    strong 2nd harmonic, so it is never inferred."""
+    shares: list[float] = []
     for t0, t1, pitch in notes:
         seg = audio[int(t0 * RATE) : int(min(t1, t0 + 0.5) * RATE)].astype(np.float64)
-        if len(seg) < 2048:
+        if len(seg) < 4096:
             continue
-        power = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), n=1 << 16)) ** 2
-        freqs = np.fft.rfftfreq(1 << 16, 1 / RATE)
+        power = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), n=1 << 17)) ** 2
+        freqs = np.fft.rfftfreq(1 << 17, 1 / RATE)
         f0 = 440.0 * 2 ** ((pitch - 69) / 12)
-        bands = {
-            k: power[(freqs > f0 * 2**k / 1.03) & (freqs < f0 * 2**k * 1.03)].sum() for k in (-1, 0)
-        }
-        votes.append(max(bands, key=lambda k: bands[k]))
-    if not votes:
-        return 0
-    best = max(set(votes), key=votes.count)
-    return 12 * best if best != 0 and votes.count(best) >= 0.8 * len(votes) else 0
+        odd = sum(band_energy(power, freqs, f0 * k / 2) for k in (1, 3, 5))
+        even = sum(band_energy(power, freqs, f0 * k) for k in (1, 2, 3))
+        shares.append(odd / (odd + even + 1e-12))
+    return -12 if shares and float(np.median(shares)) >= ODD_HALF_SHARE else 0
 
 
 def write_ref(path: Path, notes: list[tuple[float, float, int]]) -> None:
@@ -567,6 +572,38 @@ def gate(
     return stem, mix, stem >= mix and stem >= GATE_F1[instrument]
 
 
+def paired(rows: list[dict[str, Any]], transcribers: list[str]) -> list[str]:
+    """Transcribers compared on the (item, instrument, condition) cells every one of them ran."""
+    cells: list[set[tuple[str, str, str]]] = [
+        {(r["item"], r["instrument"], r["condition"]) for r in rows if r["transcriber"] == t}
+        for t in transcribers
+    ]
+    common = cells[0].intersection(*cells[1:])
+    out = [
+        "",
+        "## Paired comparison (cells every transcriber ran)",
+        "",
+        "| instrument | material | condition | items | "
+        + " | ".join(f"{t} onset F1" for t in transcribers)
+        + " |",
+        "|---|---|---|---|" + "---|" * len(transcribers),
+    ]
+    for inst, set_id, label in GROUPS:
+        for cond in CONDITIONS:
+            sel = [
+                r
+                for r in select(rows, instrument=inst, set=set_id, condition=cond)
+                if (r["item"], r["instrument"], r["condition"]) in common
+            ]
+            if not sel:
+                continue
+            means = " | ".join(
+                f"{mean(select(sel, transcriber=t), 'onset_f1'):.3f}" for t in transcribers
+            )
+            out.append(f"| {inst} | {label} | {cond} | {len(sel) // len(transcribers)} | {means} |")
+    return out
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     rows = [r for t in args.transcriber for r in scores(t)]
     RESULTS.mkdir(parents=True, exist_ok=True)
@@ -610,6 +647,12 @@ def cmd_report(args: argparse.Namespace) -> int:
             )
     out += [
         "",
+        "Caveats: Basic Pitch and YourMT3+ were trained on GuitarSet and Slakh (BabySlakh's tracks "
+        "are Slakh2100 training tracks), so every number is in-sample, YourMT3+'s mixture scores "
+        "most of all. The gate averages all items, including the sweep's fit split (the sweep "
+        "tables give held-out scores). BabySlakh references are octave-corrected per stem "
+        "(`rendered_octave`): most bass patches sound an octave below their MIDI.",
+        "",
         "## GuitarSet by mode (stem condition)",
         "",
         "| transcriber | mode | items | onset F1 |",
@@ -620,6 +663,23 @@ def cmd_report(args: argparse.Namespace) -> int:
             sel = select(rows, transcriber=t, set="guitar", condition="stem", mode=mode)
             if sel:
                 out.append(f"| {t} | {mode} | {len(sel)} | {mean(sel, 'onset_f1'):.3f} |")
+    if len(args.transcriber) > 1:
+        out += paired(rows, args.transcriber)
+    notes = cast(
+        dict[str, Any], yaml.safe_load((ML_ROOT / "config" / "notes.personal.yaml").read_text())
+    )
+    views = cast(dict[str, Any], yaml.safe_load((ML_ROOT / "config" / "views.yaml").read_text()))
+    out += ["", "## Defaults", ""]
+    for inst, spec in notes["instruments"].items():
+        gate_value = views["quality_gate"].get(inst, "none")
+        out.append(
+            f"- {inst}: `{spec['transcriber']}` {spec['params']} · views.yaml quality_gate "
+            f"`{gate_value}`"
+        )
+    for name in ("sweep-guitar.md", "sweep-bass.md", "calibration.md"):
+        if (ROOT / name).is_file():
+            text = (ROOT / name).read_text(encoding="utf-8")
+            out += ["", re.sub(r"(?m)^## ", "### ", text).strip()]
     out += ["", f"Per-item rows: `{csv_path.name}`. Command: `{' '.join(sys.argv)}`", ""]
     (RESULTS / f"{date}.md").write_text("\n".join(out), encoding="utf-8")
     print("\n".join(out))
