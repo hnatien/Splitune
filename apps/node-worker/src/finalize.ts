@@ -33,6 +33,8 @@ export interface FinalizeInputs {
 export interface FinalizeOptions {
   instruments: readonly InstrumentName[]
   fingeringMode?: FingeringMode
+  // lite runs no separation or transcription: only missing chords make it partial.
+  profile?: 'full' | 'lite'
 }
 
 export interface FinalizeResult {
@@ -144,7 +146,8 @@ export function finalize(
   }
   const missing =
     inputs.chords === undefined ||
-    inputs.stems === undefined ||
-    options.instruments.some((i) => inputs.notes[i] === undefined)
+    (options.profile !== 'lite' &&
+      (inputs.stems === undefined ||
+        options.instruments.some((i) => inputs.notes[i] === undefined)))
   return { tabs, summary, status: missing ? 'partial' : 'done' }
 }

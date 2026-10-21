@@ -81,22 +81,36 @@ async function seedAnalysis() {
     sourceKind: 'upload',
     instrument: 'guitar',
   })
-  const { analysis } = await repos.analyses.createOrGet(userId, {
-    songId: song.id,
-    version: 1,
-    pipelineVersion: 'test',
-    configProfile: 'personal',
-    requestedInstrument: 'guitar',
-    analysisType: 'full',
-    status: 'running',
-    idempotencyKey: randomUUID(),
-  })
-  return analysis.id
+  const created = await repos.analyses.create(
+    userId,
+    song.id,
+    {
+      pipelineVersion: 'test',
+      configProfile: 'personal',
+      requestedInstrument: 'guitar',
+      analysisType: 'full',
+      idempotencyKey: randomUUID(),
+    },
+    () => ({ jobs: [] }),
+  )
+  if (!created) throw new Error('seed failed')
+  return created.analysis.id
 }
 
-// Fixture artefacts re-issued for the analysis.
-async function upload(analysisId: string, file: string, document: Record<string, unknown>) {
+// Fixture artefacts re-issued for the analysis, recorded like a worker records them (finalize
+// reads only inputs that have an artefact row).
+async function record(analysisId: string, file: string) {
   const key = artefactKey(userId, analysisId, 1, file)
+  await owner.query(
+    `insert into artefacts (user_id, analysis_id, kind, version, object_key, bytes, sha256, model_refs)
+     values ($1, $2, $3, 1, $4, 1, $5, '[]')`,
+    [userId, analysisId, file.replace(/\.json$/, ''), key, 'f'.repeat(64)],
+  )
+  return key
+}
+
+async function upload(analysisId: string, file: string, document: Record<string, unknown>) {
+  const key = await record(analysisId, file)
   await storage.putBytes(
     key,
     JSON.stringify({ ...document, analysis_id: analysisId, user_id: userId }),
@@ -109,6 +123,7 @@ function request(
   analysisId: string,
   inputs: Record<string, string>,
   outputs?: Record<string, string>,
+  params: Record<string, unknown> = { instruments: ['guitar'] },
 ) {
   return {
     analysis_id: analysisId,
@@ -120,7 +135,7 @@ function request(
       'render.guitar': renderKey(userId, analysisId, 1, 'guitar'),
       summary: artefactKey(userId, analysisId, 1, 'summary.json'),
     },
-    params: { instruments: ['guitar'] },
+    params,
   }
 }
 
@@ -134,7 +149,7 @@ async function waitForJob(id: number, timeoutMs = 10_000) {
   for (;;) {
     const { rows } = await owner.query('select status, error_code from jobs where id = $1', [id])
     const row = rows[0] as { status: string; error_code: string | null }
-    if (row.status === 'done' || row.status === 'failed') return row
+    if (row.status === 'done' || row.status === 'failed' || row.status === 'cancelled') return row
     if (Date.now() > until) throw new Error(`job ${id} still ${row.status}`)
     await new Promise((r) => setTimeout(r, 100))
   }
@@ -168,12 +183,26 @@ describe('node worker finalize', () => {
       'select kind, object_key from artefacts where analysis_id = $1 order by kind',
       [analysisId],
     )
-    expect(arts.map((r) => r.kind)).toEqual(['render.guitar', 'summary', 'tab.guitar'])
+    // The inputs' rows (recorded by the test) plus finalize's three outputs.
+    expect(arts.map((r) => r.kind)).toEqual([
+      'beats',
+      'chords',
+      'notes.guitar',
+      'render.guitar',
+      'stems',
+      'summary',
+      'tab.guitar',
+    ])
     const { rows: analysis } = await owner.query(
       'select status, progress, finished_at from analyses where id = $1',
       [analysisId],
     )
     expect(analysis[0]).toMatchObject({ status: 'done', progress: 1 })
+    const { rows: song } = await owner.query(
+      'select s.status from songs s join analyses a on a.song_id = s.id where a.id = $1',
+      [analysisId],
+    )
+    expect(song[0]).toEqual({ status: 'ready' })
     const { rows: events } = await owner.query(
       "select event->>'type' as type from job_events where analysis_id = $1 order by id",
       [analysisId],
@@ -204,13 +233,58 @@ describe('node worker finalize', () => {
     expect(rows[0]).toEqual({ status: 'partial' })
   })
 
-  it('fails permanently without beats, and on outputs outside the analysis prefix', async () => {
+  it('finishes a Lite analysis with beats and chords as done', async () => {
+    const analysisId = await seedAnalysis()
+    const payload = request(
+      analysisId,
+      {
+        beats: await upload(analysisId, 'beats.json', beats()),
+        chords: await upload(analysisId, 'chords.json', chords()),
+      },
+      undefined,
+      { instruments: ['guitar'], profile: 'lite' },
+    )
+    const job = await queue.enqueue(ownerDb, 'finalize', 'node', payload, { analysisId })
+    expect((await waitForJob(job.id)).status).toBe('done')
+    const { rows } = await owner.query('select status from analyses where id = $1', [analysisId])
+    expect(rows[0]).toEqual({ status: 'done' })
+  })
+
+  it('ends the analysis failed when beats never succeeded', async () => {
+    const analysisId = await seedAnalysis()
+    const job = await queue.enqueue(
+      ownerDb,
+      'finalize',
+      'node',
+      request(analysisId, { beats: artefactKey(userId, analysisId, 1, 'beats.json') }),
+      { analysisId },
+    )
+    expect(await waitForJob(job.id)).toEqual({ status: 'done', error_code: null })
+    const { rows } = await owner.query(
+      `select a.status, s.status as song_status, r.status as stage_status
+       from analyses a join songs s on s.id = a.song_id
+       join stage_runs r on r.analysis_id = a.id and r.stage = 'finalize'
+       where a.id = $1`,
+      [analysisId],
+    )
+    expect(rows[0]).toEqual({ status: 'failed', song_status: 'failed', stage_status: 'skipped' })
+    const { rows: events } = await owner.query(
+      'select event from job_events where analysis_id = $1 order by id',
+      [analysisId],
+    )
+    expect(events.map((e) => e.event)).toEqual([
+      { type: 'stage.started', stage: 'finalize', at: expect.any(String) },
+      { type: 'analysis.done', status: 'failed' },
+    ])
+  })
+
+  it('fails permanently when recorded beats are gone, and on outputs outside the analysis prefix', async () => {
     const analysisId = await seedAnalysis()
     const noBeats = await queue.enqueue(
       ownerDb,
       'finalize',
       'node',
-      request(analysisId, { beats: artefactKey(userId, analysisId, 1, 'beats.json') }),
+      request(analysisId, { beats: await record(analysisId, 'beats.json') }),
       { analysisId },
     )
     expect(await waitForJob(noBeats.id)).toEqual({ status: 'failed', error_code: 'beats_missing' })
@@ -237,5 +311,45 @@ describe('node worker finalize', () => {
       status: 'failed',
       error_code: 'invalid_request',
     })
+  })
+})
+
+describe('node worker delete_prefix', () => {
+  it('deletes every object under the payload prefixes and leaves the rest', async () => {
+    const gone = [
+      `${userPrefix(userId)}raw/${randomUUID()}/`,
+      `${userPrefix(userId)}a/${randomUUID()}/`,
+    ]
+    const kept = `${userPrefix(userId)}a/${randomUUID()}/v1/beats.json`
+    for (const prefix of gone) {
+      await storage.putBytes(`${prefix}source.bin`, 'x', 'application/octet-stream')
+      await storage.putBytes(`${prefix}v1/stems/guitar.m4a`, 'x', 'audio/mp4')
+    }
+    await storage.putBytes(kept, '{}', 'application/json')
+    const job = await queue.enqueue(ownerDb, 'delete_prefix', 'node', {
+      user_id: userId,
+      prefixes: gone,
+    })
+    expect(await waitForJob(job.id)).toEqual({ status: 'done', error_code: null })
+    for (const prefix of gone) expect(await storage.listKeys(prefix)).toEqual([])
+    expect(await storage.listKeys(kept)).toEqual([kept])
+  })
+
+  it('refuses prefixes outside the payload user and malformed payloads', async () => {
+    const foreign = await queue.enqueue(ownerDb, 'delete_prefix', 'node', {
+      user_id: userId,
+      prefixes: [`u/someone-else/raw/${randomUUID()}/`],
+    })
+    const traversal = await queue.enqueue(ownerDb, 'delete_prefix', 'node', {
+      user_id: userId,
+      prefixes: [`${userPrefix(userId)}../x/`],
+    })
+    const empty = await queue.enqueue(ownerDb, 'delete_prefix', 'node', {
+      user_id: userId,
+      prefixes: [],
+    })
+    for (const job of [foreign, traversal, empty]) {
+      expect(await waitForJob(job.id)).toEqual({ status: 'failed', error_code: 'invalid_request' })
+    }
   })
 })

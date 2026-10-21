@@ -2,11 +2,11 @@ import { queue } from '@splitune/db'
 import type { WorkerConfig } from './config.ts'
 import { errorName, executeJob, type Services } from './execute.ts'
 
-// One slot claiming `finalize` jobs (runner `node`): sleeps until NOTIFY jobs_node or the poll
-// interval, heartbeats its job, writes worker_heartbeats every 30 s and re-queues stale jobs of
-// crashed workers. stop() finishes the running job before resolving.
+// One slot claiming `finalize` and `delete_prefix` jobs (runner `node`): sleeps until NOTIFY
+// jobs_node or the poll interval, heartbeats its job, writes worker_heartbeats every 30 s and
+// re-queues stale jobs of crashed workers. stop() finishes the running job before resolving.
 
-export const KINDS = ['finalize']
+export const KINDS = ['finalize', 'delete_prefix']
 export const WORKER_VERSION = '0.0.0'
 
 export class NodeWorker {
@@ -17,11 +17,15 @@ export class NodeWorker {
   private reconnect: NodeJS.Timeout | undefined
   private loop: Promise<void> | undefined
 
-  constructor(
-    private readonly services: Services,
-    private readonly config: WorkerConfig,
-    private readonly hostname: string,
-  ) {}
+  private readonly services: Services
+  private readonly config: WorkerConfig
+  private readonly hostname: string
+
+  constructor(services: Services, config: WorkerConfig, hostname: string) {
+    this.services = services
+    this.config = config
+    this.hostname = hostname
+  }
 
   async start(): Promise<void> {
     await this.writePresence(true)

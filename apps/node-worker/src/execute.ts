@@ -14,15 +14,22 @@ import { type Database, queue } from '@splitune/db'
 
 type Job = queue.Job
 
-import { analysisPrefix, assertSafeKey, type Storage, userPrefix } from '@splitune/storage'
+import {
+  analysisPrefix,
+  assertSafeKey,
+  type Storage,
+  StorageKeyError,
+  userPrefix,
+} from '@splitune/storage'
 import { z } from 'zod'
 import { type FinalizeInputs, finalize } from './finalize.ts'
 import type { Logger } from './log.ts'
 import type { ViewsConfig } from './views.ts'
 
-// Runs one claimed finalize job: validate → stage.started → read artefacts → finalize → write
+// Runs one claimed job. finalize: validate → stage.started → read artefacts → finalize → write
 // tab/render/summary → one transaction that records the result, ends the analysis and completes
-// the job (packages/db `finishStage`). Same request rules as the Python executor.
+// the job (packages/db `finishStage`); same request rules as the Python executor. delete_prefix:
+// remove a deleted song's objects (03 "Retention and deletion").
 
 export interface Services {
   db: Database
@@ -34,11 +41,13 @@ export interface Services {
 }
 
 export class StageError extends Error {
-  constructor(
-    readonly code: string,
-    readonly retry: boolean,
-  ) {
+  readonly code: string
+  readonly retry: boolean
+
+  constructor(code: string, retry: boolean) {
     super(code)
+    this.code = code
+    this.retry = retry
   }
 }
 
@@ -48,7 +57,19 @@ const TAB_INSTRUMENTS = new Set(['guitar', 'bass'])
 const FinalizeParams = z.object({
   instruments: z.array(Instrument).min(1),
   fingering_mode: z.enum(['easiest', 'as_played']).optional(),
+  // lite (23 §2): beats and chords only, so missing stems and notes are expected, not partial.
+  profile: z.enum(['full', 'lite']).optional(),
 })
+
+// Payload the API writes when a song is deleted (RLS policy jobs_owner_cleanup checks it).
+const CleanupPayload = z.object({
+  user_id: z.string().min(1),
+  prefixes: z.array(z.string().min(1)).min(1),
+})
+
+// No beats: a critical stage (url_import, decode or beats) failed and the queue cancelled what
+// depended on it. Its own stage.failed already says why; finalize ends the analysis `failed`.
+class NothingToFinalize extends Error {}
 
 type Request = z.infer<typeof StageRequest>
 type Params = z.infer<typeof FinalizeParams>
@@ -138,9 +159,14 @@ async function readArtefact<T extends z.ZodType>(
   return parsed.data
 }
 
-async function loadInputs(storage: Storage, request: Request, params: Params) {
-  const { inputs } = request
+async function loadInputs(services: Services, request: Request, params: Params) {
+  const { storage } = services
+  const recorded = await queue.recordedKeys(services.db, Object.values(request.inputs))
+  const inputs = Object.fromEntries(
+    Object.entries(request.inputs).filter(([, key]) => recorded.has(key)),
+  )
   const { beats: beatsKey, chords: chordsKey, stems: stemsKey } = inputs
+  if (beatsKey === undefined) throw new NothingToFinalize()
   const beats = await readArtefact(storage, beatsKey, Beats, 'beats')
   if (beats === undefined) throw new StageError('beats_missing', false)
   const result: FinalizeInputs = { beats, notes: {} }
@@ -180,13 +206,20 @@ async function run(
   params: Params,
   analysis: queue.AnalysisRef,
 ): Promise<boolean> {
-  const inputs = await loadInputs(services.storage, request, params)
+  let inputs: FinalizeInputs
+  try {
+    inputs = await loadInputs(services, request, params)
+  } catch (error) {
+    if (!(error instanceof NothingToFinalize)) throw error
+    return queue.finishAnalysisFailed(services.db, job, services.workerId, analysis, 'finalize')
+  }
   const result = finalize(
     analysis.id,
     inputs,
     {
       instruments: params.instruments,
       ...(params.fingering_mode === undefined ? {} : { fingeringMode: params.fingering_mode }),
+      ...(params.profile === undefined ? {} : { profile: params.profile }),
     },
     services.views,
   )
@@ -235,11 +268,40 @@ async function run(
   })
 }
 
+// delete_prefix: every prefix must lie inside the payload user's prefix (the API's RLS policy
+// checked that already; storage.deletePrefix checks the key rules again).
+async function cleanup(services: Services, job: Job): Promise<boolean> {
+  const payload = CleanupPayload.safeParse(job.payload)
+  if (!payload.success || job.analysisId !== null) throw new StageError('invalid_request', false)
+  const { user_id: userId, prefixes } = payload.data
+  let own: string
+  try {
+    own = userPrefix(userId)
+  } catch {
+    throw new StageError('invalid_request', false)
+  }
+  if (!prefixes.every((p) => p.startsWith(own) && p.endsWith('/'))) {
+    throw new StageError('invalid_request', false)
+  }
+  let deleted = 0
+  for (const prefix of prefixes) {
+    try {
+      deleted += await services.storage.deletePrefix(prefix)
+    } catch (error) {
+      if (error instanceof StorageKeyError) throw new StageError('invalid_request', false)
+      throw error
+    }
+  }
+  services.log.info('prefixes deleted', { job_id: job.id, prefixes: prefixes.length, deleted })
+  return queue.complete(services.db, job.id, services.workerId)
+}
+
 // Returns the final job status: done, queued (retry), failed, or lost (lock taken over).
 export async function executeJob(
   services: Services,
   job: Job,
 ): Promise<'done' | 'queued' | 'failed' | 'lost'> {
+  if (job.kind === 'delete_prefix') return executeCleanup(services, job)
   const started = Date.now()
   const context = {
     job_id: job.id,
@@ -295,6 +357,34 @@ export async function executeJob(
     return status ?? 'lost'
   } finally {
     clearInterval(beat)
+  }
+}
+
+async function executeCleanup(
+  services: Services,
+  job: Job,
+): Promise<'done' | 'queued' | 'failed' | 'lost'> {
+  const context = { job_id: job.id, kind: job.kind, attempt: job.attempts }
+  try {
+    if (!(await cleanup(services, job))) {
+      services.log.warn('lock lost', context)
+      return 'lost'
+    }
+    return 'done'
+  } catch (error) {
+    const stageError = error instanceof StageError ? error : new StageError('internal_error', true)
+    if (!(error instanceof StageError)) {
+      services.log.error('cleanup crashed', { ...context, error_code: errorName(error) })
+    }
+    const status = await queue.fail(services.db, job.id, services.workerId, stageError.code, {
+      retry: stageError.retry,
+    })
+    services.log.warn('cleanup failed', {
+      ...context,
+      error_code: stageError.code,
+      job_status: status ?? 'lost',
+    })
+    return status ?? 'lost'
   }
 }
 
