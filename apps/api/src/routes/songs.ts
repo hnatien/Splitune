@@ -1,7 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import { isIP } from 'node:net'
-import type { SongDetail as SongDetailSchema, Song as SongSchema } from '@splitune/contracts'
-import type { Song, SongCursor, SongPatch } from '@splitune/db'
+import type {
+  LibrarySong as LibrarySongSchema,
+  SongDetail as SongDetailSchema,
+  Song as SongSchema,
+} from '@splitune/contracts'
+import {
+  type LibraryCursor,
+  type LibraryEntry,
+  type LibrarySort,
+  libraryCursor,
+  type Song,
+  type SongPatch,
+} from '@splitune/db'
 import { analysisPrefix, uploadPrefix } from '@splitune/storage'
 import { z } from 'zod'
 import { admitAnalysis } from '../entitlements.ts'
@@ -32,15 +43,47 @@ export function toSong(song: Song): SongOut {
   }
 }
 
-// Opaque keyset cursor: the last row's position in the library order.
-const Cursor = z.tuple([z.iso.datetime().nullable(), z.iso.datetime(), z.uuid()])
+type LibrarySongOut = z.infer<typeof LibrarySongSchema>
 
-function encodeCursor(song: Song): string {
-  const position = [iso(song.lastOpenedAt), song.createdAt.toISOString(), song.id]
-  return Buffer.from(JSON.stringify(position)).toString('base64url')
+const toLibrarySong = (entry: LibraryEntry): LibrarySongOut => ({
+  ...toSong(entry.song),
+  latest_analysis: entry.latestAnalysis && {
+    id: entry.latestAnalysis.id,
+    type: entry.latestAnalysis.type,
+    status: entry.latestAnalysis.status,
+    stages_done: entry.latestAnalysis.stagesDone,
+    stages_total: entry.latestAnalysis.stagesTotal,
+    recommended_view: entry.latestAnalysis.recommendedView,
+  },
+  stems: entry.stems,
+  best_clean: entry.bestClean && {
+    tempo_pct: entry.bestClean.tempoPct,
+    start_bar: entry.bestClean.startBar,
+    end_bar: entry.bestClean.endBar,
+  },
+})
+
+// Opaque keyset cursor: the sort it belongs to and the last row's position in that order.
+const Cursor = z.discriminatedUnion('sort', [
+  z.object({
+    sort: z.literal('last_practised'),
+    at: z.tuple([z.iso.datetime().nullable(), z.iso.datetime(), z.uuid()]),
+  }),
+  z.object({ sort: z.literal('added'), at: z.tuple([z.iso.datetime(), z.uuid()]) }),
+  z.object({ sort: z.literal('title'), at: z.tuple([z.string(), z.uuid()]) }),
+])
+
+function encodeCursor(cursor: LibraryCursor): string {
+  const at =
+    cursor.sort === 'last_practised'
+      ? [iso(cursor.lastOpenedAt), cursor.createdAt.toISOString(), cursor.id]
+      : cursor.sort === 'added'
+        ? [cursor.createdAt.toISOString(), cursor.id]
+        : [cursor.title, cursor.id]
+  return Buffer.from(JSON.stringify({ sort: cursor.sort, at })).toString('base64url')
 }
 
-function decodeCursor(cursor: string): SongCursor {
+function decodeCursor(cursor: string, sort: LibrarySort): LibraryCursor {
   let parsed: unknown
   try {
     parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'))
@@ -48,16 +91,27 @@ function decodeCursor(cursor: string): SongCursor {
     parsed = undefined
   }
   const result = Cursor.safeParse(parsed)
-  if (!result.success) {
+  // A cursor only continues the order it came from.
+  if (!result.success || result.data.sort !== sort) {
     throw apiError('invalid_input', {
       details: { issues: [{ path: 'cursor', code: 'invalid_cursor' }] },
     })
   }
-  const [lastOpenedAt, createdAt, id] = result.data
-  return {
-    lastOpenedAt: lastOpenedAt === null ? null : new Date(lastOpenedAt),
-    createdAt: new Date(createdAt),
-    id,
+  const value = result.data
+  switch (value.sort) {
+    case 'last_practised': {
+      const [lastOpenedAt, createdAt, id] = value.at
+      return {
+        sort: value.sort,
+        lastOpenedAt: lastOpenedAt === null ? null : new Date(lastOpenedAt),
+        createdAt: new Date(createdAt),
+        id,
+      }
+    }
+    case 'added':
+      return { sort: value.sort, createdAt: new Date(value.at[0]), id: value.at[1] }
+    case 'title':
+      return { sort: value.sort, title: value.at[0], id: value.at[1] }
   }
 }
 
@@ -73,17 +127,24 @@ export const songs = {
     return { song_id: song.id }
   }),
 
+  // Library (27 §3.5): search, filter chips and sort, with what each card shows.
   list: authed.songs.list.handler(async ({ context, input }) => {
     const limit = input.limit ?? DEFAULT_PAGE
-    const rows = await context.deps.repos.songs.list(context.userId, {
+    const sort = input.sort ?? 'last_practised'
+    const rows = await context.deps.repos.songs.library(context.userId, {
       limit: limit + 1,
-      ...(input.cursor === undefined ? {} : { after: decodeCursor(input.cursor) }),
+      sort,
+      ...(input.q === undefined ? {} : { q: input.q }),
+      ...(input.instrument === undefined ? {} : { instrument: input.instrument }),
+      ...(input.status === undefined ? {} : { status: input.status }),
+      ...(input.cursor === undefined ? {} : { after: decodeCursor(input.cursor, sort) }),
     })
     const items = rows.slice(0, limit)
     const last = items.at(-1)
     return {
-      items: items.map(toSong),
-      next_cursor: rows.length > limit && last ? encodeCursor(last) : null,
+      items: items.map(toLibrarySong),
+      next_cursor:
+        rows.length > limit && last ? encodeCursor(libraryCursor(sort, last.song)) : null,
     }
   }),
 

@@ -71,8 +71,11 @@ export const uploads = {
       const song = await deps.repos.songs.get(userId, input.song_id)
       if (!song) throw apiError('not_found')
 
-      const duplicate = await deps.repos.uploads.findByFileSha256(userId, input.file_sha256)
-      if (duplicate?.songId) return { duplicate_of_song_id: duplicate.songId }
+      // "Import anyway" after the duplicate notice skips the check.
+      if (!input.allow_duplicate) {
+        const duplicate = await deps.repos.uploads.findByFileSha256(userId, input.file_sha256)
+        if (duplicate?.songId) return { duplicate_of_song_id: duplicate.songId }
+      }
 
       const id = randomUUID()
       const objectKey = rawUploadKey(userId, id, input.filename)
@@ -105,6 +108,16 @@ export const uploads = {
       const { parts, expires_at } = await presignParts(deps.storage, upload, range(partCount))
       return { upload_id: upload.id, part_size: partSize, parts, expires_at }
     }),
+
+  // Duplicate check right after the browser hashed a picked file (27 §5.6 import.duplicate):
+  // the song of a completed upload with the same bytes, if the user has one.
+  lookup: authed.uploads.lookup.handler(async ({ context, input }) => {
+    const duplicate = await context.deps.repos.uploads.findByFileSha256(
+      context.userId,
+      input.file_sha256,
+    )
+    return { song_id: duplicate?.songId ?? null }
+  }),
 
   refreshParts: authed.uploads.refreshParts.handler(async ({ context, input }) => {
     const upload = await pendingUpload(context.deps, context.userId, input.id)

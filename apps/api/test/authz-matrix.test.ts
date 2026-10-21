@@ -46,6 +46,8 @@ const CASES: Record<string, Case> = {
     body: () => ({ parts: [{ n: 1, etag: '"x"' }] }),
   },
   'uploads.abort': { target: (r) => r.uploadId },
+  // Answers for the caller's own uploads only: tests/library.test.ts checks B sees null.
+  'uploads.lookup': {},
   'songs.importUrl': {
     body: () => ({ url: 'https://www.youtube.com/watch?v=abc', instrument: 'bass', type: 'lite' }),
   },
@@ -58,6 +60,7 @@ const CASES: Record<string, Case> = {
   'analyses.rerun': { target: (r) => r.analysisId },
   'artefacts.url': { target: (r) => r.artefactId },
   'system.workerStatus': {},
+  'system.stats': {},
 }
 
 interface Route {

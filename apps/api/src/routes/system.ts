@@ -16,4 +16,13 @@ export const system = {
     }
     return { online: runners.python.online && runners.node.online, runners }
   }),
+
+  // Recent median stage times for the progress UI's ETA (13 §4); aggregates over every user's
+  // runs, never per-user data.
+  stats: authed.system.stats.handler(async ({ context }) => {
+    const timings = await queue.stageTimings(context.deps.db)
+    return {
+      stages: timings.map((t) => ({ stage: t.stage, median_s: t.medianS, runs: t.runs })),
+    }
+  }),
 }
