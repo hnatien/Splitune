@@ -1,15 +1,7 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { type Database, withUser } from '../client.ts'
 import { enqueue } from '../jobs/queue.ts'
-import {
-  analyses,
-  artefacts,
-  songs,
-  stageRuns,
-  syncPoints,
-  uploads,
-  youtubeRefs,
-} from '../schema/index.ts'
+import { analyses, songs, syncPoints, uploads, youtubeRefs } from '../schema/index.ts'
 
 export type Song = typeof songs.$inferSelect
 export type NewSong = Omit<typeof songs.$inferInsert, 'id' | 'userId' | 'createdAt'>
@@ -32,6 +24,10 @@ export interface SongObjects {
 
 // Payload of the node worker's `delete_prefix` job (RLS policy jobs_owner_cleanup checks it).
 export const DELETE_PREFIX_JOB = 'delete_prefix'
+// Deleting the rows takes the song's jobs with them, so a stage that is running at that moment
+// loses its lock, but it may still upload outputs before it notices. A second cleanup pass after
+// the longest stage timeout (separate: 25 min) removes those.
+export const CLEANUP_REPEAT_AFTER_S = 30 * 60
 
 // Never-opened songs sort after opened ones; the epoch stands in for "never" so the order and the
 // cursor comparison use one expression.
@@ -76,8 +72,9 @@ export function songsRepo(db: Database) {
           .limit(limit),
       ),
 
-    // Everything the song screen needs in one transaction; opening a song also bumps
-    // last_opened_at (library order). Undefined if the song is not the user's.
+    // The song, its latest analysis (stages and artefacts: analyses.detail) and YouTube
+    // reference; opening a song also bumps last_opened_at (library order). Undefined if the song
+    // is not the user's.
     open: (userId: string, songId: string) =>
       withUser(db, userId, async (tx) => {
         const [song] = await tx
@@ -92,16 +89,6 @@ export function songsRepo(db: Database) {
           .where(and(eq(analyses.userId, userId), eq(analyses.songId, songId)))
           .orderBy(desc(analyses.createdAt))
           .limit(1)
-        const stages = latestAnalysis
-          ? await tx.select().from(stageRuns).where(eq(stageRuns.analysisId, latestAnalysis.id))
-          : []
-        const artefactRows = latestAnalysis
-          ? await tx
-              .select()
-              .from(artefacts)
-              .where(and(eq(artefacts.userId, userId), eq(artefacts.analysisId, latestAnalysis.id)))
-              .orderBy(asc(artefacts.kind), asc(artefacts.version))
-          : []
         const [youtube] = await tx
           .select()
           .from(youtubeRefs)
@@ -116,8 +103,6 @@ export function songsRepo(db: Database) {
         return {
           song,
           latestAnalysis,
-          stages,
-          artefacts: artefactRows,
           youtube: youtube ? { videoId: youtube.videoId, syncPoints: points } : undefined,
         }
       }),
@@ -147,8 +132,8 @@ export function songsRepo(db: Database) {
         return row
       }),
 
-    // Rows cascade to uploads, analyses, artefacts, corrections, loops and practice logs. Objects
-    // are deleted by the node worker: in the same transaction this enqueues a `delete_prefix` job
+    // Rows cascade to uploads, analyses (with their queued and running jobs), artefacts,
+    // corrections, loops and practice logs. Objects are deleted by the node worker: in the same transaction this enqueues a `delete_prefix` job
     // with the prefixes `objectPrefixes` returns for the song's uploads and analyses
     // (03 "Retention and deletion"). Returns false if the song is not the user's.
     delete: (userId: string, songId: string, objectPrefixes: (objects: SongObjects) => string[]) =>
@@ -170,7 +155,11 @@ export function songsRepo(db: Database) {
           analysisIds: analysisRows.map((r) => r.id),
         })
         if (prefixes.length > 0) {
-          await enqueue(tx, DELETE_PREFIX_JOB, 'node', { user_id: userId, prefixes })
+          const payload = { user_id: userId, prefixes }
+          await enqueue(tx, DELETE_PREFIX_JOB, 'node', payload)
+          await enqueue(tx, DELETE_PREFIX_JOB, 'node', payload, {
+            runAfter: new Date(Date.now() + CLEANUP_REPEAT_AFTER_S * 1000),
+          })
         }
         return true
       }),

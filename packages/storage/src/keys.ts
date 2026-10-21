@@ -60,6 +60,10 @@ export function rawUploadKey(userId: string, uploadId: string, originalFilename:
   return `${uploadPrefix(userId, uploadId)}source.${EXTENSION.test(ext) ? ext : 'bin'}`
 }
 
+// URL import (25 §4): the muted video ≤720p next to the downloaded audio of the same import.
+export const rawVideoKey = (userId: string, importId: string) =>
+  `${uploadPrefix(userId, importId)}video.mp4`
+
 export const analysisPrefix = (userId: string, analysisId: string) =>
   `${userPrefix(userId)}a/${check(analysisId, UUID, 'analysis id')}/`
 

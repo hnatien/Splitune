@@ -1,8 +1,29 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { auditLog, createRepositories, hitRateLimit, jobs, type SongCursor } from '../src/index.ts'
-import { createUser, seedUserGraph, testDb } from './helpers.ts'
+import {
+  type Analysis,
+  type AnalysisPlan,
+  type AnalysisRequest,
+  analyses,
+  artefacts,
+  auditLog,
+  createRepositories,
+  hitRateLimit,
+  jobs,
+  queue,
+  type SongCursor,
+  stageRuns,
+  withUser,
+  workerHeartbeats,
+} from '../src/index.ts'
+import {
+  createUser,
+  INSUFFICIENT_PRIVILEGE,
+  pgErrorCode,
+  seedUserGraph,
+  testDb,
+} from './helpers.ts'
 
 const db = testDb(10)
 const repo = createRepositories(db)
@@ -87,8 +108,6 @@ describe('songs', () => {
     const opened = await repo.songs.open(alice, graph.song.id)
     expect(opened?.song.lastOpenedAt).toBeInstanceOf(Date)
     expect(opened?.latestAnalysis?.id).toBe(graph.analysis.id)
-    expect(opened?.stages.map((s) => s.stage)).toEqual(['beats'])
-    expect(opened?.artefacts.map((a) => a.id)).toEqual([graph.artefact.id])
     expect(opened?.youtube).toMatchObject({ videoId: 'dQw4w9WgXcQ', syncPoints: [{ idx: 0 }] })
     expect(await repo.songs.open(bob, graph.song.id)).toBeUndefined()
   })
@@ -130,37 +149,214 @@ describe('songs', () => {
 })
 
 describe('analyses', () => {
-  it('returns the existing run for a repeated idempotency key', async () => {
-    const input = {
-      songId: graph.song.id,
-      version: 2,
-      pipelineVersion: 'p1',
-      configProfile: 'production',
-      requestedInstrument: 'guitar',
-      analysisType: 'lite',
-      status: 'queued',
-      idempotencyKey: randomUUID(),
-    } as const
-    const first = await repo.analyses.createOrGet(alice, input)
-    const second = await repo.analyses.createOrGet(alice, input)
-    expect(first.created).toBe(true)
-    expect(second).toEqual({ analysis: first.analysis, created: false })
-    expect(await repo.analyses.get(bob, first.analysis.id)).toBeUndefined()
+  const request = (overrides: Partial<AnalysisRequest> = {}): AnalysisRequest => ({
+    pipelineVersion: 'p1',
+    configProfile: 'personal',
+    requestedInstrument: 'guitar',
+    analysisType: 'lite',
+    idempotencyKey: randomUUID(),
+    ...overrides,
+  })
+  // decode → beats → finalize (soft), as the API plans a Lite analysis.
+  const plan = (analysis: Analysis): AnalysisPlan => ({
+    jobs: [
+      { name: 'decode', kind: 'decode', runner: 'python', payload: { a: analysis.id } },
+      { name: 'beats', kind: 'beats', runner: 'python', payload: {}, dependsOn: ['decode'] },
+      {
+        name: 'finalize',
+        kind: 'finalize',
+        runner: 'node',
+        payload: {},
+        softDependsOn: ['decode', 'beats'],
+        priority: 50,
+      },
+    ],
+  })
+
+  it('creates a versioned run with its job graph, once per idempotency key', async () => {
+    const carol = await createUser(db)
+    const { song } = await seedUserGraph(db, carol)
+    const input = request()
+    const first = await repo.analyses.create(carol, song.id, input, plan)
+    const second = await repo.analyses.create(carol, song.id, input, plan)
+    expect(first?.created).toBe(true)
+    expect(second).toEqual({ analysis: first?.analysis, created: false })
+    expect(first?.song?.status).toBe('analysing')
+    // seedUserGraph already made version 1.
+    expect(first?.analysis).toMatchObject({ version: 2, status: 'queued', songId: song.id })
+    const id = first?.analysis.id as string
+    const rows = await db.select().from(jobs).where(eq(jobs.analysisId, id)).orderBy(jobs.id)
+    const [decode, beats, finalize] = rows
+    expect(rows.map((j) => j.kind)).toEqual(['decode', 'beats', 'finalize'])
+    expect(decode?.payload).toEqual({ a: id })
+    expect(beats?.dependsOn).toEqual([decode?.id])
+    expect(finalize).toMatchObject({ softDependsOn: [decode?.id, beats?.id], priority: 50 })
+    expect((await repo.songs.get(carol, song.id))?.status).toBe('analysing')
+    const third = await repo.analyses.create(carol, song.id, request(), plan)
+    expect(third?.analysis.version).toBe(3)
+  })
+
+  it('records that the run waits for a worker, once per stall', async () => {
+    const dave = await createUser(db)
+    const { song } = await seedUserGraph(db, dave)
+    await db.delete(workerHeartbeats)
+    const run = await repo.analyses.create(dave, song.id, request(), plan)
+    const id = run?.analysis.id as string
+    const events = async () => (await repo.analyses.events(dave, id, 0, 100))?.rows ?? []
+    expect((await events()).map((r) => r.event)).toEqual([
+      {
+        type: 'analysis.waiting',
+        reason: 'queued_waiting_for_worker',
+        runner: 'python',
+        at: expect.any(String),
+      },
+    ])
+    expect(await repo.analyses.noteWaiting(dave, id)).toBeUndefined()
+    // A fresh python heartbeat: the decode job is no longer waiting.
+    await queue.writeWorkerHeartbeat(
+      db,
+      { workerId: `ml-${dave}`, runner: 'python', hostname: 'mac', version: 't' },
+      { first: true },
+    )
+    expect(await repo.analyses.noteWaiting(dave, id)).toBeUndefined()
+    expect(await events()).toHaveLength(1)
+    await db.delete(workerHeartbeats)
+  })
+
+  it('replays events after an id, for the owner only', async () => {
+    const run = await repo.analyses.create(alice, graph.song.id, request(), () => ({
+      jobs: [],
+      events: [
+        { type: 'stage.completed', stage: 'decode', at: '2026-10-21T10:00:00Z' },
+        { type: 'stage.completed', stage: 'beats', at: '2026-10-21T10:00:01Z' },
+      ],
+    }))
+    const id = run?.analysis.id as string
+    const all = await repo.analyses.events(alice, id, 0, 100)
+    expect(all?.status).toBe('queued')
+    expect(all?.rows.map((r) => r.event.type === 'stage.completed' && r.event.stage)).toEqual([
+      'decode',
+      'beats',
+    ])
+    const after = await repo.analyses.events(alice, id, all?.rows[0]?.id as number, 100)
+    expect(after?.rows.map((r) => r.id)).toEqual([all?.rows[1]?.id])
+    expect(await repo.analyses.events(bob, id, 0, 100)).toBeUndefined()
+  })
+
+  it('details an analysis with its stage runs, jobs, artefacts and base', async () => {
+    const detail = await repo.analyses.detail(alice, graph.analysis.id)
+    expect(detail?.stages.map((s) => s.stage)).toEqual(['beats'])
+    expect(detail?.artefacts.map((a) => a.id)).toEqual([graph.artefact.id])
+    expect(detail?.base).toBeUndefined()
+    const upgrade = await repo.analyses.create(
+      alice,
+      graph.song.id,
+      request({ analysisType: 'full', baseAnalysisId: graph.analysis.id }),
+      plan,
+    )
+    const derived = await repo.analyses.detail(alice, upgrade?.analysis.id as string)
+    expect(derived?.jobs.map((j) => [j.kind, j.status])).toEqual([
+      ['decode', 'queued'],
+      ['beats', 'queued'],
+      ['finalize', 'queued'],
+    ])
+    expect(derived?.base?.artefacts.map((a) => a.id)).toEqual([graph.artefact.id])
+    expect(await repo.analyses.detail(bob, graph.analysis.id)).toBeUndefined()
   })
 
   it('cannot start an analysis on another user’s song', async () => {
+    expect(await repo.analyses.create(bob, graph.song.id, request(), plan)).toBeUndefined()
     await expect(
-      repo.analyses.createOrGet(bob, {
-        songId: graph.song.id,
-        version: 1,
-        pipelineVersion: 'p1',
-        configProfile: 'production',
-        requestedInstrument: 'guitar',
-        analysisType: 'full',
-        status: 'queued',
-        idempotencyKey: randomUUID(),
-      }),
+      withUser(db, bob, (tx) =>
+        tx.insert(analyses).values({
+          ...request(),
+          userId: bob,
+          songId: graph.song.id,
+          version: 1,
+          status: 'queued',
+        }),
+      ),
     ).rejects.toThrow()
+  })
+
+  it('refuses another user’s analysis as the base', async () => {
+    const gina = await createUser(db)
+    const own = await seedUserGraph(db, gina)
+    const code = await pgErrorCode(
+      withUser(db, gina, (tx) =>
+        tx.insert(analyses).values({
+          ...request(),
+          userId: gina,
+          songId: own.song.id,
+          version: 2,
+          status: 'queued',
+          baseAnalysisId: graph.analysis.id,
+        }),
+      ),
+    )
+    expect(code).toBe(INSUFFICIENT_PRIVILEGE)
+  })
+
+  it('creates a URL song together with its first analysis', async () => {
+    const created = await repo.analyses.createWithSong(
+      alice,
+      {
+        title: 'Untitled',
+        sourceKind: 'url',
+        sourceUrl: 'https://example.com/watch?v=1',
+        instrument: 'bass',
+      },
+      request({ requestedInstrument: 'bass' }),
+      (analysis) => ({ ...plan(analysis), songStatus: 'importing' }),
+    )
+    expect(created.song).toMatchObject({ sourceKind: 'url', status: 'importing' })
+    expect(created.analysis).toMatchObject({ songId: created.song.id, version: 1 })
+    expect(await repo.analyses.source(alice, created.song.id)).toMatchObject({
+      source: { kind: 'url_pending' },
+    })
+  })
+
+  it('resolves the audio source of an upload song', async () => {
+    const found = await repo.analyses.source(alice, graph.song.id)
+    expect(found?.source).toEqual({
+      kind: 'upload',
+      id: expect.any(String),
+      rawKey: `u/${alice}/raw/x/source.mp3`,
+    })
+    expect(await repo.analyses.source(bob, graph.song.id)).toBeUndefined()
+  })
+
+  it('offers decode and beats of the latest finished analysis for reuse', async () => {
+    const erin = await createUser(db)
+    const { song, analysis } = await seedUserGraph(db, erin)
+    expect(await repo.analyses.reusableStages(erin, song.id)).toBeUndefined()
+    await db.update(analyses).set({ status: 'done' }).where(eq(analyses.id, analysis.id))
+    // beats is done (seed); decode and the probe artefact are still missing.
+    expect(await repo.analyses.reusableStages(erin, song.id)).toBeUndefined()
+    await db.insert(stageRuns).values({
+      analysisId: analysis.id,
+      stage: 'decode',
+      status: 'done',
+      modelRefs: [],
+      cacheKey: 'd'.repeat(64),
+    })
+    await db.insert(artefacts).values({
+      userId: erin,
+      analysisId: analysis.id,
+      kind: 'probe',
+      version: 1,
+      objectKey: `u/${erin}/a/${analysis.id}/v1/probe.json`,
+      bytes: 1,
+      sha256: 'e'.repeat(64),
+      modelRefs: [],
+    })
+    const reusable = await repo.analyses.reusableStages(erin, song.id)
+    expect(reusable).toMatchObject({
+      analysisId: analysis.id,
+      probe: { kind: 'probe' },
+      beats: { kind: 'beats' },
+    })
+    expect(await repo.analyses.reusableStages(bob, song.id)).toBeUndefined()
   })
 })
 

@@ -35,6 +35,12 @@ export const jobs = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::bigint[]`),
+    // Jobs that must have finished (done, failed or cancelled) but need not have succeeded: a
+    // dependant that has a fallback for a missing input (06 §6). A failure here cancels nothing.
+    softDependsOn: bigint('soft_depends_on', { mode: 'number' })
+      .array()
+      .notNull()
+      .default(sql`'{}'::bigint[]`),
     errorCode: text('error_code'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },

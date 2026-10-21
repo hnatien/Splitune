@@ -144,6 +144,65 @@ describe('claim', () => {
     expect((await claim(db, 'node', 'n'))?.id).toBe(finalize.id)
   })
 
+  it('runs a job once its soft dependencies finished, whether or not they succeeded', async () => {
+    const decode = await enqueue(db, 'decode', 'python', {})
+    const separate = await enqueue(db, 'separate', 'python', {}, { dependsOn: [decode.id] })
+    const notes = await enqueue(
+      db,
+      'notes.guitar',
+      'python',
+      {},
+      { dependsOn: [decode.id], softDependsOn: [separate.id] },
+    )
+    const finalize = await enqueue(
+      db,
+      'finalize',
+      'node',
+      {},
+      { softDependsOn: [decode.id, separate.id, notes.id] },
+    )
+    expect(notes.softDependsOn).toEqual([separate.id])
+
+    await claim(db, 'python', 'w')
+    await complete(db, decode.id, 'w')
+    expect((await claim(db, 'python', 'w', { kinds: ['notes.guitar'] }))?.id).toBeUndefined()
+    expect((await claim(db, 'python', 'w'))?.id).toBe(separate.id)
+    expect(await claim(db, 'python', 'w')).toBeUndefined()
+    // A permanent failure of a soft dependency cancels nothing and unblocks its dependants.
+    await fail(db, separate.id, 'w', 'stems_unavailable', { retry: false })
+    expect((await statusOf(notes.id))?.status).toBe('queued')
+    expect(await claim(db, 'node', 'n')).toBeUndefined()
+    expect((await claim(db, 'python', 'w'))?.id).toBe(notes.id)
+    await complete(db, notes.id, 'w')
+    expect((await claim(db, 'node', 'n'))?.id).toBe(finalize.id)
+  })
+
+  it('treats a cancelled soft dependency as finished', async () => {
+    const decode = await enqueue(db, 'decode', 'python', {})
+    const beats = await enqueue(db, 'beats', 'python', {}, { dependsOn: [decode.id] })
+    const finalize = await enqueue(
+      db,
+      'finalize',
+      'node',
+      {},
+      { softDependsOn: [decode.id, beats.id] },
+    )
+    await claim(db, 'python', 'w')
+    await fail(db, decode.id, 'w', 'unsupported_media', { retry: false })
+    expect(await statusOf(beats.id)).toMatchObject({
+      status: 'cancelled',
+      errorCode: 'dependency_failed',
+    })
+    expect((await statusOf(finalize.id))?.status).toBe('queued')
+    expect((await claim(db, 'node', 'n'))?.id).toBe(finalize.id)
+  })
+
+  it('rejects unknown soft dependencies', async () => {
+    await expect(enqueue(db, 'finalize', 'node', {}, { softDependsOn: [987654] })).rejects.toThrow(
+      'unknown dependency',
+    )
+  })
+
   it('works under the ml_worker role', async () => {
     const { id } = await enqueue(db, 'beats', 'python', {}, { analysisId })
     const done = await asRole(db, 'ml_worker', async (tx) => {

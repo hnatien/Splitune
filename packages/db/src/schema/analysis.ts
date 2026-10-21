@@ -9,6 +9,7 @@ import {
 } from '@splitune/contracts'
 import { sql } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   bigint,
   check,
   index,
@@ -49,6 +50,11 @@ export const analyses = pgTable(
     progress: real('progress').notNull().default(0),
     idempotencyKey: text('idempotency_key').notNull(),
     workflowRunId: text('workflow_run_id'),
+    // Earlier analysis of the same song whose decode and beats this one reuses instead of running
+    // them again (Lite → Full upgrade; 23 §2). Their artefacts stay that analysis' rows.
+    baseAnalysisId: uuid('base_analysis_id').references((): AnyPgColumn => analyses.id, {
+      onDelete: 'set null',
+    }),
     costUsdEstimate: usd('cost_usd_estimate'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     finishedAt: timestamptz('finished_at'),

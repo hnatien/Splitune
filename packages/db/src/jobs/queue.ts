@@ -10,6 +10,8 @@ export type Job = typeof jobs.$inferSelect
 export interface EnqueueOptions {
   analysisId?: string
   dependsOn?: number[]
+  // Must have finished, successfully or not, before this job runs (no cancellation cascade).
+  softDependsOn?: number[]
   priority?: number
   maxAttempts?: number
   runAfter?: Date
@@ -59,13 +61,21 @@ export async function enqueue(
   kind: string,
   runner: JobRunner,
   payload: Record<string, unknown>,
-  { analysisId, dependsOn = [], priority, maxAttempts, runAfter }: EnqueueOptions = {},
+  {
+    analysisId,
+    dependsOn = [],
+    softDependsOn = [],
+    priority,
+    maxAttempts,
+    runAfter,
+  }: EnqueueOptions = {},
 ): Promise<Job> {
   return db.transaction(async (tx) => {
-    if (dependsOn.length > 0) {
-      const found = await tx.select({ id: jobs.id }).from(jobs).where(inArray(jobs.id, dependsOn))
-      if (found.length !== new Set(dependsOn).size) {
-        throw new Error(`enqueue ${kind}: unknown dependency in [${dependsOn.join(', ')}]`)
+    const deps = [...new Set([...dependsOn, ...softDependsOn])]
+    if (deps.length > 0) {
+      const found = await tx.select({ id: jobs.id }).from(jobs).where(inArray(jobs.id, deps))
+      if (found.length !== deps.length) {
+        throw new Error(`enqueue ${kind}: unknown dependency in [${deps.join(', ')}]`)
       }
     }
     const [job] = await tx
@@ -75,6 +85,7 @@ export async function enqueue(
         runner,
         payload,
         dependsOn,
+        softDependsOn,
         ...(analysisId === undefined ? {} : { analysisId }),
         ...(priority === undefined ? {} : { priority }),
         ...(maxAttempts === undefined ? {} : { maxAttempts }),
@@ -87,8 +98,8 @@ export async function enqueue(
   })
 }
 
-// Locks the next runnable job for `runner`: queued, due, every dependency done; lowest priority
-// number first, then oldest. SKIP LOCKED lets concurrent claimers pass over each other's rows, so
+// Locks the next runnable job for `runner`: queued, due, every dependency done, every soft
+// dependency finished (done, failed or cancelled); lowest priority number first, then oldest. SKIP LOCKED lets concurrent claimers pass over each other's rows, so
 // each job is handed to exactly one worker. Returns undefined when nothing is runnable.
 export async function claim(
   db: Executor,
@@ -115,6 +126,10 @@ export async function claim(
         and ${kindFilter}
         and not exists (
           select 1 from jobs d where d.id = any(j.depends_on) and d.status <> 'done'
+        )
+        and not exists (
+          select 1 from jobs d
+          where d.id = any(j.soft_depends_on) and d.status in ('queued', 'running')
         )
       order by j.priority, j.id
       limit 1
@@ -154,7 +169,7 @@ export async function complete(db: Executor, jobId: number, workerId: string): P
 }
 
 // Cancels every queued job that (transitively) waits on one of `failedIds`, since its
-// dependencies can no longer finish.
+// dependencies can no longer finish. Soft dependencies don't count: those jobs run regardless.
 async function cancelDependents(db: Executor, failedIds: number[]): Promise<number[]> {
   if (failedIds.length === 0) return []
   const result = await db.execute(sql`

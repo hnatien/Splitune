@@ -39,13 +39,13 @@ Raw Drizzle queries are only allowed in `src/repo/`, `src/jobs/`, `src/client.ts
 
 `src/jobs/queue.ts` is the TypeScript side; the Python consumer (`services/ml/packages/splitune_ml_core/src/splitune_ml_core/queue.py`) issues the same statements. All times are database time (`now()`), never the worker's clock.
 
-**Columns that matter:** `runner` (`python` | `node`), `status` (`queued` → `running` → `done` | `failed` | `cancelled`), `priority` (lower first), `attempts` (incremented on claim), `max_attempts`, `run_after`, `locked_by` (worker id), `heartbeat_at`, `depends_on bigint[]`, `error_code` (machine code, e.g. `model_oom`).
+**Columns that matter:** `runner` (`python` | `node`), `status` (`queued` → `running` → `done` | `failed` | `cancelled`), `priority` (lower first), `attempts` (incremented on claim), `max_attempts`, `run_after`, `locked_by` (worker id), `heartbeat_at`, `depends_on bigint[]` (must be `done`), `soft_depends_on bigint[]` (must have finished — `done`, `failed` or `cancelled` — but need not have succeeded: a dependant with a fallback for a missing input; a failure there cancels nothing), `error_code` (machine code, e.g. `model_oom`).
 
 **Enqueue** (one transaction; NOTIFY is delivered on commit):
 ```sql
--- every id in depends_on must exist (checked first)
-INSERT INTO jobs (kind, runner, analysis_id, payload, depends_on, priority, max_attempts, run_after)
-VALUES ($kind, $runner, $analysis_id, $payload, $depends_on, $priority, $max_attempts, $run_after)
+-- every id in depends_on and soft_depends_on must exist (checked first)
+INSERT INTO jobs (kind, runner, analysis_id, payload, depends_on, soft_depends_on, priority, max_attempts, run_after)
+VALUES ($kind, $runner, $analysis_id, $payload, $depends_on, $soft_depends_on, $priority, $max_attempts, $run_after)
 RETURNING *;
 SELECT pg_notify('jobs_' || $runner, $id::text);
 ```
@@ -59,6 +59,8 @@ WITH next AS (
   WHERE j.runner = $runner AND j.status = 'queued' AND j.run_after <= now()
     AND j.kind IN ($kinds...)                       -- omit for "any kind"
     AND NOT EXISTS (SELECT 1 FROM jobs d WHERE d.id = any(j.depends_on) AND d.status <> 'done')
+    AND NOT EXISTS (SELECT 1 FROM jobs d WHERE d.id = any(j.soft_depends_on)
+                    AND d.status IN ('queued', 'running'))
   ORDER BY j.priority, j.id
   LIMIT 1
   FOR UPDATE OF j SKIP LOCKED
@@ -91,7 +93,7 @@ RETURNING status;
 -- if the new status is 'failed': cancel dependents (below) with $failed_ids = {$id}
 ```
 
-**Cancel dependents** of permanently failed jobs (same transaction):
+**Cancel dependents** of permanently failed jobs (same transaction; only `depends_on` edges cascade):
 ```sql
 WITH RECURSIVE dependents AS (
   SELECT j.id FROM jobs j WHERE j.depends_on && $failed_ids::bigint[] AND j.status = 'queued'
@@ -119,3 +121,9 @@ RETURNING jobs.id, jobs.status;
 ```
 
 A `done` job keeps `locked_by` as a record of the worker that ran it.
+
+**Dependants' wake-up:** after completing (or permanently failing) a job, the Python executor sends `NOTIFY jobs_<runner>` for every runner that has a queued job depending on it (hard or soft), so the node worker claims finalize at once instead of on its next poll.
+
+**SSE wake-up:** a trigger on `job_events` sends `NOTIFY job_events, '<analysis_id>'` for every inserted event (whoever writes it); the API's SSE streams `LISTEN job_events` and poll every 5 s as a fallback.
+
+**Analysis graphs** (step 09, `apps/api/src/pipeline.ts`): full = `decode → {beats, tag} → separate → stem_post → {chords, notes.<instrument>} → finalize`, lite = `decode → beats → chords → finalize`, URL imports prepend `url_import`. Hard edges where a stage cannot run without its input (decode, beats for chords, tag → separate → stem_post); soft edges where it has a fallback (chords and notes after stem_post run on the mixture); finalize soft-depends on every other job, so it always runs once the rest has finished and decides `done` / `partial` / `failed`.

@@ -1,10 +1,11 @@
 import type { JobEvent, ModelRef, StageName, StageStatus } from '@splitune/contracts'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 import type { Executor } from '../client.ts'
 import {
   analyses,
   artefacts,
+  JOB_RUNNERS,
   type JobRunner,
   jobEvents,
   stageRuns,
@@ -44,6 +45,21 @@ export interface StageFinish {
 
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
 
+// Song status that mirrors how its latest analysis ended (an older analysis finishing late
+// leaves the song alone).
+const SONG_STATUS = { done: 'ready', partial: 'partial', failed: 'failed' } as const
+
+async function setSongStatus(db: Executor, analysisId: string, status: keyof typeof SONG_STATUS) {
+  await db.execute(sql`
+    update songs s set status = ${SONG_STATUS[status]}
+    from analyses a
+    where a.id = ${analysisId} and s.id = a.song_id
+      and not exists (
+        select 1 from analyses n where n.song_id = a.song_id and n.created_at > a.created_at
+      )
+  `)
+}
+
 async function addEvent(db: Executor, analysis: AnalysisRef, event: z.infer<typeof JobEvent>) {
   await db.insert(jobEvents).values({ analysisId: analysis.id, userId: analysis.userId, event })
 }
@@ -57,6 +73,18 @@ export async function loadAnalysis(
     .from(analyses)
     .where(eq(analyses.id, analysisId))
   return row
+}
+
+// Inputs count only when an artefact row records their object, i.e. the stage that writes them
+// succeeded (a failed or cancelled stage leaves its key unrecorded, even if an earlier attempt
+// left an object behind). Same rule as the Python executor's optional inputs.
+export async function recordedKeys(db: Executor, keys: string[]): Promise<Set<string>> {
+  if (keys.length === 0) return new Set()
+  const rows = await db
+    .select({ key: artefacts.objectKey })
+    .from(artefacts)
+    .where(inArray(artefacts.objectKey, keys))
+  return new Set(rows.map((r) => r.key))
 }
 
 export async function markStageStarted(
@@ -87,6 +115,10 @@ export async function markStageStarted(
           finishedAt: null,
         },
       })
+    await tx
+      .update(analyses)
+      .set({ status: 'running' })
+      .where(and(eq(analyses.id, analysis.id), eq(analyses.status, 'queued')))
     await addEvent(tx, analysis, { type: 'stage.started', stage, at: now() })
   })
 }
@@ -148,6 +180,7 @@ export async function finishStage(db: Executor, finish: StageFinish): Promise<bo
           .update(analyses)
           .set({ status, progress: 1, finishedAt: sql`now()` })
           .where(eq(analyses.id, analysis.id))
+        await setSongStatus(tx, analysis.id, status)
         const summaryId = ids.get(summaryKind)
         await addEvent(tx, analysis, {
           type: 'analysis.done',
@@ -199,11 +232,71 @@ export async function recordStageFailure(
           .update(analyses)
           .set({ status: 'failed', finishedAt: sql`now()` })
           .where(eq(analyses.id, analysis.id))
+        await setSongStatus(tx, analysis.id, 'failed')
         await addEvent(tx, analysis, { type: 'analysis.done', status: 'failed' })
       }
     }
     return status
   })
+}
+
+// finalize found nothing to build on (a critical stage such as decode or beats failed, and the
+// queue cancelled what depended on it): the stage is `skipped`, the analysis and its song end
+// `failed` with an `analysis.done` event, and the job completes. false = the lock was lost.
+export async function finishAnalysisFailed(
+  db: Executor,
+  job: Job,
+  workerId: string,
+  analysis: AnalysisRef,
+  stage: z.infer<typeof StageName>,
+): Promise<boolean> {
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(stageRuns)
+        .set({ status: 'skipped', finishedAt: sql`now()` })
+        .where(and(eq(stageRuns.analysisId, analysis.id), eq(stageRuns.stage, stage)))
+      await tx
+        .update(analyses)
+        .set({ status: 'failed', finishedAt: sql`now()` })
+        .where(eq(analyses.id, analysis.id))
+      await setSongStatus(tx, analysis.id, 'failed')
+      await addEvent(tx, analysis, { type: 'analysis.done', status: 'failed' })
+      if (!(await complete(tx, job.id, workerId))) throw new LockLostError()
+    })
+  } catch (error) {
+    if (error instanceof LockLostError) return false
+    throw error
+  }
+  return true
+}
+
+// A runner counts as online while one of its workers heartbeated within this window (25 §5: the
+// app shows "processing machine offline" when the heartbeat is older than 2 minutes).
+export const WORKER_ONLINE_WITHIN_S = 120
+
+export interface RunnerPresence {
+  online: boolean
+  lastHeartbeatAt: Date | null
+}
+
+// Latest heartbeat per runner, judged on the database clock.
+export async function workerPresence(db: Executor): Promise<Record<JobRunner, RunnerPresence>> {
+  const result = await db.execute(sql`
+    select runner, max(heartbeat_at) as last,
+           bool_or(heartbeat_at > now() - make_interval(secs => ${WORKER_ONLINE_WITHIN_S})) as online
+    from worker_heartbeats group by runner
+  `)
+  const rows = result.rows as { runner: JobRunner; last: string | Date; online: boolean }[]
+  return Object.fromEntries(
+    JOB_RUNNERS.map((runner) => {
+      const row = rows.find((r) => r.runner === runner)
+      return [
+        runner,
+        { online: row?.online ?? false, lastHeartbeatAt: row ? new Date(row.last) : null },
+      ]
+    }),
+  ) as Record<JobRunner, RunnerPresence>
 }
 
 // Worker presence (25 §5): `app` shows "processing machine offline" when this row is stale.
