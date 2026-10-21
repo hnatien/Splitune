@@ -2,10 +2,11 @@
   "name": "@splitune/contracts",
   "version": "0.0.0",
   "private": true,
-  "description": "Zod schemas shared across process boundaries — docs/implementation/05-analysis-schema.md",
+  "description": "Zod schemas shared across process boundaries \u2014 docs/implementation/05-analysis-schema.md",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./fixtures/*": "./fixtures/*"
   },
   "scripts": {
     "build": "node scripts/build-schema.ts",

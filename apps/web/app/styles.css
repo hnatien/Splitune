@@ -1,0 +1,8 @@
+/* Tailwind entry: Music Stand tokens (packages/ui-tokens) plus shadcn's Base UI state variants. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@splitune/ui-tokens/primitives.css";
+@import "@splitune/ui-tokens/themes.css";
+@import "@splitune/ui-tokens/fonts.css";
+@import "@splitune/ui-tokens/theme.tailwind.css";

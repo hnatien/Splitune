@@ -1,0 +1,38 @@
+/*
+ * Self-hosted fonts (docs/implementation/26-design-system.md §6.1). Files live in
+ * apps/web/public/fonts/, made by scripts/fonts/subset.sh (SIL OFL 1.1; licences beside them).
+ * Only the Inter roman file is preloaded; italic and Atkinson Hyperlegible Next load on first use.
+ */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/AtkinsonHyperlegibleNext.woff2") format("woff2");
+}
+
+/* Metric-matched fallback so the swap to Inter barely shifts layout (Inter 4.1 vs Arial). */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  size-adjust: 106.5%;
+  ascent-override: 90.97%;
+  descent-override: 22.65%;
+  line-gap-override: 0%;
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Splitune</title>
+  <rect width="512" height="512" fill="#fdfcf7"/>
+  <g fill="none" stroke-linecap="round" stroke-width="2.75" transform="translate(96 96) scale(10)">
+    <path d="M3 16c2.5-5.5 4.5-5.5 6.5 0s4 5.5 6.5 0" stroke="#14110d"/>
+    <path d="M16 16c3-3.75 6-6 13-6" stroke="#4943c1"/>
+    <path d="M16 16c3 3.75 6 6 13 6" stroke="#14110d"/>
+  </g>
+</svg>

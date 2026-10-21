@@ -1,0 +1,324 @@
+/*
+ * Tier 2 — semantic roles and tier 3 — component tokens, per appearance
+ * (docs/implementation/26-design-system.md §2–§4).
+ *
+ * <html data-appearance="light|dark|stage" data-contrast="more|normal"> is set before first paint
+ * by the inline appearance script; without JS the prefers-color-scheme / prefers-contrast blocks
+ * apply. Semantic roles point at primitives. Component tokens point at a semantic role, or carry
+ * their own tuned value (they never point at a ramp step, so retuning a ramp can't silently move
+ * a contrast-checked score colour). Every value is contrast-tested in src/contrast.test.ts.
+ *
+ * The prefers-color-scheme block repeats the Dark block; tokens.test.ts keeps the two identical.
+ */
+
+:root,
+[data-appearance="light"] {
+  color-scheme: light;
+
+  --background: var(--gray-2);
+  --foreground: var(--gray-11);
+  --card: var(--gray-1);
+  --card-foreground: var(--gray-11);
+  --popover: var(--gray-1);
+  --popover-foreground: var(--gray-11);
+  --primary: var(--indigo-9);
+  --primary-foreground: var(--indigo-1);
+  --secondary: var(--gray-3);
+  --secondary-foreground: var(--gray-11);
+  --muted: var(--gray-3);
+  --muted-foreground: var(--gray-9);
+  --accent: var(--indigo-3);
+  --accent-foreground: var(--indigo-11);
+  --destructive: var(--red-light);
+  --border: var(--gray-5);
+  --input: var(--gray-7);
+  --ring: var(--indigo-9);
+  --success: var(--green-light);
+  --warning: var(--amber-light);
+  --info: var(--blue-light);
+  --paper: var(--paper-light);
+  --ink: var(--ink-light);
+  --conf-medium: var(--ink-medium-light);
+  --conf-low: var(--ink-low-light);
+  --stem-guitar: var(--orange-light);
+  --stem-bass: var(--sky-light);
+  --stem-drums: var(--vermillion-light);
+  --stem-vocals: var(--purple-light);
+  --stem-keys: var(--jade-light);
+  --stem-other: var(--cyan-light);
+  --muted-foreground-more: var(--gray-10);
+  --border-more: var(--gray-6);
+  --input-more: var(--gray-8);
+  --elevation-1: 0 1px 2px oklch(0.2 0.01 75 / 0.06);
+  --elevation-2: 0 4px 16px oklch(0.2 0.01 75 / 0.1);
+  --elevation-3: 0 12px 40px oklch(0.2 0.01 75 / 0.16);
+  --read-scale: 1;
+
+  --loop-fill: oklch(0.92 0.036 277);
+  --loop-edge: var(--primary);
+  --playhead: oklch(0.55 0.2 27);
+  --score-loop-fill: oklch(0.92 0.036 277);
+  --score-loop-edge: oklch(0.47 0.19 278);
+  --score-playhead: oklch(0.55 0.2 27);
+  --staff: oklch(0.6 0.01 85);
+  --bar-current: oklch(0.955 0.03 90);
+  --waveform-peak: var(--input);
+  --waveform-rms: var(--muted-foreground);
+  --waveform-played: var(--foreground);
+  --hud-bg: color-mix(in oklab, var(--foreground) 82%, transparent);
+  --hud-bg-more: var(--foreground);
+  --hud-fg: var(--background);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance]) {
+    color-scheme: dark;
+
+    --background: var(--gray-dark-1);
+    --foreground: var(--gray-dark-11);
+    --card: var(--gray-dark-2);
+    --card-foreground: var(--gray-dark-11);
+    --popover: var(--gray-dark-2);
+    --popover-foreground: var(--gray-dark-11);
+    --primary: var(--indigo-dark-9);
+    --primary-foreground: var(--indigo-dark-1);
+    --secondary: var(--gray-dark-3);
+    --secondary-foreground: var(--gray-dark-11);
+    --muted: var(--gray-dark-3);
+    --muted-foreground: var(--gray-dark-9);
+    --accent: var(--indigo-dark-3);
+    --accent-foreground: var(--indigo-dark-11);
+    --destructive: var(--red-dark);
+    --border: var(--gray-dark-5);
+    --input: var(--gray-dark-7);
+    --ring: var(--indigo-dark-9);
+    --success: var(--green-dark);
+    --warning: var(--amber-dark);
+    --info: var(--blue-dark);
+    --paper: var(--paper-dark);
+    --ink: var(--ink-light);
+    --conf-medium: var(--ink-medium-light);
+    --conf-low: var(--ink-low-dark);
+    --stem-guitar: var(--orange-dark);
+    --stem-bass: var(--sky-dark);
+    --stem-drums: var(--vermillion-dark);
+    --stem-vocals: var(--purple-dark);
+    --stem-keys: var(--jade-dark);
+    --stem-other: var(--cyan-dark);
+    --muted-foreground-more: var(--gray-dark-10);
+    --border-more: var(--gray-dark-6);
+    --input-more: var(--gray-dark-8);
+    --elevation-1: none;
+    --elevation-2: none;
+    --elevation-3: none;
+    --read-scale: 1;
+
+    --loop-fill: oklch(0.3 0.06 278);
+    --loop-edge: var(--primary);
+    --playhead: oklch(0.7 0.161 27);
+    --score-loop-fill: oklch(0.86 0.049 278);
+    --score-loop-edge: oklch(0.47 0.19 278);
+    --score-playhead: oklch(0.55 0.2 27);
+    --staff: oklch(0.56 0.01 78);
+    --bar-current: oklch(0.895 0.03 90);
+    --waveform-peak: var(--input);
+    --waveform-rms: var(--muted-foreground);
+    --waveform-played: var(--foreground);
+    --hud-bg: color-mix(in oklab, var(--foreground) 90%, transparent);
+    --hud-bg-more: var(--foreground);
+    --hud-fg: var(--background);
+  }
+}
+
+[data-appearance="dark"] {
+  color-scheme: dark;
+
+  --background: var(--gray-dark-1);
+  --foreground: var(--gray-dark-11);
+  --card: var(--gray-dark-2);
+  --card-foreground: var(--gray-dark-11);
+  --popover: var(--gray-dark-2);
+  --popover-foreground: var(--gray-dark-11);
+  --primary: var(--indigo-dark-9);
+  --primary-foreground: var(--indigo-dark-1);
+  --secondary: var(--gray-dark-3);
+  --secondary-foreground: var(--gray-dark-11);
+  --muted: var(--gray-dark-3);
+  --muted-foreground: var(--gray-dark-9);
+  --accent: var(--indigo-dark-3);
+  --accent-foreground: var(--indigo-dark-11);
+  --destructive: var(--red-dark);
+  --border: var(--gray-dark-5);
+  --input: var(--gray-dark-7);
+  --ring: var(--indigo-dark-9);
+  --success: var(--green-dark);
+  --warning: var(--amber-dark);
+  --info: var(--blue-dark);
+  --paper: var(--paper-dark);
+  --ink: var(--ink-light);
+  --conf-medium: var(--ink-medium-light);
+  --conf-low: var(--ink-low-dark);
+  --stem-guitar: var(--orange-dark);
+  --stem-bass: var(--sky-dark);
+  --stem-drums: var(--vermillion-dark);
+  --stem-vocals: var(--purple-dark);
+  --stem-keys: var(--jade-dark);
+  --stem-other: var(--cyan-dark);
+  --muted-foreground-more: var(--gray-dark-10);
+  --border-more: var(--gray-dark-6);
+  --input-more: var(--gray-dark-8);
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+  --read-scale: 1;
+
+  --loop-fill: oklch(0.3 0.06 278);
+  --loop-edge: var(--primary);
+  --playhead: oklch(0.7 0.161 27);
+  --score-loop-fill: oklch(0.86 0.049 278);
+  --score-loop-edge: oklch(0.47 0.19 278);
+  --score-playhead: oklch(0.55 0.2 27);
+  --staff: oklch(0.56 0.01 78);
+  --bar-current: oklch(0.895 0.03 90);
+  --waveform-peak: var(--input);
+  --waveform-rms: var(--muted-foreground);
+  --waveform-played: var(--foreground);
+  --hud-bg: color-mix(in oklab, var(--foreground) 90%, transparent);
+  --hud-bg-more: var(--foreground);
+  --hud-fg: var(--background);
+}
+
+[data-appearance="stage"] {
+  color-scheme: dark;
+
+  --background: var(--gray-stage-1);
+  --foreground: var(--gray-stage-11);
+  --card: var(--gray-stage-2);
+  --card-foreground: var(--gray-stage-11);
+  --popover: var(--gray-stage-2);
+  --popover-foreground: var(--gray-stage-11);
+  --primary: var(--indigo-stage-9);
+  --primary-foreground: var(--indigo-stage-1);
+  --secondary: var(--gray-stage-3);
+  --secondary-foreground: var(--gray-stage-11);
+  --muted: var(--gray-stage-3);
+  --muted-foreground: var(--gray-stage-9);
+  --accent: var(--indigo-stage-3);
+  --accent-foreground: var(--indigo-stage-11);
+  --destructive: var(--red-stage);
+  --border: var(--gray-stage-5);
+  --input: var(--gray-stage-7);
+  --ring: var(--indigo-stage-9);
+  --success: var(--green-stage);
+  --warning: var(--amber-stage);
+  --info: var(--blue-stage);
+  --paper: var(--paper-stage);
+  --ink: var(--ink-stage);
+  --conf-medium: var(--ink-medium-stage);
+  --conf-low: var(--ink-low-stage);
+  --stem-guitar: var(--orange-stage);
+  --stem-bass: var(--sky-stage);
+  --stem-drums: var(--vermillion-stage);
+  --stem-vocals: var(--purple-stage);
+  --stem-keys: var(--jade-stage);
+  --stem-other: var(--cyan-stage);
+  --muted-foreground-more: var(--gray-stage-10);
+  --border-more: var(--gray-stage-6);
+  --input-more: var(--gray-stage-8);
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+  --read-scale: 1.25;
+
+  --loop-fill: oklch(0.27 0.05 278);
+  --loop-edge: var(--primary);
+  --playhead: oklch(0.68 0.14 27);
+  --score-loop-fill: oklch(0.27 0.05 278);
+  --score-loop-edge: oklch(0.72 0.1 278);
+  --score-playhead: oklch(0.68 0.14 27);
+  --staff: oklch(0.56 0.008 81);
+  --bar-current: oklch(0.215 0.02 80);
+  --waveform-peak: var(--input);
+  --waveform-rms: var(--muted-foreground);
+  --waveform-played: var(--foreground);
+  --hud-bg: color-mix(in oklab, var(--border) 94%, transparent);
+  --hud-bg-more: var(--border);
+  --hud-fg: var(--foreground);
+}
+
+/* Roles shared by every appearance: aliases of the roles above. */
+:root,
+[data-appearance] {
+  --stem-mix: var(--muted-foreground);
+  --chart-1: var(--stem-guitar);
+  --chart-2: var(--stem-bass);
+  --chart-3: var(--stem-drums);
+  --chart-4: var(--stem-vocals);
+  --chart-5: var(--stem-keys);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--card-foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --focus-width: 2px;
+}
+
+/* Increased contrast (§2): muted text and borders one step stronger, translucent fills opaque. */
+:root[data-contrast="more"] {
+  --muted-foreground: var(--muted-foreground-more);
+  --border: var(--border-more);
+  --input: var(--input-more);
+  --hud-bg: var(--hud-bg-more);
+  --focus-width: 3px;
+}
+
+@media (prefers-contrast: more) {
+  :root:not([data-contrast]) {
+    --muted-foreground: var(--muted-foreground-more);
+    --border: var(--border-more);
+    --input: var(--input-more);
+    --hud-bg: var(--hud-bg-more);
+    --focus-width: 3px;
+  }
+}
+
+/*
+ * Forced colours (Windows High Contrast): roles yield to system colours. The doubled selectors
+ * outrank the (0,2,0) fallback and contrast blocks above.
+ */
+@media (forced-colors: active) {
+  :root:root,
+  [data-appearance][data-appearance] {
+    --background: Canvas;
+    --foreground: CanvasText;
+    --card: Canvas;
+    --card-foreground: CanvasText;
+    --popover: Canvas;
+    --popover-foreground: CanvasText;
+    --primary: Highlight;
+    --primary-foreground: HighlightText;
+    --secondary: Canvas;
+    --secondary-foreground: CanvasText;
+    --muted: Canvas;
+    --muted-foreground: CanvasText;
+    --accent: Highlight;
+    --accent-foreground: HighlightText;
+    --border: CanvasText;
+    --input: CanvasText;
+    --ring: Highlight;
+    --paper: Canvas;
+    --ink: CanvasText;
+    --conf-medium: CanvasText;
+    --conf-low: CanvasText;
+    --loop-edge: Highlight;
+    --score-loop-edge: Highlight;
+    --playhead: CanvasText;
+    --score-playhead: CanvasText;
+    --staff: CanvasText;
+    --hud-bg: Canvas;
+    --hud-fg: CanvasText;
+  }
+}

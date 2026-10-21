@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Splitune</title>
+  <style>
+    .rest { stroke: #14110d }
+    .part { stroke: #4943c1 }
+    @media (prefers-color-scheme: dark) {
+      .rest { stroke: #edebe7 }
+      .part { stroke: #98a2fc }
+    }
+  </style>
+  <g fill="none" stroke-linecap="round" stroke-width="4">
+    <path class="rest" d="M3 16h9"/>
+    <path class="part" d="M12 16c4-5 8-8 17-8"/>
+    <path class="rest" d="M12 16c4 5 8 8 17 8"/>
+  </g>
+</svg>

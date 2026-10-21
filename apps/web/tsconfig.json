@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client", "@vitest/browser-playwright"],
+    "paths": {
+      "@/*": ["./app/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["app", ".storybook", "vite.config.ts", "vitest.config.ts"]
 }

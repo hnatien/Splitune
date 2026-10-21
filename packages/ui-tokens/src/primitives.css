@@ -1,0 +1,139 @@
+/*
+ * Tier 1 — primitives (docs/implementation/26-design-system.md §3, §4).
+ * OKLCH ramps and bases. Only semantic roles in themes.css reference these; Tailwind never sees
+ * them and components never use them. Ramps run from the surface end (1) to the text end (12) of
+ * their appearance, so steps 1–5 are surfaces, 6–8 borders, 9–10 secondary text, 11–12 text.
+ */
+:root {
+  /* Warm graphite neutrals — Light chrome */
+  --gray-1: oklch(0.995 0.003 85);
+  --gray-2: oklch(0.972 0.005 85);
+  --gray-3: oklch(0.94 0.006 85);
+  --gray-4: oklch(0.91 0.007 85);
+  --gray-5: oklch(0.885 0.008 85);
+  --gray-6: oklch(0.8 0.009 83);
+  --gray-7: oklch(0.62 0.01 80);
+  --gray-8: oklch(0.52 0.011 78);
+  --gray-9: oklch(0.47 0.012 75);
+  --gray-10: oklch(0.37 0.012 75);
+  --gray-11: oklch(0.2 0.012 75);
+  --gray-12: oklch(0.16 0.01 75);
+
+  /* Dark chrome (never pure black) */
+  --gray-dark-1: oklch(0.2 0.008 75);
+  --gray-dark-2: oklch(0.235 0.008 75);
+  --gray-dark-3: oklch(0.27 0.008 75);
+  --gray-dark-4: oklch(0.3 0.008 75);
+  --gray-dark-5: oklch(0.33 0.008 75);
+  --gray-dark-6: oklch(0.42 0.009 78);
+  --gray-dark-7: oklch(0.56 0.01 80);
+  --gray-dark-8: oklch(0.64 0.01 80);
+  --gray-dark-9: oklch(0.72 0.01 85);
+  --gray-dark-10: oklch(0.82 0.008 85);
+  --gray-dark-11: oklch(0.94 0.006 85);
+  --gray-dark-12: oklch(0.97 0.004 85);
+
+  /* Stage chrome (dim rooms; off-white, never #fff) */
+  --gray-stage-1: oklch(0.15 0.006 75);
+  --gray-stage-2: oklch(0.175 0.006 75);
+  --gray-stage-3: oklch(0.2 0.006 75);
+  --gray-stage-4: oklch(0.24 0.006 75);
+  --gray-stage-5: oklch(0.29 0.006 75);
+  --gray-stage-6: oklch(0.38 0.007 78);
+  --gray-stage-7: oklch(0.52 0.008 80);
+  --gray-stage-8: oklch(0.6 0.009 80);
+  --gray-stage-9: oklch(0.74 0.01 80);
+  --gray-stage-10: oklch(0.82 0.011 80);
+  --gray-stage-11: oklch(0.9 0.012 80);
+  --gray-stage-12: oklch(0.95 0.008 80);
+
+  /* Indigo ink — the one accent (hue 278) */
+  --indigo-1: oklch(0.985 0.005 275);
+  --indigo-2: oklch(0.965 0.014 278);
+  --indigo-3: oklch(0.94 0.024 278);
+  --indigo-4: oklch(0.92 0.036 277);
+  --indigo-5: oklch(0.88 0.055 278);
+  --indigo-6: oklch(0.82 0.08 278);
+  --indigo-7: oklch(0.72 0.12 278);
+  --indigo-8: oklch(0.6 0.16 278);
+  --indigo-9: oklch(0.47 0.19 278);
+  --indigo-10: oklch(0.42 0.18 278);
+  --indigo-11: oklch(0.36 0.151 278);
+  --indigo-12: oklch(0.25 0.1 278);
+
+  --indigo-dark-1: oklch(0.18 0.041 279);
+  --indigo-dark-2: oklch(0.22 0.045 278);
+  --indigo-dark-3: oklch(0.3 0.06 278);
+  --indigo-dark-4: oklch(0.34 0.07 278);
+  --indigo-dark-5: oklch(0.4 0.085 278);
+  --indigo-dark-6: oklch(0.48 0.1 278);
+  --indigo-dark-7: oklch(0.58 0.12 278);
+  --indigo-dark-8: oklch(0.66 0.13 278);
+  --indigo-dark-9: oklch(0.74 0.13 278);
+  --indigo-dark-10: oklch(0.79 0.11 278);
+  --indigo-dark-11: oklch(0.86 0.06 278);
+  --indigo-dark-12: oklch(0.93 0.03 278);
+
+  --indigo-stage-1: oklch(0.15 0.03 276);
+  --indigo-stage-2: oklch(0.2 0.04 277);
+  --indigo-stage-3: oklch(0.26 0.051 277);
+  --indigo-stage-4: oklch(0.3 0.06 278);
+  --indigo-stage-5: oklch(0.36 0.07 278);
+  --indigo-stage-6: oklch(0.44 0.08 278);
+  --indigo-stage-7: oklch(0.54 0.09 278);
+  --indigo-stage-8: oklch(0.63 0.095 278);
+  --indigo-stage-9: oklch(0.72 0.1 278);
+  --indigo-stage-10: oklch(0.77 0.09 278);
+  --indigo-stage-11: oklch(0.84 0.06 279);
+  --indigo-stage-12: oklch(0.92 0.03 278);
+
+  /* Score surface: paper and ink, with the two lighter inks for confidence (§5) */
+  --paper-light: oklch(0.99 0.006 88);
+  --paper-dark: oklch(0.93 0.008 88);
+  --paper-stage: oklch(0.165 0.006 75);
+  --ink-light: oklch(0.18 0.01 75);
+  --ink-stage: oklch(0.9 0.012 80);
+  --ink-medium-light: oklch(0.36 0.01 74);
+  --ink-medium-stage: oklch(0.78 0.011 82);
+  --ink-low-light: oklch(0.46 0.012 73);
+  --ink-low-dark: oklch(0.45 0.012 73);
+  --ink-low-stage: oklch(0.7 0.01 78);
+
+  /* Status bases */
+  --red-light: oklch(0.52 0.19 27);
+  --red-dark: oklch(0.7 0.161 27);
+  --red-stage: oklch(0.68 0.13 27);
+  --green-light: oklch(0.5 0.12 155);
+  --green-dark: oklch(0.74 0.131 155);
+  --green-stage: oklch(0.72 0.099 155);
+  --amber-light: oklch(0.53 0.115 65);
+  --amber-dark: oklch(0.8 0.12 75);
+  --amber-stage: oklch(0.78 0.1 75);
+  --blue-light: oklch(0.5 0.11 240);
+  --blue-dark: oklch(0.74 0.1 240.5);
+  --blue-stage: oklch(0.72 0.08 239);
+
+  /*
+   * Categorical bases for stems (§4.4): Okabe-Ito hues. Dark keeps the original Okabe-Ito
+   * guitar/bass/drums values; the rest were moved the smallest distance that keeps every pair
+   * ≥12 ΔE2000 under simulated protanopia, deuteranopia and tritanopia (palette.test.ts).
+   */
+  --orange-light: oklch(0.656 0.135 68);
+  --orange-dark: oklch(0.753 0.157 77);
+  --orange-stage: oklch(0.763 0.117 69);
+  --sky-light: oklch(0.489 0.162 256);
+  --sky-dark: oklch(0.735 0.117 236);
+  --sky-stage: oklch(0.719 0.102 235);
+  --vermillion-light: oklch(0.539 0.167 40);
+  --vermillion-dark: oklch(0.621 0.17 47.5);
+  --vermillion-stage: oklch(0.627 0.143 42);
+  --purple-light: oklch(0.556 0.119 348);
+  --purple-dark: oklch(0.661 0.112 343);
+  --purple-stage: oklch(0.658 0.094 344);
+  --jade-light: oklch(0.554 0.085 140);
+  --jade-dark: oklch(0.607 0.128 164);
+  --jade-stage: oklch(0.621 0.084 158);
+  --cyan-light: oklch(0.587 0.113 229);
+  --cyan-dark: oklch(0.86 0.04 235);
+  --cyan-stage: oklch(0.84 0.05 225);
+}

@@ -1,0 +1,321 @@
+/*
+ * Tailwind v4 mapping for the "Music Stand" tokens (docs/implementation/26-design-system.md §3,
+ * §6–§10). Import after `tailwindcss`, primitives.css and themes.css.
+ *
+ * The default palette is cleared, so only semantic colours exist as utilities (`bg-card`,
+ * `text-muted-foreground`, `border-input`…); a component can never write `bg-gray-4`.
+ */
+
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-appearance]), :root:not([data-appearance]) *) {
+      @slot;
+    }
+  }
+}
+
+@custom-variant practice (&:where([data-density="practice"], [data-density="practice"] *));
+@custom-variant stage (&:where([data-appearance="stage"], [data-appearance="stage"] *));
+@custom-variant contrast-more (&:where([data-contrast="more"], [data-contrast="more"] *));
+
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --ease-*: initial;
+
+  --spacing: 0.25rem;
+
+  --font-sans:
+    Inter, "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Browse scale (§6.2) */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-xs--font-weight: 500;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-lg--font-weight: 500;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-xl--font-weight: 600;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-2xl--font-weight: 600;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+  --text-4xl--font-weight: 650;
+  --text-4xl--letter-spacing: -0.02em;
+
+  /* Shape (§9) */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  /* Motion (§10) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@theme inline {
+  --font-reading: var(--reading-family);
+
+  --default-transition-duration: var(--duration-fast);
+
+  /* Practice reading scale (§6.3) */
+  --text-read-tab: var(--read-tab);
+  --text-read-tab--line-height: 1.2;
+  --text-read-tab--font-weight: 600;
+  --text-read-chord-current: var(--read-chord-current);
+  --text-read-chord-current--line-height: 1.1;
+  --text-read-chord-current--font-weight: 650;
+  --text-read-chord: var(--read-chord);
+  --text-read-chord--line-height: 1.1;
+  --text-read-chord--font-weight: 600;
+  --text-read-bar-number: var(--read-bar-number);
+  --text-read-bar-number--line-height: 1.2;
+  --text-read-readout: var(--read-readout);
+  --text-read-readout--line-height: 1.15;
+  --text-read-readout--font-weight: 650;
+  --text-read-label: var(--read-label);
+  --text-read-label--line-height: 1.3;
+
+  /* Targets (§8); `control` follows the density mode */
+  --spacing-target-min: var(--target-min);
+  --spacing-target-sm: var(--target-sm);
+  --spacing-target: var(--target);
+  --spacing-target-practice-2: var(--target-practice-2);
+  --spacing-target-practice: var(--target-practice);
+  --spacing-control: var(--control-size);
+
+  --shadow-1: var(--elevation-1);
+  --shadow-2: var(--elevation-2);
+  --shadow-3: var(--elevation-3);
+
+  /* Semantic roles */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-conf-medium: var(--conf-medium);
+  --color-conf-low: var(--conf-low);
+  --color-stem-guitar: var(--stem-guitar);
+  --color-stem-bass: var(--stem-bass);
+  --color-stem-drums: var(--stem-drums);
+  --color-stem-vocals: var(--stem-vocals);
+  --color-stem-keys: var(--stem-keys);
+  --color-stem-other: var(--stem-other);
+  --color-stem-mix: var(--stem-mix);
+
+  /* Component tokens */
+  --color-loop-fill: var(--loop-fill);
+  --color-loop-edge: var(--loop-edge);
+  --color-playhead: var(--playhead);
+  --color-score-loop-fill: var(--score-loop-fill);
+  --color-score-loop-edge: var(--score-loop-edge);
+  --color-score-playhead: var(--score-playhead);
+  --color-staff: var(--staff);
+  --color-bar-current: var(--bar-current);
+  --color-waveform-peak: var(--waveform-peak);
+  --color-waveform-rms: var(--waveform-rms);
+  --color-waveform-played: var(--waveform-played);
+  --color-hud-bg: var(--hud-bg);
+  --color-hud-fg: var(--hud-fg);
+}
+
+/* Static scales read by components and by readToken() (targets, durations, layers). */
+:root {
+  --radius: 0.625rem;
+
+  --target-min: 24px;
+  --target-sm: 32px;
+  --target: 44px;
+  --target-practice-2: 48px;
+  --target-practice: 64px;
+
+  --duration-fast: 100ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-popover: 50;
+  --z-toast: 60;
+  --z-hud: 70;
+
+  --reading-family: var(--font-sans);
+  --read-calibration: 1;
+}
+
+/* Density (§7): shared controls pick their size from the shell's mode. */
+:root,
+[data-density="browse"] {
+  --control-size: var(--target);
+}
+[data-density="practice"] {
+  --control-size: var(--target-practice-2);
+}
+
+/* Reading sizes by distance preset (§6.3). Desk is the default; coarse pointers start at Stand. */
+:root,
+[data-distance="desk"] {
+  --read-tab-base: 1.5rem;
+  --read-chord-current-base: 2rem;
+  --read-chord-base: 1.375rem;
+  --read-bar-number-base: 0.875rem;
+  --read-readout-base: 1.25rem;
+  --read-label-base: 0.875rem;
+}
+@media (pointer: coarse) {
+  :root:not([data-distance]) {
+    --read-tab-base: 2.25rem;
+    --read-chord-current-base: 3rem;
+    --read-chord-base: 2rem;
+    --read-bar-number-base: 1.25rem;
+    --read-readout-base: 1.75rem;
+    --read-label-base: 1.25rem;
+  }
+}
+[data-distance="stand"] {
+  --read-tab-base: 2.25rem;
+  --read-chord-current-base: 3rem;
+  --read-chord-base: 2rem;
+  --read-bar-number-base: 1.25rem;
+  --read-readout-base: 1.75rem;
+  --read-label-base: 1.25rem;
+}
+/* Floor shows the glance view; tab is hidden there, so its size stays at Stand. */
+[data-distance="floor"] {
+  --read-tab-base: 2.25rem;
+  --read-chord-current-base: 5.5rem;
+  --read-chord-base: 3.5rem;
+  --read-bar-number-base: 2.5rem;
+  --read-readout-base: 2.5rem;
+  --read-label-base: 1.5rem;
+}
+:root,
+[data-distance],
+[data-appearance] {
+  --read-factor: calc(var(--read-scale) * var(--read-calibration));
+  --read-tab: max(1.125rem, calc(var(--read-tab-base) * var(--read-factor)));
+  --read-chord-current: calc(var(--read-chord-current-base) * var(--read-factor));
+  --read-chord: calc(var(--read-chord-base) * var(--read-factor));
+  --read-bar-number: calc(var(--read-bar-number-base) * var(--read-factor));
+  --read-readout: calc(var(--read-readout-base) * var(--read-factor));
+  --read-label: calc(var(--read-label-base) * var(--read-factor));
+}
+
+/* Hyperlegible reading font (§6.1): notation digits, chord chips and practice readouts only. */
+[data-reading-font="hyperlegible"] {
+  --reading-family: "Atkinson Hyperlegible Next", var(--font-sans);
+}
+
+/* Reduced motion (§10): no movement; state changes are instant. */
+[data-motion="reduce"] {
+  --duration-fast: 0ms;
+  --duration-base: 0ms;
+  --duration-slow: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion]) {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Focus (§9): 2 px outline in --ring with 2 px offset, 3 px under increased contrast. */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Reduced motion: unlayered, so it outranks every Tailwind layer (utilities and animations)
+ * without !important.
+ */
+[data-motion="reduce"] *,
+[data-motion="reduce"] ::before,
+[data-motion="reduce"] ::after {
+  animation-duration: 0ms;
+  animation-iteration-count: 1;
+  transition-duration: 0ms;
+  scroll-behavior: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion]) *,
+  :root:not([data-motion]) ::before,
+  :root:not([data-motion]) ::after {
+    animation-duration: 0ms;
+    animation-iteration-count: 1;
+    transition-duration: 0ms;
+    scroll-behavior: auto;
+  }
+}
