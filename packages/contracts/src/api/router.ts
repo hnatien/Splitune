@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { Analysis, AnalysisAccepted, CreateAnalysisInput } from './analyses.ts'
 import { ArtefactUrlInput, ArtefactUrlOutput } from './artefacts.ts'
 import { BillingPlansOutput, CheckoutInput } from './billing.ts'
-import { IdInput, PageInput, page, RedirectOutput } from './common.ts'
+import { IdInput, page, RedirectOutput } from './common.ts'
 import {
   CorrectionsBatchInput,
   CorrectionsBatchOutput,
@@ -27,17 +27,21 @@ import {
   CreateSongOutput,
   ImportUrlInput,
   ImportUrlOutput,
+  LibrarySong,
+  ListSongsInput,
   PutSyncPointsInput,
   PutYoutubeInput,
   Song,
   SongDetail,
   UpdateSongInput,
 } from './songs.ts'
-import { WorkerStatus } from './system.ts'
+import { SystemStats, WorkerStatus } from './system.ts'
 import {
   CompleteUploadInput,
   CreateUploadInput,
   CreateUploadOutput,
+  LookupUploadInput,
+  LookupUploadOutput,
   RefreshPartsInput,
   RefreshPartsOutput,
   UploadState,
@@ -75,7 +79,10 @@ export const contract = {
       .route({ method: 'POST', path: '/v1/songs', successStatus: 201 })
       .input(CreateSongInput)
       .output(CreateSongOutput),
-    list: base.route({ method: 'GET', path: '/v1/songs' }).input(PageInput).output(page(Song)),
+    list: base
+      .route({ method: 'GET', path: '/v1/songs' })
+      .input(ListSongsInput)
+      .output(page(LibrarySong)),
     get: base.route({ method: 'GET', path: '/v1/songs/{id}' }).input(IdInput).output(SongDetail),
     update: base
       .route({ method: 'PATCH', path: '/v1/songs/{id}' })
@@ -107,6 +114,10 @@ export const contract = {
       .route({ method: 'POST', path: '/v1/uploads', successStatus: 201 })
       .input(CreateUploadInput)
       .output(CreateUploadOutput),
+    lookup: base
+      .route({ method: 'GET', path: '/v1/uploads/lookup' })
+      .input(LookupUploadInput)
+      .output(LookupUploadOutput),
     refreshParts: base
       .route({ method: 'POST', path: '/v1/uploads/{id}/parts' })
       .input(RefreshPartsInput)
@@ -181,6 +192,7 @@ export const contract = {
     workerStatus: base
       .route({ method: 'GET', path: '/v1/system/worker-status' })
       .output(WorkerStatus),
+    stats: base.route({ method: 'GET', path: '/v1/system/stats' }).output(SystemStats),
   },
   billing: {
     plans: base.route({ method: 'GET', path: '/v1/billing/plans' }).output(BillingPlansOutput),

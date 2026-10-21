@@ -15,6 +15,8 @@ export const CreateUploadInput = z.object({
   file_sha256: Sha256Hex,
   rights_warranty: z.literal(true).optional(),
   tos_version: z.string().min(1).optional(),
+  // "Import anyway" after the duplicate notice (27 §5.6 import.duplicate): skip the check.
+  allow_duplicate: z.boolean().optional(),
 })
 
 export const UploadTarget = z.object({
@@ -27,6 +29,10 @@ export const UploadTarget = z.object({
 export const DuplicateUpload = z.object({ duplicate_of_song_id: z.uuid() })
 
 export const CreateUploadOutput = z.union([UploadTarget, DuplicateUpload])
+
+// Duplicate check right after the browser hashed a picked file, before any song is created.
+export const LookupUploadInput = z.object({ file_sha256: Sha256Hex })
+export const LookupUploadOutput = z.object({ song_id: z.uuid().nullable() })
 
 export const RefreshPartsInput = z.object({
   id: z.uuid(),

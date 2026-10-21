@@ -1,8 +1,15 @@
 import { z } from 'zod'
 import { Instrument, SourceKind } from '../analysis/common.ts'
 import { RecommendedView } from '../analysis/summary.ts'
-import { Analysis, AnalysisAccepted, AnalysisType } from './analyses.ts'
+import {
+  Analysis,
+  AnalysisAccepted,
+  AnalysisKind,
+  AnalysisStatus,
+  AnalysisType,
+} from './analyses.ts'
 import { ArtefactIndexEntry } from './artefacts.ts'
+import { PageInput } from './common.ts'
 
 export const SongStatus = z.enum([
   'importing',
@@ -41,6 +48,43 @@ export const Song = z.object({
   player_state: PlayerState,
   last_opened_at: z.iso.datetime().nullable(),
   created_at: z.iso.datetime(),
+})
+
+// Library query (27-screens-flows-and-content.md §3.5): title search, filter chips and sort. The
+// `analysing` chip covers songs still importing (URL download) or analysing.
+export const LibrarySort = z.enum(['last_practised', 'added', 'title'])
+export const LibraryStatusFilter = z.enum(['ready', 'partial', 'analysing', 'failed'])
+
+export const ListSongsInput = PageInput.extend({
+  q: z.string().trim().min(1).max(200).optional(),
+  instrument: Instrument.optional(),
+  status: LibraryStatusFilter.optional(),
+  sort: LibrarySort.optional(),
+})
+
+// What a library card shows besides the song: the latest analysis' progress (stages finished of
+// those planned, reused stages included) and the view finalize recommended ("Chords only"), whether
+// its stems can still be played, and the best clean tempo of any clip with that clip's bars
+// (0-based bar_index, 05 "indexing").
+export const LibraryAnalysis = z.object({
+  id: z.uuid(),
+  type: AnalysisKind,
+  status: AnalysisStatus,
+  stages_done: z.number().int().nonnegative(),
+  stages_total: z.number().int().nonnegative(),
+  recommended_view: RecommendedView.nullable(),
+})
+
+export const BestClean = z.object({
+  tempo_pct: z.number().int().min(1).max(200),
+  start_bar: z.number().int(),
+  end_bar: z.number().int(),
+})
+
+export const LibrarySong = Song.extend({
+  latest_analysis: LibraryAnalysis.nullable(),
+  stems: z.enum(['available', 'expired', 'none']),
+  best_clean: BestClean.nullable(),
 })
 
 export const SyncPoint = z.object({
