@@ -128,6 +128,25 @@ describe('multipart upload via presigned part URLs', () => {
   })
 })
 
+describe('getBytes and putBytes', () => {
+  it('round-trips bytes and reports a missing object as undefined', async () => {
+    const key = artefactKey(user, randomUUID(), 1, 'summary.json')
+    await storage.putBytes(key, '{"ok":true}', 'application/json')
+    const body = await storage.getBytes(key, { maxBytes: 1024 })
+    expect(new TextDecoder().decode(body)).toBe('{"ok":true}')
+    const missing = artefactKey(user, randomUUID(), 1, 'summary.json')
+    expect(await storage.getBytes(missing, { maxBytes: 1024 })).toBeUndefined()
+  })
+
+  it('refuses objects larger than maxBytes and unsafe keys', async () => {
+    const key = artefactKey(user, randomUUID(), 1, 'chords.json')
+    await storage.putBytes(key, randomBytes(2048), 'application/octet-stream')
+    await expect(storage.getBytes(key, { maxBytes: 1024 })).rejects.toThrow(RangeError)
+    await expect(storage.getBytes('../x', { maxBytes: 1024 })).rejects.toThrow(StorageKeyError)
+    await expect(storage.putBytes('/abs', 'x', 'text/plain')).rejects.toThrow(StorageKeyError)
+  })
+})
+
 describe('deletePrefix', () => {
   const putObject = async (key: string) => {
     const url = await storage.presignPut(key, { contentType: 'application/octet-stream' })

@@ -206,6 +206,43 @@ export function createStorage(config: StorageConfig) {
 
     listKeys,
 
+    // Server-side reads and writes (Mac workers). undefined = no such object; objects larger than
+    // maxBytes are refused.
+    async getBytes(
+      key: string,
+      { maxBytes }: { maxBytes: number },
+    ): Promise<Uint8Array | undefined> {
+      let body: Uint8Array | undefined
+      try {
+        const object = await client.send(
+          new GetObjectCommand({ Bucket: bucket, Key: assertSafeKey(key) }),
+        )
+        if (object.ContentLength !== undefined && object.ContentLength > maxBytes) {
+          await object.Body?.transformToWebStream().cancel()
+          throw new RangeError(`object larger than ${maxBytes} bytes`)
+        }
+        body = await object.Body?.transformToByteArray()
+      } catch (error) {
+        if ((error as { name?: string }).name === 'NoSuchKey') return undefined
+        throw error
+      }
+      if (body === undefined || body.byteLength > maxBytes) {
+        throw new RangeError(`object larger than ${maxBytes} bytes`)
+      }
+      return body
+    },
+
+    async putBytes(key: string, body: Uint8Array | string, contentType: string): Promise<void> {
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: assertSafeKey(key),
+          Body: body,
+          ContentType: contentType,
+        }),
+      )
+    },
+
     // Deletes every object under a user-scoped prefix (song/account deletion, sweeper). Idempotent;
     // returns how many objects were deleted.
     async deletePrefix(prefix: string): Promise<number> {
