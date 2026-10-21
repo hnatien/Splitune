@@ -471,7 +471,8 @@ def test_local_chain_transcribes_and_recognizes_chords(
 ) -> None:
     """Real islands: the separation graph, then chords (beats + separation + stems) and
     notes.guitar / notes.bass (separation + stems) with their optional inputs downloaded."""
-    source = click_track(bpm=100, seconds=12)
+    # The tagger must hear bass, or separation drops the bass extra and notes.bass falls back.
+    source = click_track(bpm=100, seconds=12, plucked_bass=True)
     models = models_subset(
         tmp_path, ["htdemucs-6s", "panns-cnn14", "basic-pitch", "consonance-ace"]
     )

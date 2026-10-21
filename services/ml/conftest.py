@@ -41,9 +41,12 @@ def render_click_track(
     sample_rate: int = 44100,
     offset_s: float = 0.5,
     seed: int = 0,
+    plucked_bass: bool = False,
 ) -> list[float]:
     """A drum-like pattern (kick on downbeats, snare on backbeats, hats on eighths) plus a bass
-    tone; returns the beat times. Deterministic for a given seed."""
+    tone; returns the beat times. Deterministic for a given seed. The default bass is a quiet
+    110 Hz sine that PANNs doesn't hear as bass; `plucked_bass` plays a plucked A2 string on every
+    beat instead, which it does (≈ 0.06, above separation's keep_min_prob, drums still ≈ 0.3)."""
     rng = np.random.default_rng(seed)
     n = int(seconds * sample_rate)
     audio = np.zeros(n, dtype=np.float64)
@@ -72,8 +75,23 @@ def render_click_track(
         hit(at, "kick" if k % beats_per_bar == 0 else "snare" if k % 2 else "hat")
         hit(at + period / 2, "hat")
         k += 1
-    whole = np.arange(n) / sample_rate
-    audio += 0.08 * np.sin(2 * np.pi * 110 * whole)
+    if plucked_bass:
+        # Karplus-Strong: a noise burst one period long, recirculated through a damped average.
+        note, wave = int(period * sample_rate), round(sample_rate / 110)
+        for at in beats:
+            string = np.zeros(1 + note)  # string[0] = 0 seeds the first average
+            string[1 : 1 + wave] = rng.uniform(-1, 1, wave)
+            for i in range(1 + wave, string.size, wave):
+                m = min(wave, string.size - i)
+                string[i : i + m] = 0.498 * (
+                    string[i - wave : i - wave + m] + string[i - wave - 1 : i - wave - 1 + m]
+                )
+            start = int(at * sample_rate)
+            end = min(n, start + note)
+            audio[start:end] += 0.15 * string[1 : 1 + end - start]
+    else:
+        whole = np.arange(n) / sample_rate
+        audio += 0.08 * np.sin(2 * np.pi * 110 * whole)
     audio = 0.5 * audio / max(1e-9, float(np.max(np.abs(audio))))
     stereo = np.stack([audio, audio * 0.9], axis=1).astype(np.float32)
     path.parent.mkdir(parents=True, exist_ok=True)
