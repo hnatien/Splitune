@@ -12,7 +12,16 @@ export const ArtefactIndexEntry = z.object({
 
 export const StemVariant = z.enum(['opus_webm', 'aac_mp4'])
 
-export const ArtefactUrlInput = z.object({ id: z.uuid(), variant: StemVariant.optional() })
+// A stems artefact with `stem_id` signs that stem's audio file in `variant` (default aac_mp4);
+// without `stem_id` every artefact signs its own document.
+export const ArtefactUrlInput = z.object({
+  id: z.uuid(),
+  stem_id: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9_.-]{0,63}$/)
+    .optional(),
+  variant: StemVariant.optional(),
+})
 
 // Signed GET URL, valid for 15 minutes.
 export const ArtefactUrlOutput = z.object({ url: z.url(), expires_at: z.iso.datetime() })

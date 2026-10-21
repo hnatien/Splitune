@@ -33,6 +33,7 @@ import {
   SongDetail,
   UpdateSongInput,
 } from './songs.ts'
+import { WorkerStatus } from './system.ts'
 import {
   CompleteUploadInput,
   CreateUploadInput,
@@ -175,6 +176,11 @@ export const contract = {
       .route({ method: 'GET', path: '/v1/progress' })
       .input(ProgressInput)
       .output(ProgressOutput),
+  },
+  system: {
+    workerStatus: base
+      .route({ method: 'GET', path: '/v1/system/worker-status' })
+      .output(WorkerStatus),
   },
   billing: {
     plans: base.route({ method: 'GET', path: '/v1/billing/plans' }).output(BillingPlansOutput),

@@ -28,7 +28,9 @@ export const StageFailedEvent = z
     type: z.literal('stage.failed'),
     stage: StageName,
     error_code: MachineCode,
-    fallback: z.string().optional(),
+    // What the analysis does instead (06 §6), e.g. stems_unavailable when separation failed; absent
+    // when the stage is critical (the analysis then ends failed).
+    fallback: MachineCode.optional(),
     at: z.iso.datetime(),
   })
   .register(contracts, { id: 'StageFailedEvent' })
@@ -45,12 +47,24 @@ export const AnalysisDoneEvent = z
   })
   .register(contracts, { id: 'AnalysisDoneEvent' })
 
+// Runnable jobs of the analysis are waiting for a Mac worker that has no fresh heartbeat (25 §5);
+// processing resumes on its own when the worker comes back (the next stage.started).
+export const AnalysisWaitingEvent = z
+  .object({
+    type: z.literal('analysis.waiting'),
+    reason: z.literal('queued_waiting_for_worker'),
+    runner: z.enum(['python', 'node']),
+    at: z.iso.datetime(),
+  })
+  .register(contracts, { id: 'AnalysisWaitingEvent' })
+
 export const JobEvent = z
   .discriminatedUnion('type', [
     StageStartedEvent,
     StageCompletedEvent,
     StageFailedEvent,
     ProgressEvent,
+    AnalysisWaitingEvent,
     AnalysisDoneEvent,
   ])
   .register(contracts, { id: 'JobEvent' })
