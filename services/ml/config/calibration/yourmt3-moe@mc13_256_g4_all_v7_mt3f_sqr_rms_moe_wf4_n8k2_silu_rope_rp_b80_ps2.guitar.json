@@ -1,0 +1,1 @@
+{"model_id":"yourmt3-moe","version":"mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b80_ps2","method":"isotonic","knots":[[1.0,0.593035]],"bands":{"high":0.7,"medium":0.4},"fitted_on":"p2-guitarset-players-00-02-stems"}

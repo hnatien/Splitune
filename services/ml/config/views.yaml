@@ -12,7 +12,8 @@ rough_stem_low_conf: 0.35
 low_confidence: 0.5
 
 # Prototype 2 gate per instrument (08): `fail` → chords_only with reason quality_gate_failed.
-# Instruments not listed have no gate.
+# Instruments not listed have no gate. P2 (eval/results/p2), Basic Pitch on separated stems:
+# guitar 0.797 onset F1 (GuitarSet + band), bass 0.807 (BabySlakh, 19 tracks): both pass.
 quality_gate:
   guitar: pass
   bass: pass
@@ -30,3 +31,6 @@ changes:
   - date: 2026-10-21
     change: initial proposal values from 05-analysis-schema.md
     models: []
+  - date: 2026-10-21
+    change: "quality_gate confirmed by Prototype 2: guitar pass, bass pass"
+    models: [basic-pitch@0.4.0]

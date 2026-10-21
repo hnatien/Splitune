@@ -5,12 +5,14 @@ version: 1
 
 instruments:
   guitar:
+    # Thresholds from the P2 sweep on separated stems (eval/results/p2).
     transcriber: basic_pitch
-    params: {min_freq_hz: 70}
+    params: {min_freq_hz: 70, onset_threshold: 0.6, frame_threshold: 0.5, min_note_ms: 58}
   bass:
     # ≈30 Hz floor (06 §4) and a ceiling well above a 4-string's 24th fret (G5 ≈ 784 Hz is rare).
+    # Thresholds from the P2 sweep on separated stems (eval/results/p2).
     transcriber: basic_pitch
-    params: {min_freq_hz: 30, max_freq_hz: 600}
+    params: {min_freq_hz: 30, max_freq_hz: 600, onset_threshold: 0.7, frame_threshold: 0.5}
   vocals:
     transcriber: basic_pitch
     params: {min_freq_hz: 65, max_freq_hz: 1400}

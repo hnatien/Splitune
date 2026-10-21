@@ -1,12 +1,15 @@
 # Chord recognition (06 §0 chords / key; Prototype 6 chooses, 08). Inputs present in the request
-# are fused per beat: the mixture always, the no-drums stem (mixture − drums) and the bass-root
-# prior when separation kept drums / bass.
+# are fused per beat: the mixture, the no-drums stem (mixture − drums) and the bass-root prior when
+# separation kept drums / bass. Without a drums stem the mixture is used.
 version: 1
 
-recognizer: consonance_ace  # consonance_ace | btc | madmom_cnn
+# P6 (eval/results/p6): BTC sevenths on the no-drums stem. majmin WCSR 0.770 vs madmom's 0.787
+# (paired difference 0.018, SE 0.016, n 60), but it also decodes sevenths; music-core's key over
+# its chords scores 0.880 vs 0.715 for madmom's key CNN.
+recognizer: btc  # consonance_ace | btc | madmom_cnn
 vocabulary: sevenths  # sevenths | majmin (madmom_cnn: majmin only); music-core simplifies for display
-key: madmom_cnn  # madmom_cnn | music_core
+key: music_core  # madmom_cnn | music_core
 
-inputs: [mixture, no_drums]
-bass_root_weight: 0.5  # 0 disables the bass-root prior
+inputs: [no_drums]  # P6: better alone than fused with the mixture, for every recognizer
+bass_root_weight: 0.5  # 0 disables the bass-root prior; not evaluated (P6 material has no bass)
 change_penalty: 3.0  # log-penalty per chord change in the beat Viterbi

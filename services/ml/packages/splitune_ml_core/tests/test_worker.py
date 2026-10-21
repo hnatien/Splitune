@@ -474,7 +474,7 @@ def test_local_chain_transcribes_and_recognizes_chords(
     # The tagger must hear bass, or separation drops the bass extra and notes.bass falls back.
     source = click_track(bpm=100, seconds=12, plucked_bass=True)
     models = models_subset(
-        tmp_path, ["htdemucs-6s", "panns-cnn14", "basic-pitch", "consonance-ace"]
+        tmp_path, ["htdemucs-6s", "panns-cnn14", "basic-pitch", "btc-large-voca"]
     )
     settings = make_settings(
         ML_MODE="local", ML_ISLAND_PYTHON=sys.executable, ML_MODELS_DIR=str(models)
@@ -521,8 +521,7 @@ def test_local_chain_transcribes_and_recognizes_chords(
     chords = contracts.Chords.model_validate_json(
         storage.get_bytes(rows["chords"]["object_key"], max_bytes=1 << 24)
     )
-    assert chords.inputs_fused[0] == "mixture"
-    assert "no_drums" in chords.inputs_fused  # htdemucs_6s kept the drums extra
+    assert chords.inputs_fused[0] == "no_drums"  # htdemucs_6s kept the drums extra
     assert chords.segments
     assert all(s.beat_aligned for s in chords.segments)
     for kind in ("notes.guitar", "notes.bass"):

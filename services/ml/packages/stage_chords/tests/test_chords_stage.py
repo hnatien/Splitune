@@ -174,7 +174,13 @@ def test_recognizes_a_progression_with_fusion(
     tmp_path: Path, recognizer: str, vocabulary: str
 ) -> None:
     chords = run(
-        tmp_path, {"recognizer": recognizer, "vocabulary": vocabulary, "key": "music_core"}
+        tmp_path,
+        {
+            "recognizer": recognizer,
+            "vocabulary": vocabulary,
+            "inputs": ["mixture", "no_drums"],
+            "key": "music_core",
+        },
     )
     assert chords.vocabulary == vocabulary
     assert chords.inputs_fused == ["mixture", "no_drums", "bass_root"]
