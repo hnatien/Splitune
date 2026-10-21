@@ -114,7 +114,7 @@ export const uploads = {
     if (outOfRange.length > 0) {
       throw apiError('invalid_input', {
         details: {
-          issues: [{ path: 'part_numbers', message: `This upload has ${partCount} parts` }],
+          issues: [{ path: 'part_numbers', code: 'part_out_of_range', part_count: partCount }],
         },
       })
     }
@@ -137,7 +137,7 @@ export const uploads = {
     ) {
       throw apiError('invalid_input', {
         details: {
-          issues: [{ path: 'parts', message: `Expected parts 1–${partCount}, each once` }],
+          issues: [{ path: 'parts', code: 'parts_incomplete', part_count: partCount }],
         },
       })
     }
@@ -151,7 +151,7 @@ export const uploads = {
       const name = s3ErrorName(error)
       if (BAD_PARTS.has(name)) {
         throw apiError('invalid_input', {
-          details: { issues: [{ path: 'parts', message: 'Parts are missing or do not match' }] },
+          details: { issues: [{ path: 'parts', code: 'parts_mismatch' }] },
         })
       }
       if (name === 'NoSuchUpload') throw apiError('conflict')

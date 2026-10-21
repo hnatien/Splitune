@@ -1,5 +1,4 @@
 import { randomBytes } from 'node:crypto'
-import { queue } from '@splitune/db'
 import { uploadPrefix } from '@splitune/storage'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MAX_UPLOAD_BYTES, partPlan } from '../src/routes/uploads.ts'
@@ -195,12 +194,19 @@ describe('DELETE /v1/songs/{id}', () => {
       (await alice.request('POST', `/v1/uploads/${target.upload_id}/complete`, { parts })).status,
     ).toBe(404)
 
-    // Act as the node worker: claim the job and delete each prefix.
-    const job = await queue.claim(api.db, 'node', 'test-node-worker', { kinds: ['delete_prefix'] })
-    expect(job?.payload).toEqual({ user_id: aliceId, prefixes: [prefix] })
-    const { prefixes = [] } = (job?.payload ?? {}) as { prefixes?: string[] }
-    for (const p of prefixes) await api.storage.deletePrefix(p)
-    await queue.complete(api.db, job?.id as number, 'test-node-worker')
+    // The cleanup jobs of this song (other files' deletions may be queued too): one due now and
+    // a second pass later (packages/db CLEANUP_REPEAT_AFTER_S).
+    const { rows } = await api.db.$client.query(
+      `select payload, run_after <= now() as due from jobs
+       where kind = 'delete_prefix' and runner = 'node' and payload->'prefixes' ? $1 order by id`,
+      [prefix],
+    )
+    expect(rows).toEqual([
+      { payload: { user_id: aliceId, prefixes: [prefix] }, due: true },
+      { payload: { user_id: aliceId, prefixes: [prefix] }, due: false },
+    ])
+    // What the node worker's delete_prefix does with it (apps/node-worker tests run the real one).
+    await api.storage.deletePrefix(prefix)
     expect(await api.storage.listKeys(prefix)).toEqual([])
   })
 })

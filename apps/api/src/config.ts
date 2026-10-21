@@ -21,6 +21,9 @@ export interface ApiConfig {
   // Behind Railway's proxy the client address is the last X-Forwarded-For hop.
   trustProxy: boolean
   logLevel: string
+  // analyses.pipeline_version (05 "manifest"): part of the analysis idempotency key, so a new
+  // pipeline release analyses an already analysed song again.
+  pipelineVersion: string
 }
 
 const origin = z.url({ protocol: /^https?$/ }).transform((value) => new URL(value).origin)
@@ -46,6 +49,9 @@ const Env = z.object({
   EMAIL_FROM: z.string().min(3),
   TRUST_PROXY: flag.default(false),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  // Railway sets RAILWAY_GIT_COMMIT_SHA on deploys from GitHub.
+  PIPELINE_VERSION: optional,
+  RAILWAY_GIT_COMMIT_SHA: optional,
 })
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
@@ -80,5 +86,6 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     },
     trustProxy: e.TRUST_PROXY,
     logLevel: e.LOG_LEVEL,
+    pipelineVersion: e.PIPELINE_VERSION ?? e.RAILWAY_GIT_COMMIT_SHA?.slice(0, 12) ?? 'dev',
   }
 }

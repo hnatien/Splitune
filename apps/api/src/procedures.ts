@@ -5,6 +5,7 @@ import type { Storage } from '@splitune/storage'
 import type { SessionInfo } from './auth.ts'
 import type { ApiConfig } from './config.ts'
 import { apiError } from './errors.ts'
+import type { EventHub } from './events.ts'
 import type { Logger } from './logger.ts'
 
 export interface ApiDeps {
@@ -12,6 +13,7 @@ export interface ApiDeps {
   repos: Repositories
   storage: Storage
   config: ApiConfig
+  events: EventHub
 }
 
 // Per-request context the Hono layer hands to oRPC.
@@ -19,10 +21,12 @@ export interface RequestContext {
   deps: ApiDeps
   session: SessionInfo | null
   log: Logger
+  // Idempotency-Key header (04 "Conventions"), for procedures that are not idempotent by body.
+  idempotencyKey?: string
 }
 
-// The procedures this step implements (04-api-contract.md); analyses, SSE, corrections, loops,
-// practice, billing and URL import join in later steps. Only these are routed and documented.
+// The procedures implemented so far (04-api-contract.md); corrections, loops, practice, billing
+// and the YouTube reference join in later steps. Only these are routed and documented.
 export const v1Contract = {
   me: { get: contract.me.get, update: contract.me.update },
   songs: {
@@ -31,8 +35,12 @@ export const v1Contract = {
     get: contract.songs.get,
     update: contract.songs.update,
     delete: contract.songs.delete,
+    importUrl: contract.songs.importUrl,
   },
   uploads: contract.uploads,
+  analyses: contract.analyses,
+  artefacts: { url: contract.artefacts.url },
+  system: contract.system,
 }
 
 // Every v1 procedure needs a session; handlers get `userId` and resolve resources through it.
@@ -50,6 +58,8 @@ export const RATE_LIMITS = {
   auth: { limit: 10, windowS: 60 },
   // per user, POST /v1/uploads
   uploads: { limit: 20, windowS: 3600 },
+  // per user, POST /v1/analyses, /v1/analyses/{id}/rerun and /v1/songs/import-url
+  analyses: { limit: 30, windowS: 3600 },
 } as const
 
 export function userRateLimit(policy: keyof typeof RATE_LIMITS) {

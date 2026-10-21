@@ -20,13 +20,14 @@ describe('toEnvelope', () => {
     expect(toEnvelope(error).details).toBeUndefined()
   })
 
-  it('turns input validation failures into invalid_input with field paths', () => {
+  it('turns input validation failures into invalid_input with field paths and codes', () => {
     const cause = new ValidationError({
       message: 'Input validation failed',
       issues: [
-        { message: 'Invalid option', path: ['handedness'] },
-        { message: 'Too big', path: [{ key: 'parts' }, 0, 'n'] },
-      ],
+        { message: 'Invalid option', path: ['handedness'], code: 'invalid_value' },
+        { message: 'Too big', path: [{ key: 'parts' }, 0, 'n'], code: 'too_big' },
+        { message: 'Not a code', path: ['x'], code: 'Not a code' },
+      ] as never,
     })
     const error = new ORPCError('BAD_REQUEST', { message: 'Input validation failed', cause })
     expect(toEnvelope(error)).toEqual({
@@ -34,8 +35,9 @@ describe('toEnvelope', () => {
       message: 'The request is not valid.',
       details: {
         issues: [
-          { path: 'handedness', message: 'Invalid option' },
-          { path: 'parts.0.n', message: 'Too big' },
+          { path: 'handedness', code: 'invalid_value' },
+          { path: 'parts.0.n', code: 'too_big' },
+          { path: 'x', code: 'invalid' },
         ],
       },
     })

@@ -135,3 +135,43 @@ export async function userIdOf(api: TestApi, cookie: string): Promise<string> {
   const body = (await res.json()) as { user: { id: string } }
   return body.user.id
 }
+
+export interface SseMessage {
+  id: string | undefined
+  event: string | undefined
+  data: unknown
+}
+
+// Server-sent events of a streaming response, frame by frame (comments and keep-alives skipped).
+export async function* sseMessages(res: Response): AsyncGenerator<SseMessage> {
+  if (!res.body) throw new Error('response has no body')
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  try {
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) return
+      buffer += decoder.decode(value, { stream: true })
+      for (let end = buffer.indexOf('\n\n'); end >= 0; end = buffer.indexOf('\n\n')) {
+        const frame = buffer.slice(0, end)
+        buffer = buffer.slice(end + 2)
+        const fields = new Map<string, string>()
+        for (const line of frame.split('\n')) {
+          const colon = line.indexOf(':')
+          if (colon <= 0) continue
+          const name = line.slice(0, colon)
+          const value = line.slice(colon + 1).trimStart()
+          const previous = fields.get(name)
+          fields.set(name, previous === undefined ? value : `${previous}\n${value}`)
+        }
+        const data = fields.get('data')
+        if (data !== undefined) {
+          yield { id: fields.get('id'), event: fields.get('event'), data: JSON.parse(data) }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}

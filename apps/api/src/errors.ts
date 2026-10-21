@@ -66,10 +66,18 @@ function codeFor(error: ORPCError<string, unknown>): ErrorCode {
 interface Issue {
   message: string
   path?: readonly (PropertyKey | { key: PropertyKey })[] | undefined
+  // Zod's issue code (invalid_type, too_small, …); Standard Schema issues may lack it.
+  code?: unknown
 }
 
 const issuePath = (issue: Issue) =>
   (issue.path ?? []).map((p) => String(typeof p === 'object' ? p.key : p)).join('.')
+
+const MACHINE_CODE = /^[a-z][a-z0-9_.]*$/
+
+// A field problem as the UI gets it (27 §5.6): where, and a machine code, never English text.
+const issueCode = (issue: Issue) =>
+  typeof issue.code === 'string' && MACHINE_CODE.test(issue.code) ? issue.code : 'invalid'
 
 // The body of every error response (04-api-contract.md "Error codes").
 export function toEnvelope(error: ORPCError<string, unknown>): Envelope {
@@ -79,7 +87,7 @@ export function toEnvelope(error: ORPCError<string, unknown>): Envelope {
     envelope.details = {
       issues: (error.cause.issues as readonly Issue[]).map((issue) => ({
         path: issuePath(issue),
-        message: issue.message,
+        code: issueCode(issue),
       })),
     }
     return envelope

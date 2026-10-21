@@ -1,17 +1,16 @@
-import type {
-  Analysis as AnalysisSchema,
-  ArtefactIndexEntry,
-  SongDetail as SongDetailSchema,
-  Song as SongSchema,
-} from '@splitune/contracts'
-import type { Analysis, Artefact, Song, SongCursor, SongPatch, stageRuns } from '@splitune/db'
+import { randomUUID } from 'node:crypto'
+import { isIP } from 'node:net'
+import type { SongDetail as SongDetailSchema, Song as SongSchema } from '@splitune/contracts'
+import type { Song, SongCursor, SongPatch } from '@splitune/db'
 import { analysisPrefix, uploadPrefix } from '@splitune/storage'
 import { z } from 'zod'
+import { admitAnalysis } from '../entitlements.ts'
 import { apiError } from '../errors.ts'
-import { authed } from '../procedures.ts'
+import { analysisKey, CONFIG_PROFILE, planAnalysis } from '../pipeline.ts'
+import { authed, userRateLimit } from '../procedures.ts'
+import { artefactIndex, toAnalysis } from './analyses.ts'
 
 type SongOut = z.infer<typeof SongSchema>
-type StageRun = typeof stageRuns.$inferSelect
 
 const DEFAULT_PAGE = 50
 
@@ -33,17 +32,6 @@ export function toSong(song: Song): SongOut {
   }
 }
 
-function toArtefact(row: Artefact): z.infer<typeof ArtefactIndexEntry> {
-  return {
-    id: row.id,
-    kind: row.kind,
-    version: row.version,
-    bytes: row.bytes,
-    sha256: row.sha256,
-    created_at: row.createdAt.toISOString(),
-  }
-}
-
 // Opaque keyset cursor: the last row's position in the library order.
 const Cursor = z.tuple([z.iso.datetime().nullable(), z.iso.datetime(), z.uuid()])
 
@@ -62,7 +50,7 @@ function decodeCursor(cursor: string): SongCursor {
   const result = Cursor.safeParse(parsed)
   if (!result.success) {
     throw apiError('invalid_input', {
-      details: { issues: [{ path: 'cursor', message: 'Invalid cursor' }] },
+      details: { issues: [{ path: 'cursor', code: 'invalid_cursor' }] },
     })
   }
   const [lastOpenedAt, createdAt, id] = result.data
@@ -100,14 +88,17 @@ export const songs = {
   }),
 
   get: authed.songs.get.handler(async ({ context, input }) => {
-    const opened = await context.deps.repos.songs.open(context.userId, input.id)
+    const { repos } = context.deps
+    const opened = await repos.songs.open(context.userId, input.id)
     if (!opened) throw apiError('not_found')
-    const { song, latestAnalysis, stages, artefacts, youtube } = opened
-    const artefactIndex = artefacts.map(toArtefact)
+    const { song, latestAnalysis, youtube } = opened
+    const latest = latestAnalysis
+      ? await repos.analyses.detail(context.userId, latestAnalysis.id)
+      : undefined
     const detail: z.infer<typeof SongDetailSchema> = {
       ...toSong(song),
-      latest_analysis: latestAnalysis ? toAnalysis(latestAnalysis, stages, artefactIndex) : null,
-      artefacts: artefactIndex,
+      latest_analysis: latest ? toAnalysis(latest) : null,
+      artefacts: latest ? artefactIndex(latest) : [],
       youtube: youtube
         ? {
             video_id: youtube.videoId,
@@ -141,35 +132,55 @@ export const songs = {
     ])
     if (!deleted) throw apiError('not_found')
   }),
+
+  // URL import (25 §4): the song (source_kind url, placeholder title until the download names it)
+  // and its analysis, url_import first, in one transaction. Progress and the download's errors
+  // (url_unsupported, url_download_failed, too_long, file_too_large) arrive on the analysis' SSE
+  // stream.
+  importUrl: authed
+    .use(userRateLimit('analyses'))
+    .songs.importUrl.handler(async ({ context, input }) => {
+      const { deps, userId } = context
+      if (!importable(input.url)) throw apiError('url_unsupported')
+      const admission = await admitAnalysis(deps, userId, input.type)
+      const importId = randomUUID()
+      const created = await deps.repos.analyses.createWithSong(
+        userId,
+        {
+          title: 'Untitled',
+          sourceKind: 'url',
+          sourceUrl: input.url,
+          instrument: input.instrument,
+        },
+        {
+          pipelineVersion: deps.config.pipelineVersion,
+          configProfile: CONFIG_PROFILE,
+          requestedInstrument: input.instrument,
+          analysisType: admission.kind,
+          // Every import makes a new song, so the import itself is the source.
+          idempotencyKey: analysisKey([userId, `url:${importId}`, input.instrument, input.type]),
+        },
+        (analysis) =>
+          planAnalysis({
+            userId,
+            analysis,
+            type: input.type,
+            source: { download: { importId, video: input.download_video ?? true } },
+            priority: admission.priority,
+          }),
+      )
+      return {
+        song_id: created.song.id,
+        analysis_id: created.analysis.id,
+        status: created.analysis.status,
+      }
+    }),
 }
 
-function toAnalysis(
-  analysis: Analysis,
-  stages: StageRun[],
-  artefacts: z.infer<typeof ArtefactIndexEntry>[],
-): z.infer<typeof AnalysisSchema> {
-  return {
-    id: analysis.id,
-    song_id: analysis.songId,
-    version: analysis.version,
-    type: analysis.analysisType,
-    requested_instrument: analysis.requestedInstrument,
-    status: analysis.status,
-    progress: analysis.progress,
-    pipeline_version: analysis.pipelineVersion,
-    stages: Object.fromEntries(
-      stages.map((run) => [
-        run.stage,
-        {
-          status: run.status,
-          ...(run.startedAt ? { started_at: run.startedAt.toISOString() } : {}),
-          ...(run.finishedAt ? { finished_at: run.finishedAt.toISOString() } : {}),
-          ...(run.errorCode ? { error_code: run.errorCode } : {}),
-        },
-      ]),
-    ),
-    artefacts,
-    created_at: analysis.createdAt.toISOString(),
-    finished_at: iso(analysis.finishedAt),
-  }
+// The worker only uses site-specific extractors, so a URL naming an address or a local host can
+// never be imported; refusing it here also keeps the Mac from fetching its own network.
+function importable(raw: string): boolean {
+  const host = new URL(raw).hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (isIP(host) !== 0 || !host.includes('.')) return false
+  return !['.local', '.localhost', '.internal', '.lan', '.home.arpa'].some((s) => host.endsWith(s))
 }

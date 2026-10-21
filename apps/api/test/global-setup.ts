@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { runMigrations } from '@splitune/db'
 import pg from 'pg'
@@ -10,7 +11,8 @@ declare module 'vitest' {
 }
 
 // Fresh database on the compose Postgres (DATABASE_URL from the environment, .env or
-// .env.example), migrated, dropped afterwards.
+// .env.example), migrated with role logins enabled (test/pipeline.test.ts runs the Mac workers as
+// ml_worker and node_worker), dropped afterwards.
 export default async function setup(project: TestProject) {
   await import('./env.ts')
   const { DATABASE_URL: adminUrl } = process.env
@@ -24,6 +26,10 @@ export default async function setup(project: TestProject) {
   const url = new URL(adminUrl)
   url.pathname = `/${name}`
   await runMigrations(url.toString())
+  execFileSync(process.execPath, ['../../packages/db/scripts/roles.ts'], {
+    env: { ...process.env, DATABASE_URL: url.toString() },
+    stdio: 'ignore',
+  })
   project.provide('databaseUrl', url.toString())
 
   return async () => {

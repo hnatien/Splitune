@@ -17,9 +17,16 @@ describe('OpenAPI document', () => {
       paths: Record<string, { get?: { responses: Record<string, unknown> } }>
     }
     expect(Object.keys(doc.paths).sort()).toEqual([
+      '/v1/analyses',
+      '/v1/analyses/{id}',
+      '/v1/analyses/{id}/events',
+      '/v1/analyses/{id}/rerun',
+      '/v1/artefacts/{id}/url',
       '/v1/me',
       '/v1/songs',
+      '/v1/songs/import-url',
       '/v1/songs/{id}',
+      '/v1/system/worker-status',
       '/v1/uploads',
       '/v1/uploads/{id}',
       '/v1/uploads/{id}/complete',

@@ -12,11 +12,13 @@ import { type RequestIdVariables, requestId } from 'hono/request-id'
 import { AUTH_BASE_PATH, createAuth, resolveSession, type SessionInfo } from './auth.ts'
 import type { ApiConfig } from './config.ts'
 import { apiError, envelopeResponse, toEnvelope } from './errors.ts'
+import { EventHub } from './events.ts'
 import { createLogger, type Logger, userHasher } from './logger.ts'
 import { createSmtpMailer, type Mailer } from './mailer.ts'
 import { generateOpenApi } from './openapi.ts'
 import { type ApiDeps, RATE_LIMITS, type RequestContext } from './procedures.ts'
 import { router } from './router.ts'
+import { HEARTBEAT_MS } from './routes/analyses.ts'
 
 export interface CreateApiOptions {
   db: Database
@@ -41,7 +43,8 @@ const MAX_BODY_BYTES = 1024 * 1024
 export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
   const log = createLogger(config.logLevel)
   const hashUser = userHasher(config.authSecret)
-  const deps: ApiDeps = { db, repos: createRepositories(db), storage, config }
+  const events = new EventHub(db.$client.options.connectionString ?? '', log)
+  const deps: ApiDeps = { db, repos: createRepositories(db), storage, config, events }
   const auth = createAuth(db, config, mailer ?? createSmtpMailer(config.smtp))
 
   const handler = new OpenAPIHandler(router, {
@@ -63,6 +66,8 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
       },
     ],
     customErrorResponseBodyEncoder: toEnvelope,
+    // SSE keep-alive comments (04: 15 s heartbeats; Railway closes streams idle for 5 min).
+    eventIteratorKeepAliveInterval: HEARTBEAT_MS,
   })
 
   let openApi: Promise<unknown> | undefined
@@ -166,7 +171,13 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
         details: { reason: 'csrf_header_required' },
       })
     }
-    const context: RequestContext = { deps, session, log: c.get('log') }
+    const idempotencyKey = c.req.header('idempotency-key')?.trim()
+    const context: RequestContext = {
+      deps,
+      session,
+      log: c.get('log'),
+      ...(idempotencyKey ? { idempotencyKey: idempotencyKey.slice(0, 200) } : {}),
+    }
     const { matched, response } = await handler.handle(c.req.raw, { context })
     if (!matched) return envelopeResponse('not_found')
     if (response.status === 429) {

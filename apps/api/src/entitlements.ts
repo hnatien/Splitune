@@ -1,5 +1,5 @@
 import type { EntitlementKey, Plan } from '@splitune/contracts'
-import type { Subscription } from '@splitune/db'
+import type { Repositories, Subscription } from '@splitune/db'
 import type { z } from 'zod'
 
 // Plans and allowances of 23-plans-free-and-paid.md and 14-auth-billing-and-entitlements.md §2.
@@ -63,4 +63,41 @@ export function usagePeriod(
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
   const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
   return { start: start.toISOString().slice(0, 10), resetsAt: next }
+}
+
+// Queue priority (lower runs first): Plus has priority processing (23 §3).
+export const PRIORITY = { free: 100, paid: 50 } as const
+
+export interface Admission {
+  // analyses.analysis_type: a Free user's full request is their Welcome analysis (23 §2).
+  kind: 'welcome' | 'full' | 'lite'
+  priority: number
+}
+
+// The plan and entitlements the pipeline acts on, read like GET /v1/me reads them. Until mock
+// billing (step 14) writes subscriptions, that is Free for everyone.
+export async function entitlements(
+  deps: { repos: Repositories },
+  userId: string,
+  now = new Date(),
+): Promise<{ plan: PlanName; keys: Key[] }> {
+  const profile = await deps.repos.users.profile(userId)
+  const plan = planOf(profile?.subscription, now)
+  return { plan, keys: entitlementsFor(plan) }
+}
+
+// Admission of a new analysis (POST /v1/analyses, rerun, import-url). Step 14 plugs the
+// allowances in here: a usage_ledger reservation per run, `analysis_cap_reached` (402) when the
+// type's allowance is used up, nothing charged for failed runs.
+export async function admitAnalysis(
+  deps: { repos: Repositories },
+  userId: string,
+  type: 'full' | 'lite',
+  now = new Date(),
+): Promise<Admission> {
+  const { plan, keys } = await entitlements(deps, userId, now)
+  return {
+    kind: type === 'lite' ? 'lite' : plan === 'free' ? 'welcome' : 'full',
+    priority: keys.includes('processing.priority') ? PRIORITY.paid : PRIORITY.free,
+  }
 }
