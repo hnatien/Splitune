@@ -8,7 +8,7 @@
     "generate": "paraglide-js compile --project ./project.inlang --outdir ./app/paraglide --emit-ts-declarations && tsr generate",
     "dev": "vite dev",
     "build": "vite build",
-    "start": "node .output/server/index.mjs",
+    "start": "node --env-file-if-exists=../../.env .output/server/index.mjs",
     "typecheck": "pnpm run generate && tsc -p .",
     "test": "pnpm run generate && vitest run --project unit",
     "test:stories": "pnpm run generate && vitest run --project storybook",
