@@ -44,7 +44,9 @@ services:
       retries: 30
     restart: unless-stopped
 
-  # One-shot job: creates the media bucket if it does not exist yet, then exits.
+  # One-shot job: creates the media bucket if it does not exist yet, applies the browser CORS rules
+  # (local copy of infra/r2/cors.json for the local app origin; put-bucket-cors replaces them, so
+  # reruns are idempotent), then exits.
   seaweedfs-init:
     image: amazon/aws-cli:2.38.2
     depends_on:
@@ -57,9 +59,15 @@ services:
       AWS_ENDPOINT_URL: http://seaweedfs:8333
       AWS_REQUEST_CHECKSUM_CALCULATION: when_required
       AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    volumes:
+      - ./seaweedfs/cors.json:/etc/seaweedfs/cors.json:ro
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - aws s3api head-bucket --bucket splitune-media 2>/dev/null || aws s3api create-bucket --bucket splitune-media
+      - >-
+        (aws s3api head-bucket --bucket splitune-media 2>/dev/null
+        || aws s3api create-bucket --bucket splitune-media)
+        && aws s3api put-bucket-cors --bucket splitune-media
+        --cors-configuration file:///etc/seaweedfs/cors.json
     restart: "no"
 
   mailpit:
