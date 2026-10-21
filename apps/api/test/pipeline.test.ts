@@ -213,12 +213,23 @@ describe('analysis pipeline with mock-mode workers', () => {
     expect(seen[0]).toMatchObject({ type: 'analysis.waiting', runner: 'python' })
     expect(seen.at(-1)).toMatchObject({ type: 'analysis.done', status: 'done' })
 
+    // On failure the message shows the whole sequence (retries and failures included).
+    const sequence = seen
+      .map((e) =>
+        'stage' in e
+          ? `${e.type}:${e.stage}${'error_code' in e ? `:${e.error_code}` : ''}`
+          : e.type,
+      )
+      .join(', ')
     const completedAt = new Map<string, number>()
     seen.forEach((event, i) => {
       if (event.type === 'stage.completed') completedAt.set(event.stage, i)
       if (event.type === 'stage.started') {
         for (const dep of NEEDS[event.stage] ?? []) {
-          expect(completedAt.get(dep), `${event.stage} after ${dep}`).toBeLessThan(i)
+          expect(
+            completedAt.get(dep) ?? Infinity,
+            `${event.stage} after ${dep}: ${sequence}`,
+          ).toBeLessThan(i)
         }
       }
     })

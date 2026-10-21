@@ -165,3 +165,45 @@ describe('stage bookkeeping as node_worker', () => {
     expect(rows[0]).toMatchObject({ runner: 'node', version: '2' })
   })
 })
+
+describe('job_events ids', () => {
+  const insert = (
+    client: { query: (text: string, values: unknown[]) => Promise<unknown> },
+    id: string,
+    userId = alice,
+  ) =>
+    client.query(
+      `insert into job_events (analysis_id, user_id, event)
+       values ($1, $2, '{"type":"progress","value":0.5}') returning id`,
+      [id, userId],
+    ) as Promise<{ rows: { id: string }[] }>
+
+  // SSE streams page through an analysis' events by id: an event committed after a higher id was
+  // already visible would be skipped (migration 0007).
+  it('follow commit order within an analysis, and only block that analysis', async () => {
+    const bob = await createUser(db)
+    const other = (await seedUserGraph(db, bob)).analysis.id
+    const first = await db.$client.connect()
+    const second = await db.$client.connect()
+    try {
+      await first.query('begin')
+      const early = await insert(first, analysisId)
+      await second.query('begin')
+      const late = insert(second, analysisId)
+      const elsewhere = await insert(db.$client, other, bob)
+      expect(Number(elsewhere.rows[0]?.id)).toBeGreaterThan(Number(early.rows[0]?.id))
+      const state = await Promise.race([
+        late.then(() => 'inserted'),
+        new Promise((resolve) => setTimeout(() => resolve('waiting'), 300)),
+      ])
+      expect(state).toBe('waiting')
+      await first.query('commit')
+      const lateId = Number((await late).rows[0]?.id)
+      await second.query('commit')
+      expect(lateId).toBeGreaterThan(Number(elsewhere.rows[0]?.id))
+    } finally {
+      first.release()
+      second.release()
+    }
+  })
+})
