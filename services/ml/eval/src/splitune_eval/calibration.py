@@ -11,13 +11,16 @@ import numpy as np
 
 def fit_isotonic(raw: Sequence[float], correct: Sequence[int]) -> list[tuple[float, float]]:
     """Non-decreasing step fit of P(correct | raw), as knots (block mean raw, block precision).
-    music-core and splitune_ml_core interpolate linearly between knots and clamp outside them."""
-    order = np.argsort(np.asarray(raw, dtype=np.float64), kind="stable")
-    xs = np.asarray(raw, dtype=np.float64)[order]
-    ys = np.asarray(correct, dtype=np.float64)[order]
+    music-core and splitune_ml_core interpolate linearly between knots and clamp outside them.
+    Equal raw values form one block from the start: a model with a constant score (YourMT3+)
+    gets a single knot at its precision."""
+    xs, inverse, counts = np.unique(
+        np.asarray(raw, dtype=np.float64), return_inverse=True, return_counts=True
+    )
+    ys = np.bincount(inverse, weights=np.asarray(correct, dtype=np.float64), minlength=len(xs))
     blocks: list[list[float]] = []  # [sum_x, sum_y, count]
-    for x, y in zip(xs.tolist(), ys.tolist(), strict=True):
-        blocks.append([x, y, 1.0])
+    for x, y, n in zip(xs.tolist(), ys.tolist(), counts.tolist(), strict=True):
+        blocks.append([x * n, y, float(n)])
         while len(blocks) > 1 and blocks[-2][1] / blocks[-2][2] >= blocks[-1][1] / blocks[-1][2]:
             sx, sy, n = blocks.pop()
             blocks[-1][0] += sx

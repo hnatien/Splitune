@@ -13,6 +13,15 @@ def test_isotonic_fit_is_monotone_and_pools_violators() -> None:
     assert ys == sorted(ys)
 
 
+def test_isotonic_fit_pools_equal_raw_values() -> None:
+    assert fit_isotonic([1.0] * 4, [1, 0, 1, 1]) == [(1.0, 0.75)]
+    assert fit_isotonic([0.2, 0.5, 0.5, 0.5, 0.9], [0, 1, 0, 0, 1]) == [
+        (0.2, 0.0),
+        (0.5, pytest.approx(1 / 3)),
+        (0.9, 1.0),
+    ]
+
+
 def test_fitted_table_recovers_a_known_curve() -> None:
     rng = np.random.default_rng(1)
     raw = rng.random(20_000)
