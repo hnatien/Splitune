@@ -10,23 +10,29 @@ models:
   # `arch` is audio-separator's architecture; `inference` overrides single keys of its
   # mdxc_params (overlap = RoFormer window step in s, capped at the chunk length; default 8) or
   # demucs_params (shifts = random-shift passes, default 2; overlap = segment fraction, 0.25).
+  # Values: the cheapest setting within 0.3 dB median uSDR of the default on the P1 clips
+  # (services/ml/eval/results/p1/2026-10-21-overlap.md). RoFormer overlap = the model's chunk
+  # length (no overlap between windows); viperx's chunk is 8 s, so its default already is.
   bs_roformer_sw:
     record: bs-roformer-sw
     filename: BS-Roformer-SW.ckpt
     provider: "bs_roformer:BS-Roformer-SW"
     arch: mdxc
+    inference: {overlap: 9.3}  # chunk 9.29 s
     outputs: {bass: bass, drums: drums, guitar: guitar, piano: piano, vocals: vocals, other: other}
   htdemucs_6s:
     record: htdemucs-6s
     filename: htdemucs_6s.yaml
     provider: htdemucs_6s
     arch: demucs
+    inference: {shifts: 1}
     outputs: {bass: bass, drums: drums, guitar: guitar, piano: piano, vocals: vocals, other: other}
   htdemucs_ft:
     record: htdemucs-ft
     filename: htdemucs_ft.yaml
     provider: htdemucs_ft
     arch: demucs
+    inference: {shifts: 1}
     outputs: {bass: bass, drums: drums, vocals: vocals, other: other}
   bs_roformer_viperx_1297:
     record: bs-roformer-viperx-1297
@@ -39,6 +45,7 @@ models:
     filename: vocals_mel_band_roformer.ckpt
     provider: "mel_roformer:kim-vocals"
     arch: mdxc
+    inference: {overlap: 11}  # chunk 11.0 s
     outputs: {vocals: vocals, other: null}
 
 # mix_minus: subtract = mixture − aligned stem; complement = sum of the model's other outputs.
