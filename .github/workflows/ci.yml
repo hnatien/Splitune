@@ -16,7 +16,7 @@ jobs:
   checks:
     name: Lint, typecheck, test
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -39,7 +39,8 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      # Storybook story tests run in Chromium and WebKit (docs/implementation/28-ui-quality-and-design-review.md §2).
+      # Storybook story tests run in Chromium and WebKit (docs/implementation/28-ui-quality-and-design-review.md §2);
+      # the web E2E journeys add Firefox (24-browser-compatibility.md §6).
       - name: Playwright version
         id: playwright
         run: echo "version=$(pnpm --filter @splitune/web exec playwright --version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
@@ -51,13 +52,13 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
-      - name: Install Playwright Chromium and WebKit
+      - name: Install Playwright Chromium, Firefox and WebKit
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @splitune/web exec playwright install --with-deps chromium webkit
+        run: pnpm --filter @splitune/web exec playwright install --with-deps chromium firefox webkit
 
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @splitune/web exec playwright install-deps chromium webkit
+        run: pnpm --filter @splitune/web exec playwright install-deps chromium firefox webkit
 
       - name: Install Python dependencies
         working-directory: services/ml
@@ -102,3 +103,19 @@ jobs:
       # Every story rendered in Chromium and WebKit with axe (a11y test 'error').
       - name: Story tests (Storybook, Chromium + WebKit)
         run: pnpm --filter @splitune/web test:stories
+
+      # The combined server (web + API under /v1) Railway starts with `pnpm --filter @splitune/web start`.
+      - name: Build the app server
+        run: pnpm --filter @splitune/web build
+
+      # Practice route JS (10 §9, ≤ 300 KB gzip): reported now, enforced (--enforce) from step 12.
+      - name: Practice route JS budget
+        run: pnpm --filter @splitune/web budget
+
+      # Sign-in via Mailpit, upload, analysis (ML_MODE=mock workers), URL import, resume after
+      # reload, delete, axe and console/CORS checks on Chromium, Firefox, WebKit and phones.
+      - name: E2E (Playwright)
+        run: pnpm --filter @splitune/web e2e
+
+      - name: Lighthouse CI (Home, mobile)
+        run: pnpm --filter @splitune/web lighthouse
