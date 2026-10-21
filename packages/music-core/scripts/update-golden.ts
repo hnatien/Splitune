@@ -18,6 +18,10 @@ const pickupNotes = makeNotes([
 ])
 
 const CASES: Record<string, { command: string; input: unknown }> = {
+  'key.fixture': {
+    command: 'key',
+    input: { segments: fixtures.chords().segments },
+  },
   'build-tab.fixture-corrected': {
     command: 'build-tab',
     input: {

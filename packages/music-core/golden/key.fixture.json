@@ -1,0 +1,119 @@
+{
+  "command": "key",
+  "input": {
+    "segments": [
+      {
+        "id": "c0000",
+        "confidence": 0.95,
+        "confidence_raw": 0.97,
+        "t0": 0,
+        "t1": 0.5,
+        "label": "N",
+        "top_k": [
+          {
+            "label": "N",
+            "prob": 0.97
+          }
+        ],
+        "beat_aligned": false
+      },
+      {
+        "id": "c0001",
+        "confidence": 0.91,
+        "confidence_raw": 0.96,
+        "t0": 0.5,
+        "t1": 5.3,
+        "label": "A:min",
+        "top_k": [
+          {
+            "label": "A:min",
+            "prob": 0.94
+          },
+          {
+            "label": "C:maj",
+            "prob": 0.054
+          },
+          {
+            "label": "A:min7",
+            "prob": 0.027
+          }
+        ],
+        "beat_aligned": true
+      },
+      {
+        "id": "c0002",
+        "confidence": 0.84,
+        "confidence_raw": 0.89,
+        "t0": 5.3,
+        "t1": 10.1,
+        "label": "F:maj",
+        "top_k": [
+          {
+            "label": "F:maj",
+            "prob": 0.87
+          },
+          {
+            "label": "A:min",
+            "prob": 0.096
+          },
+          {
+            "label": "F:maj7",
+            "prob": 0.048
+          }
+        ],
+        "beat_aligned": true
+      },
+      {
+        "id": "c0003",
+        "confidence": 0.88,
+        "confidence_raw": 0.93,
+        "t0": 10.1,
+        "t1": 14.9,
+        "label": "C:maj",
+        "top_k": [
+          {
+            "label": "C:maj",
+            "prob": 0.91
+          },
+          {
+            "label": "A:min",
+            "prob": 0.072
+          },
+          {
+            "label": "E:min",
+            "prob": 0.036
+          }
+        ],
+        "beat_aligned": true
+      },
+      {
+        "id": "c0004",
+        "confidence": 0.62,
+        "confidence_raw": 0.67,
+        "t0": 14.9,
+        "t1": 19.7,
+        "label": "G:maj",
+        "top_k": [
+          {
+            "label": "G:maj",
+            "prob": 0.65
+          },
+          {
+            "label": "E:min",
+            "prob": 0.228
+          },
+          {
+            "label": "G:7",
+            "prob": 0.114
+          }
+        ],
+        "beat_aligned": true
+      }
+    ]
+  },
+  "expected": {
+    "tonic": "C",
+    "mode": "major",
+    "confidence": 0.8108237415814709
+  }
+}
