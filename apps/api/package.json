@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env --watch src/server.ts",
+    "dev:standalone": "node --env-file-if-exists=../../.env --watch src/server.ts",
     "start": "node src/server.ts",
     "openapi:check": "node scripts/openapi.ts",
     "typecheck": "tsc -p .",

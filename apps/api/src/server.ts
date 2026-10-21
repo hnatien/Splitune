@@ -1,5 +1,6 @@
-// Standalone API server (`pnpm --filter @splitune/api dev`): the same Hono app the web server
-// mounts in step 10, on PORT (default 3000, matching APP_URL/BETTER_AUTH_URL in .env.example).
+// Standalone API server (`pnpm --filter @splitune/api dev:standalone`): the same Hono app the web
+// server (apps/web, `pnpm dev`) mounts under /v1, on PORT (default 3000, matching
+// APP_URL/BETTER_AUTH_URL in .env.example). Run one or the other, not both.
 import { serve } from '@hono/node-server'
 import { createDb } from '@splitune/db'
 import { createStorage, storageConfigFromEnv } from '@splitune/storage'

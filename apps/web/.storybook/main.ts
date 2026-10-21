@@ -5,7 +5,11 @@ import { DISPLAY_SCRIPT } from '../app/ui/display.ts'
 // the same inline display script and font preload as the app, so stories prove the real theming
 // path, including no flash on load.
 const config: StorybookConfig = {
-  framework: '@storybook/react-vite',
+  // The shared config (React, Tailwind, Paraglide, `@/`) without TanStack Start and Nitro.
+  framework: {
+    name: '@storybook/react-vite',
+    options: { builder: { viteConfigPath: 'vite.base.ts' } },
+  },
   stories: ['../app/**/*.stories.tsx'],
   addons: ['@storybook/addon-a11y', '@storybook/addon-vitest'],
   staticDirs: ['../public'],

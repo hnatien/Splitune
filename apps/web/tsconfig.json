@@ -8,5 +8,13 @@
       "@/*": ["./app/*"]
     }
   },
-  "include": ["app", ".storybook", "vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "app",
+    ".storybook",
+    "e2e",
+    "vite.config.ts",
+    "vite.base.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ]
 }
