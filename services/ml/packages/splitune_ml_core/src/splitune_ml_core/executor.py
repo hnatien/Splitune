@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import psycopg
+from psycopg import sql
 from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
 from pydantic import ValidationError
@@ -112,10 +113,16 @@ def check_request(request: contracts.StageRequest, spec: StageSpec, analysis: An
     only inside the analysis' prefix (same rule as packages/storage `assertOwnedKey`)."""
     if request.user_id != analysis.user_id:
         raise StageError("invalid_request", retry=False)
-    if set(request.outputs) != set(spec.outputs):
-        raise StageError("invalid_request", retry=False)
     own = user_prefix(analysis.user_id)
-    out = analysis_prefix(analysis.user_id, analysis.id)
+    if spec.raw_outputs:
+        # url_import writes the downloaded files under the user's raw/ prefix (03 layout).
+        if spec.primary not in request.outputs or not set(request.outputs) <= set(spec.outputs):
+            raise StageError("invalid_request", retry=False)
+        out = f"{own}raw/"
+    else:
+        if set(request.outputs) != set(spec.outputs):
+            raise StageError("invalid_request", retry=False)
+        out = analysis_prefix(analysis.user_id, analysis.id)
     if not all(is_safe_key(k) and k.startswith(own) for k in request.inputs.values()):
         raise StageError("invalid_request", retry=False)
     if not all(is_safe_key(k) and k.startswith(out) for k in request.outputs.values()):
@@ -160,7 +167,9 @@ def prepare(
         )
     inputs: dict[str, str] = {}
     audio_id = ""
-    wanted = [*spec.downloads, *(n for n in spec.optional_downloads if n in request.inputs)]
+    optional = [n for n in spec.optional_downloads if n in request.inputs]
+    recorded = recorded_keys(services, [request.inputs[n] for n in optional])
+    wanted = [*spec.downloads, *(n for n in optional if request.inputs[n] in recorded)]
     for name in wanted:
         dest = workdir / "inputs" / name
         digest = services.storage.download(request.inputs[name], dest, max_bytes=MAX_SOURCE_BYTES)
@@ -181,6 +190,19 @@ def prepare(
         duration_s=probe.duration_s,
         decoded_path=str(flac),
     )
+
+
+def recorded_keys(services: Services, keys: list[str]) -> set[str]:
+    """Optional inputs count only when an artefact row records them, i.e. their stage succeeded:
+    an upstream stage that failed (stems_unavailable) or was cancelled leaves its key unrecorded,
+    even if an earlier attempt of it left an object behind."""
+    if not keys:
+        return set()
+    with services.pool.connection() as conn:
+        rows = conn.execute(
+            "select object_key from artefacts where object_key = any(%s)", [keys]
+        ).fetchall()
+    return {str(r["object_key"]) for r in rows}
 
 
 def rematerialize(
@@ -397,7 +419,30 @@ def mark_started(
             """,
             [analysis.id, request.stage, request.cache_key or "", job.attempts],
         )
+        conn.execute(
+            "update analyses set status = 'running' where id = %s and status = 'queued'",
+            [analysis.id],
+        )
         _event(conn, analysis, {"type": "stage.started", "stage": request.stage, "at": _now()})
+
+
+def update_progress(conn: Connection, analysis: Analysis) -> None:
+    """Share of the analysis' jobs that have finished, as `analyses.progress` and a `progress`
+    event. Stays below 1 until finalize ends the analysis (and sets 1 itself)."""
+    row = conn.execute(
+        """
+        update analyses
+        set progress = least(0.99, greatest(progress, (
+          select round((count(*) filter (where status in ('done', 'failed', 'cancelled')))::numeric
+                       / count(*), 2)::real
+          from jobs where analysis_id = %(id)s)))
+        where id = %(id)s and status in ('queued', 'running')
+        returning progress
+        """,
+        {"id": analysis.id},
+    ).fetchone()
+    if row is not None:
+        _event(conn, analysis, {"type": "progress", "value": float(row["progress"])})
 
 
 def finish(
@@ -442,23 +487,21 @@ def finish(
             )
             if spec.name == "decode":
                 update_song(conn, analysis, outcome.facts)
-            primary_kind = spec.outputs[spec.primary]
-            _event(
-                conn,
-                analysis,
-                {
-                    "type": "stage.completed",
-                    "stage": spec.name,
-                    "artefact": {
-                        "id": ids[primary_kind],
-                        "kind": primary_kind,
-                        "version": analysis.version,
-                    },
-                    "at": _now(),
-                },
-            )
+            if spec.name == "url_import":
+                update_imported_song(conn, analysis, outcome.facts)
+            event: dict[str, Any] = {"type": "stage.completed", "stage": spec.name, "at": _now()}
+            if not spec.raw_outputs:
+                primary_kind = spec.outputs[spec.primary]
+                event["artefact"] = {
+                    "id": ids[primary_kind],
+                    "kind": primary_kind,
+                    "version": analysis.version,
+                }
+            _event(conn, analysis, event)
             if not q.complete(conn, job.id, lock_id):
                 raise _LockLostError
+            update_progress(conn, analysis)
+            q.notify_dependents(conn, job.id)
     except _LockLostError:
         return False
     return True
@@ -486,6 +529,26 @@ def update_song(conn: Connection, analysis: Analysis, facts: dict[str, Any]) -> 
             "duplicate song audio",
             extra={"analysis_id": analysis.id, "error_code": "duplicate_audio_hash"},
         )
+
+
+def update_imported_song(conn: Connection, analysis: Analysis, facts: dict[str, Any]) -> None:
+    """url_import: the download's title and artist (when the site has them) replace the
+    placeholder, and the song moves on from `importing` to `analysing`."""
+    # Workers may write but not read titles, so only present values are assigned.
+    assignments: list[sql.Composable] = [sql.SQL("status = 'analysing'")]
+    values: list[Any] = []
+    for column in ("title", "artist"):
+        value = facts.get(column)
+        if isinstance(value, str) and value:
+            assignments.append(sql.SQL("{} = %s").format(sql.Identifier(column)))
+            values.append(value)
+    conn.execute(
+        sql.SQL(
+            "update songs set {} where id = (select song_id from analyses where id = %s)"
+            " and source_kind = 'url'"
+        ).format(sql.SQL(", ").join(assignments)),
+        [*values, analysis.id],
+    )
 
 
 def record_failure(
@@ -518,6 +581,7 @@ def record_failure(
                     ],
                 )
                 if status == "failed":
+                    fallback = STAGES[stage].failure_fallback
                     _event(
                         conn,
                         analysis,
@@ -525,9 +589,12 @@ def record_failure(
                             "type": "stage.failed",
                             "stage": stage,
                             "error_code": error.code,
+                            **({} if fallback is None else {"fallback": fallback}),
                             "at": _now(),
                         },
                     )
+                    update_progress(conn, analysis)
+                    q.notify_dependents(conn, job.id)
             return status
     except _LockLostError:
         return None
@@ -555,6 +622,70 @@ def compute_key(
     )
 
 
+def source_url(services: Services, analysis: Analysis) -> str:
+    with services.pool.connection() as conn:
+        row = conn.execute(
+            """
+            select s.source_url from songs s join analyses a on a.song_id = s.id
+            where a.id = %s and s.source_kind = 'url'
+            """,
+            [analysis.id],
+        ).fetchone()
+    if row is None or not row["source_url"]:
+        raise StageError("invalid_request", retry=False)
+    return str(row["source_url"])
+
+
+RAW_TYPES = {
+    ".m4a": "audio/mp4",
+    ".mp3": "audio/mpeg",
+    ".webm": "audio/webm",
+    ".opus": "audio/ogg",
+    ".ogg": "audio/ogg",
+    ".mp4": "video/mp4",
+}
+
+
+def run_raw_stage(
+    services: Services,
+    backend: Backend,
+    request: contracts.StageRequest,
+    spec: StageSpec,
+    analysis: Analysis,
+    workdir: Path,
+) -> Outcome:
+    """url_import: no inputs, no cache (a page can change behind its URL); the files go to the
+    request's raw/ keys. The URL is read from the song, so job payloads never carry it."""
+    params = {**request.params, "url": source_url(services, analysis)}
+    description = backend.describe(spec, params, {})
+    out: StageOutput = backend.run(
+        spec,
+        StageJob(
+            stage=spec.name,
+            analysis_id=analysis.id,
+            user_id=analysis.user_id,
+            artefact_version=analysis.version,
+            params=description.params,
+            inputs={},
+            workdir=str(workdir),
+            cache_dir=str(services.settings.resolved_cache_dir),
+        ),
+    )
+    if spec.primary not in out.files or not set(out.files) <= set(request.outputs):
+        raise StageError("stage_output_missing", retry=False)
+    for name, path in sorted(out.files.items()):
+        content_type = RAW_TYPES.get(Path(path).suffix, "application/octet-stream")
+        artefacts.put_atomic(services.storage, request.outputs[name], Path(path), content_type)
+    return Outcome(
+        status=out.status,
+        model_refs=out.model_refs,
+        written=[],
+        metrics=out.metrics,
+        facts=out.facts,
+        cache_hit=False,
+    )
+
+
 def run_stage(
     services: Services,
     backend: Backend,
@@ -563,6 +694,8 @@ def run_stage(
     analysis: Analysis,
     workdir: Path,
 ) -> tuple[str, Outcome]:
+    if spec.raw_outputs:
+        return "", run_raw_stage(services, backend, request, spec, analysis, workdir)
     prepared = prepare(services, backend, request, spec, analysis, workdir)
     description = backend.describe(spec, request.params, prepared.inputs)
     key = compute_key(services, request, analysis, prepared, description)

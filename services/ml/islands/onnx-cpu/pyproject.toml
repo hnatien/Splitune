@@ -1,4 +1,4 @@
-# Island "onnx-cpu" (06-ml-pipeline-service.md §0): CPU stages (decode, tagger, stem
+# Island "onnx-cpu" (06-ml-pipeline-service.md §0): CPU stages (URL import, decode, tagger, stem
 # post-processing, Basic Pitch ONNX notes). Separate uv project and venv.
 #   uv sync --project islands/onnx-cpu
 [project]
@@ -11,6 +11,7 @@ dependencies = [
     "stage-notes",
     "stage-separation",
     "stage-tagger",
+    "stage-url-import",
 ]
 
 [tool.uv]
@@ -23,3 +24,4 @@ stage-decode = { path = "../../packages/stage_decode", editable = true }
 stage-notes = { path = "../../packages/stage_notes", editable = true }
 stage-separation = { path = "../../packages/stage_separation", editable = true }
 stage-tagger = { path = "../../packages/stage_tagger", editable = true }
+stage-url-import = { path = "../../packages/stage_url_import", editable = true }

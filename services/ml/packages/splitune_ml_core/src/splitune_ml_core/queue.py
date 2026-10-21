@@ -40,6 +40,7 @@ class Job:
     run_after: datetime
     locked_by: str | None
     depends_on: list[int]
+    soft_depends_on: list[int]
     error_code: str | None
 
     @staticmethod
@@ -58,6 +59,7 @@ class Job:
             run_after=cast(datetime, row["run_after"]),
             locked_by=cast(str | None, row["locked_by"]),
             depends_on=[int(d) for d in cast(list[int], row["depends_on"])],
+            soft_depends_on=[int(d) for d in cast(list[int], row["soft_depends_on"])],
             error_code=cast(str | None, row["error_code"]),
         )
 
@@ -70,26 +72,29 @@ def enqueue(
     *,
     analysis_id: str | None = None,
     depends_on: Sequence[int] = (),
+    soft_depends_on: Sequence[int] = (),
     priority: int = 100,
     max_attempts: int = 3,
 ) -> Job:
     """Inserts a queued job and NOTIFYs `jobs_<runner>` (delivered on commit). Production jobs are
     enqueued by the TypeScript side; this is for scripts and tests."""
     with conn.transaction():
-        deps = list(depends_on)
-        if deps:
-            found = conn.execute("select count(*) as n from jobs where id = any(%s)", [deps])
+        deps, soft = list(depends_on), list(soft_depends_on)
+        every = sorted(set(deps) | set(soft))
+        if every:
+            found = conn.execute("select count(*) as n from jobs where id = any(%s)", [every])
             row = found.fetchone()
-            if row is None or int(row["n"]) != len(set(deps)):
-                raise ValueError(f"enqueue {kind}: unknown dependency in {deps}")
+            if row is None or int(row["n"]) != len(every):
+                raise ValueError(f"enqueue {kind}: unknown dependency in {every}")
         created = conn.execute(
             """
             insert into jobs
-              (kind, runner, analysis_id, payload, depends_on, priority, max_attempts)
-            values (%s, %s, %s, %s, %s, %s, %s)
+              (kind, runner, analysis_id, payload, depends_on, soft_depends_on, priority,
+               max_attempts)
+            values (%s, %s, %s, %s, %s, %s, %s, %s)
             returning *
             """,
-            [kind, runner, analysis_id, Jsonb(payload), deps, priority, max_attempts],
+            [kind, runner, analysis_id, Jsonb(payload), deps, soft, priority, max_attempts],
         ).fetchone()
         assert created is not None
         job = Job.from_row(created)
@@ -100,8 +105,9 @@ def enqueue(
 def claim(
     conn: Connection, runner: Runner, worker_id: str, kinds: Sequence[str] | None = None
 ) -> Job | None:
-    """Locks the next runnable job (queued, due, all dependencies done; lowest priority number,
-    then oldest). SKIP LOCKED hands each job to exactly one worker."""
+    """Locks the next runnable job (queued, due, all dependencies done, all soft dependencies
+    finished; lowest priority number, then oldest). SKIP LOCKED hands each job to exactly one
+    worker."""
     if kinds is not None and not kinds:
         return None
     row = conn.execute(
@@ -115,6 +121,10 @@ def claim(
             and (%(kinds)s::text[] is null or j.kind = any(%(kinds)s::text[]))
             and not exists (
               select 1 from jobs d where d.id = any(j.depends_on) and d.status <> 'done'
+            )
+            and not exists (
+              select 1 from jobs d
+              where d.id = any(j.soft_depends_on) and d.status in ('queued', 'running')
             )
           order by j.priority, j.id
           limit 1
@@ -160,8 +170,26 @@ def complete(conn: Connection, job_id: int, worker_id: str) -> bool:
     return cur.rowcount == 1
 
 
+def notify_dependents(conn: Connection, job_id: int) -> None:
+    """A finished job may make queued jobs of another runner runnable (finalize after the last
+    Python stage); their workers otherwise wait for the poll. NOTIFY is delivered on commit."""
+    rows = conn.execute(
+        """
+        select distinct runner from jobs
+        where status = 'queued' and (depends_on @> array[%(id)s]::bigint[]
+                                     or soft_depends_on @> array[%(id)s]::bigint[])
+        """,
+        {"id": job_id},
+    ).fetchall()
+    for row in rows:
+        conn.execute(
+            "select pg_notify(%s, %s)", [channel_for(cast(Runner, row["runner"])), str(job_id)]
+        )
+
+
 def cancel_dependents(conn: Connection, failed_ids: Sequence[int]) -> list[int]:
-    """Cancels queued jobs that (transitively) wait on a permanently failed job."""
+    """Cancels queued jobs that (transitively) wait on a permanently failed job. Soft
+    dependencies don't count: those jobs run regardless."""
     if not failed_ids:
         return []
     rows = conn.execute(

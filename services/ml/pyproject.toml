@@ -13,6 +13,7 @@ dependencies = [
     "stage-notes[yourmt3]",
     "stage-sections",
     "stage-lyrics",
+    "stage-url-import",
     "splitune-eval",
 ]
 
@@ -45,6 +46,7 @@ stage-chords = { workspace = true }
 stage-notes = { workspace = true }
 stage-sections = { workspace = true }
 stage-lyrics = { workspace = true }
+stage-url-import = { workspace = true }
 splitune-eval = { workspace = true }
 # Linux (CI) gets the CPU-only wheels instead of the CUDA build; macOS wheels come from PyPI.
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]

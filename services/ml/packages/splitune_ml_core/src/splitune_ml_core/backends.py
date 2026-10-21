@@ -140,11 +140,15 @@ class FixtureBackend:
     def describe(
         self, spec: StageSpec, params: dict[str, Any], inputs: dict[str, str] | None = None
     ) -> StageDescription:
+        if spec.raw_outputs:
+            return StageDescription(model_refs=[], params=params)
         models = self.fixture(spec.outputs[spec.primary]).get("models", [])
         refs = [contracts.ModelRef.model_validate(m) for m in cast(list[Any], models)]
         return StageDescription(model_refs=refs, params=params)
 
     def run(self, spec: StageSpec, job: StageJob) -> StageOutput:
+        if spec.raw_outputs:
+            return self.download(job)
         files: dict[str, str] = {}
         blobs: dict[str, str] = {}
         for name, kind in spec.outputs.items():
@@ -170,6 +174,20 @@ class FixtureBackend:
             model_refs=self.describe(spec, job.params).model_refs,
             metrics={"cpu_s": 0.0, "audio_s": probe.duration_s},
             facts={"audio_hash": probe.audio_hash, "duration_s": probe.duration_s},
+        )
+
+    def download(self, job: StageJob) -> StageOutput:
+        """url_import without the network: the probe fixture's length of quiet tone as the
+        downloaded audio. No video is made, so asking for one ends in the video fallback."""
+        probe = self.probe()
+        source = tone(Path(job.workdir) / "source.m4a", min(probe.duration_s, 10.0))
+        wants_video = bool(job.params.get("download_video"))
+        return StageOutput(
+            status="fallback" if wants_video else "done",
+            files={"source": str(source)},
+            model_refs=[],
+            fallback_reason="video_unavailable" if wants_video else None,
+            facts={"title": "Mock import", "duration_s": probe.duration_s},
         )
 
     def close(self) -> None:

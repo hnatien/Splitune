@@ -1,0 +1,16 @@
+[project]
+name = "stage-url-import"
+version = "0.0.0"
+description = "URL import with yt-dlp (personal mode): page URL → audio (+ muted video ≤720p)"
+requires-python = ">=3.12,<3.13"
+# yt-dlp needs a JavaScript runtime for YouTube (Deno on PATH: `brew install deno`) and the
+# challenge solver scripts from yt-dlp-ejs (25-personal-mode.md §4).
+dependencies = [
+    "splitune-ml-core",
+    "yt-dlp==2026.8.19",
+    "yt-dlp-ejs==0.8.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14"]
+build-backend = "uv_build"

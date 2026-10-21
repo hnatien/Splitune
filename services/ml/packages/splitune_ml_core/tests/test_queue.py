@@ -36,6 +36,27 @@ def test_claim_order_kinds_and_dependencies(owner: Connection, worker_conn: Conn
     assert q.claim(worker_conn, "python", "w", kinds=[]) is None
 
 
+def test_soft_dependencies_wait_for_any_outcome(owner: Connection, worker_conn: Connection) -> None:
+    decode = q.enqueue(owner, "decode", "python", {})
+    separate = q.enqueue(owner, "separate", "python", {}, depends_on=[decode.id])
+    notes = q.enqueue(
+        owner, "notes.guitar", "python", {}, depends_on=[decode.id], soft_depends_on=[separate.id]
+    )
+    assert notes.soft_depends_on == [separate.id]
+    assert q.claim(worker_conn, "python", "w") is not None
+    assert q.complete(worker_conn, decode.id, "w")
+    assert q.claim(worker_conn, "python", "w", kinds=["notes.guitar"]) is None
+    claimed = q.claim(worker_conn, "python", "w")
+    assert claimed is not None
+    assert claimed.id == separate.id
+    with worker_conn.transaction():
+        assert q.fail(worker_conn, separate.id, "w", "stems_unavailable", retry=False) == "failed"
+    # Nothing was cancelled: the soft dependant runs now.
+    after = q.claim(worker_conn, "python", "w")
+    assert after is not None
+    assert after.id == notes.id
+
+
 def test_heartbeat_and_complete_need_the_lock(owner: Connection, worker_conn: Connection) -> None:
     job = q.enqueue(owner, "decode", "python", {})
     assert q.claim(worker_conn, "python", "a") is not None
@@ -156,3 +177,28 @@ def test_enqueue_notifies_listeners(owner: Connection, database: ScratchDatabase
     job = q.enqueue(owner, "decode", "python", {})
     thread.join(10)
     assert received == [str(job.id)]
+
+
+def test_finishing_a_job_wakes_the_runners_of_its_dependants(
+    owner: Connection, database: ScratchDatabase
+) -> None:
+    stage = q.enqueue(owner, "chords", "python", {})
+    q.enqueue(owner, "finalize", "node", {}, soft_depends_on=[stage.id])
+    received: list[str] = []
+    ready = threading.Event()
+
+    def listen() -> None:
+        with connect(database.worker_url) as conn:
+            conn.execute("listen jobs_node")
+            ready.set()
+            for note in conn.notifies(timeout=5, stop_after=1):
+                received.append(note.payload)
+
+    thread = threading.Thread(target=listen)
+    thread.start()
+    ready.wait(5)
+    time.sleep(0.1)
+    with owner.transaction():
+        q.notify_dependents(owner, stage.id)
+    thread.join(10)
+    assert received == [str(stage.id)]

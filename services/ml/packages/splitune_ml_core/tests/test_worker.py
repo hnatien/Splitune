@@ -5,13 +5,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 import time
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import TypeAdapter
 from splitune_ml_core import contracts, devtools
 from splitune_ml_core import queue as q
 from splitune_ml_core.db import Connection
@@ -21,6 +24,16 @@ from splitune_ml_core.worker import Worker
 from .conftest import SettingsFactory
 
 TERMINAL = {"done", "failed", "cancelled"}
+
+
+class _AnyTime:
+    """Matches the events' second-precision UTC timestamps."""
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, str) and bool(re.fullmatch(r"\d{4}-\d\d-\d\dT[\d:]{8}Z", other))
+
+
+ANY_TIME = _AnyTime()
 
 
 def wait_for(owner: Connection, job_ids: list[int], timeout_s: float = 120) -> dict[int, Any]:
@@ -140,17 +153,21 @@ def test_mock_chain_writes_fixtures_and_bookkeeping(
     runs = stage_runs(owner, analysis_id)
     assert {s: r["status"] for s, r in runs.items()} == {"decode": "done", "beats": "done"}
     assert all(len(r["cache_key"]) == 64 and r["finished_at"] for r in runs.values())
-    kinds = [(e["type"], e.get("stage")) for e in events(owner, analysis_id)]
+    kinds = [(e["type"], e.get("stage", e.get("value"))) for e in events(owner, analysis_id)]
     assert kinds == [
         ("stage.started", "decode"),
         ("stage.completed", "decode"),
+        ("progress", 0.5),
         ("stage.started", "beats"),
         ("stage.completed", "beats"),
+        ("progress", 0.99),
     ]
     for event in events(owner, analysis_id):
-        contracts.StageStartedEvent.model_validate(event) if event[
-            "type"
-        ] == "stage.started" else contracts.StageCompletedEvent.model_validate(event)
+        TypeAdapter(contracts.JobEvent).validate_python(event)
+    analysis = owner.execute(
+        "select status, progress from analyses where id = %s", [analysis_id]
+    ).fetchone()
+    assert analysis == {"status": "running", "progress": pytest.approx(0.99)}
     completed = [e for e in events(owner, analysis_id) if e["type"] == "stage.completed"]
     assert {e["artefact"]["id"] for e in completed} == {str(r["id"]) for r in rows}
     song = owner.execute(
@@ -515,3 +532,109 @@ def test_local_chain_transcribes_and_recognizes_chords(
         assert notes.params["source"] != "mixture"  # the separated stem was transcribed
     runs = stage_runs(owner, analysis_id)
     assert runs["notes.bass"]["status"] == "done"
+
+
+def test_url_import_downloads_into_raw_and_names_the_song(
+    owner: Connection,
+    storage: Storage,
+    make_settings: SettingsFactory,
+    user_id: str,
+    running: list[Worker],
+) -> None:
+    song_id, analysis_id = devtools.seed_analysis(owner, user_id)
+    owner.execute(
+        "update songs set source_kind = 'url', source_url = %s, status = 'importing' where id = %s",
+        ["https://www.youtube.com/watch?v=abc", song_id],
+    )
+    source_key = f"u/{user_id}/raw/{uuid.uuid4()}/source.bin"
+    request = {
+        "analysis_id": analysis_id,
+        "user_id": user_id,
+        "stage": "url_import",
+        "inputs": {},
+        "outputs": {"source": source_key},
+        "params": {"download_video": False},
+    }
+    job = q.enqueue(owner, "url_import", "python", request, analysis_id=analysis_id)
+    start(running, Worker(make_settings(ML_MODE="mock")))
+    assert wait_for(owner, [job.id])[job.id]["status"] == "done"
+
+    head = storage.head(source_key)
+    assert head is not None
+    assert head.bytes > 0
+    song = owner.execute("select title, status from songs where id = %s", [song_id]).fetchone()
+    assert song == {"title": "Mock import", "status": "analysing"}
+    assert stage_runs(owner, analysis_id)["url_import"]["status"] == "done"
+    completed = [e for e in events(owner, analysis_id) if e["type"] == "stage.completed"]
+    assert completed == [{"type": "stage.completed", "stage": "url_import", "at": ANY_TIME}]
+    # No artefact rows: the download is a raw object like an upload.
+    assert artefact_rows(owner, analysis_id) == []
+
+
+def test_url_import_refuses_outputs_outside_raw(
+    owner: Connection, make_settings: SettingsFactory, user_id: str, running: list[Worker]
+) -> None:
+    song_id, analysis_id = devtools.seed_analysis(owner, user_id)
+    owner.execute(
+        "update songs set source_kind = 'url', source_url = 'https://x.test/v' where id = %s",
+        [song_id],
+    )
+    request = {
+        "analysis_id": analysis_id,
+        "user_id": user_id,
+        "stage": "url_import",
+        "inputs": {},
+        "outputs": {"source": f"u/{user_id}/a/{analysis_id}/v1/source.bin"},
+        "params": {},
+    }
+    job = q.enqueue(owner, "url_import", "python", request, analysis_id=analysis_id)
+    start(running, Worker(make_settings(ML_MODE="mock")))
+    assert wait_for(owner, [job.id])[job.id]["error_code"] == "invalid_request"
+
+
+def test_failed_optional_stage_reports_its_fallback_and_unblocks_soft_dependants(
+    owner: Connection,
+    storage: Storage,
+    make_settings: SettingsFactory,
+    user_id: str,
+    click_track: Any,
+    running: list[Worker],
+) -> None:
+    _, analysis_id = devtools.seed_analysis(owner, user_id)
+    decode_id, beats_id, source_key = enqueue_chain(
+        owner, storage, user_id, analysis_id, click_track()
+    )
+    chords = devtools.stage_request(
+        "chords", user_id=user_id, analysis_id=analysis_id, source_key=source_key
+    )
+    # An output outside the analysis: refused for good once the analysis is known.
+    chords["outputs"] = {"chords": f"u/{user_id}/raw/x/chords.json"}
+    chords_id = q.enqueue(
+        owner, "chords", "python", chords, analysis_id=analysis_id, depends_on=[beats_id]
+    ).id
+    tag = devtools.stage_request(
+        "tag", user_id=user_id, analysis_id=analysis_id, source_key=source_key
+    )
+    tag_id = q.enqueue(
+        owner,
+        "tag",
+        "python",
+        tag,
+        analysis_id=analysis_id,
+        depends_on=[decode_id],
+        soft_depends_on=[chords_id],
+    ).id
+    start(running, Worker(make_settings(ML_MODE="mock")))
+    jobs = wait_for(owner, [decode_id, beats_id, chords_id, tag_id])
+    assert [jobs[i]["status"] for i in (chords_id, tag_id)] == ["failed", "done"]
+    failed = [e for e in events(owner, analysis_id) if e["type"] == "stage.failed"]
+    assert failed == [
+        {
+            "type": "stage.failed",
+            "stage": "chords",
+            "error_code": "invalid_request",
+            "fallback": "chords_unavailable",
+            "at": ANY_TIME,
+        }
+    ]
+    contracts.StageFailedEvent.model_validate(failed[0])

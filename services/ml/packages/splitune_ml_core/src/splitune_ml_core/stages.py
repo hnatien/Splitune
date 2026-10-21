@@ -25,7 +25,8 @@ class StageSpec:
     outputs: dict[str, str]  # output name -> artefact kind
     primary: str  # output reported in stage.completed
     downloads: tuple[str, ...] = ()  # inputs fetched to local disk before `run`
-    # Fetched when the request names them (e.g. no separation when stems_unavailable).
+    # Fetched when the request names them and an artefact row records the object, i.e. the
+    # upstream stage succeeded (no separation when stems_unavailable).
     optional_downloads: tuple[str, ...] = ()
     # Resolves the decoded FLAC (and audio_hash) from the `probe` input, re-decoding `source`
     # when the local cache no longer has it.
@@ -33,9 +34,25 @@ class StageSpec:
     # False: a cached `fallback` result is recomputed instead of reused (the failure that caused
     # it, e.g. an MPS out-of-memory, may be gone by now).
     reuse_fallback: bool = True
+    # What the analysis does when this stage fails for good (06 §6), sent as `stage.failed`'s
+    # `fallback`. None = critical: nothing downstream can make up for it.
+    failure_fallback: str | None = None
+    # Outputs are raw objects under the user's raw/ prefix (no artefact rows, no stage cache):
+    # url_import's downloaded audio and video.
+    raw_outputs: bool = False
 
 
 STAGES: dict[str, StageSpec] = {
+    "url_import": StageSpec(
+        name="url_import",
+        module="stage_url_import.stage",
+        island="onnx-cpu",
+        slot="cpu",
+        timeout_s=300,  # 06 §0
+        outputs={"source": "source", "video": "video"},  # video only when requested
+        primary="source",
+        raw_outputs=True,
+    ),
     "decode": StageSpec(
         name="decode",
         module="stage_decode.stage",
@@ -65,6 +82,7 @@ STAGES: dict[str, StageSpec] = {
         outputs={"tags": "tags"},
         primary="tags",
         needs_audio=True,
+        failure_fallback="tagger_unavailable",
     ),
     "separate": StageSpec(
         name="separate",
@@ -74,9 +92,10 @@ STAGES: dict[str, StageSpec] = {
         timeout_s=1500,  # 600 s per model (06 §2) for up to two chain entries + model loads
         outputs={"separation": "separation"},
         primary="separation",
-        downloads=("tags",),
+        optional_downloads=("tags",),
         needs_audio=True,
         reuse_fallback=False,
+        failure_fallback="stems_unavailable",
     ),
     "stem_post": StageSpec(
         name="stem_post",
@@ -86,8 +105,10 @@ STAGES: dict[str, StageSpec] = {
         timeout_s=300,  # 180 s budget (06 §2) + encodes of up to ~6 stems
         outputs={"stems": "stems", "presence": "presence"},
         primary="stems",
-        downloads=("separation", "tags"),
+        downloads=("separation",),
+        optional_downloads=("tags",),
         needs_audio=True,
+        failure_fallback="stems_unavailable",
     ),
     "chords": StageSpec(
         name="chords",
@@ -100,6 +121,7 @@ STAGES: dict[str, StageSpec] = {
         downloads=("beats",),
         optional_downloads=("separation", "stems"),
         needs_audio=True,
+        failure_fallback="chords_unavailable",
     ),
 }
 
@@ -131,6 +153,7 @@ def notes_spec(instrument: str) -> StageSpec:
         primary="notes",
         optional_downloads=("separation", "stems"),
         needs_audio=True,
+        failure_fallback="notes_unavailable",
     )
 
 
