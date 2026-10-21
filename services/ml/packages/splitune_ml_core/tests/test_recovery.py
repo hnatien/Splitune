@@ -78,13 +78,25 @@ def test_killed_worker_job_is_requeued_and_completes_once(
     env = worker_env(make_settings(), database)
     first = spawn(env, tmp_path)
     try:
+        # Kill once beats has started (its stage.started is committed), not merely been claimed:
+        # the job reads `running` from the claim on, a moment before the worker records the start.
         deadline = time.monotonic() + 300
         while True:
-            row = owner.execute("select status from jobs where id = %s", [beats_id]).fetchone()
-            if row is not None and row["status"] == "running":
-                break
+            row = owner.execute(
+                """
+                select j.status, exists (
+                  select 1 from job_events e
+                  where e.analysis_id = j.analysis_id
+                    and e.event->>'type' = 'stage.started' and e.event->>'stage' = 'beats'
+                ) as started
+                from jobs j where j.id = %s
+                """,
+                [beats_id],
+            ).fetchone()
             assert row is not None
-            assert row["status"] == "queued", f"beats finished before it could be killed: {row}"
+            if row["status"] == "running" and row["started"]:
+                break
+            assert row["status"] in {"queued", "running"}, f"beats finished too soon: {row}"
             assert time.monotonic() < deadline
             time.sleep(0.02)
         os.killpg(first.pid, signal.SIGKILL)
