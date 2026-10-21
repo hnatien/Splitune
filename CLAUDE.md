@@ -3,7 +3,7 @@
 Web-first practice app for instrument learners: bring a song (upload, recording or URL), Splitune isolates your part, transcribes it (beats, chords, guitar/bass tab; piano and drums in v1) and wraps it in practice tools (bar-snapped loops, slow-down, count-in, stem mixer, confidence-aware notation, pedal control).
 
 ## Current mode: personal
-`docs/implementation/25-personal-mode.md` is binding and overrides docs 00–24: Railway Hobby (`app` + Postgres + Bucket), ML and Node workers on the owner's Mac, mock billing, no copyright gating. Never create, scale or enable billable Railway resources without asking first.
+`docs/implementation/25-personal-mode.md` is binding and overrides docs 00–24: Railway Hobby (`app` + Postgres), Cloudflare R2 free tier (bucket `splitune-media`), ML and Node workers on the owner's Mac, mock billing, no copyright gating. Never create, scale or enable billable Railway or Cloudflare resources without asking first.
 
 ## Where things live
 - `docs/` (research + `docs/implementation/` specs) and `prompts/` (one prompt per implementation step) are **local-only and untracked**. Never `git add` them or change their ignore rules. Progress log: `docs/implementation/PROGRESS.md`.

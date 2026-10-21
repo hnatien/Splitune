@@ -1,4 +1,4 @@
-"""S3 access with the worker's own bucket credentials (SeaweedFS locally, Railway Bucket)."""
+"""S3 access with the worker's own bucket credentials (SeaweedFS locally, Cloudflare R2)."""
 
 from __future__ import annotations
 
@@ -44,7 +44,8 @@ class Storage:
                 retries={"max_attempts": 5, "mode": "standard"},
                 connect_timeout=10,
                 read_timeout=60,
-                # Same as the TS adapter: SeaweedFS and Railway reject the newer default checksums.
+                # Same as the TS adapter: S3-compatible stores need not support the newer default
+                # checksums.
                 request_checksum_calculation="when_required",
                 response_checksum_validation="when_required",
             ),

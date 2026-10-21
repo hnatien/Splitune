@@ -1,0 +1,12 @@
+[
+  {
+    "id": "app-presigned",
+    "allowed": {
+      "origins": ["https://<app>.up.railway.app"],
+      "methods": ["GET", "HEAD", "PUT"],
+      "headers": ["content-type", "range"]
+    },
+    "exposeHeaders": ["ETag", "Content-Length", "Content-Range", "Accept-Ranges"],
+    "maxAgeSeconds": 3600
+  }
+]

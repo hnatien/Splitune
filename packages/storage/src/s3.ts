@@ -12,9 +12,9 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { assertSafeKey, StorageKeyError } from './keys.ts'
 
-// S3 adapter for SeaweedFS (local) and the Railway Bucket (production). Railway Buckets have no
-// lifecycle rules, versioning or SSE (25-personal-mode.md §1): nothing here relies on them, and
-// expiry of raw uploads and stems is done by the sweeper via deletePrefix.
+// S3 adapter for SeaweedFS (local) and Cloudflare R2 (production). Nothing here relies on bucket
+// lifecycle rules, versioning or SSE (25-personal-mode.md §1): expiry of raw uploads and stems is
+// done by the sweeper via deletePrefix.
 //
 // Presigned URLs are credentials: never log them.
 

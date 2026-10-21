@@ -21,7 +21,7 @@ services:
       retries: 20
     restart: unless-stopped
 
-  # SeaweedFS stands in for the Railway Bucket (MinIO Community images were withdrawn in 2026).
+  # SeaweedFS stands in for Cloudflare R2 (MinIO Community images were withdrawn in 2026).
   seaweedfs:
     image: chrislusf/seaweedfs:4.48
     command:

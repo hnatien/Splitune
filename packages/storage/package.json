@@ -2,7 +2,7 @@
   "name": "@splitune/storage",
   "version": "0.0.0",
   "private": true,
-  "description": "S3 storage adapter (SeaweedFS locally, Railway Bucket in production) — docs/implementation/03-data-model-and-storage.md",
+  "description": "S3 storage adapter (SeaweedFS locally, Cloudflare R2 in production) — docs/implementation/03-data-model-and-storage.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
