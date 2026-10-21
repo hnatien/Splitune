@@ -6,14 +6,18 @@ import hashlib
 import json
 import os
 import uuid
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 import pytest
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
+import yaml
+from pydantic import ValidationError
 from splitune_ml_core import contracts, register
 from splitune_ml_core.errors import StageError
+from splitune_ml_core.keys import cache_key
 from splitune_ml_core.stage_api import StageJob
 from stage_separation import config, models, separate
 from stage_separation.config import ModelSpec
@@ -103,6 +107,113 @@ def test_roles_follow_the_mix_minus_mode() -> None:
     two = config.load().models["mel_roformer_kim_vocals"]
     vocals = separate.roles(two, {"instrument": "vocals", "keep": [], "mix_minus": "complement"})
     assert vocals == {"vocals": "target", "other": "complement"}
+
+
+def with_inference(name: str, inference: dict[str, Any]) -> ModelSpec:
+    spec = config.load().models[name]
+    return ModelSpec.model_validate({**spec.model_dump(), "inference": inference})
+
+
+def test_inference_settings_reject_unknown_and_foreign_keys() -> None:
+    assert with_inference("bs_roformer_sw", {"overlap": 4}).inference == {"overlap": 4}
+    assert with_inference("htdemucs_ft", {"shifts": 1}).inference == {"shifts": 1}
+    for name, bad in (
+        ("bs_roformer_sw", {"overlapp": 4}),
+        ("bs_roformer_sw", {"shifts": 1}),  # a Demucs key on an MDXC model
+        ("bs_roformer_sw", {"overlap": 0}),
+        ("htdemucs_ft", {"overlap": 1.5}),  # Demucs overlap is a fraction
+        ("htdemucs_ft", {"segment_size": 10}),
+    ):
+        with pytest.raises(ValidationError):
+            with_inference(name, bad)
+
+
+def describe_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, inference: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    document = yaml.safe_load(config.DEFAULT_PATH.read_text(encoding="utf-8"))
+    document["models"]["htdemucs_ft"]["inference"] = inference
+    path = tmp_path / f"separation-{len(list(tmp_path.iterdir()))}.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    monkeypatch.setenv("ML_SEPARATION_CONFIG", str(path))
+    config.load.cache_clear()
+    try:
+        described = separate.describe({"instrument": "bass"})
+    finally:
+        config.load.cache_clear()
+    key = cache_key(
+        scope="global",
+        audio_id=AUDIO_HASH,
+        stage="separate",
+        model_refs=described.model_refs,
+        params=described.params,
+    )
+    return key, described.params
+
+
+def test_inference_settings_are_part_of_the_cache_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """htdemucs_ft is bass's fallback: its settings change the key although it is not first."""
+    one, params = describe_key(tmp_path, monkeypatch, {"shifts": 1})
+    two, _ = describe_key(tmp_path, monkeypatch, {"shifts": 2})
+    same, _ = describe_key(tmp_path, monkeypatch, {"shifts": 1})
+    assert params["inference"]["htdemucs_ft"] == {"shifts": 1}
+    assert one != two
+    assert one == same
+    job = make_job(tmp_path, params)
+    ref = models.model_ref(config.load().models["htdemucs_ft"])
+    kept: dict[str, separate.Role] = {"bass": "target"}
+    assert separate.run_id(
+        job, "htdemucs_ft", with_inference("htdemucs_ft", {"shifts": 1}), ref, kept
+    ) != separate.run_id(job, "htdemucs_ft", with_inference("htdemucs_ft", {}), ref, kept)
+
+
+class FakeSeparator:
+    """Records how audio-separator would be constructed."""
+
+    built: ClassVar[list[dict[str, Any]]] = []
+
+    def __init__(self, **kwargs: Any) -> None:
+        FakeSeparator.built.append(kwargs)
+        self.model_instance = self
+
+    def load_model(self, model_filename: str) -> None:
+        self.model_filename = model_filename
+
+
+@pytest.fixture
+def fake_separator(monkeypatch: pytest.MonkeyPatch) -> Generator[list[dict[str, Any]]]:
+    FakeSeparator.built = []
+    monkeypatch.setattr(models, "Separator", FakeSeparator)
+    monkeypatch.setattr(register, "verify", lambda *_: None)  # pyright: ignore[reportUnknownLambdaType, reportUnknownArgumentType]
+    models.release()
+    yield FakeSeparator.built
+    models.release()
+
+
+def test_inference_settings_reach_the_separator_over_library_defaults(
+    tmp_path: Path, fake_separator: list[dict[str, Any]]
+) -> None:
+    models._separator("bs_roformer_sw", with_inference("bs_roformer_sw", {"overlap": 4}), tmp_path)  # pyright: ignore[reportPrivateUsage]
+    models._separator("htdemucs_ft", with_inference("htdemucs_ft", {"shifts": 1}), tmp_path)  # pyright: ignore[reportPrivateUsage]
+    mdxc, demucs = fake_separator
+    assert mdxc["mdxc_params"] == {**models.LIBRARY_PARAMS["mdxc"], "overlap": 4}
+    assert mdxc["mdxc_params"]["segment_size"] == 256  # other library defaults kept
+    assert mdxc["demucs_params"] == models.LIBRARY_PARAMS["demucs"]
+    assert demucs["demucs_params"] == {**models.LIBRARY_PARAMS["demucs"], "shifts": 1}
+    assert demucs["demucs_params"]["overlap"] == 0.25
+
+
+def test_the_warm_model_reloads_when_its_settings_change(
+    tmp_path: Path, fake_separator: list[dict[str, Any]]
+) -> None:
+    four = with_inference("bs_roformer_sw", {"overlap": 4})
+    first = models._separator("bs_roformer_sw", four, tmp_path / "a")  # pyright: ignore[reportPrivateUsage]
+    assert models._separator("bs_roformer_sw", four, tmp_path / "b") is first  # pyright: ignore[reportPrivateUsage]
+    eight = with_inference("bs_roformer_sw", {"overlap": 8})
+    assert models._separator("bs_roformer_sw", eight, tmp_path / "c") is not first  # pyright: ignore[reportPrivateUsage]
+    assert [b["mdxc_params"]["overlap"] for b in fake_separator] == [4, 8]
 
 
 class FakeModels:

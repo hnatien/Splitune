@@ -7,30 +7,38 @@ version: 1
 
 models:
   # `outputs` maps the model's stem names to instruments; null = a complement ("everything else").
+  # `arch` is audio-separator's architecture; `inference` overrides single keys of its
+  # mdxc_params (overlap = RoFormer window step in s, capped at the chunk length; default 8) or
+  # demucs_params (shifts = random-shift passes, default 2; overlap = segment fraction, 0.25).
   bs_roformer_sw:
     record: bs-roformer-sw
     filename: BS-Roformer-SW.ckpt
     provider: "bs_roformer:BS-Roformer-SW"
+    arch: mdxc
     outputs: {bass: bass, drums: drums, guitar: guitar, piano: piano, vocals: vocals, other: other}
   htdemucs_6s:
     record: htdemucs-6s
     filename: htdemucs_6s.yaml
     provider: htdemucs_6s
+    arch: demucs
     outputs: {bass: bass, drums: drums, guitar: guitar, piano: piano, vocals: vocals, other: other}
   htdemucs_ft:
     record: htdemucs-ft
     filename: htdemucs_ft.yaml
     provider: htdemucs_ft
+    arch: demucs
     outputs: {bass: bass, drums: drums, vocals: vocals, other: other}
   bs_roformer_viperx_1297:
     record: bs-roformer-viperx-1297
     filename: model_bs_roformer_ep_317_sdr_12.9755.ckpt
     provider: "bs_roformer:viperx-1297"
+    arch: mdxc
     outputs: {vocals: vocals, instrumental: null}
   mel_roformer_kim_vocals:
     record: mel-roformer-kim-vocals
     filename: vocals_mel_band_roformer.ckpt
     provider: "mel_roformer:kim-vocals"
+    arch: mdxc
     outputs: {vocals: vocals, other: null}
 
 # mix_minus: subtract = mixture − aligned stem; complement = sum of the model's other outputs.

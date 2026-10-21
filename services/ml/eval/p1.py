@@ -2,17 +2,19 @@
 
     uv run python eval/p1.py codec                       # mixture.aac128.wav per window
     uv run python eval/p1.py separate --model bs_roformer_sw [--clip ID ...]
+    uv run python eval/p1.py separate --model htdemucs_ft --set --tag shifts1 --inference shifts=1
     uv run python eval/p1.py energies --model bs_roformer_sw   # stem/mixture energy per window
     uv run python eval/p1.py select                      # 20 clips → eval/sets/musdb18hq-p1.yaml
     uv run python eval/p1.py export --session p1-2026-10-21   # blinded listening session
-    uv run python eval/p1.py sdr                          # uSDR where MUSDB has references
+    uv run python eval/p1.py sdr [--tag shifts1]          # uSDR where MUSDB has references
     uv run python eval/p1.py report --session p1-2026-10-21   # ratings (Postgres) → results/p1
 
 Windows come from `eval/p1_musdb.py` (default root ~/datasets/musdb18hq-p1). Candidates run on the
 "YouTube-style" AAC 128 kb/s round-trip of each mixture, without loudness normalisation so the
 reference stems keep their scale for SDR. Separation uses the shipped wrapper
 (`stage_separation.models`), and the listening items are encoded by the shipped stem encoder, so
-the raters hear what `separate` + `stem_post` would produce.
+the raters hear what `separate` + `stem_post` would produce. A `--tag` keeps a sweep point's runs
+(model-map inference settings overridden with `--inference`) apart from the default `runs/`.
 """
 
 from __future__ import annotations
@@ -81,14 +83,18 @@ def outputs_of(model: str) -> dict[str, str | None]:
     return dict(config.load().models[model].outputs)
 
 
-def stem_file(root: Path, model: str, clip: str, instrument: str) -> Path:
+def runs_dir(root: Path, tag: str | None) -> Path:
+    return root / "runs" if tag is None else root / f"runs-{tag}"
+
+
+def stem_file(runs: Path, model: str, clip: str, instrument: str) -> Path:
     name = next(k for k, v in outputs_of(model).items() if v == instrument)
-    return root / "runs" / model / clip / f"{name}.wav"
+    return runs / model / clip / f"{name}.wav"
 
 
-def load_stem(root: Path, model: str, clip: str, name: str, frames: int) -> np.ndarray:
+def load_stem(runs: Path, model: str, clip: str, name: str, frames: int) -> np.ndarray:
     """A run's output; audio-separator skips writing a near-silent stem, which reads as zeros."""
-    path = root / "runs" / model / clip / f"{name}.wav"
+    path = runs / model / clip / f"{name}.wav"
     return read(path)[:frames] if path.is_file() else np.zeros((frames, 2), dtype=np.float32)
 
 
@@ -110,9 +116,16 @@ def cmd_codec(args: argparse.Namespace) -> int:
 def cmd_separate(args: argparse.Namespace) -> int:
     from stage_separation import config, models  # torch + audio-separator: only here
 
+    if args.inference and not args.tag:
+        sys.exit("--inference needs --tag (the default runs/ follow the model map)")
     root = Path(args.root).expanduser()
     spec = config.load().models[args.model]
-    out = root / "runs" / args.model
+    if args.inference:
+        override = {k: yaml.safe_load(v) for k, v in (i.split("=", 1) for i in args.inference)}
+        spec = config.ModelSpec.model_validate(
+            {**spec.model_dump(), "inference": {**spec.inference, **override}}
+        )
+    out = runs_dir(root, args.tag) / args.model
     timing_path = out / "timing.json"
     timing: dict[str, Any] = (
         json.loads(timing_path.read_text(encoding="utf-8")) if timing_path.is_file() else {}
@@ -126,6 +139,7 @@ def cmd_separate(args: argparse.Namespace) -> int:
         out.mkdir(parents=True, exist_ok=True)
         timing_path.write_text(json.dumps(timing, indent=2) + "\n", encoding="utf-8")
         print(f"{args.model} {clip}: {result.seconds:.1f}s, {result.peak_mb:.0f} MB", flush=True)
+    print(f"{args.model} inference {spec.inference or 'library defaults'} → {out}")
     return 0
 
 
@@ -249,6 +263,7 @@ def cmd_export(args: argparse.Namespace) -> int:
     complement mix-minus, isolated A/B pairs (all pairs, or a rotating three when there are
     more) and subtract-vs-complement for the head candidate."""
     root = Path(args.root).expanduser()
+    runs = runs_dir(root, None)
     session = root / "listening" / args.session
     media = session / "media"
     media.mkdir(parents=True, exist_ok=True)
@@ -272,7 +287,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         isolated: dict[str, str] = {}
         subtract: dict[str, str] = {}
         for model in CANDIDATES[target]:
-            stem = load_stem(root, model, clip, stem_file(root, model, clip, target).stem, frames)
+            stem = load_stem(runs, model, clip, stem_file(runs, model, clip, target).stem, frames)
             for kind, system, audio, bucket in (
                 ("isolated", model, stem, isolated),
                 ("mix_minus", f"{model}:subtract", mixture - stem, subtract),
@@ -290,7 +305,7 @@ def cmd_export(args: argparse.Namespace) -> int:
                 )
         head = CANDIDATES[target][0]
         others = [k for k, v in outputs_of(head).items() if v != target]
-        complement = np.sum([load_stem(root, head, clip, o, frames) for o in others], axis=0)
+        complement = np.sum([load_stem(runs, head, clip, o, frames) for o in others], axis=0)
         complement_item = token()
         items.append(
             {
@@ -321,22 +336,23 @@ def cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
-def sdr_rows(root: Path) -> list[dict[str, Any]]:
+def sdr_rows(root: Path, tag: str | None = None) -> list[dict[str, Any]]:
+    runs = runs_dir(root, tag)
     rows: list[dict[str, Any]] = []
     for item in load_set(SET_ID).items:
         clip = item.id
         refs = {i: read(root / clip / f"{i}.wav").astype(np.float64) for i in REFERENCED}
         for model in sorted({m for c in CANDIDATES.values() for m in c}):
-            if not (root / "runs" / model / clip).is_dir():
+            if not (runs / model / clip).is_dir():
                 continue
             for instrument in REFERENCED:
                 if instrument not in outputs_of(model).values():
                     continue
                 est = load_stem(
-                    root,
+                    runs,
                     model,
                     clip,
-                    stem_file(root, model, clip, instrument).stem,
+                    stem_file(runs, model, clip, instrument).stem,
                     len(refs[instrument]),
                 ).astype(np.float64)
                 rows.append(
@@ -350,9 +366,17 @@ def sdr_rows(root: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def seconds_per_clip(runs: Path, model: str) -> float:
+    """Median separation time of the set's clips (`separate` timing.json)."""
+    timing = json.loads((runs / model / "timing.json").read_text(encoding="utf-8"))
+    clips = {i.id for i in load_set(SET_ID).items}
+    return statistics.median(t["seconds"] for c, t in timing.items() if c in clips)
+
+
 def cmd_sdr(args: argparse.Namespace) -> int:
-    rows = sdr_rows(Path(args.root).expanduser())
-    out = RESULTS / "sdr.csv"
+    root = Path(args.root).expanduser()
+    rows = sdr_rows(root, args.tag)
+    out = RESULTS / ("sdr.csv" if args.tag is None else f"sdr-{args.tag}.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["clip", "model", "instrument", "usdr"])
@@ -365,7 +389,7 @@ def cmd_sdr(args: argparse.Namespace) -> int:
         values = [r["usdr"] for r in group]
         print(
             f"{model:26} {instrument:7} median {statistics.median(values):6.2f} dB "
-            f"(n={len(values)})"
+            f"(n={len(values)}), {seconds_per_clip(runs_dir(root, args.tag), model):.1f} s/clip"
         )
     return 0
 
@@ -545,6 +569,10 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--model", required=True)
     s.add_argument("--clip", action="append")
     s.add_argument("--set", action="store_true", help=f"only the clips of {SET_ID}")
+    s.add_argument("--tag", help="write to runs-<tag>/ instead of runs/")
+    s.add_argument(
+        "--inference", action="append", metavar="KEY=VALUE", help="override (needs --tag)"
+    )
     s.set_defaults(fn=cmd_separate)
     e = sub.add_parser("energies", help="separated stem energy per window")
     e.add_argument("--model", required=True)
@@ -555,7 +583,9 @@ def main(argv: list[str] | None = None) -> int:
     x = sub.add_parser("export", help="write a blinded listening session")
     x.add_argument("--session", required=True)
     x.set_defaults(fn=cmd_export)
-    sub.add_parser("sdr", help="uSDR against MUSDB references").set_defaults(fn=cmd_sdr)
+    d = sub.add_parser("sdr", help="uSDR against MUSDB references")
+    d.add_argument("--tag", help="score runs-<tag>/ instead of runs/")
+    d.set_defaults(fn=cmd_sdr)
     r = sub.add_parser("report", help="ratings from Postgres → report tables")
     r.add_argument("--session", required=True)
     r.add_argument("--out")

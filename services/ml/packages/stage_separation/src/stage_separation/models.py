@@ -2,13 +2,16 @@
 
 The library is driven with settings that keep its output usable for mix-minus: float WAV in and
 out (no 16/24-bit clipping) and peak normalisation only above 0 dBFS (its default rescales every
-stem to a 0.9 peak, which breaks `mixture - stem`). Its public `separate()` logs and swallows
-exceptions, so the per-file method is called to see failures; the version is pinned.
+stem to a 0.9 peak, which breaks `mixture - stem`). Per-model inference settings from the model
+map override single keys of the library's `mdxc_params` / `demucs_params`. Its public `separate()`
+logs and swallows exceptions, so the per-file method is called to see failures; the version is
+pinned.
 """
 
 from __future__ import annotations
 
 import gc
+import inspect
 import logging
 import os
 import threading
@@ -29,6 +32,12 @@ from .config import ModelSpec
 log = logging.getLogger("splitune.separate")
 
 _lock = threading.Lock()
+
+# The library's defaults per architecture; the model map overrides single keys.
+LIBRARY_PARAMS: dict[str, dict[str, Any]] = {
+    arch: dict(inspect.signature(Separator).parameters[f"{arch}_params"].default)
+    for arch in ("mdxc", "demucs")
+}
 
 
 def models_dir() -> Path:
@@ -56,6 +65,7 @@ def device() -> str:
 @dataclass
 class _Loaded:
     name: str
+    inference: dict[str, Any]
     separator: Any
 
 
@@ -72,7 +82,7 @@ def _ffmpeg_on_path() -> None:
 def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
     """One model stays loaded per island (they are 50-900 MB); switching models frees the last."""
     global _warm
-    if _warm is not None and _warm.name == name:
+    if _warm is not None and _warm.name == name and _warm.inference == spec.inference:
         # The loaded model instance copied output_dir at load time; both must move.
         _warm.separator.output_dir = str(output_dir)
         _warm.separator.model_instance.output_dir = str(output_dir)
@@ -80,6 +90,7 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
     release()
     register.verify(register.model(spec.record), models_dir() / "audio-separator")
     _ffmpeg_on_path()
+    params = {**LIBRARY_PARAMS[spec.arch], **spec.inference}
     separator: Any = Separator(
         log_level=logging.ERROR,
         model_file_dir=str(models_dir() / "audio-separator"),
@@ -89,11 +100,13 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
         amplification_threshold=0.0,
         sample_rate=44100,
         use_soundfile=True,
+        mdxc_params=params if spec.arch == "mdxc" else LIBRARY_PARAMS["mdxc"],
+        demucs_params=params if spec.arch == "demucs" else LIBRARY_PARAMS["demucs"],
     )
     if device() == "cpu":
         separator.torch_device = separator.torch_device_cpu  # pyright: ignore[reportUnknownMemberType]
     separator.load_model(model_filename=spec.filename)  # pyright: ignore[reportUnknownMemberType]
-    _warm = _Loaded(name, separator)
+    _warm = _Loaded(name, dict(spec.inference), separator)
     return separator
 
 

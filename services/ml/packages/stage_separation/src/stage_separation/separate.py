@@ -63,6 +63,8 @@ def plan(
     return {
         "instrument": instrument,
         "chain": spec.chain,
+        # Part of the cache key: other inference settings never reuse old stems.
+        "inference": {name: cfg.models[name].inference for name in spec.chain},
         "mix_minus": spec.mix_minus,
         "keep": keep,
         "config_version": cfg.version,
@@ -106,9 +108,14 @@ def load_stem(path: Path | None, frames: int) -> NDArray[np.float32]:
     return np.pad(audio, ((0, frames - len(audio)), (0, 0)))
 
 
-def run_id(job: StageJob, name: str, ref: contracts.ModelRef, kept: dict[str, Role]) -> str:
-    """Cache directory of one separation: same audio, weights and kept outputs → same files."""
-    key = canonical_json([job.audio_hash, name, ref.weights_sha256, sorted(kept.items())])
+def run_id(
+    job: StageJob, name: str, spec: ModelSpec, ref: contracts.ModelRef, kept: dict[str, Role]
+) -> str:
+    """Cache directory of one separation: same audio, weights, inference settings and kept
+    outputs → same files."""
+    key = canonical_json(
+        [job.audio_hash, name, ref.weights_sha256, spec.inference, sorted(kept.items())]
+    )
     return hashlib.sha256(key.encode()).hexdigest()[:32]
 
 
@@ -148,7 +155,7 @@ def run(job: StageJob) -> StageOutput:
     else:
         raise StageError("stems_unavailable", retry=False)
 
-    directory = run_id(job, name, ref, kept)
+    directory = run_id(job, name, spec, ref, kept)
     cache = Path(job.cache_dir) / "separated"
     entries: list[dict[str, Any]] = []
     for stem, audio in stems.items():

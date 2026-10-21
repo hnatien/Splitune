@@ -6,10 +6,10 @@ from __future__ import annotations
 import os
 from functools import cache
 from pathlib import Path
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from splitune_ml_core.errors import StageError
 from splitune_ml_core.paths import ML_ROOT
 
@@ -18,11 +18,39 @@ DEFAULT_PATH = ML_ROOT / "config" / "separation.personal.yaml"
 Instrument = Literal["guitar", "bass", "piano", "drums", "vocals", "other"]
 
 
+class MdxcInference(BaseModel):
+    """audio-separator `mdxc_params`; unset keys keep the library default."""
+
+    model_config = ConfigDict(extra="forbid")
+    # RoFormers: the window step in seconds, capped at the model's chunk length (default 8).
+    overlap: float | None = Field(default=None, gt=0)
+
+
+class DemucsInference(BaseModel):
+    """audio-separator `demucs_params`; unset keys keep the library default."""
+
+    model_config = ConfigDict(extra="forbid")
+    shifts: int | None = Field(default=None, ge=0)  # random-shift passes averaged (default 2)
+    overlap: float | None = Field(default=None, ge=0, lt=1)  # fraction of a segment (0.25)
+
+
+INFERENCE: dict[str, type[BaseModel]] = {"mdxc": MdxcInference, "demucs": DemucsInference}
+
+
 class ModelSpec(BaseModel):
     record: str  # compliance/register/models/<id>.yaml
     filename: str  # audio-separator model filename
     provider: str  # contracts Stem.provider
     outputs: dict[str, Instrument | None]  # model stem name -> instrument; None = complement
+    arch: Literal["mdxc", "demucs"]  # audio-separator architecture
+    inference: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _inference_is_known(self) -> Self:
+        self.inference = (
+            INFERENCE[self.arch].model_validate(self.inference).model_dump(exclude_none=True)
+        )
+        return self
 
 
 class InstrumentSpec(BaseModel):
