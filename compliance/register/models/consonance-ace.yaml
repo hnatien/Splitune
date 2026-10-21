@@ -1,0 +1,25 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: consonance-ace
+kind: model
+name: "consonance-ACE conformer_decomposed (consonance label smoothing)"
+version: "d17633a"
+repo_url: https://github.com/andreamust/consonance-ACE
+code_spdx: MIT
+weights:
+  licence: "MIT (checkpoint in the repository)"
+  url: https://raw.githubusercontent.com/andreamust/consonance-ACE/d17633aea4e68e616e735d09df97b97ae3428e71/ACE/checkpoints/conformer_decomposed_smooth.ckpt
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "7b5b6a9678ae315fa077074198064950b83dc37f483a5e760ce58952b1b4e98f"
+  files:
+    - { name: conformer_decomposed_smooth.ckpt, sha256: "6ab1a314366fefb3d09e351ae7cb7f826a9e0718e94e7ff164df844ba7bcd954", bytes: 57624994 }
+training_data:
+  - { name: "Isophonics", licence: "annotations CC-BY-NC-SA / commercial audio", commercial_ok: false }
+  - { name: "McGill Billboard", licence: "annotations CC0 / commercial audio", commercial_ok: false }
+tier: amber
+tier_reason: "trained on commercial recordings (Isophonics, Billboard)"
+used_in: [chords]
+profiles: [personal]
+notes: >-
+  Model definition and decoding ported into stage_chords.ace (no lightning/gin); hyperparameters from the checkpoint.
+reviewer: owner
+reviewed: 2026-10-21

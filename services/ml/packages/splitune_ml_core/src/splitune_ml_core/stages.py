@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
-from typing import Literal
+from pathlib import Path
+from typing import Any, Literal, cast
+
+import yaml
+
+from .paths import ML_ROOT
 
 Island = Literal["torch", "onnx-cpu", "legacy"]
 Slot = Literal["mps", "cpu"]
@@ -19,6 +25,8 @@ class StageSpec:
     outputs: dict[str, str]  # output name -> artefact kind
     primary: str  # output reported in stage.completed
     downloads: tuple[str, ...] = ()  # inputs fetched to local disk before `run`
+    # Fetched when the request names them (e.g. no separation when stems_unavailable).
+    optional_downloads: tuple[str, ...] = ()
     # Resolves the decoded FLAC (and audio_hash) from the `probe` input, re-decoding `source`
     # when the local cache no longer has it.
     needs_audio: bool = False
@@ -81,7 +89,53 @@ STAGES: dict[str, StageSpec] = {
         downloads=("separation", "tags"),
         needs_audio=True,
     ),
+    "chords": StageSpec(
+        name="chords",
+        module="stage_chords.stage",
+        island="torch",
+        slot="mps",
+        timeout_s=300,  # 120 s budget (06 §2) for up to two inputs + key + cold model loads
+        outputs={"chords": "chords"},
+        primary="chords",
+        downloads=("beats",),
+        optional_downloads=("separation", "stems"),
+        needs_audio=True,
+    ),
 }
+
+NOTES_CONFIG = ML_ROOT / "config" / "notes.personal.yaml"
+# The transcriber chosen per instrument decides where its notes stage runs.
+TRANSCRIBER_ISLANDS: dict[str, tuple[Island, Slot]] = {
+    "basic_pitch": ("onnx-cpu", "cpu"),
+    "yourmt3": ("torch", "mps"),
+}
+
+
+def notes_placement(instrument: str) -> tuple[Island, Slot]:
+    raw = os.environ.get("ML_NOTES_CONFIG")
+    path = Path(raw).expanduser() if raw else NOTES_CONFIG
+    config = cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
+    transcriber = str(config["instruments"][instrument]["transcriber"])
+    return TRANSCRIBER_ISLANDS[transcriber]
+
+
+def notes_spec(instrument: str) -> StageSpec:
+    island, slot = notes_placement(instrument)
+    return StageSpec(
+        name=f"notes.{instrument}",
+        module=f"stage_notes.{instrument}",
+        island=island,
+        slot=slot,
+        timeout_s=240,  # 180 s budget (06 §2) + cold model load
+        outputs={"notes": f"notes.{instrument}"},
+        primary="notes",
+        optional_downloads=("separation", "stems"),
+        needs_audio=True,
+    )
+
+
+for _instrument in ("guitar", "bass", "vocals"):
+    STAGES[f"notes.{_instrument}"] = notes_spec(_instrument)
 
 DESCRIBE_TIMEOUT_S = 600.0  # first describe may download model weights
 

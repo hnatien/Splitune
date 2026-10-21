@@ -1,0 +1,32 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: basic-pitch
+kind: model
+name: "Basic Pitch (ICASSP 2022) note transcription, bundled ONNX export"
+version: "0.4.0"
+repo_url: https://github.com/spotify/basic-pitch
+code_spdx: Apache-2.0
+weights:
+  licence: Apache-2.0
+  url: https://files.pythonhosted.org/packages/99/0e/3a36d22562daeb0ae3c78ac78da3f8dba96543c5576ed57d4acb8ddbab5b/basic_pitch-0.4.0-py2.py3-none-any.whl
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "3e6bf57d7880754fbae96fece3bc33cc71a53cb6ded10c21d5cf70281273f95a"
+  files:
+    - { name: nmp.onnx, sha256: "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec", bytes: 230444 }
+training_data:
+  - { name: GuitarSet, licence: CC-BY-4.0, commercial_ok: true }
+  - { name: MAESTRO, licence: CC-BY-NC-SA-4.0, commercial_ok: false }
+  - { name: MedleyDB-Pitch, licence: CC-BY-NC-SA-4.0, commercial_ok: false }
+  - { name: iKala, licence: research only, commercial_ok: false }
+  - { name: Slakh2100, licence: CC-BY-4.0, commercial_ok: true }
+tier: green
+tier_reason: "Apache-2.0 code and weights"
+used_in: [notes.guitar, notes.bass, notes.vocals]
+profiles: [personal]
+notes: >-
+  nmp.onnx is basic_pitch/saved_models/icassp_2022/nmp.onnx from the PyPI wheel (wheel sha256
+  738adb503aae7fdfc7d1e1511aa0ce35052315f260a19531ef4c356708425db0), extracted by
+  services/ml/scripts/fetch_models.py. Inference and note decoding are ported into
+  stage_notes.basic_pitch (numpy/scipy only), so the package itself (which pins TensorFlow) is not
+  installed.
+reviewer: owner
+reviewed: 2026-10-21

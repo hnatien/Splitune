@@ -32,6 +32,11 @@ _PASSTHROUGH = (
     "ML_TORCH_DEVICE",
     "ML_MODELS_DIR",
     "ML_SEPARATION_CONFIG",
+    # Read both by stages.py (notes island placement) in the worker and by the stages in the
+    # island, so an override must reach both as the same process environment.
+    "ML_NOTES_CONFIG",
+    "ML_CHORDS_CONFIG",
+    "NODE_BIN",  # music-core key estimator (chords, key: music_core)
     "TORCH_HOME",
     "XDG_CACHE_HOME",
     "PYTORCH_ENABLE_MPS_FALLBACK",

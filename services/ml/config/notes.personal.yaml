@@ -1,0 +1,16 @@
+# Note transcription per instrument (06 §0 notes.*; P2 chooses the transcriber, 08).
+# `transcriber` selects the NoteTranscriber; `params` override that transcriber's defaults.
+# The transcriber also decides the island: basic_pitch → onnx-cpu (CPU slot), yourmt3 → torch (MPS).
+version: 1
+
+instruments:
+  guitar:
+    transcriber: basic_pitch
+    params: {min_freq_hz: 70}
+  bass:
+    # ≈30 Hz floor (06 §4) and a ceiling well above a 4-string's 24th fret (G5 ≈ 784 Hz is rare).
+    transcriber: basic_pitch
+    params: {min_freq_hz: 30, max_freq_hz: 600}
+  vocals:
+    transcriber: basic_pitch
+    params: {min_freq_hz: 65, max_freq_hz: 1400}

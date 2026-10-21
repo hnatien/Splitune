@@ -1,0 +1,24 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: yourmt3-moe
+kind: model
+name: "YourMT3+ YPTF.MoE+Multi (PS) multi-instrument transcription"
+version: "mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b80_ps2"
+repo_url: https://huggingface.co/spaces/mimbres/YourMT3
+code_spdx: GPL-3.0-only
+weights:
+  licence: "Apache-2.0 (model card)"
+  url: https://huggingface.co/mimbres/YourMT3/resolve/main/logs/2024/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b80_ps2/checkpoints/model.ckpt
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "c1981527051275a6ba9e3b1ca00330b055e354bad139bd383f4ba12a8ea26caa"
+  files:
+    - { name: model.ckpt, sha256: "7427055b51c3c8c86f6a35493cf0741d8db29186052055b59193590a82e6ec01", bytes: 758957292 }
+training_data:
+  - { name: "Slakh, MAESTRO, GuitarSet, MusicNet, ENST, ...", licence: "mixed, some non-commercial", commercial_ok: false }
+tier: red
+tier_reason: "GPL-3.0 code; non-commercial training data"
+used_in: [notes.guitar, notes.bass]
+profiles: [personal]
+notes: >-
+  P2 candidate only. Inference code from the HF space (amt/src) is kept outside the repo under ~/.cache/splitune/src/yourmt3.
+reviewer: owner
+reviewed: 2026-10-21

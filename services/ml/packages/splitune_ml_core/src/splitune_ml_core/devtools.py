@@ -18,9 +18,17 @@ OUTPUT_FILES = {
     "tag": {"tags": "tags.json"},
     "separate": {"separation": "separation.json"},
     "stem_post": {"stems": "stems.json", "presence": "presence.json"},
+    "chords": {"chords": "chords.json"},
+    **{f"notes.{i}": {"notes": f"notes.{i}.json"} for i in ("guitar", "bass", "vocals")},
 }
 # Inputs that are upstream artefacts of the same analysis version.
-INPUT_FILES = {"probe": "probe.json", "tags": "tags.json", "separation": "separation.json"}
+INPUT_FILES = {
+    "probe": "probe.json",
+    "tags": "tags.json",
+    "separation": "separation.json",
+    "stems": "stems.json",
+    "beats": "beats.json",
+}
 
 
 def seed_analysis(owner: Connection, user_id: str, instrument: str = "guitar") -> tuple[str, str]:
@@ -69,7 +77,7 @@ def stage_request(
     inputs = {"source": source_key}
     if spec.needs_audio:
         inputs["probe"] = f"{base}probe.json"
-    for name in spec.downloads:
+    for name in (*spec.downloads, *spec.optional_downloads):
         if name in INPUT_FILES:
             inputs[name] = base + INPUT_FILES[name]
     return {

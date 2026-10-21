@@ -1,9 +1,27 @@
 [project]
 name = "stage-chords"
 version = "0.0.0"
-description = "Chord and key recognition"
+description = "Chord and key recognition (consonance-ACE, BTC, madmom CNN+CRF) with fusion"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "numpy==2.5.4",
+    "pyyaml==6.0.3",
+    "scipy==1.18.1",
+    "soundfile==0.14.0",
+    "splitune-ml-core",
+    "stage-separation",
+]
+
+[project.optional-dependencies]
+# The recognizers run in the torch island; the fusion code needs only the base set.
+models = [
+    "librosa==0.11.0",
+    # madmom's PyPI release doesn't build on Python 3.12 / NumPy 2; main does (models come from
+    # its madmom_models submodule).
+    "madmom @ git+https://github.com/CPJKU/madmom@27f032e8947204902c675e5e341a3faf5dc86dae",
+    "torch==2.14.1",
+    "torchaudio==2.11.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.3,<0.14"]

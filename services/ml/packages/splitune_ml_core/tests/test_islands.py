@@ -18,7 +18,7 @@ from splitune_ml_core.islands import IslandProcess, island_env
 def test_server_dispatch_and_error_mapping() -> None:
     messages: list[dict[str, Any]] = [
         {"id": 1, "method": "ping"},
-        {"id": 2, "method": "describe", "params": {"stage": "chords", "params": {}}},
+        {"id": 2, "method": "describe", "params": {"stage": "sections", "params": {}}},
         {"id": 3, "method": "nope"},
         {"id": 4, "method": "describe", "params": {"stage": "decode", "params": {}}},
     ]

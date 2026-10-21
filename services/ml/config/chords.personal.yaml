@@ -1,0 +1,12 @@
+# Chord recognition (06 §0 chords / key; Prototype 6 chooses, 08). Inputs present in the request
+# are fused per beat: the mixture always, the no-drums stem (mixture − drums) and the bass-root
+# prior when separation kept drums / bass.
+version: 1
+
+recognizer: consonance_ace  # consonance_ace | btc | madmom_cnn
+vocabulary: sevenths  # sevenths | majmin (madmom_cnn: majmin only); music-core simplifies for display
+key: madmom_cnn  # madmom_cnn | music_core
+
+inputs: [mixture, no_drums]
+bass_root_weight: 0.5  # 0 disables the bass-root prior
+change_penalty: 3.0  # log-penalty per chord change in the beat Viterbi

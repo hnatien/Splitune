@@ -160,7 +160,8 @@ def prepare(
         )
     inputs: dict[str, str] = {}
     audio_id = ""
-    for name in spec.downloads:
+    wanted = [*spec.downloads, *(n for n in spec.optional_downloads if n in request.inputs)]
+    for name in wanted:
         dest = workdir / "inputs" / name
         digest = services.storage.download(request.inputs[name], dest, max_bytes=MAX_SOURCE_BYTES)
         inputs[name] = str(dest)

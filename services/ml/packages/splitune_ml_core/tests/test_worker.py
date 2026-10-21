@@ -369,9 +369,15 @@ def models_subset(tmp_path: Path, records: list[str]) -> Path:
     from splitune_ml_core import register
 
     real = Path("~/.cache/splitune/models").expanduser()
+    folders = {
+        "panns-cnn14": "panns",
+        "basic-pitch": "basic-pitch",
+        "consonance-ace": "consonance-ace",
+        "btc-large-voca": "btc",
+    }
     for record_id in records:
         record = register.model(record_id)
-        folder = "panns" if record_id == "panns-cnn14" else "audio-separator"
+        folder = folders.get(record_id, "audio-separator")
         (tmp_path / "models" / folder).mkdir(parents=True, exist_ok=True)
         for entry in record.weights.files:
             (tmp_path / "models" / folder / entry.name).symlink_to(real / folder / entry.name)
@@ -434,3 +440,78 @@ def test_local_separation_chain_falls_back_then_gives_up(
     assert stage_runs(owner, failed)["separate"]["error_code"] == "stems_unavailable"
     failures = [e for e in events(owner, failed) if e["type"] == "stage.failed"]
     assert [(e["stage"], e["error_code"]) for e in failures] == [("separate", "stems_unavailable")]
+
+
+@pytest.mark.models
+def test_local_chain_transcribes_and_recognizes_chords(
+    owner: Connection,
+    storage: Storage,
+    make_settings: SettingsFactory,
+    user_id: str,
+    click_track: Any,
+    running: list[Worker],
+    tmp_path: Path,
+) -> None:
+    """Real islands: the separation graph, then chords (beats + separation + stems) and
+    notes.guitar / notes.bass (separation + stems) with their optional inputs downloaded."""
+    source = click_track(bpm=100, seconds=12)
+    models = models_subset(
+        tmp_path, ["htdemucs-6s", "panns-cnn14", "basic-pitch", "consonance-ace"]
+    )
+    settings = make_settings(
+        ML_MODE="local", ML_ISLAND_PYTHON=sys.executable, ML_MODELS_DIR=str(models)
+    )
+    start(running, Worker(settings))
+    _, analysis_id = devtools.seed_analysis(owner, user_id)
+    ids = enqueue_separation(owner, storage, user_id, analysis_id, source)
+    source_key = devtools.upload_source(storage, user_id, source)
+    beats = q.enqueue(
+        owner,
+        "beats",
+        "python",
+        devtools.stage_request(
+            "beats", user_id=user_id, analysis_id=analysis_id, source_key=source_key
+        ),
+        analysis_id=analysis_id,
+        depends_on=[ids["decode"]],
+    ).id
+    # music_core key: the madmom key model is covered by the stage tests.
+    params = {"chords": {"key": "music_core"}}
+    for stage, deps in (
+        ("chords", [beats, ids["stem_post"]]),
+        ("notes.guitar", [ids["stem_post"]]),
+        ("notes.bass", [ids["stem_post"]]),
+    ):
+        ids[stage] = q.enqueue(
+            owner,
+            stage,
+            "python",
+            devtools.stage_request(
+                stage,
+                user_id=user_id,
+                analysis_id=analysis_id,
+                source_key=source_key,
+                params=params.get(stage, {}),
+            ),
+            analysis_id=analysis_id,
+            depends_on=deps,
+        ).id
+    jobs = wait_for(owner, [*ids.values(), beats], timeout_s=900)
+    assert {s: jobs[i]["status"] for s, i in ids.items()} == dict.fromkeys(ids, "done")
+    rows = {r["kind"]: r for r in artefact_rows(owner, analysis_id)}
+    assert {"chords", "notes.guitar", "notes.bass"} <= set(rows)
+    chords = contracts.Chords.model_validate_json(
+        storage.get_bytes(rows["chords"]["object_key"], max_bytes=1 << 24)
+    )
+    assert chords.inputs_fused[0] == "mixture"
+    assert "no_drums" in chords.inputs_fused  # htdemucs_6s kept the drums extra
+    assert chords.segments
+    assert all(s.beat_aligned for s in chords.segments)
+    for kind in ("notes.guitar", "notes.bass"):
+        notes = contracts.Notes.model_validate_json(
+            storage.get_bytes(rows[kind]["object_key"], max_bytes=1 << 24)
+        )
+        assert notes.instrument == kind.split(".")[1]
+        assert notes.params["source"] != "mixture"  # the separated stem was transcribed
+    runs = stage_runs(owner, analysis_id)
+    assert runs["notes.bass"]["status"] == "done"

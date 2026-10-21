@@ -1,0 +1,24 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: madmom-key-cnn
+kind: model
+name: "madmom CNN key recognition (Korzeniowski & Widmer 2018)"
+version: "0.17.dev0@27f032e"
+repo_url: https://github.com/CPJKU/madmom
+code_spdx: BSD-2-Clause
+weights:
+  licence: "CC-BY-NC-SA-4.0 (madmom_models)"
+  url: https://github.com/CPJKU/madmom_models
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "55ca98bb4042adfd96dedeaa43a5d29dda4d21ca7ea8935c3624665694617c4e"
+  files:
+    - { name: key/2018/key_cnn.pkl, sha256: "c58ba553be1048877662a663a2670c0051b3c2c66d109b6042ba722ed0bfc7a6", bytes: 2670279 }
+training_data:
+  - { name: "GiantSteps, McGill Billboard, Isophonics", licence: "research / commercial audio", commercial_ok: false }
+tier: red
+tier_reason: "non-commercial model licence"
+used_in: [chords]
+profiles: [personal]
+notes: >-
+  Installed with madmom from git (models submodule).
+reviewer: owner
+reviewed: 2026-10-21
