@@ -28,6 +28,7 @@ Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `s
 - User-scoped queries go through repository helpers that require `userId`; RLS is defence in depth.
 - Times are seconds on the decoded-PCM timeline; quantization is a separate re-runnable stage; corrections are overlays.
 - Confidence never shown by colour alone; every practice action keyboard/pedal operable; WCAG 2.2 AA.
+- UI follows the "Music Stand" design system (docs 26–28): semantic tokens from `@splitune/ui-tokens` and `apps/web/app/ui` components only (no raw colours, ad-hoc sizes or one-off components); every UI change gets stories for its states (`pnpm --filter web test:stories`).
 - Tier 1 browsers per doc 24: feature-detect, never UA-sniff (except the in-app-browser banner). No cross-origin isolation.
 - No secrets in git (`.env` is ignored; `.env.example` holds fake values). gitleaks runs as the pre-commit hook.
 - No debug prints, dead code, commented-out blocks or stray TODOs.

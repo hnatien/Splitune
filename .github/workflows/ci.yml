@@ -16,7 +16,7 @@ jobs:
   checks:
     name: Lint, typecheck, test
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -38,6 +38,26 @@ jobs:
 
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
+
+      # Storybook story tests run in Chromium and WebKit (docs/implementation/28-ui-quality-and-design-review.md §2).
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @splitune/web exec playwright --version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Playwright Chromium and WebKit
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @splitune/web exec playwright install --with-deps chromium webkit
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @splitune/web exec playwright install-deps chromium webkit
 
       - name: Install Python dependencies
         working-directory: services/ml
@@ -75,5 +95,10 @@ jobs:
       - name: Typecheck (tsc, pyright)
         run: pnpm typecheck
 
+      # Includes the @splitune/ui-tokens contrast, gamut, CVD and naming tests (28 §3).
       - name: Test (Vitest, pytest)
         run: pnpm test
+
+      # Every story rendered in Chromium and WebKit with axe (a11y test 'error').
+      - name: Story tests (Storybook, Chromium + WebKit)
+        run: pnpm --filter @splitune/web test:stories
