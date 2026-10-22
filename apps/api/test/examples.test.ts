@@ -231,10 +231,10 @@ describe('product events', () => {
     expect((await anonymous.request('POST', '/v1/events', { events: [event] })).status).toBe(204)
     expect((await alice.request('POST', '/v1/events', { events: [event] })).status).toBe(204)
     const { rows } = await api.db.$client.query(
-      `select user_id from analytics_events where props->>'example_id' = $1 order by id`,
+      `select user_hash from analytics_events where props->>'example_id' = $1 order by id`,
       [exampleId],
     )
-    expect(rows.map((r) => (r as { user_id: string | null }).user_id === null)).toEqual([
+    expect(rows.map((r) => (r as { user_hash: string | null }).user_hash === null)).toEqual([
       true,
       false,
     ])

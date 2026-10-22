@@ -9,6 +9,7 @@ const base = {
   SMTP_PORT: '1025',
   EMAIL_FROM: 'Splitune <no-reply@splitune.localhost>',
   BILLING_WEBHOOK_SECRET: 'w'.repeat(16),
+  ANALYTICS_SALT: 's'.repeat(16),
 }
 
 describe('configFromEnv', () => {
@@ -44,6 +45,7 @@ describe('configFromEnv', () => {
       /short-secret/,
     )
     expect(() => configFromEnv({ ...base, CORS_ORIGINS: '*' })).toThrow()
+    expect(() => configFromEnv({ ...base, ANALYTICS_SALT: 'short' })).toThrow(/ANALYTICS_SALT/)
     expect(() => configFromEnv({ ...base, BILLING_WEBHOOK_SECRET: 'short' })).toThrow(
       /BILLING_WEBHOOK_SECRET/,
     )

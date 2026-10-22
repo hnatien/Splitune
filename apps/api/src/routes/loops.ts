@@ -2,7 +2,7 @@ import type { LoopClip as LoopClipSchema } from '@splitune/contracts'
 import type { LoopClip, LoopClipPatch } from '@splitune/db'
 import type { z } from 'zod'
 import { apiError } from '../errors.ts'
-import { authed } from '../procedures.ts'
+import { type ApiDeps, authed } from '../procedures.ts'
 
 // Saved loop clips per song (12 §5). Bars are the beat grid's 0-based bar_index; start_s/end_s
 // are the times on the current grid, so a clip plays even before the grid is loaded.
@@ -29,6 +29,15 @@ const toLoop = (clip: LoopClip): LoopOut => ({
 const emptyRange = () =>
   apiError('invalid_input', { details: { issues: [{ path: 'end_s', code: 'empty_range' }] } })
 
+// Speed trainer settings are a v1 feature behind the `v1.speed_trainer` flag (21, 16 §5).
+async function checkTrainer(deps: ApiDeps, trainer: unknown) {
+  if (trainer === undefined || trainer === null) return
+  if (await deps.flags.flag('v1.speed_trainer')) return
+  throw apiError('invalid_input', {
+    details: { issues: [{ path: 'trainer', code: 'feature_disabled' }] },
+  })
+}
+
 export const loops = {
   list: authed.loops.list.handler(async ({ context, input }) => {
     const { deps, userId } = context
@@ -39,6 +48,7 @@ export const loops = {
   create: authed.loops.create.handler(async ({ context, input }) => {
     const { deps, userId } = context
     if (input.end_s <= input.start_s) throw emptyRange()
+    await checkTrainer(deps, input.trainer)
     if (!(await deps.repos.songs.get(userId, input.id))) throw apiError('not_found')
     const clip = await deps.repos.loops.create(userId, input.id, {
       name: input.name ?? null,
@@ -60,6 +70,7 @@ export const loops = {
     const current = await deps.repos.loops.get(userId, input.loop_id)
     if (!current || current.songId !== input.id) throw apiError('not_found')
     if ((input.end_s ?? current.endS) <= (input.start_s ?? current.startS)) throw emptyRange()
+    await checkTrainer(deps, input.trainer)
     const patch: LoopClipPatch = {}
     if (input.name !== undefined) patch.name = input.name
     if (input.start_bar !== undefined) patch.startBar = input.start_bar

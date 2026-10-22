@@ -19,7 +19,7 @@ import { admitAnalysis, reserving } from '../admission.ts'
 import { apiError } from '../errors.ts'
 import { analysisKey, CONFIG_PROFILE, planAnalysis } from '../pipeline.ts'
 import { authed, userRateLimit } from '../procedures.ts'
-import { artefactIndex, toAnalysis } from './analyses.ts'
+import { artefactIndex, recordRequested, toAnalysis } from './analyses.ts'
 
 type SongOut = z.infer<typeof SongSchema>
 
@@ -215,6 +215,10 @@ export const songs = {
     .use(userRateLimit('analyses'))
     .songs.importUrl.handler(async ({ context, input }) => {
       const { deps, userId } = context
+      // Kill switch (16 §5): the client shows "Link import is temporarily broken".
+      if (!(await deps.flags.flag('import.url'))) {
+        throw apiError('url_unsupported', { details: { reason: 'import_disabled' } })
+      }
       if (!importable(input.url)) throw apiError('url_unsupported')
       const admission = await admitAnalysis(deps, userId, input.type)
       const importId = randomUUID()
@@ -246,6 +250,11 @@ export const songs = {
           admission.charge,
         ),
       )
+      await recordRequested(deps, userId, {
+        type: admission.kind,
+        instrument: input.instrument,
+        source: 'link',
+      })
       return {
         song_id: created.song.id,
         analysis_id: created.analysis.id,

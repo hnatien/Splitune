@@ -34,6 +34,7 @@ describe('OpenAPI document', () => {
       '/v1/examples/{id}/claim',
       '/v1/examples/{id}/url',
       '/v1/me',
+      '/v1/me/export',
       '/v1/practice/sync',
       '/v1/progress',
       '/v1/songs',

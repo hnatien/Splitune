@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { userHasher } from '@splitune/analytics/server'
 import { rawUploadKey } from '@splitune/storage'
 import { afterAll, describe, expect, it } from 'vitest'
 import { DEV_CLOCK_PATH, WEBHOOK_PATH } from '../src/app.ts'
@@ -345,8 +346,8 @@ describe('checkout and Plus', () => {
     const jobs = await sql('select distinct priority from jobs where analysis_id = $1', [id])
     expect(jobs.rows).toEqual([{ priority: 50 }])
     const { rows: events } = await sql(
-      `select name, props from analytics_events where user_id = $1 and name = 'checkout_completed'`,
-      [user.id],
+      `select name, props from analytics_events where user_hash = $1 and name = 'checkout_completed'`,
+      [userHasher(api.config.analyticsSalt)(user.id)],
     )
     expect(events).toEqual([{ name: 'checkout_completed', props: { plan: 'paid_monthly' } }])
   })

@@ -3,6 +3,8 @@ import { SmartCoercionPlugin } from '@orpc/json-schema'
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { ORPCError } from '@orpc/server'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
+import { userHasher as analyticsHasher } from '@splitune/analytics/server'
+import { inSpan } from '@splitune/analytics/tracing'
 import { DevClockInput } from '@splitune/contracts'
 import { createRepositories, type Database, hitRateLimit, ping } from '@splitune/db'
 import type { Storage } from '@splitune/storage'
@@ -18,6 +20,7 @@ import { createClock } from './clock.ts'
 import type { ApiConfig } from './config.ts'
 import { apiError, envelopeResponse, toEnvelope } from './errors.ts'
 import { EventHub } from './events.ts'
+import { createFlags } from './flags.ts'
 import { createLogger, type Logger, userHasher } from './logger.ts'
 import { createSmtpMailer, type Mailer } from './mailer.ts'
 import { generateOpenApi } from './openapi.ts'
@@ -56,6 +59,7 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
   const events = new EventHub(db.$client.options.connectionString ?? '', log)
   const mail = mailer ?? createSmtpMailer(config.smtp)
   const repos = createRepositories(db)
+  const analyticsHash = analyticsHasher(config.analyticsSalt)
   const clock = createClock()
   const provider = createMockProvider({
     secret: config.billing.webhookSecret,
@@ -72,6 +76,7 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
     clock,
     provider,
     log,
+    analyticsHash,
     post: async (body, signature) =>
       app.request(WEBHOOK_PATH, {
         method: 'POST',
@@ -79,7 +84,8 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
         body,
       }),
   })
-  const deps: ApiDeps = { db, repos, storage, config, events, billing }
+  const flags = createFlags(() => repos.flags.list())
+  const deps: ApiDeps = { db, repos, storage, config, events, billing, flags, analyticsHash }
   const auth = createAuth(db, config, mail)
 
   const handler = new OpenAPIHandler(router, {
@@ -128,7 +134,19 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
     const started = performance.now()
     c.set('log', log.child({ request_id: c.get('requestId') }))
     c.set('session', null)
-    await next()
+    // One span per request when tracing is on (16 §1): method and path only, never the query.
+    await inSpan(
+      `${c.req.method} ${c.req.routePath}`,
+      {
+        'http.request.method': c.req.method,
+        'url.path': c.req.path,
+        request_id: c.get('requestId'),
+      },
+      async (span) => {
+        await next()
+        span.setAttribute('http.response.status_code', c.res.status)
+      },
+    )
     const session = c.get('session')
     c.get('log').info(
       {

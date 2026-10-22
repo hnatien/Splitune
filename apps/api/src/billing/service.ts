@@ -34,6 +34,7 @@ export function createBilling({
   clock,
   provider,
   log,
+  analyticsHash,
   post,
 }: {
   db: Database
@@ -43,6 +44,7 @@ export function createBilling({
   clock: Clock
   provider: MockBillingProvider
   log: Logger
+  analyticsHash: (userId: string) => string
   // POSTs a signed body to /internal/billing/webhook.
   post: (body: string, signature: string) => Promise<Response>
 }): Billing {
@@ -83,13 +85,13 @@ export function createBilling({
           after?.cancelAtPeriodEnd === true) ||
         (event.type === 'subscription.cancelled' && before?.status !== 'cancelled')
       if (event.type === 'subscription.activated') {
-        await repos.analytics.record(userId, [
+        await repos.analytics.record(analyticsHash(userId), [
           { name: 'checkout_completed', props: { plan: event.plan } },
         ])
       }
       if (cancelled) {
         const since = await repos.billing.firstActivation(userId)
-        await repos.analytics.record(userId, [
+        await repos.analytics.record(analyticsHash(userId), [
           {
             name: 'subscription_cancelled',
             props: { tenure_days: since ? daysBetween(since, clock.now()) : 0 },

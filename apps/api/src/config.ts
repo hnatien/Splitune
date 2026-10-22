@@ -41,6 +41,8 @@ export interface ApiConfig {
   }
   // POST /internal/dev/clock (04 "Internal"): moves the billing clock. Never in production.
   devClock: boolean
+  // Salt of the pseudonymous user hash in analytics_events (16 §6), shared with the node worker.
+  analyticsSalt: string
 }
 
 const origin = z.url({ protocol: /^https?$/ }).transform((value) => new URL(value).origin)
@@ -82,6 +84,7 @@ const Env = z.object({
   BILLING_PRICE_MONTHLY_MINOR: z.coerce.number().int().positive().default(999),
   BILLING_PRICE_YEARLY_MINOR: z.coerce.number().int().positive().default(7999),
   ENABLE_DEV_CLOCK: flag.default(false),
+  ANALYTICS_SALT: z.string().min(16, 'ANALYTICS_SALT must be at least 16 characters'),
 })
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
@@ -128,6 +131,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
       },
     },
     devClock: e.ENABLE_DEV_CLOCK,
+    analyticsSalt: e.ANALYTICS_SALT,
   }
 }
 

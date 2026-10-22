@@ -25,7 +25,11 @@ export function createAuth(db: Database, config: ApiConfig, mailer: Mailer) {
       provider: 'pg',
       schema: { users, authSessions, authAccounts, authVerifications },
     }),
-    user: { modelName: 'users' },
+    // deleted_at: an account whose deletion is under way signs in to nothing (resolveSession).
+    user: {
+      modelName: 'users',
+      additionalFields: { deletedAt: { type: 'date', required: false, input: false } },
+    },
     session: { modelName: 'authSessions', expiresIn: SESSION_TTL_S, updateAge: 24 * 3600 },
     account: {
       modelName: 'authAccounts',
@@ -72,7 +76,7 @@ export interface SessionInfo {
 
 export async function resolveSession(auth: Auth, headers: Headers): Promise<SessionInfo | null> {
   const result = await auth.api.getSession({ headers })
-  if (!result) return null
+  if (!result || result.user.deletedAt) return null
   return {
     userId: result.user.id,
     sessionId: result.session.id,

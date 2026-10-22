@@ -1,5 +1,5 @@
 import { implement, os } from '@orpc/server'
-import { billingContract, contract } from '@splitune/contracts'
+import { billingContract, contract, eventsContract, privacyContract } from '@splitune/contracts'
 import { type Database, hitRateLimit, type Repositories } from '@splitune/db'
 import type { Storage } from '@splitune/storage'
 import type { SessionInfo } from './auth.ts'
@@ -7,6 +7,7 @@ import type { Billing } from './billing/service.ts'
 import type { ApiConfig } from './config.ts'
 import { apiError } from './errors.ts'
 import type { EventHub } from './events.ts'
+import type { Flags } from './flags.ts'
 import type { Logger } from './logger.ts'
 
 export interface ApiDeps {
@@ -16,6 +17,9 @@ export interface ApiDeps {
   config: ApiConfig
   events: EventHub
   billing: Billing
+  flags: Flags
+  // Pseudonymous user key of analytics_events (`@splitune/analytics/server`).
+  analyticsHash: (userId: string) => string
 }
 
 // Per-request context the Hono layer hands to oRPC.
@@ -32,7 +36,7 @@ export interface RequestContext {
 // The procedures implemented so far (04-api-contract.md); the YouTube reference joins in a later
 // step. Only these are routed and documented.
 export const v1Contract = {
-  me: { get: contract.me.get, update: contract.me.update },
+  me: { ...contract.me, ...privacyContract.me },
   songs: {
     create: contract.songs.create,
     list: contract.songs.list,
@@ -49,7 +53,7 @@ export const v1Contract = {
   practice: contract.practice,
   system: contract.system,
   examples: contract.examples,
-  analytics: contract.analytics,
+  analytics: eventsContract.analytics,
   billing: billingContract.billing,
 }
 
@@ -77,6 +81,8 @@ export const RATE_LIMITS = {
   examples: { limit: 300, windowS: 60 },
   // per IP, POST /v1/events
   events: { limit: 120, windowS: 60 },
+  // per user, POST /v1/me/export ("Download my data")
+  exports: { limit: 5, windowS: 3600 },
 } as const
 
 export function userRateLimit(policy: keyof typeof RATE_LIMITS) {

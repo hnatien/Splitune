@@ -57,6 +57,7 @@ function toArtefact(row: Artefact): z.infer<typeof ArtefactIndexEntry> {
     bytes: row.bytes,
     sha256: row.sha256,
     created_at: row.createdAt.toISOString(),
+    purged_at: row.purgedAt ? row.purgedAt.toISOString() : null,
   }
 }
 
@@ -157,7 +158,33 @@ async function start(deps: ApiDeps, userId: string, options: StartOptions) {
     ),
   )
   if (!created) throw apiError('not_found')
+  if (created.created) {
+    await recordRequested(deps, userId, {
+      type: admission.kind,
+      instrument: options.instrument,
+      source: source.kind === 'upload' ? 'file' : 'link',
+    })
+  }
   return { analysis_id: created.analysis.id, status: created.analysis.status }
+}
+
+// analysis_requested (16 §2), once per new run. Best effort: the run exists either way.
+export async function recordRequested(
+  deps: ApiDeps,
+  userId: string,
+  props: {
+    type: Analysis['analysisType']
+    instrument: Analysis['requestedInstrument']
+    source: 'file' | 'link'
+  },
+): Promise<void> {
+  try {
+    await deps.repos.analytics.record(deps.analyticsHash(userId), [
+      { name: 'analysis_requested', props },
+    ])
+  } catch {
+    // Analytics never fails a request (16 §6).
+  }
 }
 
 const analysesLimited = authed.use(userRateLimit('analyses'))
@@ -195,17 +222,20 @@ export const analyses = {
   // Re-analyses with the current pipeline as the song's next version; the old version's
   // artefacts stay. Repeats with the same Idempotency-Key return the same run. A re-run the
   // learner asks for uses an allowance; one after a Splitune model upgrade (a new pipeline
-  // version) doesn't and is never refused.
+  // version) or of a run whose stems the sweeper removed doesn't, and is never refused.
   rerun: analysesLimited.analyses.rerun.handler(async ({ context, input }) => {
     const { deps, userId } = context
-    const previous = await deps.repos.analyses.get(userId, input.id)
-    if (!previous) throw apiError('not_found')
+    const detail = await deps.repos.analyses.detail(userId, input.id)
+    if (!detail) throw apiError('not_found')
+    const previous = detail.analysis
+    // "Re-create stems" after the sweeper removed them (15 §3) is free too: nothing the learner did.
+    const stemsPurged = detail.artefacts.some((a) => a.kind === 'stems' && a.purgedAt !== null)
     const request = context.idempotencyKey ?? randomUUID()
     return start(deps, userId, {
       songId: previous.songId,
       instrument: previous.requestedInstrument,
       type: previous.analysisType === 'lite' ? 'lite' : 'full',
-      charged: previous.pipelineVersion === deps.config.pipelineVersion,
+      charged: previous.pipelineVersion === deps.config.pipelineVersion && !stemsPurged,
       idempotencyKey: () => analysisKey([userId, 'rerun', previous.id, request]),
     })
   }),

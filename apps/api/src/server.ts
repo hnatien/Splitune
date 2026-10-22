@@ -2,12 +2,14 @@
 // server (apps/web, `pnpm dev`) mounts under /v1, on PORT (default 3000, matching
 // APP_URL/BETTER_AUTH_URL in .env.example). Run one or the other, not both.
 import { serve } from '@hono/node-server'
+import { startTracing } from '@splitune/analytics/tracing'
 import { createDb } from '@splitune/db'
 import { createStorage, storageConfigFromEnv } from '@splitune/storage'
 import { createApi } from './app.ts'
 import { configFromEnv } from './config.ts'
 
 const config = configFromEnv()
+await startTracing('splitune-api')
 const { DATABASE_URL, PORT = '3000' } = process.env
 if (!DATABASE_URL) throw new Error('DATABASE_URL is not set')
 

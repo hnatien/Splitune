@@ -34,6 +34,10 @@ interface Case {
 const CASES: Record<string, Case> = {
   'me.get': {},
   'me.update': { body: () => ({ level: 'returning' }) },
+  // The caller's own export request and account; nothing addresses another user.
+  'me.export': {},
+  'me.exportState': {},
+  'me.delete': {},
   'songs.create': { body: () => ({ instrument: 'bass', source_kind: 'upload' }) },
   'songs.list': {},
   'songs.get': { target: (r) => r.songId },

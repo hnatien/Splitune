@@ -29,6 +29,7 @@ export function toPublicExample(example: Example): z.infer<typeof ExampleSchema>
     bytes: a.bytes,
     sha256: a.sha256,
     created_at: analysis.finished_at,
+    purged_at: null,
   }))
   const latest: z.infer<typeof AnalysisSchema> = {
     id: analysis.id,
@@ -72,12 +73,17 @@ export function toPublicExample(example: Example): z.infer<typeof ExampleSchema>
   }
 }
 
+// The `examples` flag (16 §5) hides them from visitors without a deploy; claiming keeps working for
+// progress made before it was switched off.
 export const examples = {
-  list: pub.examples.list.handler(({ context }) => ({
-    items: context.deps.config.examples.examples.map(toPublicExample),
+  list: pub.examples.list.handler(async ({ context }) => ({
+    items: (await context.deps.flags.flag('examples'))
+      ? context.deps.config.examples.examples.map(toPublicExample)
+      : [],
   })),
 
   url: pub.use(ipRateLimit('examples')).examples.url.handler(async ({ context, input }) => {
+    if (!(await context.deps.flags.flag('examples'))) throw apiError('not_found')
     const example = find(context.deps, input.id)
     const artefact = example.artefacts.find((a) => a.id === input.artefact_id)
     if (!artefact) throw apiError('not_found')
