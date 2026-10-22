@@ -22,7 +22,11 @@ export function MarketingShell({
       <SystemBanners />
       <header className="border-b border-border">
         <div className="mx-auto flex min-h-16 max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-6 lg:px-8">
-          <Link to="/" aria-label={m['nav.home']()} className="rounded-md">
+          <Link
+            to="/"
+            aria-label={m['nav.home']()}
+            className="inline-flex min-h-target items-center rounded-md"
+          >
             <Wordmark />
           </Link>
           <nav
@@ -71,26 +75,32 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       <nav
         aria-label={m['footer.nav']()}
-        className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-sm text-muted-foreground md:px-6 lg:px-8"
+        className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 px-4 py-4 text-sm text-muted-foreground md:px-6 lg:px-8"
       >
         <Wordmark tone="mono" className="text-base text-muted-foreground" />
-        <Link to="/how-it-works" className="underline-offset-4 hover:underline">
+        <Link
+          to="/how-it-works"
+          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
+        >
           {m['nav.how_it_works']()}
         </Link>
-        <Link to="/pricing" className="underline-offset-4 hover:underline">
+        <Link
+          to="/pricing"
+          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
+        >
           {m['nav.pricing']()}
         </Link>
         <Link
           to="/legal/$page"
           params={{ page: 'terms' }}
-          className="underline-offset-4 hover:underline"
+          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
         >
           {m['legal.terms_title']()}
         </Link>
         <Link
           to="/legal/$page"
           params={{ page: 'privacy' }}
-          className="underline-offset-4 hover:underline"
+          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
         >
           {m['legal.privacy_title']()}
         </Link>

@@ -52,7 +52,8 @@ function DropZone({
           {prompt}{' '}
           <Button
             variant="link"
-            className="min-h-0 px-0 align-baseline text-lg"
+            // Inline in the sentence, with a 44 px tall hit area for fingers (26 §8).
+            className="min-h-0 px-0 align-baseline text-lg after:absolute after:inset-x-0 after:top-1/2 after:h-target after:-translate-y-1/2"
             aria-describedby={hintId}
             disabled={disabled}
             onClick={() => input.current?.click()}

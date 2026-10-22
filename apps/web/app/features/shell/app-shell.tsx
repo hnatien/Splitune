@@ -21,7 +21,11 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
       <SkipLink />
       <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background">
         <div className="mx-auto flex min-h-14 max-w-page items-center gap-2 px-4 md:gap-4 md:px-6 lg:px-8">
-          <Link to="/library" aria-label={m['nav.library_home']()} className="mr-auto rounded-md">
+          <Link
+            to="/library"
+            aria-label={m['nav.library_home']()}
+            className="mr-auto inline-flex min-h-target min-w-target items-center rounded-md"
+          >
             {/* Phones: the mark alone, so Library and Import keep their labels (27 §1). */}
             <BrandMark className="size-8 sm:hidden" />
             <Wordmark className="max-sm:hidden" />

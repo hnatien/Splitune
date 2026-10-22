@@ -13,7 +13,11 @@ export function BareShell({ children }: { children: React.ReactNode }) {
       <SkipLink />
       <SystemBanners />
       <header className="flex min-h-16 items-center justify-center px-4">
-        <Link to="/" aria-label={m['nav.home']()} className="rounded-md">
+        <Link
+          to="/"
+          aria-label={m['nav.home']()}
+          className="inline-flex min-h-target items-center rounded-md"
+        >
           <Wordmark />
         </Link>
       </header>

@@ -89,7 +89,7 @@ function StemRow({
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="col-span-2 flex min-w-0 items-center gap-2 sm:col-span-1">
         <span aria-hidden className={cn('h-8 w-1.5 shrink-0 rounded-full', RULE[stem])} />
         <Icon aria-hidden className="size-6 shrink-0" />
         <span className="truncate text-base font-semibold">{name}</span>
@@ -123,7 +123,6 @@ function StemRow({
         </Toggle>
       </div>
       <Slider
-        className="col-span-2 sm:col-span-1"
         value={gainDb}
         min={GAIN_RANGE.min}
         max={GAIN_RANGE.max}
@@ -158,12 +157,12 @@ function StemRowSkeleton({ className }: { className?: string }) {
         className,
       )}
     >
-      <Skeleton className="h-8 w-40" />
+      <Skeleton className="col-span-2 h-8 w-40 sm:col-span-1" />
       <div className="flex gap-2">
         <Skeleton className="size-target-practice-2" />
         <Skeleton className="size-target-practice-2" />
       </div>
-      <Skeleton className="col-span-2 h-2 sm:col-span-1" />
+      <Skeleton className="h-2" />
       <Skeleton className="col-span-2 h-11 w-44 sm:col-span-1" />
     </div>
   )

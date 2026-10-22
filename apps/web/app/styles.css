@@ -7,3 +7,9 @@
 @import "@splitune/ui-tokens/fonts.css";
 @import "@splitune/ui-tokens/theme.tailwind.css";
 @source "../../../packages/notation/src";
+
+/* Sticky shell bars (56 px + the safe area) never cover the focused element or a scrolled-to
+   anchor (26 §7, WCAG 2.4.11), with room for the focus outline. */
+html {
+  scroll-padding-top: calc(var(--spacing) * 18 + env(safe-area-inset-top));
+}

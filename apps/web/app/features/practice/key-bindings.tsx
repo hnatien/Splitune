@@ -60,7 +60,6 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
               {learnable && (
                 <td className="py-2">
                   <Button
-                    size="sm"
                     variant={learning === action ? 'primary' : 'outline'}
                     aria-pressed={learning === action}
                     aria-label={
