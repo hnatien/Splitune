@@ -6,3 +6,4 @@
 @import "@splitune/ui-tokens/themes.css";
 @import "@splitune/ui-tokens/fonts.css";
 @import "@splitune/ui-tokens/theme.tailwind.css";
+@source "../../../packages/notation/src";

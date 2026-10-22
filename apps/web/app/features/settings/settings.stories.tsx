@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { KeyboardIcon } from 'lucide-react'
-import { expect, within } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { AppShell } from '../shell/app-shell'
 import { ME } from '../story-fixtures'
 import { DisplaySettings } from './display-settings'
+import { KeyboardSettings } from './keyboard-settings'
 import { SettingsPlaceholder } from './placeholder'
 import { ProfileSettings } from './profile-settings'
 
@@ -49,9 +50,29 @@ export const Placeholder: Story = {
   render: () =>
     shell(
       <SettingsPlaceholder
-        title="Keyboard & pedal"
-        body="Keyboard shortcuts and pedal bindings arrive with the practice screen."
+        title="Privacy"
+        body="Downloading your data and deleting your account arrive here soon."
         icon={<KeyboardIcon aria-hidden />}
       />,
     ),
+}
+
+/** Keyboard & pedal (27 §3.9): the binding table, "Learn this pedal" and the test area. */
+export const Keyboard: Story = {
+  render: () => shell(<KeyboardSettings />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Learn this pedal for Felt clean' }))
+    await expect(
+      canvas.getByText('Press the pedal or key for Felt clean. Escape cancels.'),
+    ).toBeVisible()
+    await userEvent.keyboard('{PageDown}')
+    await expect(canvas.getByRole('row', { name: /Felt clean/ })).toHaveTextContent('Page down')
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset to the defaults' }))
+  },
+}
+
+export const KeyboardDark: Story = {
+  render: () => shell(<KeyboardSettings />),
+  globals: { appearance: 'dark' },
 }

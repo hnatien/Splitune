@@ -16,12 +16,21 @@ export type PracticeDefaults = {
   speedPct: number
   countInBars: number
   restBetween: z.infer<typeof RestBetween>
+  /** Confidence outlines and "?" glyphs on the score (the ink stays, 26 §5). */
+  showUncertainty: boolean
+  /** Stop after each pass until "Felt clean" / "Not yet" is chosen (12 §6 Assess). */
+  passPrompt: boolean
+  /** Tab layout: page-flip by bar group, or continuous scroll under a fixed now-line (12 §3). */
+  notationLayout: 'page' | 'scroll'
 }
 
 export const DEFAULT_PRACTICE: PracticeDefaults = {
   speedPct: 100,
   countInBars: 1,
   restBetween: 'none',
+  showUncertainty: true,
+  passPrompt: false,
+  notationLayout: 'page',
 }
 
 // Storage can be missing (SSR) or throw (privacy modes, blocked storage): preferences then last

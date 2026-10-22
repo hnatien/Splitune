@@ -5,6 +5,7 @@ import type { Body } from '@uppy/core/utils'
 import type { z } from 'zod'
 import { client, errorCode, errorData, orpc } from '@/lib/api'
 import { hashFile } from './hash'
+import { keepLocalFile } from './local-files'
 import { SplituneUploader, type UploadMeta } from './splitune-uploader'
 import { createUploadDb, type PendingUpload } from './upload-db'
 import { useUploads } from './upload-store'
@@ -84,6 +85,7 @@ export function connectUploads(client: QueryClient) {
 
 function transfer(record: PendingUpload, file: File) {
   records.set(record.uploadId, record)
+  keepLocalFile(record.songId, file)
   const instance = uploader()
   instance.addFile({
     name: file.name || record.title,

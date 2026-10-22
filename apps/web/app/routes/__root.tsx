@@ -19,6 +19,8 @@ import { TooltipProvider } from '@/ui/tooltip'
 import type { RouterContext } from '../router'
 import appCss from '../styles.css?url'
 
+const ZOD_CONFIG_SCRIPT = 'globalThis.__zod_globalConfig={jitless:true}'
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => ({
     me: await context.queryClient.ensureQueryData(meQuery),
@@ -41,8 +43,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       { rel: 'stylesheet', href: appCss },
     ],
-    // Before the stylesheet paints: the stored appearance applies with no flash (26 §2).
-    scripts: [{ children: DISPLAY_SCRIPT }],
+    // Before the stylesheet paints: the stored appearance applies with no flash (26 §2). Before any
+    // module loads: Zod parses without its `new Function` probe, which the CSP (no 'unsafe-eval',
+    // 17 §5) blocks and Firefox reports; Zod reads this global when its core module initialises.
+    scripts: [{ children: DISPLAY_SCRIPT }, { children: ZOD_CONFIG_SCRIPT }],
   }),
   shellComponent: RootDocument,
   component: Root,

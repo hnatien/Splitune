@@ -12,18 +12,24 @@ import { SkipLink } from './skip-link'
 export function FocusShell({
   status,
   exit = false,
+  fill = false,
   children,
 }: {
   status?: React.ReactNode
   /** Signed-out pages (onboarding) leave to Home with "Exit" instead of the library. */
   exit?: boolean
+  /** Exactly the viewport (practice): regions size themselves and the transport never moves. */
+  fill?: boolean
   children: React.ReactNode
 }) {
   return (
-    <div data-density="practice" className="flex min-h-dvh flex-col">
+    <div
+      data-density="practice"
+      className={fill ? 'flex h-dvh flex-col overflow-hidden' : 'flex min-h-dvh flex-col'}
+    >
       <SkipLink />
       <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)]">
-        <div className="flex min-h-14 items-center gap-3 px-4">
+        <div className="flex min-h-14 items-center gap-3 px-4 in-data-[appearance=stage]:min-h-12">
           <Link to={exit ? '/' : '/library'} className={buttonVariants({ variant: 'ghost' })}>
             <ChevronLeftIcon aria-hidden />
             {exit ? m['nav.exit']() : m['nav.back_to_library']()}
@@ -36,7 +42,11 @@ export function FocusShell({
       <main
         id="main"
         tabIndex={-1}
-        className="flex flex-1 flex-col pb-[env(safe-area-inset-bottom)]"
+        className={
+          fill
+            ? 'flex min-h-0 flex-1 flex-col'
+            : 'flex flex-1 flex-col pb-[env(safe-area-inset-bottom)]'
+        }
       >
         {children}
       </main>

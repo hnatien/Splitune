@@ -1,14 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { PracticeLoading } from '@/features/practice/practice-loading'
-import { ProgressPage } from '@/features/practice/progress-page'
+import { PracticePage } from '@/features/practice/practice-page'
 import { m } from '@/lib/i18n'
 import { requireAudioEngine } from '@/lib/require-audio'
 import { requireSignIn } from '@/lib/require-sign-in'
 
-// Practice (12, 27 §3.7): client-only (10 §1). Step 10 shows the analysis progress here; step 12
-// replaces the page with the progressive practice screen. Typed search params are reserved for
-// bookmarkable setups (?view=tab|chords&loop=17-20&speed=70&mix=minus-one).
+// Practice (12, 27 §3.7): client-only (10 §1), the progressive practice screen. Typed search params
+// make setups bookmarkable (?view=tab|chords&loop=17-20&speed=70&mix=minus-one; bars 1-based).
 const Search = z.object({
   view: z.enum(['tab', 'chords']).optional().catch(undefined),
   loop: z
@@ -34,5 +33,6 @@ export const Route = createFileRoute('/_focus/songs/$songId/practice')({
 
 function Practice() {
   const { songId } = Route.useParams()
-  return <ProgressPage songId={songId} />
+  const search = Route.useSearch()
+  return <PracticePage songId={songId} search={search} />
 }

@@ -1,0 +1,49 @@
+import { create } from 'zustand'
+import type { LoopSelection } from './model/loops'
+
+// Practice screen UI state that isn't the player's (12 §2): loop selection in progress, which
+// overlay is open, the editor target, the pass prompt and the PedalHud message. One practice
+// screen exists at a time; the provider resets this on mount.
+
+export type EditorTarget = {
+  kind: 'bar'
+  bar: number
+  chordId?: string | undefined
+  noteId?: string | undefined
+} | null
+
+export interface PracticeUi {
+  selection: LoopSelection
+  editor: EditorTarget
+  mixerOpen: boolean
+  shortcutsOpen: boolean
+  /** The pass whose "Felt clean / Not yet" is being asked (0 = none). */
+  promptPass: number
+  hud: { message: string | null; sequence: number }
+  /** Phone portrait: the tab instead of the glance view. */
+  showTab: boolean
+  /** "Show tab anyway" over a chords-only recommendation. */
+  forceTab: boolean
+  videoOverlay: boolean
+  /** Bar the count-in or metronome is on, for the visual beat counter. */
+  beat: { index: number; accent: boolean; countIn: boolean } | null
+}
+
+export const INITIAL_UI: PracticeUi = {
+  selection: { kind: 'none' },
+  editor: null,
+  mixerOpen: false,
+  shortcutsOpen: false,
+  promptPass: 0,
+  hud: { message: null, sequence: 0 },
+  showTab: false,
+  forceTab: false,
+  videoOverlay: false,
+  beat: null,
+}
+
+export const usePracticeUi = create<PracticeUi>()(() => INITIAL_UI)
+
+export function showHud(message: string) {
+  usePracticeUi.setState((state) => ({ hud: { message, sequence: state.hud.sequence + 1 } }))
+}
