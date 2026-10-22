@@ -104,8 +104,12 @@ function snapTick(
   swingBars: ReadonlySet<number>,
 ): { tick: number; step: number } {
   const { index, frac } = beatOf(ft)
-  const step = swingBars.has(beatLabel(grid, index).bar) ? SWING_STEP : STRAIGHT_STEP
-  return { tick: index * PPQ + Math.round((frac * PPQ) / step) * step, step }
+  const stepOf = (beat: number) =>
+    swingBars.has(beatLabel(grid, beat).bar) ? SWING_STEP : STRAIGHT_STEP
+  const tick = index * PPQ + Math.round((frac * PPQ) / stepOf(index)) * stepOf(index)
+  // Rounding up can land on the next beat, possibly in a bar with the other grid: the note's
+  // minimum length (and so its end) follows the bar it lands in.
+  return { tick, step: stepOf(Math.floor(tick / PPQ)) }
 }
 
 interface Grouped {

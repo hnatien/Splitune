@@ -52,6 +52,23 @@ describe('quantizeNotes', () => {
     expect(notes[9]?.tick).toBe(480)
   })
 
+  it('takes the grid step of the bar a note snaps into, not the bar it was played in', () => {
+    // The last onset of a swung bar lands on the next (straight) bar's downbeat: its minimum
+    // length is a straight 1/16, so its end stays on that bar's grid (and alphaTex can write it).
+    const swung = [0, 1, 2, 3].flatMap((b) => [at(b), at(b) + 0.5 * (2 / 3) + 0.01])
+    const straight = [5, 6, 7].flatMap((b) => [at(b), at(b) + 0.25])
+    const late = { id: 'late', onset_s: at(3) + 0.49, offset_s: at(3) + 0.5 }
+    const { notes, swingBars } = quantizeNotes(
+      [
+        ...[...swung, ...straight].map((t, i) => ({ id: `n${i}`, onset_s: t, offset_s: t + 0.1 })),
+        late,
+      ],
+      grid,
+    )
+    expect(swingBars).toEqual([0])
+    expect(notes.at(-1)).toMatchObject({ onTick: 4 * PPQ, bar: 1, durationTicks: 240 })
+  })
+
   it('clamps notes before the pickup bar to its first beat', () => {
     const { notes } = quantizeNotes(
       [{ id: 'a', onset_s: 0, offset_s: 0.1 }],
