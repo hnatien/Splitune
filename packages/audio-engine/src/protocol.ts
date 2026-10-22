@@ -33,6 +33,8 @@ export type Command = Scheduled &
     | { type: 'play'; countInBars: number }
     | { type: 'pause' }
     | { type: 'seek'; position: number }
+    // Pause when the heard position crosses this source frame (loop rests, 12 §6); null clears it.
+    | { type: 'stopAt'; position: number | null }
     | { type: 'flush'; id: number }
   )
 
@@ -54,6 +56,8 @@ export type ProcessorEvent =
   | { type: 'stopped'; frame: number; position: number }
   | { type: 'ended'; frame: number; position: number }
   | { type: 'loopWrap'; frame: number; pass: number }
+  // Paused by stopAt: the block at `frame` fades out as the heard position reaches `position`.
+  | { type: 'stopReached'; frame: number; position: number }
   | { type: 'beat'; frame: number; index: number; accent: boolean }
   | { type: 'countIn'; frame: number; index: number; accent: boolean }
   // Processing time over audio time in the last window (≈1 s); 1 means no headroom left.

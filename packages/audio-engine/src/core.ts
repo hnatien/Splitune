@@ -26,6 +26,8 @@ export class ProcessorCore {
   #sinceReport = Number.POSITIVE_INFINITY
   #busy = 0
   #loadFrames = 0
+  #stopAt: number | null = null
+  #heardEnd = 0
 
   constructor(
     module: WebAssembly.Module,
@@ -61,12 +63,26 @@ export class ProcessorCore {
       if (command) this.#apply(command, frame)
     }
 
+    // Pausing fades this block out, so the stop lands within one block of the target.
+    const stopAt = this.#stopAt
+    if (
+      stopAt !== null &&
+      this.#dsp.transport === TransportCode.playing &&
+      this.#heardEnd < stopAt &&
+      this.#heardEnd + this.#dsp.rate * frames >= stopAt
+    ) {
+      this.#stopAt = null
+      this.#dsp.pause()
+      this.#post({ type: 'stopReached', frame, position: stopAt })
+    }
+
     const started = this.#now()
     const [outLeft, outRight] = this.#dsp.process(frames)
     left.set(outLeft)
     right.set(outRight)
     const events = this.#dsp.events()
     const heard = this.#dsp.heard(0)
+    this.#heardEnd = this.#dsp.heard(frames - 1)
     this.#busy += this.#now() - started
 
     let transportChanged = false
@@ -169,6 +185,9 @@ export class ProcessorCore {
         return
       case 'seek':
         dsp.seek(Math.round(command.position))
+        return
+      case 'stopAt':
+        this.#stopAt = command.position
         return
       case 'flush':
         this.#post({ type: 'flushed', id: command.id, frame })

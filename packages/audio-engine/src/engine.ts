@@ -55,6 +55,8 @@ export interface EngineEvents {
   stopped: { position: number; frame: number }
   ended: { position: number; frame: number }
   loopWrap: { pass: number; frame: number; at: number }
+  // Paused at the position given to setStopAt (seconds; `at` = performance time heard).
+  stopReached: { position: number; frame: number; at: number }
   beat: { index: number; accent: boolean; frame: number; at: number }
   countIn: { index: number; accent: boolean; frame: number; at: number }
   // The browser suspended audio (iOS call, Siri, route change): show "Tap to resume".
@@ -307,6 +309,15 @@ export class Engine {
     this.send({ type: 'seek', position: Math.round(seconds * this.sampleRate) })
   }
 
+  // Pauses when the heard position reaches `seconds` (a loop end with a rest after it, where the
+  // seamless loop wrap must not happen); null cancels. One-shot: cleared once it fires.
+  setStopAt(seconds: number | null): void {
+    this.send({
+      type: 'stopAt',
+      position: seconds === null ? null : Math.round(seconds * this.sampleRate),
+    })
+  }
+
   // The heard position in seconds (what the listener hears at performance time `now`).
   position(now: number = performance.now()): number {
     const heard = heardContextTime(this.#timing(now)) - this.#displayOffset
@@ -396,6 +407,13 @@ export class Engine {
         void this.#wakeLock?.release()
         this.#updateMediaSession(false, event.position)
         this.#emit(event.type, { position: event.position / this.sampleRate, frame: event.frame })
+        return
+      case 'stopReached':
+        this.#emit('stopReached', {
+          position: event.position / this.sampleRate,
+          frame: event.frame,
+          at: this.timeOf(event.frame),
+        })
         return
       case 'loopWrap':
         this.#emit('loopWrap', {

@@ -62,9 +62,10 @@ function frame() {
 | `setLoop({ start, end } \| null)` | The loop wraps when the read position reaches `end`; seek into it to start there. |
 | `setBeatGrid(beats)`, `setMetronome(on)`, `setClickVolume(gain)` | The grid drives the metronome, beat events and the count-in tempo. |
 | `play({ countInBars })`, `pause()`, `seek(seconds)` | Count-in clicks at the tempo of the next beats ÷ rate; playback starts on the downbeat frame. |
+| `setStopAt(seconds \| null)` | One-shot pause when the heard position crosses `seconds` (fades the block that reaches it; emits `stopReached`). For a loop with a rest between passes: clear `setLoop` and stop at the loop end instead of wrapping. |
 | `position(now?)`, `timeOf(frame)`, `setDisplayOffset(seconds)` | Master clock (below); ±150 ms user offset. |
 | `transport`, `duration`, `tier`, `ready` | |
-| `on(event, listener)` | `loaded`, `started`, `stopped`, `ended`, `loopWrap`, `beat`, `countIn` (with `frame` and `at` = performance time heard), `interrupted`, `audio_underrun`, `load`, `error`, `processor` (raw protocol events). |
+| `on(event, listener)` | `loaded`, `started`, `stopped`, `ended`, `loopWrap`, `stopReached`, `beat`, `countIn` (with `frame` and `at` = performance time heard), `interrupted`, `audio_underrun`, `load`, `error`, `processor` (raw protocol events). |
 | `setMediaMetadata({ title, artist })` | Media Session: lock-screen and headset play/pause/seek. |
 | `dispose()` | Disconnects, releases the wake lock, closes a context it created. |
 

@@ -107,6 +107,37 @@ describe('transport', () => {
     expect(e.of('position').at(-1)?.transport).toBe('stopped')
   })
 
+  it('pauses where the heard position crosses stopAt, once', () => {
+    const e = engine()
+    e.send({ type: 'stopAt', position: sr })
+    e.send({ type: 'play', countInBars: 0 })
+    const out = e.run(1.5)
+    const [reached] = e.of('stopReached')
+    expect(reached?.position).toBe(sr)
+    const [stopped] = e.of('stopped')
+    // The fading block ends within one block of the target.
+    expect(Math.abs((stopped?.position ?? 0) - sr)).toBeLessThanOrEqual(QUANTUM)
+    expect(peak(out, (reached?.frame ?? 0) + QUANTUM)).toBe(0)
+    // One-shot: playing on from there does not stop again.
+    e.send({ type: 'play', countInBars: 0 })
+    e.run(0.5)
+    expect(e.of('stopReached')).toHaveLength(1)
+    expect(e.of('position').at(-1)?.transport).toBe('playing')
+  })
+
+  it('never stops for a stopAt behind the start or after it is cleared', () => {
+    const e = engine()
+    e.send({ type: 'seek', position: 2 * sr })
+    e.send({ type: 'stopAt', position: sr })
+    e.send({ type: 'play', countInBars: 0 })
+    e.run(0.5)
+    e.send({ type: 'stopAt', position: 3 * sr })
+    e.send({ type: 'stopAt', position: null })
+    e.run(1)
+    expect(e.of('stopReached')).toEqual([])
+    expect(e.of('position').at(-1)?.transport).toBe('playing')
+  })
+
   it('emits beats with downbeat accents and metronome clicks only when enabled', () => {
     const grid = beatGrid(sr, 4, 120)
     const quiet = engine(4)
