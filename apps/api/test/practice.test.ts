@@ -112,8 +112,8 @@ describe('loop clips', () => {
   it('creates a clip with the defaults', async () => {
     const res = await alice.request('POST', `/v1/songs/${songId}/loops`, LOOP)
     expect(res.status).toBe(201)
-    const clip = await json<Record<string, unknown>>(res)
-    loopId = clip.id as string
+    const clip = await json<{ id: string } & Record<string, unknown>>(res)
+    loopId = clip.id
     expect(clip).toMatchObject({
       ...LOOP,
       song_id: songId,
