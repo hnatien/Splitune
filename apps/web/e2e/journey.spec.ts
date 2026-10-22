@@ -10,11 +10,13 @@ test.describe.configure({ mode: 'serial' })
 let page: Page
 let errors: string[]
 
-// The analysis is done: the practice screen shows the music (the tab, or the phone's glance view)
-// instead of the stage list, whose label says so if it is still on screen (step 12).
+// The analysis is done: the practice screen shows the music (the tab, the chord sheet of a Lite
+// analysis, or the phone's glance view) instead of the stage list, whose label says so if it is
+// still on screen (step 12). Free accounts get Lite once the Welcome analysis is used (step 14).
 const finished = () =>
   page
     .getByRole('region', { name: 'Tab' })
+    .or(page.getByRole('region', { name: 'Chord sheet' }))
     .or(page.getByRole('region', { name: 'Current chord' }))
     .or(page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' }))
     .first()
@@ -47,9 +49,10 @@ test.beforeAll(async ({ browser }, info) => {
     ...(baseURL ? { baseURL } : {}),
   })
   page = await context.newPage()
-  errors = collectErrors(page)
   const email = `e2e-${info.project.name}-${Date.now()}@splitune.localhost`
   await signIn(page, email)
+  // From here on: the sign-in helper waits out the shared per-IP limit (429s it handles).
+  errors = collectErrors(page)
 })
 
 test.afterAll(async () => {
