@@ -10,8 +10,25 @@ test.describe.configure({ mode: 'serial' })
 let page: Page
 let errors: string[]
 
-// The StageList's progress label (a polite live region announces the same words).
-const finished = () => page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' })
+// The analysis is done: the practice screen shows the music (the tab, or the phone's glance view)
+// instead of the stage list, whose label says so if it is still on screen (step 12).
+const finished = () =>
+  page
+    .getByRole('region', { name: 'Tab' })
+    .or(page.getByRole('region', { name: 'Current chord' }))
+    .or(page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' }))
+    .first()
+
+/** The stages of the song's latest analysis, from the API (the page no longer lists them). */
+async function stageStatuses(): Promise<Record<string, string>> {
+  const songId = new URL(page.url()).pathname.split('/')[2]
+  const song = (await (await page.request.get(`/v1/songs/${songId}`)).json()) as {
+    latest_analysis: { stages: Record<string, { status: string }> }
+  }
+  return Object.fromEntries(
+    Object.entries(song.latest_analysis.stages).map(([stage, state]) => [stage, state.status]),
+  )
+}
 
 test.beforeAll(async ({ browser }, info) => {
   // One context per project (with its device), shared by the serial tests below.
@@ -71,9 +88,7 @@ test('a short file uploads, analyses and shows as ready', async () => {
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
   await expect(page.getByRole('progressbar')).toBeVisible()
   await expect(finished()).toBeVisible({ timeout: 90_000 })
-  for (const stage of ['Reading the audio', 'Finding the beat', 'Building the tab']) {
-    await expect(page.locator('li', { hasText: stage })).toHaveAttribute('data-status', 'done')
-  }
+  expect(await stageStatuses()).toMatchObject({ decode: 'done', beats: 'done', finalize: 'done' })
   await page.getByRole('link', { name: 'Back to library' }).click()
   const card = page.getByRole('article').filter({ hasText: 'Riff in A minor' })
   await expect(card.getByText('Ready')).toBeVisible()

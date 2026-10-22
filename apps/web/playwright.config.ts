@@ -5,6 +5,9 @@ import { defineConfig, devices } from '@playwright/test'
 // viewports (docs/implementation/24-browser-compatibility.md §6). Projects run one after another:
 // they share one server, one Mac worker pair and the per-IP sign-in limit.
 export const APP_URL = 'http://localhost:3000'
+// Firefox doesn't start on macOS 27: PW_FIREFOX_WS_ENDPOINT runs it in the Linux Playwright image
+// (as the audio engine's suite does), with loopback traffic tunnelled back to this machine.
+const { PW_FIREFOX_WS_ENDPOINT: firefoxEndpoint } = process.env
 
 export default defineConfig({
   testDir: './e2e',
@@ -21,7 +24,15 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        ...(firefoxEndpoint
+          ? { connectOptions: { wsEndpoint: firefoxEndpoint, exposeNetwork: '<loopback>' } }
+          : {}),
+      },
+    },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 15'] } },

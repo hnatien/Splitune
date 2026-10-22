@@ -53,8 +53,17 @@ export async function signIn(page: Page, email: string) {
   await page.goto('/library')
   await expect(page).toHaveURL(/\/auth\/sign-in/)
   await page.getByLabel('Email').fill(email)
-  await page.getByRole('button', { name: 'Email me a link' }).click()
-  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()
+  // Projects share one IP and its 10/min sign-in limit: wait out a "Too many tries" and retry.
+  for (let attempt = 0; ; attempt++) {
+    await page.getByRole('button', { name: 'Email me a link' }).click()
+    const sent = page.getByRole('heading', { name: 'Check your email' })
+    const limited = page.getByText(/Too many tries in a short time\. Try again in (\d+)/)
+    await expect(sent.or(limited)).toBeVisible()
+    if (await sent.isVisible()) break
+    if (attempt >= 3) throw new Error('sign-in stayed rate limited')
+    const seconds = Number((await limited.textContent())?.match(/in (\d+)/)?.[1] ?? 60)
+    await page.waitForTimeout((seconds + 1) * 1000)
+  }
   await page.goto(await magicLink(email))
   await expect(page).toHaveURL(/\/library/)
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible()
