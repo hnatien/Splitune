@@ -246,6 +246,20 @@
   --hud-fg: var(--foreground);
 }
 
+/* Score "match appearance" in Dark (26 §2, Settings -> Display -> Score): the music surfaces take
+   Stage's score colours, without Stage's size step. Paper stays the default. */
+[data-appearance="dark"][data-score="match"] {
+  --paper: var(--paper-stage);
+  --ink: var(--ink-stage);
+  --conf-medium: var(--ink-medium-stage);
+  --conf-low: var(--ink-low-stage);
+  --score-loop-fill: oklch(0.27 0.05 278);
+  --score-loop-edge: oklch(0.72 0.1 278);
+  --score-playhead: oklch(0.68 0.14 27);
+  --staff: oklch(0.56 0.008 81);
+  --bar-current: oklch(0.215 0.02 80);
+}
+
 /* Roles shared by every appearance: aliases of the roles above. */
 :root,
 [data-appearance] {

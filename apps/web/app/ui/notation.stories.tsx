@@ -113,9 +113,16 @@ export const Armed: Story = { render: () => <Score armedBar={4} /> }
 
 export const Scrolling: Story = { render: () => <Score layout="scroll" /> }
 
-export const MatchDark: Story = {
+/** Dark keeps the score on paper by default (26 §2). */
+export const Dark: Story = {
   render: () => <Score loop={{ startBar: 2, endBar: 3 }} />,
   globals: { appearance: 'dark' },
+}
+
+/** Dark with Score: Match appearance — Stage's score colours at the normal size. */
+export const MatchDark: Story = {
+  render: () => <Score loop={{ startBar: 2, endBar: 3 }} />,
+  globals: { appearance: 'dark', score: 'match' },
 }
 
 export const StageScore: Story = {

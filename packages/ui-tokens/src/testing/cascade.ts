@@ -211,11 +211,18 @@ export function contrast(fg: Color, bg: Color): number {
 }
 
 /** Every appearance × contrast context, with attributes set as the appearance script sets them. */
-export const CONTEXTS: { name: string; context: Context }[] = (
-  ['light', 'dark', 'stage'] as const
-).flatMap((appearance) =>
-  (['normal', 'more'] as const).map((contrastMode) => ({
-    name: `${appearance}/${contrastMode}`,
-    context: { attrs: { 'data-appearance': appearance, 'data-contrast': contrastMode } },
+export const CONTEXTS: { name: string; context: Context }[] = [
+  ...(['light', 'dark', 'stage'] as const).flatMap((appearance) =>
+    (['normal', 'more'] as const).map((contrastMode) => ({
+      name: `${appearance}/${contrastMode}`,
+      context: { attrs: { 'data-appearance': appearance, 'data-contrast': contrastMode } },
+    })),
+  ),
+  // Dark with the score matching the appearance (26 §2).
+  ...(['normal', 'more'] as const).map((contrastMode) => ({
+    name: `dark+match/${contrastMode}`,
+    context: {
+      attrs: { 'data-appearance': 'dark', 'data-contrast': contrastMode, 'data-score': 'match' },
+    },
   })),
-)
+]

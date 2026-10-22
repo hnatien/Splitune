@@ -22,7 +22,7 @@ const DisplayPanel = lazy(() =>
 
 // Status bar content (27 §3.7.1): song title (truncates) and part, the loop badge for distance
 // reading, ⚙ Display and ⋯ (shortcuts and the editor on desktop, key bindings). Stage keeps only
-// the loop badge and ⚙ of the chrome.
+// the loop badge and ⚙ (the way back out of Stage) of the chrome.
 
 export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
   const { data, songId } = usePractice()
@@ -36,11 +36,11 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
         {song?.title}
       </span>
       {song && (
-        <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline in-data-[appearance=stage]:hidden">
+        <span className="shrink-0 text-sm text-muted-foreground max-sm:hidden in-data-[appearance=stage]:hidden">
           {instrumentLabel(song.instrument)}
         </span>
       )}
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="ml-auto flex min-w-0 items-center gap-2">
         <LoopControl />
         <Popover>
           <PopoverTrigger
@@ -57,7 +57,12 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
         <Popover>
           <PopoverTrigger
             render={
-              <Button variant="ghost" size="icon-practice-2" aria-label={m['practice.more']()} />
+              <Button
+                variant="ghost"
+                size="icon-practice-2"
+                className="in-data-[appearance=stage]:hidden"
+                aria-label={m['practice.more']()}
+              />
             }
           >
             <EllipsisIcon aria-hidden />

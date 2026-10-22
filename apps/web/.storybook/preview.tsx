@@ -6,10 +6,10 @@ import '../app/styles.css'
 // Toolbar globals set the same data-* attributes as the app (doc 26 §2, 28 §2), so every story is
 // rendered through the real theming path. Density is per shell, so it goes on the story wrapper.
 const withDisplay: Decorator = (Story, context) => {
-  const { appearance, contrast, density, distance, motion, readingFont } = context.globals
+  const { appearance, contrast, density, distance, motion, readingFont, score } = context.globals
   // Applied during render, before paint, like the app's inline head script.
   applyDisplay(
-    { appearance, contrast, distance, motion, readingFont },
+    { appearance, contrast, distance, motion, readingFont, score },
     document.documentElement,
     (query) => window.matchMedia(query),
   )
@@ -66,6 +66,10 @@ const preview: Preview = {
       { value: 'inter', title: 'Inter' },
       { value: 'hyperlegible', title: 'Hyperlegible' },
     ]),
+    score: toolbar('Score', 'document', [
+      { value: 'paper', title: 'Score on paper' },
+      { value: 'match', title: 'Score matches appearance' },
+    ]),
   },
   initialGlobals: {
     appearance: 'light',
@@ -74,6 +78,7 @@ const preview: Preview = {
     distance: 'desk',
     motion: 'full',
     readingFont: 'inter',
+    score: 'paper',
   },
   parameters: {
     layout: 'fullscreen',

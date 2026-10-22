@@ -143,7 +143,8 @@ export const Chords: Story = {
   render: screen(['beats', 'stems', 'chords'], { running: true }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    const sheet = await canvas.findByRole('region', { name: 'Chord sheet' })
+    // The chord sheet's code loads on demand.
+    const sheet = await canvas.findByRole('region', { name: 'Chord sheet' }, { timeout: 10_000 })
     // Layers fade in (200 ms, 27 §3.7.3).
     await waitFor(() => expect(sheet).toBeVisible())
     await expect(await canvas.findByRole('button', { name: 'Mix' })).toBeVisible()

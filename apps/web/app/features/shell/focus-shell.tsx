@@ -30,9 +30,15 @@ export function FocusShell({
       <SkipLink />
       <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)]">
         <div className="flex min-h-14 items-center gap-3 px-4 in-data-[appearance=stage]:min-h-12">
-          <Link to={exit ? '/' : '/library'} className={buttonVariants({ variant: 'ghost' })}>
+          <Link
+            to={exit ? '/' : '/library'}
+            className={buttonVariants({ variant: 'ghost', className: 'max-sm:min-w-target' })}
+          >
             <ChevronLeftIcon aria-hidden />
-            {exit ? m['nav.exit']() : m['nav.back_to_library']()}
+            {/* Icon only on phones, so the page's status keeps its room. */}
+            <span className="max-sm:sr-only">
+              {exit ? m['nav.exit']() : m['nav.back_to_library']()}
+            </span>
           </Link>
           <div className="flex min-w-0 flex-1 items-center gap-3">{status}</div>
           <UploadPill />

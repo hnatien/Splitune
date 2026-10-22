@@ -31,14 +31,14 @@ function LoopBadge({
       data-slot="loop-badge"
       data-state={state}
       className={cn(
-        'inline-flex min-h-target items-center gap-2 rounded-full border-2 px-4 font-semibold whitespace-nowrap tabular-nums text-read-bar-number hover:bg-muted [&_svg]:size-[1.1em] [&_svg]:shrink-0',
+        'inline-flex min-h-target min-w-0 items-center gap-2 rounded-full border-2 px-4 font-semibold whitespace-nowrap tabular-nums text-read-bar-number hover:bg-muted [&_svg]:size-[1.1em] [&_svg]:shrink-0',
         styles[state],
         className,
       )}
       {...props}
     >
       <Icon aria-hidden />
-      {children}
+      <span className="truncate">{children}</span>
     </button>
   )
 }

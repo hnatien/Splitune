@@ -82,7 +82,7 @@ function Banner({ tone, title, description, actions, dismiss, className }: Banne
       )}
     >
       <span className={cn('shrink-0 [&_svg]:size-5', style.text)}>{style.icon}</span>
-      <p className="min-w-0 flex-1 text-sm text-foreground">
+      <p className="min-w-0 flex-1 basis-3xs text-sm text-foreground">
         <span className="font-medium">{title}</span>
         {description && <span className="text-muted-foreground"> {description}</span>}
       </p>
