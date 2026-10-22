@@ -110,6 +110,19 @@ jobs:
       - name: Story tests (Storybook, Chromium + WebKit)
         run: pnpm --filter @splitune/web test:stories
 
+      # The visual matrix (28 §4) against the committed baselines, Chromium + WebKit inside the
+      # pinned Playwright image (linux/amd64, like the baselines); diffs are kept on failure.
+      - name: Visual regression (Storybook screens, Docker)
+        run: pnpm --filter @splitune/web e2e:visual
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-diffs
+          path: apps/web/test-results/
+          retention-days: 7
+
       # The combined server (web + API under /v1) Railway starts with `pnpm --filter @splitune/web start`.
       - name: Build the app server
         run: pnpm --filter @splitune/web build

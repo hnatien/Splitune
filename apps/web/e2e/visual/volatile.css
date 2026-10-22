@@ -1,0 +1,7 @@
+/* Hidden in visual baselines (28 §4): UI that moves with the audio clock or appears for a moment
+   after an action, not the layout under test. */
+html body [data-slot="notation-cursor"],
+html body [data-slot="pedal-hud"],
+html body [data-slot="count-in"] {
+  visibility: hidden;
+}

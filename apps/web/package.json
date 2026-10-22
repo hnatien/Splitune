@@ -2,7 +2,7 @@
   "name": "@splitune/web",
   "version": "0.0.0",
   "private": true,
-  "description": "Web app (TanStack Start PWA) — docs/implementation/10-web-app-architecture.md",
+  "description": "Web app (TanStack Start PWA) \u2014 docs/implementation/10-web-app-architecture.md",
   "type": "module",
   "scripts": {
     "generate": "paraglide-js compile --project ./project.inlang --outdir ./app/paraglide --emit-ts-declarations && tsr generate",
@@ -13,6 +13,8 @@
     "test": "pnpm run generate && vitest run --project unit",
     "test:stories": "pnpm run generate && vitest run --project storybook",
     "e2e": "playwright test",
+    "e2e:visual": "node scripts/visual.mjs --image mcr.microsoft.com/playwright:v1.64.1-noble",
+    "e2e:visual:update": "node scripts/visual.mjs --image mcr.microsoft.com/playwright:v1.64.1-noble --update",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "pnpm run generate && storybook build -o storybook-static",
     "lighthouse": "CHROME_PATH=$(node -e \"console.log(require('playwright').chromium.executablePath())\") lhci autorun",

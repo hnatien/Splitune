@@ -11,6 +11,8 @@ const { PW_FIREFOX_WS_ENDPOINT: firefoxEndpoint } = process.env
 
 export default defineConfig({
   testDir: './e2e',
+  // The visual matrix has its own config (playwright.visual.config.ts, run in Docker).
+  testIgnore: 'visual/**',
   timeout: 120_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
