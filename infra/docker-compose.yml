@@ -82,6 +82,31 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Optional observability (16 §1, 25 §1): Grafana with Tempo/Loki/Prometheus and an OTLP collector
+  # in one container, plus the product dashboards over the `dashboards` views. Start with
+  # `docker compose -f infra/docker-compose.yml --profile observability up -d`, run `pnpm db:roles`
+  # once (DB_DASHBOARD_PASSWORD), then open http://localhost:3001 (folder "Splitune"). Point the
+  # app and workers at it with OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318.
+  otel-lgtm:
+    image: grafana/otel-lgtm:0.35.0
+    profiles: ["observability"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_DASHBOARD_PASSWORD: ${DB_DASHBOARD_PASSWORD:-dev-only-dashboard-password}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    ports:
+      - "127.0.0.1:3001:3000"
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./grafana/provisioning/datasources/splitune.yaml:/otel-lgtm/grafana/conf/provisioning/datasources/splitune.yaml:ro
+      - ./grafana/provisioning/dashboards/splitune.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/splitune.yaml:ro
+      - ./grafana/dashboards:/otel-lgtm/splitune-dashboards:ro
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   seaweedfs-data:

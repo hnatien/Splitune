@@ -1,0 +1,122 @@
+{
+  "uid": "splitune-pipeline",
+  "title": "Splitune · Pipeline",
+  "description": "Latency per stage and per analysis, compute time (16 §3; 25 §5 targets).",
+  "tags": ["splitune"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "refresh": "",
+  "editable": false,
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Analysis latency by day and type (targets: beat grid ≤ 15 s, full ≤ 3 min)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.analysis_latency_daily where $__timeFilter(day::timestamptz) order by day desc, type"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Stage latency by day",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.stage_latency_daily where $__timeFilter(day::timestamptz) order by day desc, p50_s desc"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 2
+    },
+    {
+      "type": "table",
+      "title": "Compute per analysis (latest 50)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select day, type, instrument, status, wall_s, beat_grid_s, compute_s, gpu_s from dashboards.analysis_compute order by day desc limit 50"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 3
+    }
+  ]
+}

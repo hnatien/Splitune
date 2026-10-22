@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: Splitune
+    folder: Splitune
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /otel-lgtm/splitune-dashboards

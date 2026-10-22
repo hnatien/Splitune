@@ -1,0 +1,87 @@
+{
+  "uid": "splitune-trust",
+  "title": "Splitune · Trust",
+  "description": "Fallback, failure and correction rates per model_id@version (16 §3).",
+  "tags": ["splitune"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "refresh": "",
+  "editable": false,
+  "panels": [
+    {
+      "type": "table",
+      "title": "Per model",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.trust_by_model order by stage, analyses desc"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 1
+    },
+    {
+      "type": "table",
+      "title": "Chords-only fallback by instrument (guitar ≤ 40 %, bass ≤ 20 %)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.view_fallback_weekly where $__timeFilter(week::timestamptz) order by week desc, instrument"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 2
+    }
+  ]
+}

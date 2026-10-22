@@ -1,0 +1,17 @@
+# Read-only Postgres datasource for the dashboards (16 §3): role dashboard_reader, which can read
+# only the views in schema `dashboards` (migration 0014). Give it a login with `pnpm db:roles`
+# (DB_DASHBOARD_PASSWORD). Local compose database only; never point this at production from here.
+apiVersion: 1
+datasources:
+  - name: Splitune Postgres
+    uid: splitune-pg
+    type: grafana-postgresql-datasource
+    url: postgres:5432
+    user: dashboard_reader
+    jsonData:
+      database: splitune
+      sslmode: disable
+      postgresVersion: 1800
+    secureJsonData:
+      password: $DB_DASHBOARD_PASSWORD
+    editable: false

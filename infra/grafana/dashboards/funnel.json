@@ -1,0 +1,170 @@
+{
+  "uid": "splitune-funnel-platform",
+  "title": "Splitune · Funnel & platform",
+  "description": "Import success, conversion (mock billing), browser health and display choices (16 §3).",
+  "tags": ["splitune"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "refresh": "",
+  "editable": false,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Import success",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select day::timestamptz as time, file_success_pct, link_success_pct from dashboards.import_funnel_daily where $__timeFilter(day::timestamptz) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "pointSize": 5,
+            "showPoints": "always"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 1
+    },
+    {
+      "type": "table",
+      "title": "Conversion by week",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.conversion_weekly where $__timeFilter(week::timestamptz) order by week desc"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 2
+    },
+    {
+      "type": "table",
+      "title": "Platform health by browser and device",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.platform_health_weekly where $__timeFilter(week::timestamptz) order by week desc, probes desc"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 3
+    },
+    {
+      "type": "table",
+      "title": "Display choices",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from dashboards.display_choices order by setting, changes desc"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 4
+    }
+  ]
+}

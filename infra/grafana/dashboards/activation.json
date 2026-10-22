@@ -1,0 +1,195 @@
+{
+  "uid": "splitune-activation",
+  "title": "Splitune · Activation",
+  "description": "Onboarding funnel and the north-star timings (16 §3).",
+  "tags": ["splitune"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "refresh": "",
+  "editable": false,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Onboarding started vs first slowed loop",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select day::timestamptz as time, onboarding_started, example_opened, first_playback, first_slowed_loop from dashboards.activation_daily where $__timeFilter(day::timestamptz) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "pointSize": 5,
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 1
+    },
+    {
+      "type": "timeseries",
+      "title": "Time to first isolated playback / slowed loop (p50)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select day::timestamptz as time, first_playback_p50_s, first_slowed_loop_p50_s from dashboards.activation_daily where $__timeFilter(day::timestamptz) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "pointSize": 5,
+            "showPoints": "always"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 2
+    },
+    {
+      "type": "timeseries",
+      "title": "Reaching a slowed loop (target ≥ 60 %)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select day::timestamptz as time, slowed_loop_pct from dashboards.activation_daily where $__timeFilter(day::timestamptz) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "pointSize": 5,
+            "showPoints": "always"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 3
+    },
+    {
+      "type": "table",
+      "title": "Onboarding funnel by week",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "splitune-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "splitune-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select week, step, views from dashboards.onboarding_funnel where $__timeFilter(week::timestamptz) order by week desc, views desc"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 4
+    }
+  ]
+}
