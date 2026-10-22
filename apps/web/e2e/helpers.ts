@@ -1,5 +1,12 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, type Page, test } from '@playwright/test'
+import {
+  type Browser,
+  type BrowserContext,
+  type BrowserContextOptions,
+  expect,
+  type Page,
+  test,
+} from '@playwright/test'
 import { APP_URL } from '../playwright.config.ts'
 
 const MAILPIT = 'http://localhost:8025'
@@ -154,4 +161,42 @@ export async function expectNoCardInputs(page: Page, scope = 'body') {
     description: `${new URL(page.url()).pathname} ${scope}: ${scan.controls} form controls, 0 card or text inputs`,
   })
   return scan.controls
+}
+
+/**
+ * A context with the project's device settings (viewport, user agent, touch), reduced motion and
+ * `options` on top. Firefox has no device emulation: its "phone" is the viewport alone.
+ */
+export async function projectContext(
+  browser: Browser,
+  options: BrowserContextOptions = {},
+): Promise<BrowserContext> {
+  const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch, baseURL } =
+    test.info().project.use
+  return browser.newContext({
+    reducedMotion: 'reduce',
+    ...(viewport ? { viewport } : {}),
+    ...(userAgent && browser.browserType().name() !== 'firefox' ? { userAgent } : {}),
+    ...(deviceScaleFactor ? { deviceScaleFactor } : {}),
+    ...(isMobile !== undefined ? { isMobile } : {}),
+    ...(hasTouch !== undefined ? { hasTouch } : {}),
+    ...(baseURL ? { baseURL } : {}),
+    ...options,
+  })
+}
+
+/**
+ * Onboarding's way into the example song without signing in (13 §1): instrument, level, skip the
+ * screen step. Returns the card's "Play your part" once the audio is decoded.
+ */
+export async function openExample(page: Page) {
+  await page.goto('/start')
+  await page.getByRole('button', { name: 'Guitar', exact: true }).click()
+  await page.getByRole('button', { name: 'Just started' }).click()
+  await page.getByRole('button', { name: 'Skip' }).click()
+  const play = page
+    .getByRole('dialog', { name: 'Your first song' })
+    .getByRole('button', { name: 'Play your part' })
+  await expect(play).toBeEnabled({ timeout: 90_000 })
+  return play
 }
