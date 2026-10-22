@@ -37,7 +37,9 @@ const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', '
 const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(ALL.indexOf(kind) + 1).padStart(12, '0')}`
 
-function seed(kinds: Kind[], patch: { summary?: unknown; running?: boolean } = {}) {
+type Patch = { summary?: unknown; chords?: unknown; running?: boolean }
+
+function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
     const run = analysis(1, patch.running ? 'running' : 'done')
     const entries = kinds.map((kind) => ({
@@ -65,7 +67,12 @@ function seed(kinds: Kind[], patch: { summary?: unknown; running?: boolean } = {
         orpc.artefacts.listCorrections.queryKey({ input: { id: artefactId(kind) } }),
         { ops: [] },
       )
-      const doc = kind === 'summary' && patch.summary ? patch.summary : DOCS[kind]
+      const doc =
+        kind === 'summary' && patch.summary
+          ? patch.summary
+          : kind === 'chords' && patch.chords
+            ? patch.chords
+            : DOCS[kind]
       if (doc) client.setQueryData(['artefact-doc', artefactId(kind)], doc)
     }
   }
@@ -103,7 +110,7 @@ const tone: FetchAudio = async () => {
 const SONG_ID = detail(1, null).id
 
 const screen =
-  (kinds: Kind[], patch: { summary?: unknown; running?: boolean } = {}) =>
+  (kinds: Kind[], patch: Patch = {}) =>
   () => (
     <AppStory path={`/songs/${SONG_ID}/practice`} seed={seed(kinds, patch)}>
       <PracticePage songId={SONG_ID} search={{}} fetchAudio={tone} />
@@ -170,6 +177,57 @@ export const ReadyStage: Story = { render: screen(ALL), globals: { appearance: '
 export const ReadyAtTheStand: Story = {
   render: screen(ALL),
   globals: { distance: 'stand' },
+}
+
+// A chord every half bar from 12 names (like the "Stitch Up" example): more chips than fit.
+const NAMES = [
+  'E:min7',
+  'A:7',
+  'D:maj7',
+  'B:hdim7',
+  'G:sus4',
+  'C:maj7',
+  'F#:min7',
+  'Bb:maj',
+  'Eb:dim',
+  'Ab:aug',
+  'Db:maj7',
+  'C:min7',
+]
+const MANY_CHORDS = {
+  ...chords,
+  segments: Array.from({ length: 16 }, (_, i) => {
+    const label = NAMES[i % NAMES.length] as string
+    const confidence = [0.92, 0.7, 0.45][i % 3] as number
+    return {
+      id: `c${String(i).padStart(4, '0')}`,
+      confidence,
+      confidence_raw: confidence,
+      t0: 0.5 + i * 1.2,
+      t1: 0.5 + (i + 1) * 1.2,
+      label,
+      top_k: [{ label, prob: confidence }],
+      beat_aligned: true,
+    }
+  }),
+}
+
+/** Many chords: the chips clip inside their own area and the legend keeps its space. */
+export const ManyChords: Story = {
+  render: screen(ALL, { chords: MANY_CHORDS }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const list = await canvas.findByRole('list', { name: 'Chords' })
+    // At the start: the first chord and the five after it.
+    await waitFor(() => expect(within(list).getAllByRole('button')).toHaveLength(6))
+    // Nothing of a chip paints past the list's own edge.
+    const box = list.getBoundingClientRect()
+    const past = canvasElement.ownerDocument.elementFromPoint(
+      box.right + 1,
+      box.top + box.height / 2,
+    )
+    await expect(past?.closest('[data-slot=chord-chip]')).toBeNull()
+  },
 }
 
 const CHORDS_ONLY = {
