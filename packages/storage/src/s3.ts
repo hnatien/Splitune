@@ -98,18 +98,29 @@ export function createStorage(config: StorageConfig) {
     responseChecksumValidation: 'WHEN_REQUIRED',
   })
 
-  async function listKeys(prefix: string): Promise<string[]> {
-    assertSafeKey(prefix)
-    const keys: string[] = []
+  // Every object under `prefix` (the whole bucket when empty) with its size.
+  async function listObjects(prefix: string): Promise<{ key: string; bytes: number }[]> {
+    if (prefix !== '') assertSafeKey(prefix)
+    const objects: { key: string; bytes: number }[] = []
     let token: string | undefined
     do {
       const page = await client.send(
-        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          ...(prefix === '' ? {} : { Prefix: prefix }),
+          ContinuationToken: token,
+        }),
       )
-      for (const object of page.Contents ?? []) if (object.Key) keys.push(object.Key)
+      for (const object of page.Contents ?? []) {
+        if (object.Key) objects.push({ key: object.Key, bytes: object.Size ?? 0 })
+      }
       token = page.IsTruncated ? page.NextContinuationToken : undefined
     } while (token)
-    return keys
+    return objects
+  }
+
+  async function listKeys(prefix: string): Promise<string[]> {
+    return (await listObjects(prefix)).map((object) => object.key)
   }
 
   return {
@@ -254,6 +265,27 @@ export function createStorage(config: StorageConfig) {
           Key: assertSafeKey(key),
           Body: body,
           ContentType: contentType,
+        }),
+      )
+    },
+
+    // Object count and bytes under a prefix, or in the whole bucket (the daily digest compares it
+    // with R2's 10 GB-month free tier; 25 §1).
+    async usage(prefix = ''): Promise<{ objects: number; bytes: number }> {
+      const objects = await listObjects(prefix)
+      return { objects: objects.length, bytes: objects.reduce((sum, o) => sum + o.bytes, 0) }
+    },
+
+    // Deletes one object inside a user prefix; deleting a missing object succeeds (idempotent).
+    async deleteKey(key: string): Promise<void> {
+      assertSafeKey(key)
+      if (!DELETABLE_PREFIX.test(key.slice(0, key.lastIndexOf('/') + 1))) {
+        throw new StorageKeyError('deleteKey needs a key inside u/{user_id}/')
+      }
+      await client.send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: { Objects: [{ Key: key }], Quiet: true },
         }),
       )
     },

@@ -185,3 +185,26 @@ describe('deletePrefix', () => {
     }
   })
 })
+
+describe('deleteKey and usage', () => {
+  it('deletes one object, idempotently, and counts what is left', async () => {
+    const analysisId = randomUUID()
+    const prefix = `${userPrefix(user)}a/${analysisId}/`
+    const json = artefactKey(user, analysisId, 1, 'stems.json')
+    const stem = stemKey(user, analysisId, 1, 'guitar', 'm4a')
+    await storage.putBytes(json, '{}', 'application/json')
+    await storage.putBytes(stem, new Uint8Array(1000), 'audio/mp4')
+    expect(await storage.usage(prefix)).toEqual({ objects: 2, bytes: 1002 })
+
+    await storage.deleteKey(stem)
+    await storage.deleteKey(stem)
+    expect(await storage.listKeys(prefix)).toEqual([json])
+    expect((await storage.usage()).objects).toBeGreaterThanOrEqual(1)
+  })
+
+  it('refuses keys outside u/{user_id}/', async () => {
+    for (const key of ['assets/examples/a/20261022T000000Z/beats.json', 'u/x', '../a']) {
+      await expect(storage.deleteKey(key), key).rejects.toThrow(StorageKeyError)
+    }
+  })
+})

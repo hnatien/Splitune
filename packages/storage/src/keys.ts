@@ -100,6 +100,19 @@ export const renderKey = (
 ) =>
   `${versionPrefix(userId, analysisId, version)}render/${check(instrument, INSTRUMENT, 'instrument')}.alphatex`
 
+// "Download my data" bundles (15 §4), removed by the lifecycle sweeper once they expire.
+export const exportKey = (userId: string, exportId: string) =>
+  `${userPrefix(userId)}exports/${check(exportId, UUID, 'export id')}.json`
+
+// The audio files of a stems artefact sit beside its JSON: …/v{n}/stems.json → …/v{n}/stems/.
+export function stemFilesPrefix(stemsJsonKey: string): string {
+  assertSafeKey(stemsJsonKey)
+  if (!/^u\/[A-Za-z0-9_-]+\/a\/[0-9a-f-]{36}\/v\d+\/stems\.json$/.test(stemsJsonKey)) {
+    throw new StorageKeyError('not a stems.json key')
+  }
+  return `${stemsJsonKey.slice(0, -'.json'.length)}/`
+}
+
 // Example songs (13 §1): Splitune-owned analyses, shared by every visitor and every claimed copy.
 // Each build gets its own prefix, so cached files never change under a URL.
 const EXAMPLE_ID = /^[a-z0-9][a-z0-9-]{0,62}$/

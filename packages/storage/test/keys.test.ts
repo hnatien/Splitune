@@ -7,10 +7,12 @@ import {
   assertWithin,
   exampleKey,
   examplePrefix,
+  exportKey,
   rawUploadKey,
   recordingKey,
   renderKey,
   StorageKeyError,
+  stemFilesPrefix,
   stemKey,
   uploadPrefix,
   userPrefix,
@@ -67,6 +69,23 @@ describe('key builders', () => {
     () => recordingKey(user, 'x'),
   ])('reject invalid segments (%#)', (build) => {
     expect(build).toThrow(StorageKeyError)
+  })
+})
+
+describe('lifecycle keys', () => {
+  it('builds export bundle keys and the stem files beside a stems.json', () => {
+    expect(exportKey(user, id)).toBe(`u/${user}/exports/${id}.json`)
+    expect(stemFilesPrefix(artefactKey(user, id, 3, 'stems.json'))).toBe(
+      `u/${user}/a/${id}/v3/stems/`,
+    )
+    expect(() => exportKey(user, 'not-a-uuid')).toThrow(StorageKeyError)
+    for (const key of [
+      artefactKey(user, id, 1, 'beats.json'),
+      'assets/examples/riff/20261022T090536Z/stems.json',
+      `u/${user}/a/${id}/v1/../stems.json`,
+    ]) {
+      expect(() => stemFilesPrefix(key), key).toThrow(StorageKeyError)
+    }
   })
 })
 
