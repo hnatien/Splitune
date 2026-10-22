@@ -1,6 +1,6 @@
 // One-shot developer setup. Run with `pnpm run setup` (plain `pnpm setup` is pnpm's own built-in command).
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -45,9 +45,13 @@ if (!hasCommand('gitleaks')) {
     '\ngitleaks is not installed; the pre-commit secret scan will block commits until it is (`brew install gitleaks`).',
   )
 }
-if (!hasCommand('docker')) {
+if (hasCommand('docker')) {
+  // The pinned Emscripten image that builds packages/audio-dsp/dist/dsp.wasm.
+  const emsdk = readFileSync(join(root, 'packages/audio-dsp/emsdk-version'), 'utf8').trim()
+  run('docker', ['pull', `emscripten/emsdk:${emsdk}`])
+} else {
   console.warn(
-    '\nDocker is not installed; `pnpm dev` needs it for Postgres, SeaweedFS and Mailpit.',
+    '\nDocker is not installed; `pnpm dev` needs it for Postgres, SeaweedFS and Mailpit, and the dsp.wasm build for the Emscripten image.',
   )
 }
 

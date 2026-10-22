@@ -100,6 +100,12 @@ jobs:
       - name: Test (Vitest, pytest)
         run: pnpm test
 
+      # `pnpm test` builds dsp.wasm first (turbo ^build): the pinned Emscripten image, failing if
+      # its sha256 differs from packages/audio-dsp/dsp.wasm.sha256. This suite renders the engine
+      # through the real AudioWorklet offline and checks stem decode alignment (11 §8, 18 §2).
+      - name: Audio engine offline render (Chromium, Firefox, WebKit)
+        run: pnpm --filter @splitune/audio-engine test:browser
+
       # Every story rendered in Chromium and WebKit with axe (a11y test 'error').
       - name: Story tests (Storybook, Chromium + WebKit)
         run: pnpm --filter @splitune/web test:stories
