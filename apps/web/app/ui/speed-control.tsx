@@ -1,16 +1,17 @@
 import { MinusIcon, PlusIcon } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 import { cn } from '@/lib/utils'
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover'
-import { Slider } from '@/ui/slider'
-import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
+import { Popover, PopoverTrigger } from '@/ui/popover'
 import { TransportButton } from '@/ui/transport-button'
 
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
 // (50–100 %, 25–200 % advanced) and presets 50/70/85/100; readout "70 % · 84 BPM".
 
-export const SPEED_PRESETS = [50, 70, 85, 100] as const
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
+
+// The slider and presets load on first open, so the transport stays light (12 §10 route budget).
+const SpeedPanel = lazy(() => import('./speed-panel').then((m) => ({ default: m.SpeedPanel })))
 
 type SpeedControlProps = {
   /** Playback rate in percent of the original. */
@@ -79,35 +80,15 @@ function SpeedControl({
             </span>
           )}
         </PopoverTrigger>
-        <PopoverContent side="top" className="w-96 gap-4">
-          <Slider
+        <Suspense fallback={null}>
+          <SpeedPanel
             value={value}
             min={min}
             max={max}
-            step={SPEED_FINE_STEP}
-            onValueChange={(next) => set(Array.isArray(next) ? (next[0] ?? value) : next)}
-            thumbLabels={[labels.speed]}
+            onValueChange={set}
+            labels={{ speed: labels.speed, presets: labels.presets }}
           />
-          <ToggleGroup
-            aria-label={labels.presets}
-            size="practice-2"
-            value={
-              SPEED_PRESETS.includes(value as (typeof SPEED_PRESETS)[number]) ? [String(value)] : []
-            }
-            onValueChange={(next) => {
-              const preset = next[0]
-              if (preset !== undefined) set(Number(preset))
-            }}
-            className="w-full justify-between"
-          >
-            {SPEED_PRESETS.map((preset) => (
-              <ToggleGroupItem key={preset} value={String(preset)} className="flex-1 tabular-nums">
-                {preset}
-                {NBSP}%
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </PopoverContent>
+        </Suspense>
       </Popover>
       <TransportButton
         icon={<PlusIcon aria-hidden />}

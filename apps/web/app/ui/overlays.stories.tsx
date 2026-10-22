@@ -13,14 +13,13 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from './dropdown-menu.tsx'
+import { Popover, PopoverTrigger } from './popover.tsx'
 import {
-  Popover,
   PopoverContent,
   PopoverDescription,
   PopoverHeader,
   PopoverTitle,
-  PopoverTrigger,
-} from './popover.tsx'
+} from './popover-content.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select.tsx'
 import { WithTooltip } from './tooltip.tsx'
 
@@ -62,7 +61,10 @@ export const TooltipWithShortcut: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.tab()
     await expect(within(canvasElement).getByRole('button', { name: 'Play' })).toHaveFocus()
-    await waitFor(async () => expect(await screen.findByText('Space')).toBeVisible())
+    // The popup's code loads on the first open.
+    await waitFor(async () => expect(await screen.findByText('Space')).toBeVisible(), {
+      timeout: 5000,
+    })
   },
 }
 
