@@ -55,6 +55,23 @@ export function correctionsRepo(db: Database) {
         return { rev, applied: fresh.map((o) => o.clientOpId) }
       }),
 
+    // The rev each client op was stored with on this artefact (replays included).
+    revsOf: (userId: string, artefactId: string, clientOpIds: string[]) =>
+      withUser(db, userId, async (tx) => {
+        if (clientOpIds.length === 0) return new Map<string, number>()
+        const rows = await tx
+          .select({ clientOpId: correctionOps.clientOpId, rev: correctionOps.rev })
+          .from(correctionOps)
+          .where(
+            and(
+              eq(correctionOps.userId, userId),
+              eq(correctionOps.artefactId, artefactId),
+              inArray(correctionOps.clientOpId, clientOpIds),
+            ),
+          )
+        return new Map(rows.map((r) => [r.clientOpId, r.rev]))
+      }),
+
     listSince: (userId: string, artefactId: string, afterRev = 0) =>
       withUser(db, userId, (tx) =>
         tx

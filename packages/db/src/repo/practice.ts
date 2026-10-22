@@ -1,6 +1,6 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { type Database, withUser } from '../client.ts'
-import { practiceAttempts, practiceSessions, songs } from '../schema/index.ts'
+import { loopClips, practiceAttempts, practiceSessions, songs } from '../schema/index.ts'
 
 export type PracticeSession = typeof practiceSessions.$inferSelect
 export type PracticeAttempt = typeof practiceAttempts.$inferSelect
@@ -54,14 +54,49 @@ export function practiceRepo(db: Database) {
             ),
           )
         const sessionIdByClientId = new Map(sessions.map((s) => [s.clientSessionId, s.id]))
+        // A clip deleted while the attempt waited offline (or not the user's) leaves the attempt
+        // without a clip instead of failing the batch.
+        const clipIds = [...new Set(attempts.flatMap((a) => (a.loopClipId ? [a.loopClipId] : [])))]
+        const clips =
+          clipIds.length === 0
+            ? []
+            : await tx
+                .select({ id: loopClips.id })
+                .from(loopClips)
+                .where(and(eq(loopClips.userId, userId), inArray(loopClips.id, clipIds)))
+        const ownedClips = new Set(clips.map((c) => c.id))
         const values = attempts.flatMap(({ clientSessionId, ...attempt }) => {
           const sessionId = sessionIdByClientId.get(clientSessionId)
-          return sessionId ? [{ ...attempt, userId, sessionId }] : []
+          if (!sessionId) return []
+          const loopClipId =
+            attempt.loopClipId && ownedClips.has(attempt.loopClipId) ? attempt.loopClipId : null
+          return [{ ...attempt, loopClipId, userId, sessionId }]
         })
         if (values.length === 0) return []
-        await tx.insert(practiceAttempts).values(values).onConflictDoNothing({
-          target: practiceAttempts.clientAttemptId,
-        })
+        const inserted = await tx
+          .insert(practiceAttempts)
+          .values(values)
+          .onConflictDoNothing({ target: practiceAttempts.clientAttemptId })
+          .returning({
+            loopClipId: practiceAttempts.loopClipId,
+            tempoPct: practiceAttempts.tempoPct,
+            outcome: practiceAttempts.outcome,
+          })
+        // The progress metric (12 §5): the fastest clean pass per clip. Replays insert nothing,
+        // so they never move it.
+        const best = new Map<string, number>()
+        for (const a of inserted) {
+          if (a.outcome !== 'clean' || !a.loopClipId) continue
+          best.set(a.loopClipId, Math.max(best.get(a.loopClipId) ?? 0, a.tempoPct))
+        }
+        for (const [id, tempo] of best) {
+          await tx
+            .update(loopClips)
+            .set({
+              bestCleanTempoPct: sql`greatest(coalesce(${loopClips.bestCleanTempoPct}, 0), ${tempo})`,
+            })
+            .where(and(eq(loopClips.userId, userId), eq(loopClips.id, id)))
+        }
         const stored = await tx
           .select({ clientAttemptId: practiceAttempts.clientAttemptId })
           .from(practiceAttempts)
@@ -75,6 +110,50 @@ export function practiceRepo(db: Database) {
             ),
           )
         return stored.map((s) => s.clientAttemptId)
+      }),
+
+    // GET /v1/progress: every clip (optionally of one song) with its attempts in time order.
+    progress: (userId: string, songId?: string) =>
+      withUser(db, userId, async (tx) => {
+        const clips = await tx
+          .select({
+            id: loopClips.id,
+            songId: loopClips.songId,
+            bestCleanTempoPct: loopClips.bestCleanTempoPct,
+          })
+          .from(loopClips)
+          .where(
+            and(
+              eq(loopClips.userId, userId),
+              songId === undefined ? undefined : eq(loopClips.songId, songId),
+            ),
+          )
+          .orderBy(asc(loopClips.createdAt))
+        const attempts =
+          clips.length === 0
+            ? []
+            : await tx
+                .select({
+                  loopClipId: practiceAttempts.loopClipId,
+                  at: practiceAttempts.at,
+                  tempoPct: practiceAttempts.tempoPct,
+                  outcome: practiceAttempts.outcome,
+                })
+                .from(practiceAttempts)
+                .where(
+                  and(
+                    eq(practiceAttempts.userId, userId),
+                    inArray(
+                      practiceAttempts.loopClipId,
+                      clips.map((c) => c.id),
+                    ),
+                  ),
+                )
+                .orderBy(asc(practiceAttempts.at))
+        return clips.map((clip) => ({
+          ...clip,
+          attempts: attempts.filter((a) => a.loopClipId === clip.id),
+        }))
       }),
   }
 }

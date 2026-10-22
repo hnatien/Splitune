@@ -4,6 +4,7 @@ import {
   CreateMultipartUploadCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -230,6 +231,20 @@ export function createStorage(config: StorageConfig) {
         throw new RangeError(`object larger than ${maxBytes} bytes`)
       }
       return body
+    },
+
+    // Whether an object exists (HEAD), e.g. an optional download output before signing it.
+    async exists(key: string): Promise<boolean> {
+      try {
+        await client.send(new HeadObjectCommand({ Bucket: bucket, Key: assertSafeKey(key) }))
+        return true
+      } catch (error) {
+        const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+        if ((error as { name?: string }).name === 'NotFound' || status?.httpStatusCode === 404) {
+          return false
+        }
+        throw error
+      }
     },
 
     async putBytes(key: string, body: Uint8Array | string, contentType: string): Promise<void> {

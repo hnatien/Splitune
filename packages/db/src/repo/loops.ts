@@ -20,6 +20,15 @@ export function loopsRepo(db: Database) {
         return row as LoopClip
       }),
 
+    get: (userId: string, loopId: string) =>
+      withUser(db, userId, async (tx) => {
+        const [row] = await tx
+          .select()
+          .from(loopClips)
+          .where(and(eq(loopClips.userId, userId), eq(loopClips.id, loopId)))
+        return row
+      }),
+
     list: (userId: string, songId: string) =>
       withUser(db, userId, (tx) =>
         tx

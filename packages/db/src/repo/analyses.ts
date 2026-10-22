@@ -58,7 +58,7 @@ export interface JobState {
 // Where an analysis reads its audio from: a completed upload, or a finished URL download.
 export type SongSource =
   | { kind: 'upload'; id: string; rawKey: string }
-  | { kind: 'url'; id: string; rawKey: string }
+  | { kind: 'url'; id: string; rawKey: string; videoKey?: string }
   | { kind: 'url_pending' }
 
 // decode + beats of an earlier analysis that a new one can reuse (and the analysis owning them).
@@ -320,13 +320,20 @@ export function analysesRepo(db: Database) {
             )
             .orderBy(desc(jobs.id))
             .limit(1)
-          // url_import's StageRequest: outputs.source = u/{user}/raw/{import_id}/source.bin
-          const request = download?.payload as { outputs?: { source?: string } } | undefined
+          // url_import's StageRequest: outputs.source = u/{user}/raw/{import_id}/source.bin, and
+          // outputs.video = …/video.mp4 when the video was requested.
+          const request = download?.payload as
+            | { outputs?: { source?: string; video?: string } }
+            | undefined
           const rawKey = request?.outputs?.source
+          const videoKey = request?.outputs?.video
           const id = rawKey?.split('/')[3]
           return {
             song,
-            source: rawKey && id ? { kind: 'url', id, rawKey } : { kind: 'url_pending' as const },
+            source:
+              rawKey && id
+                ? { kind: 'url', id, rawKey, ...(videoKey ? { videoKey } : {}) }
+                : { kind: 'url_pending' as const },
           }
         }
         const [upload] = await tx
