@@ -1,0 +1,13 @@
+{
+  "name": "@splitune/audio-dsp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Signalsmith Stretch practice DSP compiled to dsp.wasm — docs/implementation/11-audio-engine.md",
+  "type": "module",
+  "exports": {
+    "./dsp.wasm": "./dist/dsp.wasm"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  }
+}
