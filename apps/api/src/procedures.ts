@@ -21,6 +21,8 @@ export interface RequestContext {
   deps: ApiDeps
   session: SessionInfo | null
   log: Logger
+  // The client address (last X-Forwarded-For hop behind a trusted proxy), for per-IP limits.
+  ip: string
   // Idempotency-Key header (04 "Conventions"), for procedures that are not idempotent by body.
   idempotencyKey?: string
 }
@@ -44,9 +46,12 @@ export const v1Contract = {
   loops: contract.loops,
   practice: contract.practice,
   system: contract.system,
+  examples: contract.examples,
+  analytics: contract.analytics,
 }
 
-// Every v1 procedure needs a session; handlers get `userId` and resolve resources through it.
+// Procedures that work without a session (example songs, product events) use `pub` directly;
+// every other one needs a session: handlers get `userId` and resolve resources through it.
 export const pub = implement(v1Contract).$context<RequestContext>()
 
 export const authed = pub.use(({ context, next }) => {
@@ -65,6 +70,10 @@ export const RATE_LIMITS = {
   analyses: { limit: 30, windowS: 3600 },
   // per user, POST /v1/artefacts/{id}/corrections (04 "Conventions": 600/min)
   corrections: { limit: 600, windowS: 60 },
+  // per IP, GET /v1/examples/{id}/url (signs example documents and stems for visitors)
+  examples: { limit: 300, windowS: 60 },
+  // per IP, POST /v1/events
+  events: { limit: 120, windowS: 60 },
 } as const
 
 export function userRateLimit(policy: keyof typeof RATE_LIMITS) {
@@ -76,6 +85,17 @@ export function userRateLimit(policy: keyof typeof RATE_LIMITS) {
       limit,
       windowS,
     )
+    if (!result.allowed) {
+      throw apiError('rate_limited', { details: { retry_after_s: result.retryAfterS } })
+    }
+    return next()
+  })
+}
+
+export function ipRateLimit(policy: keyof typeof RATE_LIMITS) {
+  const { limit, windowS } = RATE_LIMITS[policy]
+  return os.$context<RequestContext>().middleware(async ({ context, next }) => {
+    const result = await hitRateLimit(context.deps.db, `${policy}:ip:${context.ip}`, limit, windowS)
     if (!result.allowed) {
       throw apiError('rate_limited', { details: { retry_after_s: result.retryAfterS } })
     }

@@ -176,6 +176,7 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
       deps,
       session,
       log: c.get('log'),
+      ip: clientIp(c),
       ...(idempotencyKey ? { idempotencyKey: idempotencyKey.slice(0, 200) } : {}),
     }
     const { matched, response } = await handler.handle(c.req.raw, { context })

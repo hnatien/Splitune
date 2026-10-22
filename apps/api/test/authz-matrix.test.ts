@@ -7,6 +7,8 @@ import { type Caller, caller, createTestApi, sha256Hex, signIn, userIdOf } from 
 // contract: every procedure must appear below, or this test fails. For each one, anonymous gets
 // 401; for each procedure that addresses user A's resource (path id or body reference), user B
 // gets 404 — the same answer as for an id that does not exist — and A's data is unchanged.
+// Public procedures (example songs for visitors, product events) are listed as such and answer
+// anonymous callers; their own tests cover what they expose.
 
 interface Resources {
   songId: string
@@ -23,6 +25,10 @@ interface Case {
   target?: (r: Resources) => string
   // Query string of a GET with required parameters.
   query?: string
+  // Answers without a session.
+  public?: true
+  // The path id when it names something that is not a user's resource (an example song).
+  id?: string
 }
 
 const CASES: Record<string, Case> = {
@@ -82,6 +88,17 @@ const CASES: Record<string, Case> = {
   'practice.progress': {},
   'system.workerStatus': {},
   'system.stats': {},
+  'examples.list': { public: true },
+  'examples.url': { public: true, id: 'no-such-example', query: `artefact_id=${randomUUID()}` },
+  // Claims into the caller's own library: tests/examples.test.ts covers it.
+  'examples.claim': {
+    id: 'no-such-example',
+    body: () => ({ loops: [], sessions: [], attempts: [], corrections: [] }),
+  },
+  'analytics.track': {
+    public: true,
+    body: () => ({ events: [{ name: 'example_song_opened', props: { example_id: 'a' } }] }),
+  },
 }
 
 interface Route {
@@ -106,7 +123,9 @@ const anonymous = caller(api)
 let resources: Resources
 
 const urlFor = (route: Route, id: string) => {
-  const path = route.path.replace('{id}', id).replace('{loop_id}', resources.loopId)
+  const path = route.path
+    .replace('{id}', CASES[route.key]?.id ?? id)
+    .replace('{loop_id}', resources.loopId)
   const query = CASES[route.key]?.query
   return query ? `${path}?${query}` : path
 }
@@ -172,15 +191,28 @@ describe('authorization matrix', () => {
   it('covers every routed procedure', () => {
     expect(ROUTES.map((r) => r.key).sort()).toEqual(Object.keys(CASES).sort())
     for (const route of ROUTES) {
-      if (route.path.includes('{id}')) expect(CASES[route.key]?.target, route.key).toBeDefined()
+      const c = CASES[route.key]
+      if (route.path.includes('{id}')) expect(c?.target ?? c?.id, route.key).toBeDefined()
     }
   })
 
-  it.each(ROUTES)('anonymous gets 401 on $method $path', async (route) => {
-    const res = await call(anonymous, route, resources.songId)
-    expect(res.status).toBe(401)
-    expect(((await res.json()) as { code: string }).code).toBe('unauthenticated')
-  })
+  it.each(ROUTES.filter((r) => !CASES[r.key]?.public))(
+    'anonymous gets 401 on $method $path',
+    async (route) => {
+      const res = await call(anonymous, route, resources.songId)
+      expect(res.status).toBe(401)
+      expect(((await res.json()) as { code: string }).code).toBe('unauthenticated')
+    },
+  )
+
+  it.each(ROUTES.filter((r) => CASES[r.key]?.public))(
+    'anonymous is answered on public $method $path',
+    async (route) => {
+      const res = await call(anonymous, route, resources.songId)
+      expect(res.status).not.toBe(401)
+      expect(res.status).toBeLessThan(500)
+    },
+  )
 
   it.each(ROUTES.filter((r) => CASES[r.key]?.target))(
     'user B gets 404 for user A’s resource on $method $path',

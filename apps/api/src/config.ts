@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { ExamplesManifest } from '@splitune/contracts/examples-manifest'
 import { z } from 'zod'
+import bundledExamples from '../examples.json' with { type: 'json' }
 
 // Runtime configuration of the API, read once from the environment (names from .env.example).
 export interface ApiConfig {
@@ -24,6 +27,9 @@ export interface ApiConfig {
   // analyses.pipeline_version (05 "manifest"): part of the analysis idempotency key, so a new
   // pipeline release analyses an already analysed song again.
   pipelineVersion: string
+  // Example songs (13 §1): the committed examples.json written by `pnpm examples:build`, or the
+  // file EXAMPLES_MANIFEST names (end-to-end tests build their own).
+  examples: z.infer<typeof ExamplesManifest>
 }
 
 const origin = z.url({ protocol: /^https?$/ }).transform((value) => new URL(value).origin)
@@ -52,6 +58,7 @@ const Env = z.object({
   // Railway sets RAILWAY_GIT_COMMIT_SHA on deploys from GitHub.
   PIPELINE_VERSION: optional,
   RAILWAY_GIT_COMMIT_SHA: optional,
+  EXAMPLES_MANIFEST: optional,
 })
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
@@ -87,5 +94,17 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     trustProxy: e.TRUST_PROXY,
     logLevel: e.LOG_LEVEL,
     pipelineVersion: e.PIPELINE_VERSION ?? e.RAILWAY_GIT_COMMIT_SHA?.slice(0, 12) ?? 'dev',
+    examples: loadExamples(e.EXAMPLES_MANIFEST),
   }
+}
+
+function loadExamples(path: string | undefined): z.infer<typeof ExamplesManifest> {
+  const raw: unknown = path === undefined ? bundledExamples : JSON.parse(readFileSync(path, 'utf8'))
+  const parsed = ExamplesManifest.safeParse(raw)
+  if (!parsed.success) {
+    throw new Error(
+      `invalid examples manifest: ${parsed.error.issues.map((i) => i.path.join('.')).join(', ')}`,
+    )
+  }
+  return parsed.data
 }

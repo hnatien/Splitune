@@ -22,6 +22,7 @@
     "db:roles": "pnpm --filter @splitune/db roles",
     "db:studio": "pnpm --filter @splitune/db studio",
     "seed": "pnpm --filter @splitune/db seed",
+    "examples:build": "node --env-file-if-exists=.env apps/api/scripts/examples/build.ts",
     "secrets:scan": "gitleaks git --redact --verbose"
   },
   "devDependencies": {
