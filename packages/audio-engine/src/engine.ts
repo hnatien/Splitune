@@ -295,7 +295,13 @@ export class Engine {
 
   async play(options: { countInBars?: number } = {}): Promise<void> {
     if (this.context instanceof AudioContext && this.context.state !== 'running') {
-      await this.context.resume()
+      try {
+        await this.context.resume()
+      } catch (error) {
+        // Disposed while resuming (the page left right after the tap): nothing to play any more.
+        if (this.context.state === 'closed') return
+        throw error
+      }
     }
     this.send({ type: 'play', countInBars: options.countInBars ?? 0 })
     void this.#wakeLock?.acquire()
