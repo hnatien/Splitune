@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 // Doc 26 §12.1: pressed = --accent fill + indigo text + an indigo edge (callers add a check or
 // filled icon), so the state never rests on colour alone.
 const toggleVariants = cva(
-  "group/toggle inline-flex items-center justify-center gap-2 rounded-lg border font-medium whitespace-nowrap transition-colors hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary disabled:pointer-events-none disabled:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "group/toggle inline-flex items-center justify-center gap-2 rounded-lg border font-medium whitespace-nowrap transition-colors hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary forced-colors:data-pressed:bg-card disabled:pointer-events-none disabled:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {

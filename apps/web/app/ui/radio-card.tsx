@@ -28,7 +28,7 @@ function RadioCard({ title, description, meta, className, ...props }: RadioCardP
     <label
       data-slot="radio-card"
       className={cn(
-        'flex cursor-pointer gap-3 rounded-xl border border-input bg-card p-4 has-data-checked:border-2 has-data-checked:border-primary has-data-checked:bg-accent has-data-disabled:cursor-not-allowed has-data-disabled:bg-muted',
+        'flex cursor-pointer gap-3 rounded-xl border border-input bg-card p-4 has-data-checked:border-2 has-data-checked:border-primary has-data-checked:bg-accent forced-colors:has-data-checked:bg-card has-data-disabled:cursor-not-allowed has-data-disabled:bg-muted',
         className,
       )}
     >

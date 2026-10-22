@@ -301,7 +301,9 @@
 
 /*
  * Forced colours (Windows High Contrast): roles yield to system colours. The doubled selectors
- * outrank the (0,2,0) fallback and contrast blocks above.
+ * outrank the (0,2,0) fallback and contrast blocks above. Components that tint a selected or
+ * pressed surface with bg-accent behind ordinary text drop the tint there (forced-colors:…:bg-card):
+ * CanvasText on Highlight is unreadable; the Highlight border still marks the state.
  */
 @media (forced-colors: active) {
   :root:root,

@@ -25,11 +25,14 @@ function Proof({
         <h2 className="text-xl">{title}</h2>
         <p className="text-base text-muted-foreground">{body}</p>
       </div>
+      {/* Pictures of the app: Desk reading sizes on every device (a phone's Floor sizes overflowed),
+          cropped rather than widening the page at 320 px; the text beside them says what they show. */}
       <div
         inert
         aria-hidden
         data-density="practice"
-        className="rounded-xl border border-border bg-card p-5"
+        data-distance="desk"
+        className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-5"
       >
         {children}
       </div>

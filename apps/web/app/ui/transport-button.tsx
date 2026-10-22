@@ -20,7 +20,7 @@ const sizes = {
 const tones = {
   primary: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
   neutral:
-    'border-border bg-card text-foreground hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary data-[active]:border-primary data-[active]:bg-accent data-[active]:text-primary',
+    'border-border bg-card text-foreground hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary data-[active]:border-primary data-[active]:bg-accent data-[active]:text-primary forced-colors:data-pressed:bg-card forced-colors:data-[active]:bg-card',
 }
 
 type TransportButtonProps = {

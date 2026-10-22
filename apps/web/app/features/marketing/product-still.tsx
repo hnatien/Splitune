@@ -91,15 +91,20 @@ export function LegendStill() {
   )
 }
 
-/** A still of the practice screen; `caption` is its text alternative. */
+/**
+ * A still of the practice screen; `caption` is its text alternative. A picture, not something read
+ * at a distance: Desk reading sizes on every device (a phone's Floor sizes made it wider than the
+ * screen), cropped at 320 px rather than widening the page.
+ */
 export function ProductStill({ caption }: { caption: string }) {
   return (
-    <figure className="flex flex-col gap-3">
+    <figure className="flex min-w-0 flex-col gap-3">
       <div
         inert
         aria-hidden
         data-density="practice"
-        className="flex flex-col gap-5 rounded-xl border border-border bg-card p-5 shadow-2"
+        data-distance="desk"
+        className="flex flex-col gap-5 overflow-hidden rounded-xl border border-border bg-card p-5 shadow-2"
       >
         <ChordStill />
         <LoopStill />

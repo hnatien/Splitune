@@ -38,7 +38,7 @@ function DropZone({
       data-slot="drop-zone"
       data-dragging={dragging || undefined}
       className={cn(
-        'flex min-h-56 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-input bg-card px-6 py-10 text-center transition-colors data-dragging:border-primary data-dragging:bg-accent',
+        'flex min-h-56 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-input bg-card px-6 py-10 text-center transition-colors data-dragging:border-primary data-dragging:bg-accent forced-colors:data-dragging:bg-card',
         className,
       )}
     >

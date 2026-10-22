@@ -28,7 +28,8 @@ export function SettingsLayout({ children }: { children: React.ReactNode }) {
                   className={cn(buttonVariants({ variant: 'ghost' }), 'w-full justify-start')}
                   activeProps={{
                     'aria-current': 'page',
-                    className: 'bg-accent text-accent-foreground',
+                    // The ghost variant's text colour stays; forced colours pair Highlight with its text.
+                    className: 'bg-accent forced-colors:text-accent-foreground',
                   }}
                 >
                   {section.label()}
