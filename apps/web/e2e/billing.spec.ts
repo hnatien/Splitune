@@ -193,11 +193,7 @@ test('billing: Plus lasts to the period end, then the account is back on Free', 
   await checkBillingPage()
 })
 
-// WebKit logs a same-origin fetch that a navigation aborts as "… due to access control checks".
-// This journey leaves the practice screen while its analysis panel still loads worker status and
-// stage timings; real CORS failures stay journey.spec.ts' check.
-const ABORTED_BY_NAVIGATION = /\/v1\/system\/(stats|worker-status) due to access control checks/
-
+// Fetches a navigation cancels are already left out by collectErrors (helpers.ts).
 test('billing: no console errors', async () => {
-  expect(errors.filter((error) => !ABORTED_BY_NAVIGATION.test(error))).toEqual([])
+  expect(errors).toEqual([])
 })

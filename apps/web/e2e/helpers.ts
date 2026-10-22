@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, type Page, test } from '@playwright/test'
+import { APP_URL } from '../playwright.config.ts'
 
 const MAILPIT = 'http://localhost:8025'
 
@@ -69,13 +70,26 @@ export async function signIn(page: Page, email: string) {
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible()
 }
 
+// WebKit logs a fetch to the app's own API that a navigation cancels as "/localhost:3000/v1/…
+// due to access control checks." Same-origin requests can't fail CORS, so only those are dropped;
+// cross-origin ones (the bucket's presigned uploads) still count.
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const CANCELLED_SAME_ORIGIN = new RegExp(
+  `/${escapeRegExp(new URL(APP_URL).host)}/v1/\\S* due to access control checks`,
+)
+
 /** Console errors and uncaught exceptions on the page (CORS failures show up here). */
 export function collectErrors(page: Page): string[] {
   const errors: string[] = []
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text())
+    if (message.type() === 'error' && !CANCELLED_SAME_ORIGIN.test(message.text())) {
+      errors.push(message.text())
+    }
   })
-  page.on('pageerror', (error) => errors.push(error.message))
+  // An unhandled rejection of such a fetch arrives as a page error with the same text.
+  page.on('pageerror', (error) => {
+    if (!CANCELLED_SAME_ORIGIN.test(error.message)) errors.push(error.message)
+  })
   return errors
 }
 
