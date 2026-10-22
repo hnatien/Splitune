@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [dev]
+  # Nightly: the full E2E matrix (every spec × desktop, phone and tablet projects, 18 §1).
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,7 +20,8 @@ jobs:
   checks:
     name: Lint, typecheck, test
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # The nightly full matrix runs about twice as long as a pull request.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,6 +78,11 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
+      # pnpm audit (fails on critical) and pip-audit over the ML workspace and islands (fails on
+      # anything not accepted in scripts/audit/findings.mjs), 17 §7.
+      - name: Dependency audit
+        run: pnpm audit:deps
+
       # Regenerates JSON Schema and Pydantic models into a temp dir; fails if the committed ones differ.
       - name: Contracts drift
         run: pnpm contracts:check
@@ -115,14 +125,6 @@ jobs:
       - name: Visual regression (Storybook screens, Docker)
         run: pnpm --filter @splitune/web e2e:visual
 
-      - name: Upload visual diffs
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: visual-diffs
-          path: apps/web/test-results/
-          retention-days: 7
-
       # The combined server (web + API under /v1) Railway starts with `pnpm --filter @splitune/web start`.
       - name: Build the app server
         run: pnpm --filter @splitune/web build
@@ -130,6 +132,10 @@ jobs:
       # Practice route JS (10 §9, 12 §10): ≤ 302 KB gzip, alphaTab and WASM excluded.
       - name: Practice route JS budget
         run: pnpm --filter @splitune/web budget --enforce
+
+      # Nothing in the built CSS above the Safari 16.4 / Chrome 111 / Firefox 128 floor (24 §2).
+      - name: CSS floor
+        run: pnpm --filter @splitune/web css-floor
 
       # The practice suite plays audio in a real AudioContext: Firefox needs an output device,
       # which the runner hasn't (Chromium and WebKit fall back to a fake one themselves).
@@ -140,11 +146,26 @@ jobs:
           pactl load-module module-null-sink sink_name=null
           pactl set-default-sink null
 
-      # Sign-in via Mailpit, upload, analysis (ML_MODE=mock workers), URL import, resume after
-      # reload, delete, the practice screen (loop, count-in, speed, passes, mix, edits, layers,
-      # cursor timing), axe and console/CORS checks on Chromium, Firefox, WebKit and phones.
-      - name: E2E (Playwright)
+      # Pull requests and pushes: the smoke subset (import → analysis → practice at 70 % with
+      # count-in, edits, onboarding, delete song and account) on Chromium, Firefox and WebKit.
+      - name: E2E smoke (Playwright)
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        run: pnpm --filter @splitune/web e2e:smoke
+
+      # Nightly: every spec (adds billing, PWA, forced browser fallbacks, accessibility across
+      # appearances) on Chromium, Firefox, WebKit, Pixel 7, iPhone 15, iPad Pro 11 and Galaxy Tab.
+      - name: E2E full matrix (Playwright)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: pnpm --filter @splitune/web e2e
 
       - name: Lighthouse CI (Home, mobile)
         run: pnpm --filter @splitune/web lighthouse
+
+      # Visual diffs and E2E traces, whichever step failed.
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results
+          path: apps/web/test-results/
+          retention-days: 7

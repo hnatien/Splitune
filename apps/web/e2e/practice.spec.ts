@@ -2,15 +2,15 @@ import { expect, type Page, test } from '@playwright/test'
 import { collectErrors, expectAccessible, signIn, wav } from './helpers'
 
 // Step 12 acceptance (prompt 12): the practice screen with the mock-mode artefacts (the contracts'
-// 8-bar Am–F–C–G fixture at 100 BPM) and the real audio engine. Desktop projects run the practice
-// journey; phones check the glance view. Timings are attached to the test results.
+// 8-bar Am–F–C–G fixture at 100 BPM) and the real audio engine. Desktop and tablet projects run
+// the practice journey; phones check the glance view. Timings are attached to the test results.
 
 test.describe.configure({ mode: 'serial' })
 
 let page: Page
 let errors: string[]
 let songUrl = ''
-let mobile = false
+let mobile = false // a phone: the glance view instead of the tab (practice/layout.ts)
 
 const transport = () => page.getByRole('toolbar', { name: 'Playback' })
 const loopBadge = () => page.getByRole('button', { name: /^(Loop ·|No loop)/ })
@@ -22,7 +22,7 @@ const noteName = async (locator: import('@playwright/test').Locator) =>
 
 test.beforeAll(async ({ browser }, info) => {
   const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch, baseURL } = info.project.use
-  mobile = Boolean(isMobile)
+  mobile = Boolean(isMobile) && Math.min(viewport?.width ?? 0, viewport?.height ?? 0) <= 640
   const context = await browser.newContext({
     reducedMotion: 'reduce',
     // These journeys hold and rewrite requests with page.route, which never sees what a service
@@ -254,6 +254,11 @@ test('the practice screen is accessible', async () => {
 test('on the desktop editor, a chord and a note edit persist', async () => {
   test.skip(mobile, 'the editor is desktop-first')
   await page.goto(`${songUrl.replace(/\/practice$/, '/edit')}`)
+  if (test.info().project.use.hasTouch) {
+    // Touch devices edit in practice's editor sheet (27 §3.8), covered above.
+    await expect(page).toHaveURL(new RegExp(`${songUrl}$`))
+    return
+  }
   await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
     timeout: 60_000,
   })

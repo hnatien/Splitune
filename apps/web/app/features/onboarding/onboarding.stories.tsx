@@ -119,7 +119,12 @@ export const ExamplesFailed: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText("We couldn't load the example songs.")).toBeVisible()
+    // The failed request settles after the query's retries; the 1 s default flakes in WebKit.
+    await expect(
+      await canvas.findByText("We couldn't load the example songs.", undefined, {
+        timeout: 10_000,
+      }),
+    ).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }

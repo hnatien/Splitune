@@ -43,7 +43,12 @@ async function waitFor(url: string, child: ChildProcess, timeoutMs = 30_000) {
 
 export default async function setup() {
   loadEnv()
-  const { DATABASE_URL: adminUrl, DB_ML_WORKER_PASSWORD, DB_NODE_WORKER_PASSWORD } = process.env
+  const {
+    DATABASE_URL: adminUrl,
+    DB_ML_WORKER_PASSWORD,
+    DB_NODE_WORKER_PASSWORD,
+    DB_MAINTENANCE_PASSWORD,
+  } = process.env
   if (!adminUrl) throw new Error('DATABASE_URL is not set')
   const server = join(WEB, '.output/server/index.mjs')
   if (!existsSync(server)) throw new Error('Build the app first: pnpm --filter @splitune/web build')
@@ -90,6 +95,11 @@ export default async function setup() {
       env: {
         ...env,
         NODE_WORKER_DATABASE_URL: roleUrl('node_worker', DB_NODE_WORKER_PASSWORD),
+        // Privacy jobs (account.spec.ts) on this database; the local .env's maintenance login
+        // would point the scheduler and deletions at the dev database. No dumps, no digest.
+        NODE_WORKER_MAINTENANCE_DATABASE_URL: roleUrl('maintenance', DB_MAINTENANCE_PASSWORD),
+        PG_DUMP_DIR: '',
+        DIGEST_EMAIL_TO: '',
         NODE_WORKER_ID: 'node-e2e',
         NODE_WORKER_POLL_INTERVAL_S: '1',
       },
