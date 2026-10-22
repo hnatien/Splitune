@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { alphaTab } from '@coderline/alphatab-vite'
 import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -18,7 +19,11 @@ const paraglide = () =>
 
 export const alias = { '@': fileURLToPath(new URL('./app', import.meta.url)) }
 
+// alphaTab's render worker (12 §3). Its fonts are not copied: Bravura is imported as an asset by
+// @splitune/notation, and the SoundFont is unused (the synth is off in external-media mode).
+const notation = () => alphaTab({ assetOutputDir: false, audioWorklets: false })
+
 // After the plugins that must see JSX first (TanStack Router's code splitter).
-export const sharedPlugins = () => [react(), tailwindcss(), paraglide()]
+export const sharedPlugins = () => [react(), tailwindcss(), paraglide(), notation()]
 
 export default defineConfig({ plugins: sharedPlugins(), resolve: { alias } })

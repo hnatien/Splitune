@@ -2,13 +2,31 @@
   "name": "@splitune/notation",
   "version": "0.0.0",
   "private": true,
-  "description": "alphaTab wrapper — docs/implementation/12-practice-screen-and-notation.md",
+  "description": "alphaTab wrapper \u2014 docs/implementation/12-practice-screen-and-notation.md",
   "type": "module",
+  "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./view": "./src/view.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@coderline/alphatab": "1.8.4",
+    "@splitune/ui-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@splitune/contracts": "workspace:*",
+    "@splitune/music-core": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "vite": "8.3.4"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0"
   }
 }
