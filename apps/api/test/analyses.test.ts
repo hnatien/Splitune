@@ -11,6 +11,7 @@ import {
   sha256Hex,
   signIn,
   sseMessages,
+  subscribePlus,
   userIdOf,
 } from './helpers.ts'
 
@@ -28,6 +29,8 @@ beforeAll(async () => {
   aliceCookie = await signIn(api)
   alice = caller(api, aliceCookie)
   aliceId = await userIdOf(api, aliceCookie)
+  // Plenty of full analyses for the graphs below; allowances are tests/billing.test.ts's.
+  await subscribePlus(api, aliceId)
 })
 afterAll(() => api.close())
 
@@ -191,8 +194,9 @@ describe('POST /v1/analyses', () => {
         soft: ['decode', 'beats', 'tag', 'separate', 'stem_post', 'chords', 'notes.guitar'],
       },
     })
+    // Alice is on Plus: priority processing (a Free user's jobs run at 100).
     expect(new Set(rows.map((r) => `${r.runner}:${r.priority}`))).toEqual(
-      new Set(['python:100', 'node:100']),
+      new Set(['python:50', 'node:50']),
     )
     for (const row of rows) {
       expect(StageRequest.parse(row.payload)).toMatchObject({
@@ -248,7 +252,7 @@ describe('POST /v1/analyses', () => {
       id,
       song_id: songId,
       version: 1,
-      type: 'welcome', // a Free user's first full analysis
+      type: 'full', // Alice is on Plus (a Free user's first full analysis is 'welcome')
       requested_instrument: 'guitar',
       status: 'queued',
       progress: 0,

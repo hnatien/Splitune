@@ -3,6 +3,7 @@ import { SmartCoercionPlugin } from '@orpc/json-schema'
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { ORPCError } from '@orpc/server'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
+import { DevClockInput } from '@splitune/contracts'
 import { createRepositories, type Database, hitRateLimit, ping } from '@splitune/db'
 import type { Storage } from '@splitune/storage'
 import { type Context, Hono } from 'hono'
@@ -10,6 +11,10 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { type RequestIdVariables, requestId } from 'hono/request-id'
 import { AUTH_BASE_PATH, createAuth, resolveSession, type SessionInfo } from './auth.ts'
+import { createMockProvider, SIGNATURE_HEADER } from './billing/mock.ts'
+import { WebhookRejected } from './billing/provider.ts'
+import { createBilling } from './billing/service.ts'
+import { createClock } from './clock.ts'
 import type { ApiConfig } from './config.ts'
 import { apiError, envelopeResponse, toEnvelope } from './errors.ts'
 import { EventHub } from './events.ts'
@@ -36,16 +41,46 @@ export const CSRF_HEADER = 'x-splitune-csrf'
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // JSON bodies only: audio goes straight to object storage through presigned URLs.
 const MAX_BODY_BYTES = 1024 * 1024
+export const WEBHOOK_PATH = '/internal/billing/webhook'
+export const DEV_CLOCK_PATH = '/internal/dev/clock'
+// How often renewals, expiries and reminders are settled while the app is awake (requests that
+// read entitlements settle their own user first).
+const SETTLE_INTERVAL_MS = 10 * 60_000
 
 // The API as a Hono app: runs standalone (src/server.ts) or is mounted by the web server under
 // the same origin (25-personal-mode.md §1). Routes: /v1/* (oRPC), /v1/auth/* (Better Auth),
-// /v1/openapi.json, /internal/health and /internal/ready.
+// /v1/openapi.json, /internal/health, /internal/ready, the billing webhook and the dev clock.
 export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
   const log = createLogger(config.logLevel)
   const hashUser = userHasher(config.authSecret)
   const events = new EventHub(db.$client.options.connectionString ?? '', log)
-  const deps: ApiDeps = { db, repos: createRepositories(db), storage, config, events }
-  const auth = createAuth(db, config, mailer ?? createSmtpMailer(config.smtp))
+  const mail = mailer ?? createSmtpMailer(config.smtp)
+  const repos = createRepositories(db)
+  const clock = createClock()
+  const provider = createMockProvider({
+    secret: config.billing.webhookSecret,
+    clock,
+    priceMinor: config.billing.priceMinor,
+    currency: config.billing.currency,
+  })
+  // The mock provider's events take the real webhook path, through this app.
+  const billing = createBilling({
+    db,
+    repos,
+    config,
+    mailer: mail,
+    clock,
+    provider,
+    log,
+    post: async (body, signature) =>
+      app.request(WEBHOOK_PATH, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', [SIGNATURE_HEADER]: signature },
+        body,
+      }),
+  })
+  const deps: ApiDeps = { db, repos, storage, config, events, billing }
+  const auth = createAuth(db, config, mail)
 
   const handler = new OpenAPIHandler(router, {
     plugins: [new SmartCoercionPlugin({ schemaConverters: [new ZodToJsonSchemaConverter()] })],
@@ -126,6 +161,58 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
       return c.json({ status: 'unavailable' }, 503)
     }
   })
+
+  app.use(
+    '/internal/*',
+    bodyLimit({
+      maxSize: MAX_BODY_BYTES,
+      onError: () => envelopeResponse('file_too_large', { message: 'The request is too large.' }),
+    }),
+  )
+
+  // Provider events (14 §3): verified signature, then applied once per event id. Entitlements
+  // change only here, never from client redirects.
+  app.post(WEBHOOK_PATH, async (c) => {
+    let event: Awaited<ReturnType<typeof provider.verifyWebhook>>
+    try {
+      event = await provider.verifyWebhook(c.req.raw)
+    } catch (error) {
+      if (!(error instanceof WebhookRejected)) throw error
+      return error.reason === 'signature'
+        ? envelopeResponse('unauthenticated', { message: 'Invalid signature.' })
+        : envelopeResponse('invalid_input')
+    }
+    if (!(await repos.users.get(event.user_id))) {
+      return envelopeResponse('invalid_input', { details: { reason: 'unknown_user' } })
+    }
+    const applied = await billing.handle(event)
+    return c.json({ received: true, applied })
+  })
+
+  // Dev clock (25 §2): only with ENABLE_DEV_CLOCK, for a signed-in caller, like a mutation.
+  app.post(DEV_CLOCK_PATH, async (c) => {
+    if (!config.devClock) return envelopeResponse('not_found')
+    const session = await resolveSession(auth, c.req.raw.headers)
+    if (!session) return envelopeResponse('unauthenticated')
+    if (!c.req.header(CSRF_HEADER)) {
+      return envelopeResponse('forbidden', { details: { reason: 'csrf_header_required' } })
+    }
+    const parsed = DevClockInput.safeParse(await c.req.json().catch(() => undefined))
+    if (!parsed.success) return envelopeResponse('invalid_input')
+    const now = clock.advance(parsed.data.advance_days)
+    c.get('log').info({ advance_days: parsed.data.advance_days }, 'dev clock advanced')
+    await billing.settle()
+    return c.json({ now: now.toISOString() })
+  })
+
+  if (config.env !== 'test') {
+    const settle = setInterval(() => {
+      billing.settle().catch((error: Error) => {
+        log.error({ err_name: error.name, err_message: error.message }, 'billing settle failed')
+      })
+    }, SETTLE_INTERVAL_MS)
+    settle.unref()
+  }
 
   app.use(
     '/v1/*',

@@ -15,7 +15,7 @@ import {
 } from '@splitune/db'
 import { analysisPrefix, GET_TTL_S, uploadPrefix } from '@splitune/storage'
 import { z } from 'zod'
-import { admitAnalysis } from '../entitlements.ts'
+import { admitAnalysis, reserving } from '../admission.ts'
 import { apiError } from '../errors.ts'
 import { analysisKey, CONFIG_PROFILE, planAnalysis } from '../pipeline.ts'
 import { authed, userRateLimit } from '../procedures.ts'
@@ -218,30 +218,33 @@ export const songs = {
       if (!importable(input.url)) throw apiError('url_unsupported')
       const admission = await admitAnalysis(deps, userId, input.type)
       const importId = randomUUID()
-      const created = await deps.repos.analyses.createWithSong(
-        userId,
-        {
-          title: 'Untitled',
-          sourceKind: 'url',
-          sourceUrl: input.url,
-          instrument: input.instrument,
-        },
-        {
-          pipelineVersion: deps.config.pipelineVersion,
-          configProfile: CONFIG_PROFILE,
-          requestedInstrument: input.instrument,
-          analysisType: admission.kind,
-          // Every import makes a new song, so the import itself is the source.
-          idempotencyKey: analysisKey([userId, `url:${importId}`, input.instrument, input.type]),
-        },
-        (analysis) =>
-          planAnalysis({
-            userId,
-            analysis,
-            type: input.type,
-            source: { download: { importId, video: input.download_video ?? true } },
-            priority: admission.priority,
-          }),
+      const created = await reserving(admission, () =>
+        deps.repos.analyses.createWithSong(
+          userId,
+          {
+            title: 'Untitled',
+            sourceKind: 'url',
+            sourceUrl: input.url,
+            instrument: input.instrument,
+          },
+          {
+            pipelineVersion: deps.config.pipelineVersion,
+            configProfile: CONFIG_PROFILE,
+            requestedInstrument: input.instrument,
+            analysisType: admission.kind,
+            // Every import makes a new song, so the import itself is the source.
+            idempotencyKey: analysisKey([userId, `url:${importId}`, input.instrument, input.type]),
+          },
+          (analysis) =>
+            planAnalysis({
+              userId,
+              analysis,
+              type: input.type,
+              source: { download: { importId, video: input.download_video ?? true } },
+              priority: admission.priority,
+            }),
+          admission.charge,
+        ),
       )
       return {
         song_id: created.song.id,

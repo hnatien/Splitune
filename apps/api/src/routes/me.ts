@@ -1,7 +1,7 @@
 import type { Me as MeSchema, Subscription as SubscriptionSchema } from '@splitune/contracts'
 import type { UserProfilePatch } from '@splitune/db'
 import type { z } from 'zod'
-import { ALLOWANCES, entitlementsFor, planOf, usagePeriod } from '../entitlements.ts'
+import { loadEntitlements } from '../entitlements.ts'
 import { apiError } from '../errors.ts'
 import { type ApiDeps, authed } from '../procedures.ts'
 
@@ -10,23 +10,17 @@ type PaidPlan = z.infer<typeof SubscriptionSchema>['plan']
 
 const iso = (date: Date | null | undefined) => (date ? date.toISOString() : null)
 
-async function readMe(deps: ApiDeps, userId: string, now = new Date()): Promise<Me> {
-  const profile = await deps.repos.users.profile(userId)
-  // The session outlived its user (account deleted): treat as signed out.
-  if (!profile) throw apiError('unauthenticated')
-  const { user, subscription, flags } = profile
-  const plan = planOf(subscription, now)
-  const period = usagePeriod(plan, subscription, now)
-  const allowance = plan === 'free' ? ALLOWANCES.free : ALLOWANCES.paid
-  const [current, lifetime] = await Promise.all([
-    deps.repos.usage.totals(
-      userId,
-      ['full_analysis', 'lite_analysis', 'extra_instrument'],
-      period.start,
-    ),
-    deps.repos.usage.totals(userId, ['welcome_analysis']),
+async function readMe(deps: ApiDeps, userId: string): Promise<Me> {
+  // Renewals or expiry due on the billing clock land before the plan is read.
+  await deps.billing.settle({ userId })
+  const [profile, loaded] = await Promise.all([
+    deps.repos.users.profile(userId),
+    loadEntitlements(deps, userId, deps.billing.clock.now()),
   ])
-  const resetsAt = iso(period.resetsAt)
+  // The session outlived its user (account deleted): treat as signed out.
+  if (!profile || !loaded) throw apiError('unauthenticated')
+  const { user, subscription, flags } = profile
+  const { ent } = loaded
   return {
     id: user.id,
     email: user.email,
@@ -37,7 +31,7 @@ async function readMe(deps: ApiDeps, userId: string, now = new Date()): Promise<
     handedness: user.handedness,
     training_opt_in: user.trainingOptIn,
     marketing_opt_in: user.marketingOptIn,
-    plan,
+    plan: ent.plan,
     subscription:
       subscription && subscription.plan !== 'free'
         ? {
@@ -47,17 +41,8 @@ async function readMe(deps: ApiDeps, userId: string, now = new Date()): Promise<
             cancel_at_period_end: subscription.cancelAtPeriodEnd,
           }
         : null,
-    usage: {
-      welcome_available: (lifetime.welcome_analysis ?? 0) < allowance.welcome,
-      // An extra instrument on a song counts as one full analysis (14 §2).
-      full: {
-        used: (current.full_analysis ?? 0) + (current.extra_instrument ?? 0),
-        cap: allowance.full,
-        resets_at: resetsAt,
-      },
-      lite: { used: current.lite_analysis ?? 0, cap: allowance.lite, resets_at: resetsAt },
-    },
-    entitlements: entitlementsFor(plan),
+    usage: ent.usage,
+    entitlements: ent.keys,
     flags: Object.fromEntries(flags.map((flag) => [flag.key, flag.enabled])),
   }
 }
