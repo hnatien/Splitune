@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Splitune audio engine demo</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { margin: 0 auto; max-width: 44rem; padding: 1rem; line-height: 1.4; }
+      fieldset { margin: 0 0 1rem; }
+      label { display: inline-flex; gap: 0.35rem; align-items: center; margin: 0.25rem 0.75rem 0.25rem 0; }
+      button { min-height: 2.75rem; min-width: 2.75rem; margin: 0.25rem 0.25rem 0.25rem 0; }
+      input[type='range'] { width: 100%; }
+      output, #position { font-variant-numeric: tabular-nums; }
+      #position { font-size: 1.5rem; }
+      pre { white-space: pre-wrap; font-size: 0.8rem; }
+    </style>
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <h1>Audio engine demo</h1>
+    <p>Manual device checks for docs/implementation/11-audio-engine.md (loop seam, 0.5× quality, count-in, mixer, clock, CPU). Keyboard: Space play/pause, L loop, M metronome.</p>
+
+    <fieldset>
+      <legend>Stems</legend>
+      <label>Stem 1 <input id="file-0" type="file" accept="audio/*,video/*" /></label>
+      <label>Stem 2 <input id="file-1" type="file" accept="audio/*,video/*" /></label>
+      <label>stems.json (optional) <input id="stems-json" type="file" accept="application/json" /></label>
+      <div>
+        <button id="load-files" type="button">Load files</button>
+        <button id="load-test" type="button">Use test stems</button>
+        <label>Decode <select id="decode-path"><option value="">auto</option><option>webcodecs</option><option>decodeAudioData</option></select></label>
+      </div>
+      <p id="stem-status" role="status">No stems loaded.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Engine</legend>
+      <label>Tier <select id="tier"><option value="">auto</option><option>high</option><option>mid</option><option>low</option></select></label>
+      <label><input id="adaptive" type="checkbox" checked /> Step down on underruns</label>
+      <p id="engine-status" role="status">Not started (the first button press creates the AudioContext).</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Transport</legend>
+      <div id="position" aria-live="off">0:00.000</div>
+      <button id="play" type="button">Play</button>
+      <button id="pause" type="button">Pause</button>
+      <label>Count-in <select id="count-in"><option value="0">off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label>
+      <label><input id="metronome" type="checkbox" /> Metronome</label>
+      <label class="wide">Seek <input id="seek" type="range" min="0" max="1" step="0.001" value="0" /></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Speed and key</legend>
+      <label>Speed <input id="rate" type="range" min="50" max="100" step="1" value="100" /> <output id="rate-value">100%</output></label>
+      <div id="rate-presets"></div>
+      <label>Transpose <input id="transpose" type="number" min="-12" max="12" step="1" value="0" /> semitones</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Beat grid and loop</legend>
+      <label>BPM <input id="bpm" type="number" min="30" max="300" step="0.01" value="120" /></label>
+      <label>Beats per bar <input id="beats-per-bar" type="number" min="1" max="16" value="4" /></label>
+      <label>First downbeat (s) <input id="offset" type="number" min="0" step="0.001" value="0" /></label>
+      <br />
+      <label>Loop from bar <input id="loop-start" type="number" min="1" value="1" /></label>
+      <label>for <input id="loop-bars" type="number" min="1" value="4" /> bars</label>
+      <label><input id="loop" type="checkbox" /> Loop</label>
+      <output id="passes">Passes: 0</output>
+    </fieldset>
+
+    <fieldset>
+      <legend>Mixer</legend>
+      <div id="mixer"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Measure (Prototype 7)</legend>
+      <p>Plays the loaded stems at 0.5× for the chosen time with the tier fixed, then reports worklet load (processing time ÷ audio time, one core), underruns and clock latencies.</p>
+      <label>Seconds <input id="measure-seconds" type="number" min="10" max="600" value="60" /></label>
+      <button id="measure" type="button">Run</button>
+      <pre id="results" aria-live="polite"></pre>
+    </fieldset>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "@splitune/audio-engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "AudioWorklet engine — docs/implementation/11-audio-engine.md",
   "type": "module",
@@ -9,6 +9,16 @@
   },
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "demo": "vite --config demo/vite.config.ts"
+  },
+  "dependencies": {
+    "@splitune/audio-dsp": "workspace:*",
+    "mediabunny": "1.62.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "vite": "8.3.4"
   }
 }
