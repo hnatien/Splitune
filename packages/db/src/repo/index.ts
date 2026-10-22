@@ -2,6 +2,7 @@ import type { Database } from '../client.ts'
 import { analysesRepo } from './analyses.ts'
 import { analyticsRepo } from './analytics.ts'
 import { artefactsRepo } from './artefacts.ts'
+import { billingRepo } from './billing.ts'
 import { correctionsRepo } from './corrections.ts'
 import { examplesRepo } from './examples.ts'
 import { loopsRepo } from './loops.ts'
@@ -12,8 +13,11 @@ import { usageRepo } from './usage.ts'
 import { usersRepo } from './users.ts'
 
 export type * from './analyses.ts'
+export { AllowanceExhaustedError } from './analyses.ts'
 export type * from './analytics.ts'
 export type * from './artefacts.ts'
+export type * from './billing.ts'
+export { dueSubscriptions } from './billing.ts'
 export type * from './corrections.ts'
 export type * from './examples.ts'
 export { SYSTEM_USER } from './examples.ts'
@@ -40,6 +44,7 @@ export function createRepositories(db: Database) {
     practice: practiceRepo(db),
     usage: usageRepo(db),
     analytics: analyticsRepo(db),
+    billing: billingRepo(db),
   }
 }
 

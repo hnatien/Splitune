@@ -26,6 +26,7 @@ const USER_TABLES = [
   'practice_attempts',
   'subscriptions',
   'usage_ledger',
+  'billing_events',
   'jobs',
   'job_events',
 ] as const
