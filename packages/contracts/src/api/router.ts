@@ -1,7 +1,6 @@
 import { eventIterator, oc } from '@orpc/contract'
 import { z } from 'zod'
 import { Analysis, AnalysisAccepted, CreateAnalysisInput } from './analyses.ts'
-import { TrackInput } from './analytics.ts'
 import { ArtefactUrlInput, ArtefactUrlOutput } from './artefacts.ts'
 import { IdInput, page } from './common.ts'
 import {
@@ -26,7 +25,7 @@ import {
   LoopClip,
   UpdateLoopInput,
 } from './loops.ts'
-import { DeleteMeOutput, ExportOutput, Me, UpdateMeInput } from './me.ts'
+import { Me, UpdateMeInput } from './me.ts'
 import { PracticeSyncInput, PracticeSyncOutput, ProgressInput, ProgressOutput } from './practice.ts'
 import {
   CreateSongInput,
@@ -76,12 +75,6 @@ export const contract = {
   me: {
     get: base.route({ method: 'GET', path: '/v1/me' }).output(Me),
     update: base.route({ method: 'PATCH', path: '/v1/me' }).input(UpdateMeInput).output(Me),
-    export: base
-      .route({ method: 'POST', path: '/v1/me/export', successStatus: 202 })
-      .output(ExportOutput),
-    delete: base
-      .route({ method: 'DELETE', path: '/v1/me', successStatus: 202 })
-      .output(DeleteMeOutput),
   },
   songs: {
     create: base
@@ -212,13 +205,6 @@ export const contract = {
       .route({ method: 'POST', path: '/v1/examples/{id}/claim' })
       .input(ClaimExampleInput)
       .output(ClaimExampleOutput),
-  },
-  // Product events (16 §2), from visitors and signed-in users alike.
-  analytics: {
-    track: base
-      .route({ method: 'POST', path: '/v1/events', successStatus: 204 })
-      .input(TrackInput)
-      .output(z.void()),
   },
   system: {
     workerStatus: base

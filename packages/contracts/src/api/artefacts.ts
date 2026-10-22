@@ -8,6 +8,9 @@ export const ArtefactIndexEntry = z.object({
   bytes: z.number().int().nonnegative(),
   sha256: Sha256Hex,
   created_at: z.iso.datetime(),
+  // Set when the sweeper deleted a stems artefact's audio after 180 days unused (15 §3); the JSON
+  // stays, and re-running the analysis re-creates the stems.
+  purged_at: z.iso.datetime().nullable(),
 })
 
 export const StemVariant = z.enum(['opus_webm', 'aac_mp4'])

@@ -64,7 +64,3 @@ export const UpdateMeInput = z.object({
   training_opt_in: z.boolean().optional(), // changes are audited
   marketing_opt_in: z.boolean().optional(),
 })
-
-export const ExportOutput = z.object({ status: z.literal('started') })
-
-export const DeleteMeOutput = z.object({ purge_after: z.iso.datetime() })
