@@ -85,15 +85,10 @@ test('music-core recomputes and redraws a capo change on a slowed tablet CPU', a
   })
   const samples: number[] = []
   for (const control of ['Capo up', 'Capo down', 'Capo up', 'Capo down', 'Capo up']) {
-    const previous = (await notation.getAttribute('data-update-ms')) ?? ''
-    const stamp = await notation.getAttribute('data-render-ms')
+    // Cleared first: the next redraw sets it again (two redraws can take the same time).
+    await notation.evaluate((el) => el.removeAttribute('data-update-ms'))
     await page.getByRole('button', { name: control }).click()
-    await expect
-      .poll(async () => [
-        await notation.getAttribute('data-update-ms'),
-        await notation.getAttribute('data-render-ms'),
-      ])
-      .not.toEqual([previous, stamp])
+    await expect(notation).toHaveAttribute('data-update-ms', /^\d+$/)
     samples.push(Number(await notation.getAttribute('data-update-ms')))
   }
   const sorted = [...samples].sort((a, b) => a - b)
