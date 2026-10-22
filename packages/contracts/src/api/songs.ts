@@ -130,6 +130,13 @@ export const ImportUrlOutput = AnalysisAccepted.extend({ song_id: z.uuid() })
 
 export const PutYoutubeInput = z.object({ id: z.uuid(), video_id: YoutubeVideoId })
 
+// The song's own media (not an analysis artefact): `source` is the original upload or downloaded
+// audio, played before stems exist and for Lite analyses; `video` is a URL import's downloaded
+// video (13 §6a). Signed GET like artefact URLs.
+export const SongMedia = z.enum(['source', 'video'])
+
+export const SongMediaInput = z.object({ id: z.uuid(), kind: SongMedia })
+
 export const PutSyncPointsInput = z.object({
   id: z.uuid(),
   sync_points: z.array(SyncPoint).max(500),

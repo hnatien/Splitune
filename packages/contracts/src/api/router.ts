@@ -33,6 +33,7 @@ import {
   PutYoutubeInput,
   Song,
   SongDetail,
+  SongMediaInput,
   UpdateSongInput,
 } from './songs.ts'
 import { SystemStats, WorkerStatus } from './system.ts'
@@ -92,6 +93,10 @@ export const contract = {
       .route({ method: 'DELETE', path: '/v1/songs/{id}', successStatus: 204 })
       .input(IdInput)
       .output(z.void()),
+    mediaUrl: base
+      .route({ method: 'GET', path: '/v1/songs/{id}/media' })
+      .input(SongMediaInput)
+      .output(ArtefactUrlOutput),
     importUrl: base
       .route({ method: 'POST', path: '/v1/songs/import-url', successStatus: 202 })
       .input(ImportUrlInput)
