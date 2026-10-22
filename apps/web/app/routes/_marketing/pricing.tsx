@@ -1,27 +1,30 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
+import { plansQuery } from '@/features/billing/plans'
+import { PricingPage } from '@/features/billing/pricing-page'
 import { m } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
-import { buttonVariants } from '@/ui/button'
-import { Banner } from '@/ui/status-message'
+import { InlineError } from '@/ui/status-message'
 
-// Pricing stub (27 §3.2): the plan matrix and mock checkout arrive with step 14.
+// Pricing (27 §3.2): plans and prices from the provider (14 §3), rendered on the server. The
+// loader sits in every page's entry chunk (10 §9), so it loads the billing client when it runs.
 export const Route = createFileRoute('/_marketing/pricing')({
+  loader: async ({ context }) => {
+    const billing = await import('@/features/billing/plans')
+    await context.queryClient.prefetchQuery(billing.plansQuery)
+  },
   head: () => ({ meta: [{ title: m['meta.page']({ page: m['pricing.title']() }) }] }),
   component: Pricing,
 })
 
 function Pricing() {
-  return (
-    <div className="flex flex-col">
-      <Banner tone="info" title={m['billing.demo']()} />
-      <div className="mx-auto flex max-w-reading flex-col gap-4 px-4 py-12">
-        <h1 className="text-4xl">{m['pricing.title']()}</h1>
-        <p className="text-lg text-muted-foreground">{m['pricing.free_body']()}</p>
-        <p className="text-base text-muted-foreground">{m['pricing.coming']()}</p>
-        <Link to="/start" className={cn(buttonVariants({ variant: 'primary' }), 'self-start')}>
-          {m['home.cta_example']()}
-        </Link>
+  const { me } = Route.useRouteContext()
+  const plans = useQuery(plansQuery)
+  if (!plans.data) {
+    return (
+      <div className="mx-auto w-full max-w-reading px-4 py-12">
+        {plans.isError && <InlineError title={m['plan.prices_failed']()} />}
       </div>
-    </div>
-  )
+    )
+  }
+  return <PricingPage me={me} plans={plans.data} />
 }

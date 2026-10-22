@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { AppShell } from '../shell/app-shell'
-import { ME, ME_CAPPED } from '../story-fixtures'
+import { ME, ME_CAPPED, ME_PLUS_CAPPED } from '../story-fixtures'
 import { FileRow } from './file-row'
 import { ImportPage } from './import-page'
 import type { PickedFile } from './use-picked-file'
@@ -30,6 +30,12 @@ export const DropZone: Story = {
     await expect(await canvas.findByRole('button', { name: 'choose a file' })).toBeVisible()
     await expect(canvas.getByRole('radio', { name: /Full/ })).toBeChecked()
     await expect(canvas.getByRole('button', { name: 'Start practising' })).toBeDisabled()
+    await expect(
+      canvas.getByText('Your first full analysis is free — your part isolated, plus tab.'),
+    ).toBeVisible()
+    await userEvent.click(canvas.getByRole('radio', { name: /Lite/ }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Use it now' }))
+    await expect(canvas.getByRole('radio', { name: /Full/ })).toBeChecked()
   },
 }
 export const DropZoneDark: Story = { render: page(), globals: { appearance: 'dark' } }
@@ -40,6 +46,19 @@ export const CapReached: Story = {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText(/Full analyses are part of Plus/)).toBeVisible()
     await expect(canvas.getByText(/You've used this month's 5 Lite analyses/)).toBeVisible()
+    await expect(canvas.getAllByRole('button', { name: 'See Plus' })).toHaveLength(2)
+  },
+}
+
+export const PlusCapReached: Story = {
+  render: page(ME_PLUS_CAPPED),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText(/You've used this period's 15 full analyses/),
+    ).toBeVisible()
+    await expect(canvas.getByRole('radio', { name: /Lite/ })).toBeChecked()
+    await expect(canvas.queryByRole('button', { name: 'See Plus' })).toBeNull()
   },
 }
 

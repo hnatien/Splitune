@@ -87,14 +87,19 @@ export function apiErrorMessage(
       return m['import.url_unsupported']()
     case 'url_download_failed':
       return m['import.url_failed']()
-    case 'analysis_cap_reached':
+    case 'analysis_cap_reached': {
+      // The cap comes from /v1/me (callers merge it in); the details carry the reset.
+      const values = {
+        limit: String(limit ?? ''),
+        date: typeof resets_at === 'string' ? formatDate(new Date(resets_at)) : '',
+      }
+      // `full` is Plus' monthly allowance; a Free account's full analysis is its Welcome one.
       return type === 'lite'
-        ? m['plan.cap_lite']({
-            // The cap comes from /v1/me (callers merge it in); the details carry the reset.
-            limit: String(limit ?? ''),
-            date: typeof resets_at === 'string' ? formatDate(new Date(resets_at)) : '',
-          })
-        : m['plan.cap_full']()
+        ? m['plan.cap_lite'](values)
+        : type === 'full'
+          ? m['plan.cap_full_plus'](values)
+          : m['plan.cap_full']()
+    }
     case 'rate_limited':
       return m['error.rate_limited']({ seconds: String(retry_after_s ?? 60) })
     case 'pipeline_unavailable':

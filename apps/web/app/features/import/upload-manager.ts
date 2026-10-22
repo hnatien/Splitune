@@ -4,6 +4,7 @@ import Uppy from '@uppy/core'
 import type { Body } from '@uppy/core/utils'
 import type { z } from 'zod'
 import { client, errorCode, errorData, orpc } from '@/lib/api'
+import { reloadMe } from '@/lib/reload-me'
 import { hashFile } from './hash'
 import { keepLocalFile } from './local-files'
 import { SplituneUploader, type UploadMeta } from './splitune-uploader'
@@ -120,6 +121,8 @@ async function startAnalysis(record: PendingUpload) {
     queryKey: orpc.songs.get.queryKey({ input: { id: record.songId } }),
   })
   await queryClient?.invalidateQueries({ queryKey: orpc.songs.list.key() })
+  // The new analysis used an allowance: the meter follows.
+  if (queryClient) await reloadMe(queryClient)
 }
 
 /** Creates the song and its upload; the transfer continues in the background. Returns the song. */

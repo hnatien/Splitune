@@ -1,6 +1,6 @@
 import type { LibrarySong } from '@splitune/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import {
   CircleCheckIcon,
   CircleDashedIcon,
@@ -8,17 +8,20 @@ import {
   EllipsisVerticalIcon,
   ListMusicIcon,
   LoaderIcon,
+  LockIcon,
   TimerOffIcon,
   TriangleAlertIcon,
   UploadIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import type { z } from 'zod'
-import { client, errorCode, orpc } from '@/lib/api'
+import { client, errorCode, errorData, orpc } from '@/lib/api'
 import { barNumber, formatPercent, formatRelativeDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { instrumentLabel } from '@/lib/instruments'
 import { apiErrorMessage, stageFailureMessage } from '@/lib/reasons'
+import { reloadMe } from '@/lib/reload-me'
+import { meQuery } from '@/lib/session'
 import { currentStage, etaText, remainingSeconds, stageLabel } from '@/lib/stages'
 import { Button } from '@/ui/button'
 import {
@@ -30,6 +33,8 @@ import {
 } from '@/ui/dropdown-menu'
 import { SongCard, SongRow, type SongSummary } from '@/ui/song-card'
 import { toast } from '@/ui/toast'
+import { UpgradeSheet } from '../billing/upgrade-sheet'
+import { analysisAvailability } from '../import/analysis-choice'
 import { uploadPercent, useUploads } from '../import/upload-store'
 import { statsQuery } from './queries'
 import { DeleteSongDialog, RenameSongDialog } from './song-dialogs'
@@ -163,7 +168,10 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
   const status = cardStatus(song, uploading)
   const [renaming, setRenaming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
   const queryClient = useQueryClient()
+  const me = useQuery(meQuery).data
+  const router = useRouter()
   const refresh = () => queryClient.invalidateQueries({ queryKey: orpc.songs.list.key() })
 
   const analyse = useMutation({
@@ -181,12 +189,22 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
     onSuccess: () => {
       toast.add({ title: m['library.analysis_started'](), type: 'success' })
       void refresh()
+      // The allowance meter in the shell reads route context.
+      void reloadMe(queryClient).then(() => router.invalidate())
     },
-    onError: (error) => toast.add({ title: apiErrorMessage(errorCode(error)), type: 'error' }),
+    onError: (error) =>
+      toast.add({ title: apiErrorMessage(errorCode(error), errorData(error)), type: 'error' }),
   })
 
   const canAnalyse = song.latest_analysis !== null && !isInProgress(status)
   const lite = song.latest_analysis?.type === 'lite'
+  // Stems + tab for a Lite song is a point of action: locked when no full analysis is left, and on
+  // Free it leads to Plus (23 §5).
+  const fullLocked = lite && me != null && !analysisAvailability(me).full
+  const upgradeFull = () => {
+    if (fullLocked && me?.plan === 'free') setUpgrading(true)
+    else analyse.mutate('full')
+  }
   const actions = (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -205,7 +223,8 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
           {m['library.rename']()}
         </DropdownMenuItem>
         {canAnalyse && (
-          <DropdownMenuItem onClick={() => analyse.mutate(lite ? 'full' : 'rerun')}>
+          <DropdownMenuItem onClick={() => (lite ? upgradeFull() : analyse.mutate('rerun'))}>
+            {fullLocked && <LockIcon aria-hidden />}
             {lite ? m['library.upgrade_full']() : m['library.analyse_again']()}
           </DropdownMenuItem>
         )}
@@ -278,6 +297,12 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
         open={deleting}
         onOpenChange={setDeleting}
         onDeleted={refresh}
+      />
+      <UpgradeSheet
+        open={upgrading}
+        onClose={() => setUpgrading(false)}
+        trigger="lite_song"
+        returnPath="/library"
       />
     </>
   )
