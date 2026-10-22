@@ -79,9 +79,22 @@ async function withWebAudio(file: File): Promise<LocalAudio | undefined> {
 
 const MEDIA_EXTENSION = /\.(mp3|m4a|aac|wav|aiff?|flac|ogg|oga|opus|mp4|m4v|mov|webm|mkv)$/i
 
-export async function decodeLocally(file: File): Promise<LocalAudio> {
-  const decoded = (await withMediabunny(file).catch(() => undefined)) ?? (await withWebAudio(file))
-  if (decoded && decoded.kind !== 'unreadable') return decoded
+type Decoder = (file: File) => Promise<LocalAudio | undefined>
+
+export async function decodeLocally(
+  file: File,
+  decoders: { demux: Decoder; webAudio: Decoder } = {
+    demux: withMediabunny,
+    webAudio: withWebAudio,
+  },
+): Promise<LocalAudio> {
+  const demuxed = await decoders.demux(file).catch(() => undefined)
+  if (demuxed?.kind === 'decoded' || demuxed?.kind === 'unreadable') return demuxed
+  // No WebCodecs decoder for the codec (Firefox Android has none), or a container Mediabunny
+  // doesn't read: the browser's own decoder may still manage it (24 §3).
+  const decoded = await decoders.webAudio(file)
+  if (decoded) return decoded
+  if (demuxed) return demuxed
   const media = /^(audio|video)\//.test(file.type) || MEDIA_EXTENSION.test(file.name)
-  return media && decoded?.kind !== 'unreadable' ? { kind: 'needs_upload' } : { kind: 'unreadable' }
+  return media ? { kind: 'needs_upload' } : { kind: 'unreadable' }
 }
