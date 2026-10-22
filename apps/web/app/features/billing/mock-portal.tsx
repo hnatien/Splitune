@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
+import { useHydrated } from '@/lib/use-hydrated'
 import { Button, buttonVariants } from '@/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
 import { Skeleton } from '@/ui/skeleton'
@@ -49,6 +50,8 @@ export function MockPortal({ session }: { session: string }) {
   const [pending, setPending] = useState<PortalAction | undefined>()
   const [done, setDone] = useState<PortalAction | undefined>()
   const [failed, setFailed] = useState(false)
+  // Server-rendered: the renewal date in UTC until hydrated (formatDate).
+  const zone = useHydrated() ? undefined : 'UTC'
 
   const act = async (action: PortalAction) => {
     setPending(action)
@@ -95,7 +98,9 @@ export function MockPortal({ session }: { session: string }) {
               <CardTitle className="text-xl">
                 {plus ? planName(subscription.plan) : m['billing.plan_free']()}
               </CardTitle>
-              {plus && <CardDescription className="text-base">{periodLine(me)}</CardDescription>}
+              {plus && (
+                <CardDescription className="text-base">{periodLine(me, zone)}</CardDescription>
+              )}
             </CardHeader>
             {plus && subscription.status === 'past_due' && (
               <CardContent>

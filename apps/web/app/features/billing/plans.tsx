@@ -72,11 +72,14 @@ export async function portalAction(action: PortalAction) {
   await billingClient.billing.mockPortal({ session: sessionOf(url), action })
 }
 
-/** "Renews on 5 Nov" / "Ends on 5 Nov" for a live Plus subscription. */
-export function periodLine(me: MeData): string | undefined {
+/**
+ * "Renews on 5 Nov" / "Ends on 5 Nov" for a live Plus subscription; `timeZone` as formatDate's
+ * for server-rendered pages.
+ */
+export function periodLine(me: MeData, timeZone?: string): string | undefined {
   const subscription = me.subscription
   if (me.plan === 'free' || !subscription?.current_period_end) return undefined
-  const date = formatDate(new Date(subscription.current_period_end))
+  const date = formatDate(new Date(subscription.current_period_end), undefined, timeZone)
   return subscription.cancel_at_period_end
     ? m['billing.ends_on']({ date })
     : m['billing.renews_on']({ date })

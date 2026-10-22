@@ -29,6 +29,14 @@ describe('format', () => {
     expect(formatDate(new Date(2027, 11, 1), now)).toBe('1 Dec 2027')
   })
 
+  it('formats in a given time zone, so server and client agree before hydration', () => {
+    const resets = new Date(Date.UTC(2026, 10, 1, 0, 30))
+    const now = new Date(Date.UTC(2026, 9, 20))
+    expect(formatDate(resets, now, 'UTC')).toBe('1 Nov')
+    expect(formatDate(resets, now, 'America/New_York')).toBe('31 Oct')
+    expect(formatDate(resets, now, 'Asia/Bangkok')).toBe('1 Nov')
+  })
+
   it('shows bars 1-based', () => {
     expect(barNumber(0)).toBe(1)
     expect(barNumber(16)).toBe(17)

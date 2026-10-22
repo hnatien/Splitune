@@ -19,12 +19,18 @@ export function formatPercent(value: number): string {
 
 const DAY_MS = 24 * 3600 * 1000
 
-export function formatDate(date: Date, now: Date = new Date()): string {
+/**
+ * "1 Dec" (with the year when it isn't this year), in this runtime's time zone or `timeZone`.
+ * Server-rendered dates pass 'UTC' until hydration (useHydrated): the server's zone is not the
+ * learner's, and a different day would break hydration.
+ */
+export function formatDate(date: Date, now: Date = new Date(), timeZone?: string): string {
   const sameYear = date.getFullYear() === now.getFullYear()
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
     ...(sameYear ? {} : { year: 'numeric' }),
+    ...(timeZone ? { timeZone } : {}),
   }).format(date)
 }
 
