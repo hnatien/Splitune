@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { AppStory } from '../../../.storybook/app.tsx'
+import { toneWav } from '../practice/practice-story-data'
 import { AppShell } from '../shell/app-shell'
 import { ME, ME_CAPPED, ME_PLUS_CAPPED } from '../story-fixtures'
 import { FileRow } from './file-row'
@@ -71,6 +72,25 @@ export const LinkTab: Story = {
     await userEvent.tab()
     await expect(canvas.getByText('Enter a link that starts with https://')).toBeVisible()
     await expect(canvas.getByRole('switch', { name: 'Also download the video' })).toBeChecked()
+  },
+}
+
+/** A file picked on the whole page: hashed, decoded locally, waveform and "Start practising". */
+export const FileSelected: Story = {
+  render: page(),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    // The page reopens the last tab used; pick File.
+    await userEvent.click(await canvas.findByRole('tab', { name: 'File' }))
+    const wav = new File([toneWav()], 'Riff in A minor.wav', { type: 'audio/wav' })
+    const input = canvasElement.querySelector<HTMLInputElement>('input[type=file]')
+    if (!input) throw new Error('no file input')
+    await userEvent.upload(input, wav)
+    await waitFor(
+      () => expect(canvas.getByRole('button', { name: 'Start practising' })).toBeEnabled(),
+      { timeout: 10_000 },
+    )
+    await expect(canvas.getByText('Riff in A minor.wav')).toBeVisible()
   },
 }
 

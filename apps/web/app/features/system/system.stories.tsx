@@ -11,8 +11,8 @@ import { ErrorPage, NotFoundPage } from './error-page'
 import { UnsupportedBrowser } from './unsupported'
 
 // System pages and banners (27 §3.11): 404, the error boundary with a copyable error id,
-// unsupported browser, "A new version is ready", the iOS install hint, and the page after an
-// account was deleted (15 §4).
+// unsupported browser, offline, the in-app-browser hint, "A new version is ready", the iOS install
+// hint, and the page after an account was deleted (15 §4).
 const meta = { title: 'Screens/System', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -138,5 +138,52 @@ export const InstallHintIos: Story = {
     ).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }))
     await expect(canvas.queryByText(/Add to Home Screen/)).toBeNull()
+  },
+}
+
+const libraryPage = () => (
+  <AppStory path="/library" seed={(client) => client.setQueryData(meQuery.queryKey, ME)}>
+    <AppShell me={ME}>
+      <p>Library</p>
+    </AppShell>
+  </AppStory>
+)
+
+// No connection (27 §3.11): the offline banner under the bar.
+export const Offline: Story = {
+  beforeEach: () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    return () => {
+      Reflect.deleteProperty(navigator, 'onLine')
+    }
+  },
+  render: libraryPage,
+  play: async ({ canvasElement }) => {
+    await expect(
+      await within(canvasElement).findByText(
+        "You're offline. You can keep practising songs you've opened.",
+      ),
+    ).toBeVisible()
+  },
+}
+
+// An in-app browser (Instagram's): "Open in your browser" with Copy link (24 §4).
+export const InAppBrowser: Story = {
+  beforeEach: () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: `${navigator.userAgent} Instagram 300.0`,
+      configurable: true,
+    })
+    return () => {
+      Reflect.deleteProperty(navigator, 'userAgent')
+    }
+  },
+  render: libraryPage,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText('Open in your browser for audio and uploads.'),
+    ).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Copy link' })).toBeVisible()
   },
 }

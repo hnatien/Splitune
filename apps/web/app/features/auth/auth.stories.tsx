@@ -2,10 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { BareShell } from '../shell/bare-shell'
+import { LinkLanding } from './link-landing'
 import { CheckEmail, EmailForm } from './sign-in'
 
 // Auth screens (27 §3.4): sign in or create an account, field error, Google when configured,
-// and "Check your email" with the resend countdown and the dev-only Mailpit link.
+// "Check your email" with the resend countdown and the dev-only Mailpit link, and the magic-link
+// landing's expired and invalid states.
 const meta = { title: 'Screens/Auth', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -63,3 +65,24 @@ export const CheckYourEmailStage: Story = {
     ),
   globals: { appearance: 'stage' },
 }
+
+const landing = (error?: string) => () => (
+  <AppStory path="/auth/verify">
+    <BareShell>
+      <LinkLanding error={error} />
+    </BareShell>
+  </AppStory>
+)
+
+/** Expired, already used or unknown link (Better Auth: INVALID_TOKEN). */
+export const LinkExpired: Story = {
+  render: landing('INVALID_TOKEN'),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText('This link has expired. We can send a new one.'),
+    ).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Send a new link' })).toBeVisible()
+  },
+}
+export const LinkInvalid: Story = { render: landing('UNKNOWN') }

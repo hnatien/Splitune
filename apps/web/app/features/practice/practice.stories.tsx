@@ -2,9 +2,12 @@ import chords from '@splitune/contracts/fixtures/chords.json'
 import summary from '@splitune/contracts/fixtures/summary.json'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { m } from '@/lib/i18n'
 import { AppStory } from '../../../.storybook/app.tsx'
+import { EditPage } from './edit-page'
 import { GlanceView } from './glance-view'
-import { PracticeProvider } from './practice-context'
+import { PracticeProvider, type PracticeSearch } from './practice-context'
+import { PracticeLoading } from './practice-loading'
 import { PracticePage } from './practice-page'
 import { ALL, type Kind, type Patch, SONG_ID, seed, tone } from './practice-story-data'
 
@@ -16,10 +19,10 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const screen =
-  (kinds: Kind[], patch: Patch = {}) =>
+  (kinds: Kind[], patch: Patch = {}, search: PracticeSearch = {}) =>
   () => (
     <AppStory path={`/songs/${SONG_ID}/practice`} seed={seed(kinds, patch)}>
-      <PracticePage songId={SONG_ID} search={{}} fetchAudio={tone} />
+      <PracticePage songId={SONG_ID} search={search} fetchAudio={tone} />
     </AppStory>
   )
 
@@ -29,6 +32,22 @@ const playable = async (canvasElement: HTMLElement) => {
     timeout: 20_000,
   })
   return canvas
+}
+
+/** Loading (27 §4): the regions as skeletons; "Loading your song…" after 1 s. */
+export const Loading: Story = {
+  render: () => (
+    <AppStory path={`/songs/${SONG_ID}/practice`}>
+      <PracticeLoading slowText={m['practice.loading']()} />
+    </AppStory>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('status')).toBeEmptyDOMElement()
+    await expect(
+      await canvas.findByText('Loading your song…', undefined, { timeout: 3_000 }),
+    ).toBeVisible()
+  },
 }
 
 /** Local audio only (27 §3.7.3): the paper placeholder with the analysis stages. */
@@ -51,6 +70,19 @@ export const BeatsFound: Story = {
   },
 }
 
+/** Pedal presses that can't act yet still answer in the PedalHud (12 §8): no loop, no stems. */
+export const PedalBeforeLoop: Story = {
+  render: screen(['beats'], { running: true }),
+  play: async ({ canvasElement }) => {
+    await playable(canvasElement)
+    const hud = () => canvasElement.ownerDocument.querySelector('[data-slot=pedal-hud]')
+    await userEvent.keyboard('c')
+    await waitFor(() => expect(hud()).toHaveTextContent('No loop — tap two bars'))
+    await userEvent.keyboard('m')
+    await waitFor(() => expect(hud()).toHaveTextContent("Stems aren't ready yet"))
+  },
+}
+
 /** + stems + chords: the chord strip and the chord sheet, the mixer, the audition banner. */
 export const Chords: Story = {
   render: screen(['beats', 'stems', 'chords'], { running: true }),
@@ -64,6 +96,17 @@ export const Chords: Story = {
   },
 }
 
+/** Separation failed (27 §3.7.3): beat and chords are ready, the reason where the stems would be. */
+export const StemsUnavailable: Story = {
+  render: screen(['beats', 'chords'], { failedStage: 'separate' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByText(/Stems are unavailable right now; chords and beat are ready/),
+    ).toBeVisible()
+  },
+}
+
 /** + tab: everything (the primary state). */
 export const Ready: Story = {
   render: screen(ALL),
@@ -72,6 +115,16 @@ export const Ready: Story = {
     const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
     // Layers fade in (200 ms, 27 §3.7.3).
     await waitFor(() => expect(tab).toBeVisible())
+  },
+}
+
+/** A loop on bars 5–6 from the URL (`?loop=5-6`): band on score and timeline, badge, pass pair. */
+export const LoopActive: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    // Every layout: the status bar's badge (the glance view repeats it on phones).
+    await expect((await canvas.findAllByText(/Loop · bars 5–6/))[0]).toBeVisible()
   },
 }
 
@@ -88,6 +141,33 @@ export const StemsExpired: Story = {
       ),
     ).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Re-create stems' })).toBeVisible()
+  },
+}
+
+/** Offline with a song whose audio this device never stored (27 §4). */
+export const NotSavedOffline: Story = {
+  beforeEach: () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    return () => {
+      Reflect.deleteProperty(navigator, 'onLine')
+    }
+  },
+  render: () => (
+    <AppStory path={`/songs/${SONG_ID}/practice`} seed={seed(ALL)}>
+      <PracticePage
+        songId={SONG_ID}
+        search={{}}
+        fetchAudio={() => Promise.reject(new TypeError('Failed to fetch'))}
+      />
+    </AppStory>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText("This song isn't saved for offline yet.", undefined, {
+        timeout: 10_000,
+      }),
+    ).toBeVisible()
   },
 }
 
@@ -218,5 +298,70 @@ export const Glance: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('region', { name: 'Current chord' })).toBeVisible()
+  },
+}
+
+// The status bar's and transport's popovers (27 §3.7.4): each opens from its own control.
+const opens =
+  (control: RegExp, expectText: string | RegExp): NonNullable<Story['play']> =>
+  async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: control }))
+    const body = within(canvasElement.ownerDocument.body)
+    // Popover contents load on first open.
+    const popup = await body.findByRole('dialog', undefined, { timeout: 10_000 })
+    const shown = (await within(popup).findAllByText(expectText))[0]
+    // Popups fade in (26 §10).
+    await waitFor(() => expect(shown).toBeVisible())
+  }
+
+/** ⚙ Display: appearance, score, distance and calibration, font, uncertainty (27 §3.7.4). */
+export const DisplayPopover: Story = {
+  render: screen(ALL),
+  play: opens(/^Display$/, m['nav.appearance']()),
+}
+
+/** The loop's options from the badge: from/to bars, clear, saved clips (12 §5). */
+export const LoopOptions: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  play: opens(/^Loop · bars 5–6/, m['practice.loop_options']()),
+}
+
+/** Speed panel from the readout: slider and presets (27 §3.7.4). */
+export const SpeedPanel: Story = {
+  render: screen(ALL),
+  play: opens(/^Speed:/, /^70\s%$/),
+}
+
+/** ⋯ More: shortcuts, editor on desktop, key bindings. */
+export const MorePanel: Story = {
+  render: screen(ALL),
+  play: opens(/^More$/, m['practice.shortcuts']()),
+}
+
+/** `?` on desktop: the shortcuts overlay. */
+export const ShortcutsOverlay: Story = {
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    await playable(canvasElement)
+    await userEvent.keyboard('?')
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', undefined, { timeout: 10_000 })
+    await waitFor(() => expect(dialog).toBeVisible())
+  },
+}
+
+/** Desktop editor (27 §3.8): notation and the inspector. */
+export const Edit: Story = {
+  render: () => (
+    <AppStory path={`/songs/${SONG_ID}/edit`} seed={seed(ALL)}>
+      <EditPage songId={SONG_ID} fetchAudio={tone} />
+    </AppStory>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    // Layers fade in (200 ms, 27 §3.7.3).
+    await waitFor(() => expect(tab).toBeVisible())
   },
 }

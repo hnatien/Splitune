@@ -12,32 +12,37 @@ import { DisplaySettings } from './display-settings'
 import { KeyboardSettings } from './keyboard-settings'
 import { type DeleteStep, exportStateQuery, PrivacySettings } from './privacy-settings'
 import { ProfileSettings } from './profile-settings'
+import { SettingsLayout } from './settings-layout'
 
 // Settings sections (27 §3.9): Profile, Display & practice, Keyboard & pedal and Privacy.
 const meta = { title: 'Screens/Settings', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
-const shell = (children: React.ReactNode, seed?: (client: QueryClient) => void) => (
-  <AppStory path="/settings/profile" {...(seed ? { seed } : {})}>
+const shell = (
+  section: string,
+  children: React.ReactNode,
+  seed?: (client: QueryClient) => void,
+) => (
+  <AppStory path={`/settings/${section}`} {...(seed ? { seed } : {})}>
     <AppShell me={ME}>
-      <div className="max-w-2xl">{children}</div>
+      <SettingsLayout>{children}</SettingsLayout>
     </AppShell>
   </AppStory>
 )
 
 export const Profile: Story = {
-  render: () => shell(<ProfileSettings me={ME} />),
+  render: () => shell('profile', <ProfileSettings me={ME} />),
   play: async ({ canvasElement }) => {
     await expect(await within(canvasElement).findByLabelText('Name')).toHaveValue('Ana')
   },
 }
 export const ProfileDark: Story = {
-  render: () => shell(<ProfileSettings me={ME} />),
+  render: () => shell('profile', <ProfileSettings me={ME} />),
   globals: { appearance: 'dark' },
 }
 export const Display: Story = {
-  render: () => shell(<DisplaySettings />),
+  render: () => shell('display', <DisplaySettings />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(
@@ -47,7 +52,7 @@ export const Display: Story = {
   },
 }
 export const DisplayStage: Story = {
-  render: () => shell(<DisplaySettings />),
+  render: () => shell('display', <DisplaySettings />),
   globals: { appearance: 'stage' },
 }
 type ExportState = z.infer<typeof DataExportState>
@@ -64,7 +69,7 @@ const IN_A_DAY = new Date(Date.now() + 86_400_000).toISOString()
 const privacy =
   (state: ExportState | null, options: { worker?: boolean; dialog?: DeleteStep } = {}) =>
   () =>
-    shell(<PrivacySettings me={ME} deleteDialog={options.dialog} />, (client) => {
+    shell('privacy', <PrivacySettings me={ME} deleteDialog={options.dialog} />, (client) => {
       client.setQueryData(meQuery.queryKey, ME)
       if (state) client.setQueryData(exportStateQuery(false).queryKey, state)
       const runner = { online: options.worker ?? true, last_heartbeat_at: null }
@@ -170,7 +175,7 @@ export const PrivacyDeleteLinkSent: Story = {
 
 /** Keyboard & pedal (27 §3.9): the binding table, "Learn this pedal" and the test area. */
 export const Keyboard: Story = {
-  render: () => shell(<KeyboardSettings />),
+  render: () => shell('keyboard', <KeyboardSettings />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole('button', { name: 'Learn this pedal for Felt clean' }))
@@ -184,6 +189,6 @@ export const Keyboard: Story = {
 }
 
 export const KeyboardDark: Story = {
-  render: () => shell(<KeyboardSettings />),
+  render: () => shell('keyboard', <KeyboardSettings />),
   globals: { appearance: 'dark' },
 }

@@ -1,10 +1,12 @@
 import type { Decorator, Preview } from '@storybook/react-vite'
+import { cn } from '../app/lib/utils.ts'
 import { applyDisplay } from '../app/ui/display.ts'
 import { TooltipProvider } from '../app/ui/tooltip.tsx'
 import '../app/styles.css'
 
 // Toolbar globals set the same data-* attributes as the app (doc 26 §2, 28 §2), so every story is
 // rendered through the real theming path. Density is per shell, so it goes on the story wrapper.
+// Screens render edge to edge like the app (their shells bring the gutters); components get a margin.
 const withDisplay: Decorator = (Story, context) => {
   const { appearance, contrast, density, distance, motion, readingFont, score } = context.globals
   // Applied during render, before paint, like the app's inline head script.
@@ -15,7 +17,13 @@ const withDisplay: Decorator = (Story, context) => {
   )
   return (
     <TooltipProvider>
-      <div data-density={density} className="min-h-full bg-background p-6 text-foreground">
+      <div
+        data-density={density}
+        className={cn(
+          'min-h-full bg-background text-foreground',
+          !context.title.startsWith('Screens/') && 'p-6',
+        )}
+      >
         <Story />
       </div>
     </TooltipProvider>

@@ -3,6 +3,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { expect, userEvent, within } from 'storybook/test'
 import { meQuery } from '@/lib/session'
 import { AppStory } from '../../../.storybook/app.tsx'
+import { SettingsLayout } from '../settings/settings-layout'
 import { AppShell } from '../shell/app-shell'
 import { BareShell } from '../shell/bare-shell'
 import { MarketingShell } from '../shell/marketing-shell'
@@ -189,9 +190,9 @@ export const PortalPastDue: Story = {
 const settings = (me: typeof ME, checkout?: 'success' | 'cancelled') => () => (
   <AppStory path="/settings/billing" seed={seed(me)}>
     <AppShell me={me}>
-      <div className="max-w-2xl">
+      <SettingsLayout>
         <BillingSettings me={me} checkout={checkout} />
-      </div>
+      </SettingsLayout>
     </AppShell>
   </AppStory>
 )

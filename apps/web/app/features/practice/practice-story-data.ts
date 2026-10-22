@@ -34,11 +34,16 @@ export type Patch = {
   running?: boolean
   /** The sweeper removed the stems' audio (15 §3). */
   stemsPurged?: boolean
+  /** A stage that failed and fell back (27 §3.7.3 "Failed stage"). */
+  failedStage?: string
 }
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
-    const run = analysis(1, patch.running ? 'running' : 'done')
+    const done = analysis(1, patch.running ? 'running' : 'done')
+    const run = patch.failedStage
+      ? { ...done, stages: { ...done.stages, [patch.failedStage]: { status: 'failed' as const } } }
+      : done
     const entries = kinds.map((kind) => ({
       id: artefactId(kind),
       kind,
@@ -77,7 +82,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
 }
 
 // 20.5 s of a quiet plucked 220 Hz tone as a WAV, for every stem and the song's own audio.
-export const tone: FetchAudio = async () => {
+export function toneWav(): ArrayBuffer {
   const rate = 22_050
   const frames = Math.round(20.5 * rate)
   const buffer = new ArrayBuffer(44 + frames * 2)
@@ -104,5 +109,7 @@ export const tone: FetchAudio = async () => {
   }
   return buffer
 }
+
+export const tone: FetchAudio = async () => toneWav()
 
 export const SONG_ID = detail(1, null).id
