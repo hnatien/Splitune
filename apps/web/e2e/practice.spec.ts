@@ -255,8 +255,12 @@ test('on the desktop editor, a chord and a note edit persist', async () => {
   test.skip(mobile, 'the editor is desktop-first')
   await page.goto(`${songUrl.replace(/\/practice$/, '/edit')}`)
   if (test.info().project.use.hasTouch) {
-    // Touch devices edit in practice's editor sheet (27 §3.8), covered above.
+    // Touch devices edit in practice's editor sheet (27 §3.8), covered above. The tab loads before
+    // the next test navigates (WebKit reports cancelled worker and font loads as errors).
     await expect(page).toHaveURL(new RegExp(`${songUrl}$`))
+    await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+      timeout: 60_000,
+    })
     return
   }
   await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({

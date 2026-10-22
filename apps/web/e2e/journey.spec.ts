@@ -94,7 +94,10 @@ test('a short file uploads, analyses and shows as ready', async () => {
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
   await expect(page.getByRole('progressbar')).toBeVisible()
   await expect(finished()).toBeVisible({ timeout: 90_000 })
-  expect(await stageStatuses()).toMatchObject({ decode: 'done', beats: 'done', finalize: 'done' })
+  // The layers show as they land; finalize may still be closing the run for a moment.
+  await expect
+    .poll(stageStatuses, { timeout: 15_000 })
+    .toMatchObject({ decode: 'done', beats: 'done', finalize: 'done' })
   await page.getByRole('link', { name: 'Back to library' }).click()
   const card = page.getByRole('article').filter({ hasText: 'Riff in A minor' })
   await expect(card.getByText('Ready')).toBeVisible()
