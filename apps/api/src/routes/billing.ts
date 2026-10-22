@@ -1,7 +1,7 @@
 import type { MockSession } from '@splitune/contracts'
 import type { z } from 'zod'
 import { type MockSessionData, MockSessionInvalid } from '../billing/mock.ts'
-import { planOf } from '../entitlements.ts'
+import { limitsFrom, planOf } from '../entitlements.ts'
 import { apiError } from '../errors.ts'
 import { type ApiDeps, authed, pub } from '../procedures.ts'
 
@@ -29,8 +29,9 @@ const toSession = (session: MockSessionData): z.infer<typeof MockSession> => ({
 })
 
 export const billing = {
-  plans: pub.billing.plans.handler(({ context }) => {
+  plans: pub.billing.plans.handler(async ({ context }) => {
     const { billing } = context.deps.config
+    const limits = limitsFrom(await context.deps.repos.flags.list())
     return {
       provider: billing.provider,
       plans: [
@@ -47,6 +48,11 @@ export const billing = {
           currency: billing.currency,
         },
       ],
+      allowances: {
+        welcome: limits.welcomeLifetime,
+        free_lite_per_month: limits.freeLitePerPeriod,
+        plus_full_per_period: limits.plusFullPerPeriod,
+      },
     }
   }),
 

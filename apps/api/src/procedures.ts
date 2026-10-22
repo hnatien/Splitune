@@ -1,5 +1,5 @@
 import { implement, os } from '@orpc/server'
-import { contract } from '@splitune/contracts'
+import { billingContract, contract } from '@splitune/contracts'
 import { type Database, hitRateLimit, type Repositories } from '@splitune/db'
 import type { Storage } from '@splitune/storage'
 import type { SessionInfo } from './auth.ts'
@@ -50,7 +50,7 @@ export const v1Contract = {
   system: contract.system,
   examples: contract.examples,
   analytics: contract.analytics,
-  billing: contract.billing,
+  billing: billingContract.billing,
 }
 
 // Procedures that work without a session (example songs, product events) use `pub` directly;

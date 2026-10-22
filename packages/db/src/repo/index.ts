@@ -5,6 +5,7 @@ import { artefactsRepo } from './artefacts.ts'
 import { billingRepo } from './billing.ts'
 import { correctionsRepo } from './corrections.ts'
 import { examplesRepo } from './examples.ts'
+import { flagsRepo } from './flags.ts'
 import { loopsRepo } from './loops.ts'
 import { practiceRepo } from './practice.ts'
 import { songsRepo } from './songs.ts'
@@ -40,6 +41,7 @@ export function createRepositories(db: Database) {
     artefacts: artefactsRepo(db),
     corrections: correctionsRepo(db),
     examples: examplesRepo(db),
+    flags: flagsRepo(db),
     loops: loopsRepo(db),
     practice: practiceRepo(db),
     usage: usageRepo(db),

@@ -161,7 +161,28 @@ describe('plans', () => {
         { plan: 'paid_monthly', interval: 'month', price_minor: 999, currency: 'USD' },
         { plan: 'paid_yearly', interval: 'year', price_minor: 7999, currency: 'USD' },
       ],
+      allowances: { welcome: 1, free_lite_per_month: 5, plus_full_per_period: 15 },
     })
+  })
+})
+
+describe('remote limits', () => {
+  it('follow an enabled flag in the plans list, /v1/me and admission', async () => {
+    const user = await newUser()
+    await sql(
+      `insert into feature_flags (key, enabled, value) values ('plan.free.lite_per_month', true, '1')`,
+    )
+    try {
+      const plans = await json<{ allowances: unknown }>(
+        await caller(api).request('GET', '/v1/billing/plans'),
+      )
+      expect(plans.allowances).toMatchObject({ free_lite_per_month: 1 })
+      expect((await me(user)).usage.lite.cap).toBe(1)
+      await analysed(user, 'lite')
+      expect((await analyse(user, await uploadedSong(user), 'lite')).status).toBe(402)
+    } finally {
+      await sql(`delete from feature_flags where key = 'plan.free.lite_per_month'`)
+    }
   })
 })
 
