@@ -1,9 +1,15 @@
+import { fileURLToPath } from 'node:url'
 import babel from '@rolldown/plugin-babel'
+import { serwist } from '@serwist/vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import { reactCompilerPreset } from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { defineConfig, loadEnv } from 'vite'
 import { alias, sharedPlugins } from './vite.base.ts'
+
+// Nitro serves .output/public as the site root.
+const PUBLIC_DIR = fileURLToPath(new URL('./.output/public', import.meta.url))
+const PUBLIC_SW = fileURLToPath(new URL('./.output/public/sw.js', import.meta.url))
 
 // The app (10-web-app-architecture.md): TanStack Start with the routes in app/routes, the Hono API
 // mounted under /v1 by app/server.ts, built by Nitro's node preset into one server that Railway
@@ -25,6 +31,19 @@ export default defineConfig(({ command, mode }) => {
       nitro({ preset: 'node', compressPublicAssets: true }),
       ...sharedPlugins(),
       babel({ presets: [reactCompilerPreset()] }),
+      // The service worker (10 §6): app/sw.ts bundled into Nitro's public folder as /sw.js with
+      // the app shell's precache list. Fonts, WASM and alphaTab (its render chunk is the one file
+      // over the size cap) are cached on first use instead (runtime caching in sw.ts).
+      serwist({
+        swSrc: 'app/sw.ts',
+        swDest: PUBLIC_SW,
+        globDirectory: PUBLIC_DIR,
+        globPatterns: ['**/*.{js,css,svg,png,webmanifest}'],
+        globIgnores: ['sw.js', '**/*.worker-*.js', '**/alphaTab*'],
+        maximumFileSizeToCacheInBytes: 600 * 1024,
+        injectionPoint: 'self.__SW_MANIFEST',
+        rollupFormat: 'iife',
+      }),
     ],
   }
 })

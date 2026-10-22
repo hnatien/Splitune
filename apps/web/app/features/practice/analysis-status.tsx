@@ -37,9 +37,10 @@ export function analysisFailures(data: PracticeData): StageFailure[] {
 
 export function AnalysisStatus({ data, songId }: { data: PracticeData; songId: string }) {
   const { song, upload, analysis, live } = data
-  const stats = useQuery(statsQuery)
   const running =
     analysis.data && (analysis.data.status === 'queued' || analysis.data.status === 'running')
+  // Stage times feed the ETA, which only a running analysis shows.
+  const stats = useQuery({ ...statsQuery, enabled: Boolean(running) })
   const worker = useQuery({ ...workerStatusQuery, enabled: Boolean(running) })
   const [retrying, setRetrying] = useState(false)
 

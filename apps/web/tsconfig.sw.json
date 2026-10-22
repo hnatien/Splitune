@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "WebWorker"],
+    "types": [],
+    // Serwist's option and plugin types are not written for exactOptionalPropertyTypes.
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["app/sw.ts"]
+}

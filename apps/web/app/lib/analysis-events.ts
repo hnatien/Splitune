@@ -2,7 +2,7 @@ import { type JobEvent, JobEvent as JobEventSchema } from '@splitune/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { z } from 'zod'
-import { orpc } from '@/lib/api'
+import { answeredLocally, orpc } from '@/lib/api'
 import type { StageFailure } from '@/lib/reasons'
 
 type Event = z.infer<typeof JobEvent>
@@ -33,6 +33,8 @@ export function useAnalysisEvents(
 
   useEffect(() => {
     if (!analysisId || typeof EventSource === 'undefined') return
+    // An example song's finished analysis on a visitor's device has no stream.
+    if (answeredLocally(['analyses', 'events'], { id: analysisId })) return
     const analysisKey = orpc.analyses.get.queryKey({ input: { id: analysisId } })
     const source = new EventSource(`/v1/analyses/${analysisId}/events`, { withCredentials: true })
     source.onmessage = (message) => {

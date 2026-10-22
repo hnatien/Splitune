@@ -1,6 +1,6 @@
 import type { PlayerState } from '@splitune/contracts'
 import type { z } from 'zod'
-import { CSRF_HEADER, client } from '@/lib/api'
+import { answeredLocally, CSRF_HEADER, client } from '@/lib/api'
 import { apiFetch } from '@/lib/api-fetch'
 
 // Resume state (13 §5): speed, mix, view, position and the selected clip, sent whole with a
@@ -35,8 +35,14 @@ export function createResumeWriter(songId: string) {
       if (!pending) return
       clearTimeout(timer)
       timer = undefined
-      const body = JSON.stringify({ player_state: pending })
+      const state = pending
       pending = undefined
+      // Kept on the device (a visitor's example song): no request to outlive the page.
+      if (answeredLocally(['songs', 'update'], { id: songId })) {
+        void client.songs.update({ id: songId, player_state: state }).catch(() => undefined)
+        return
+      }
+      const body = JSON.stringify({ player_state: state })
       void apiFetch(
         new Request(`/v1/songs/${songId}`, {
           method: 'PATCH',

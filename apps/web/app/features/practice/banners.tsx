@@ -56,7 +56,12 @@ export function PracticeBanners() {
   const failures = analysisFailures(data).filter(isFallback)
   const songId = data.song.data?.id ?? ''
   const reason = recommended.reasons.find((r) => r in VIEW_REASON)
-  const auditionPending = layers.stems && songId !== '' && !storedOnce(AUDITION_KEY, songId)
+  // Example songs are Splitune's own, already checked: no "Is this your guitar?".
+  const auditionPending =
+    layers.stems &&
+    songId !== '' &&
+    data.song.data?.source_kind !== 'example' &&
+    !storedOnce(AUDITION_KEY, songId)
   const evening = new Date().getHours() >= 20
   const stageHint = evening && appearance !== 'stage' && !storedOnce(STAGE_HINT_KEY, 'shown')
   const [wrongOpen, setWrongOpen] = useState(false)

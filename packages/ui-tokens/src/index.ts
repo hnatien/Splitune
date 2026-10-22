@@ -250,3 +250,10 @@ export function readColor(name: TokenName, element: Element = document.documentE
   const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data
   return `rgba(${r}, ${g}, ${b}, ${Math.round(((a ?? 255) / 255) * 1000) / 1000})`
 }
+
+/**
+ * The Light and Dark page backgrounds (--background) as sRGB hex, for what takes no CSS variable:
+ * the web app manifest and `<meta name="theme-color">`. tokens.test.ts checks them against
+ * primitives.css.
+ */
+export const BACKGROUND_HEX = { light: '#f7f6f2', dark: '#181612' } as const

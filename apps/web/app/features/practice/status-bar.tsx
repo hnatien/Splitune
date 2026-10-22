@@ -25,7 +25,7 @@ const DisplayPanel = lazy(() =>
 // the loop badge and ⚙ (the way back out of Stage) of the chrome.
 
 export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
-  const { data, songId } = usePractice()
+  const { data, songId, guest } = usePractice()
   const song = data.song.data
   return (
     <>
@@ -68,7 +68,7 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
             <EllipsisIcon aria-hidden />
           </PopoverTrigger>
           <Suspense fallback={null}>
-            <MorePanel desktop={layout === 'desktop'} songId={songId} />
+            <MorePanel desktop={layout === 'desktop'} editor={!guest} songId={songId} />
           </Suspense>
         </Popover>
       </div>

@@ -6,6 +6,7 @@ import type { MeData } from '@/lib/session'
 import { BrandMark, Wordmark } from '@/ui/brand'
 import { buttonVariants } from '@/ui/button'
 import { UploadPill } from '../import/upload-pill'
+import { useClaimOnSignIn } from '../onboarding/claim-on-sign-in'
 import { SystemBanners } from '../system/system-banners'
 import { AccountMenu } from './account-menu'
 import { SkipLink } from './skip-link'
@@ -14,6 +15,7 @@ import { UsageMeter } from './usage-meter'
 // App shell (27 §1): 56 px bar with the wordmark (→ Library), Library, Import (the one primary
 // action), the allowance meter from md up and the account menu. Library, import and settings.
 export function AppShell({ me, children }: { me: MeData; children: React.ReactNode }) {
+  useClaimOnSignIn()
   return (
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
@@ -46,7 +48,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
           <AccountMenu email={me.email} />
         </div>
       </header>
-      <SystemBanners />
+      <SystemBanners installHint />
       <main
         id="main"
         tabIndex={-1}

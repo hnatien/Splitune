@@ -1,3 +1,4 @@
+import type * as React from 'react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
@@ -7,7 +8,6 @@ import { Button } from '@/ui/button'
 import { PedalHud } from '@/ui/pedal-hud'
 import { Banner, InlineError } from '@/ui/status-message'
 import { FocusShell } from '../shell/focus-shell'
-import { PracticeBanners } from './banners'
 import { ChordStrip } from './chord-strip'
 import { useInputMapper } from './input-mapper'
 import { isPhone, type PracticeLayout, usePracticeLayout } from './layout'
@@ -41,6 +41,10 @@ const GlanceView = lazy(() =>
 const VideoPane = lazy(() =>
   import('./video-pane').then((module) => ({ default: module.VideoPane })),
 )
+// Banners render only once an artefact or a failure calls for one, so they load on demand too.
+const PracticeBanners = lazy(() =>
+  import('./banners').then((module) => ({ default: module.PracticeBanners })),
+)
 const ShortcutsOverlay = lazy(() =>
   import('./shortcuts-overlay').then((module) => ({ default: module.ShortcutsOverlay })),
 )
@@ -59,20 +63,31 @@ function useOpened(open: boolean): boolean {
 export function PracticePage({
   songId,
   search,
+  guest = false,
   fetchAudio,
+  children,
 }: {
   songId: string
   search: PracticeSearch
+  /** A visitor's example song (onboarding): exits to Home, no editor. */
+  guest?: boolean
   fetchAudio?: FetchAudio
+  /** Extra layers inside the practice screen (onboarding's coach marks and save sheet). */
+  children?: React.ReactNode
 }) {
   return (
-    <PracticeProvider songId={songId} search={search} {...(fetchAudio ? { fetchAudio } : {})}>
-      <PracticeScreen />
+    <PracticeProvider
+      songId={songId}
+      search={search}
+      guest={guest}
+      {...(fetchAudio ? { fetchAudio } : {})}
+    >
+      <PracticeScreen>{children}</PracticeScreen>
     </PracticeProvider>
   )
 }
 
-function PracticeScreen() {
+function PracticeScreen({ children }: { children?: React.ReactNode }) {
   const practice = usePractice()
   const layout = usePracticeLayout()
   const { song } = practice.data
@@ -86,7 +101,7 @@ function PracticeScreen() {
   if (song.isPending) return <PracticeLoading />
   if (song.isError) {
     return (
-      <FocusShell>
+      <FocusShell exit={practice.guest}>
         <div className="mx-auto w-full max-w-page px-4 py-6">
           <InlineError title={apiErrorMessage(errorCode(song.error))} />
         </div>
@@ -94,14 +109,17 @@ function PracticeScreen() {
     )
   }
   return (
-    <FocusShell fill status={<PracticeStatus layout={layout} />}>
-      <PracticeBanners />
+    <FocusShell fill exit={practice.guest} status={<PracticeStatus layout={layout} />}>
+      <Suspense fallback={null}>
+        <PracticeBanners />
+      </Suspense>
       <Interrupted />
       <AudioProblem />
       <Regions layout={layout} />
       <PracticeTimeline compact={layout === 'phone-landscape'} />
       <TransportBar layout={layout} />
       <Overlays layout={layout} />
+      {children}
     </FocusShell>
   )
 }

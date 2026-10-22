@@ -6,7 +6,16 @@ import { PopoverContent } from '@/ui/popover-content'
 import { usePracticeUi } from './practice-store'
 
 // The ⋯ popover (27 §3.7.1): the shortcuts overlay and the editor on desktop, key bindings.
-export function MorePanel({ desktop, songId }: { desktop: boolean; songId: string }) {
+export function MorePanel({
+  desktop,
+  editor,
+  songId,
+}: {
+  desktop: boolean
+  /** The desktop editor needs an account (not for a visitor's example song). */
+  editor: boolean
+  songId: string
+}) {
   return (
     <PopoverContent align="end" className="w-64 gap-1 p-2">
       {desktop && (
@@ -19,14 +28,16 @@ export function MorePanel({ desktop, songId }: { desktop: boolean; songId: strin
             <KeyboardIcon aria-hidden />
             {m['practice.shortcuts']()}
           </Button>
-          <Link
-            to="/songs/$songId/edit"
-            params={{ songId }}
-            className={buttonVariants({ variant: 'ghost', className: 'justify-start' })}
-          >
-            <PencilRulerIcon aria-hidden />
-            {m['practice.open_editor']()}
-          </Link>
+          {editor && (
+            <Link
+              to="/songs/$songId/edit"
+              params={{ songId }}
+              className={buttonVariants({ variant: 'ghost', className: 'justify-start' })}
+            >
+              <PencilRulerIcon aria-hidden />
+              {m['practice.open_editor']()}
+            </Link>
+          )}
         </>
       )}
       <Link

@@ -16,7 +16,8 @@ const RESEND_AFTER_S = 30
 
 const Email = z.email()
 
-async function sendLink(email: string, next: string): Promise<string | undefined> {
+/** Emails a magic link that signs in and continues at `next`; the problem's copy, if any. */
+export async function sendLink(email: string, next: string): Promise<string | undefined> {
   const { error } = await authClient.signIn.magicLink({
     email,
     callbackURL: `/auth/verify?next=${encodeURIComponent(next)}`,

@@ -1,7 +1,15 @@
 // Token structure (docs/implementation/28-ui-quality-and-design-review.md §3): every role exists in
 // every appearance, tiers only point downwards, and the no-JS fallbacks match the attribute paths.
+
+import Color from 'colorjs.io'
 import { describe, expect, it } from 'vitest'
-import { ALIAS_ROLES, COMPONENT_TOKENS, READING_TOKENS, SEMANTIC_ROLES } from './index.ts'
+import {
+  ALIAS_ROLES,
+  BACKGROUND_HEX,
+  COMPONENT_TOKENS,
+  READING_TOKENS,
+  SEMANTIC_ROLES,
+} from './index.ts'
 import { CONTEXTS, loadRules, parseRules, readSource, tokensFor } from './testing/cascade.ts'
 
 const primitives = parseRules(readSource('primitives.css'))
@@ -146,5 +154,15 @@ describe('reading sizes (§6.3)', () => {
     expect(size({ 'data-distance': 'stand' }, '--read-tab')).toBe(
       'max(1.125rem, calc(2.25rem * calc(1 * 1)))',
     )
+  })
+})
+
+describe('BACKGROUND_HEX', () => {
+  it.each(['light', 'dark'] as const)('is the %s --background in sRGB hex', (appearance) => {
+    const tokens = tokensFor(rules, {
+      attrs: { 'data-appearance': appearance, 'data-contrast': 'normal' },
+    })
+    const hex = new Color(tokens.raw('--background')).to('srgb').toString({ format: 'hex' })
+    expect(BACKGROUND_HEX[appearance]).toBe(hex)
   })
 })

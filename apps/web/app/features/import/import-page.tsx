@@ -18,7 +18,8 @@ import { RecordPanel } from './record-panel'
 import { DuplicateSongError, startImport } from './upload-manager'
 import { usePickedFile } from './use-picked-file'
 
-type Tab = 'file' | 'link' | 'record'
+export type ImportTab = 'file' | 'link' | 'record'
+type Tab = ImportTab
 
 const TAB_KEY = 'splitune.import.tab'
 const ACCEPT = 'audio/*,video/*,.mp3,.m4a,.wav,.aif,.aiff,.flac,.ogg,.opus,.mp4,.mov,.webm'
@@ -78,10 +79,10 @@ function usePageDrop(onFile: (file: File) => void) {
   return dragging
 }
 
-export function ImportPage({ me }: { me: MeData }) {
+export function ImportPage({ me, tab: requested }: { me: MeData; tab?: Tab | undefined }) {
   const navigate = useNavigate()
   const online = useOnline()
-  const [tab, setTab] = useState<Tab>(storedTab)
+  const [tab, setTab] = useState<Tab>(() => requested ?? storedTab())
   const [instrument, setInstrument] = useState<InstrumentName>(me.primary_instrument ?? 'guitar')
   const available = analysisAvailability(me)
   const [type, setType] = useState<AnalysisKind>(available.full ? 'full' : 'lite')

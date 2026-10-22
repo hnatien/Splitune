@@ -1,4 +1,4 @@
-import { createORPCClient, ORPCError } from '@orpc/client'
+import { type ClientLink, createORPCClient, ORPCError } from '@orpc/client'
 import type { ContractRouterClient } from '@orpc/contract'
 import { OpenAPILink } from '@orpc/openapi-client/fetch'
 import { createTanstackQueryUtils } from '@orpc/tanstack-query'
@@ -11,7 +11,7 @@ import { apiFetch } from '@/lib/api-fetch'
 
 export const CSRF_HEADER = 'x-splitune-csrf'
 
-const link = new OpenAPILink(contract, {
+const network = new OpenAPILink(contract, {
   url: () => (typeof window === 'undefined' ? 'http://splitune.internal' : window.location.origin),
   headers: () => ({ [CSRF_HEADER]: '1' }),
   fetch: (request, init) => apiFetch(new Request(request, { ...init, credentials: 'same-origin' })),
@@ -29,6 +29,36 @@ const link = new OpenAPILink(contract, {
 })
 
 export type ApiClient = ContractRouterClient<typeof contract>
+
+/**
+ * Procedures answered on the device instead of by the API: a visitor's example song before they
+ * have an account (13 §1). The practice screen reads it through the same client and queries.
+ */
+export interface LocalProcedures {
+  handles(path: readonly string[], input: unknown): boolean
+  /** `api` reaches the API itself, for what the device can't answer alone (signed URLs). */
+  call(path: readonly string[], input: unknown, api: ApiClient): Promise<unknown>
+}
+
+let local: LocalProcedures | undefined
+
+export function answerLocally(procedures: LocalProcedures | undefined) {
+  local = procedures
+}
+
+/** Whether a call is answered on the device (so code that bypasses the client can skip it). */
+export function answeredLocally(path: readonly string[], input: unknown): boolean {
+  return local?.handles(path, input) ?? false
+}
+
+const networkClient: ApiClient = createORPCClient(network)
+
+const link: ClientLink<Record<never, never>> = {
+  call: (path, input, options) =>
+    local?.handles(path, input)
+      ? local.call(path, input, networkClient)
+      : network.call(path, input, options),
+}
 
 export const client: ApiClient = createORPCClient(link)
 export const orpc = createTanstackQueryUtils(client)

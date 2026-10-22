@@ -5,6 +5,7 @@ import type * as React from 'react'
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { z } from 'zod'
 import { client, orpc } from '@/lib/api'
+import { usePlaybackActive } from '@/lib/app-state'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
@@ -28,7 +29,7 @@ import {
 } from './model/data'
 import type { Edit } from './model/edits'
 import { type PracticeGrid, practiceGrid } from './model/grid'
-import { defaultLevel } from './model/levels'
+import { defaultLevel, levelsFor } from './model/levels'
 import { barRange, clipBeats, type LoopRange, restSeconds, tapBar } from './model/loops'
 import {
   type Mix,
@@ -64,6 +65,8 @@ export interface PracticeSearch {
   loop?: string | undefined
   speed?: number | undefined
   mix?: 'your-part' | 'minus-one' | 'original' | undefined
+  /** The level toggle's start (07 §6); ignored if the song's instrument has no such level. */
+  level?: MusicOptions['level'] | undefined
 }
 
 export type AudioStatus = 'none' | 'loading' | 'ready' | 'failed'
@@ -77,6 +80,8 @@ export interface Layers {
 
 export interface PracticeValue {
   songId: string
+  /** A visitor's example song, kept on the device until they sign in (13 §1). */
+  guest: boolean
   data: PracticeData
   audio: PracticeAudio
   audioStatus: AudioStatus
@@ -153,11 +158,13 @@ const fetchFromApi: FetchAudio = (request, signal) =>
 export function PracticeProvider({
   songId,
   search,
+  guest = false,
   fetchAudio = fetchFromApi,
   children,
 }: {
   songId: string
   search: PracticeSearch
+  guest?: boolean
   /** The API by default; stories pass generated audio. */
   fetchAudio?: FetchAudio
   children: React.ReactNode
@@ -239,12 +246,15 @@ export function PracticeProvider({
 
   // Audio: the stems when both sides exist, else this page's own file, else the song's audio.
   const local = localFile(songId)
-  // A file's audio exists once its analysis does; a link's once url_import has downloaded it.
+  // A file's audio exists once its analysis does; a link's once url_import has downloaded it. An
+  // example song has no audio of its own, only its stems.
   const download = data.analysis.data?.stages['url_import']?.status
+  const sourceKind = data.song.data?.source_kind
   const hasSource =
-    data.song.data?.source_kind === 'url'
+    sourceKind === 'url'
       ? download === 'done' || download === 'fallback'
-      : Boolean(data.song.data?.latest_analysis || data.upload?.analysisId)
+      : sourceKind !== 'example' &&
+        Boolean(data.song.data?.latest_analysis || data.upload?.analysisId)
   const targetKey =
     channels.length > 0 && data.entry.stems
       ? `stems:${data.entry.stems.id}`
@@ -265,6 +275,10 @@ export function PracticeProvider({
   // The load in flight (or done) and its key: a re-render never cancels it, a new source does.
   const loading = useRef<{ key: string; abort: AbortController } | null>(null)
   const busy = BUSY.includes(state)
+  useEffect(() => {
+    usePlaybackActive.setState({ active: busy })
+  }, [busy])
+  useEffect(() => () => usePlaybackActive.setState({ active: false }), [])
   useEffect(() => {
     // Never swap audio under the learner's hands: a new source waits until playback stops.
     if (!targetKey || loading.current?.key === targetKey || busy) return
@@ -415,9 +429,19 @@ export function PracticeProvider({
   useEffect(() => {
     const song = data.song.data
     if (resumed.current || !song || !clipsQuery.isFetched) return
-    if (song.player_state.selected_loop_id && !grid && data.entry.beats) return
+    // A saved clip or a ?loop= needs the bars, so wait for the beat grid when the song has one.
+    if ((song.player_state.selected_loop_id || search.loop) && !grid && data.entry.beats) return
     resumed.current = true
     const saved = song.player_state
+    // The level toggle starts at the requested level, or the instrument's default once known.
+    const levels = levelsFor(song.instrument)
+    const level =
+      search.level && levels.includes(search.level)
+        ? search.level
+        : levels.includes(options.level)
+          ? undefined
+          : defaultLevel(song.instrument)
+    if (level) setOptionsState((current) => ({ ...current, level }))
     const speed = search.speed ?? saved.speed_pct
     if (speed !== undefined) actor.send({ type: 'SET_SPEED', pct: speed })
     setSavedMix(
@@ -608,6 +632,7 @@ export function PracticeProvider({
 
   const value: PracticeValue = {
     songId,
+    guest,
     data,
     audio,
     audioStatus,
