@@ -13,6 +13,7 @@ import os
 import signal
 import socket
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from types import FrameType
@@ -232,23 +233,46 @@ class Worker:
         self.pool.close()
 
 
+class ShutdownSignals:
+    """SIGINT/SIGTERM handler: the first signal starts a graceful shutdown, a second one forces
+    exit. A repeat of the same signal within `duplicate_window_s` does not count: a terminal
+    Ctrl-C reaches both `uv run` and the worker, and uv forwards its copy a moment later."""
+
+    def __init__(
+        self,
+        duplicate_window_s: float = 1.0,
+        clock: Callable[[], float] = time.monotonic,
+        force_exit: Callable[[], None] = lambda: os._exit(1),
+    ) -> None:
+        self.stopping = threading.Event()
+        self._duplicate_window_s = duplicate_window_s
+        self._clock = clock
+        self._force_exit = force_exit
+        self._first: tuple[int, float] | None = None
+
+    def __call__(self, signum: int, _frame: FrameType | None) -> None:
+        now = self._clock()
+        if self._first is None:
+            self._first = (signum, now)
+            log.info("shutting down; finishing running jobs", extra={"signal": signum})
+            self.stopping.set()
+            return
+        first_signum, first_at = self._first
+        if signum == first_signum and now - first_at < self._duplicate_window_s:
+            return
+        log.warning("second signal; exiting now")
+        self._force_exit()
+
+
 def main() -> None:
     settings = load_settings()
     configure_logging(settings.log_level)
     worker = Worker(settings)
-    stopping = threading.Event()
-
-    def on_signal(signum: int, _frame: FrameType | None) -> None:
-        if stopping.is_set():
-            log.warning("second signal; exiting now")
-            os._exit(1)
-        log.info("shutting down; finishing running jobs", extra={"signal": signum})
-        stopping.set()
-
-    signal.signal(signal.SIGTERM, on_signal)
-    signal.signal(signal.SIGINT, on_signal)
+    signals = ShutdownSignals()
+    signal.signal(signal.SIGTERM, signals)
+    signal.signal(signal.SIGINT, signals)
     worker.start()
-    while not stopping.wait(1.0):
+    while not signals.stopping.wait(1.0):
         pass
     worker.shutdown()
     log.info("worker stopped")

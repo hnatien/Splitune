@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import signal
 from typing import Any
 
 import pytest
@@ -10,6 +11,7 @@ from splitune_ml_core.errors import StageError
 from splitune_ml_core.keys import cache_key, is_safe_key
 from splitune_ml_core.logs import JsonFormatter, redact
 from splitune_ml_core.paths import CONTRACT_FIXTURES_DIR
+from splitune_ml_core.worker import ShutdownSignals
 
 REF = contracts.ModelRef(
     model_id="beat_this/final0",
@@ -89,3 +91,41 @@ def test_validate_artefact_checks_contract_kind_and_major() -> None:
 def test_stage_errors_need_machine_codes() -> None:
     with pytest.raises(ValueError, match="not a machine code"):
         StageError("Traceback: boom")
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.now = 100.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_forwarded_duplicate_signal_does_not_force_exit() -> None:
+    clock, forced = _Clock(), list[bool]()
+    signals = ShutdownSignals(clock=clock, force_exit=lambda: forced.append(True))
+    signals(signal.SIGINT, None)
+    assert signals.stopping.is_set()
+    clock.now += 0.2  # uv run forwarding the Ctrl-C it also received
+    signals(signal.SIGINT, None)
+    assert forced == []
+
+
+def test_deliberate_second_signal_forces_exit() -> None:
+    clock, forced = _Clock(), list[bool]()
+    signals = ShutdownSignals(clock=clock, force_exit=lambda: forced.append(True))
+    signals(signal.SIGINT, None)
+    clock.now += 0.2
+    signals(signal.SIGINT, None)
+    clock.now += 1.5
+    signals(signal.SIGINT, None)
+    assert forced == [True]
+
+
+def test_different_second_signal_forces_exit_at_once() -> None:
+    clock, forced = _Clock(), list[bool]()
+    signals = ShutdownSignals(clock=clock, force_exit=lambda: forced.append(True))
+    signals(signal.SIGTERM, None)
+    clock.now += 0.1
+    signals(signal.SIGINT, None)
+    assert forced == [True]
