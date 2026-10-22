@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { CSRF_HEADER } from '../src/app.ts'
-import { type Caller, caller, createTestApi, signIn } from './helpers.ts'
+import { type Caller, caller, createTestApi, nextIp, signIn } from './helpers.ts'
 
 const api = createTestApi()
 let cookie: string
@@ -201,5 +201,40 @@ describe('cross-cutting', () => {
   it('serves health and readiness', async () => {
     expect(await json(await api.app.request('/internal/health'))).toEqual({ status: 'ok' })
     expect(await json(await api.app.request('/internal/ready'))).toEqual({ status: 'ok' })
+  })
+})
+
+describe('POST /internal/csp-report', () => {
+  const report = (body: unknown, type = 'application/csp-report') =>
+    api.app.request('/internal/csp-report', {
+      method: 'POST',
+      headers: { 'content-type': type, 'x-forwarded-for': nextIp() },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    })
+
+  it('accepts both report formats without a session or CSRF header', async () => {
+    const legacy = await report({
+      'csp-report': {
+        'document-uri': 'http://localhost:3000/library',
+        'effective-directive': 'img-src',
+        'blocked-uri': 'https://tracker.example/p.png',
+      },
+    })
+    expect(legacy.status).toBe(204)
+    const batch = await report(
+      [
+        {
+          type: 'csp-violation',
+          body: { effectiveDirective: 'script-src-elem', blockedURL: 'inline' },
+        },
+      ],
+      'application/reports+json',
+    )
+    expect(batch.status).toBe(204)
+  })
+
+  it('drops unreadable reports quietly and refuses large ones', async () => {
+    expect((await report('{not json')).status).toBe(204)
+    expect((await report({ 'csp-report': 'x'.repeat(100 * 1024) })).status).toBe(413)
   })
 })

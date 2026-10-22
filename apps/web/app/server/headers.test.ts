@@ -54,4 +54,21 @@ describe('security headers (17 §5)', () => {
     expect(local).not.toHaveProperty('strict-transport-security')
     expect(live['strict-transport-security']).toContain('max-age=63072000')
   })
+
+  it('reports violations to the API, and sends the policy report-only when asked', () => {
+    const csp = contentSecurityPolicy({ nonce: 'n', storage: [], dev: false })
+    expect(directive(csp, 'report-uri')).toEqual(['/internal/csp-report'])
+    const enforced = securityHeaders({ nonce: 'n', storage: [], dev: false, production: true })
+    expect(enforced['content-security-policy']).toContain("default-src 'self'")
+    expect(enforced).not.toHaveProperty('content-security-policy-report-only')
+    const trial = securityHeaders({
+      nonce: 'n',
+      storage: [],
+      dev: false,
+      production: true,
+      reportOnly: true,
+    })
+    expect(trial).not.toHaveProperty('content-security-policy')
+    expect(trial['content-security-policy-report-only']).toBe(enforced['content-security-policy'])
+  })
 })

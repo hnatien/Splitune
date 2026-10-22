@@ -5,6 +5,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import { reactCompilerPreset } from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { defineConfig, loadEnv } from 'vite'
+import { BASE_HEADERS } from './app/server/headers.ts'
 import { alias, sharedPlugins } from './vite.base.ts'
 
 // Nitro serves .output/public as the site root.
@@ -28,7 +29,12 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       tanstackStart({ srcDirectory: 'app' }),
       // Railway's edge doesn't compress, so static assets ship pre-gzipped and pre-brotlied.
-      nitro({ preset: 'node', compressPublicAssets: true }),
+      // Static files skip app/server.ts: they get the base security headers here (17 §5).
+      nitro({
+        preset: 'node',
+        compressPublicAssets: true,
+        routeRules: { '/**': { headers: BASE_HEADERS } },
+      }),
       ...sharedPlugins(),
       babel({ presets: [reactCompilerPreset()] }),
       // The service worker (10 §6): app/sw.ts bundled into Nitro's public folder as /sw.js with

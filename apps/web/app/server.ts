@@ -11,8 +11,9 @@ const API_PATH = /^\/(?:v1|internal)(?:\/|$)/
 routeApiInProcess(forwardToApi)
 
 const storage = storageSources(process.env)
-const { NODE_ENV } = process.env
+const { NODE_ENV, CSP_REPORT_ONLY } = process.env
 const production = NODE_ENV === 'production'
+const reportOnly = CSP_REPORT_ONLY === 'true'
 const dev = import.meta.env.DEV
 
 type NodeBindings = { runtime?: { node?: { req?: unknown; res?: unknown } } }
@@ -46,7 +47,7 @@ export default createServerEntry({
     const response = await handler.fetch(plainRequest(request, headers))
     const secured = new Response(response.body, response)
     for (const [name, header] of Object.entries(
-      securityHeaders({ nonce: value, storage, dev, production }),
+      securityHeaders({ nonce: value, storage, dev, production, reportOnly }),
     )) {
       secured.headers.set(name, header)
     }

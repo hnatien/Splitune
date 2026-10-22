@@ -83,6 +83,8 @@ export const RATE_LIMITS = {
   events: { limit: 120, windowS: 60 },
   // per user, POST /v1/me/export ("Download my data")
   exports: { limit: 5, windowS: 3600 },
+  // per IP, POST /internal/csp-report (browsers batch violations; a broken page sends many)
+  cspReports: { limit: 60, windowS: 60 },
 } as const
 
 export function userRateLimit(policy: keyof typeof RATE_LIMITS) {

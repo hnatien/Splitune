@@ -7,6 +7,11 @@ export const NONCE_HEADER = 'x-splitune-csp-nonce'
 
 const YOUTUBE_FRAMES = ['https://www.youtube-nocookie.com', 'https://www.youtube.com']
 
+// Where browsers post violations (the API's /internal/csp-report, logged as "csp violation").
+// report-uri only: Chromium ignores it next to report-to, and its Reporting API uploads were never
+// delivered in testing; every Tier 1 browser honours report-uri.
+const CSP_REPORT_PATH = '/internal/csp-report'
+
 /**
  * Where the browser talks to object storage (presigned part PUTs, stem and video GETs): the
  * S3 endpoint's origin, widened to its subdomains when the bucket is addressed virtual-host style
@@ -48,22 +53,39 @@ export function contentSecurityPolicy({ nonce, storage, dev }: CspOptions): stri
     'base-uri': ["'self'"],
     'form-action': ["'self'"],
     'frame-ancestors': ["'none'"],
+    'report-uri': [CSP_REPORT_PATH],
   }
   return Object.entries(directives)
     .map(([name, values]) => `${name} ${values.join(' ')}`)
     .join('; ')
 }
 
+/**
+ * Headers on every response, static files included: Nitro serves .output/public before the server
+ * entry runs (vite.config.ts route rules), so those never get securityHeaders().
+ */
+export const BASE_HEADERS = {
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-content-type-options': 'nosniff',
+} as const
+
 export function securityHeaders(
-  options: CspOptions & { production: boolean },
+  options: CspOptions & {
+    production: boolean
+    /**
+     * CSP_REPORT_ONLY: send the policy as Content-Security-Policy-Report-Only, so a changed policy
+     * can be watched in the logs before it's enforced (17 §9).
+     */
+    reportOnly?: boolean
+  },
 ): Record<string, string> {
   return {
-    'content-security-policy': contentSecurityPolicy(options),
-    'referrer-policy': 'strict-origin-when-cross-origin',
+    ...BASE_HEADERS,
+    [options.reportOnly ? 'content-security-policy-report-only' : 'content-security-policy']:
+      contentSecurityPolicy(options),
     // Microphone for "Record yourself" and (v1) mic scoring; the page is one document across
     // client-side navigation, so the grant can't be limited to /import.
     'permissions-policy': 'microphone=(self), camera=(), geolocation=(), midi=(self)',
-    'x-content-type-options': 'nosniff',
     ...(options.production
       ? { 'strict-transport-security': 'max-age=63072000; includeSubDomains; preload' }
       : {}),

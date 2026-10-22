@@ -18,6 +18,7 @@ import { WebhookRejected } from './billing/provider.ts'
 import { createBilling } from './billing/service.ts'
 import { createClock } from './clock.ts'
 import type { ApiConfig } from './config.ts'
+import { parseCspReports } from './csp-report.ts'
 import { apiError, envelopeResponse, toEnvelope } from './errors.ts'
 import { EventHub } from './events.ts'
 import { createFlags } from './flags.ts'
@@ -46,6 +47,8 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 const MAX_BODY_BYTES = 1024 * 1024
 export const WEBHOOK_PATH = '/internal/billing/webhook'
 export const DEV_CLOCK_PATH = '/internal/dev/clock'
+export const CSP_REPORT_PATH = '/internal/csp-report'
+const MAX_CSP_REPORT_BYTES = 64 * 1024
 // How often renewals, expiries and reminders are settled while the app is awake (requests that
 // read entitlements settle their own user first).
 const SETTLE_INTERVAL_MS = 10 * 60_000
@@ -179,6 +182,24 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
       return c.json({ status: 'unavailable' }, 503)
     }
   })
+
+  // CSP violations (17 §5, §9) from the web app's report-uri / report-to: logged so a policy
+  // change can run report-only before it's enforced (CSP_REPORT_ONLY). Anonymous, so limited per
+  // IP and kept small; a report that can't be read is dropped quietly, as browsers never retry.
+  app.post(
+    CSP_REPORT_PATH,
+    bodyLimit({ maxSize: MAX_CSP_REPORT_BYTES, onError: (c) => c.body(null, 413) }),
+    async (c) => {
+      const { limit, windowS } = RATE_LIMITS.cspReports
+      const allowed = (await hitRateLimit(db, `csp:ip:${clientIp(c)}`, limit, windowS)).allowed
+      if (allowed) {
+        for (const violation of parseCspReports(await c.req.json().catch(() => undefined))) {
+          c.get('log').warn(violation, 'csp violation')
+        }
+      }
+      return c.body(null, 204)
+    },
+  )
 
   app.use(
     '/internal/*',
