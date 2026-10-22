@@ -3,7 +3,16 @@ import { z } from 'zod'
 import { Analysis, AnalysisAccepted, CreateAnalysisInput } from './analyses.ts'
 import { TrackInput } from './analytics.ts'
 import { ArtefactUrlInput, ArtefactUrlOutput } from './artefacts.ts'
-import { BillingPlansOutput, CheckoutInput } from './billing.ts'
+import {
+  BillingPlansOutput,
+  CheckoutInput,
+  MockCheckoutInput,
+  MockCheckoutOutput,
+  MockPortalInput,
+  MockPortalOutput,
+  MockSession,
+  MockSessionInput,
+} from './billing.ts'
 import { IdInput, page, RedirectOutput } from './common.ts'
 import {
   CorrectionsBatchInput,
@@ -232,6 +241,19 @@ export const contract = {
       .input(CheckoutInput)
       .output(RedirectOutput),
     portal: base.route({ method: 'POST', path: '/v1/billing/portal' }).output(RedirectOutput),
+    // Personal mode only (25 §2): the mock checkout and portal pages act through these.
+    mockSession: base
+      .route({ method: 'GET', path: '/v1/billing/mock/session' })
+      .input(MockSessionInput)
+      .output(MockSession),
+    mockCheckout: base
+      .route({ method: 'POST', path: '/v1/billing/mock/checkout' })
+      .input(MockCheckoutInput)
+      .output(MockCheckoutOutput),
+    mockPortal: base
+      .route({ method: 'POST', path: '/v1/billing/mock/portal' })
+      .input(MockPortalInput)
+      .output(MockPortalOutput),
   },
 }
 
