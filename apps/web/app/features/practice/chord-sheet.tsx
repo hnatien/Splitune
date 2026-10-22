@@ -43,7 +43,7 @@ export function ChordSheet({
       aria-label={m['practice.chord_sheet']()}
       data-slot="chord-sheet"
       className={cn(
-        'min-h-0 flex-1 overflow-y-auto bg-paper px-4 py-4 text-ink motion-safe:animate-in motion-safe:fade-in',
+        'min-h-0 flex-1 overflow-y-auto bg-paper px-4 py-4 text-ink motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter',
         className,
       )}
     >

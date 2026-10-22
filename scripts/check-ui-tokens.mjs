@@ -29,6 +29,8 @@ const OUTLINE_REMOVED = /(?<![\w-])(?:[\w-]+:)*outline-(?:none|hidden)(?![\w-])/
 const OUTLINE_REPLACED =
   /(?<![\w-])focus-visible:(?:after:|before:)?-?outline-(?!none|hidden)[\w(-]/
 const CSS_OUTLINE_NONE = /outline\s*:\s*(?:none|0)\s*[;}]/g
+const MOTION =
+  /(?<![\w-])(?:[\w-]+:)*(?:(?:duration|delay)-(?:(?!0(?![\w-]))\d+|\[[^\]]*\d+m?s[^\]]*\])|ease-(?:in|out|in-out|linear|\[[^\]]*\])|\[transition:[^\]]*\d+m?s[^\]]*\])(?![\w-])/g
 
 const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
   cwd: root,
@@ -55,6 +57,13 @@ for (const file of files) {
       violations.push(`${file}:${lineOf(text, match.index)}: raw colour ${match[0]} — use a token`)
     }
   }
+  if (!file.endsWith('.css')) {
+    for (const match of text.matchAll(MOTION)) {
+      violations.push(
+        `${file}:${lineOf(text, match.index)}: motion ${match[0]} — use --duration-*/--ease-* tokens`,
+      )
+    }
+  }
   for (const match of text.matchAll(PALETTE)) {
     violations.push(
       `${file}:${lineOf(text, match.index)}: palette class ${match[0]} — use a semantic colour`,
@@ -79,10 +88,10 @@ for (const file of files) {
 }
 
 if (violations.length > 0) {
-  console.error('UI token violations (docs/implementation/26-design-system.md §3, §9):')
+  console.error('UI token violations (docs/implementation/26-design-system.md §3, §9, §10):')
   for (const violation of violations) console.error(`  ${violation}`)
   process.exit(1)
 }
 console.log(
-  `check-ui-tokens: ${files.length} files, no raw colours, palette classes or bare outline-none.`,
+  `check-ui-tokens: ${files.length} files, no raw colours, palette classes, bare outline-none or one-off motion.`,
 )

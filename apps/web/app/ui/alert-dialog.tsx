@@ -21,7 +21,7 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
     <AlertDialogPrimitive.Backdrop
       data-slot="alert-dialog-overlay"
       className={cn(
-        'fixed inset-0 isolate z-(--z-overlay) bg-background/80 duration-(--duration-slow) data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
+        'fixed inset-0 isolate z-(--z-overlay) bg-background/80 duration-(--duration-slow) data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0',
         className,
       )}
       {...props}
@@ -43,7 +43,7 @@ function AlertDialogContent({
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          'group/alert-dialog-content fixed top-1/2 left-1/2 z-(--z-overlay) grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-popover p-6 text-base text-popover-foreground shadow-3 duration-(--duration-slow) max-w-[calc(100%-2rem)] data-[size=default]:sm:max-w-md data-[size=sm]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          'group/alert-dialog-content fixed top-1/2 left-1/2 z-(--z-overlay) grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-popover p-6 text-base text-popover-foreground shadow-3 duration-(--duration-slow) max-w-[calc(100%-2rem)] data-[size=default]:sm:max-w-md data-[size=sm]:sm:max-w-sm data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
           className,
         )}
         {...props}

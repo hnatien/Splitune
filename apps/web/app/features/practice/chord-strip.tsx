@@ -52,7 +52,7 @@ export function ChordStrip({ legend = true, className }: { legend?: boolean; cla
     <div
       data-slot="chord-strip"
       className={cn(
-        'flex min-h-[5.5rem] shrink-0 items-center gap-3 overflow-hidden border-b border-border px-4 py-2 motion-safe:animate-in motion-safe:fade-in',
+        'flex min-h-[5.5rem] shrink-0 items-center gap-3 overflow-hidden border-b border-border px-4 py-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter',
         className,
       )}
     >
