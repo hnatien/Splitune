@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { Instrument } from '../analysis/common.ts'
-import { PaidPlan } from './billing.ts'
 import { ExampleId } from './examples.ts'
 import { Level } from './me.ts'
+import { PaidPlan } from './plan.ts'
 
 // Product events (16 §2), the personal-mode stand-in for PostHog: rows in analytics_events. Only
 // the events built so far; props never carry audio, titles, file names or emails. The typed
@@ -37,15 +37,6 @@ export const AnalyticsEvent = z.discriminatedUnion('name', [
   z.object({
     name: z.literal('upgrade_clicked'),
     props: z.object({ trigger: PaywallTrigger, plan: PaidPlan }),
-  }),
-])
-
-// Recorded by the API from billing webhooks, never sent by clients.
-export const ServerAnalyticsEvent = z.discriminatedUnion('name', [
-  z.object({ name: z.literal('checkout_completed'), props: z.object({ plan: PaidPlan }) }),
-  z.object({
-    name: z.literal('subscription_cancelled'),
-    props: z.object({ tenure_days: z.number().int().nonnegative() }),
   }),
 ])
 

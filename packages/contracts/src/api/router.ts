@@ -3,17 +3,7 @@ import { z } from 'zod'
 import { Analysis, AnalysisAccepted, CreateAnalysisInput } from './analyses.ts'
 import { TrackInput } from './analytics.ts'
 import { ArtefactUrlInput, ArtefactUrlOutput } from './artefacts.ts'
-import {
-  BillingPlansOutput,
-  CheckoutInput,
-  MockCheckoutInput,
-  MockCheckoutOutput,
-  MockPortalInput,
-  MockPortalOutput,
-  MockSession,
-  MockSessionInput,
-} from './billing.ts'
-import { IdInput, page, RedirectOutput } from './common.ts'
+import { IdInput, page } from './common.ts'
 import {
   CorrectionsBatchInput,
   CorrectionsBatchOutput,
@@ -76,7 +66,9 @@ const errors = {
   },
 }
 
-const base = oc.errors(errors)
+// Every procedure's builder, with the typed errors (billing-router.ts uses it too).
+export const procedureBase = oc.errors(errors)
+const base = procedureBase
 
 // Router definition without handlers (04-api-contract.md "Public procedures"): apps/api implements
 // it and apps/web gets a typed client from it. Legal (DMCA) routes are dormant in personal mode.
@@ -233,27 +225,6 @@ export const contract = {
       .route({ method: 'GET', path: '/v1/system/worker-status' })
       .output(WorkerStatus),
     stats: base.route({ method: 'GET', path: '/v1/system/stats' }).output(SystemStats),
-  },
-  billing: {
-    plans: base.route({ method: 'GET', path: '/v1/billing/plans' }).output(BillingPlansOutput),
-    checkout: base
-      .route({ method: 'POST', path: '/v1/billing/checkout' })
-      .input(CheckoutInput)
-      .output(RedirectOutput),
-    portal: base.route({ method: 'POST', path: '/v1/billing/portal' }).output(RedirectOutput),
-    // Personal mode only (25 §2): the mock checkout and portal pages act through these.
-    mockSession: base
-      .route({ method: 'GET', path: '/v1/billing/mock/session' })
-      .input(MockSessionInput)
-      .output(MockSession),
-    mockCheckout: base
-      .route({ method: 'POST', path: '/v1/billing/mock/checkout' })
-      .input(MockCheckoutInput)
-      .output(MockCheckoutOutput),
-    mockPortal: base
-      .route({ method: 'POST', path: '/v1/billing/mock/portal' })
-      .input(MockPortalInput)
-      .output(MockPortalOutput),
   },
 }
 

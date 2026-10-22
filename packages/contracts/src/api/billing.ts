@@ -1,7 +1,5 @@
 import { z } from 'zod'
-
-export const PaidPlan = z.enum(['paid_monthly', 'paid_yearly'])
-export const Plan = z.enum(['free', ...PaidPlan.options])
+import { PaidPlan } from './plan.ts'
 
 export const BillingPlan = z.object({
   plan: PaidPlan,
@@ -10,9 +8,17 @@ export const BillingPlan = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/),
 })
 
+// What each plan includes per period (23 §2; remote-configurable, so never hard-coded in clients).
+export const PlanAllowances = z.object({
+  welcome: z.number().int().nonnegative(),
+  free_lite_per_month: z.number().int().nonnegative(),
+  plus_full_per_period: z.number().int().nonnegative(),
+})
+
 export const BillingPlansOutput = z.object({
   provider: z.enum(['mock', 'stripe', 'paddle']),
   plans: z.array(BillingPlan),
+  allowances: PlanAllowances,
 })
 
 // A same-origin path (no scheme, no `//host`, no backslashes).
