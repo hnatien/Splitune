@@ -9,11 +9,12 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "dev": "docker compose -f infra/docker-compose.yml up -d && turbo run dev",
+    "dev:all": "node scripts/dev.mjs",
     "build": "turbo run build",
     "lint": "biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs && turbo run lint",
     "format": "biome check --write .",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test && vitest run --dir scripts",
     "e2e": "turbo run e2e",
     "contracts:gen": "node scripts/contracts.mjs gen",
     "contracts:check": "node scripts/contracts.mjs check",
