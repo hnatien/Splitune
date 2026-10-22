@@ -1,7 +1,9 @@
 import type { Database } from '../client.ts'
 import { analysesRepo } from './analyses.ts'
+import { analyticsRepo } from './analytics.ts'
 import { artefactsRepo } from './artefacts.ts'
 import { correctionsRepo } from './corrections.ts'
+import { examplesRepo } from './examples.ts'
 import { loopsRepo } from './loops.ts'
 import { practiceRepo } from './practice.ts'
 import { songsRepo } from './songs.ts'
@@ -10,8 +12,11 @@ import { usageRepo } from './usage.ts'
 import { usersRepo } from './users.ts'
 
 export type * from './analyses.ts'
+export type * from './analytics.ts'
 export type * from './artefacts.ts'
 export type * from './corrections.ts'
+export type * from './examples.ts'
+export { SYSTEM_USER } from './examples.ts'
 export type * from './loops.ts'
 export type * from './practice.ts'
 export type * from './songs.ts'
@@ -30,9 +35,11 @@ export function createRepositories(db: Database) {
     analyses: analysesRepo(db),
     artefacts: artefactsRepo(db),
     corrections: correctionsRepo(db),
+    examples: examplesRepo(db),
     loops: loopsRepo(db),
     practice: practiceRepo(db),
     usage: usageRepo(db),
+    analytics: analyticsRepo(db),
   }
 }
 

@@ -100,5 +100,30 @@ export const renderKey = (
 ) =>
   `${versionPrefix(userId, analysisId, version)}render/${check(instrument, INSTRUMENT, 'instrument')}.alphatex`
 
+// Example songs (13 §1): Splitune-owned analyses, shared by every visitor and every claimed copy.
+// Each build gets its own prefix, so cached files never change under a URL.
+const EXAMPLE_ID = /^[a-z0-9][a-z0-9-]{0,62}$/
+const EXAMPLE_BUILD = /^\d{8}T\d{6}Z$/
+const EXAMPLE_PATH = /^[a-z0-9][a-z0-9_.-]{0,63}(\/[a-z0-9][a-z0-9_.-]{0,63})?$/
+
+export const EXAMPLES_PREFIX = 'assets/examples/'
+
+export const examplePrefix = (exampleId: string, build: string) =>
+  `${EXAMPLES_PREFIX}${check(exampleId, EXAMPLE_ID, 'example id')}/${check(build, EXAMPLE_BUILD, 'example build')}/`
+
+// `path` is relative to the build: an analysis document (beats.json) or a stem (stems/guitar.m4a).
+export function exampleKey(exampleId: string, build: string, path: string): string {
+  return assertSafeKey(
+    `${examplePrefix(exampleId, build)}${check(path, EXAMPLE_PATH, 'example path')}`,
+  )
+}
+
+// Throws unless `key` is a safe key inside `prefix` (a user's or an example build's).
+export function assertWithin(prefix: string, key: string): string {
+  assertSafeKey(key)
+  if (!key.startsWith(prefix)) throw new StorageKeyError('key outside prefix')
+  return key
+}
+
 export const recordingKey = (userId: string, recordingId: string) =>
   `${userPrefix(userId)}rec/${check(recordingId, UUID, 'recording id')}.webm`

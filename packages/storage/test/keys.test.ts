@@ -4,6 +4,9 @@ import {
   artefactKey,
   assertOwnedKey,
   assertSafeKey,
+  assertWithin,
+  exampleKey,
+  examplePrefix,
   rawUploadKey,
   recordingKey,
   renderKey,
@@ -90,5 +93,38 @@ describe('assertOwnedKey', () => {
   it('rejects non-ASCII and over-long keys', () => {
     expect(() => assertSafeKey(`u/${user}/é.json`)).toThrow(StorageKeyError)
     expect(() => assertSafeKey(`u/${user}/${'a'.repeat(1024)}`)).toThrow(StorageKeyError)
+  })
+})
+
+describe('example keys', () => {
+  const build = '20261022T153000Z'
+
+  it('build assets/examples/{id}/{build}/{path}', () => {
+    expect(examplePrefix('ill-fate', build)).toBe(`assets/examples/ill-fate/${build}/`)
+    expect(exampleKey('ill-fate', build, 'beats.json')).toBe(
+      `assets/examples/ill-fate/${build}/beats.json`,
+    )
+    expect(exampleKey('ill-fate', build, 'stems/guitar.m4a')).toBe(
+      `assets/examples/ill-fate/${build}/stems/guitar.m4a`,
+    )
+  })
+
+  it.each([
+    () => examplePrefix('Ill Fate', build),
+    () => examplePrefix('ill-fate', '2026-10-22'),
+    () => exampleKey('ill-fate', build, '../beats.json'),
+    () => exampleKey('ill-fate', build, 'stems/../../x.json'),
+    () => exampleKey('ill-fate', build, 'a/b/c.json'),
+    () => exampleKey('ill-fate', build, '/beats.json'),
+  ])('reject invalid segments (%#)', (make) => {
+    expect(make).toThrow(StorageKeyError)
+  })
+
+  it('assertWithin keeps a key inside its prefix', () => {
+    const prefix = examplePrefix('ill-fate', build)
+    expect(assertWithin(prefix, `${prefix}stems/bass.m4a`)).toBe(`${prefix}stems/bass.m4a`)
+    for (const key of [`${prefix}../other/x.json`, `assets/examples/other/${build}/x.json`]) {
+      expect(() => assertWithin(prefix, key)).toThrow(StorageKeyError)
+    }
   })
 })
