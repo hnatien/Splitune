@@ -1,12 +1,18 @@
+import { inSpan } from '@splitune/analytics/tracing'
 import { queue } from '@splitune/db'
 import type { WorkerConfig } from './config.ts'
 import { errorName, executeJob, type Services } from './execute.ts'
+import { DELETE_ACCOUNT_KIND, EXPORT_KIND } from './privacy.ts'
+import type { Scheduler } from './scheduler.ts'
 
-// One slot claiming `finalize` and `delete_prefix` jobs (runner `node`): sleeps until NOTIFY
-// jobs_node or the poll interval, heartbeats its job, writes worker_heartbeats every 30 s and
-// re-queues stale jobs of crashed workers. stop() finishes the running job before resolving.
+// One slot claiming `finalize` and `delete_prefix` jobs (runner `node`), plus the privacy jobs when
+// the worker has its maintenance login: sleeps until NOTIFY jobs_node or the poll interval,
+// heartbeats its job, writes worker_heartbeats every 30 s and re-queues stale jobs of crashed
+// workers. The lifecycle scheduler, if any, ticks beside it. stop() finishes the running job and
+// scheduled run before resolving.
 
 export const KINDS = ['finalize', 'delete_prefix']
+export const PRIVACY_KINDS = [EXPORT_KIND, DELETE_ACCOUNT_KIND]
 export const WORKER_VERSION = '0.0.0'
 
 export class NodeWorker {
@@ -20,11 +26,15 @@ export class NodeWorker {
   private readonly services: Services
   private readonly config: WorkerConfig
   private readonly hostname: string
+  private readonly scheduler: Scheduler | undefined
+  private readonly kinds: string[]
 
-  constructor(services: Services, config: WorkerConfig, hostname: string) {
+  constructor(services: Services, config: WorkerConfig, hostname: string, scheduler?: Scheduler) {
     this.services = services
     this.config = config
     this.hostname = hostname
+    this.scheduler = scheduler
+    this.kinds = services.privacy ? [...KINDS, ...PRIVACY_KINDS] : KINDS
   }
 
   async start(): Promise<void> {
@@ -32,6 +42,7 @@ export class NodeWorker {
     await this.listen()
     this.housekeeping = setInterval(() => void this.tick(), this.config.workerHeartbeatMs)
     this.loop = this.run()
+    this.scheduler?.start()
   }
 
   async stop(): Promise<void> {
@@ -39,7 +50,7 @@ export class NodeWorker {
     this.wake?.()
     clearInterval(this.housekeeping)
     clearTimeout(this.reconnect)
-    await this.loop
+    await Promise.all([this.loop, this.scheduler?.stop()])
     await this.listener?.close()
   }
 
@@ -48,12 +59,23 @@ export class NodeWorker {
     while (!this.stopping) {
       let job: queue.Job | undefined
       try {
-        job = await queue.claim(db, 'node', workerId, { kinds: KINDS })
+        job = await queue.claim(db, 'node', workerId, { kinds: this.kinds })
       } catch (error) {
         log.warn('claim failed', { error_code: errorName(error) })
       }
       if (job !== undefined) {
-        await executeJob(this.services, job)
+        const claimed = job
+        await inSpan(
+          `job ${claimed.kind}`,
+          {
+            'job.id': claimed.id,
+            'job.kind': claimed.kind,
+            ...(claimed.analysisId ? { analysis_id: claimed.analysisId } : {}),
+          },
+          async (span) => {
+            span.setAttribute('job.status', await executeJob(this.services, claimed))
+          },
+        )
         continue
       }
       await new Promise<void>((resolve) => {

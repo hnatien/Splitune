@@ -51,6 +51,7 @@ const worker = new NodeWorker(
     workerId: config.workerId,
     log: createLogger((line) => logs.push(line)),
     jobHeartbeatMs: config.jobHeartbeatMs,
+    hashUser: (id) => `test-hash-${id}`,
   },
   config,
   'test-host',
@@ -212,6 +213,25 @@ describe('node worker finalize', () => {
       "select runner from worker_heartbeats where worker_id = 'node-test'",
     )
     expect(presence).toEqual([{ runner: 'node' }])
+    // Product events (16 §2) under the user's hash, with declared props only.
+    const { rows: telemetry } = await owner.query(
+      `select name, props from analytics_events where user_hash = $1 and props->>'type' = 'full'
+       order by id desc limit 1`,
+      [`test-hash-${userId}`],
+    )
+    expect(telemetry[0]).toMatchObject({
+      name: 'analysis_done',
+      props: { status: 'done', type: 'full', instrument: 'guitar', recommended_view: 'tab' },
+    })
+    expect(Object.keys(telemetry[0].props).sort()).toEqual([
+      'compute_ms',
+      'fallback_stages',
+      'instrument',
+      'recommended_view',
+      'status',
+      'total_ms',
+      'type',
+    ])
     // No object keys or URLs in the logs.
     expect(logs.join('')).not.toContain(userId)
   })

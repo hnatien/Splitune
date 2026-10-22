@@ -24,12 +24,21 @@ import {
 import { z } from 'zod'
 import { type FinalizeInputs, finalize } from './finalize.ts'
 import type { Logger } from './log.ts'
+import {
+  DELETE_ACCOUNT_KIND,
+  deleteAccount,
+  EXPORT_KIND,
+  exportUserData,
+  PrivacyJobError,
+  type PrivacyServices,
+} from './privacy.ts'
 import type { ViewsConfig } from './views.ts'
 
 // Runs one claimed job. finalize: validate → stage.started → read artefacts → finalize → write
 // tab/render/summary → one transaction that records the result, ends the analysis and completes
-// the job (packages/db `finishStage`); same request rules as the Python executor. delete_prefix:
-// remove a deleted song's objects (03 "Retention and deletion").
+// the job (packages/db `finishStage`); same request rules as the Python executor; then the
+// analysis' product events (16 §2). delete_prefix: remove a deleted song's objects (03 "Retention
+// and deletion"). export_user_data / delete_account: privacy self-service (privacy.ts).
 
 export interface Services {
   db: Database
@@ -38,6 +47,10 @@ export interface Services {
   workerId: string
   log: Logger
   jobHeartbeatMs: number
+  // Pseudonymous user hash for analytics events; none = no events recorded.
+  hashUser?: (userId: string) => string
+  // Privacy jobs need the maintenance login (worker.ts claims them only then).
+  privacy?: PrivacyServices
 }
 
 export class StageError extends Error {
@@ -308,7 +321,14 @@ export async function executeJob(
   services: Services,
   job: Job,
 ): Promise<'done' | 'queued' | 'failed' | 'lost'> {
-  if (job.kind === 'delete_prefix') return executeCleanup(services, job)
+  if (job.kind === 'delete_prefix') return executeCleanup(services, job, cleanup)
+  const { privacy } = services
+  if (privacy && job.kind === EXPORT_KIND) {
+    return executeCleanup(services, job, () => exportUserData(privacy, job))
+  }
+  if (privacy && job.kind === DELETE_ACCOUNT_KIND) {
+    return executeCleanup(services, job, () => deleteAccount(privacy, job))
+  }
   const started = Date.now()
   const context = {
     job_id: job.id,
@@ -340,6 +360,7 @@ export async function executeJob(
       return 'lost'
     }
     services.log.info('stage done', { ...context, wall_s: (Date.now() - started) / 1000 })
+    await recordTelemetry(services, analysis.id)
     return 'done'
   } catch (error) {
     const stageError = error instanceof StageError ? error : new StageError('internal_error', true)
@@ -367,20 +388,40 @@ export async function executeJob(
   }
 }
 
+// Best effort: an analysis without its events is still a finished analysis.
+async function recordTelemetry(services: Services, analysisId: string): Promise<void> {
+  if (!services.hashUser) return
+  try {
+    await queue.recordAnalysisTelemetry(services.db, analysisId, services.hashUser)
+  } catch (error) {
+    services.log.warn('analysis events not recorded', {
+      analysis_id: analysisId,
+      error_code: errorName(error),
+    })
+  }
+}
+
+// Jobs without an analysis (object cleanup, privacy requests): run, complete, or fail with a code.
 async function executeCleanup(
   services: Services,
   job: Job,
+  work: (services: Services, job: Job) => Promise<boolean>,
 ): Promise<'done' | 'queued' | 'failed' | 'lost'> {
   const context = { job_id: job.id, kind: job.kind, attempt: job.attempts }
   try {
-    if (!(await cleanup(services, job))) {
+    if (!(await work(services, job))) {
       services.log.warn('lock lost', context)
       return 'lost'
     }
     return 'done'
   } catch (error) {
-    const stageError = error instanceof StageError ? error : new StageError('internal_error', true)
-    if (!(error instanceof StageError)) {
+    const stageError =
+      error instanceof StageError
+        ? error
+        : error instanceof PrivacyJobError
+          ? new StageError(error.code, error.retry)
+          : new StageError('internal_error', true)
+    if (!(error instanceof StageError) && !(error instanceof PrivacyJobError)) {
       services.log.error('cleanup crashed', { ...context, error_code: errorName(error) })
     }
     const status = await queue.fail(services.db, job.id, services.workerId, stageError.code, {
