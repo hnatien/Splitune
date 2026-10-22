@@ -1,6 +1,7 @@
 import { eventIterator, oc } from '@orpc/contract'
 import { z } from 'zod'
 import { Analysis, AnalysisAccepted, CreateAnalysisInput } from './analyses.ts'
+import { TrackInput } from './analytics.ts'
 import { ArtefactUrlInput, ArtefactUrlOutput } from './artefacts.ts'
 import { BillingPlansOutput, CheckoutInput } from './billing.ts'
 import { IdInput, page, RedirectOutput } from './common.ts'
@@ -12,6 +13,12 @@ import {
 } from './corrections.ts'
 import { AnalysisCapDetails, ERROR_STATUS, type ErrorCode } from './errors.ts'
 import { JobEvent } from './events.ts'
+import {
+  ClaimExampleInput,
+  ClaimExampleOutput,
+  ExampleUrlInput,
+  ListExamplesOutput,
+} from './examples.ts'
 import {
   CreateLoopInput,
   DeleteLoopInput,
@@ -192,6 +199,25 @@ export const contract = {
       .route({ method: 'GET', path: '/v1/progress' })
       .input(ProgressInput)
       .output(ProgressOutput),
+  },
+  // Example songs (13 §1): listed and signed for visitors without an account; claimed once signed in.
+  examples: {
+    list: base.route({ method: 'GET', path: '/v1/examples' }).output(ListExamplesOutput),
+    url: base
+      .route({ method: 'GET', path: '/v1/examples/{id}/url' })
+      .input(ExampleUrlInput)
+      .output(ArtefactUrlOutput),
+    claim: base
+      .route({ method: 'POST', path: '/v1/examples/{id}/claim' })
+      .input(ClaimExampleInput)
+      .output(ClaimExampleOutput),
+  },
+  // Product events (16 §2), from visitors and signed-in users alike.
+  analytics: {
+    track: base
+      .route({ method: 'POST', path: '/v1/events', successStatus: 204 })
+      .input(TrackInput)
+      .output(z.void()),
   },
   system: {
     workerStatus: base

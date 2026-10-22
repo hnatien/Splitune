@@ -4,8 +4,10 @@
   "private": true,
   "description": "Zod schemas shared across process boundaries \u2014 docs/implementation/05-analysis-schema.md",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./examples-manifest": "./src/examples-manifest.ts",
     "./fixtures/*": "./fixtures/*"
   },
   "scripts": {

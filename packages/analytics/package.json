@@ -4,11 +4,16 @@
   "private": true,
   "description": "Typed event taxonomy — docs/implementation/16-observability-analytics-experiments.md",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@splitune/contracts": "workspace:*",
+    "zod": "4.6.7"
   }
 }
