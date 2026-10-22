@@ -22,7 +22,12 @@ export type PracticeDefaults = {
   passPrompt: boolean
   /** Tab layout: page-flip by bar group, or continuous scroll under a fixed now-line (12 §3). */
   notationLayout: 'page' | 'scroll'
+  /** How late this device's output is heard beyond what the browser reports (Bluetooth, 11 §3). */
+  soundDelayMs: number
 }
+
+/** The engine clamps its display offset to ±150 ms (`MAX_DISPLAY_OFFSET`, 11 §3). */
+export const MAX_SOUND_DELAY_MS = 150
 
 export const DEFAULT_PRACTICE: PracticeDefaults = {
   speedPct: 100,
@@ -31,6 +36,7 @@ export const DEFAULT_PRACTICE: PracticeDefaults = {
   showUncertainty: true,
   passPrompt: false,
   notationLayout: 'page',
+  soundDelayMs: 0,
 }
 
 // Storage can be missing (SSR) or throw (privacy modes, blocked storage): preferences then last

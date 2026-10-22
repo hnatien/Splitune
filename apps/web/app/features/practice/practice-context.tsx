@@ -199,12 +199,18 @@ export function PracticeProvider({
     configureCorrections({ queryClient })
     void hydrateCorrections()
     startSession(songId)
-    void audio.keepScreenOn().catch(() => undefined)
+    void audio
+      .keepScreenOn()
+      .then((held) => !held && usePracticeUi.setState({ screenMayLock: true }))
+      .catch(() => undefined)
     return () => {
       endSession()
       void audio.dispose()
     }
   }, [songId, audio, queryClient])
+
+  const soundDelayMs = defaults.soundDelayMs
+  useEffect(() => audio.setDisplayOffset(soundDelayMs / 1000), [audio, soundDelayMs])
 
   // Effective music: recomputed in the Worker when an input it depends on changes.
   const beatsDoc = data.beats.data

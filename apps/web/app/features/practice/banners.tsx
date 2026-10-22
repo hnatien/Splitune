@@ -15,7 +15,8 @@ import { usePracticeUi } from './practice-store'
 // Practice banners (27 §3.7.3, §5.6): the chords-only fallback with "Show tab anyway", stage
 // fallbacks ("Stems are unavailable right now…"), stems removed after 180 days unused with
 // "Re-create stems", the once-only "Is this your guitar?" audition when stems arrive, and the
-// evening "Practising in the dark? Try Stage" hint (26 §2).
+// evening "Practising in the dark? Try Stage" hint (26 §2), and once per device, where the screen
+// can't be kept on, the "Keep screen on" tip from the first play (24 §3).
 
 const WrongInstrument = lazy(() =>
   import('./wrong-instrument').then((module) => ({ default: module.WrongInstrument })),
@@ -23,6 +24,7 @@ const WrongInstrument = lazy(() =>
 
 const AUDITION_KEY = 'splitune.audition'
 const STAGE_HINT_KEY = 'splitune.stage-hint'
+const SCREEN_TIP_KEY = 'splitune.screen-tip'
 
 function storedOnce(key: string, id: string): boolean {
   try {
@@ -50,8 +52,9 @@ const VIEW_REASON: Record<string, () => string> = {
 }
 
 export function PracticeBanners() {
-  const { data, layers } = usePractice()
+  const { data, layers, state } = usePractice()
   const forceTab = usePracticeUi((s) => s.forceTab)
+  const screenMayLock = usePracticeUi((s) => s.screenMayLock)
   const recommended = useRecommendedView()
   const appearance = useDisplay((s) => s.appearance)
   const update = useDisplay((s) => s.update)
@@ -67,6 +70,8 @@ export function PracticeBanners() {
     !storedOnce(AUDITION_KEY, songId)
   const evening = new Date().getHours() >= 20
   const stageHint = evening && appearance !== 'stage' && !storedOnce(STAGE_HINT_KEY, 'shown')
+  const played = state !== 'loading' && state !== 'ready'
+  const screenTip = screenMayLock && played && !storedOnce(SCREEN_TIP_KEY, 'shown')
   const [wrongOpen, setWrongOpen] = useState(false)
 
   return (
@@ -139,6 +144,19 @@ export function PracticeBanners() {
             label: m['system.close'](),
             onDismiss: () => {
               rememberOnce(STAGE_HINT_KEY, 'shown')
+              rerender((n) => n + 1)
+            },
+          }}
+        />
+      )}
+      {screenTip && (
+        <Banner
+          tone="info"
+          title={m['practice.screen_tip']()}
+          dismiss={{
+            label: m['system.close'](),
+            onDismiss: () => {
+              rememberOnce(SCREEN_TIP_KEY, 'shown')
               rerender((n) => n + 1)
             },
           }}

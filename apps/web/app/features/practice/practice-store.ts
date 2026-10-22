@@ -27,6 +27,8 @@ export interface PracticeUi {
   videoOverlay: boolean
   /** Bar the count-in or metronome is on, for the visual beat counter. */
   beat: { index: number; accent: boolean; countIn: boolean } | null
+  /** The screen can't be kept on here (no Wake Lock, or refused): the tip shows (24 §3). */
+  screenMayLock: boolean
 }
 
 export const INITIAL_UI: PracticeUi = {
@@ -40,6 +42,7 @@ export const INITIAL_UI: PracticeUi = {
   forceTab: false,
   videoOverlay: false,
   beat: null,
+  screenMayLock: false,
 }
 
 export const usePracticeUi = create<PracticeUi>()(() => INITIAL_UI)

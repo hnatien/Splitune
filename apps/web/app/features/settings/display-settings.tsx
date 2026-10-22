@@ -3,7 +3,12 @@ import type * as React from 'react'
 import { useId } from 'react'
 import type { z } from 'zod'
 import { appearanceLabel } from '@/lib/appearance'
-import { type PracticeDefaults, useDisplay, usePracticeDefaults } from '@/lib/display-store'
+import {
+  MAX_SOUND_DELAY_MS,
+  type PracticeDefaults,
+  useDisplay,
+  usePracticeDefaults,
+} from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import type { DisplayPreferences } from '@/ui/display'
@@ -158,7 +163,37 @@ function PracticeDefaultsSection() {
         options={RestBetween.options.map((value) => ({ value, label: rests[value] }))}
         onChange={(value) => set({ restBetween: value })}
       />
+      <SoundDelay />
     </>
+  )
+}
+
+// The display offset (11 §3, 24 §3): what the browser's reported output latency misses, mostly
+// Bluetooth headphones. The cursor and beat counter follow the sound this much later.
+function SoundDelay() {
+  const delay = usePracticeDefaults((s) => s.soundDelayMs)
+  const update = usePracticeDefaults((s) => s.update)
+  const setting = useDeviceSetting()
+  const id = useId()
+  return (
+    <SettingRow state={setting.state} description={m['settings.sound_delay_hint']()}>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={id}>{m['settings.sound_delay']()}</Label>
+        <NumberField
+          id={id}
+          min={-MAX_SOUND_DELAY_MS}
+          max={MAX_SOUND_DELAY_MS}
+          step={10}
+          unit="ms"
+          value={delay}
+          decrementLabel={m['settings.sound_delay_decrease']()}
+          incrementLabel={m['settings.sound_delay_increase']()}
+          onValueChange={(value) =>
+            value !== null && setting.apply(() => update({ soundDelayMs: value }))
+          }
+        />
+      </div>
+    </SettingRow>
   )
 }
 

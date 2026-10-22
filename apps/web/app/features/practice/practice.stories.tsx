@@ -144,6 +144,27 @@ export const StemsExpired: Story = {
   },
 }
 
+/** No Screen Wake Lock (24 §3): from the first play, once per device, the "keep screen on" tip. */
+export const ScreenMayLock: Story = {
+  beforeEach: () => {
+    Object.defineProperty(navigator, 'wakeLock', { value: undefined, configurable: true })
+    localStorage.removeItem('splitune.screen-tip')
+    return () => {
+      Reflect.deleteProperty(navigator, 'wakeLock')
+    }
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(canvas.queryByText(m['practice.screen_tip']())).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+    await expect(
+      await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
+  },
+}
+
 /** Offline with a song whose audio this device never stored (27 §4). */
 export const NotSavedOffline: Story = {
   beforeEach: () => {

@@ -80,6 +80,7 @@ export class PracticeAudio implements PlayerEngine {
   #loop: { start: number; end: number } | null = null
   #stopAt: number | null = null
   #metronome = false
+  #displayOffset = 0
   #position = 0
   #beats: BeatMarker[] = []
   #mixer: ChannelMix[] = []
@@ -109,11 +110,14 @@ export class PracticeAudio implements PlayerEngine {
     return this.#engine !== null
   }
 
-  /** Keeps the screen on while the practice screen is open (12 §1), where supported. */
-  async keepScreenOn(): Promise<void> {
+  /**
+   * Keeps the screen on while the practice screen is open (12 §1), where supported. False when
+   * this browser can't (no Wake Lock, or the request was refused).
+   */
+  async keepScreenOn(): Promise<boolean> {
     const { ScreenWakeLock } = await loadEngine()
     this.#wakeLock = new ScreenWakeLock()
-    await this.#wakeLock.acquire()
+    return this.#wakeLock.acquire()
   }
 
   /** Decodes new audio at the engine's rate; it replaces what's loaded on the next play. */
@@ -193,6 +197,7 @@ export class PracticeAudio implements PlayerEngine {
     engine.setMetronome(this.#metronome)
     engine.setLoop(this.#loop)
     engine.setStopAt(this.#stopAt)
+    engine.setDisplayOffset(this.#displayOffset)
     if (this.#title) engine.setMediaMetadata({ title: this.#title })
     await engine.ready
     await this.#load(engine)
@@ -231,6 +236,12 @@ export class PracticeAudio implements PlayerEngine {
   setMetronome(on: boolean): void {
     this.#metronome = on
     this.#engine?.setMetronome(on)
+  }
+
+  /** The learner's sound delay (Bluetooth headphones): the cursor follows what is heard. */
+  setDisplayOffset(seconds: number): void {
+    this.#displayOffset = seconds
+    this.#engine?.setDisplayOffset(seconds)
   }
 
   position(): number {
