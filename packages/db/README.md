@@ -7,6 +7,7 @@ Spec: `docs/implementation/03-data-model-and-storage.md` (local docs), security 
 pnpm db:migrate                    # apply migrations to DATABASE_URL (run as the database owner)
 pnpm db:roles                      # give ml_worker / node_worker / maintenance a login password from DB_*_PASSWORD
 pnpm seed                          # system user + test user (idempotent)
+pnpm --filter @splitune/db seed:dashboards [YYYY-MM-DD]  # local only: a synthetic week for the dashboards
 pnpm db:check                      # fail if the schema changed without a migration (CI)
 pnpm db:studio                     # Drizzle Studio
 pnpm --filter @splitune/db generate  # write a migration for schema changes in src/schema/
@@ -27,9 +28,14 @@ pnpm --filter db test              # integration tests: fresh throwaway database
 |---|---|---|
 | `app` | API, via `withUser(db, userId, fn)` (`SET LOCAL ROLE app` + `app.user_id`) | User tables, RLS-scoped to `app.user_id`; inserts must also reference a parent row the user can see. Read-only: artefacts, stage runs, job events, flags, worker heartbeats. Insert-only: analytics events, audit log. |
 | `ml_worker`, `node_worker` | Mac workers (log in with `DB_*_PASSWORD`) | jobs, job_events, stage_runs, artefacts, worker_heartbeats; read analyses and update their status columns; read songs' id/user/source/instrument/duration/audio_hash/status and update status, duration, audio_hash. No users, uploads, corrections, practice or billing data. |
-| `maintenance` | sweepers, deletion cascade | `BYPASSRLS`, full DML on every table. |
+| `maintenance` | the node worker's lifecycle scheduler and privacy jobs (`NODE_WORKER_MAINTENANCE_DATABASE_URL`), nightly `pg_dump` | `BYPASSRLS`, full DML on every table; read on the identity sequences, the `drizzle` journal and the `dashboards` views. |
+| `dashboard_reader` | Grafana (`infra/grafana`) | `SELECT` on the views in schema `dashboards` only (aggregates, no titles, emails, keys or user ids). |
 
 The table owner (migrations, seeds, Better Auth, the rate limiter) is not subject to RLS. Better Auth's tables (`auth_sessions`, `auth_accounts`, `auth_verifications`) and `rate_limits` are owner-only.
+
+**Product events** (`analytics_events`) carry a salted `user_hash` (`@splitune/analytics/server`, `ANALYTICS_SALT`), never the user id: `app` and `node_worker` may insert, nobody but maintenance reads. Account deletion removes them by hash.
+
+**Account jobs.** `privacy.requestExport` / `requestDeletion` enqueue `export_user_data` (payload `{ user_id, export_id }`) and `delete_account` (`{ user_id }`) for the node worker in the request's transaction; policy `jobs_owner_account` admits only the caller's own. `src/jobs/lifecycle.ts` holds the worker's maintenance queries (stems sweeper, raw-upload and export expiry, YouTube titles, export rows, account purge, digest facts, `schedule_runs` claims).
 
 **Object cleanup jobs.** `songs.delete(userId, songId, objectPrefixes)` deletes the rows and, in the same transaction, enqueues a `delete_prefix` job (`runner = 'node'`, no analysis) with payload `{ "user_id": "<id>", "prefixes": ["u/<id>/raw/<upload_id>/", "u/<id>/a/<analysis_id>/"] }`. Policy `jobs_owner_cleanup` only admits prefixes under the caller's `u/<user_id>/` ending in `/` without `.`/`..` segments; the node worker still re-checks each one (`deletePrefix` does).
 

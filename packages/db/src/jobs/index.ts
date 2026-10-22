@@ -1,3 +1,5 @@
+export * as lifecycle from './lifecycle.ts'
 export * from './listen.ts'
 export * from './queue.ts'
 export * from './stages.ts'
+export * from './telemetry.ts'

@@ -133,6 +133,9 @@ export async function seedUserGraph(db: Database, userId: string) {
     userId,
     event: { type: 'progress', value: 0.5 },
   })
-  await db.insert(s.analyticsEvents).values({ userId, name: 'song_opened' })
+  await db.insert(s.analyticsEvents).values({ userHash: `hash-${userId}`, name: 'song_opened' })
+  await db
+    .insert(s.dataExports)
+    .values({ userId, objectKey: `u/${userId}/exports/${randomUUID()}.json` })
   return { song, analysis, artefact, loop, session }
 }

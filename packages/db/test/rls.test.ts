@@ -29,6 +29,7 @@ const USER_TABLES = [
   'billing_events',
   'jobs',
   'job_events',
+  'data_exports',
 ] as const
 
 const db = testDb(1)

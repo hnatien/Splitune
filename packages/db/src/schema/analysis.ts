@@ -119,6 +119,8 @@ export const artefacts = pgTable(
     modelRefs: jsonb('model_refs').$type<ModelRefs>().notNull(),
     // Stems expire after inactivity (sweeper); JSON artefacts are kept while the song exists.
     expiresAt: timestamptz('expires_at'),
+    // When the sweeper deleted a stems artefact's audio files (15 §3); the row and its JSON stay.
+    purgedAt: timestamptz('purged_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [

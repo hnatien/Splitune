@@ -9,6 +9,7 @@ const ROLE_PASSWORD_VARS = {
   ml_worker: 'DB_ML_WORKER_PASSWORD',
   node_worker: 'DB_NODE_WORKER_PASSWORD',
   maintenance: 'DB_MAINTENANCE_PASSWORD',
+  dashboard_reader: 'DB_DASHBOARD_PASSWORD',
 } as const
 
 const client = new pg.Client({ connectionString: requireEnv('DATABASE_URL') })

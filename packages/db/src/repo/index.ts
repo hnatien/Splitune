@@ -8,6 +8,7 @@ import { examplesRepo } from './examples.ts'
 import { flagsRepo } from './flags.ts'
 import { loopsRepo } from './loops.ts'
 import { practiceRepo } from './practice.ts'
+import { privacyRepo } from './privacy.ts'
 import { songsRepo } from './songs.ts'
 import { uploadsRepo } from './uploads.ts'
 import { usageRepo } from './usage.ts'
@@ -24,11 +25,14 @@ export type * from './examples.ts'
 export { SYSTEM_USER } from './examples.ts'
 export type * from './loops.ts'
 export type * from './practice.ts'
+export type * from './privacy.ts'
+export { DELETE_ACCOUNT_JOB, EXPORT_JOB } from './privacy.ts'
 export type * from './songs.ts'
 export { libraryCursor } from './songs.ts'
 export type * from './uploads.ts'
 export type * from './usage.ts'
 export type * from './users.ts'
+export { revokeSessions } from './users.ts'
 
 // User-scoped data access. Every function takes the user id first, filters on it and runs inside
 // withUser(), so RLS backs up the explicit filter.
@@ -44,6 +48,7 @@ export function createRepositories(db: Database) {
     flags: flagsRepo(db),
     loops: loopsRepo(db),
     practice: practiceRepo(db),
+    privacy: privacyRepo(db),
     usage: usageRepo(db),
     analytics: analyticsRepo(db),
     billing: billingRepo(db),

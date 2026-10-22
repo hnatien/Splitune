@@ -256,7 +256,7 @@ export function songsRepo(db: Database) {
             : await tx
                 .select({
                   analysisId: artefacts.analysisId,
-                  live: sql<boolean>`bool_or(${artefacts.expiresAt} is null or ${artefacts.expiresAt} > now())`,
+                  live: sql<boolean>`bool_or(${artefacts.purgedAt} is null)`,
                 })
                 .from(artefacts)
                 .where(

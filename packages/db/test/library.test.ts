@@ -53,7 +53,7 @@ async function analysis(
   return row as Analysis
 }
 
-async function stems(userId: string, analysisId: string, expiresAt: Date | null) {
+async function stems(userId: string, analysisId: string, purgedAt: Date | null) {
   await db.insert(artefacts).values({
     userId,
     analysisId,
@@ -63,7 +63,7 @@ async function stems(userId: string, analysisId: string, expiresAt: Date | null)
     bytes: 10,
     sha256: 'e'.repeat(64),
     modelRefs: [],
-    expiresAt,
+    purgedAt,
   })
 }
 
@@ -168,7 +168,7 @@ describe('library', () => {
       { kind: 'finalize', runner: 'node', analysisId: full.id },
     ])
 
-    // A finished Full run whose stems expired, and one whose stems are still there.
+    // A finished Full run whose stems the sweeper removed, and one whose stems are still there.
     const expired = await song(gina, { title: 'expired', createdAt: new Date('2026-01-03Z') })
     const old = await analysis(gina, expired.id, { status: 'partial', recommendedView: 'tab' })
     await stems(gina, old.id, new Date('2026-03-01Z'))
@@ -182,7 +182,7 @@ describe('library', () => {
       // Not a stage: never counted.
       { kind: 'delete_prefix', runner: 'node', analysisId: done.id, status: 'done' },
     ])
-    await stems(gina, done.id, new Date(Date.now() + 86_400_000))
+    await stems(gina, done.id, null)
     const clip = {
       userId: gina,
       songId: ready.id,

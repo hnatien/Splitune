@@ -128,14 +128,14 @@ describe('examples.claim', () => {
 })
 
 describe('analytics.record', () => {
-  it("stores a visitor's events without a user and a user's with theirs", async () => {
+  it("stores a visitor's events without a user key and a user's under their hash", async () => {
     const name = `test_${randomUUID()}`
     await repo.analytics.record(null, [{ name, props: { step: 'instrument' } }])
-    await repo.analytics.record(alice, [{ name, props: { step: 'level' } }])
+    await repo.analytics.record('0123abcd', [{ name, props: { step: 'level' } }])
     const rows = await db.select().from(analyticsEvents).where(eq(analyticsEvents.name, name))
-    expect(rows.map((r) => [r.userId, r.props])).toEqual([
+    expect(rows.map((r) => [r.userHash, r.props])).toEqual([
       [null, { step: 'instrument' }],
-      [alice, { step: 'level' }],
+      ['0123abcd', { step: 'level' }],
     ])
   })
 })

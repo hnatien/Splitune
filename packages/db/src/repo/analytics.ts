@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { type Database, withUser } from '../client.ts'
+import type { Database } from '../client.ts'
 import { analyticsEvents } from '../schema/index.ts'
 
 export interface NewAnalyticsEvent {
@@ -7,20 +7,17 @@ export interface NewAnalyticsEvent {
   props: Record<string, unknown>
 }
 
-// Product events (16 §2) into analytics_events, as role `app`: a signed-in user's events carry
-// their id (RLS checks it), a visitor's carry none.
+// Product events (16 §2) into analytics_events, as role `app`. Rows carry the salted user hash
+// (`@splitune/analytics/server`) of a signed-in user, none for a visitor; never the user id.
 export function analyticsRepo(db: Database) {
   return {
-    record: async (userId: string | null, events: NewAnalyticsEvent[]) => {
+    record: async (userHash: string | null, events: NewAnalyticsEvent[]) => {
       if (events.length === 0) return
-      const rows = events.map((e) => ({ userId, name: e.name, props: e.props }))
-      if (userId !== null) {
-        await withUser(db, userId, (tx) => tx.insert(analyticsEvents).values(rows))
-        return
-      }
       await db.transaction(async (tx) => {
         await tx.execute(sql`set local role app`)
-        await tx.insert(analyticsEvents).values(rows)
+        await tx
+          .insert(analyticsEvents)
+          .values(events.map((e) => ({ userHash, name: e.name, props: e.props })))
       })
     },
   }

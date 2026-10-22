@@ -85,6 +85,27 @@
       "when": 1792667175613,
       "tag": "0011_billing_grants_and_refunds",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792674534340,
+      "tag": "0012_lifecycle_and_analytics_hash",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792674534686,
+      "tag": "0013_analytics_drop_user_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792674543858,
+      "tag": "0014_lifecycle_grants_and_dashboards",
+      "breakpoints": true
     }
   ]
 }

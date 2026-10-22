@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { type Database, withUser } from '../client.ts'
-import { auditLog, featureFlags, subscriptions, users } from '../schema/index.ts'
+import { auditLog, authSessions, featureFlags, subscriptions, users } from '../schema/index.ts'
 
 export type User = typeof users.$inferSelect
 export type Subscription = typeof subscriptions.$inferSelect
@@ -70,4 +70,14 @@ export function usersRepo(db: Database) {
         return row
       }),
   }
+}
+
+// Signs the user out everywhere (account deletion, 15 §3). Runs as the table owner: Better Auth's
+// tables are owner-only. Returns how many sessions ended.
+export async function revokeSessions(db: Database, userId: string): Promise<number> {
+  const ended = await db
+    .delete(authSessions)
+    .where(eq(authSessions.userId, userId))
+    .returning({ id: authSessions.id })
+  return ended.length
 }
