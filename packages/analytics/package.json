@@ -2,17 +2,24 @@
   "name": "@splitune/analytics",
   "version": "0.0.0",
   "private": true,
-  "description": "Typed event taxonomy — docs/implementation/16-observability-analytics-experiments.md",
+  "description": "Typed event taxonomy, user hashing and optional tracing — docs/implementation/16-observability-analytics-experiments.md",
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./tracing": "./src/tracing.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "vitest run"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "0.223.0",
+    "@opentelemetry/resources": "2.12.0",
+    "@opentelemetry/sdk-trace-base": "2.12.0",
+    "@opentelemetry/sdk-trace-node": "2.12.0",
     "@splitune/contracts": "workspace:*",
     "zod": "4.6.7"
   }
