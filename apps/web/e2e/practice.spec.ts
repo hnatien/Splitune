@@ -51,7 +51,9 @@ async function ready() {
     timeout: 90_000,
   })
   if (!mobile) {
-    await expect(page.getByRole('region', { name: 'Tab' })).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+      timeout: 60_000,
+    })
     await expect(page.getByRole('button', { name: 'Mix', exact: true })).toBeVisible()
   }
 }
@@ -252,7 +254,9 @@ test('the practice screen is accessible', async () => {
 test('on the desktop editor, a chord and a note edit persist', async () => {
   test.skip(mobile, 'the editor is desktop-first')
   await page.goto(`${songUrl.replace(/\/practice$/, '/edit')}`)
-  await expect(page.getByRole('region', { name: 'Tab' })).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+    timeout: 60_000,
+  })
   const firstNote = page.locator('[data-slot=note-target]').first()
   await firstNote.click()
   const inspector = page.getByRole('complementary', { name: 'Bar and note details' })
@@ -270,7 +274,9 @@ test('on the desktop editor, a chord and a note edit persist', async () => {
   await expect(inspector.getByRole('heading', { name: 'Your edits' })).toBeVisible()
   await expectAccessible(page)
   await page.reload()
-  await expect(page.getByRole('region', { name: 'Tab' })).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+    timeout: 60_000,
+  })
   await page.locator('[data-slot=note-target]').first().click()
   await expect(
     page
@@ -340,7 +346,9 @@ test('layers appear one by one without moving the transport', async () => {
   boxes.push(await box())
 
   released = ['beats', 'stems', 'chords', 'notes', 'tab', 'render', 'summary']
-  await expect(page.getByRole('region', { name: 'Tab' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+    timeout: 30_000,
+  })
   boxes.push(await box())
 
   expect(new Set(boxes).size).toBe(1)
@@ -349,13 +357,15 @@ test('layers appear one by one without moving the transport', async () => {
 
 test('on a phone the glance view shows the chord, bar and speed', async () => {
   test.skip(!mobile, 'phones only')
-  const glance = page.getByRole('region', { name: 'Current chord' })
+  const glance = page.getByRole('region', { name: 'Current chord', exact: true })
   await expect(glance).toBeVisible()
   await page.getByRole('button', { name: 'Play', exact: true }).click()
   await expect(glance.getByText(/^Bar \d+\.\d$/)).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Pause', exact: true }).click()
   await page.getByRole('button', { name: 'Show tab' }).click()
-  await expect(page.getByRole('region', { name: 'Tab' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+    timeout: 30_000,
+  })
   await expectAccessible(page)
 })
 

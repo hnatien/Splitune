@@ -15,9 +15,9 @@ let errors: string[]
 // still on screen (step 12). Free accounts get Lite once the Welcome analysis is used (step 14).
 const finished = () =>
   page
-    .getByRole('region', { name: 'Tab' })
-    .or(page.getByRole('region', { name: 'Chord sheet' }))
-    .or(page.getByRole('region', { name: 'Current chord' }))
+    .getByRole('region', { name: 'Tab', exact: true })
+    .or(page.getByRole('region', { name: 'Chord sheet', exact: true }))
+    .or(page.getByRole('region', { name: 'Current chord', exact: true }))
     .or(page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' }))
     .first()
 
