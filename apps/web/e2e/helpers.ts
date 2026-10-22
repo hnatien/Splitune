@@ -29,7 +29,7 @@ export function wav(seconds: number): Buffer {
   return Buffer.concat([header, data])
 }
 
-async function magicLink(email: string): Promise<string> {
+export async function magicLink(email: string): Promise<string> {
   for (let attempt = 0; attempt < 40; attempt++) {
     const search = await fetch(
       `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}&limit=1`,
@@ -83,6 +83,9 @@ export function collectErrors(page: Page): string[] {
 export async function expectAccessible(page: Page) {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    // Base UI's visually hidden focus guards around an open dialog or sheet: in WebKit they get
+    // role="button" (no name) on purpose, so VoiceOver's cursor stays trapped inside.
+    .exclude('[data-base-ui-focus-guard]')
     .analyze()
   const serious = results.violations.filter(
     (v) => v.impact === 'serious' || v.impact === 'critical',

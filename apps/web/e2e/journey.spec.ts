@@ -36,6 +36,9 @@ test.beforeAll(async ({ browser }, info) => {
   // Reduced motion: colour transitions finish instantly, so axe never samples a half-faded state.
   const context = await browser.newContext({
     reducedMotion: 'reduce',
+    // These journeys hold and rewrite requests with page.route, which never sees what a service
+    // worker fetches; the PWA has its own test (pwa.spec.ts).
+    serviceWorkers: 'block',
     ...(viewport ? { viewport } : {}),
     ...(userAgent ? { userAgent } : {}),
     ...(deviceScaleFactor ? { deviceScaleFactor } : {}),

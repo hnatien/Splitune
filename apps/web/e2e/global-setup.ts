@@ -1,15 +1,19 @@
-import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
+import { type ChildProcess, execFile, execFileSync, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 import { runMigrations } from '@splitune/db'
 import pg from 'pg'
 import { APP_URL } from '../playwright.config.ts'
+import { wav } from './helpers.ts'
 
-// A throwaway database on the compose Postgres, the built app server on :3000 (the origin the
-// local bucket CORS allows) and the Mac workers in ML_MODE=mock, all torn down afterwards.
+// A throwaway database on the compose Postgres, the Mac workers in ML_MODE=mock, an example song
+// built through `pnpm examples:build` (onboarding, 13 §1) and the built app server on :3000 (the
+// origin the local bucket CORS allows) serving that example's manifest, all torn down afterwards.
+export const E2E_EXAMPLE = { id: 'e2e-riff', title: 'E2E riff' }
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..')
 const REPO = join(WEB, '../..')
 
@@ -65,18 +69,7 @@ export default async function setup() {
 
   const cacheDir = mkdtempSync(join(tmpdir(), 'splitune-e2e-'))
   const env = { ...process.env, DATABASE_URL: databaseUrl }
-  const children: ChildProcess[] = [
-    spawn(process.execPath, [server], {
-      env: {
-        ...env,
-        NODE_ENV: 'test',
-        PORT: '3000',
-        APP_URL,
-        BETTER_AUTH_URL: APP_URL,
-        LOG_LEVEL: 'warn',
-      },
-      stdio: ['ignore', 'inherit', 'inherit'],
-    }),
+  const workers: ChildProcess[] = [
     spawn('uv', ['run', '--frozen', 'splitune-ml-worker'], {
       cwd: join(REPO, 'services/ml'),
       env: {
@@ -101,8 +94,46 @@ export default async function setup() {
       stdio: ['ignore', 'ignore', 'inherit'],
     }),
   ]
-  const [web] = children
-  if (!web) throw new Error('server did not start')
+  const examplesManifest = join(cacheDir, 'examples.json')
+  const exampleAudio = join(cacheDir, 'e2e-riff.wav')
+  writeFileSync(exampleAudio, wav(20))
+  const built = promisify(execFile)(
+    process.execPath,
+    [
+      join(REPO, 'apps/api/scripts/examples/build.ts'),
+      '--out',
+      examplesManifest,
+      '--id',
+      E2E_EXAMPLE.id,
+      '--title',
+      E2E_EXAMPLE.title,
+      '--instrument',
+      'guitar',
+      '--part',
+      'riff',
+      exampleAudio,
+    ],
+    { env, timeout: 120_000 },
+  )
+  try {
+    await built
+  } catch (error) {
+    for (const worker of workers) worker.kill('SIGTERM')
+    throw error
+  }
+  const web = spawn(process.execPath, [server], {
+    env: {
+      ...env,
+      NODE_ENV: 'test',
+      PORT: '3000',
+      APP_URL,
+      BETTER_AUTH_URL: APP_URL,
+      LOG_LEVEL: 'warn',
+      EXAMPLES_MANIFEST: examplesManifest,
+    },
+    stdio: ['ignore', 'inherit', 'inherit'],
+  })
+  const children = [web, ...workers]
   await waitFor(`${APP_URL}/internal/ready`, web)
 
   return async () => {

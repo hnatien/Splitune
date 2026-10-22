@@ -25,6 +25,9 @@ test.beforeAll(async ({ browser }, info) => {
   mobile = Boolean(isMobile)
   const context = await browser.newContext({
     reducedMotion: 'reduce',
+    // These journeys hold and rewrite requests with page.route, which never sees what a service
+    // worker fetches; the PWA has its own test (pwa.spec.ts).
+    serviceWorkers: 'block',
     ...(viewport ? { viewport } : {}),
     ...(userAgent ? { userAgent } : {}),
     ...(deviceScaleFactor ? { deviceScaleFactor } : {}),
