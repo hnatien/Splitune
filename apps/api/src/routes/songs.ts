@@ -13,7 +13,7 @@ import {
   type Song,
   type SongPatch,
 } from '@splitune/db'
-import { analysisPrefix, uploadPrefix } from '@splitune/storage'
+import { analysisPrefix, GET_TTL_S, uploadPrefix } from '@splitune/storage'
 import { z } from 'zod'
 import { admitAnalysis } from '../entitlements.ts'
 import { apiError } from '../errors.ts'
@@ -192,6 +192,19 @@ export const songs = {
       ...objects.analysisIds.map((id) => analysisPrefix(userId, id)),
     ])
     if (!deleted) throw apiError('not_found')
+  }),
+
+  // The song's own audio (original upload or download) or a URL import's video (13 §6a).
+  mediaUrl: authed.songs.mediaUrl.handler(async ({ context, input }) => {
+    const { deps, userId } = context
+    const found = await deps.repos.analyses.source(userId, input.id)
+    const source = found?.source
+    if (!source || source.kind === 'url_pending') throw apiError('not_found')
+    const key =
+      input.kind === 'source' ? source.rawKey : source.kind === 'url' ? source.videoKey : undefined
+    if (key === undefined || !(await deps.storage.exists(key))) throw apiError('not_found')
+    const expiresAt = new Date(Date.now() + GET_TTL_S * 1000)
+    return { url: await deps.storage.presignGet(key), expires_at: expiresAt.toISOString() }
   }),
 
   // URL import (25 §4): the song (source_kind url, placeholder title until the download names it)

@@ -13,6 +13,7 @@ interface Resources {
   uploadId: string
   analysisId: string
   artefactId: string
+  loopId: string
 }
 
 interface Case {
@@ -20,6 +21,8 @@ interface Case {
   body?: (r: Resources) => unknown
   // The resource of A the call addresses; undefined = the procedure has no resource id.
   target?: (r: Resources) => string
+  // Query string of a GET with required parameters.
+  query?: string
 }
 
 const CASES: Record<string, Case> = {
@@ -30,6 +33,7 @@ const CASES: Record<string, Case> = {
   'songs.get': { target: (r) => r.songId },
   'songs.update': { target: (r) => r.songId, body: () => ({ title: 'stolen' }) },
   'songs.delete': { target: (r) => r.songId },
+  'songs.mediaUrl': { target: (r) => r.songId, query: 'kind=source' },
   'uploads.create': {
     target: (r) => r.songId,
     body: (r) => ({
@@ -59,6 +63,23 @@ const CASES: Record<string, Case> = {
   'analyses.events': { target: (r) => r.analysisId },
   'analyses.rerun': { target: (r) => r.analysisId },
   'artefacts.url': { target: (r) => r.artefactId },
+  'artefacts.listCorrections': { target: (r) => r.artefactId },
+  'artefacts.applyCorrections': {
+    target: (r) => r.artefactId,
+    body: () => ({
+      ops: [{ client_op_id: randomUUID(), op: { op: 'report_wrong', entity_id: 'b0001' } }],
+    }),
+  },
+  'loops.list': { target: (r) => r.songId },
+  'loops.create': {
+    target: (r) => r.songId,
+    body: () => ({ start_bar: 0, start_beat: 1, end_bar: 1, end_beat: 4, start_s: 1, end_s: 3 }),
+  },
+  'loops.update': { target: (r) => r.songId, body: () => ({ name: 'stolen' }) },
+  'loops.delete': { target: (r) => r.songId },
+  // Writes only for the caller's own songs: tests/practice.test.ts checks B's sync stores nothing.
+  'practice.sync': { body: () => ({ sessions: [], attempts: [] }) },
+  'practice.progress': {},
   'system.workerStatus': {},
   'system.stats': {},
 }
@@ -84,7 +105,11 @@ let bob: Caller
 const anonymous = caller(api)
 let resources: Resources
 
-const urlFor = (route: Route, id: string) => route.path.replace('{id}', id)
+const urlFor = (route: Route, id: string) => {
+  const path = route.path.replace('{id}', id).replace('{loop_id}', resources.loopId)
+  const query = CASES[route.key]?.query
+  return query ? `${path}?${query}` : path
+}
 
 async function call(who: Caller, route: Route, id: string) {
   const body = CASES[route.key]?.body?.(resources)
@@ -125,11 +150,20 @@ beforeAll(async () => {
      values ($1, $2, 'beats', 1, $3, 2, $4, '[]') returning id`,
     [aliceId, analysisId, `u/${aliceId}/a/${analysisId}/v1/beats.json`, sha256Hex('beats')],
   )
+  const loop = await alice.request('POST', `/v1/songs/${song_id}/loops`, {
+    start_bar: 0,
+    start_beat: 1,
+    end_bar: 1,
+    end_beat: 4,
+    start_s: 1,
+    end_s: 3,
+  })
   resources = {
     songId: song_id,
     uploadId: upload_id,
     analysisId,
     artefactId: (artefactRows[0] as { id: string }).id,
+    loopId: ((await loop.json()) as { id: string }).id,
   }
 })
 afterAll(() => api.close())
@@ -173,5 +207,16 @@ describe('authorization matrix', () => {
       latest_analysis: { id: string }
     }
     expect(runs.latest_analysis.id).toBe(resources.analysisId)
+    // B's loop update and delete and correction append left A's clip and overlay alone.
+    const loops = (await (
+      await alice.request('GET', `/v1/songs/${resources.songId}/loops`)
+    ).json()) as {
+      items: { id: string; name: string | null }[]
+    }
+    expect(loops.items).toEqual([expect.objectContaining({ id: resources.loopId, name: null })])
+    const ops = (await (
+      await alice.request('GET', `/v1/artefacts/${resources.artefactId}/corrections`)
+    ).json()) as { ops: unknown[] }
+    expect(ops.ops).toEqual([])
   })
 })

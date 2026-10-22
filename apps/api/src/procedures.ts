@@ -25,8 +25,8 @@ export interface RequestContext {
   idempotencyKey?: string
 }
 
-// The procedures implemented so far (04-api-contract.md); corrections, loops, practice, billing
-// and the YouTube reference join in later steps. Only these are routed and documented.
+// The procedures implemented so far (04-api-contract.md); billing and the YouTube reference join
+// in later steps. Only these are routed and documented.
 export const v1Contract = {
   me: { get: contract.me.get, update: contract.me.update },
   songs: {
@@ -35,11 +35,14 @@ export const v1Contract = {
     get: contract.songs.get,
     update: contract.songs.update,
     delete: contract.songs.delete,
+    mediaUrl: contract.songs.mediaUrl,
     importUrl: contract.songs.importUrl,
   },
   uploads: contract.uploads,
   analyses: contract.analyses,
-  artefacts: { url: contract.artefacts.url },
+  artefacts: contract.artefacts,
+  loops: contract.loops,
+  practice: contract.practice,
   system: contract.system,
 }
 
@@ -60,6 +63,8 @@ export const RATE_LIMITS = {
   uploads: { limit: 20, windowS: 3600 },
   // per user, POST /v1/analyses, /v1/analyses/{id}/rerun and /v1/songs/import-url
   analyses: { limit: 30, windowS: 3600 },
+  // per user, POST /v1/artefacts/{id}/corrections (04 "Conventions": 600/min)
+  corrections: { limit: 600, windowS: 60 },
 } as const
 
 export function userRateLimit(policy: keyof typeof RATE_LIMITS) {
