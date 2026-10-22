@@ -132,3 +132,24 @@ def test_silence_has_no_loudness(tmp_path: Path) -> None:
 def test_describe_clamps_the_duration_limit() -> None:
     assert stage.describe({"max_duration_s": 99999}).params["max_duration_s"] == 1200
     assert stage.describe({}).params["ffmpeg"] == ffmpeg.version()
+
+
+def test_inputs_are_read_from_files_only_with_bounded_probing(
+    click_track: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[str]] = []
+    run = ffmpeg.run
+
+    def recording(args: list[str], *rest: Any, **kwargs: Any) -> Any:
+        calls.append(args)
+        return run(args, *rest, **kwargs)
+
+    monkeypatch.setattr(ffmpeg, "run", recording)
+    stage.run(job(click_track(seconds=2), tmp_path))
+    reads = [args for args in calls if "-i" in args and "-protocol_whitelist" in args]
+    assert reads
+    for args in reads:
+        before_input = args[: args.index("-i")]
+        assert before_input[before_input.index("-probesize") + 1] == "5000000"
+        assert before_input[before_input.index("-analyzeduration") + 1] == "5000000"
+        assert before_input[before_input.index("-protocol_whitelist") + 1] == "file"

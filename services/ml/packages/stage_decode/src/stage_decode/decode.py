@@ -25,7 +25,16 @@ SAMPLE_RATE = 44100
 CHANNELS = 2
 FRAME_BYTES = CHANNELS * 4
 # Inputs only ever come from local files; never let a crafted playlist make ffmpeg fetch URLs.
-_INPUT_OPTS = ["-protocol_whitelist", "file"]
+# Probing reads at most 5 MB / 5 s of the input (FFmpeg's defaults, pinned so an upgrade can't
+# raise them): a crafted header can't make ffprobe read or buffer the whole file (17 §3).
+_INPUT_OPTS = [
+    "-protocol_whitelist",
+    "file",
+    "-probesize",
+    "5000000",
+    "-analyzeduration",
+    "5000000",
+]
 
 
 @dataclass(frozen=True)
