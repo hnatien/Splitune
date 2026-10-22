@@ -66,9 +66,13 @@ export function usePracticeData(songId: string) {
   const live = useAnalysisEvents(analysisId, songId)
   const entries = analysis.data?.artefacts ?? song.data?.artefacts ?? []
   const instrument = song.data?.instrument ?? 'guitar'
+  const stemsEntry = latestOf(entries, 'stems')
+  // Stems the sweeper removed after 180 days unused (15 §3): the song's own audio plays instead,
+  // and the banner offers "Re-create stems".
+  const stemsExpired = Boolean(stemsEntry?.purged_at)
   const entry = {
     beats: latestOf(entries, 'beats'),
-    stems: latestOf(entries, 'stems'),
+    stems: stemsExpired ? undefined : stemsEntry,
     chords: latestOf(entries, 'chords'),
     notes: latestOf(entries, `notes.${instrument}`),
     tab: latestOf(entries, `tab.${instrument}`),
@@ -98,6 +102,7 @@ export function usePracticeData(songId: string) {
     summary,
     ops,
     instrument,
+    stemsExpired,
   }
 }
 

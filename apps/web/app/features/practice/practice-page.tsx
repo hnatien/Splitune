@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
+import { track } from '@/lib/track'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import { PedalHud } from '@/ui/pedal-hud'
@@ -139,7 +140,10 @@ function Regions({ layout }: { layout: PracticeLayout }) {
             <Button
               variant="outline"
               aria-pressed={showTab}
-              onClick={() => usePracticeUi.setState({ showTab: !showTab })}
+              onClick={() => {
+                usePracticeUi.setState({ showTab: !showTab })
+                track('view_changed', { view: showTab ? 'glance' : 'tab' })
+              }}
             >
               {showTab ? m['practice.show_glance']() : m['practice.show_tab']()}
             </Button>

@@ -28,7 +28,13 @@ export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.gui
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(ALL.indexOf(kind) + 1).padStart(12, '0')}`
 
-export type Patch = { summary?: unknown; chords?: unknown; running?: boolean }
+export type Patch = {
+  summary?: unknown
+  chords?: unknown
+  running?: boolean
+  /** The sweeper removed the stems' audio (15 §3). */
+  stemsPurged?: boolean
+}
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
@@ -40,6 +46,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
       bytes: 100,
       sha256: '0'.repeat(64),
       created_at: '2026-10-22T10:00:00Z',
+      purged_at: kind === 'stems' && patch.stemsPurged ? '2026-10-01T03:30:00Z' : null,
     }))
     const withArtefacts: z.infer<typeof Analysis> = { ...run, artefacts: entries }
     const song: z.infer<typeof SongDetail> = {

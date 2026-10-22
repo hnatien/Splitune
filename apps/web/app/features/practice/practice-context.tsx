@@ -9,6 +9,7 @@ import { usePlaybackActive } from '@/lib/app-state'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
+import { track, trackCorrection } from '@/lib/track'
 import { toast } from '@/ui/toast'
 import { localFile } from '../import/local-files'
 import {
@@ -46,6 +47,7 @@ import { type AudioInput, type Lane, PracticeAudio } from './model/practice-audi
 import {
   endSession,
   flushPractice,
+  lastInput,
   noteInput,
   recordAttempt,
   startSession,
@@ -104,7 +106,8 @@ export interface PracticeValue {
   clip: Clip | undefined
   best: number | null
   tapBar: (bar: number) => void
-  setLoop: (range: LoopRange | null) => void
+  /** `method`: how the learner made a new loop (16 §2 loop_created); none for adjustments. */
+  setLoop: (range: LoopRange | null, method?: 'tap' | 'numeric' | 'clip') => void
   togglePlay: () => void
   restart: () => void
   stepBar: (direction: 1 | -1) => void
@@ -408,8 +411,11 @@ export function PracticeProvider({
     }, 500)
   }
 
-  const setLoop = (range: LoopRange | null) => {
+  const setLoop = (range: LoopRange | null, method?: 'tap' | 'numeric' | 'clip') => {
     actor.send({ type: 'SET_LOOP', loop: range })
+    if (range && method) {
+      track('loop_created', { method, bars: range.endBar - range.startBar + 1 })
+    }
     usePracticeUi.setState({ promptPass: 0 })
     if (range) {
       actor.send({
@@ -527,6 +533,12 @@ export function PracticeProvider({
         case 'ended':
           actor.send({ type: 'ENGINE.ENDED' })
           return
+        case 'underrun':
+          track('audio_underrun', {
+            rate: actor.getSnapshot().context.speedPct / 100,
+            preset: event.event.tier,
+          })
+          return
         case 'interrupted':
           actor.send({ type: 'ENGINE.INTERRUPTED' })
           return
@@ -550,6 +562,10 @@ export function PracticeProvider({
   const setMix = (next: Mix) => setSavedMix(next)
   const applyPreset = (preset: MixPreset) => {
     setSavedMix(presetMix(channels, preset))
+    track('mix_preset_applied', {
+      preset:
+        preset === 'part-loud' ? 'part_loud' : preset === 'minus-one' ? 'minus_one' : 'original',
+    })
     showHud(
       preset === 'part-loud'
         ? m['mixer.preset_part_loud']()
@@ -562,6 +578,7 @@ export function PracticeProvider({
   const setSpeed = (pct: number) => {
     const clamped = Math.min(100, Math.max(50, Math.round(pct)))
     actor.send({ type: 'SET_SPEED', pct: clamped })
+    track('speed_changed', { speed_pct: clamped, input_mode: lastInput() })
     showHud(m['practice.hud_speed']({ speed: formatPercent(clamped) }))
   }
 
@@ -594,6 +611,7 @@ export function PracticeProvider({
 
   const markPass = (outcome: 'clean' | 'not_yet') => {
     recordAttempt({ loopClipId: clip?.id, tempoPct: player.speedPct, outcome })
+    track('loop_pass_completed', { tempo_pct: player.speedPct, outcome, input_mode: lastInput() })
     if (outcome === 'clean') setBest((previous) => Math.max(previous ?? 0, player.speedPct))
     usePracticeUi.setState({ promptPass: 0 })
     if (state === 'assess') actor.send({ type: 'ASSESSED' })
@@ -607,6 +625,14 @@ export function PracticeProvider({
     const target = artefactFor(change.kind)
     if (!target) return
     applyCorrection(target.id, change.op, change.inverse)
+    const doc =
+      change.kind === 'chords'
+        ? data.chords.data
+        : change.kind === 'notes'
+          ? data.notes.data
+          : data.beats.data
+    const model = doc?.models[0]
+    trackCorrection(change.kind, change.op.op, model)
     if (change.inverse === null) {
       toast.add({ title: m['editor.reported']() })
       return
@@ -660,7 +686,7 @@ export function PracticeProvider({
       const next = tapBar(usePracticeUi.getState().selection, bar, grid)
       usePracticeUi.setState({ selection: next })
       if (next.kind === 'active') {
-        setLoop(next.range)
+        setLoop(next.range, 'tap')
         showHud(
           m['practice.hud_loop']({
             bars: `${next.range.startBar + 1}–${next.range.endBar + 1}`,

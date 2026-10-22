@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   barNumber,
   formatDate,
+  formatDateTime,
   formatDuration,
   formatPercent,
   formatRelativeDate,
@@ -31,5 +32,12 @@ describe('format', () => {
   it('shows bars 1-based', () => {
     expect(barNumber(0)).toBe(1)
     expect(barNumber(16)).toBe(17)
+  })
+})
+
+describe('formatDateTime', () => {
+  it('adds the 24 h time to the short date', () => {
+    const now = new Date(2026, 9, 22, 9, 0)
+    expect(formatDateTime(new Date(2026, 9, 23, 14, 5), now)).toBe('23 Oct, 14:05')
   })
 })

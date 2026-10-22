@@ -7,6 +7,7 @@ import type { InstrumentName } from '@/lib/instruments'
 import { apiErrorMessage } from '@/lib/reasons'
 import { reloadMe } from '@/lib/reload-me'
 import type { MeData } from '@/lib/session'
+import { track } from '@/lib/track'
 import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
 import { DropZone } from '@/ui/drop-zone'
@@ -147,6 +148,7 @@ export function ImportPage({ me, tab: requested }: { me: MeData; tab?: Tab | und
           download_video: link.downloadVideo,
         })
         void reloadMe(queryClient)
+        track('link_import_started', { type })
         await navigate({ to: '/songs/$songId/practice', params: { songId: accepted.song_id } })
         return
       }

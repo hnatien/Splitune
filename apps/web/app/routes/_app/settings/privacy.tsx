@@ -1,15 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ShieldIcon } from 'lucide-react'
-import { SettingsPlaceholder } from '@/features/settings/placeholder'
-import { m } from '@/lib/i18n'
+import { PrivacySettings } from '@/features/settings/privacy-settings'
 
-// Placeholder until step 15 fills this section (27 §3.9).
-export const Route = createFileRoute('/_app/settings/privacy')({
-  component: () => (
-    <SettingsPlaceholder
-      title={m['settings.privacy']()}
-      body={m['settings.coming_privacy']()}
-      icon={<ShieldIcon aria-hidden />}
-    />
-  ),
-})
+// Privacy (27 §3.9); `?confirm=delete` is where the re-authentication link for account deletion
+// returns, with the confirmation open.
+export const Route = createFileRoute('/_app/settings/privacy')({ component: Privacy })
+
+function Privacy() {
+  const { me } = Route.useRouteContext()
+  const { confirm }: { confirm?: unknown } = Route.useSearch()
+  return <PrivacySettings me={me} deleteDialog={confirm === 'delete' ? 'confirm' : undefined} />
+}

@@ -75,9 +75,10 @@ function Root() {
   const nonce = useRouter().options.ssr?.nonce
   // Uploads a previous page left unfinished continue once signed in; loaded on demand so the
   // uploader stays out of pages that never upload.
-  // The service worker registers after the first render, outside the route budgets (10 §9).
+  // The service worker and device telemetry start after the first render, outside the route
+  // budgets (10 §9).
   useEffect(() => {
-    void import('@/lib/pwa').then((pwa) => pwa.registerServiceWorker())
+    void import('@/lib/after-render').then((page) => page.afterFirstRender())
   }, [])
   // Pages reached in the app (not loaded from the server) are kept for offline use too.
   const href = useRouterState({ select: (state) => state.location.href })

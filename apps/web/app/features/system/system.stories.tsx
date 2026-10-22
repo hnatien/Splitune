@@ -6,14 +6,41 @@ import { AppStory } from '../../../.storybook/app.tsx'
 import { AppShell } from '../shell/app-shell'
 import { BareShell } from '../shell/bare-shell'
 import { ME } from '../story-fixtures'
+import { AccountDeleted } from './account-deleted'
 import { ErrorPage, NotFoundPage } from './error-page'
 import { UnsupportedBrowser } from './unsupported'
 
 // System pages and banners (27 §3.11): 404, the error boundary with a copyable error id,
-// unsupported browser, "A new version is ready" and the iOS install hint.
+// unsupported browser, "A new version is ready", the iOS install hint, and the page after an
+// account was deleted (15 §4).
 const meta = { title: 'Screens/System', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
+
+const accountDeleted = () => (
+  <AppStory path="/account-deleted">
+    <BareShell>
+      <AccountDeleted />
+    </BareShell>
+  </AppStory>
+)
+export const AccountWasDeleted: Story = {
+  render: accountDeleted,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByRole('heading', { name: 'Your account was deleted' }),
+    ).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute(
+      'href',
+      '/',
+    )
+  },
+}
+export const AccountWasDeletedDark: Story = {
+  render: accountDeleted,
+  globals: { appearance: 'dark' },
+}
 
 export const NotFound: Story = {
   render: () => (

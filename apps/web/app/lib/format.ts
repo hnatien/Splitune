@@ -28,6 +28,12 @@ export function formatDate(date: Date, now: Date = new Date()): string {
   }).format(date)
 }
 
+/** "22 Oct, 14:30": a date with its time, for deadlines within a day or two. */
+export function formatDateTime(date: Date, now: Date = new Date()): string {
+  const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(date)
+  return `${formatDate(date, now)}, ${time}`
+}
+
 /** "today", "yesterday", "3 days ago" within a week; a date after that. */
 export function formatRelativeDate(date: Date, now: Date = new Date()): string {
   const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()

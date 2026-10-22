@@ -61,12 +61,15 @@ export function LoopPanel() {
                     variant={c.id === clip?.id ? 'secondary' : 'ghost'}
                     className="w-full justify-between"
                     onClick={() =>
-                      practice.setLoop({
-                        startBar: c.start_bar,
-                        endBar: c.end_bar,
-                        start: c.start_s,
-                        end: c.end_s,
-                      })
+                      practice.setLoop(
+                        {
+                          startBar: c.start_bar,
+                          endBar: c.end_bar,
+                          start: c.start_s,
+                          end: c.end_s,
+                        },
+                        'clip',
+                      )
                     }
                   >
                     <span className="truncate">{c.name}</span>
@@ -90,7 +93,8 @@ function LoopFields() {
   if (!grid) return null
   const first = grid.firstBar + 1
   const last = grid.lastBar + 1
-  const setBars = (from: number, to: number) => practice.setLoop(barRange(grid, from - 1, to - 1))
+  const setBars = (from: number, to: number) =>
+    practice.setLoop(barRange(grid, from - 1, to - 1), 'numeric')
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-end gap-3">

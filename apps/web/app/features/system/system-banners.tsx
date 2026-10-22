@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { canAddToHomeScreen, usePlaybackActive, usePwa } from '@/lib/app-state'
 import { isInAppBrowser } from '@/lib/capabilities'
 import { m } from '@/lib/i18n'
+import { track } from '@/lib/track'
 import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
 import { Banner } from '@/ui/status-message'
@@ -31,6 +32,7 @@ export function SystemBanners({ installHint = false }: { installHint?: boolean }
     try {
       await navigator.clipboard.writeText(window.location.href)
       setCopied(true)
+      track('in_app_browser_opened_external', {})
     } catch {
       setCopied(false)
     }

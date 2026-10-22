@@ -66,7 +66,7 @@ export function apiErrorMessage(
   code: ErrorCode | undefined,
   data: Record<string, unknown> = {},
 ): string {
-  const { type, limit, resets_at, retry_after_s } = data
+  const { type, limit, resets_at, retry_after_s, reason } = data
   switch (code) {
     case 'invalid_input':
       return m['error.invalid_input']()
@@ -84,7 +84,8 @@ export function apiErrorMessage(
     case 'unsupported_media':
       return m['import.unreadable']()
     case 'url_unsupported':
-      return m['import.url_unsupported']()
+      // Link import switched off (flag `import.url`, 16 §5).
+      return reason === 'import_disabled' ? m['import.url_broken']() : m['import.url_unsupported']()
     case 'url_download_failed':
       return m['import.url_failed']()
     case 'analysis_cap_reached': {

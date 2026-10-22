@@ -1,8 +1,10 @@
 import { lazy, Suspense, useState } from 'react'
+import { client } from '@/lib/api'
 import { useDisplay } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { instrumentLabel } from '@/lib/instruments'
 import { isFallback, stageFailureMessage } from '@/lib/reasons'
+import { track } from '@/lib/track'
 import { Button } from '@/ui/button'
 import { Banner } from '@/ui/status-message'
 import { analysisFailures } from './analysis-status'
@@ -11,8 +13,9 @@ import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
 // Practice banners (27 §3.7.3, §5.6): the chords-only fallback with "Show tab anyway", stage
-// fallbacks ("Stems are unavailable right now…"), the once-only "Is this your guitar?" audition
-// when stems arrive, and the evening "Practising in the dark? Try Stage" hint (26 §2).
+// fallbacks ("Stems are unavailable right now…"), stems removed after 180 days unused with
+// "Re-create stems", the once-only "Is this your guitar?" audition when stems arrive, and the
+// evening "Practising in the dark? Try Stage" hint (26 §2).
 
 const WrongInstrument = lazy(() =>
   import('./wrong-instrument').then((module) => ({ default: module.WrongInstrument })),
@@ -77,7 +80,13 @@ export function PracticeBanners() {
               : m['practice.chords_only']()
           }
           actions={
-            <Button variant="outline" onClick={() => usePracticeUi.setState({ forceTab: true })}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                usePracticeUi.setState({ forceTab: true })
+                track('view_changed', { view: 'tab' })
+              }}
+            >
               {m['practice.show_tab_anyway']()}
             </Button>
           }
@@ -86,6 +95,7 @@ export function PracticeBanners() {
       {failures.map((failure) => (
         <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
       ))}
+      {data.stemsExpired && <StemsExpired />}
       {auditionPending && data.song.data && (
         <Banner
           tone="info"
@@ -148,5 +158,37 @@ export function PracticeBanners() {
         </Suspense>
       )}
     </>
+  )
+}
+
+// A re-run of the analysis re-creates the stems; it uses no allowance (the API's rerun).
+function StemsExpired() {
+  const { data } = usePractice()
+  const [busy, setBusy] = useState(false)
+  const analysisId = data.analysis.data?.id
+  return (
+    <Banner
+      tone="info"
+      title={m['practice.stems_expired']()}
+      actions={
+        analysisId && (
+          <Button
+            variant="outline"
+            loading={busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                await client.analyses.rerun({ id: analysisId })
+                await data.song.refetch()
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            {m['library.recreate_stems']()}
+          </Button>
+        )
+      }
+    />
   )
 }

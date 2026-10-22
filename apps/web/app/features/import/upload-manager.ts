@@ -5,6 +5,7 @@ import type { Body } from '@uppy/core/utils'
 import type { z } from 'zod'
 import { client, errorCode, errorData, orpc } from '@/lib/api'
 import { reloadMe } from '@/lib/reload-me'
+import { track } from '@/lib/track'
 import { hashFile } from './hash'
 import { keepLocalFile } from './local-files'
 import { SplituneUploader, type UploadMeta } from './splitune-uploader'
@@ -43,6 +44,16 @@ const initialUrls = new Map<string, { n: number; url: string }[]>()
 let uppy: Uppy<UploadMeta, Body> | undefined
 let queryClient: QueryClient | undefined
 const records = new Map<string, PendingUpload>()
+// Recordings vs files for product events (16 §2); an upload resumed after a reload counts as a file.
+const recordings = new Set<string>()
+
+const bytesBucket = (bytes: number) =>
+  bytes < 10e6 ? 'lt_10mb' : bytes < 50e6 ? 'lt_50mb' : bytes < 200e6 ? 'lt_200mb' : 'gte_200mb'
+
+function uploadEvent(record: PendingUpload, name: 'upload_completed' | 'upload_started') {
+  const source = recordings.has(record.uploadId) ? 'recording' : 'file'
+  track(name, { source, bytes_bucket: bytesBucket(record.bytes) })
+}
 
 function uploader(): Uppy<UploadMeta, Body> {
   if (uppy) return uppy
@@ -63,15 +74,23 @@ function uploader(): Uppy<UploadMeta, Body> {
   instance.on('upload-success', (file) => {
     const record = file && records.get(file.meta.uploadId)
     if (file) instance.removeFile(file.id)
-    if (record) void startAnalysis(record)
+    if (!record) return
+    uploadEvent(record, 'upload_completed')
+    void startAnalysis(record)
   })
   instance.on('upload-error', (file, error) => {
     const record = file && records.get(file.meta.uploadId)
     if (file) instance.removeFile(file.id)
     if (!record) return
+    const code = errorCode(error) ?? 'upload_failed'
+    track('upload_failed', {
+      source: recordings.has(record.uploadId) ? 'recording' : 'file',
+      bytes_bucket: bytesBucket(record.bytes),
+      error_code: code,
+    })
     useUploads.getState().patch(record.songId, {
       phase: 'failed',
-      errorCode: errorCode(error) ?? 'upload_failed',
+      errorCode: code,
       errorData: errorData(error),
     })
   })
@@ -165,6 +184,8 @@ export async function startImport(request: ImportRequest): Promise<string> {
     .put(record)
     .catch(() => resumeStore.put({ ...record, file: undefined }).catch(() => undefined))
   initialUrls.set(record.uploadId, target.parts)
+  if (request.sourceKind === 'recording') recordings.add(record.uploadId)
+  uploadEvent(record, 'upload_started')
   useUploads.getState().upsert(songId, {
     title: request.title,
     phase: navigator.onLine ? 'uploading' : 'waiting_online',

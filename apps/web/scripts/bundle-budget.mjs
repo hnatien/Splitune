@@ -1,6 +1,6 @@
-// Practice route JS budget (10-web-app-architecture.md §9: ≤ 300 KB gzip, alphaTab and WASM
-// excluded): the entry chunk plus the practice route's chunk and every chunk they import
-// statically, gzip-compressed, from the production build in .output/public/assets.
+// Practice route JS budget (10-web-app-architecture.md §9: ≤ 302 KB gzip, alphaTab and WASM
+// excluded; 300 KB until step 15's product events, raised by the owner on 2026-10-22): the entry
+// chunk plus the practice route's chunk and every chunk they import statically, gzip-compressed, from the production build in .output/public/assets.
 // Reports by default; `--enforce` fails over budget (enforced from step 12, when the practice
 // screen exists).
 import { readdirSync, readFileSync } from 'node:fs'
@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
-const BUDGET_BYTES = 300 * 1024
+const BUDGET_BYTES = 302 * 1024
 const ASSETS = fileURLToPath(new URL('../.output/public/assets/', import.meta.url))
 const IMPORT = /(?:import|from)\s*["']\.\/([^"']+\.js)["']/g
 

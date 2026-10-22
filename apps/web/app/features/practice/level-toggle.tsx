@@ -1,4 +1,5 @@
 import { m } from '@/lib/i18n'
+import { track } from '@/lib/track'
 import { CapoIcon } from '@/ui/icons'
 import { NumberField } from '@/ui/number-field'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
@@ -29,7 +30,9 @@ export function LevelToggle({ capo = true }: { capo?: boolean }) {
         value={[options.level]}
         onValueChange={(next) => {
           const level = next[0]
-          if (level) setOptions({ level: level as typeof options.level })
+          if (!level) return
+          setOptions({ level: level as typeof options.level })
+          track('level_changed', { level: level as typeof options.level })
         }}
       >
         {levelsFor(instrument).map((level) => (

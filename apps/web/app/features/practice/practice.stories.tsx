@@ -77,6 +77,20 @@ export const Ready: Story = {
 
 export const ReadyDark: Story = { render: screen(ALL), globals: { appearance: 'dark' } }
 
+/** Stems removed after 180 days unused: the song's own audio plays, "Re-create stems" (27 §5.6). */
+export const StemsExpired: Story = {
+  render: screen(ALL, { stemsPurged: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByText(
+        'The stems for this song were removed after 180 days unused. Your loops and edits are safe.',
+      ),
+    ).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Re-create stems' })).toBeVisible()
+  },
+}
+
 /** Stage: chrome reduced to the transport and the loop badge; reading sizes +1 step. */
 export const ReadyStage: Story = { render: screen(ALL), globals: { appearance: 'stage' } }
 

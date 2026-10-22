@@ -37,14 +37,20 @@ export function startSession(songId: string, now = new Date()): string {
   return id
 }
 
+let last: 'touch' | 'keyboard' | 'pedal' = 'touch'
+
 /** How the learner drives practice this session (touch, keys, a pedal, or several). */
 export function noteInput(kind: 'touch' | 'keyboard' | 'pedal') {
+  last = kind
   if (!current || modes.has(kind)) return
   modes.add(kind)
   const input_mode: InputMode = modes.size > 1 ? 'mixed' : kind
   current = { ...current, input_mode }
   void safely(() => outbox.put('sessions', current as StoredSession), undefined)
 }
+
+/** The input of the latest practice action, for product events (16 §2). */
+export const lastInput = () => last
 
 export function endSession(now = new Date()) {
   if (!current) return

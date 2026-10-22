@@ -114,7 +114,7 @@ jobs:
       - name: Build the app server
         run: pnpm --filter @splitune/web build
 
-      # Practice route JS (10 §9, 12 §10): ≤ 300 KB gzip, alphaTab and WASM excluded.
+      # Practice route JS (10 §9, 12 §10): ≤ 302 KB gzip, alphaTab and WASM excluded.
       - name: Practice route JS budget
         run: pnpm --filter @splitune/web budget --enforce
 

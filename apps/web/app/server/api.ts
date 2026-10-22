@@ -1,3 +1,4 @@
+import { startTracing } from '@splitune/analytics/tracing'
 import { type Api, configFromEnv, createApi } from '@splitune/api'
 import { createDb } from '@splitune/db'
 import { createStorage, storageConfigFromEnv } from '@splitune/storage'
@@ -10,6 +11,8 @@ export function getApi(): Api {
   if (!api) {
     const { DATABASE_URL: url } = process.env
     if (!url) throw new Error('DATABASE_URL is not set')
+    // Optional traces (OTEL_EXPORTER_OTLP_ENDPOINT); requests before it is ready aren't traced.
+    void startTracing('splitune-app')
     api = createApi({
       db: createDb({ url, applicationName: 'splitune-app' }),
       storage: createStorage(storageConfigFromEnv()),
