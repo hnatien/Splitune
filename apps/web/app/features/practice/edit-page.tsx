@@ -12,7 +12,7 @@ import { applyCorrection, useCorrections } from './model/corrections'
 import { deleteNote, type Edit, revertOp } from './model/edits'
 import { ignoredTarget } from './model/keymap'
 import { NotationPane } from './notation-pane'
-import { PracticeProvider, usePractice } from './practice-context'
+import { type FetchAudio, PracticeProvider, usePractice } from './practice-context'
 import { PracticeLoading } from './practice-loading'
 import { TransportBar } from './transport-bar'
 
@@ -21,14 +21,14 @@ import { TransportBar } from './transport-bar'
 // Keyboard-first: ←/→ select the previous/next note (or bar), Delete removes a note, ⌘/Ctrl Z
 // undoes. Touch devices go to practice, where the editor is a sheet.
 
-export function EditPage({ songId }: { songId: string }) {
+export function EditPage({ songId, fetchAudio }: { songId: string; fetchAudio?: FetchAudio }) {
   const coarse = useMediaQuery('(pointer: coarse)', false)
   const navigate = useNavigate()
   useEffect(() => {
     if (coarse) void navigate({ to: '/songs/$songId/practice', params: { songId }, replace: true })
   }, [coarse, navigate, songId])
   return (
-    <PracticeProvider songId={songId} search={{}}>
+    <PracticeProvider songId={songId} search={{}} {...(fetchAudio ? { fetchAudio } : {})}>
       <EditScreen />
     </PracticeProvider>
   )

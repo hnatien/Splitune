@@ -1,5 +1,5 @@
 import type { AlphaTabViewHandle } from '@splitune/notation'
-import { lazy, Suspense, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useId, useMemo, useRef, useState } from 'react'
 import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { useMediaQuery } from '@/lib/use-media-query'
@@ -49,6 +49,7 @@ export function NotationPane({
   const { layers, music, data } = practice
   const forceTab = usePracticeUi((s) => s.forceTab)
   const recommended = useRecommendedView()
+  const placeholderId = useId()
   if (layers.tab && music?.tab && (!recommended.chordsOnly || forceTab)) {
     return (
       <TabView
@@ -67,17 +68,24 @@ export function NotationPane({
       </Suspense>
     )
   }
+  // Before any bar exists the pane may scroll with nothing focusable in it, so the region itself
+  // takes focus (WCAG 2.1.1); practice keys still reach the input mapper from here.
   return (
-    <div
+    <section
+      aria-labelledby={placeholderId}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be keyboard reachable
+      tabIndex={0}
       className={cn(
         'flex min-h-0 flex-1 flex-col items-center gap-6 overflow-y-auto bg-paper px-4 py-6 text-ink',
         className,
       )}
     >
-      <p className="text-center text-read-label">{m['practice.placeholder']()}</p>
+      <p id={placeholderId} className="text-center text-read-label">
+        {m['practice.placeholder']()}
+      </p>
       {layers.beats && <BarNumbers onBarActivate={activate} />}
       <AnalysisStatus data={data} songId={practice.songId} />
-    </div>
+    </section>
   )
 }
 
@@ -88,7 +96,7 @@ function BarNumbers({ onBarActivate }: { onBarActivate: (bar: number) => void })
   return (
     <ol
       aria-label={m['practice.bars']()}
-      className="flex w-full max-w-reading flex-wrap gap-2 motion-safe:animate-in motion-safe:fade-in"
+      className="flex w-full max-w-reading flex-wrap gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter"
     >
       {grid.bars.map((bar) => {
         const inLoop =
@@ -184,7 +192,7 @@ function TabView({
       <Suspense fallback={<div className="min-h-0 flex-1 bg-paper" aria-busy="true" />}>
         <AlphaTabView
           ref={ref}
-          className="min-h-0 flex-1 motion-safe:animate-in motion-safe:fade-in"
+          className="min-h-0 flex-1 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter"
           tex={tab.alphaTex}
           noteMap={tab.noteMap}
           marks={view.marks}

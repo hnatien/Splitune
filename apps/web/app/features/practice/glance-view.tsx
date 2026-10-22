@@ -51,7 +51,9 @@ export function GlanceView() {
       )}
       {grid && (
         <p className="font-reading text-read-bar-number tabular-nums">
-          {m['practice.bar_beat']({ bar: String(now.bar + 1), beat: String(now.beat) })}
+          {now.bar < 0
+            ? m['practice.pickup']()
+            : m['practice.bar_beat']({ bar: String(now.bar + 1), beat: String(now.beat) })}
         </p>
       )}
       <p className="text-read-readout tabular-nums">

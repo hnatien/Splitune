@@ -17,7 +17,7 @@ export function MorePanel({
   songId: string
 }) {
   return (
-    <PopoverContent align="end" className="w-64 gap-1 p-2">
+    <PopoverContent align="end" aria-label={m['practice.more']()} className="w-64 gap-1 p-2">
       {desktop && (
         <>
           <Button

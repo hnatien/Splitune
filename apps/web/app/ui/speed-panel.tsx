@@ -23,7 +23,7 @@ export function SpeedPanel({
   labels: { speed: string; presets: string }
 }) {
   return (
-    <PopoverContent side="top" className="w-96 gap-4">
+    <PopoverContent side="top" aria-label={labels.speed} className="w-96 gap-4">
       <Slider
         value={value}
         min={min}

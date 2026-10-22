@@ -29,8 +29,10 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
   const song = data.song.data
   return (
     <>
+      {/* Phones keep the loop badge, read from the stand, whole: the title is for screen readers
+          there, as in Stage. */}
       <span
-        className="min-w-0 truncate text-base font-semibold in-data-[appearance=stage]:sr-only"
+        className="min-w-0 truncate text-base font-semibold max-sm:sr-only in-data-[appearance=stage]:sr-only"
         title={song?.title}
       >
         {song?.title}

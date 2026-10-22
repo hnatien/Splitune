@@ -69,14 +69,21 @@ export function useInputMapper({ desktop }: { desktop: boolean }) {
         case 'clean':
         case 'notYet':
           if (player.loop) practice.markPass(action === 'clean' ? 'clean' : 'not_yet')
+          else showHud(m['practice.loop_off']())
           return
         case 'toggleLoop':
-          if (!player.loop) return
+          if (!player.loop) {
+            showHud(m['practice.loop_off']())
+            return
+          }
           practice.send({ type: 'SET_LOOP_ON', on: !player.loopOn })
           showHud(player.loopOn ? m['practice.hud_loop_off']() : m['practice.hud_loop_on']())
           return
         case 'mutePart': {
-          if (practice.channels.length === 0) return
+          if (practice.channels.length === 0) {
+            showHud(m['practice.hud_no_stems']())
+            return
+          }
           const next = toggleMutePart(practice.channels, practice.mix)
           practice.setMix(next)
           const part = practice.channels.find((c) => c.role === 'part')

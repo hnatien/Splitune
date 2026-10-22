@@ -4,6 +4,7 @@ import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
 import { track } from '@/lib/track'
+import { useOnline } from '@/lib/use-online'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import { PedalHud } from '@/ui/pedal-hud'
@@ -99,7 +100,7 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
     document.getElementById('main')?.focus({ preventScroll: true })
   }, [])
 
-  if (song.isPending) return <PracticeLoading />
+  if (song.isPending) return <PracticeLoading slowText={m['practice.loading']()} />
   if (song.isError) {
     return (
       <FocusShell exit={practice.guest}>
@@ -229,10 +230,17 @@ function Interrupted() {
   )
 }
 
+// Offline, a song whose audio this device never stored can't play (27 §4).
 function AudioProblem() {
   const { audioStatus } = usePractice()
+  const online = useOnline()
   if (audioStatus !== 'failed') return null
-  return <Banner tone="warning" title={m['practice.audio_failed']()} />
+  return (
+    <Banner
+      tone="warning"
+      title={online ? m['practice.audio_failed']() : m['practice.not_offline']()}
+    />
+  )
 }
 
 function Overlays({ layout }: { layout: PracticeLayout }) {
