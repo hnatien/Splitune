@@ -55,6 +55,8 @@ export default async function setup() {
   const url = new URL(adminUrl)
   url.pathname = `/${name}`
   const databaseUrl = url.toString()
+  // Specs that check what the API stored (billing.spec.ts: queue priority) read it here.
+  Object.assign(process.env, { E2E_DATABASE_URL: databaseUrl })
   await runMigrations(databaseUrl)
   execFileSync(process.execPath, [join(REPO, 'packages/db/scripts/roles.ts')], {
     env: { ...process.env, DATABASE_URL: databaseUrl },
@@ -130,6 +132,8 @@ export default async function setup() {
       BETTER_AUTH_URL: APP_URL,
       LOG_LEVEL: 'warn',
       EXAMPLES_MANIFEST: examplesManifest,
+      // billing.spec.ts moves the billing clock past a period end.
+      ENABLE_DEV_CLOCK: 'true',
     },
     stdio: ['ignore', 'inherit', 'inherit'],
   })

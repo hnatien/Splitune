@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, type Page } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 
 const MAILPIT = 'http://localhost:8025'
 
@@ -105,4 +105,39 @@ export async function expectNoHorizontalScroll(page: Page) {
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(overflow).toBeLessThanOrEqual(0)
+}
+
+/**
+ * Billing pages never render card fields, even fake ones (25 §2): no text-like input, select or
+ * textarea at all, and nothing that names or autocompletes card data. `scope` limits the scan to
+ * part of the page (the upgrade sheet over the import screen). Returns how many form controls it
+ * found (radios only).
+ */
+export async function expectNoCardInputs(page: Page, scope = 'body') {
+  const scan = await page.evaluate((selector) => {
+    const root = document.querySelector(selector) ?? document.body
+    const controls = [...root.querySelectorAll('input, select, textarea')]
+    const textLike = controls.filter(
+      (el) =>
+        !(el instanceof HTMLInputElement && ['radio', 'checkbox', 'hidden'].includes(el.type)),
+    )
+    const cardish = controls.filter((el) => {
+      const attrs = ['name', 'id', 'autocomplete', 'placeholder', 'aria-label']
+        .map((name) => el.getAttribute(name) ?? '')
+        .join(' ')
+      return /\bcc-|card|cvc|cvv|expir|iban|account.?number/i.test(attrs)
+    })
+    return {
+      controls: controls.length,
+      textLike: textLike.map((el) => el.outerHTML.slice(0, 120)),
+      cardish: cardish.map((el) => el.outerHTML.slice(0, 120)),
+    }
+  }, scope)
+  expect(scan.textLike).toEqual([])
+  expect(scan.cardish).toEqual([])
+  test.info().annotations.push({
+    type: 'card-input scan',
+    description: `${new URL(page.url()).pathname} ${scope}: ${scan.controls} form controls, 0 card or text inputs`,
+  })
+  return scan.controls
 }

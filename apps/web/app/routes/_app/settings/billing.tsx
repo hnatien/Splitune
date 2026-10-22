@@ -1,15 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CreditCardIcon } from 'lucide-react'
-import { SettingsPlaceholder } from '@/features/settings/placeholder'
-import { m } from '@/lib/i18n'
+import { BillingSettings } from '@/features/billing/billing-settings'
 
-// Placeholder until step 14 fills this section (27 §3.9).
-export const Route = createFileRoute('/_app/settings/billing')({
-  component: () => (
-    <SettingsPlaceholder
-      title={m['settings.billing']()}
-      body={m['settings.coming_billing']()}
-      icon={<CreditCardIcon aria-hidden />}
+// Plan & billing (27 §3.9); `?checkout=` is the mock checkout's return state (27 §3.10).
+export const Route = createFileRoute('/_app/settings/billing')({ component: Billing })
+
+function Billing() {
+  const { me } = Route.useRouteContext()
+  const { checkout }: { checkout?: unknown } = Route.useSearch()
+  return (
+    <BillingSettings
+      me={me}
+      checkout={checkout === 'success' || checkout === 'cancelled' ? checkout : undefined}
     />
-  ),
-})
+  )
+}

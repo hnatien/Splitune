@@ -9,7 +9,7 @@ import {
 } from '@splitune/contracts'
 import type { Analysis, Artefact, ReusableStages, SongSource, stageRuns } from '@splitune/db'
 import type { z } from 'zod'
-import { admitAnalysis } from '../entitlements.ts'
+import { admitAnalysis, reserving } from '../admission.ts'
 import { apiError } from '../errors.ts'
 import { analysisKey, CONFIG_PROFILE, planAnalysis } from '../pipeline.ts'
 import { type ApiDeps, authed, userRateLimit } from '../procedures.ts'
@@ -105,6 +105,8 @@ interface StartOptions {
   idempotencyKey: (source: Exclude<SongSource, { kind: 'url_pending' }> | undefined) => string
   baseAnalysisId?: string
   reuse?: ReusableStages | undefined
+  // false: a re-run after a Splitune model upgrade, which never uses an allowance (23 §2).
+  charged?: boolean
 }
 
 // A URL song without a finished download gets a fresh url_import ahead of its graph.
@@ -120,34 +122,39 @@ async function start(deps: ApiDeps, userId: string, options: StartOptions) {
       details: { reason: 'source_not_ready' },
     })
   }
-  const admission = await admitAnalysis(deps, userId, options.type)
+  const admission = await admitAnalysis(deps, userId, options.type, {
+    charged: options.charged ?? true,
+  })
   const ready = source.kind === 'url_pending' ? undefined : source
   const reuse = ready === undefined ? undefined : options.reuse
-  const created = await deps.repos.analyses.create(
-    userId,
-    options.songId,
-    {
-      pipelineVersion: deps.config.pipelineVersion,
-      configProfile: CONFIG_PROFILE,
-      requestedInstrument: options.instrument,
-      analysisType: admission.kind,
-      idempotencyKey: options.idempotencyKey(ready),
-      ...(options.baseAnalysisId === undefined && reuse === undefined
-        ? {}
-        : { baseAnalysisId: options.baseAnalysisId ?? reuse?.analysisId }),
-    },
-    (analysis) =>
-      planAnalysis({
-        userId,
-        analysis,
-        type: options.type,
-        source:
-          ready === undefined
-            ? { download: { importId: randomUUID(), video: DOWNLOAD_VIDEO_DEFAULT } }
-            : { rawKey: ready.rawKey },
-        reuse,
-        priority: admission.priority,
-      }),
+  const created = await reserving(admission, () =>
+    deps.repos.analyses.create(
+      userId,
+      options.songId,
+      {
+        pipelineVersion: deps.config.pipelineVersion,
+        configProfile: CONFIG_PROFILE,
+        requestedInstrument: options.instrument,
+        analysisType: admission.kind,
+        idempotencyKey: options.idempotencyKey(ready),
+        ...(options.baseAnalysisId === undefined && reuse === undefined
+          ? {}
+          : { baseAnalysisId: options.baseAnalysisId ?? reuse?.analysisId }),
+      },
+      (analysis) =>
+        planAnalysis({
+          userId,
+          analysis,
+          type: options.type,
+          source:
+            ready === undefined
+              ? { download: { importId: randomUUID(), video: DOWNLOAD_VIDEO_DEFAULT } }
+              : { rawKey: ready.rawKey },
+          reuse,
+          priority: admission.priority,
+        }),
+      admission.charge,
+    ),
   )
   if (!created) throw apiError('not_found')
   return { analysis_id: created.analysis.id, status: created.analysis.status }
@@ -186,7 +193,9 @@ export const analyses = {
   }),
 
   // Re-analyses with the current pipeline as the song's next version; the old version's
-  // artefacts stay. Repeats with the same Idempotency-Key return the same run.
+  // artefacts stay. Repeats with the same Idempotency-Key return the same run. A re-run the
+  // learner asks for uses an allowance; one after a Splitune model upgrade (a new pipeline
+  // version) doesn't and is never refused.
   rerun: analysesLimited.analyses.rerun.handler(async ({ context, input }) => {
     const { deps, userId } = context
     const previous = await deps.repos.analyses.get(userId, input.id)
@@ -196,6 +205,7 @@ export const analyses = {
       songId: previous.songId,
       instrument: previous.requestedInstrument,
       type: previous.analysisType === 'lite' ? 'lite' : 'full',
+      charged: previous.pipelineVersion === deps.config.pipelineVersion,
       idempotencyKey: () => analysisKey([userId, 'rerun', previous.id, request]),
     })
   }),

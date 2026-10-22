@@ -117,6 +117,13 @@ export async function seedUserGraph(db: Database, userId: string) {
   await db
     .insert(s.subscriptions)
     .values({ userId, provider: 'mock', plan: 'paid_monthly', status: 'active' })
+  await db.insert(s.billingEvents).values({
+    id: `evt_${randomUUID()}`,
+    provider: 'mock',
+    type: 'payment.failed',
+    userId,
+    payload: {},
+  })
   await db
     .insert(s.usageLedger)
     .values({ userId, periodStart: '2026-10-01', kind: 'full_analysis', analysisId: analysis.id })

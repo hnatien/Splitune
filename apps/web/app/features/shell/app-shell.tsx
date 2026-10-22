@@ -43,7 +43,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
               <span className="max-sm:text-sm">{m['nav.import']()}</span>
             </Link>
           </nav>
-          <UsageMeter me={me} className="hidden w-64 lg:flex" />
+          <UsageMeter me={me} className="hidden w-80 lg:flex" />
           <UploadPill />
           <AccountMenu email={me.email} />
         </div>

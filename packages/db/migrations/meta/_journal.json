@@ -71,6 +71,20 @@
       "when": 1792658908561,
       "tag": "0009_example_artefacts",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792667172585,
+      "tag": "0010_billing_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792667175613,
+      "tag": "0011_billing_grants_and_refunds",
+      "breakpoints": true
     }
   ]
 }

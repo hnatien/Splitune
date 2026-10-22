@@ -12,7 +12,9 @@ import {
   jobs,
   songs,
   stageRuns,
+  type UsageKind,
   uploads,
+  usageLedger,
 } from '../schema/index.ts'
 import type { NewSong, Song } from './songs.ts'
 
@@ -70,12 +72,57 @@ export interface ReusableStages {
 
 const REUSABLE_STATUSES = ['done', 'fallback'] as const
 
+// The allowance a new run uses (23 §2), reserved in usage_ledger in the run's own transaction.
+export interface UsageCharge {
+  kind: UsageKind
+  // usage_ledger.period_start of the reservation.
+  periodStart: string
+  // The allowance: units of `counts` already used (in `periodStart`, or ever when `lifetime`)
+  // plus this run may not exceed `cap`; null = no cap.
+  counts: readonly UsageKind[]
+  lifetime?: boolean
+  cap: number | null
+}
+
+// The run would exceed its allowance; nothing was created.
+export class AllowanceExhaustedError extends Error {
+  readonly charge: UsageCharge
+  constructor(charge: UsageCharge) {
+    super(`allowance exhausted: ${charge.kind}`)
+    this.charge = charge
+    this.name = 'AllowanceExhaustedError'
+  }
+}
+
+// Counts and reserves under a per-user transaction lock, so concurrent requests never exceed the
+// cap (the count of one waits for the other's reservation to commit or roll back).
+async function reserve(tx: Transaction, userId: string, analysisId: string, charge: UsageCharge) {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`usage:${userId}`}, 0))`)
+  if (charge.cap !== null) {
+    const [row] = await tx
+      .select({ used: sql<number>`coalesce(sum(${usageLedger.units}), 0)::int` })
+      .from(usageLedger)
+      .where(
+        and(
+          eq(usageLedger.userId, userId),
+          inArray(usageLedger.kind, [...charge.counts]),
+          charge.lifetime ? undefined : eq(usageLedger.periodStart, charge.periodStart),
+        ),
+      )
+    if ((row?.used ?? 0) + 1 > charge.cap) throw new AllowanceExhaustedError(charge)
+  }
+  await tx
+    .insert(usageLedger)
+    .values({ userId, periodStart: charge.periodStart, kind: charge.kind, analysisId })
+}
+
 async function insertRun(
   tx: Transaction,
   userId: string,
   song: Pick<Song, 'id'>,
   input: AnalysisRequest,
   plan: (analysis: Analysis) => AnalysisPlan,
+  charge: UsageCharge | undefined,
 ): Promise<{ analysis: Analysis; created: boolean; song?: Song }> {
   const [existing] = await tx
     .select()
@@ -91,6 +138,7 @@ async function insertRun(
     .values({ ...input, userId, songId: song.id, version: next, status: 'queued' })
     .returning()
   const created = analysis as Analysis
+  if (charge !== undefined) await reserve(tx, userId, created.id, charge)
   const { jobs: planned, events = [], songStatus = 'analysing' } = plan(created)
   const ids = new Map<string, number>()
   const resolve = (names: string[] = []) =>
@@ -175,13 +223,15 @@ export function analysesRepo(db: Database) {
     // Idempotent on (user_id, idempotency_key): a repeated request returns the existing run
     // unchanged. A new run gets the song's next version, its stage graph enqueued in the same
     // transaction (`plan` builds the jobs from the inserted row), the song marked `analysing`
-    // and, if no worker is online for its first stage, an `analysis.waiting` event. Undefined if
-    // the song is not the user's.
+    // and, if no worker is online for its first stage, an `analysis.waiting` event. A `charge`
+    // reserves the run's allowance (AllowanceExhaustedError rolls everything back); a repeated
+    // request is not charged again. Undefined if the song is not the user's.
     create: (
       userId: string,
       songId: string,
       input: AnalysisRequest,
       plan: (analysis: Analysis) => AnalysisPlan,
+      charge?: UsageCharge,
     ) =>
       withUser(db, userId, async (tx) => {
         const [song] = await tx
@@ -190,7 +240,7 @@ export function analysesRepo(db: Database) {
           .where(and(eq(songs.userId, userId), eq(songs.id, songId)))
           .for('update')
         if (!song) return undefined
-        return insertRun(tx, userId, song, input, plan)
+        return insertRun(tx, userId, song, input, plan, charge)
       }),
 
     // URL import: the song and its first analysis (url_import + the stage graph) commit together.
@@ -199,13 +249,14 @@ export function analysesRepo(db: Database) {
       newSong: NewSong,
       input: AnalysisRequest,
       plan: (analysis: Analysis) => AnalysisPlan,
+      charge?: UsageCharge,
     ) =>
       withUser(db, userId, async (tx) => {
         const [song] = await tx
           .insert(songs)
           .values({ ...newSong, userId })
           .returning()
-        const run = await insertRun(tx, userId, song as Song, input, plan)
+        const run = await insertRun(tx, userId, song as Song, input, plan, charge)
         return { ...run, song: run.song ?? (song as Song) }
       }),
 

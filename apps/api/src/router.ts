@@ -2,6 +2,7 @@ import { pub } from './procedures.ts'
 import { analyses } from './routes/analyses.ts'
 import { analytics } from './routes/analytics.ts'
 import { artefacts } from './routes/artefacts.ts'
+import { billing } from './routes/billing.ts'
 import { corrections } from './routes/corrections.ts'
 import { examples } from './routes/examples.ts'
 import { loops } from './routes/loops.ts'
@@ -22,6 +23,7 @@ export const router = pub.router({
   system,
   examples,
   analytics,
+  billing,
 })
 
 export type Router = typeof router

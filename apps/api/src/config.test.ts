@@ -8,6 +8,7 @@ const base = {
   SMTP_HOST: 'localhost',
   SMTP_PORT: '1025',
   EMAIL_FROM: 'Splitune <no-reply@splitune.localhost>',
+  BILLING_WEBHOOK_SECRET: 'w'.repeat(16),
 }
 
 describe('configFromEnv', () => {
@@ -43,5 +44,20 @@ describe('configFromEnv', () => {
       /short-secret/,
     )
     expect(() => configFromEnv({ ...base, CORS_ORIGINS: '*' })).toThrow()
+    expect(() => configFromEnv({ ...base, BILLING_WEBHOOK_SECRET: 'short' })).toThrow(
+      /BILLING_WEBHOOK_SECRET/,
+    )
+  })
+
+  it('reads mock billing prices and keeps the dev clock off by default', () => {
+    const config = configFromEnv(base)
+    expect(config.billing).toMatchObject({
+      provider: 'mock',
+      currency: 'USD',
+      priceMinor: { paid_monthly: 999, paid_yearly: 7999 },
+    })
+    expect(config.devClock).toBe(false)
+    expect(configFromEnv({ ...base, ENABLE_DEV_CLOCK: 'true' }).devClock).toBe(true)
+    expect(() => configFromEnv({ ...base, BILLING_PROVIDER: 'stripe' })).toThrow(/BILLING_PROVIDER/)
   })
 })

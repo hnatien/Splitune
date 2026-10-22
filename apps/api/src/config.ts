@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import type { PaidPlan } from '@splitune/contracts'
 import { ExamplesManifest } from '@splitune/contracts/examples-manifest'
 import { z } from 'zod'
 import bundledExamples from '../examples.json' with { type: 'json' }
@@ -30,6 +31,16 @@ export interface ApiConfig {
   // Example songs (13 §1): the committed examples.json written by `pnpm examples:build`, or the
   // file EXAMPLES_MANIFEST names (end-to-end tests build their own).
   examples: z.infer<typeof ExamplesManifest>
+  // Payments (25 §2): the mock provider is the only one in personal mode. Prices are the
+  // provider's (14 §3), here config; the secret signs the provider's webhook events.
+  billing: {
+    provider: 'mock'
+    webhookSecret: string
+    currency: string
+    priceMinor: Record<z.infer<typeof PaidPlan>, number>
+  }
+  // POST /internal/dev/clock (04 "Internal"): moves the billing clock. Never in production.
+  devClock: boolean
 }
 
 const origin = z.url({ protocol: /^https?$/ }).transform((value) => new URL(value).origin)
@@ -59,6 +70,18 @@ const Env = z.object({
   PIPELINE_VERSION: optional,
   RAILWAY_GIT_COMMIT_SHA: optional,
   EXAMPLES_MANIFEST: optional,
+  BILLING_PROVIDER: z.literal('mock').default('mock'),
+  BILLING_WEBHOOK_SECRET: z
+    .string()
+    .min(16, 'BILLING_WEBHOOK_SECRET must be at least 16 characters'),
+  // Starting prices of 23 TL;DR (US$9.99 / US$79.99), in minor units.
+  BILLING_CURRENCY: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .default('USD'),
+  BILLING_PRICE_MONTHLY_MINOR: z.coerce.number().int().positive().default(999),
+  BILLING_PRICE_YEARLY_MINOR: z.coerce.number().int().positive().default(7999),
+  ENABLE_DEV_CLOCK: flag.default(false),
 })
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
@@ -95,6 +118,16 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     logLevel: e.LOG_LEVEL,
     pipelineVersion: e.PIPELINE_VERSION ?? e.RAILWAY_GIT_COMMIT_SHA?.slice(0, 12) ?? 'dev',
     examples: loadExamples(e.EXAMPLES_MANIFEST),
+    billing: {
+      provider: e.BILLING_PROVIDER,
+      webhookSecret: e.BILLING_WEBHOOK_SECRET,
+      currency: e.BILLING_CURRENCY,
+      priceMinor: {
+        paid_monthly: e.BILLING_PRICE_MONTHLY_MINOR,
+        paid_yearly: e.BILLING_PRICE_YEARLY_MINOR,
+      },
+    },
+    devClock: e.ENABLE_DEV_CLOCK,
   }
 }
 

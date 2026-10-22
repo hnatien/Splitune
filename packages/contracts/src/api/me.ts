@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Instrument } from '../analysis/common.ts'
-import { PaidPlan, Plan } from './billing.ts'
+import { PaidPlan, Plan } from './plan.ts'
 
 // Entitlement keys of 14-auth-billing-and-entitlements.md §2.
 export const EntitlementKey = z.enum([

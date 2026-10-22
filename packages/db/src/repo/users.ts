@@ -36,7 +36,11 @@ export function usersRepo(db: Database) {
           .from(subscriptions)
           .where(eq(subscriptions.userId, userId))
         const flags = await tx
-          .select({ key: featureFlags.key, enabled: featureFlags.enabled })
+          .select({
+            key: featureFlags.key,
+            enabled: featureFlags.enabled,
+            value: featureFlags.value,
+          })
           .from(featureFlags)
         return { user, subscription, flags }
       }),

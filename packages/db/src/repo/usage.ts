@@ -38,6 +38,21 @@ export function usageRepo(db: Database) {
         return totals
       }),
 
+    // Units per kind and period, every period: what entitlements() needs (small: one row per
+    // kind and month).
+    summary: (userId: string) =>
+      withUser(db, userId, (tx) =>
+        tx
+          .select({
+            kind: usageLedger.kind,
+            periodStart: usageLedger.periodStart,
+            units: sql<number>`coalesce(sum(${usageLedger.units}), 0)::int`,
+          })
+          .from(usageLedger)
+          .where(eq(usageLedger.userId, userId))
+          .groupBy(usageLedger.kind, usageLedger.periodStart),
+      ),
+
     // Failed or fallback-only runs never count (23-plans-free-and-paid.md §2).
     refundAnalysis: (userId: string, analysisId: string) =>
       withUser(db, userId, async (tx) => {

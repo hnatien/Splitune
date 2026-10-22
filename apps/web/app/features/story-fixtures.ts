@@ -25,7 +25,7 @@ export const ME: MeData = {
   subscription: null,
   usage: {
     welcome_available: true,
-    full: { used: 0, cap: 1, resets_at: null },
+    full: { used: 0, cap: 0, resets_at: '2026-12-01T00:00:00Z' },
     lite: { used: 1, cap: 5, resets_at: '2026-12-01T00:00:00Z' },
   },
   entitlements: ['practice.core', 'analysis.welcome', 'analysis.lite'],
@@ -36,10 +36,77 @@ export const ME_CAPPED: MeData = {
   ...ME,
   usage: {
     welcome_available: false,
-    full: { used: 1, cap: 1, resets_at: null },
+    full: { used: 0, cap: 0, resets_at: '2026-12-01T00:00:00Z' },
     lite: { used: 5, cap: 5, resets_at: '2026-12-01T00:00:00Z' },
   },
-  entitlements: ['practice.core'],
+}
+
+const PLUS_ENTITLEMENTS: MeData['entitlements'] = [
+  'practice.core',
+  'analysis.full',
+  'analysis.lite',
+  'analysis.extra_instrument',
+  'processing.priority',
+  'mic.scoring',
+  'midi.wait_mode',
+  'offline',
+  'export',
+  'embed.view',
+]
+
+export const ME_PLUS: MeData = {
+  ...ME,
+  plan: 'paid_monthly',
+  subscription: {
+    plan: 'paid_monthly',
+    status: 'active',
+    current_period_end: '2026-11-22T10:00:00Z',
+    cancel_at_period_end: false,
+  },
+  usage: {
+    welcome_available: false,
+    full: { used: 3, cap: 15, resets_at: '2026-11-22T10:00:00Z' },
+    lite: { used: 12, cap: null, resets_at: '2026-11-22T10:00:00Z' },
+  },
+  entitlements: PLUS_ENTITLEMENTS,
+}
+
+export const ME_PLUS_CANCELLING: MeData = {
+  ...ME_PLUS,
+  subscription: {
+    ...(ME_PLUS.subscription as NonNullable<MeData['subscription']>),
+    cancel_at_period_end: true,
+  },
+}
+
+export const ME_PLUS_PAST_DUE: MeData = {
+  ...ME_PLUS,
+  plan: 'paid_yearly',
+  subscription: {
+    plan: 'paid_yearly',
+    status: 'past_due',
+    current_period_end: '2027-10-22T10:00:00Z',
+    cancel_at_period_end: false,
+  },
+}
+
+export const ME_PLUS_CAPPED: MeData = {
+  ...ME_PLUS,
+  usage: { ...ME_PLUS.usage, full: { used: 15, cap: 15, resets_at: '2026-11-22T10:00:00Z' } },
+}
+
+export const PLANS = {
+  provider: 'mock' as const,
+  plans: [
+    {
+      plan: 'paid_monthly' as const,
+      interval: 'month' as const,
+      price_minor: 999,
+      currency: 'USD',
+    },
+    { plan: 'paid_yearly' as const, interval: 'year' as const, price_minor: 7999, currency: 'USD' },
+  ],
+  allowances: { welcome: 1, free_lite_per_month: 5, plus_full_per_period: 15 },
 }
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`

@@ -175,3 +175,16 @@ export async function* sseMessages(res: Response): AsyncGenerator<SseMessage> {
     reader.releaseLock()
   }
 }
+
+// Gives a user a live Plus subscription straight in the cache (as the webhook would leave it), for
+// tests about something other than billing.
+export async function subscribePlus(api: TestApi, userId: string, plan = 'paid_monthly') {
+  await api.db.$client.query(
+    `insert into subscriptions (user_id, provider, plan, status, current_period_start, current_period_end)
+     values ($1, 'mock', $2, 'active', now() - interval '1 day', now() + interval '29 days')
+     on conflict (user_id) do update set plan = excluded.plan, status = 'active',
+       current_period_start = excluded.current_period_start,
+       current_period_end = excluded.current_period_end`,
+    [userId, plan],
+  )
+}

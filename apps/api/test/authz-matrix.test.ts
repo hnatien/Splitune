@@ -99,6 +99,15 @@ const CASES: Record<string, Case> = {
     public: true,
     body: () => ({ events: [{ name: 'example_song_opened', props: { example_id: 'a' } }] }),
   },
+  // Prices for the pricing page, signed in or not.
+  'billing.plans': { public: true },
+  // The caller's own checkout and portal; mock sessions are bound to the user who opened them
+  // (tests/billing.test.ts checks another user's session is a 404).
+  'billing.checkout': { body: () => ({ plan: 'paid_monthly' }) },
+  'billing.portal': {},
+  'billing.mockSession': { query: 'session=x' },
+  'billing.mockCheckout': { body: () => ({ session: 'x', outcome: 'cancel' }) },
+  'billing.mockPortal': { body: () => ({ session: 'x', action: 'cancel' }) },
 }
 
 interface Route {

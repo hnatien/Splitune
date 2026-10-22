@@ -6,6 +6,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   uuid,
@@ -40,6 +41,8 @@ export const subscriptions = pgTable(
     currentPeriodStart: timestamptz('current_period_start'),
     currentPeriodEnd: timestamptz('current_period_end'),
     cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+    // The period end the annual renewal reminder was sent for (14 §4.3: once per renewal).
+    renewalReminderFor: timestamptz('renewal_reminder_for'),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
   (t) => [
@@ -65,4 +68,20 @@ export const usageLedger = pgTable(
     index('usage_ledger_user_period_idx').on(t.userId, t.periodStart),
     check('usage_ledger_kind_check', oneOf(t.kind, USAGE_KINDS)),
   ],
+)
+
+// Provider events already applied (14 §3: the webhook is idempotent by event id).
+export const billingEvents = pgTable(
+  'billing_events',
+  {
+    id: text('id').primaryKey(),
+    provider: text('provider').notNull(),
+    type: text('type').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    receivedAt: timestamptz('received_at').notNull().defaultNow(),
+  },
+  (t) => [index('billing_events_user_idx').on(t.userId, t.receivedAt)],
 )

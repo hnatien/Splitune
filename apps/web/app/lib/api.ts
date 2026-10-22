@@ -1,5 +1,5 @@
 import { type ClientLink, createORPCClient, ORPCError } from '@orpc/client'
-import type { ContractRouterClient } from '@orpc/contract'
+import type { AnyContractRouter, ContractRouterClient } from '@orpc/contract'
 import { OpenAPILink } from '@orpc/openapi-client/fetch'
 import { createTanstackQueryUtils } from '@orpc/tanstack-query'
 import { contract, type ErrorCode, ErrorEnvelope } from '@splitune/contracts'
@@ -11,22 +11,28 @@ import { apiFetch } from '@/lib/api-fetch'
 
 export const CSRF_HEADER = 'x-splitune-csrf'
 
-const network = new OpenAPILink(contract, {
-  url: () => (typeof window === 'undefined' ? 'http://splitune.internal' : window.location.origin),
-  headers: () => ({ [CSRF_HEADER]: '1' }),
-  fetch: (request, init) => apiFetch(new Request(request, { ...init, credentials: 'same-origin' })),
-  // The API answers errors with the ErrorEnvelope (04 "Errors"), not oRPC's own error body.
-  customErrorResponseBodyDecoder: (body, response) => {
-    const parsed = ErrorEnvelope.safeParse(body)
-    if (!parsed.success) return null
-    const { code, message, details, retry_after_s } = parsed.data
-    return new ORPCError(code, {
-      status: response.status,
-      message,
-      data: retry_after_s === undefined ? details : { ...details, retry_after_s },
-    })
-  },
-})
+function openApiLink<T extends AnyContractRouter>(router: T) {
+  return new OpenAPILink(router, {
+    url: () =>
+      typeof window === 'undefined' ? 'http://splitune.internal' : window.location.origin,
+    headers: () => ({ [CSRF_HEADER]: '1' }),
+    fetch: (request, init) =>
+      apiFetch(new Request(request, { ...init, credentials: 'same-origin' })),
+    // The API answers errors with the ErrorEnvelope (04 "Errors"), not oRPC's own error body.
+    customErrorResponseBodyDecoder: (body, response) => {
+      const parsed = ErrorEnvelope.safeParse(body)
+      if (!parsed.success) return null
+      const { code, message, details, retry_after_s } = parsed.data
+      return new ORPCError(code, {
+        status: response.status,
+        message,
+        data: retry_after_s === undefined ? details : { ...details, retry_after_s },
+      })
+    },
+  })
+}
+
+const network = openApiLink(contract)
 
 export type ApiClient = ContractRouterClient<typeof contract>
 
@@ -75,3 +81,7 @@ export function errorData(error: unknown): Record<string, unknown> {
     ? (error.data as Record<string, unknown>)
     : {}
 }
+
+/** A client for a contract that only some pages load (billing), with the same link settings. */
+export const clientFor = <T extends AnyContractRouter>(router: T): ContractRouterClient<T> =>
+  createORPCClient(openApiLink(router))

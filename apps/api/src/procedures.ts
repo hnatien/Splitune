@@ -1,8 +1,9 @@
 import { implement, os } from '@orpc/server'
-import { contract } from '@splitune/contracts'
+import { billingContract, contract } from '@splitune/contracts'
 import { type Database, hitRateLimit, type Repositories } from '@splitune/db'
 import type { Storage } from '@splitune/storage'
 import type { SessionInfo } from './auth.ts'
+import type { Billing } from './billing/service.ts'
 import type { ApiConfig } from './config.ts'
 import { apiError } from './errors.ts'
 import type { EventHub } from './events.ts'
@@ -14,6 +15,7 @@ export interface ApiDeps {
   storage: Storage
   config: ApiConfig
   events: EventHub
+  billing: Billing
 }
 
 // Per-request context the Hono layer hands to oRPC.
@@ -27,8 +29,8 @@ export interface RequestContext {
   idempotencyKey?: string
 }
 
-// The procedures implemented so far (04-api-contract.md); billing and the YouTube reference join
-// in later steps. Only these are routed and documented.
+// The procedures implemented so far (04-api-contract.md); the YouTube reference joins in a later
+// step. Only these are routed and documented.
 export const v1Contract = {
   me: { get: contract.me.get, update: contract.me.update },
   songs: {
@@ -48,6 +50,7 @@ export const v1Contract = {
   system: contract.system,
   examples: contract.examples,
   analytics: contract.analytics,
+  billing: billingContract.billing,
 }
 
 // Procedures that work without a session (example songs, product events) use `pub` directly;

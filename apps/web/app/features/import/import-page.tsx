@@ -1,15 +1,19 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { client, errorCode, errorData } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import type { InstrumentName } from '@/lib/instruments'
 import { apiErrorMessage } from '@/lib/reasons'
+import { reloadMe } from '@/lib/reload-me'
 import type { MeData } from '@/lib/session'
 import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
 import { DropZone } from '@/ui/drop-zone'
 import { InlineError } from '@/ui/status-message'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
+import type { Trigger } from '../billing/plans'
+import { UpgradeSheet } from '../billing/upgrade-sheet'
 import { AnalysisChoice, type AnalysisKind, analysisAvailability } from './analysis-choice'
 import { FileRow } from './file-row'
 import { hashFile } from './hash'
@@ -93,6 +97,8 @@ export function ImportPage({ me, tab: requested }: { me: MeData; tab?: Tab | und
   const [submitting, setSubmitting] = useState(false)
   const [failure, setFailure] = useState<string | undefined>()
   const [waitingOnline, setWaitingOnline] = useState(false)
+  const [upgrade, setUpgrade] = useState<Trigger | undefined>()
+  const queryClient = useQueryClient()
 
   const onFile = useCallback(
     (picked: File) => {
@@ -140,6 +146,7 @@ export function ImportPage({ me, tab: requested }: { me: MeData; tab?: Tab | und
           type,
           download_video: link.downloadVideo,
         })
+        void reloadMe(queryClient)
         await navigate({ to: '/songs/$songId/practice', params: { songId: accepted.song_id } })
         return
       }
@@ -214,12 +221,26 @@ export function ImportPage({ me, tab: requested }: { me: MeData; tab?: Tab | und
           </TabsContent>
         </Tabs>
         <aside className="flex flex-col gap-6">
+          {me.usage.welcome_available && (
+            <InlineError
+              tone="info"
+              title={m['plan.welcome_available']()}
+              actions={
+                type !== 'full' && (
+                  <Button variant="outline" onClick={() => setType('full')}>
+                    {m['plan.use_it_now']()}
+                  </Button>
+                )
+              }
+            />
+          )}
           <AnalysisChoice
             me={me}
             instrument={instrument}
             onInstrumentChange={setInstrument}
             type={type}
             onTypeChange={setType}
+            onSeePlus={setUpgrade}
           />
           {waitingOnline && <InlineError tone="warning" title={m['import.offline']()} />}
           {failure && <InlineError title={failure} />}
@@ -238,6 +259,12 @@ export function ImportPage({ me, tab: requested }: { me: MeData; tab?: Tab | und
           </Button>
         </aside>
       </div>
+      <UpgradeSheet
+        open={upgrade !== undefined}
+        onClose={() => setUpgrade(undefined)}
+        trigger={upgrade ?? 'cap_full'}
+        returnPath="/import"
+      />
     </div>
   )
 }
