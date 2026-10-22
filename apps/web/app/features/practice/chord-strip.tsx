@@ -10,7 +10,9 @@ import { usePracticeUi } from './practice-store'
 
 // ChordStrip (12 §2, §4): beat-synchronous chips following the clock, the current one enlarged,
 // confidence by ink, dashed border and "?" (never colour alone); tap → editor sheet. The legend
-// sits at the end with the "Show uncertainty" switch.
+// sits at the end with the "Show uncertainty" switch. Chips that don't fit are clipped inside the
+// list, which fades at its end so a cut name doesn't read as a shorter chord (padded so focus rings
+// show); the list keeps at least 20rem and the legend wraps when the strip is narrower than both.
 
 const BEFORE = 1
 const AFTER = 5
@@ -54,7 +56,10 @@ export function ChordStrip({ legend = true, className }: { legend?: boolean; cla
         className,
       )}
     >
-      <ol aria-label={m['practice.chords']()} className="flex min-w-0 flex-1 items-center gap-2">
+      <ol
+        aria-label={m['practice.chords']()}
+        className="-m-1.5 flex min-w-80 flex-1 items-center gap-2 overflow-hidden p-1.5 mask-r-from-[calc(100%-var(--spacing)*6)]"
+      >
         {shown.map((chord) => {
           const position = chords.indexOf(chord)
           const timing: ChordTiming =
@@ -81,7 +86,7 @@ export function ChordStrip({ legend = true, className }: { legend?: boolean; cla
       </ol>
       {legend && (
         <ConfidenceLegend
-          className="hidden shrink-0 lg:inline-flex"
+          className="hidden lg:inline-flex"
           text={m['practice.legend']({ model })}
           labels={{
             showUncertainty: m['practice.show_uncertainty'](),

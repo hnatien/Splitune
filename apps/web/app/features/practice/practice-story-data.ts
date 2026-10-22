@@ -28,7 +28,9 @@ export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.gui
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(ALL.indexOf(kind) + 1).padStart(12, '0')}`
 
-export function seed(kinds: Kind[], patch: { summary?: unknown; running?: boolean } = {}) {
+export type Patch = { summary?: unknown; chords?: unknown; running?: boolean }
+
+export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
     const run = analysis(1, patch.running ? 'running' : 'done')
     const entries = kinds.map((kind) => ({
@@ -56,7 +58,12 @@ export function seed(kinds: Kind[], patch: { summary?: unknown; running?: boolea
         orpc.artefacts.listCorrections.queryKey({ input: { id: artefactId(kind) } }),
         { ops: [] },
       )
-      const doc = kind === 'summary' && patch.summary ? patch.summary : DOCS[kind]
+      const doc =
+        kind === 'summary' && patch.summary
+          ? patch.summary
+          : kind === 'chords' && patch.chords
+            ? patch.chords
+            : DOCS[kind]
       if (doc) client.setQueryData(['artefact-doc', artefactId(kind)], doc)
     }
   }
