@@ -72,7 +72,15 @@ export async function signIn(page: Page, email: string) {
     const seconds = Number((await limited.textContent())?.match(/in (\d+)/)?.[1] ?? 60)
     await page.waitForTimeout((seconds + 1) * 1000)
   }
-  await page.goto(await magicLink(email))
+  // Opening the link counts against the same limit: wait out a 429 there too.
+  const link = await magicLink(email)
+  for (let attempt = 0; ; attempt++) {
+    const response = await page.goto(link)
+    if (response?.status() !== 429) break
+    if (attempt >= 3) throw new Error('magic link stayed rate limited')
+    const seconds = Number(response.headers()['retry-after'] ?? 60)
+    await page.waitForTimeout((seconds + 1) * 1000)
+  }
   await expect(page).toHaveURL(/\/library/)
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible()
 }
