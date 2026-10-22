@@ -5,6 +5,7 @@
   "description": "Turborepo bridge for the uv workspace: lets pnpm lint/typecheck/test run ruff, pyright and pytest",
   "type": "module",
   "scripts": {
+    "ml-worker": "uv run splitune-ml-worker",
     "lint": "uv run ruff check && uv run ruff format --check",
     "typecheck": "uv run pyright && tsc -p tsconfig.json",
     "test": "uv run pytest",
