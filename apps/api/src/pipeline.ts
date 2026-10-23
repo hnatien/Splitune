@@ -18,8 +18,13 @@ type Event = z.infer<typeof JobEvent>
 export const CONFIG_PROFILE = 'personal'
 
 // Instruments with a notes stage in services/ml (`stages.py`); the others get a chords-only
-// summary until v1 adds theirs (piano, drums).
-const NOTES_INSTRUMENTS: ReadonlySet<InstrumentName> = new Set(['guitar', 'bass', 'vocals'])
+// summary until v1 adds theirs (drums).
+const NOTES_INSTRUMENTS: ReadonlySet<InstrumentName> = new Set([
+  'guitar',
+  'bass',
+  'piano',
+  'vocals',
+])
 // finalize writes tab + alphaTex for fretted instruments (music-core buildTab).
 const TAB_INSTRUMENTS: ReadonlySet<InstrumentName> = new Set(['guitar', 'bass'])
 

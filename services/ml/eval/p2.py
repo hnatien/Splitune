@@ -1,9 +1,10 @@
 """Prototype 2: note transcription on stems vs mixture (08 §3 P2, personal-mode candidates).
 
     uv run python eval/p2.py build-guitar        # GuitarSet excerpts + MUSDB18-HQ band → mixtures
-    uv run python eval/p2.py build-bass          # BabySlakh windows (mix, bass stems, MIDI refs)
+    uv run python eval/p2.py build-bass          # BabySlakh windows (mix, bass/guitar/piano, MIDI)
+    uv run python eval/p2.py build-piano         # MAESTRO test excerpts + MUSDB18-HQ band
     uv run python eval/p2.py separate            # BS-Roformer-SW (the map's first choice)
-    uv run python eval/p2.py predict --transcriber basic_pitch|yourmt3 [--set guitar|slakh]
+    uv run python eval/p2.py predict --transcriber basic_pitch|yourmt3|transkun [--set ...]
     uv run python eval/p2.py sweep --instrument guitar|bass  # Basic Pitch thresholds on stems
     uv run python eval/p2.py calibrate           # isotonic fit, reliability diagram, ECE
     uv run python eval/p2.py report              # metrics + gates → eval/results/p2/<date>.md
@@ -15,9 +16,11 @@ code; the transcriber is switched with a temporary notes config.
 
 Material (local only, never committed): GuitarSet mono-mic excerpts (CC-BY-4.0) mixed with the
 drums, bass and vocals of a MUSDB18-HQ test window (the guitar 3 LU below the band; harmony and
-tempo don't match, so this measures interference, not musical context), and BabySlakh (CC-BY-4.0,
-20 Slakh2100 tracks rendered at 16 kHz, MIDI ground truth). Both Basic Pitch and YourMT3+ were
-trained on GuitarSet and Slakh, so absolute scores are optimistic (in-sample).
+tempo don't match, so this measures interference, not musical context), MAESTRO v3 test-split
+excerpts (CC-BY-NC-SA-4.0, read from the dataset zip with HTTP range requests; Disklavier MIDI
+ground truth) mixed the same way, and BabySlakh (CC-BY-4.0, 20 Slakh2100 tracks rendered at
+16 kHz, MIDI ground truth). Both Basic Pitch and YourMT3+ were trained on GuitarSet and Slakh, and
+YourMT3+ and Transkun on MAESTRO's training split, so absolute scores are optimistic (in-sample).
 """
 
 from __future__ import annotations
@@ -52,19 +55,26 @@ ROOT = Path("~/datasets/p2").expanduser()
 GUITARSET = Path("~/datasets/guitarset").expanduser()
 MUSDB = Path("~/datasets/musdb18hq-p1").expanduser()
 BABYSLAKH = Path("~/datasets/babyslakh/babyslakh_16k").expanduser()
+MAESTRO_URL = (
+    "https://storage.googleapis.com/magentadata/datasets/maestro/v3.0.0/maestro-v3.0.0.zip"
+)
 RESULTS = Path(__file__).resolve().parent / "results" / "p2"
 ML_ROOT = Path(__file__).resolve().parents[1]
 CALIBRATION_DIR = ML_ROOT / "config" / "calibration"
 RATE = 44100
-GUITAR_BELOW_BAND_LU = 3.0
+GUITAR_BELOW_BAND_LU = 3.0  # also used for piano
 SEPARATOR = "bs_roformer_sw"
 CONDITIONS = ("clean", "stem", "mixture")
-TRANSCRIBERS = {"basic_pitch": "basic-pitch", "yourmt3": "yourmt3-moe"}  # → register record
-# P2 gate (08 §3): stem >= mixture and onset F1 >= 0.70 for guitar. The doc names no bass
-# threshold; the guitar one is applied (proposal).
-GATE_F1 = {"guitar": 0.70, "bass": 0.70}
+# → register record
+TRANSCRIBERS = {"basic_pitch": "basic-pitch", "yourmt3": "yourmt3-moe", "transkun": "transkun-v2"}
+# P2 gate (08 §3): stem >= mixture and onset F1 >= 0.70 for guitar, >= 0.80 for piano in a band.
+# The doc names no bass threshold; the guitar one is applied (proposal).
+GATE_F1 = {"guitar": 0.70, "bass": 0.70, "piano": 0.80}
+INSTRUMENTS = ("guitar", "bass", "piano")
+SETS = ("guitar", "slakh", "piano")
 FIT_PLAYERS = {"00", "01", "02"}  # calibration fit split; players 03-05 are held out
 SLAKH_WINDOW_S = 30.0
+MAESTRO_WINDOW_S = (20.0, 50.0)  # past the opening, as the Slakh windows start after the first note
 ODD_HALF_SHARE = 0.3  # rendered_octave
 
 Audio = NDArray[np.float32]
@@ -215,7 +225,7 @@ def cmd_build_bass(_: argparse.Namespace) -> int:
                 and (track / "stems" / f"{s}.wav").is_file()
                 and (track / "MIDI" / f"{s}.mid").is_file()
             ]
-            for inst, cls in (("bass", "Bass"), ("guitar", "Guitar"))
+            for inst, cls in (("bass", "Bass"), ("guitar", "Guitar"), ("piano", "Piano"))
         }
         if not parts["bass"]:
             continue
@@ -254,11 +264,78 @@ def cmd_build_bass(_: argparse.Namespace) -> int:
                     "track": track.name,
                     "window_s": [round(t0, 2), round(t1, 2)],
                     "ref_octave_shift": shifts,
+                    "piano_programs": sorted(
+                        {int(stems[s]["program_num"]) for s in parts["piano"]}
+                    ),
                 },
             }
         )
         print(f"slakh {track.name}: {sorted(instruments)}", flush=True)
     write_json(manifest_path("slakh"), items)
+    return 0
+
+
+def cmd_build_piano(_: argparse.Namespace) -> int:
+    """One MAESTRO v3 test performance per composer (16; the first by title), window
+    MAESTRO_WINDOW_S, mixed under the drums, bass and vocals of a MUSDB18-HQ window like the
+    guitar set. References: the performance MIDI's note on/off (no pedal extension)."""
+    import zipfile
+
+    from p1_musdb import HttpRangeFile, WavStream
+
+    archive = zipfile.ZipFile(io.BufferedReader(HttpRangeFile(MAESTRO_URL), buffer_size=4 << 20))
+    folder = "maestro-v3.0.0/"
+    rows = list(
+        csv.DictReader(io.TextIOWrapper(archive.open(f"{folder}maestro-v3.0.0.csv"), "utf-8"))
+    )
+    picked: dict[str, dict[str, str]] = {}
+    for row in sorted(
+        (r for r in rows if r["split"] == "test"),
+        key=lambda r: (r["canonical_composer"], r["canonical_title"], r["audio_filename"]),
+    ):
+        picked.setdefault(row["canonical_composer"], row)
+    windows = sorted(p for p in MUSDB.iterdir() if (p / "drums.wav").is_file())
+    t0, t1 = MAESTRO_WINDOW_S
+    items: list[dict[str, Any]] = []
+    for k, row in enumerate(picked.values()):
+        item_id = f"maestro{k:02d}"
+        out = ROOT / "piano" / item_id
+        out.mkdir(parents=True, exist_ok=True)
+        with archive.open(folder + row["audio_filename"]) as member:
+            wav = WavStream(member)
+            start = int(t0 * wav.samplerate)
+            frames = int((t1 - t0) * wav.samplerate)
+            data = wav.read(start, frames).mean(axis=1)
+            rate = wav.samplerate
+        piano = np.asarray(resample_poly(data, RATE, rate) if rate != RATE else data, np.float32)
+        midi = out / "performance.midi"
+        midi.write_bytes(archive.read(folder + row["midi_filename"]))
+        band = sum(
+            read(windows[k % len(windows)] / f"{s}.wav") for s in ("drums", "bass", "vocals")
+        )
+        band = fit_length(np.asarray(band, dtype=np.float32), len(piano))
+        gain_db = loudness(piano) - loudness(band) + GUITAR_BELOW_BAND_LU
+        mixture = (piano + band * np.float32(10 ** (gain_db / 20))).astype(np.float32)
+        scale = np.float32(min(1.0, 0.9 / float(np.max(np.abs(mixture)))))
+        write(out / "mixture.wav", mixture * scale)
+        write(out / "piano.wav", piano * scale)
+        write_ref(out / "piano.ref.csv", midi_notes(midi, t0, t1))
+        items.append(
+            {
+                "id": item_id,
+                "dir": str(out),
+                "instruments": {"piano": str(out / "piano.ref.csv")},
+                "tags": {
+                    "composer": row["canonical_composer"],
+                    "title": row["canonical_title"],
+                    "audio": row["audio_filename"],
+                    "window_s": [t0, t1],
+                },
+                "band": windows[k % len(windows)].name,
+            }
+        )
+        print(f"piano {item_id} {row['canonical_composer']}", flush=True)
+    write_json(manifest_path("piano"), items)
     return 0
 
 
@@ -312,6 +389,8 @@ def cmd_predict(args: argparse.Namespace) -> int:
                 continue
             base = Path(item["dir"])
             for instrument in item["instruments"]:
+                if instrument not in args.instrument:
+                    continue
                 for condition in args.condition:
                     dest = run_dir(args.transcriber, condition) / f"{item['id']}.{instrument}.json"
                     if dest.is_file():
@@ -324,7 +403,7 @@ def cmd_predict(args: argparse.Namespace) -> int:
                             continue  # not separated yet
                         sep = {
                             i: base / "sep" / f"{i}.wav"
-                            for i in ("guitar", "bass", "drums")
+                            for i in ("guitar", "bass", "piano", "drums")
                             if (base / "sep" / f"{i}.wav").is_file()
                         }
                         inputs["separation"] = str(
@@ -352,7 +431,7 @@ def fold(notes: formats.NoteEvents) -> formats.NoteEvents:
 
 def scores(transcriber: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for item in all_items(["guitar", "slakh"]):
+    for item in all_items(SETS):
         for instrument, ref_path in item["instruments"].items():
             ref = reference(ref_path)
             for condition in CONDITIONS:
@@ -409,12 +488,14 @@ def hz(midi: NDArray[np.float64]) -> NDArray[np.float64]:
 def is_fit(item: dict[str, Any]) -> bool:
     if item["set"] == "guitar":
         return item["tags"]["player"] in FIT_PLAYERS
+    if item["set"] == "piano":
+        return int(item["id"].removeprefix("maestro")) % 2 == 0
     return int(item["id"].removeprefix("Track")) <= 10
 
 
 def calibration_data(transcriber: str, instrument: str) -> dict[str, tuple[list[float], list[int]]]:
     split: dict[str, tuple[list[float], list[int]]] = {"fit": ([], []), "test": ([], [])}
-    for item in all_items(["guitar", "slakh"]):
+    for item in all_items(SETS):
         if instrument not in item["instruments"]:
             continue
         est_path = run_dir(transcriber, "stem") / f"{item['id']}.{instrument}.json"
@@ -433,13 +514,17 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
     lines: list[str] = []
     for transcriber in args.transcriber:
         record = register.model(TRANSCRIBERS[transcriber])
-        for instrument in ("guitar", "bass"):
+        for instrument in INSTRUMENTS:
             data = calibration_data(transcriber, instrument)
             (fx, fy), (tx, ty) = data["fit"], data["test"]
             if not fx or not tx:
                 continue
             knots = fit_isotonic(fx, fy)
-            fitted_on = "guitarset-players-00-02" if instrument == "guitar" else "babyslakh-01-10"
+            fitted_on = {
+                "guitar": "guitarset-players-00-02",
+                "bass": "babyslakh-01-10",
+                "piano": "maestro-even-babyslakh-01-10",
+            }[instrument]
             table = contracts.CalibrationTable(
                 model_id=record.id,
                 version=record.version,
@@ -495,7 +580,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     base = transcribers.for_instrument(args.instrument)[1]
     combos = [dict(zip(SWEEP, v, strict=True)) for v in itertools.product(*SWEEP.values())]
     results: dict[str, dict[int, list[float]]] = {"fit": {}, "test": {}}
-    for item in all_items(["guitar", "slakh"]):
+    for item in all_items(SETS):
         if args.instrument not in item["instruments"]:
             continue
         stem = Path(item["dir"]) / "sep" / f"{args.instrument}.wav"
@@ -554,6 +639,8 @@ GROUPS = [
     ("guitar", "guitar", "GuitarSet + MUSDB band"),
     ("guitar", "slakh", "BabySlakh"),
     ("bass", "slakh", "BabySlakh"),
+    ("piano", "piano", "MAESTRO + MUSDB band"),
+    ("piano", "slakh", "BabySlakh"),
 ]
 COLUMNS = ("onset_f1", "onset_precision", "onset_recall", "onset_offset_f1", "onset_f1_pitch_class")
 
@@ -637,10 +724,16 @@ def cmd_report(args: argparse.Namespace) -> int:
                 if sel:
                     cells = " | ".join(f"{mean(sel, k):.3f}" for k in COLUMNS)
                     out.append(f"| {t} | {inst} | {label} | {cond} | {len(sel)} | {cells} |")
-    out += ["", "## Gate (08 §3 P2: stem ≥ mixture, onset F1 ≥ 0.70 on stems)", ""]
-    for inst in ("guitar", "bass"):
+    out += [
+        "",
+        "## Gate (08 §3 P2: stem ≥ mixture, onset F1 ≥ 0.70 on stems; piano ≥ 0.80 in a band)",
+        "",
+    ]
+    for inst in INSTRUMENTS:
         for t in args.transcriber:
             stem, mix, ok = gate(rows, t, inst)
+            if stem != stem:  # NaN: this transcriber has no stem runs for the instrument
+                continue
             out.append(
                 f"- {inst} / {t}: stem {stem:.3f} vs mixture {mix:.3f}, "
                 f"threshold {GATE_F1[inst]:.2f} → **{'PASS' if ok else 'FAIL'}**"
@@ -651,7 +744,11 @@ def cmd_report(args: argparse.Namespace) -> int:
         "are Slakh2100 training tracks), so every number is in-sample, YourMT3+'s mixture scores "
         "most of all. The gate averages all items, including the sweep's fit split (the sweep "
         "tables give held-out scores). BabySlakh references are octave-corrected per stem "
-        "(`rendered_octave`): most bass patches sound an octave below their MIDI.",
+        "(`rendered_octave`): most bass patches sound an octave below their MIDI. YourMT3+ and "
+        "Transkun were trained on MAESTRO's training split: the piano excerpts come from its test "
+        "split (unseen performances, but the same Disklavier pianos and rooms), so MAESTRO scores "
+        "are optimistic for pop piano; BabySlakh's piano class includes electric pianos, "
+        "clavinet and harpsichord (General MIDI programs 0-7).",
         "",
         "## GuitarSet by mode (stem condition)",
         "",
@@ -663,6 +760,22 @@ def cmd_report(args: argparse.Namespace) -> int:
             sel = select(rows, transcriber=t, set="guitar", condition="stem", mode=mode)
             if sel:
                 out.append(f"| {t} | {mode} | {len(sel)} | {mean(sel, 'onset_f1'):.3f} |")
+    out += [
+        "",
+        "## BabySlakh piano by patch (stem condition)",
+        "",
+        "Acoustic: every piano part in the track is a General MIDI acoustic piano (programs 0-3); "
+        "electric: the track also has an electric piano, harpsichord or clavinet (4-7).",
+        "",
+        "| transcriber | patches | items | onset F1 |",
+        "|---|---|---|---|",
+    ]
+    for t in args.transcriber:
+        sel = select(rows, transcriber=t, instrument="piano", set="slakh", condition="stem")
+        for name, acoustic in (("acoustic", True), ("electric", False)):
+            group = [r for r in sel if all(p <= 3 for p in r["piano_programs"]) == acoustic]
+            if group:
+                out.append(f"| {t} | {name} | {len(group)} | {mean(group, 'onset_f1'):.3f} |")
     if len(args.transcriber) > 1:
         out += paired(rows, args.transcriber)
     notes = cast(
@@ -673,7 +786,7 @@ def cmd_report(args: argparse.Namespace) -> int:
     for inst, spec in notes["instruments"].items():
         gate_value = views["quality_gate"].get(inst, "none")
         out.append(
-            f"- {inst}: `{spec['transcriber']}` {spec['params']} · views.yaml quality_gate "
+            f"- {inst}: `{spec['transcriber']}` {spec.get('params', {})} · views.yaml quality_gate "
             f"`{gate_value}`"
         )
     for name in ("sweep-guitar.md", "sweep-bass.md", "calibration.md"):
@@ -691,12 +804,16 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("build-guitar").set_defaults(fn=cmd_build_guitar)
     sub.add_parser("build-bass").set_defaults(fn=cmd_build_bass)
+    sub.add_parser("build-piano").set_defaults(fn=cmd_build_piano)
     for name, fn in (("separate", cmd_separate), ("predict", cmd_predict)):
         p = sub.add_parser(name)
-        p.add_argument("--set", nargs="+", choices=["guitar", "slakh"], default=["guitar", "slakh"])
+        p.add_argument("--set", nargs="+", choices=SETS, default=list(SETS))
         if name == "predict":
             p.add_argument("--transcriber", choices=list(TRANSCRIBERS), required=True)
             p.add_argument("--condition", nargs="+", choices=CONDITIONS, default=list(CONDITIONS))
+            p.add_argument(
+                "--instrument", nargs="+", choices=INSTRUMENTS, default=list(INSTRUMENTS)
+            )
             p.add_argument(
                 "--players", nargs="+", help="GuitarSet players to include (default all)"
             )

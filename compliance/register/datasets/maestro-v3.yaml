@@ -1,0 +1,14 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: maestro-v3
+kind: dataset
+name: MAESTRO
+version: "3.0.0"
+url: https://magenta.tensorflow.org/datasets/maestro
+licence: CC-BY-NC-SA-4.0
+use: [eval_only]
+notes: >-
+  Prototype 2 (piano) reads 30 s windows of test-split performances and their MIDI straight from
+  the dataset zip with HTTP range requests (services/ml/eval/p2.py build-piano); audio stays in
+  ~/datasets and is never committed.
+reviewer: owner
+reviewed: 2026-10-23

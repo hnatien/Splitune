@@ -455,20 +455,27 @@ requires-dist = [
     { name = "einops", marker = "extra == 'yourmt3'", specifier = "==0.8.2" },
     { name = "lightning", marker = "extra == 'yourmt3'", specifier = "==2.6.6" },
     { name = "mido", marker = "extra == 'yourmt3'", specifier = "==1.3.3" },
+    { name = "mir-eval", marker = "extra == 'transkun'", specifier = "==0.8.2" },
     { name = "numpy", specifier = "==2.5.4" },
     { name = "onnxruntime", specifier = "==1.31.0" },
+    { name = "pretty-midi", marker = "extra == 'transkun'", specifier = "==0.2.11.post0" },
     { name = "pyyaml", specifier = "==6.0.3" },
     { name = "scipy", specifier = "==1.18.1" },
     { name = "soundfile", specifier = "==0.14.0" },
     { name = "splitune-ml-core", editable = "../../packages/splitune_ml_core" },
     { name = "stage-separation", editable = "../../packages/stage_separation" },
+    { name = "torch", marker = "sys_platform == 'linux' and extra == 'transkun'", specifier = "==2.14.1", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'yourmt3'", specifier = "==2.14.1", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torch", marker = "sys_platform != 'linux' and extra == 'transkun'", specifier = "==2.14.1" },
     { name = "torch", marker = "sys_platform != 'linux' and extra == 'yourmt3'", specifier = "==2.14.1" },
+    { name = "torchaudio", marker = "sys_platform == 'linux' and extra == 'transkun'", specifier = "==2.11.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torchaudio", marker = "sys_platform == 'linux' and extra == 'yourmt3'", specifier = "==2.11.0", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'transkun'", specifier = "==2.11.0" },
     { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'yourmt3'", specifier = "==2.11.0" },
     { name = "transformers", marker = "extra == 'yourmt3'", specifier = "==4.45.1" },
+    { name = "transkun", marker = "extra == 'transkun'", specifier = "==2.0.1" },
 ]
-provides-extras = ["yourmt3"]
+provides-extras = ["yourmt3", "transkun"]
 
 [[package]]
 name = "stage-separation"

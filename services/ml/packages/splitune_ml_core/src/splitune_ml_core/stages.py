@@ -130,6 +130,7 @@ NOTES_CONFIG = ML_ROOT / "config" / "notes.personal.yaml"
 TRANSCRIBER_ISLANDS: dict[str, tuple[Island, Slot]] = {
     "basic_pitch": ("onnx-cpu", "cpu"),
     "yourmt3": ("torch", "mps"),
+    "transkun": ("torch", "mps"),
 }
 
 
@@ -157,7 +158,7 @@ def notes_spec(instrument: str) -> StageSpec:
     )
 
 
-for _instrument in ("guitar", "bass", "vocals"):
+for _instrument in ("guitar", "bass", "piano", "vocals"):
     STAGES[f"notes.{_instrument}"] = notes_spec(_instrument)
 
 DESCRIBE_TIMEOUT_S = 600.0  # first describe may download model weights

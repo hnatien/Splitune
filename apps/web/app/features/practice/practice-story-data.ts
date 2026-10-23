@@ -16,17 +16,19 @@ import type { FetchAudio } from './practice-context'
 // 8-bar Am–F–C–G fixture as a song whose artefacts land kind by kind, and a generated tone for
 // its audio. Nothing reaches the network.
 
-export type Kind = 'beats' | 'stems' | 'chords' | 'notes.guitar' | 'tab.guitar' | 'summary'
-export const DOCS: Partial<Record<Kind, unknown>> = {
-  beats,
-  stems,
-  chords,
-  'notes.guitar': notes,
-  summary,
-}
+export type Kind =
+  | 'beats'
+  | 'stems'
+  | 'chords'
+  | 'notes.guitar'
+  | 'tab.guitar'
+  | 'summary'
+  | 'notes.piano'
+/** Every artefact of the guitar song. */
 export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', 'summary']
+const IDS: Kind[] = [...ALL, 'notes.piano']
 export const artefactId = (kind: Kind) =>
-  `00000000-0000-4000-9000-${String(ALL.indexOf(kind) + 1).padStart(12, '0')}`
+  `00000000-0000-4000-9000-${String(IDS.indexOf(kind) + 1).padStart(12, '0')}`
 
 export type Patch = {
   summary?: unknown
@@ -57,6 +59,73 @@ const PIANO_SEGMENTS: [string, number, number, number][] = [
   ['F:min7', BAR(6), BAR(7), 0.9],
   ['G#:maj', BAR(7), 20.5, 0.9],
 ]
+// The piano part over those chords, as notes.piano: the left hand's bass on beats 1 and 3, the
+// right hand's chord on each half bar, a melody over the N.C. bar and bar 4. The unsure B♭7 half
+// bar is low confidence, the G♯m7 one medium.
+type PianoBeat = [bar: number, beat: number, beats: number, pitches: number[], confidence?: number]
+const PIANO_PART: PianoBeat[] = [
+  [0, 0, 1, [67]],
+  [0, 1, 1, [70]],
+  [0, 2, 1, [75]],
+  [0, 3, 1, [74]],
+  [1, 0, 2, [39, 55, 58, 62]],
+  [1, 2, 2, [46, 55, 58, 62]],
+  [2, 0, 2, [44, 56, 60, 63]],
+  [2, 2, 2, [46, 56, 58, 62], 0.3],
+  [3, 0, 2, [39, 55, 58, 62]],
+  [3, 2, 1, [46, 70]],
+  [3, 3, 1, [72]],
+  [4, 0, 4, [39, 55, 58, 62]],
+  [5, 0, 2, [44, 59, 63, 66], 0.55],
+  [5, 2, 2, [47, 58, 63, 66]],
+  [6, 0, 2, [41, 56, 60, 63]],
+  [6, 2, 2, [48, 56, 60, 63]],
+  [7, 0, 4, [44, 56, 60, 63]],
+]
+export const PIANO_NOTES = {
+  ...notes,
+  artefact: 'notes.piano',
+  instrument: 'piano',
+  models: [{ ...notes.models[0], model_id: 'transkun/2.0', version: '2.0.1' }],
+  params: { calibration: { bands: { high: 0.7, medium: 0.4 } } },
+  notes: PIANO_PART.flatMap(([bar, beat, beats, pitches, confidence = 0.92], i) =>
+    pitches.map((pitch_midi, k) => ({
+      id: `p${String(i * 8 + k).padStart(6, '0')}`,
+      onset_s: BAR(bar, beat),
+      offset_s: BAR(bar, beat + beats) - 0.05,
+      pitch_midi,
+      velocity: 72,
+      confidence,
+      confidence_raw: 1,
+      stem_id: 'piano',
+    })),
+  ),
+}
+const pianoSummary = (view: 'roll' | 'chords_only') => ({
+  ...summary,
+  per_instrument: [
+    {
+      instrument: 'piano',
+      note_confidence_mean: 0.85,
+      fraction_low_conf: 0.12,
+      recommended_view: view,
+      reasons: view === 'roll' ? [] : ['quality_gate_failed'],
+    },
+  ],
+})
+/** A piano song whose notes passed the quality gate (the falling notes by default), or not. */
+export const PIANO_SUMMARY = pianoSummary('roll')
+export const PIANO_SUMMARY_BELOW_GATE = pianoSummary('chords_only')
+
+export const DOCS: Partial<Record<Kind, unknown>> = {
+  beats,
+  stems,
+  chords,
+  'notes.guitar': notes,
+  summary,
+  'notes.piano': PIANO_NOTES,
+}
+
 export const PIANO_CHORDS = {
   ...chords,
   key: { tonic: 'D#', mode: 'major', confidence: 0.74 },

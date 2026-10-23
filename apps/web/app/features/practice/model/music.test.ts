@@ -65,7 +65,23 @@ describe('effective music', () => {
       }),
     )
     expect(out.tab).toBeUndefined()
+    expect(out.piano).toBeUndefined()
     expect(out.beats.beats.length).toBeGreaterThan((beats as Beats).beats.length)
+    expect(out.displayChords.length).toBeGreaterThan(0)
+  })
+
+  it('gives piano the hand-split notes for the roll, with corrections, and no tab', () => {
+    const piano = { ...(notes as Notes), artefact: 'notes.piano', instrument: 'piano' } as Notes
+    const out = computeMusic(
+      input({
+        notes: piano,
+        ops: { beats: [], chords: [], notes: [{ op: 'delete_note', note_id: 'n000000' }] },
+      }),
+    )
+    expect(out.tab).toBeUndefined()
+    expect(out.piano?.notes.length).toBe(piano.notes.length - 1)
+    expect(out.piano?.notes.some((n) => n.id === 'n000000')).toBe(false)
+    expect(new Set(out.piano?.notes.map((n) => n.hand))).toEqual(new Set(['left', 'right']))
     expect(out.displayChords.length).toBeGreaterThan(0)
   })
 })

@@ -1,0 +1,27 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: transkun-v2
+kind: model
+name: "Transkun V2 piano transcription (neural semi-CRF, transformer)"
+version: "2.0.1"
+repo_url: https://github.com/Yujia-Yan/Transkun
+code_spdx: MIT
+weights:
+  licence: "unstated (shipped in the MIT-licensed PyPI package)"
+  url: https://files.pythonhosted.org/packages/a2/1f/1e04ac0f04583d593ecca935270401404ad45e88c9db7b249b67bde20a1b/transkun-2.0.1-py3-none-any.whl
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "001717a2de88c3f9d33676438cb3593df76484f07949fdf27d9931d6c8e2878e"
+  files:
+    - { name: 2.0.pt, sha256: "50a80010effc2a59ffcd068a95cd2b29bd7f23a27a3515bc3ccd209c89a3d44c", bytes: 56408978 }
+    - { name: 2.0.conf, sha256: "d3d989214eb148230ee5df476d994dcde6af595904d3f968f1221d2e3bea5ac6", bytes: 782 }
+training_data:
+  - { name: MAESTRO v3, licence: CC-BY-NC-SA-4.0, commercial_ok: false }
+tier: amber
+tier_reason: "MIT code; weights licence unstated; non-commercial training data"
+used_in: [notes.piano]
+profiles: [personal]
+notes: >-
+  2.0.pt and 2.0.conf are transkun/pretrained/ from the PyPI wheel (wheel sha256
+  7d7f5bf88b0d21f7da0415b089cff3bcbcbdda04e1a3c9719964947942c859fe), extracted by
+  services/ml/scripts/fetch_models.py; the package itself is installed for its model code.
+reviewer: owner
+reviewed: 2026-10-23

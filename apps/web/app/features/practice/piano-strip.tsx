@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import type { ChordTiming } from '@/ui/chord-chip'
 import { ChordSymbol } from '@/ui/chord-chip'
 import { type ChordModel, chordsAround, noteName } from './model/view-model'
+import { useShownView } from './notation-pane'
 import { PianoOptions } from './piano-options'
 import { usePianoVoicings } from './piano-voicing'
 import { usePractice } from './practice-context'
@@ -15,7 +16,8 @@ import { usePractice } from './practice-context'
 // with its bar and the bar's beats, its voicing (left hand bass, right hand chord, L and R on the
 // keys and below them); then the next chord with how many beats away it is and a small keyboard,
 // so the change is seen coming (sight-readers look about a second ahead); then the two after it.
-// Narrow strips drop the extras from the end. Loads with the strip, outside the route budget.
+// Narrow strips drop the extras from the end. Over the falling notes, which have their own
+// keyboard, the voicings stay off. Loads with the strip, outside the route budget.
 
 const EPS = 1e-3
 // Beyond this many beats the next change is named by its bar.
@@ -61,6 +63,8 @@ export function PianoStrip({
 }) {
   const { view, audio, grid } = usePractice()
   const voicings = usePianoVoicings()
+  // Phones have no piano strip, so the desktop default stands for every layout here.
+  const keyboards = useShownView('desktop') === 'chords'
   const chords = view?.chords ?? []
   const [now, setNow] = useState<Now>(START)
 
@@ -152,7 +156,7 @@ export function PianoStrip({
       </div>
 
       {/* Always drawn, empty under N.C., so the strip never moves when a chord starts. */}
-      <figure className="flex shrink-0 flex-col gap-1.5">
+      <figure className={cn('flex shrink-0 flex-col gap-1.5', !keyboards && 'hidden')}>
         <KeyboardDiagram
           className="h-[calc(var(--read-chord-current)*2.9)] w-auto"
           left={voicing?.left ?? []}
@@ -172,7 +176,7 @@ export function PianoStrip({
           <div className="flex shrink-0 flex-col items-start gap-2">
             <span className={label}>{nextLabel}</span>
             {chip(next, 'upcoming')}
-            {nextVoicing && (
+            {nextVoicing && keyboards && (
               <KeyboardDiagram
                 className="hidden h-[calc(var(--read-chord)*2.2)] w-auto @4xl:block"
                 left={nextVoicing.left}

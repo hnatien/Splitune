@@ -21,8 +21,9 @@ const AlphaTabView = lazy(() =>
 )
 
 // NotationView (12 §2–3, 27 §3.7.3): on paper in every appearance. Before the tab exists it holds
-// the analysis status, then a chord-only sheet (for piano, the chord chart), then the tab — each
-// layer fading in without moving the transport. Bars are buttons: tap A then B loops them.
+// the analysis status, then a chord-only sheet (for piano, the chord chart), then the tab (for
+// piano, the falling notes) — each layer fading in without moving the transport. Bars are buttons:
+// tap A then B loops them.
 
 /** summary.recommended_view for the learner's part (05): the global chords-only fallback. */
 export function useRecommendedView() {
@@ -33,17 +34,17 @@ export function useRecommendedView() {
 
 /**
  * What the paper shows, as the status bar's Tab / Chords switch reads it: chords (the chord sheet,
- * or the glance view on phone portrait, its default) or the tab once one exists and isn't held back
- * by a chords-only recommendation.
+ * or the glance view on phone portrait, its default) or the tab (piano: the falling notes, its
+ * Notes) once one exists and isn't held back by a chords-only recommendation.
  */
 export function useShownView(layout: PracticeLayout): 'tab' | 'chords' {
-  const { layers, music } = usePractice()
+  const { layers } = usePractice()
   const view = usePracticeUi((s) => s.view)
   const forceTab = usePracticeUi((s) => s.forceTab)
   const recommended = useRecommendedView()
   const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
   if (wanted === 'chords' && layers.chords) return 'chords'
-  return layers.tab && music?.tab && (!recommended.chordsOnly || forceTab) ? 'tab' : 'chords'
+  return (layers.tab || layers.roll) && (!recommended.chordsOnly || forceTab) ? 'tab' : 'chords'
 }
 
 export function NotationPane({
@@ -62,12 +63,13 @@ export function NotationPane({
 }) {
   const practice = usePractice()
   const activate = onBarActivate ?? practice.tapBar
-  const { layers, music, data } = practice
+  const { layers, data } = practice
   const forceTab = usePracticeUi((s) => s.forceTab)
   const chosen = usePracticeUi((s) => s.view)
   const recommended = useRecommendedView()
   const placeholderId = useId()
-  if (layers.tab && music?.tab && chosen !== 'chords' && (!recommended.chordsOnly || forceTab)) {
+  const notation = chosen !== 'chords' && (!recommended.chordsOnly || forceTab)
+  if (layers.tab && notation) {
     return (
       <TabView
         interaction={interaction}
@@ -78,10 +80,14 @@ export function NotationPane({
       />
     )
   }
-  if (layers.chords) {
+  if (layers.chords || layers.roll) {
     return (
       <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', className)} />}>
-        <ChordSheet className={className} onBarActivate={activate} />
+        <ChordSheet
+          className={className}
+          onBarActivate={activate}
+          notes={layers.roll && (notation || !layers.chords)}
+        />
       </Suspense>
     )
   }

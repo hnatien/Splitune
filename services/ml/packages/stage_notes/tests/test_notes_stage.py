@@ -14,9 +14,9 @@ import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import calibration, contracts, register
 from splitune_ml_core.stage_api import StageJob
 from splitune_ml_core.stages import STAGES
-from stage_notes import bass, guitar, transcribers
+from stage_notes import bass, guitar, piano, transcribers
 
-from .synth import phrase
+from .synth import PHRASE, phrase
 
 RATE = 44100
 AUDIO_HASH = "ab" * 32
@@ -122,6 +122,28 @@ def test_mixture_fallback_and_bass_low_band_energy(tmp_path: Path) -> None:
     assert all(n.pitch_midi <= 79 for n in notes.notes)  # 600 Hz ceiling for bass
 
 
+@pytest.mark.models
+def test_piano_notes_from_the_isolated_stem_with_transkun(tmp_path: Path) -> None:
+    try:
+        register.verify(register.model("transkun-v2"), transcribers.models_dir() / "transkun")
+    except Exception:
+        pytest.skip("Transkun weights not installed (scripts/fetch_models.py transkun)")
+    stem = phrase(RATE)
+    decoded = write_stereo(tmp_path / "decoded.flac", stem)
+    inputs = {"separation": str(separation(tmp_path, tmp_path / "cache", "piano", stem))}
+    out = piano.run(job(tmp_path, piano, inputs, decoded, len(stem)))
+    assert out.status == "done"
+    notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
+    assert notes.artefact == "notes.piano"
+    assert notes.models[0].model_id == "transkun/2.0"
+    # Synthetic plucks, not a piano: most of the phrase is found (accuracy is P2's job, 08).
+    assert len({n.pitch_midi for n in notes.notes} & {p for _, _, p in PHRASE}) >= 4
+    assert all(21 <= n.pitch_midi <= 108 and n.stem_id == "piano" for n in notes.notes)
+    # No per-note score: every note carries the calibrated precision of the P2 table.
+    assert {n.confidence_raw for n in notes.notes} == {1.0}
+    assert all(n.confidence == pytest.approx(0.918, abs=0.01) for n in notes.notes)
+
+
 def test_calibration_table_is_applied(tmp_path: Path) -> None:
     table = contracts.CalibrationTable(
         model_id="basic-pitch",
@@ -143,9 +165,11 @@ def test_calibration_table_is_applied(tmp_path: Path) -> None:
 
 
 def test_specs_follow_the_notes_config() -> None:
-    for instrument in ("guitar", "bass", "vocals"):
+    for instrument in ("guitar", "bass", "piano", "vocals"):
         spec = STAGES[f"notes.{instrument}"]
         assert spec.module == f"stage_notes.{instrument}"
-        assert (spec.island, spec.slot) == ("onnx-cpu", "cpu")
+        # Basic Pitch runs in the CPU slot, Transkun (piano) on MPS.
+        placement = ("torch", "mps") if instrument == "piano" else ("onnx-cpu", "cpu")
+        assert (spec.island, spec.slot) == placement
         assert spec.outputs == {"notes": f"notes.{instrument}"}
         assert spec.optional_downloads == ("separation", "stems")

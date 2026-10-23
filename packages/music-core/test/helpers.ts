@@ -66,7 +66,10 @@ export function makeBeats(
   }
 }
 
-export function makeNotes(notes: Partial<Note>[], instrument: 'guitar' | 'bass' = 'guitar'): Notes {
+export function makeNotes(
+  notes: Partial<Note>[],
+  instrument: 'guitar' | 'bass' | 'piano' = 'guitar',
+): Notes {
   return {
     ...HEADER,
     artefact: `notes.${instrument}`,

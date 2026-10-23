@@ -78,6 +78,8 @@ export interface Layers {
   stems: boolean
   chords: boolean
   tab: boolean
+  /** Piano's falling notes (its notation layer: piano has no tab). */
+  roll: boolean
 }
 
 export interface PracticeValue {
@@ -280,6 +282,7 @@ export function PracticeProvider({
     stems: lanes.some((lane) => lane.role === 'part'),
     chords: (view?.chords.length ?? 0) > 0,
     tab: data.entry.tab !== undefined && music?.tab !== undefined,
+    roll: (music?.piano?.notes.length ?? 0) > 0,
   }
   // The load in flight (or done) and its key: a re-render never cancels it, a new source does.
   const loading = useRef<{ key: string; abort: AbortController } | null>(null)

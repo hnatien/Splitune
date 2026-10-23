@@ -9,7 +9,7 @@ dependencies = [
     "splitune-ml-core",
     "stage-beats",
     "stage-chords[models]",
-    "stage-notes[yourmt3]",
+    "stage-notes[yourmt3,transkun]",
     "stage-separation[models]",
 ]
 
@@ -25,6 +25,13 @@ stage-notes = { path = "../../packages/stage_notes", editable = true }
 stage-separation = { path = "../../packages/stage_separation", editable = true }
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+# transkun 2.0.1 declares its training and plotting tools (tensorboard, seaborn, sox, ncls, ...) as
+# requirements; inference (stage_notes.transkun) imports only these.
+[[tool.uv.dependency-metadata]]
+name = "transkun"
+version = "2.0.1"
+requires-dist = ["mir-eval", "numpy", "pretty-midi", "scipy", "torch", "torchaudio"]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

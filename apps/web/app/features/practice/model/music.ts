@@ -4,6 +4,7 @@ import {
   type BandThresholds,
   type Beats,
   type BuildTabResult,
+  buildPianoScore,
   buildTab,
   type ChordSegment,
   type Chords,
@@ -11,14 +12,16 @@ import {
   DEFAULT_BANDS,
   keyNoteNames,
   type Notes,
+  type PianoNote,
   simplifyChords,
   type TabLevel,
 } from '@splitune/music-core'
 import { z } from 'zod'
 import { defaultLevel, levelsFor } from './levels'
 
-// The effective music of a song (12 §4, 07): artefacts ⊕ corrections, then music-core's tab and
-// display chords for the chosen capo, level and fingering. Pure, so it runs in the Worker
+// The effective music of a song (12 §4, 07): artefacts ⊕ corrections, then music-core's tab (or,
+// for piano, the hand-split notes of the roll) and display chords for the chosen capo, level and
+// fingering. Pure, so it runs in the Worker
 // (music.worker.ts) and in tests; nothing here touches the DOM.
 
 export type Fingering = 'easiest' | 'as_played'
@@ -57,6 +60,8 @@ export interface MusicOutput {
   /** Labels as shown at this level (sevenths simplified to triads where the level says so). */
   displayChords: ChordSegment[]
   tab?: MusicTab | undefined
+  /** Piano notes on the beat grid with their hands (21 V4), for the falling-notes roll. */
+  piano?: { notes: PianoNote[] } | undefined
   bands: BandThresholds
   /** Every pitch class's name in the song's key (C major's without one): E♭, not D#. */
   noteNames: string[]
@@ -123,8 +128,19 @@ export function computeMusic(input: MusicInput): MusicOutput {
       },
     }
   }
-  const beats = applyBeatCorrections(input.beats, input.ops.beats).value
-  const chords = input.chords && applyChordCorrections(input.chords, input.ops.chords).value
+  const piano =
+    input.notes && instrument === 'piano'
+      ? buildPianoScore(
+          input.notes,
+          input.beats,
+          { notes: input.ops.notes, beats: input.ops.beats, chords: input.ops.chords },
+          { ...(input.chords ? { chords: input.chords } : {}), bands },
+        )
+      : undefined
+  const beats = piano?.effective.beats ?? applyBeatCorrections(input.beats, input.ops.beats).value
+  const chords =
+    piano?.effective.chords ??
+    (input.chords && applyChordCorrections(input.chords, input.ops.chords).value)
   return {
     beats,
     chords,
@@ -135,6 +151,7 @@ export function computeMusic(input: MusicInput): MusicOutput {
           input.options.level === 'simplified' ? 'simplified' : 'as_transcribed',
         )
       : [],
+    ...(piano ? { piano: { notes: piano.notes } } : {}),
     bands,
     noteNames: namesFor(chords),
   }

@@ -14,6 +14,8 @@ import {
   type Kind,
   type Patch,
   PIANO_CHORDS,
+  PIANO_SUMMARY,
+  PIANO_SUMMARY_BELOW_GATE,
   SONG_ID,
   seed,
   tone,
@@ -486,6 +488,96 @@ export const PianoDark: Story = {
 export const PianoStage: Story = {
   render: screen(PIANO_KINDS, PIANO, { loop: '3-4' }),
   globals: { appearance: 'stage' },
+}
+
+const PIANO_NOTES: Patch = { ...PIANO, summary: PIANO_SUMMARY }
+const PIANO_NOTES_KINDS: Kind[] = ['beats', 'stems', 'chords', 'notes.piano', 'summary']
+
+const pianoNotes = async (canvasElement: HTMLElement) => {
+  const canvas = await playable(canvasElement)
+  // The roll's code loads on demand, through the chord chart's chunk.
+  const region = await canvas.findByRole('region', { name: 'Notes' }, { timeout: 10_000 })
+  await waitFor(() => expect(region).toBeVisible())
+  return { canvas, notes: within(region), element: region }
+}
+
+/** Piano notes (21 V4): the transcribed notes fall onto a keyboard the width of the roll, hands
+ * by lightness and L/R; the status bar's Chart / Notes switch, Notes by default once the notes
+ * pass the quality gate; the strip keeps its chords but drops its voicing keyboards. */
+export const PianoNotes: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES),
+  play: async ({ canvasElement }) => {
+    const { canvas, notes, element } = await pianoNotes(canvasElement)
+    await expect(await notes.findByRole('img', { name: /^Falling notes/ })).toBeVisible()
+    const roll = element.querySelector('[data-slot=piano-roll]') as HTMLElement
+    const keys = element.querySelector('[data-slot=keyboard-diagram]') as SVGElement
+    // Notes land on their keys: the roll and the keyboard share their left edge and width.
+    const r = roll.getBoundingClientRect()
+    const k = keys.getBoundingClientRect()
+    await expect(Math.abs(r.left - k.left)).toBeLessThan(1)
+    await expect(Math.abs(r.width - k.width)).toBeLessThan(1)
+    await expect(r.height).toBeGreaterThan(k.height)
+    await expect(notes.getByRole('img', { name: 'Nothing sounding', hidden: true })).toBeVisible()
+    const strip = canvasElement.querySelector('[data-slot=piano-strip]') as HTMLElement
+    await expect(strip.querySelector('[data-slot=keyboard-diagram]')).not.toBeVisible()
+
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    const buttons = within(view).getAllByRole('button')
+    await expect(buttons.map((b) => b.textContent)).toEqual(['Chart', 'Notes'])
+    await expect(within(view).getByRole('button', { name: 'Notes' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await userEvent.click(within(view).getByRole('button', { name: 'Chart' }))
+    const chart = await canvas.findByRole('region', { name: 'Chord chart' }, { timeout: 10_000 })
+    await waitFor(() => expect(chart).toBeVisible())
+    await expect(canvas.queryByRole('region', { name: 'Notes' })).toBeNull()
+    await expect(strip.querySelector('[data-slot=keyboard-diagram]')).toBeVisible()
+    await userEvent.click(within(view).getByRole('button', { name: 'Notes' }))
+    await expect(
+      await canvas.findByRole('region', { name: 'Notes' }, { timeout: 10_000 }),
+    ).toBeVisible()
+  },
+}
+
+/** Below the quality gate (05 recommended_view chords_only): the chord chart by default, with
+ * "Show notes anyway" in the banner. */
+export const PianoNotesBelowGate: Story = {
+  render: screen(PIANO_NOTES_KINDS, { ...PIANO, summary: PIANO_SUMMARY_BELOW_GATE }),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await pianoChart(canvasElement)
+    await expect(canvas.queryByRole('region', { name: 'Notes' })).toBeNull()
+    await expect(
+      await canvas.findByText(m['practice.chords_only_piano'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Show notes anyway' }))
+    await pianoNotes(canvasElement)
+  },
+}
+
+/** A loop over bars 3–4 shades their stretch of the roll. */
+export const PianoNotesLoop: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
+  play: async ({ canvasElement }) => {
+    await pianoNotes(canvasElement)
+  },
+}
+
+export const PianoNotesDark: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
+  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    await pianoNotes(canvasElement)
+  },
+}
+
+export const PianoNotesStage: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
+  globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    await pianoNotes(canvasElement)
+  },
 }
 
 /** Piano on a phone (glance view): the current chord, its voicing on a keyboard, the next chord. */

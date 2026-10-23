@@ -91,7 +91,7 @@ export const AnalyticsEvent = z.discriminatedUnion('name', [
   z.object({ name: z.literal('level_changed'), props: z.object({ level: PracticeLevel }) }),
   z.object({
     name: z.literal('view_changed'),
-    props: z.object({ view: z.enum(['tab', 'chords', 'glance']) }),
+    props: z.object({ view: z.enum(['tab', 'notes', 'chords', 'glance']) }),
   }),
   z.object({
     name: z.literal('upload_started'),

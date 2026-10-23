@@ -289,9 +289,9 @@ describe('POST /v1/analyses', () => {
   })
 
   it('gives instruments without a notes stage a chords-only finalize', async () => {
-    const { songId } = await uploadedSong('piano')
-    const rows = await jobsOf((await analyse(songId, 'full', 'piano')).analysis_id)
-    expect(rows.map((r) => r.kind)).not.toContain('notes.piano')
+    const { songId } = await uploadedSong('drums')
+    const rows = await jobsOf((await analyse(songId, 'full', 'drums')).analysis_id)
+    expect(rows.map((r) => r.kind)).not.toContain('notes.drums')
     expect(Object.keys(rows.at(-1)?.payload.outputs ?? {})).toEqual(['summary'])
   })
 

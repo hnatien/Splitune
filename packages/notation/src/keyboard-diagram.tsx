@@ -17,15 +17,35 @@ export interface KeyboardDiagramProps {
   marks?: boolean
   /** Text under middle C (C4), e.g. "C4". */
   middleC?: string | undefined
+  /** White key length in key units (a white key is 10 wide); default 48. Black keys follow. */
+  height?: number
   className?: string
 }
 
 const BLACK = new Set([1, 3, 6, 8, 10])
 const W = 10
-const H = 48
 const BW = 6
-const BH = 30
 const CAPTION = 9
+
+export interface KeyboardKey {
+  midi: number
+  x: number // left edge in key units: a white key is 10 wide, a black key 6
+  width: number
+  black: boolean
+}
+
+/** The keys from `from` to `to` (both white) as the diagram lays them out, and the total width;
+ * the falling-notes roll draws its lanes on the same geometry so notes land on their keys. */
+export function keyboardKeys(from: number, to: number): { keys: KeyboardKey[]; width: number } {
+  const keys: KeyboardKey[] = []
+  let whites = 0
+  for (let midi = from; midi <= to; midi++) {
+    const black = BLACK.has(midi % 12)
+    keys.push({ midi, x: black ? whites * W - BW / 2 : whites * W, width: black ? BW : W, black })
+    if (!black) whites++
+  }
+  return { keys, width: whites * W }
+}
 
 const fade = { transition: 'fill var(--duration-base) var(--ease-standard)' }
 
@@ -37,14 +57,13 @@ export function KeyboardDiagram({
   to = 72,
   marks = true,
   middleC,
+  height: H = 48,
   className,
 }: KeyboardDiagramProps) {
-  const whites: { midi: number; x: number }[] = []
-  const blacks: { midi: number; x: number }[] = []
-  for (let midi = from; midi <= to; midi++) {
-    if (BLACK.has(midi % 12)) blacks.push({ midi, x: whites.length * W - BW / 2 })
-    else whites.push({ midi, x: whites.length * W })
-  }
+  const BH = Math.round((H * 30) / 48)
+  const { keys, width } = keyboardKeys(from, to)
+  const whites = keys.filter((key) => !key.black)
+  const blacks = keys.filter((key) => key.black)
   const hand = (midi: number) =>
     right.includes(midi) ? 'right' : left.includes(midi) ? 'left' : undefined
   const fill = (midi: number, black: boolean) => {
@@ -73,8 +92,8 @@ export function KeyboardDiagram({
     <svg
       role="img"
       aria-label={label}
-      viewBox={`-0.5 -0.5 ${whites.length * W + 1} ${height + 1}`}
-      width={whites.length * W + 1}
+      viewBox={`-0.5 -0.5 ${width + 1} ${height + 1}`}
+      width={width + 1}
       height={height + 1}
       data-slot="keyboard-diagram"
       className={className}

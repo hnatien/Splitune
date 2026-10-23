@@ -204,6 +204,8 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--key-left-fg', '--key-left', 4.5],
   ['--key-right-fg', '--key-right', 4.5],
   ['--staff', '--key-white', 3],
+  // Falling notes: bar numbers over the loop band (notes are outlined in --staff or --ink)
+  ['--conf-medium', '--score-loop-fill', 4.5],
   // Timeline chrome
   ['--loop-edge', '--card', 3],
   ['--playhead', '--card', 3],

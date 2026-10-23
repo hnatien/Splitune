@@ -164,6 +164,10 @@ def get(name: str) -> NoteTranscriber:
                 from .yourmt3 import YourMT3  # torch island only
 
                 _instances[name] = YourMT3()
+            elif name == "transkun":
+                from .transkun import Transkun  # torch island only
+
+                _instances[name] = Transkun()
             else:
                 raise StageError("invalid_params", retry=False)
         return _instances[name]

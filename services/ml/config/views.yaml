@@ -3,8 +3,8 @@
 # it was tuned on.
 version: 1
 
-# D11: instruments with note-exact notation in the current release (MVP: guitar, bass).
-notation_supported: [guitar, bass]
+# D11: instruments with note-exact notation in the current release (MVP: guitar, bass; V4 piano).
+notation_supported: [guitar, bass, piano]
 
 # Rule 3: rough stem and more than this share of low-band notes → chords_only.
 rough_stem_low_conf: 0.35
@@ -14,9 +14,12 @@ low_confidence: 0.5
 # Prototype 2 gate per instrument (08): `fail` → chords_only with reason quality_gate_failed.
 # Instruments not listed have no gate. P2 (eval/results/p2), Basic Pitch on separated stems:
 # guitar 0.797 onset F1 (GuitarSet + band), bass 0.807 (BabySlakh, 19 tracks): both pass.
+# Piano, Transkun V2 on separated stems (gate 0.80): 0.946 on MAESTRO test excerpts + band, 0.835 on
+# BabySlakh tracks with acoustic piano only; tracks with electric piano or clavinet 0.676: pass.
 quality_gate:
   guitar: pass
   bass: pass
+  piano: pass
 
 # Rule 5: the instrument default (D13).
 defaults:
@@ -34,3 +37,6 @@ changes:
   - date: 2026-10-21
     change: "quality_gate confirmed by Prototype 2: guitar pass, bass pass"
     models: [basic-pitch@0.4.0]
+  - date: 2026-10-23
+    change: "piano notation supported (falling-notes roll); quality_gate piano pass by Prototype 2"
+    models: [transkun-v2@2.0.1]

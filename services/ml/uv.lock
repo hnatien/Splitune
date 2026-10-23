@@ -22,6 +22,11 @@ members = [
     "stage-url-import",
 ]
 
+[[manifest.dependency-metadata]]
+name = "transkun"
+version = "2.0.1"
+requires-dist = ["mir-eval", "numpy", "pretty-midi", "scipy", "torch", "torchaudio"]
+
 [[package]]
 name = "absl-py"
 version = "2.5.1"
@@ -577,6 +582,15 @@ wheels = [
 ]
 
 [[package]]
+name = "importlib-resources"
+version = "7.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/06/b56dfa750b44e86157093bc8fca0ab81dccbf5260510de4eaf1cb69b5b99/importlib_resources-7.1.0.tar.gz", hash = "sha256:0722d4c6212489c530f2a145a34c0a7a3b4721bc96a15fada5930e2a0b760708", size = 44985, upload-time = "2026-04-12T16:36:09.232Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8a/db/55a262f3606bebcae07cc14095338471ad7c0bbcaa37707e6f0ee49725b7/importlib_resources-7.1.0-py3-none-any.whl", hash = "sha256:1bd7b48b4088eddb2cd16382150bb515af0bd2c70128194392725f82ad2c96a1", size = 37232, upload-time = "2026-04-12T16:36:08.219Z" },
+]
+
+[[package]]
 name = "inflect"
 version = "7.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1096,6 +1110,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/83/43/85ef45e8b36c6a48546af7b266592dc32d7f67837a6514d111bced6d7d75/pooch-1.9.0.tar.gz", hash = "sha256:de46729579b9857ffd3e741987a2f6d5e0e03219892c167c6578c0091fb511ed", size = 61788, upload-time = "2026-01-30T19:15:09.649Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/2d/d4bf65e47cea8ff2c794a600c4fd1273a7902f268757c531e0ee9f18aa58/pooch-1.9.0-py3-none-any.whl", hash = "sha256:f265597baa9f760d25ceb29d0beb8186c243d6607b0f60b83ecf14078dbc703b", size = 67175, upload-time = "2026-01-30T19:15:08.36Z" },
+]
+
+[[package]]
+name = "pretty-midi"
+version = "0.2.11.post0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "importlib-resources" },
+    { name = "mido" },
+    { name = "numpy" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/19/0c3822e73fa1364cf00aa5f57b9b72a216e35818bd75871308283e76ed8c/pretty_midi-0.2.11.post0.tar.gz", hash = "sha256:c91e40c9b087b0511f503c3efbba892b41e7048c831cafdccbf6ba965632a0bf", size = 5602265, upload-time = "2026-07-28T18:14:53.148Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/4f/fae82739ec54708915e90772938ac2745f2084550223f94cbee175a24910/pretty_midi-0.2.11.post0-py3-none-any.whl", hash = "sha256:a3e2321736245a9c92259716d85a4762f16b7bde2f591fb0dba95bdb6e793d8a", size = 5597222, upload-time = "2026-07-28T18:14:51.38Z" },
 ]
 
 [[package]]
@@ -1662,7 +1691,7 @@ dependencies = [
     { name = "stage-chords", extra = ["models"] },
     { name = "stage-decode" },
     { name = "stage-lyrics" },
-    { name = "stage-notes", extra = ["yourmt3"] },
+    { name = "stage-notes", extra = ["transkun", "yourmt3"] },
     { name = "stage-sections" },
     { name = "stage-separation", extra = ["models"] },
     { name = "stage-tagger" },
@@ -1687,7 +1716,7 @@ requires-dist = [
     { name = "stage-chords", extras = ["models"], editable = "packages/stage_chords" },
     { name = "stage-decode", editable = "packages/stage_decode" },
     { name = "stage-lyrics", editable = "packages/stage_lyrics" },
-    { name = "stage-notes", extras = ["yourmt3"], editable = "packages/stage_notes" },
+    { name = "stage-notes", extras = ["yourmt3", "transkun"], editable = "packages/stage_notes" },
     { name = "stage-sections", editable = "packages/stage_sections" },
     { name = "stage-separation", extras = ["models"], editable = "packages/stage_separation" },
     { name = "stage-tagger", editable = "packages/stage_tagger" },
@@ -1831,6 +1860,15 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+transkun = [
+    { name = "mir-eval" },
+    { name = "pretty-midi" },
+    { name = "torch", version = "2.14.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torch", version = "2.14.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
+    { name = "torchaudio", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torchaudio", version = "2.11.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
+    { name = "transkun" },
+]
 yourmt3 = [
     { name = "deprecated" },
     { name = "einops" },
@@ -1849,20 +1887,27 @@ requires-dist = [
     { name = "einops", marker = "extra == 'yourmt3'", specifier = "==0.8.2" },
     { name = "lightning", marker = "extra == 'yourmt3'", specifier = "==2.6.6" },
     { name = "mido", marker = "extra == 'yourmt3'", specifier = "==1.3.3" },
+    { name = "mir-eval", marker = "extra == 'transkun'", specifier = "==0.8.2" },
     { name = "numpy", specifier = "==2.5.4" },
     { name = "onnxruntime", specifier = "==1.31.0" },
+    { name = "pretty-midi", marker = "extra == 'transkun'", specifier = "==0.2.11.post0" },
     { name = "pyyaml", specifier = "==6.0.3" },
     { name = "scipy", specifier = "==1.18.1" },
     { name = "soundfile", specifier = "==0.14.0" },
     { name = "splitune-ml-core", editable = "packages/splitune_ml_core" },
     { name = "stage-separation", editable = "packages/stage_separation" },
+    { name = "torch", marker = "sys_platform == 'linux' and extra == 'transkun'", specifier = "==2.14.1", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'yourmt3'", specifier = "==2.14.1", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torch", marker = "sys_platform != 'linux' and extra == 'transkun'", specifier = "==2.14.1" },
     { name = "torch", marker = "sys_platform != 'linux' and extra == 'yourmt3'", specifier = "==2.14.1" },
+    { name = "torchaudio", marker = "sys_platform == 'linux' and extra == 'transkun'", specifier = "==2.11.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torchaudio", marker = "sys_platform == 'linux' and extra == 'yourmt3'", specifier = "==2.11.0", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'transkun'", specifier = "==2.11.0" },
     { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'yourmt3'", specifier = "==2.11.0" },
     { name = "transformers", marker = "extra == 'yourmt3'", specifier = "==4.45.1" },
+    { name = "transkun", marker = "extra == 'transkun'", specifier = "==2.0.1" },
 ]
-provides-extras = ["yourmt3"]
+provides-extras = ["yourmt3", "transkun"]
 
 [[package]]
 name = "stage-sections"
@@ -2120,6 +2165,24 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/15/1f/4d4c718c178b27268e5b9fa6112ebe82e190b703a984a51b0f743168ed49/transformers-4.45.1.tar.gz", hash = "sha256:9cace11072172df05ca6a694fcd1f5064a55b63285e492bd88f0ad1cec270f02", size = 8478117, upload-time = "2024-09-26T18:07:02.25Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/f2/f01ea29c8eff8e749d96525a17c2d3ec02656cec9a80c20fb3e74dba4b04/transformers-4.45.1-py3-none-any.whl", hash = "sha256:21e3f47aa7256dbbfb5215937a3168a984c94432ce3a16b7908265807d62aee8", size = 9881041, upload-time = "2024-09-26T18:06:57.772Z" },
+]
+
+[[package]]
+name = "transkun"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mir-eval" },
+    { name = "numpy" },
+    { name = "pretty-midi" },
+    { name = "scipy" },
+    { name = "torch", version = "2.14.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torch", version = "2.14.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
+    { name = "torchaudio", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torchaudio", version = "2.11.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/1f/1e04ac0f04583d593ecca935270401404ad45e88c9db7b249b67bde20a1b/transkun-2.0.1-py3-none-any.whl", hash = "sha256:7d7f5bf88b0d21f7da0415b089cff3bcbcbdda04e1a3c9719964947942c859fe", size = 50758783, upload-time = "2024-09-28T15:30:19.859Z" },
 ]
 
 [[package]]

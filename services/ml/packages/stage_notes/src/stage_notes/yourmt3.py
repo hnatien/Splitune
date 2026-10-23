@@ -34,8 +34,14 @@ ARGS = [
     "-act", "silu", "-epe", "rope", "-rp", "1", "-ac", "spec", "-hop", "300", "-atc", "1",
     "-pr", "32",
 ]  # fmt: skip
-# GM program families per instrument (YourMT3 vocabulary: Guitar 24-31, Bass 32-39, voice 100-101).
-PROGRAMS = {"guitar": list(range(24, 32)), "bass": list(range(32, 40)), "vocals": [100, 101]}
+# GM program families per instrument (YourMT3 vocabulary: Piano 0-7, Guitar 24-31, Bass 32-39,
+# voice 100-101).
+PROGRAMS = {
+    "piano": list(range(8)),
+    "guitar": list(range(24, 32)),
+    "bass": list(range(32, 40)),
+    "vocals": [100, 101],
+}
 YOURMT3_DEFAULTS: dict[str, Any] = {"instrument": None, "batch": 8}
 
 

@@ -31,12 +31,17 @@ function readTheme(element: HTMLElement): ScoreTheme {
 }
 
 export function useScoreTheme(element: HTMLElement | null): ScoreTheme | undefined {
-  const [theme, setTheme] = useState<ScoreTheme | undefined>(undefined)
+  return useTokens(element, readTheme)
+}
+
+/** Values read from the tokens in effect at `element`, re-read whenever they may have changed. */
+export function useTokens<T>(element: HTMLElement | null, read: (element: HTMLElement) => T) {
+  const [theme, setTheme] = useState<T | undefined>(undefined)
   useEffect(() => {
     if (!element) return
     const apply = () =>
       setTheme((previous) => {
-        const next = readTheme(element)
+        const next = read(element)
         return previous && JSON.stringify(previous) === JSON.stringify(next) ? previous : next
       })
     apply()
@@ -54,6 +59,6 @@ export function useScoreTheme(element: HTMLElement | null): ScoreTheme | undefin
     })
     void document.fonts?.ready.then(apply)
     return () => observer.disconnect()
-  }, [element])
+  }, [element, read])
   return theme
 }
