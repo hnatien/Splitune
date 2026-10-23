@@ -4,7 +4,8 @@ import { AppStory } from '../../../.storybook/app.tsx'
 import { MarketingShell } from '../shell/marketing-shell'
 import { Home } from './home'
 
-// Home (27 §3.1) in the marketing shell, signed out and signed in.
+// Home (27 §3.1) in the marketing shell, signed out and signed in, and on a phone, where the stills
+// crop instead of widening the page.
 const meta = { title: 'Screens/Home', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -33,5 +34,13 @@ export const SignedOut: Story = {
   },
 }
 export const SignedIn: Story = { render: home(true) }
+export const Phone: Story = {
+  render: home(false),
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.ownerDocument.documentElement
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth)
+  },
+}
 export const Dark: Story = { render: home(false), globals: { appearance: 'dark' } }
 export const Stage: Story = { render: home(false), globals: { appearance: 'stage' } }
