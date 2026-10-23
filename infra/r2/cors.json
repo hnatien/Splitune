@@ -2,7 +2,7 @@
   {
     "id": "app-presigned",
     "allowed": {
-      "origins": ["https://<app>.up.railway.app"],
+      "origins": ["https://app-production-d679.up.railway.app"],
       "methods": ["GET", "HEAD", "PUT"],
       "headers": ["content-type", "range"]
     },

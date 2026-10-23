@@ -37,11 +37,8 @@ export default defineRailway(() => {
     preDeploy: 'node packages/db/scripts/migrate.ts',
     healthcheck: '/internal/ready',
     healthcheckTimeout: 120,
-    deploy: {
-      sleepApplication: true,
-      restartPolicyType: 'ON_FAILURE',
-      restartPolicyMaxRetries: 5,
-    },
+    // Railway's default restart policy (on failure) stays.
+    deploy: { sleepApplication: true },
     regions: { [REGION]: 1 },
     env: {
       NODE_ENV: 'production',
