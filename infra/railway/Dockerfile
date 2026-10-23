@@ -40,11 +40,16 @@ COPY services/ml/package.json services/ml/
 
 FROM manifests AS build
 RUN pnpm install --frozen-lockfile --filter "@splitune/web..."
-COPY tsconfig.base.json .browserslistrc ./
+# .gitignore too: Tailwind skips what it lists (.output), so the SSR build doesn't scan the
+# client build's output and both name the same stylesheet.
+COPY tsconfig.base.json .browserslistrc .gitignore ./
 COPY apps ./apps
 COPY packages ./packages
 COPY --from=dsp /build/dsp.wasm packages/audio-dsp/dist/dsp.wasm
-RUN pnpm --filter @splitune/web build
+RUN pnpm --filter @splitune/web build \
+  && for css in $(grep -rhoE 'assets/[A-Za-z0-9_.-]+\.css' apps/web/.output/server | sort -u); do \
+    test -f "apps/web/.output/public/$css" || { echo "server links missing $css"; exit 1; }; \
+  done
 
 # The pre-deploy migration (`node packages/db/scripts/migrate.ts`, what `pnpm db:migrate` runs)
 # needs only @splitune/db and its production dependencies.
