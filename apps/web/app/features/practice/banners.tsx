@@ -51,13 +51,23 @@ export function PracticeBanners() {
   const recommended = useRecommendedView()
   const appearance = useDisplay((s) => s.appearance)
   const update = useDisplay((s) => s.update)
-  const [, rerender] = useState(0)
+  // Closed on this page even where storage is blocked; storage only remembers it for next time.
+  const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set())
+  const close = (key: string) => {
+    rememberOnce(key, 'shown')
+    setClosed((current) => new Set(current).add(key))
+  }
   const failures = analysisFailures(data).filter(isFallback)
   const reason = recommended.reasons.find((r) => r in VIEW_REASON)
   const evening = new Date().getHours() >= 20
-  const stageHint = evening && appearance !== 'stage' && !storedOnce(STAGE_HINT_KEY, 'shown')
+  const stageHint =
+    evening &&
+    appearance !== 'stage' &&
+    !closed.has(STAGE_HINT_KEY) &&
+    !storedOnce(STAGE_HINT_KEY, 'shown')
   const played = state !== 'loading' && state !== 'ready'
-  const screenTip = screenMayLock && played && !storedOnce(SCREEN_TIP_KEY, 'shown')
+  const screenTip =
+    screenMayLock && played && !closed.has(SCREEN_TIP_KEY) && !storedOnce(SCREEN_TIP_KEY, 'shown')
 
   return (
     <>
@@ -96,33 +106,21 @@ export function PracticeBanners() {
             <Button
               variant="outline"
               onClick={() => {
-                rememberOnce(STAGE_HINT_KEY, 'shown')
+                close(STAGE_HINT_KEY)
                 update({ appearance: 'stage' })
               }}
             >
               {m['practice.try_stage']()}
             </Button>
           }
-          dismiss={{
-            label: m['system.close'](),
-            onDismiss: () => {
-              rememberOnce(STAGE_HINT_KEY, 'shown')
-              rerender((n) => n + 1)
-            },
-          }}
+          dismiss={{ label: m['system.close'](), onDismiss: () => close(STAGE_HINT_KEY) }}
         />
       )}
       {screenTip && (
         <Banner
           tone="info"
           title={m['practice.screen_tip']()}
-          dismiss={{
-            label: m['system.close'](),
-            onDismiss: () => {
-              rememberOnce(SCREEN_TIP_KEY, 'shown')
-              rerender((n) => n + 1)
-            },
-          }}
+          dismiss={{ label: m['system.close'](), onDismiss: () => close(SCREEN_TIP_KEY) }}
         />
       )}
     </>
