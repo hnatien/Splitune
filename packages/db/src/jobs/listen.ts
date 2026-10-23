@@ -1,4 +1,5 @@
 import pg from 'pg'
+import { KEEPALIVE_IDLE_MS } from '../client.ts'
 import type { JobRunner } from '../schema/index.ts'
 import { channelFor } from './queue.ts'
 
@@ -16,10 +17,16 @@ async function listenOn(
   url: string,
   channel: string,
   applicationName: string,
+  keepAlive: boolean,
   onNotify: (payload: string) => void,
   onError: (error: Error) => void,
 ): Promise<JobListener> {
-  const client = new pg.Client({ connectionString: url, application_name: applicationName })
+  const client = new pg.Client({
+    connectionString: url,
+    application_name: applicationName,
+    // An idle LISTEN sends nothing, so without keepalive a dead socket would never error.
+    ...(keepAlive ? { keepAlive, keepAliveInitialDelayMillis: KEEPALIVE_IDLE_MS } : {}),
+  })
   client.on('notification', (message) => onNotify(message.payload ?? ''))
   client.on('error', onError)
   await client.connect()
@@ -33,14 +40,14 @@ async function listenOn(
   }
 }
 
-// Workers: wake up on NOTIFY jobs_<runner>.
+// Workers (on the Mac, with keepalive): wake up on NOTIFY jobs_<runner>.
 export function listenForJobs(
   url: string,
   runner: JobRunner,
   onNotify: () => void,
   onError: (error: Error) => void,
 ): Promise<JobListener> {
-  return listenOn(url, channelFor(runner), `${runner}-listener`, () => onNotify(), onError)
+  return listenOn(url, channelFor(runner), `${runner}-listener`, true, () => onNotify(), onError)
 }
 
 // API SSE streams: wake up when an event of `analysisId` was written.
@@ -49,5 +56,5 @@ export function listenForJobEvents(
   onEvent: (analysisId: string) => void,
   onError: (error: Error) => void,
 ): Promise<JobListener> {
-  return listenOn(url, JOB_EVENTS_CHANNEL, 'api-events-listener', onEvent, onError)
+  return listenOn(url, JOB_EVENTS_CHANNEL, 'api-events-listener', false, onEvent, onError)
 }

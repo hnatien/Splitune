@@ -12,10 +12,29 @@ export interface DbOptions {
   url: string
   max?: number
   applicationName?: string
+  /**
+   * TCP keepalive on idle connections (the Mac's workers): a socket left dead by sleep or a
+   * network change errors instead of hanging. Not for `app`, whose idle traffic would keep
+   * Railway from sleeping it.
+   */
+  keepAlive?: boolean
 }
 
-export function createDb({ url, max = 10, applicationName = 'splitune' }: DbOptions): Database {
-  const pool = new pg.Pool({ connectionString: url, max, application_name: applicationName })
+// First keepalive probe after this much idle time; the OS's interval and count follow.
+export const KEEPALIVE_IDLE_MS = 30_000
+
+export function createDb({
+  url,
+  max = 10,
+  applicationName = 'splitune',
+  keepAlive = false,
+}: DbOptions): Database {
+  const pool = new pg.Pool({
+    connectionString: url,
+    max,
+    application_name: applicationName,
+    ...(keepAlive ? { keepAlive, keepAliveInitialDelayMillis: KEEPALIVE_IDLE_MS } : {}),
+  })
   return drizzle({ client: pool, schema })
 }
 

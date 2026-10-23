@@ -1,4 +1,4 @@
-// `pnpm --filter @splitune/node-worker dev` on the Mac (25-personal-mode.md §5). Connects as the
+// `pnpm --filter @splitune/node-worker dev` (local) or the launchd agent (production) on the Mac (25-personal-mode.md §5). Connects as the
 // restricted node_worker role; with NODE_WORKER_MAINTENANCE_DATABASE_URL it also logs in as
 // maintenance for the lifecycle scheduler and privacy jobs (15 §3–§4). SIGINT/SIGTERM stop
 // claiming and finish the running job.
@@ -17,12 +17,22 @@ import { NodeWorker } from './worker.ts'
 const config = configFromEnv()
 const log = createLogger()
 const tracing = await startTracing('splitune-node-worker')
-const db = createDb({ url: config.databaseUrl, max: 3, applicationName: 'splitune-node-worker' })
+const db = createDb({
+  url: config.databaseUrl,
+  max: 3,
+  applicationName: 'splitune-node-worker',
+  keepAlive: true,
+})
 const storage = createStorage(storageConfigFromEnv())
 const hashUser = config.analyticsSalt ? userHasher(config.analyticsSalt) : undefined
 const { lifecycle } = config
 const maintenance = lifecycle
-  ? createDb({ url: lifecycle.maintenanceUrl, max: 2, applicationName: 'splitune-lifecycle' })
+  ? createDb({
+      url: lifecycle.maintenanceUrl,
+      max: 2,
+      applicationName: 'splitune-lifecycle',
+      keepAlive: true,
+    })
   : undefined
 const worker = new NodeWorker(
   {
