@@ -12,7 +12,7 @@ import yaml
 from .paths import ML_ROOT
 
 Island = Literal["torch", "onnx-cpu", "legacy"]
-Slot = Literal["mps", "cpu"]
+Slot = Literal["gpu", "cpu"]
 
 
 @dataclass(frozen=True)
@@ -67,7 +67,7 @@ STAGES: dict[str, StageSpec] = {
         name="beats",
         module="stage_beats.stage",
         island="torch",
-        slot="mps",
+        slot="gpu",
         timeout_s=120,  # 60 s budget (06 §2) + cold model load
         outputs={"beats": "beats"},
         primary="beats",
@@ -88,7 +88,7 @@ STAGES: dict[str, StageSpec] = {
         name="separate",
         module="stage_separation.separate",
         island="torch",
-        slot="mps",
+        slot="gpu",
         timeout_s=1500,  # 600 s per model (06 §2) for up to two chain entries + model loads
         outputs={"separation": "separation"},
         primary="separation",
@@ -114,7 +114,7 @@ STAGES: dict[str, StageSpec] = {
         name="chords",
         module="stage_chords.stage",
         island="torch",
-        slot="mps",
+        slot="gpu",
         timeout_s=300,  # 120 s budget (06 §2) for up to two inputs + key + cold model loads
         outputs={"chords": "chords"},
         primary="chords",
@@ -129,8 +129,8 @@ NOTES_CONFIG = ML_ROOT / "config" / "notes.personal.yaml"
 # The transcriber chosen per instrument decides where its notes stage runs.
 TRANSCRIBER_ISLANDS: dict[str, tuple[Island, Slot]] = {
     "basic_pitch": ("onnx-cpu", "cpu"),
-    "yourmt3": ("torch", "mps"),
-    "transkun": ("torch", "mps"),
+    "yourmt3": ("torch", "gpu"),
+    "transkun": ("torch", "gpu"),
 }
 
 

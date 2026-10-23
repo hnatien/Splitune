@@ -25,11 +25,17 @@ if (!hasCommand('uv')) {
   process.exit(1)
 }
 
+// PyTorch variant: SPLITUNE_TORCH=cuda|cpu (default: none on macOS, cpu on Linux, cuda on Windows/PC)
+const defaultTorch =
+  process.platform === 'linux' ? 'cpu' : process.platform === 'win32' ? 'cuda' : undefined
+const torchExtra = process.env.SPLITUNE_TORCH ?? defaultTorch
+const mlSyncArgs = ['sync', ...(torchExtra ? ['--extra', torchExtra] : [])]
+
 run('pnpm', ['install'])
-run('uv', ['sync'], join(root, 'services/ml'))
+run('uv', mlSyncArgs, join(root, 'services/ml'))
 // ML worker islands: one venv each (services/ml/islands/<name>, 06-ml-pipeline-service.md §0).
-for (const island of ['torch', 'onnx-cpu'])
-  run('uv', ['sync'], join(root, 'services/ml/islands', island))
+run('uv', mlSyncArgs, join(root, 'services/ml/islands/torch'))
+run('uv', ['sync'], join(root, 'services/ml/islands/onnx-cpu'))
 
 const envFile = join(root, '.env')
 if (existsSync(envFile)) {

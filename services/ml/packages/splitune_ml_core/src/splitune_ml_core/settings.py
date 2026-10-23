@@ -56,13 +56,19 @@ class Settings(BaseSettings):
     log_level: str = Field(default="info", validation_alias="LOG_LEVEL")
 
     worker_id: str = Field(default_factory=_default_worker_id, validation_alias="ML_WORKER_ID")
-    # 25-personal-mode.md §5: one MPS job at a time, at most two CPU jobs.
-    mps_slots: int = Field(default=1, ge=0, le=4, validation_alias="ML_MPS_SLOTS")
+    # 25-personal-mode.md §5: one GPU job at a time, at most two CPU jobs.
+    gpu_slots: int = Field(
+        default=1, ge=0, le=4, validation_alias=AliasChoices("ML_GPU_SLOTS", "ML_MPS_SLOTS")
+    )
     cpu_slots: int = Field(default=2, ge=0, le=8, validation_alias="ML_CPU_SLOTS")
-    # auto = MPS when available, else CPU (beats then falls back to the small model).
-    torch_device: Literal["auto", "mps", "cpu"] = Field(
+    # auto = CUDA when available, else MPS, else CPU.
+    torch_device: Literal["auto", "cuda", "mps", "cpu"] = Field(
         default="auto", validation_alias="ML_TORCH_DEVICE"
     )
+
+    @property
+    def mps_slots(self) -> int:
+        return self.gpu_slots
 
     # Decoded FLAC intermediates and per-job scratch space stay on the Mac's disk.
     cache_dir: Path = Field(default=Path("~/.cache/splitune/ml"), validation_alias="ML_CACHE_DIR")

@@ -1178,3 +1178,13 @@ Branch `impl/18b-guitar-notes` from `dev` (`6b15c01`). **Owner's choice, 2026-10
 **Found on the way (out of scope, not fixed):** `buildTab` throws `alphaTex: cannot express 160 ticks at 1440 (swing=true)` (`export/alphatex-bars.ts` `split`) on the owner's "Risk It All" guitar notes, so finalize failed 3× (`internal_error`) and the analysis `ad3e94b9-…` is `failed`. The practice Worker would hit the same throw. Needs its own fix with a regression test from these notes.
 
 **Phone landscape:** the current chrome leaves no paper at 844 × 390 (confirmed in Storybook, as step 18 noted). The mockup folds the chord strip into the status bar on phone landscape, which gives A six 30 px lanes; Phase 2 needs that layout change.
+
+## 2026-10-24 — Step 09c: Workers on a Windows PC with an NVIDIA GPU (CUDA)
+Branch `impl/09c-cuda-worker-wsl` from `dev`. Enables NVIDIA GPU acceleration (CUDA) alongside macOS MPS for ML workers and development on Windows/WSL2.
+
+**Built**
+- **Contracts:** Added `'cuda'` to `Separation.device` in `packages/contracts/src/analysis/separation.ts`; bumped `SCHEMA_VERSION` to `1.5.0` in `common.ts` and updated tests (`common.test.ts`, `test_contracts.py`). Regenerated schemas (`pnpm contracts:gen`) and verified drift check (`pnpm contracts:check`).
+- **Device abstraction:** Created `services/ml/packages/splitune_ml_core/src/splitune_ml_core/device.py` (`torch_device()` with `ML_TORCH_DEVICE=auto|cuda|mps|cpu`, `synchronize()`, `empty_cache()`, `peak_memory()`). Unit tested with mocked torch in `test_device.py`.
+- **Stages & Worker:** Replaced hardcoded `"mps"` in `stage_separation` (`models.py`, `separate.py`), `stage_beats` (`model.py`, `stage.py`), `stage_chords` (`recognizers.py`), `stage_notes` (`yourmt3.py`, `transkun.py`), and `splitune_eval.local`. Updated slot concurrency from `mps` to `gpu` in `stages.py` and `worker.py` (`gpu_slots`, alias `ML_GPU_SLOTS` and `ML_MPS_SLOTS`). Added `CUDA_VISIBLE_DEVICES` to island passthrough and resolved `Scripts/python.exe` on Windows.
+- **Packaging (uv):** Replaced Linux CPU-only lock with mutually exclusive `cpu` and `cuda` extras (`[tool.uv] conflicts`), routing to `pytorch-cu126` wheels for Linux and Windows. Locked `services/ml` and `services/ml/islands/torch`. Verified PyTorch 2.14.1+cu126 detects NVIDIA GeForce RTX 3060.
+- **Dev Runner & Supervision:** Updated `scripts/dev.mjs` for Windows process tree signaling, added `--no-sync` in `services/ml/package.json` to prevent unwanted venv de-synchronization, and added systemd unit templates (`splitune-ml-worker.service`, `splitune-node-worker.service`) and Task Scheduler keepalive script (`register-wsl-task.ps1`).

@@ -1,6 +1,6 @@
-"""The Mac ML worker: `uv run splitune-ml-worker`.
+"""The ML worker: `uv run splitune-ml-worker`.
 
-Slots claim jobs from Postgres (`runner = 'python'`) and run them through a backend: one MPS slot
+Slots claim jobs from Postgres (`runner = 'python'`) and run them through a backend: one GPU slot
 for torch-island stages and up to two CPU slots (25-personal-mode.md §5). Idle slots sleep until
 `NOTIFY jobs_python` or the 5 s poll. Each running job heartbeats every 15 s; the worker writes its
 `worker_heartbeats` row every 30 s and re-queues stale jobs of crashed workers.
@@ -76,7 +76,7 @@ class Worker:
         self.settings = settings
         url = settings.database_url.get_secret_value()
         self._url = url
-        slots = settings.mps_slots + settings.cpu_slots
+        slots = settings.gpu_slots + settings.cpu_slots
         self.pool = create_pool(url, max_size=slots + 2)
         self.services = Services(settings, self.pool, Storage.from_settings(settings))
         if backend_factory is None:
@@ -90,8 +90,8 @@ class Worker:
         self.stop = threading.Event()
         self.wakeup = Wakeup()
         self.slots: list[SlotState] = []
-        for kind, count in (("mps", settings.mps_slots), ("cpu", settings.cpu_slots)):
-            slot_kind: Slot = "mps" if kind == "mps" else "cpu"
+        for kind, count in (("gpu", settings.gpu_slots), ("cpu", settings.cpu_slots)):
+            slot_kind: Slot = "gpu" if kind == "gpu" else "cpu"
             for i in range(count):
                 self.slots.append(SlotState(f"{kind}{i}", kinds_for(slot_kind)))
         self._threads: list[threading.Thread] = []

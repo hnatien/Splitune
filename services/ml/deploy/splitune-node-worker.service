@@ -1,0 +1,15 @@
+[Unit]
+Description=Splitune Node Worker (music-core tab/alphaTex on WSL2)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Splitune/apps/node-worker
+ExecStart=/usr/bin/node --env-file=%h/Splitune/.env.worker src/main.ts
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=1500
+
+[Install]
+WantedBy=default.target

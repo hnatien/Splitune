@@ -60,8 +60,6 @@ class YourMT3:
     def _load(self) -> Any:
         with self._lock:
             if self._model is None:
-                import torch
-
                 root = models_dir() / "yourmt3"
                 register.verify(register.model(self.record), root)
                 sys.path.insert(0, str(root / "src"))
@@ -73,7 +71,9 @@ class YourMT3:
                 import model_helper
 
                 cast(dict[str, Any], cfg.shared_cfg)["WANDB"]["save_dir"] = str(root / "logs")
-                device = "mps" if torch.backends.mps.is_available() else "cpu"
+                from splitune_ml_core.device import torch_device
+
+                device = torch_device()
                 self._model = model_helper.load_model_checkpoint(args=ARGS, device="cpu").to(device)
             return self._model
 

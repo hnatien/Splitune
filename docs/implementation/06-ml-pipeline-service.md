@@ -31,7 +31,7 @@ The Python side of the analysis job: stage implementations, provider interfaces,
 | `lyrics` | Whisper (faster-whisper CPU or an MLX port) — enabled | Rights-gated |
 | `sections` | allin1 in its own env | Sign-off-gated |
 | Fallback when separation fails | Next model in the map → analysis without stems | Secondary vendor → Spleeter |
-Environments ("islands") are separate uv projects/venvs on the Mac instead of Modal images: `torch` (torch 2.14.1 MPS: beat_this, transkun, audio-separator, ADTOF, RMVPE), `onnx-cpu` (Basic Pitch, taggers, SwiftF0, ffmpeg tooling), `legacy` (allin1 + madmom from git). The worker dispatches each job kind to a long-lived subprocess per island so models stay loaded (the equivalent of Modal's `@modal.enter`). Concurrency: 1 MPS job at a time, ≤2 CPU jobs.
+Environments ("islands") are separate uv projects/venvs on the worker host instead of Modal images: `torch` (torch 2.14.1 MPS/CUDA: beat_this, transkun, audio-separator, ADTOF, RMVPE), `onnx-cpu` (Basic Pitch, taggers, SwiftF0, ffmpeg tooling), `legacy` (allin1 + madmom from git). The worker dispatches each job kind to a long-lived subprocess per island so models stay loaded (the equivalent of Modal's `@modal.enter`). Concurrency: 1 GPU job at a time (MPS on Mac, CUDA on Windows PC/WSL2), ≤2 CPU jobs.
 
 ## 1. Repository layout
 ```

@@ -19,6 +19,8 @@ def binary(name: str) -> str:
         candidate = Path(directory).expanduser() / name
         if candidate.is_file():
             return str(candidate)
+        if candidate.with_suffix(".exe").is_file():
+            return str(candidate.with_suffix(".exe"))
         raise StageError("ffmpeg_missing", retry=False)
     found = shutil.which(name)
     if found is None:

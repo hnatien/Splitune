@@ -24,12 +24,21 @@ log = logging.getLogger("splitune.islands")
 _PASSTHROUGH = (
     "PATH",
     "HOME",
+    "USERPROFILE",
+    "SYSTEMROOT",
+    "SystemRoot",
+    "WINDIR",
+    "windir",
+    "PATHEXT",
+    "TEMP",
+    "TMP",
     "TMPDIR",
     "LANG",
     "LC_ALL",
     "LOG_LEVEL",
     "FFMPEG_BIN_DIR",
     "ML_TORCH_DEVICE",
+    "CUDA_VISIBLE_DEVICES",
     "ML_MODELS_DIR",
     "ML_SEPARATION_CONFIG",
     # Read both by stages.py (notes island placement) in the worker and by the stages in the
@@ -45,7 +54,10 @@ _PASSTHROUGH = (
 
 def island_python(name: str, islands_dir: Path | None = None) -> Path:
     """The interpreter of `services/ml/islands/<name>/.venv`."""
-    return (islands_dir or ISLANDS_DIR) / name / ".venv" / "bin" / "python"
+    venv = (islands_dir or ISLANDS_DIR) / name / ".venv"
+    if sys.platform == "win32":
+        return venv / "Scripts" / "python.exe"
+    return venv / "bin" / "python"
 
 
 def island_env(name: str, extra: dict[str, str] | None = None) -> dict[str, str]:
