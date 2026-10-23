@@ -1,9 +1,9 @@
 // Railway project `splitune`, environment production (25-personal-mode.md §1, §6): one `app`
-// service (web + API, sleeps when idle) and Postgres. Review with
+// service (web + API, sleeps when idle), Postgres and Mailpit. Review with
 // `railway config plan --file infra/railway/railway.ts` and apply only what was approved; the
-// generated *.up.railway.app domain is added with `railway domain` (never written here).
+// generated *.up.railway.app domains are added with `railway domain` (never written here).
 // Secrets are set with `railway variable set … --stdin` and kept by preserve().
-import { defineRailway, github, postgres, preserve, project, service } from 'railway/iac'
+import { defineRailway, github, image, postgres, preserve, project, service } from 'railway/iac'
 
 // Singapore: nearest the owner's Mac and the APAC R2 bucket.
 const REGION = 'asia-southeast1-eqsg3a'
@@ -13,6 +13,24 @@ const PUBLIC_ORIGIN = 'https://${{RAILWAY_PUBLIC_DOMAIN}}'
 
 export default defineRailway(() => {
   const db = postgres('Postgres', { region: REGION })
+
+  // Hobby blocks outbound SMTP (ports 25/465/587/2525), so sign-in links go to Mailpit over the
+  // private network; the owner reads them in its web UI (basic auth, MP_UI_AUTH). Stays awake:
+  // a sleeping Mailpit would drop the first SMTP connection after idle.
+  const mailpit = service('mailpit', {
+    source: image('axllent/mailpit:v1.31.6'),
+    healthcheck: '/readyz',
+    regions: { [REGION]: 1 },
+    env: {
+      // The public domain routes to the web UI.
+      PORT: '8025',
+      // Dual stack: private networking resolves over IPv6 in older environments.
+      MP_SMTP_BIND_ADDR: '[::]:1025',
+      MP_UI_BIND_ADDR: '[::]:8025',
+      MP_UI_AUTH: preserve(),
+      MP_MAX_MESSAGES: '200',
+    },
+  })
 
   const app = service('app', {
     source: github('hnatien/Splitune', { branch: 'dev' }),
@@ -61,14 +79,14 @@ export default defineRailway(() => {
       S3_FORCE_PATH_STYLE: 'false',
       S3_ACCESS_KEY_ID: preserve(),
       S3_SECRET_ACCESS_KEY: preserve(),
-      SMTP_HOST: preserve(),
-      SMTP_PORT: preserve(),
-      SMTP_SECURE: preserve(),
-      SMTP_USER: preserve(),
-      SMTP_PASSWORD: preserve(),
-      EMAIL_FROM: preserve(),
+      SMTP_HOST: mailpit.env.RAILWAY_PRIVATE_DOMAIN,
+      SMTP_PORT: '1025',
+      SMTP_SECURE: 'false',
+      SMTP_USER: '',
+      SMTP_PASSWORD: '',
+      EMAIL_FROM: 'Splitune <no-reply@splitune.localhost>',
     },
   })
 
-  return project('splitune', { resources: [db, app] })
+  return project('splitune', { resources: [db, mailpit, app] })
 })
