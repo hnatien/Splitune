@@ -11,7 +11,7 @@
     {
       "model_id": "panns/cnn14",
       "version": "mAP=0.431",
-      "weights_sha256": "6031a7cfcda816ff3f4d3e1b633b1f5a81f473bd3a3bf4716cb355269a237f2b",
+      "weights_sha256": "75201c264004b64bb3a38c59e694eac590a03eec8e479964240b2a28faebb164",
       "provider": "self_hosted",
       "register_tier": "amber"
     }

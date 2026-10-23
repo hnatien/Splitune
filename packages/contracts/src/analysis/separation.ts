@@ -26,7 +26,7 @@ export const Separation = ArtefactHeader.extend({
   target: Instrument,
   provider: z.string().min(1), // same naming as Stem.provider, e.g. "bs_roformer:BS-Roformer-SW"
   mix_minus: z.enum(['subtract', 'complement']),
-  device: z.enum(['mps', 'cpu']),
+  device: z.enum(['cuda', 'mps', 'cpu']),
   stems: z.array(SeparatedStem).min(1),
   failed_attempts: z.array(SeparationAttempt), // earlier models of the chain, in order
 }).register(contracts, { id: 'Separation' })

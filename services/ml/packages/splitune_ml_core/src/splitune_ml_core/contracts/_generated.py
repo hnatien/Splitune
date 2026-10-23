@@ -654,7 +654,7 @@ class Separation(BaseModel):
     target: Instrument
     provider: Annotated[StrictStr, Field(min_length=1)]
     mix_minus: Literal["subtract", "complement"]
-    device: Literal["mps", "cpu"]
+    device: Literal["cuda", "mps", "cpu"]
     stems: Annotated[list[SeparatedStem], Field(min_length=1)]
     failed_attempts: list[SeparationAttempt]
 
@@ -969,4 +969,4 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.4.0"
+SCHEMA_VERSION = "1.5.0"
