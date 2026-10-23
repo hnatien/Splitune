@@ -26,8 +26,8 @@ confidence: medium
 | Database | Railway Postgres 18 HA | **Railway Postgres** (single instance, no HA); the Mac connects via its public TCP proxy (`DATABASE_PUBLIC_URL`, TLS) with the restricted `ml_worker` role; nightly `pg_dump` from the Mac to a local/external disk |
 | Object storage | Cloudflare R2 (user, assets and compliance buckets) | **Cloudflare R2**, one bucket `splitune-media` (Standard class, free tier; presigned GET/PUT/multipart against `<account_id>.r2.cloudflarestorage.com` — presigned URLs don't work on custom domains). CORS rules are in `infra/r2/cors.json`. Lifecycle: only R2's default 7-day abort of incomplete multipart uploads — no expiry rules, because personal mode keeps raw uploads and `video.mp4`, and stem expiry depends on `last_opened_at`, so the app's sweeper (`15`) does all expiry. Chosen over the Railway Bucket on 2026-10-21: 10 GB free, outside the Hobby usage, real lifecycle rules |
 | Orchestration | Inngest Cloud | **Postgres job queue** (`jobs` table, `FOR UPDATE SKIP LOCKED`, `LISTEN/NOTIFY` over the TCP proxy with 5 s polling fallback) |
-| Workers | Modal + API-side finalize | **On the Mac:** `ml-worker` (Python, MPS) and `node-worker` (music-core finalize, sweepers, lifecycle). Keeping workers off Railway lets `app` sleep and avoids paying for idle polling |
-| ML compute | Modal L4 | Native Python on the Mac (PyTorch MPS; ONNX CoreML EP; CPU fallback) |
+| Workers | Modal + API-side finalize | **On the Mac or Windows PC (WSL2 with NVIDIA GPU):** `ml-worker` (Python, MPS or CUDA) and `node-worker` (music-core finalize, sweepers, lifecycle). Keeping workers off Railway lets `app` sleep and avoids paying for idle polling |
+| ML compute | Modal L4 | Native Python on the Mac or Windows PC / WSL2 (PyTorch MPS or CUDA; ONNX; CPU fallback) |
 | Separation | AudioShake / Music.AI / LALAL.AI | Self-hosted open models (§3) |
 | Auth email | Resend | Free SMTP account (or passkeys/Google OAuth only); Mailpit for local dev |
 | Payments | Stripe Managed Payments / Paddle | `MockBillingProvider` (§2) |

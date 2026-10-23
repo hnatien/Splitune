@@ -196,7 +196,7 @@ def run(job: StageJob) -> StageOutput:
     out = workdir / "separation.json"
     out.write_text(contracts.dump_json(document), encoding="utf-8")
     fallback = "separation_fallback_model" if attempts else None
-    metric = "gpu_s" if device == "mps" else "cpu_s"
+    metric = "gpu_s" if device != "cpu" else "cpu_s"
     return StageOutput(
         status="fallback" if fallback else "done",
         files={"separation": str(out)},

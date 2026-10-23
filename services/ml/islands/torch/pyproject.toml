@@ -13,9 +13,25 @@ dependencies = [
     "stage-separation[models]",
 ]
 
+[project.optional-dependencies]
+cpu = [
+    "torch",
+    "torchaudio",
+]
+cuda = [
+    "torch",
+    "torchaudio",
+]
+
 [tool.uv]
 package = false
 required-version = ">=0.13,<0.14"
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "cuda" },
+    ],
+]
 
 [tool.uv.sources]
 splitune-ml-core = { path = "../../packages/splitune_ml_core", editable = true }
@@ -23,8 +39,14 @@ stage-beats = { path = "../../packages/stage_beats", editable = true }
 stage-chords = { path = "../../packages/stage_chords", editable = true }
 stage-notes = { path = "../../packages/stage_notes", editable = true }
 stage-separation = { path = "../../packages/stage_separation", editable = true }
-torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
-torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform != 'darwin'" },
+    { index = "pytorch-cu126", extra = "cuda", marker = "sys_platform != 'darwin'" },
+]
+torchaudio = [
+    { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform != 'darwin'" },
+    { index = "pytorch-cu126", extra = "cuda", marker = "sys_platform != 'darwin'" },
+]
 
 # transkun 2.0.1 declares its training and plotting tools (tensorboard, seaborn, sox, ncls, ...) as
 # requirements; inference (stage_notes.transkun) imports only these.
@@ -36,4 +58,9 @@ requires-dist = ["mir-eval", "numpy", "pretty-midi", "scipy", "torch", "torchaud
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
 explicit = true

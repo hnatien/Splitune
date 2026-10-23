@@ -119,18 +119,21 @@ def run(job: StageJob) -> StageOutput:
     try:
         inference = model.infer(signal, int(sample_rate), choice.model, choice.device)
     except RuntimeError:
-        if choice.device != "mps":
+        if choice.device == "cpu":
             raise
-        # MPS kernels can fail on new OS/torch combinations; the small CPU model still gives a grid.
-        log.exception("MPS inference failed; falling back to CPU", extra={"model": choice.model})
-        choice = model.Choice(model.SMALL, "cpu", "beats_mps_failed")
+        # Accelerator kernels can fail on new OS/torch; small CPU model still gives a grid.
+        log.exception(
+            f"{choice.device.upper()} inference failed; falling back to CPU",
+            extra={"model": choice.model},
+        )
+        choice = model.Choice(model.SMALL, "cpu", f"beats_{choice.device}_failed")
         fallback = choice.fallback_reason
         inference = model.infer(signal, int(sample_rate), choice.model, choice.device)
     refs = [model.model_ref(choice.model)]
     document = build(job, inference, params, refs)
     out = Path(job.workdir) / "beats.json"
     out.write_text(contracts.dump_json(document), encoding="utf-8")
-    metric = "gpu_s" if choice.device == "mps" else "cpu_s"
+    metric = "gpu_s" if choice.device != "cpu" else "cpu_s"
     return StageOutput(
         status="fallback" if fallback else "done",
         files={"beats": str(out)},

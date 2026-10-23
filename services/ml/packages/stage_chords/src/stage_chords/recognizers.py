@@ -16,6 +16,7 @@ import torch
 from numpy.typing import NDArray
 from scipy.signal import resample_poly  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
 from splitune_ml_core import contracts, register
+from splitune_ml_core.device import torch_device as _device_name
 from splitune_ml_core.errors import StageError
 
 from . import ace, btc, fusion
@@ -29,10 +30,7 @@ def models_dir() -> Path:
 
 
 def torch_device() -> torch.device:
-    preference = os.environ.get("ML_TORCH_DEVICE", "auto")
-    if preference != "cpu" and torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
+    return torch.device(_device_name())
 
 
 def ref_for(record_id: str, model_id: str) -> contracts.ModelRef:

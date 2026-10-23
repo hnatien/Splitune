@@ -68,7 +68,8 @@ jobs:
       - name: Install Python dependencies
         working-directory: services/ml
         run: |
-          uv sync --locked
+          uv sync --locked --extra cpu
+          uv sync --locked --project islands/torch --extra cpu
           uv lock --check --project islands/torch
           uv lock --check --project islands/onnx-cpu
 

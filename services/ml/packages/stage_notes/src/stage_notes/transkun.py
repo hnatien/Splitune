@@ -53,7 +53,9 @@ class Transkun:
                 model = ModelTransformer.TransKun(conf=conf)
                 checkpoint = torch.load(str(weights), map_location="cpu")
                 model.load_state_dict(checkpoint["state_dict"])
-                device = "mps" if torch.backends.mps.is_available() else "cpu"
+                from splitune_ml_core.device import torch_device
+
+                device = torch_device()
                 self._model = model.to(device).eval()
             return self._model
 

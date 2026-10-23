@@ -10,14 +10,11 @@ pinned.
 
 from __future__ import annotations
 
-import gc
 import inspect
 import logging
 import os
 import threading
 import time
-from collections.abc import Generator
-from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -25,6 +22,7 @@ from typing import Any, cast
 import torch
 from audio_separator.separator import Separator  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import contracts, register
+from splitune_ml_core.device import empty_cache, peak_memory, torch_device
 from splitune_ml_core.errors import StageError
 
 from .config import ModelSpec
@@ -56,10 +54,8 @@ def model_ref(spec: ModelSpec) -> contracts.ModelRef:
 
 
 def device() -> str:
-    """ML_TORCH_DEVICE=cpu forces CPU; otherwise MPS when available (the library's own pick)."""
-    if os.environ.get("ML_TORCH_DEVICE", "auto") == "cpu" or not torch.backends.mps.is_available():
-        return "cpu"
-    return "mps"
+    """Accelerator device (cuda | mps | cpu) driven by ML_TORCH_DEVICE."""
+    return torch_device()
 
 
 @dataclass
@@ -103,8 +99,8 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
         mdxc_params=params if spec.arch == "mdxc" else LIBRARY_PARAMS["mdxc"],
         demucs_params=params if spec.arch == "demucs" else LIBRARY_PARAMS["demucs"],
     )
-    if device() == "cpu":
-        separator.torch_device = separator.torch_device_cpu  # pyright: ignore[reportUnknownMemberType]
+    # The library has no torch_device_cuda attribute (it builds its CUDA device inline).
+    separator.torch_device = torch.device(device())
     separator.load_model(model_filename=spec.filename)  # pyright: ignore[reportUnknownMemberType]
     _warm = _Loaded(name, dict(spec.inference), separator)
     return separator
@@ -113,30 +109,10 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
 def release() -> None:
     global _warm
     _warm = None
-    gc.collect()
-    if torch.backends.mps.is_available():
-        torch.mps.empty_cache()
+    empty_cache()
 
 
-@contextmanager
-def mps_peak() -> Generator[list[float]]:
-    """Samples the MPS driver allocation every 0.2 s; yields [peak_mb] (0 on CPU)."""
-    peak = [0.0]
-    stop = threading.Event()
-
-    def sample() -> None:
-        while not stop.wait(0.2):
-            peak[0] = max(peak[0], torch.mps.driver_allocated_memory() / 2**20)
-
-    thread = threading.Thread(target=sample, daemon=True)
-    if torch.backends.mps.is_available():
-        thread.start()
-    try:
-        yield peak
-    finally:
-        stop.set()
-        if thread.is_alive():
-            thread.join()
+mps_peak = peak_memory
 
 
 @dataclass(frozen=True)

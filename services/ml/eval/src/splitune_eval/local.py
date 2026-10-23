@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import contracts
+from splitune_ml_core.device import torch_device
 from splitune_ml_core.stage_api import StageJob, StageOutput
 from splitune_ml_core.stages import STAGES
 
@@ -130,7 +131,7 @@ class LocalRun:
                 "target": target,
                 "provider": provider,
                 "mix_minus": "subtract",
-                "device": "mps",
+                "device": torch_device(),
                 "stems": entries,
                 "failed_attempts": [],
             }

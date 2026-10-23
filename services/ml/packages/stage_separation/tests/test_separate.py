@@ -306,15 +306,19 @@ def test_tampered_weights_are_refused(tmp_path: Path) -> None:
 
 
 def models_dir_with(tmp_path: Path, record_ids: list[str]) -> Path:
-    """A models dir that holds only these register entries (symlinks to the real weights), plus
+    """A models dir that holds only these register entries (links to the real weights), plus
     the library's model list, which it would otherwise download on every load."""
     source = models.models_dir() / "audio-separator"
     target = tmp_path / "models" / "audio-separator"
     target.mkdir(parents=True)
-    os.symlink(source / "download_checks.json", target / "download_checks.json")
-    for record_id in record_ids:
-        for entry in register.model(record_id).weights.files:
-            os.symlink(source / entry.name, target / entry.name)
+    for name in ["download_checks.json"] + [
+        entry.name for record_id in record_ids for entry in register.model(record_id).weights.files
+    ]:
+        try:
+            os.symlink(source / name, target / name)
+        except OSError:
+            # Windows creates symlinks only in Developer Mode; a hard link needs no privilege.
+            os.link(source / name, target / name)
     return target.parent
 
 

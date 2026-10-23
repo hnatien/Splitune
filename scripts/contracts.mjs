@@ -25,6 +25,7 @@ function generate(schemaOut, pythonOut) {
     'uv',
     [
       'run',
+      '--no-sync',
       'python',
       'scripts/gen_contracts.py',
       '--schema',

@@ -18,6 +18,7 @@ from beat_this.inference import CHECKPOINT_URL, Audio2Frames  # pyright: ignore[
 from beat_this.model.postprocessor import Postprocessor  # pyright: ignore[reportMissingTypeStubs]
 from numpy.typing import NDArray
 from splitune_ml_core.contracts import ModelRef
+from splitune_ml_core.device import synchronize, torch_device
 
 log = logging.getLogger("splitune.beats")
 
@@ -69,13 +70,14 @@ class Choice:
 
 
 def choose(requested_model: str) -> Choice:
-    """ML_TORCH_DEVICE=auto → MPS when available, else CPU with the small model (fallback).
+    """ML_TORCH_DEVICE=auto → accelerator (CUDA / MPS) when available, else CPU fallback.
     An explicit `cpu` keeps the requested model (benchmarks)."""
-    preference = os.environ.get("ML_TORCH_DEVICE", "auto")
+    preference = os.environ.get("ML_TORCH_DEVICE", "auto").lower()
     if preference == "cpu":
         return Choice(requested_model, "cpu", None)
-    if mps_available():
-        return Choice(requested_model, "mps", None)
+    device = torch_device()
+    if device in {"cuda", "mps"}:
+        return Choice(requested_model, device, None)
     return Choice(SMALL, "cpu", "beats_cpu_small" if requested_model != SMALL else None)
 
 
@@ -103,8 +105,8 @@ def infer(signal: NDArray[np.float32], sample_rate: int, name: str, device: str)
         tuple[Any, Any], Postprocessor(type="minimal")(beat_logits, downbeat_logits)
     )
     activation = torch.sigmoid(beat_logits).cpu().numpy().astype(np.float32)
-    if device == "mps":
-        torch.mps.synchronize()
+    if device in {"cuda", "mps"}:
+        synchronize()
     seconds = time.perf_counter() - started
     return Inference(
         beats=np.asarray(beats, dtype=np.float64),
