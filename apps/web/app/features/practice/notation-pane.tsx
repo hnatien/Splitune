@@ -104,7 +104,9 @@ export function NotationPane({
       )}
     >
       <p id={placeholderId} className="text-center text-read-label">
-        {m['practice.placeholder']()}
+        {data.instrument === 'piano'
+          ? m['practice.placeholder_piano']()
+          : m['practice.placeholder']()}
       </p>
       <AnalysisStatus data={data} songId={practice.songId} />
     </section>

@@ -142,7 +142,20 @@ export const PIANO_CHORDS = {
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
-    const done = analysis(1, patch.running ? 'running' : 'done')
+    const base = analysis(1, patch.running ? 'running' : 'done')
+    // The fixture's stages are the guitar song's: another part has its own notes stage.
+    const done = patch.instrument
+      ? {
+          ...base,
+          requested_instrument: patch.instrument,
+          stages: Object.fromEntries(
+            Object.entries(base.stages).map(([stage, state]) => [
+              stage === 'notes.guitar' ? `notes.${patch.instrument}` : stage,
+              state,
+            ]),
+          ),
+        }
+      : base
     const failed = patch.failedStage
       ? { ...done, stages: { ...done.stages, [patch.failedStage]: { status: 'failed' as const } } }
       : done

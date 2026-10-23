@@ -255,6 +255,15 @@ export function PracticeProvider({
     [data.stems.data, instrument],
   )
 
+  // Piano opens all at once when its notes are in the music (the Worker's pass after they land):
+  // until then no layer shows and no audio loads, so nothing plays ahead of the notes.
+  const holding =
+    data.awaitingNotes ||
+    (instrument === 'piano' &&
+      data.notes.data !== undefined &&
+      music?.piano === undefined &&
+      !musicState.failed)
+
   // Audio: the stems when both sides exist, else this page's own file, else the song's audio.
   const local = localFile(songId)
   // A file's audio exists once its analysis does; a link's once url_import has downloaded it. An
@@ -266,8 +275,9 @@ export function PracticeProvider({
       ? download === 'done' || download === 'fallback'
       : sourceKind !== 'example' &&
         Boolean(data.song.data?.latest_analysis || data.upload?.analysisId)
-  const targetKey =
-    channels.length > 0 && data.entry.stems
+  const targetKey = holding
+    ? ''
+    : channels.length > 0 && data.entry.stems
       ? `stems:${data.entry.stems.id}`
       : local
         ? 'local'
@@ -277,12 +287,12 @@ export function PracticeProvider({
   const [audioStatus, setAudioStatus] = useState<AudioStatus>('none')
   const [lanes, setLanes] = useState<Lane[]>([])
   const layers: Layers = {
-    beats: grid !== undefined,
+    beats: grid !== undefined && !holding,
     // Once the stems are decoded and playing through the mixer, not just listed.
-    stems: lanes.some((lane) => lane.role === 'part'),
-    chords: (view?.chords.length ?? 0) > 0,
+    stems: lanes.some((lane) => lane.role === 'part') && !holding,
+    chords: (view?.chords.length ?? 0) > 0 && !holding,
     tab: data.entry.tab !== undefined && music?.tab !== undefined,
-    roll: (music?.piano?.notes.length ?? 0) > 0,
+    roll: (music?.piano?.notes.length ?? 0) > 0 && !holding,
   }
   // The load in flight (or done) and its key: a re-render never cancels it, a new source does.
   const loading = useRef<{ key: string; abort: AbortController } | null>(null)
