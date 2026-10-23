@@ -23,6 +23,7 @@
     "db:roles": "pnpm --filter @splitune/db roles",
     "db:studio": "pnpm --filter @splitune/db studio",
     "seed": "pnpm --filter @splitune/db seed",
+    "workers": "node scripts/workers.mjs",
     "examples:build": "node --env-file-if-exists=.env apps/api/scripts/examples/build.ts",
     "secrets:scan": "gitleaks git --redact --verbose",
     "audit:deps": "node scripts/audit.mjs"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@types/node": "24.19.2",
+    "railway": "3.16.0",
     "turbo": "2.11.9",
     "typescript": "7.0.2",
     "vitest": "5.0.5"

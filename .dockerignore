@@ -1,0 +1,22 @@
+# Build context of infra/railway/Dockerfile (the repository root): sources only.
+**/node_modules
+**/dist
+**/.output
+**/.nitro
+**/.tanstack
+**/.turbo
+**/storybook-static
+**/test-results
+**/playwright-report
+**/coverage
+**/.venv
+apps/web/app/paraglide
+apps/web/app/routeTree.gen.ts
+.env
+.env.*
+!.env.example
+!.env.*.example
+.git
+.claude
+docs
+prompts

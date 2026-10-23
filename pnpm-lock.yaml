@@ -172,6 +172,9 @@ importers:
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
+      railway:
+        specifier: 3.16.0
+        version: 3.16.0
       turbo:
         specifier: 2.11.9
         version: 2.11.9
@@ -1689,6 +1692,11 @@ packages:
 
   '@formatjs/intl-localematcher@0.6.2':
     resolution: {integrity: sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA==}
+
+  '@graphql-typed-document-node/core@3.2.0':
+    resolution: {integrity: sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==}
+    peerDependencies:
+      graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
 
   '@hono/node-server@2.1.5':
     resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
@@ -4354,6 +4362,10 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
+  graphql@16.14.2:
+    resolution: {integrity: sha512-Chq1s4CY7jmh8gO2qvLIJyfCDIN+EHLFW/9iShnp1z8FjBQMoodWP1kDC36VAMXXIvAjj4ARa7ntfAV2BrjsbA==}
+    engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
   h3@2.0.7:
     resolution: {integrity: sha512-00SVloxtViij9/JBsc/Ayd9H7GLXWB0KRfkReWG0dDwuUFKUKRrNGM3Csu+KZgppi5DD8Y1KpnfjtudWaRCoiQ==}
     engines: {node: '>=20.19.0'}
@@ -5443,6 +5455,11 @@ packages:
   radash@12.1.1:
     resolution: {integrity: sha512-h36JMxKRqrAxVD8201FrCpyeNuUY9Y5zZwujr20fFO77tpUtGa6EZzfKw/3WaiBX95fq7+MpsuMLNdSnORAwSA==}
     engines: {node: '>=14.18.0'}
+
+  railway@3.16.0:
+    resolution: {integrity: sha512-//vKXubZpO07iJgNyoS+9Ee3pKk+3wE+0KAJPI28GuSKqXG30UeWT4xBkkd6TYuZ4HNh7QPvkVR72Swbmq5kXw==}
+    engines: {node: '>=22'}
+    hasBin: true
 
   range-parser@1.2.1:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
@@ -7363,6 +7380,10 @@ snapshots:
   '@formatjs/intl-localematcher@0.6.2':
     dependencies:
       tslib: 2.8.1
+
+  '@graphql-typed-document-node/core@3.2.0(graphql@16.14.2)':
+    dependencies:
+      graphql: 16.14.2
 
   '@hono/node-server@2.1.5(hono@4.13.13)':
     dependencies:
@@ -9985,6 +10006,8 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
+  graphql@16.14.2: {}
+
   h3@2.0.7(crossws@0.4.15(srvx@1.0.6))(ocache@0.3.1):
     dependencies:
       rou3: 1.0.0
@@ -10978,6 +11001,11 @@ snapshots:
   quick-format-unescaped@4.0.4: {}
 
   radash@12.1.1: {}
+
+  railway@3.16.0:
+    dependencies:
+      '@graphql-typed-document-node/core': 3.2.0(graphql@16.14.2)
+      graphql: 16.14.2
 
   range-parser@1.2.1: {}
 
