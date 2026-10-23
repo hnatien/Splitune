@@ -88,6 +88,95 @@ describe('§4.6 baseline values', () => {
   })
 })
 
+describe('§4.8 surface and status-surface values', () => {
+  // The table in doc 26 §4.8 (one decimal, so ±0.1): normal contrast, then increased contrast for
+  // the muted text rows.
+  const SURFACES: Record<
+    string,
+    { pairs: [string, string, number][]; more: [string, string, number][] }
+  > = {
+    light: {
+      pairs: [
+        ['--foreground', '--surface-raised', 17.9],
+        ['--foreground', '--surface-sunken', 15.2],
+        ['--muted-foreground', '--surface-raised', 6.7],
+        ['--muted-foreground', '--surface-sunken', 5.7],
+        ['--foreground', '--success-surface', 16.3],
+        ['--foreground', '--warning-surface', 15.6],
+        ['--foreground', '--info-surface', 15.3],
+        ['--foreground', '--destructive-surface', 15.0],
+        ['--success', '--success-surface', 5.1],
+        ['--warning', '--warning-surface', 4.7],
+        ['--info', '--info-surface', 5.0],
+        ['--destructive', '--destructive-surface', 5.0],
+      ],
+      more: [
+        ['--muted-foreground', '--surface-raised', 10.3],
+        ['--muted-foreground', '--surface-sunken', 8.8],
+      ],
+    },
+    dark: {
+      pairs: [
+        ['--foreground', '--surface-raised', 12.6],
+        ['--foreground', '--surface-sunken', 14.0],
+        ['--muted-foreground', '--surface-raised', 6.1],
+        ['--muted-foreground', '--surface-sunken', 6.7],
+        ['--foreground', '--success-surface', 11.2],
+        ['--foreground', '--warning-surface', 11.5],
+        ['--foreground', '--info-surface', 11.4],
+        ['--foreground', '--destructive-surface', 11.7],
+        ['--success', '--success-surface', 6.1],
+        ['--warning', '--warning-surface', 7.2],
+        ['--info', '--info-surface', 6.0],
+        ['--destructive', '--destructive-surface', 4.9],
+      ],
+      more: [
+        ['--muted-foreground', '--surface-raised', 8.6],
+        ['--muted-foreground', '--surface-sunken', 9.6],
+      ],
+    },
+    stage: {
+      pairs: [
+        ['--foreground', '--surface-raised', 13.4],
+        ['--foreground', '--surface-sunken', 14.1],
+        ['--muted-foreground', '--surface-raised', 7.8],
+        ['--muted-foreground', '--surface-sunken', 8.2],
+        ['--foreground', '--success-surface', 12.0],
+        ['--foreground', '--warning-surface', 12.3],
+        ['--foreground', '--info-surface', 12.1],
+        ['--foreground', '--destructive-surface', 12.3],
+        ['--success', '--success-surface', 6.8],
+        ['--warning', '--warning-surface', 8.2],
+        ['--info', '--info-surface', 6.7],
+        ['--destructive', '--destructive-surface', 5.5],
+      ],
+      more: [
+        ['--muted-foreground', '--surface-raised', 10.4],
+        ['--muted-foreground', '--surface-sunken', 10.9],
+      ],
+    },
+  }
+  it.each(Object.entries(SURFACES))('%s matches the documented ratios', (appearance, rows) => {
+    for (const [contrastMode, pairs] of [
+      ['normal', rows.pairs],
+      ['more', rows.more],
+    ] as const) {
+      const tokens = tokensFor(rules, {
+        attrs: { 'data-appearance': appearance, 'data-contrast': contrastMode },
+      })
+      for (const [fg, bg, ratio] of pairs) {
+        const measured = contrast(tokens.color(fg), tokens.color(bg))
+        expect([contrastMode, fg, bg, Math.abs(measured - ratio) <= 0.1]).toEqual([
+          contrastMode,
+          fg,
+          bg,
+          true,
+        ])
+      }
+    }
+  })
+})
+
 describe('contrast helper', () => {
   it('composites translucent colours before measuring', () => {
     const half = new Color('black')

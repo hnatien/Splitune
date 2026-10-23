@@ -7,6 +7,7 @@ import {
   ALIAS_ROLES,
   BACKGROUND_HEX,
   COMPONENT_TOKENS,
+  MOTION_TOKENS,
   READING_TOKENS,
   SEMANTIC_ROLES,
 } from './index.ts'
@@ -15,6 +16,7 @@ import { CONTEXTS, loadRules, parseRules, readSource, tokensFor } from './testin
 const primitives = parseRules(readSource('primitives.css'))
 const themes = parseRules(readSource('themes.css'))
 const rules = loadRules()
+const tailwind = parseRules(readSource('theme.tailwind.css'))
 
 const PRIMITIVE_NAMES = new Set(primitives.flatMap((rule) => rule.decls.map(([name]) => name)))
 const SEMANTIC = new Set<string>([...SEMANTIC_ROLES, ...ALIAS_ROLES])
@@ -30,6 +32,14 @@ const appearanceBlocks = {
   dark: block('[data-appearance="dark"]'),
   stage: block('[data-appearance="stage"]'),
 }
+const SURFACE_ROLES = [
+  '--surface-raised',
+  '--surface-sunken',
+  '--success-surface',
+  '--warning-surface',
+  '--info-surface',
+  '--destructive-surface',
+]
 const references = (value: string) =>
   [...value.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1] as string)
 
@@ -53,6 +63,28 @@ describe('primitives', () => {
     ]) {
       for (let step = 1; step <= 12; step++) expect(PRIMITIVE_NAMES).toContain(`--${ramp}-${step}`)
     }
+  })
+
+  const primitive = (name: string) => {
+    const value = primitives.flatMap((rule) => rule.decls).find(([n]) => n === name)?.[1]
+    if (!value) throw new Error(`No primitive ${name}`)
+    return /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(value)?.slice(1).map(Number) as [
+      number,
+      number,
+      number,
+    ]
+  }
+
+  describe.each(['red', 'green', 'amber', 'blue'])('%s status tint (§4.8)', (status) => {
+    it.each([
+      ['light', 0.03],
+      ['dark', 0.05],
+      ['stage', 0.04],
+    ] as const)('%s keeps the hue of its status base at chroma %d', (appearance, chroma) => {
+      const [, tintChroma, tintHue] = primitive(`--${status}-tint-${appearance}`)
+      const [, , baseHue] = primitive(`--${status}-${appearance}`)
+      expect([tintChroma, tintHue]).toEqual([chroma, baseHue])
+    })
   })
 })
 
@@ -82,6 +114,104 @@ describe.each(Object.entries(appearanceBlocks))('%s appearance', (_, decls) => {
         ])
       }
     }
+  })
+})
+
+describe('surfaces and status surfaces (§4.8)', () => {
+  const EXPECTED = {
+    light: ['gray-1', 'gray-3', 'light'],
+    dark: ['gray-dark-3', 'gray-dark-2', 'dark'],
+    stage: ['gray-stage-3', 'gray-stage-2', 'stage'],
+  } as const
+
+  it.each(Object.entries(EXPECTED))('%s maps raised, sunken and the four tints', (name, map) => {
+    const [raised, sunken, tint] = map
+    const decls = appearanceBlocks[name as keyof typeof appearanceBlocks]
+    expect(Object.fromEntries(SURFACE_ROLES.map((role) => [role, decls.get(role)]))).toEqual({
+      '--surface-raised': `var(--${raised})`,
+      '--surface-sunken': `var(--${sunken})`,
+      '--success-surface': `var(--green-tint-${tint})`,
+      '--warning-surface': `var(--amber-tint-${tint})`,
+      '--info-surface': `var(--blue-tint-${tint})`,
+      '--destructive-surface': `var(--red-tint-${tint})`,
+    })
+  })
+
+  it('--scrim is a translucent literal, dark in Light and black in Dark and Stage', () => {
+    const scrim = (name: keyof typeof appearanceBlocks) => appearanceBlocks[name].get('--scrim')
+    expect(scrim('light')).toBe('oklch(0.2 0.01 75 / 0.4)')
+    expect(scrim('dark')).toBe('oklch(0 0 0 / 0.6)')
+    expect(scrim('stage')).toBe('oklch(0 0 0 / 0.6)')
+  })
+
+  it('forced colours map every surface to Canvas and the scrim to transparent', () => {
+    const forced = themes.find((rule) => rule.media === '(forced-colors: active)')
+    const decls = new Map(forced?.decls)
+    for (const role of SURFACE_ROLES) expect([role, decls.get(role)]).toEqual([role, 'Canvas'])
+    expect(decls.get('--scrim')).toBe('transparent')
+  })
+})
+
+describe('elevation (§9)', () => {
+  const layers = (value: string | undefined) => (value ?? '').split(/,(?![^(]*\))/).length
+  it.each(Object.entries(appearanceBlocks))('%s: two layers at every level', (_, decls) => {
+    for (const level of ['--elevation-1', '--elevation-2', '--elevation-3']) {
+      expect([level, layers(decls.get(level))]).toEqual([level, 2])
+    }
+  })
+
+  it('Dark and Stage add a 1 px top highlight; Light has none', () => {
+    const highlight = (name: 'dark' | 'stage') =>
+      ['--elevation-1', '--elevation-2', '--elevation-3'].map(
+        (level) =>
+          /^inset 0 1px 0 0 oklch\(1 0 0 \/ ([\d.]+)\),/.exec(
+            appearanceBlocks[name].get(level) ?? '',
+          )?.[1],
+      )
+    expect(highlight('dark')).toEqual(['0.05', '0.05', '0.06'])
+    expect(highlight('stage')).toEqual(['0.04', '0.04', '0.04'])
+    expect(appearanceBlocks.light.get('--elevation-1')).not.toContain('inset')
+  })
+})
+
+describe('motion (§10)', () => {
+  const value = (decls: [string, string][] | undefined, name: string) =>
+    decls?.find(([n]) => n === name)?.[1]
+  const staticScale = tailwind.find(
+    (rule) => rule.selectors.includes(':root') && rule.media === null,
+  )
+  const explicit = tailwind.find((rule) => rule.selectors.includes('[data-motion="reduce"]'))
+  const system = tailwind.find(
+    (rule) =>
+      rule.media === '(prefers-reduced-motion: reduce)' &&
+      rule.selectors.includes(':root:not([data-motion])'),
+  )
+
+  it('defines the static scale', () => {
+    expect(MOTION_TOKENS.map((name) => value(staticScale?.decls, name))).toEqual([
+      '100ms',
+      '200ms',
+      '300ms',
+      '400ms',
+      '40ms',
+    ])
+  })
+
+  it.each([
+    ['Settings (data-motion="reduce")', explicit],
+    ['the OS preference without a stored choice', system],
+  ])('zeroes every duration and the stagger for %s', (_, rule) => {
+    for (const name of MOTION_TOKENS)
+      expect([name, value(rule?.decls, name)]).toEqual([name, '0ms'])
+  })
+
+  it('exposes the keyframe utilities from @theme', () => {
+    const css = readSource('theme.tailwind.css')
+    for (const name of ['rise-in', 'pop-in', 'check-draw', 'shimmer', 'progress-indeterminate']) {
+      expect(css).toMatch(new RegExp(`--animate-${name}: ${name} `))
+      expect(css).toMatch(new RegExp(`@keyframes ${name} \\{`))
+    }
+    expect(css).toContain('--ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1)')
   })
 })
 

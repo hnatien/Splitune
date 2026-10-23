@@ -24,7 +24,7 @@ const twMerge = extendTailwindMerge({
         'read-label',
       ],
       font: ['reading'],
-      ease: ['standard', 'enter', 'exit'],
+      ease: ['standard', 'enter', 'exit', 'spring'],
     },
   },
 })

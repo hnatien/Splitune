@@ -23,6 +23,7 @@ export function getRouter() {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: 'intent',
+    defaultViewTransition: true,
     ...(nonce ? { ssr: { nonce } } : {}),
   })
   setupRouterSsrQueryIntegration({ router, queryClient })

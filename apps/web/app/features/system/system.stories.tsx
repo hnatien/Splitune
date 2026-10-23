@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { usePlaybackActive, usePwa } from '@/lib/app-state'
 import { meQuery } from '@/lib/session'
 import { AppStory } from '../../../.storybook/app.tsx'
@@ -96,7 +96,7 @@ export const UpdateReady: Story = {
   render: () => <BarePage />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText('A new version is ready.')).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('A new version is ready.')).toBeVisible())
     await expect(canvas.getByRole('button', { name: 'Reload' })).toBeVisible()
   },
 }
@@ -133,9 +133,8 @@ export const InstallHintIos: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(
-      await canvas.findByText('Install Splitune: tap Share, then Add to Home Screen.'),
-    ).toBeVisible()
+    const hint = await canvas.findByText('Install Splitune: tap Share, then Add to Home Screen.')
+    await waitFor(() => expect(hint).toBeVisible())
     await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }))
     await expect(canvas.queryByText(/Add to Home Screen/)).toBeNull()
   },
@@ -159,11 +158,10 @@ export const Offline: Story = {
   },
   render: libraryPage,
   play: async ({ canvasElement }) => {
-    await expect(
-      await within(canvasElement).findByText(
-        "You're offline. You can keep practising songs you've opened.",
-      ),
-    ).toBeVisible()
+    const notice = await within(canvasElement).findByText(
+      "You're offline. You can keep practising songs you've opened.",
+    )
+    await waitFor(() => expect(notice).toBeVisible())
   },
 }
 
@@ -181,9 +179,8 @@ export const InAppBrowser: Story = {
   render: libraryPage,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(
-      await canvas.findByText('Open in your browser for audio and uploads.'),
-    ).toBeVisible()
+    const notice = await canvas.findByText('Open in your browser for audio and uploads.')
+    await waitFor(() => expect(notice).toBeVisible())
     await expect(canvas.getByRole('button', { name: 'Copy link' })).toBeVisible()
   },
 }

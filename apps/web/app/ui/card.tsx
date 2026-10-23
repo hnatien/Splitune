@@ -1,13 +1,13 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-/** Hairline-bordered surface (doc 26 §9); elevation only on hover where the card is a link. */
+/** Raised surface (doc 26 §4.8, §9): shadow-1 lifts it; the border shows only under increased contrast. */
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card"
       className={cn(
-        'group/card flex flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0',
+        'group/card flex flex-col gap-4 overflow-hidden rounded-2xl border border-transparent bg-surface-raised py-4 shadow-1 contrast-more:border-border text-sm text-card-foreground has-data-[slot=card-footer]:pb-0',
         className,
       )}
       {...props}
@@ -60,7 +60,10 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-footer"
-      className={cn('flex items-center gap-3 border-t border-border bg-muted p-4', className)}
+      className={cn(
+        'flex items-center gap-3 border-t border-border bg-surface-sunken p-4',
+        className,
+      )}
       {...props}
     />
   )

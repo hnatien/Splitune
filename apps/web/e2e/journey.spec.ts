@@ -64,10 +64,9 @@ test('landing page is accessible and leads to the example', async () => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Learn the songs you love, one loop at a time.',
   )
-  await expect(page.getByRole('link', { name: 'Try an example song' })).toHaveAttribute(
-    'href',
-    '/start',
-  )
+  await expect(
+    page.getByRole('main').getByRole('link', { name: 'Try an example song' }),
+  ).toHaveAttribute('href', '/start')
   await expectAccessible(page)
 })
 

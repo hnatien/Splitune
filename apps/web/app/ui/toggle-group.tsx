@@ -13,7 +13,10 @@ const ToggleGroupContext = React.createContext<GroupStyle>({
   orientation: 'horizontal',
 })
 
-/** Segmented set of toggles (view Tab/Chords, mix presets, count-in); items sit 4 px apart. */
+/**
+ * Segmented set of toggles (view Tab/Chords, mix presets, count-in): a sunken track with the pressed
+ * item raised and edged in indigo. `variant` is kept for API compatibility; the track styles every item.
+ */
 function ToggleGroup({
   className,
   variant,
@@ -29,7 +32,7 @@ function ToggleGroup({
       data-size={size}
       orientation={orientation}
       className={cn(
-        'group/toggle-group flex w-fit flex-row items-center gap-1 data-vertical:flex-col data-vertical:items-stretch',
+        'group/toggle-group flex w-fit flex-row items-center gap-1 rounded-full bg-surface-sunken p-1 data-vertical:flex-col data-vertical:items-stretch data-vertical:rounded-2xl',
         className,
       )}
       {...props}
@@ -53,8 +56,8 @@ function ToggleGroupItem({
     <TogglePrimitive
       data-slot="toggle-group-item"
       className={cn(
-        'shrink-0 focus-visible:z-10',
         toggleVariants({ variant: context.variant ?? variant, size: context.size ?? size }),
+        'shrink-0 rounded-full border-transparent bg-transparent hover:bg-surface-raised/50 focus-visible:z-10 data-pressed:border-primary data-pressed:bg-surface-raised data-pressed:font-semibold data-pressed:text-foreground data-pressed:shadow-1',
         className,
       )}
       {...props}

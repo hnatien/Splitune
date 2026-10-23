@@ -30,7 +30,7 @@ function EmptyState({
         className,
       )}
     >
-      <span className="grid size-16 place-items-center rounded-full bg-muted text-muted-foreground [&_svg]:size-8">
+      <span className="grid size-16 place-items-center rounded-2xl bg-surface-sunken text-muted-foreground [&_svg]:size-8">
         {icon}
       </span>
       {title && <h2 className="text-xl">{title}</h2>}

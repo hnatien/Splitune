@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { QueryClient } from '@tanstack/react-query'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { meQuery } from '@/lib/session'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { SettingsLayout } from '../settings/settings-layout'
@@ -61,7 +61,8 @@ export const PricingSignedOut: Story = {
   render: pricing(null),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText('Demo mode — no real charges.')).toBeVisible()
+    const demo = await canvas.findByText('Demo mode — no real charges.')
+    await waitFor(() => expect(demo).toBeVisible())
     // Both prices side by side; monthly chosen, yearly not emphasised (23 §5).
     await expect(canvas.getByRole('radio', { name: /Monthly/ })).toBeChecked()
     await expect(canvas.getByText('$9.99 a month')).toBeVisible()
@@ -119,7 +120,10 @@ export const UpgradePricesFailed: Story = {
   render: sheet((client) => client.setQueryData(meQuery.queryKey, ME_CAPPED)),
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText("We couldn't load the prices.")).toBeVisible()
+    // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
+    await expect(
+      await body.findByText("We couldn't load the prices.", undefined, { timeout: 10_000 }),
+    ).toBeVisible()
   },
 }
 
@@ -134,7 +138,7 @@ export const Checkout: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText('Splitune Plus, monthly')).toBeVisible()
-    await expect(canvas.getByText('Demo mode — no real charges.')).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('Demo mode — no real charges.')).toBeVisible())
     await expect(canvas.getByRole('button', { name: 'Simulate successful payment' })).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Simulate declined card' })).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible()
@@ -149,8 +153,15 @@ export const CheckoutExpired: Story = {
   render: bare(<MockCheckout session="expired" />, seed(ME)),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
     await expect(
-      await canvas.findByText('This page has expired. Start again from Plan & billing.'),
+      await canvas.findByText(
+        'This page has expired. Start again from Plan & billing.',
+        undefined,
+        {
+          timeout: 10_000,
+        },
+      ),
     ).toBeVisible()
   },
 }

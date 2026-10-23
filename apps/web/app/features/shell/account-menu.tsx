@@ -21,7 +21,7 @@ import {
 
 const APPEARANCES: DisplayPreferences['appearance'][] = ['system', 'light', 'dark', 'stage']
 
-// Account menu (27 §1): Settings · Plan & billing · Keyboard & pedal · Appearance · Sign out.
+// Account menu (27 §1): Settings · Plan & billing · Keyboard & pedal · Appearance · Help · Sign out.
 export function AccountMenu({ email }: { email: string }) {
   const appearance = useDisplay((s) => s.appearance)
   const update = useDisplay((s) => s.update)
@@ -70,6 +70,20 @@ export function AccountMenu({ email }: { email: string }) {
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{m['nav.help']()}</DropdownMenuLabel>
+          <DropdownMenuItem render={<Link to="/how-it-works" />}>
+            {m['nav.how_it_works']()}
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link to="/pricing" />}>{m['nav.pricing']()}</DropdownMenuItem>
+          <DropdownMenuItem render={<Link to="/legal/$page" params={{ page: 'terms' }} />}>
+            {m['legal.terms_title']()}
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link to="/legal/$page" params={{ page: 'privacy' }} />}>
+            {m['legal.privacy_title']()}
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut}>{m['nav.sign_out']()}</DropdownMenuItem>

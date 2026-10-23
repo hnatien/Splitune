@@ -98,3 +98,18 @@ export const Alert: Story = {
 }
 
 export const AlertStage: Story = { ...Alert, globals: { appearance: 'stage' } }
+
+export const OpenScrim: Story = {
+  render: RenameDialog,
+  globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Rename song' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Rename song' })
+    const overlay = document.querySelector<HTMLElement>('[data-slot=dialog-overlay]')
+    await expect(overlay).not.toBeNull()
+    await expect(getComputedStyle(overlay as Element).backgroundColor).toMatch(/\/ 0\.6\)$/)
+    await expect(Number.parseFloat(getComputedStyle(dialog).borderTopLeftRadius)).toBeGreaterThan(
+      16,
+    )
+  },
+}

@@ -19,8 +19,10 @@ function WorkerStatus({ online, text, className }: WorkerStatusProps) {
       data-online={online}
       role="status"
       className={cn(
-        'inline-flex w-fit items-center gap-2 rounded-lg border px-3 py-2 text-sm',
-        online ? 'border-border text-muted-foreground' : 'border-warning bg-muted text-foreground',
+        'inline-flex w-fit items-center gap-2 rounded-xl border px-3 py-2 text-sm',
+        online
+          ? 'border-border text-muted-foreground'
+          : 'border-transparent bg-warning-surface text-foreground contrast-more:border-warning',
         className,
       )}
     >

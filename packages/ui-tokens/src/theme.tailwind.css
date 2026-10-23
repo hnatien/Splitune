@@ -53,22 +53,93 @@
   --text-2xl: 1.5rem;
   --text-2xl--line-height: 2rem;
   --text-2xl--font-weight: 600;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-3xl--font-weight: 650;
+  --text-3xl--letter-spacing: -0.015em;
   --text-4xl: 2.25rem;
   --text-4xl--line-height: 2.5rem;
   --text-4xl--font-weight: 650;
   --text-4xl--letter-spacing: -0.02em;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.1;
+  --text-5xl--font-weight: 700;
+  --text-5xl--letter-spacing: -0.025em;
+  --text-display: clamp(2.5rem, 1.6rem + 3.5vw, 4.25rem);
+  --text-display--line-height: 1.05;
+  --text-display--font-weight: 700;
+  --text-display--letter-spacing: -0.03em;
 
   /* Shape (§9): one base radius (10 px) and steps around it. */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 14px);
 
   /* Motion (§10) */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-enter: cubic-bezier(0, 0, 0, 1);
   --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+
+  /*
+   * Keyframes end at the resting state. The one-shot animations back-fill only (they wait invisible
+   * through a stagger delay, then hand back to the element's own style); the loading loops have no
+   * fill, so a zero duration under reduced motion leaves the element as the component styled it.
+   */
+  --animate-rise-in: rise-in var(--duration-slow) var(--ease-enter) backwards;
+  --animate-pop-in: pop-in var(--duration-base) var(--ease-spring) backwards;
+  --animate-check-draw: check-draw var(--duration-slow) var(--ease-enter) backwards;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-progress-indeterminate: progress-indeterminate 1.4s var(--ease-standard) infinite;
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes check-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
 
   /* Content widths (§7): app pages, reading/marketing column, bare shell (27 §1) */
   --container-page: 1200px;
@@ -146,6 +217,12 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-success-surface: var(--success-surface);
+  --color-warning-surface: var(--warning-surface);
+  --color-info-surface: var(--info-surface);
+  --color-destructive-surface: var(--destructive-surface);
   --color-paper: var(--paper);
   --color-ink: var(--ink);
   --color-conf-medium: var(--conf-medium);
@@ -170,6 +247,7 @@
   --color-waveform-peak: var(--waveform-peak);
   --color-waveform-rms: var(--waveform-rms);
   --color-waveform-played: var(--waveform-played);
+  --color-scrim: var(--scrim);
   --color-hud-bg: var(--hud-bg);
   --color-hud-fg: var(--hud-fg);
 }
@@ -187,6 +265,8 @@
   --duration-fast: 100ms;
   --duration-base: 200ms;
   --duration-slow: 300ms;
+  --duration-slower: 400ms;
+  --stagger: 40ms;
 
   --z-sticky: 10;
   --z-overlay: 40;
@@ -266,12 +346,16 @@
   --duration-fast: 0ms;
   --duration-base: 0ms;
   --duration-slow: 0ms;
+  --duration-slower: 0ms;
+  --stagger: 0ms;
 }
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-motion]) {
     --duration-fast: 0ms;
     --duration-base: 0ms;
     --duration-slow: 0ms;
+    --duration-slower: 0ms;
+    --stagger: 0ms;
   }
 }
 

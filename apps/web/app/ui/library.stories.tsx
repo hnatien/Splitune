@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { EllipsisVerticalIcon } from 'lucide-react'
+import { EllipsisVerticalIcon, GuitarIcon } from 'lucide-react'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from './dropdown-menu.tsx'
 import { LONG_TITLE, SONGS } from './fixtures.ts'
+import { BassIcon } from './icons/bass.tsx'
 import { Skeleton } from './skeleton.tsx'
 import { SongCard, SongRow } from './song-card.tsx'
 
@@ -74,6 +75,59 @@ export const Loading: Story = {
       ))}
     </ul>
   ),
+}
+
+const WithLeading = () => (
+  <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4 p-0">
+    {SONGS.map((song) => (
+      <li key={song.href}>
+        <SongCard
+          song={song}
+          className="h-full"
+          leading={
+            <span
+              data-testid="instrument-tile"
+              className="grid size-12 place-items-center rounded-xl bg-surface-sunken text-primary [&_svg]:size-6"
+            >
+              {song.instrument === 'Bass' ? <BassIcon aria-hidden /> : <GuitarIcon aria-hidden />}
+            </span>
+          }
+        />
+      </li>
+    ))}
+  </ul>
+)
+
+export const CardsWithLeading: Story = {
+  render: WithLeading,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getAllByTestId('instrument-tile')).toHaveLength(SONGS.length)
+    // The title is still the one link, and the tile sits before the text.
+    const link = canvas.getByRole('link', { name: 'Wish You Were Here' })
+    const card = link.closest<HTMLElement>('[data-slot=song-card]') as HTMLElement
+    const tile = within(card).getByTestId('instrument-tile')
+    await expect(tile.getBoundingClientRect().right).toBeLessThanOrEqual(
+      link.getBoundingClientRect().left,
+    )
+  },
+}
+export const CardsWithLeadingDark: Story = { render: WithLeading, globals: { appearance: 'dark' } }
+export const CardsWithLeadingStage: Story = {
+  render: WithLeading,
+  globals: { appearance: 'stage' },
+}
+
+export const CardRaised: Story = {
+  render: Grid,
+  play: async ({ canvasElement }) => {
+    const card = canvasElement.querySelector<HTMLElement>('[data-slot=song-card]') as HTMLElement
+    // Without a leading slot the layout is the text column alone.
+    await expect(card.querySelector('[data-testid=instrument-tile]')).toBeNull()
+    await expect(card.children).toHaveLength(1)
+    await expect(getComputedStyle(card).boxShadow).not.toBe('none')
+    await expect(parseFloat(getComputedStyle(card).borderTopLeftRadius)).toBeGreaterThan(12)
+  },
 }
 
 export const Dark: Story = { render: Grid, globals: { appearance: 'dark' } }

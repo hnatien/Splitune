@@ -115,3 +115,15 @@ const Gallery = () => (
 export const Dark: Story = { render: Gallery, globals: { appearance: 'dark' } }
 export const Stage: Story = { render: Gallery, globals: { appearance: 'stage' } }
 export const IncreasedContrast: Story = { render: Gallery, globals: { contrast: 'more' } }
+
+/** Fields sit on the raised surface, which in Dark is lighter than the page. */
+export const InputRaisedDark: Story = {
+  render: () => <Email />,
+  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Email' })
+    await expect(getComputedStyle(input).backgroundColor).not.toBe(
+      getComputedStyle(document.body).backgroundColor,
+    )
+  },
+}

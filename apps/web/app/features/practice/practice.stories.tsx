@@ -158,9 +158,8 @@ export const ScreenMayLock: Story = {
     const canvas = await playable(canvasElement)
     await expect(canvas.queryByText(m['practice.screen_tip']())).toBeNull()
     await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
-    await expect(
-      await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 }),
-    ).toBeVisible()
+    const tip = await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 })
+    await waitFor(() => expect(tip).toBeVisible())
     await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
   },
 }
@@ -184,11 +183,10 @@ export const NotSavedOffline: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(
-      await canvas.findByText("This song isn't saved for offline yet.", undefined, {
-        timeout: 10_000,
-      }),
-    ).toBeVisible()
+    const notice = await canvas.findByText("This song isn't saved for offline yet.", undefined, {
+      timeout: 10_000,
+    })
+    await waitFor(() => expect(notice).toBeVisible())
   },
 }
 

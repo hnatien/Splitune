@@ -38,6 +38,12 @@ export const SEMANTIC_ROLES = [
   '--success',
   '--warning',
   '--info',
+  '--surface-raised',
+  '--surface-sunken',
+  '--success-surface',
+  '--warning-surface',
+  '--info-surface',
+  '--destructive-surface',
   '--paper',
   '--ink',
   '--conf-medium',
@@ -89,6 +95,7 @@ export const COMPONENT_TOKENS = [
   '--waveform-peak',
   '--waveform-rms',
   '--waveform-played',
+  '--scrim',
   '--hud-bg',
   '--hud-bg-more',
   '--hud-fg',
@@ -111,7 +118,13 @@ export const TARGET_TOKENS = [
   '--target-practice',
 ] as const
 
-export const MOTION_TOKENS = ['--duration-fast', '--duration-base', '--duration-slow'] as const
+export const MOTION_TOKENS = [
+  '--duration-fast',
+  '--duration-base',
+  '--duration-slow',
+  '--duration-slower',
+  '--stagger',
+] as const
 
 export type TokenName =
   | (typeof SEMANTIC_ROLES)[number]
@@ -183,6 +196,22 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--foreground', '--loop-fill', 4.5],
   ['--waveform-peak', '--card', 3],
   ['--waveform-rms', '--card', 3],
+  // Surfaces and status surfaces (§4.8): text on raised and sunken, status colour on its own tint
+  ['--foreground', '--surface-raised', 4.5],
+  ['--foreground', '--surface-sunken', 4.5],
+  ['--muted-foreground', '--surface-raised', 4.5],
+  ['--muted-foreground', '--surface-sunken', 4.5],
+  ['--primary', '--surface-raised', 4.5],
+  ['--input', '--surface-raised', 3],
+  ['--input', '--surface-sunken', 3],
+  ['--foreground', '--success-surface', 4.5],
+  ['--foreground', '--warning-surface', 4.5],
+  ['--foreground', '--info-surface', 4.5],
+  ['--foreground', '--destructive-surface', 4.5],
+  ['--success', '--success-surface', 4.5],
+  ['--warning', '--warning-surface', 4.5],
+  ['--info', '--info-surface', 4.5],
+  ['--destructive', '--destructive-surface', 4.5],
 ]
 
 /** Stems in mixer order after "Your part"; each has a fixed colour token and a second cue (§4.4). */

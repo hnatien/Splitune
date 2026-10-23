@@ -1,9 +1,10 @@
-import { CheckIcon, CircleXIcon } from 'lucide-react'
+import { CircleXIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CheckDrawIcon } from '@/ui/icons/check-draw'
 import { Spinner } from '@/ui/spinner'
 
 // Per-field save feedback (27 §3.9: no global save button): "Saving…" → "Saved" next to the field,
-// announced politely; a failure stays visible with its reason.
+// announced politely, the tick drawing itself; a failure stays visible with its reason.
 
 type SaveStatusProps = {
   state: 'idle' | 'saving' | 'saved' | 'error'
@@ -28,7 +29,7 @@ function SaveStatus({ state, savingLabel, savedLabel, errorLabel, className }: S
       )}
       {state === 'saved' && (
         <>
-          <CheckIcon aria-hidden className="text-success" />
+          <CheckDrawIcon aria-hidden className="text-success" />
           <span className="text-success">{savedLabel}</span>
         </>
       )}

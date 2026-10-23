@@ -1,12 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { LibraryIcon, RepeatIcon } from 'lucide-react'
+import {
+  CircleCheckIcon,
+  InfoIcon,
+  LibraryIcon,
+  OctagonXIcon,
+  RepeatIcon,
+  TriangleAlertIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
 import { AllowanceMeter } from './allowance-meter.tsx'
+import { Badge } from './badge.tsx'
 import { Button } from './button.tsx'
 import { EmptyState } from './empty-state.tsx'
 import { COPY } from './fixtures.ts'
 import { PEDAL_HUD_MS, PedalHud } from './pedal-hud.tsx'
+import { Progress, ProgressLabel, ProgressValue } from './progress.tsx'
+import { Skeleton } from './skeleton.tsx'
 import { type Stage, StageList } from './stage-list.tsx'
 import { Banner, InlineError } from './status-message.tsx'
 import { WorkerStatus } from './worker-status.tsx'
@@ -55,6 +65,16 @@ export const HudVisibleStage: Story = {
   },
 }
 
+// What the browser reports for `transparent`, read from a probe element.
+const transparent = () => {
+  const probe = document.createElement('div')
+  probe.className = 'bg-transparent'
+  document.body.append(probe)
+  const { backgroundColor } = getComputedStyle(probe)
+  probe.remove()
+  return backgroundColor
+}
+
 const STAGES: Stage[] = [
   { id: 'decode', label: 'Reading the file', status: 'done', statusText: 'Done' },
   { id: 'beats', label: 'Finding the beat', status: 'done', statusText: 'Done' },
@@ -77,6 +97,36 @@ export const Stages: Story = {
       className="max-w-lg"
     />
   ),
+  play: async ({ canvasElement }) => {
+    // The overall bar is the one progressbar; the running stage's own bar is decorative.
+    await expect(within(canvasElement).getAllByRole('progressbar')).toHaveLength(1)
+    const running = canvasElement.querySelector<HTMLElement>('[data-status=running]')
+    const indicator = running?.querySelector<HTMLElement>('[data-slot=progress-indicator]')
+    await expect(indicator).toHaveAttribute('data-indeterminate')
+    await expect(getComputedStyle(indicator as Element).animationName).toBe(
+      'progress-indeterminate',
+    )
+    const done = canvasElement.querySelectorAll<SVGPathElement>('[data-status=done] svg path')
+    await expect(done).toHaveLength(2)
+    for (const tick of done) {
+      await expect(tick).toHaveAttribute('pathLength', '1')
+      await expect(getComputedStyle(tick).animationName).toBe('check-draw')
+    }
+    await expect(
+      canvasElement.querySelector('[data-status=queued] [data-slot=progress]'),
+    ).toBeNull()
+  },
+}
+export const StagesDark: Story = {
+  render: () => (
+    <StageList
+      stages={STAGES}
+      progress={46}
+      progressLabel="Analysing your song"
+      className="max-w-lg"
+    />
+  ),
+  globals: { appearance: 'dark' },
 }
 export const StagesWithFallback: Story = {
   render: () => (
@@ -114,6 +164,12 @@ export const WorkerOffline: Story = {
       />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const status = within(canvasElement).getByRole('status')
+    // A warning surface, not a muted well with a coloured border.
+    await expect(getComputedStyle(status).backgroundColor).not.toBe(transparent())
+    await expect(getComputedStyle(status).borderTopColor).toBe(transparent())
+  },
 }
 export const WorkerOnline: Story = {
   render: () => <WorkerStatus online text={COPY.workerOnline} />,
@@ -126,6 +182,14 @@ export const Allowance: Story = {
       'aria-valuetext',
       COPY.allowance,
     )
+    const track = canvasElement.querySelector<HTMLElement>('[data-slot=meter-track]') as HTMLElement
+    const sunken = document.createElement('div')
+    sunken.className = 'bg-surface-sunken'
+    document.body.append(sunken)
+    await expect(getComputedStyle(track).backgroundColor).toBe(
+      getComputedStyle(sunken).backgroundColor,
+    )
+    sunken.remove()
   },
 }
 
@@ -192,6 +256,158 @@ export const BannerStates: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole('button', { name: COPY.dismiss }))
     await expect(canvas.queryByText(COPY.offline)).not.toBeInTheDocument()
+  },
+}
+
+const TONE_COPY = {
+  error: 'Something went wrong',
+  warning: 'Check this first',
+  info: 'For your information',
+  success: 'All done',
+} as const
+
+const StatusTones = () => (
+  <div className="flex max-w-xl flex-col gap-3">
+    {(['error', 'warning', 'info', 'success'] as const).map((tone) => (
+      <InlineError
+        key={tone}
+        tone={tone}
+        title={TONE_COPY[tone]}
+        description="What it means for you."
+        actions={<Button variant="outline">{COPY.retry}</Button>}
+      />
+    ))}
+    {(['error', 'warning', 'info', 'success'] as const).map((tone) => (
+      <Banner key={tone} tone={tone} title={`${TONE_COPY[tone]} (banner)`} />
+    ))}
+  </div>
+)
+
+export const StatusTonesLight: Story = {
+  render: StatusTones,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const page = getComputedStyle(document.body).backgroundColor
+    const boxes = canvasElement.querySelectorAll<HTMLElement>(
+      '[data-slot=inline-error], [data-slot=banner]',
+    )
+    await expect(boxes).toHaveLength(8)
+    for (const box of boxes) {
+      const style = getComputedStyle(box)
+      // A tinted surface and an icon carry the tone; the hairline border waits for increased contrast.
+      await expect(style.backgroundColor).not.toBe(page)
+      await expect(style.backgroundColor).not.toBe(transparent())
+      await expect(style.borderTopColor).toBe(transparent())
+      await expect(box.querySelector('svg')).not.toBeNull()
+    }
+    await expect(
+      canvas.getByText(TONE_COPY.error, { selector: 'p' }).closest('[role=alert]'),
+    ).not.toBeNull()
+    await expect(canvas.getAllByRole('status').length).toBeGreaterThanOrEqual(6)
+    const banner = canvasElement.querySelector<HTMLElement>('[data-slot=banner]') as HTMLElement
+    await expect(getComputedStyle(banner).animationName).toBe('rise-in')
+  },
+}
+export const StatusTonesDark: Story = { render: StatusTones, globals: { appearance: 'dark' } }
+export const StatusTonesStage: Story = { render: StatusTones, globals: { appearance: 'stage' } }
+export const StatusTonesIncreasedContrast: Story = {
+  render: StatusTones,
+  globals: { contrast: 'more' },
+  play: async ({ canvasElement }) => {
+    const boxes = canvasElement.querySelectorAll<HTMLElement>(
+      '[data-slot=inline-error], [data-slot=banner]',
+    )
+    for (const box of boxes) {
+      await expect(getComputedStyle(box).borderTopColor).not.toBe(transparent())
+      await expect(getComputedStyle(box).borderTopWidth).toBe('1px')
+    }
+  },
+}
+
+const StatusBadges = () => (
+  <div className="flex flex-wrap gap-2">
+    <Badge variant="success">
+      <CircleCheckIcon aria-hidden />
+      Ready
+    </Badge>
+    <Badge variant="warning">
+      <TriangleAlertIcon aria-hidden />
+      Rough tab
+    </Badge>
+    <Badge variant="info">
+      <InfoIcon aria-hidden />
+      Analysing
+    </Badge>
+    <Badge variant="destructive">
+      <OctagonXIcon aria-hidden />
+      Failed
+    </Badge>
+  </div>
+)
+
+export const StatusBadgeStates: Story = {
+  render: StatusBadges,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    for (const name of ['Ready', 'Rough tab', 'Analysing', 'Failed']) {
+      const badge = canvas.getByText(name)
+      await expect(getComputedStyle(badge).backgroundColor).not.toBe(
+        getComputedStyle(document.body).backgroundColor,
+      )
+      await expect(getComputedStyle(badge).borderTopWidth).toBe('1px')
+    }
+  },
+}
+export const StatusBadgesDark: Story = { render: StatusBadges, globals: { appearance: 'dark' } }
+export const StatusBadgesStage: Story = { render: StatusBadges, globals: { appearance: 'stage' } }
+
+const IndeterminateProgress = () => (
+  <Progress value={null} className="max-w-md">
+    <ProgressLabel>Waiting for your Mac</ProgressLabel>
+    <ProgressValue>{() => 'No estimate yet'}</ProgressValue>
+  </Progress>
+)
+
+export const ProgressIndeterminate: Story = {
+  render: IndeterminateProgress,
+  play: async ({ canvasElement }) => {
+    const bar = within(canvasElement).getByRole('progressbar')
+    await expect(bar).toHaveAttribute('data-indeterminate')
+    const indicator = canvasElement.querySelector<HTMLElement>('[data-slot=progress-indicator]')
+    const track = canvasElement.querySelector<HTMLElement>('[data-slot=progress-track]')
+    await expect(indicator).toHaveAttribute('data-indeterminate')
+    await expect(getComputedStyle(indicator as Element).animationName).toBe(
+      'progress-indeterminate',
+    )
+    const ratio = (indicator as HTMLElement).offsetWidth / (track as HTMLElement).clientWidth
+    await expect(ratio).toBeGreaterThan(0.39)
+    await expect(ratio).toBeLessThan(0.41)
+  },
+}
+export const ProgressIndeterminateReducedMotion: Story = {
+  render: IndeterminateProgress,
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    const indicator = canvasElement.querySelector<HTMLElement>('[data-slot=progress-indicator]')
+    await expect(getComputedStyle(indicator as Element).animationDuration).toBe('0s')
+  },
+}
+export const ProgressIndeterminateStage: Story = {
+  render: IndeterminateProgress,
+  globals: { appearance: 'stage' },
+}
+
+export const SkeletonShimmer: Story = {
+  render: () => (
+    <div className="flex max-w-md flex-col gap-3" aria-busy="true">
+      <Skeleton className="h-6 w-2/3" />
+      <Skeleton className="h-4 w-full" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const skeleton = canvasElement.querySelector('[data-slot=skeleton]') as Element
+    await expect(getComputedStyle(skeleton).animationName).not.toBe('none')
+    await expect(getComputedStyle(skeleton).backgroundImage).toContain('linear-gradient')
   },
 }
 

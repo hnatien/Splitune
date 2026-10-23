@@ -28,7 +28,7 @@ export function FocusShell({
       className={fill ? 'flex h-dvh flex-col overflow-hidden' : 'flex min-h-dvh flex-col'}
     >
       <SkipLink />
-      <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)]">
+      <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)] [view-transition-name:app-header]">
         <div className="flex min-h-14 items-center gap-3 px-4 in-data-[appearance=stage]:min-h-12">
           <Link
             to={exit ? '/' : '/library'}

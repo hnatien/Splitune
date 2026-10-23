@@ -13,10 +13,13 @@ import Color from 'colorjs.io'
 import {
   AudioWaveformIcon,
   CheckIcon,
+  CircleCheckIcon,
+  CircleXIcon,
   DrumIcon,
   GaugeIcon,
   GuitarIcon,
   HeadphonesIcon,
+  InfoIcon,
   KeyboardIcon,
   MetronomeIcon,
   MicIcon,
@@ -29,6 +32,7 @@ import {
   SkipBackIcon,
   SlidersVerticalIcon,
   TimerResetIcon,
+  TriangleAlertIcon,
   XIcon,
 } from 'lucide-react'
 import { useLayoutEffect, useState } from 'react'
@@ -44,8 +48,8 @@ const meta = { title: 'Foundations/Overview', parameters: { layout: 'padded' } }
 export default meta
 type Story = StoryObj<typeof meta>
 
-function ratio(fg: TokenName, bg: TokenName) {
-  return new Color(readColor(fg)).contrast(new Color(readColor(bg)), 'WCAG21')
+function ratio(fg: TokenName, bg: TokenName, probe: Element) {
+  return new Color(readColor(fg, probe)).contrast(new Color(readColor(bg, probe)), 'WCAG21')
 }
 
 /** Reads a value from the live cascade and re-reads it when <html> data-* attributes change. */
@@ -70,8 +74,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-const readContrast = () =>
-  CONTRAST_PAIRS.map(([fg, bg, min]) => ({ fg, bg, min, value: ratio(fg, bg) }))
+/**
+ * readColor attaches a probe to the element it is given. On <html> that restyles the whole page
+ * for every read (132 per pass; WebKit takes over a second), so the pairs are read from an empty
+ * element, which inherits the same tokens.
+ */
+const readContrast = () => {
+  const probe = document.body.appendChild(document.createElement('div'))
+  try {
+    return CONTRAST_PAIRS.map(([fg, bg, min]) => ({ fg, bg, min, value: ratio(fg, bg, probe) }))
+  } finally {
+    probe.remove()
+  }
+}
 /** Custom properties hold unresolved calc(); a probe element gives the computed pixel size. */
 const readReadingSizes = () =>
   READING_TOKENS.map((token) => {
@@ -151,7 +166,18 @@ function ContrastTable() {
   )
 }
 
-const SURFACES: TokenName[] = ['--background', '--card', '--muted', '--accent']
+const SURFACES: TokenName[] = [
+  '--background',
+  '--card',
+  '--muted',
+  '--accent',
+  '--surface-raised',
+  '--surface-sunken',
+  '--success-surface',
+  '--warning-surface',
+  '--info-surface',
+  '--destructive-surface',
+]
 const STEM_SWATCHES = Object.entries(STEMS)
 
 function Colours() {
@@ -217,15 +243,18 @@ const TYPE_STEPS = [
   ['text-base', 'Body · 16/24', 'Import a song you want to learn.'],
   ['text-lg', 'Card title · 18/28 · 500', 'Wish You Were Here'],
   ['text-xl', 'Section · 20/28 · 600', 'Display & practice'],
-  ['text-2xl', 'Page title · 24/32 · 600', 'Library'],
+  ['text-2xl', 'Subsection · 24/32 · 600', 'Library'],
+  ['text-3xl', 'Page title · 30/36 · 650', 'Your library'],
   ['text-4xl', 'Marketing · 36/40 · 650', 'Practise the part you love'],
+  ['text-5xl', 'Showcase · 48/1.1 · 700', 'Slow it down'],
+  ['text-display', 'Home headline · 40–68 fluid · 700', 'Learn the part you love'],
 ] as const
 
 function Typography() {
   return (
     <div className="flex flex-col gap-10">
       <Section title="Browse scale">
-        <dl className="grid grid-cols-[12rem_1fr] items-baseline gap-x-6 gap-y-3">
+        <dl className="grid grid-cols-[14rem_1fr] items-baseline gap-x-6 gap-y-3">
           {TYPE_STEPS.map(([step, use, sample]) => (
             <div key={step} className="contents">
               <dt className="text-sm text-muted-foreground">
@@ -421,6 +450,147 @@ export const TargetSizes: Story = {
   },
 }
 
+const STATUS_SURFACES = [
+  ['success', 'bg-success-surface', 'text-success', CircleCheckIcon, 'Saved. Your loop is kept.'],
+  ['warning', 'bg-warning-surface', 'text-warning', TriangleAlertIcon, 'Stems expire in 2 days.'],
+  ['info', 'bg-info-surface', 'text-info', InfoIcon, 'Analysis takes about a minute.'],
+  ['destructive', 'bg-destructive-surface', 'text-destructive', CircleXIcon, 'Upload failed.'],
+] as const
+
+const ELEVATIONS = [
+  ['shadow-1', 'Cards at rest'],
+  ['shadow-2', 'Popovers, menus'],
+  ['shadow-3', 'Dialogs, sheets'],
+] as const
+
+function Surfaces() {
+  return (
+    <div className="flex flex-col gap-10">
+      <Section title="Raised and sunken">
+        <div className="flex flex-wrap gap-4 rounded-2xl bg-background p-6">
+          <div className="flex w-64 flex-col gap-3 rounded-2xl bg-surface-raised p-4 shadow-1">
+            <span className="text-lg">Raised panel</span>
+            <span className="text-sm text-muted-foreground">
+              Cards, panels and inputs sit one step above the page.
+            </span>
+            <span className="inline-flex w-fit gap-1 rounded-full bg-surface-sunken p-1">
+              <span className="rounded-full border border-transparent px-3 py-1 text-sm text-muted-foreground">
+                Slower
+              </span>
+              <span className="rounded-full border border-primary bg-surface-raised px-3 py-1 text-sm font-semibold shadow-1">
+                Original
+              </span>
+            </span>
+          </div>
+          <div className="flex w-64 flex-col gap-2 rounded-2xl bg-surface-sunken p-4">
+            <span className="text-lg">Sunken well</span>
+            <span className="text-sm text-muted-foreground">
+              Trays, tracks and filter bars read as a recess.
+            </span>
+          </div>
+        </div>
+      </Section>
+      <Section title="Status surfaces">
+        <ul className="m-0 flex max-w-xl list-none flex-col gap-2 p-0">
+          {STATUS_SURFACES.map(([tone, fill, ink, Icon, text]) => (
+            <li
+              key={tone}
+              data-status={tone}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${fill}`}
+            >
+              <Icon aria-hidden className={`size-5 shrink-0 ${ink}`} />
+              <span className={`font-semibold ${ink}`}>{tone}</span>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="Elevation">
+        <div className="flex flex-wrap gap-6 rounded-2xl bg-background p-6">
+          {ELEVATIONS.map(([shadow, use]) => (
+            <figure
+              key={shadow}
+              data-elevation={shadow}
+              className={`m-0 flex h-28 w-48 flex-col justify-end gap-1 rounded-2xl border border-transparent bg-surface-raised p-4 contrast-more:border-border ${shadow}`}
+            >
+              <code className="text-sm">{shadow}</code>
+              <figcaption className="text-xs text-muted-foreground">{use}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </Section>
+      <Section title="Scrim">
+        <div className="relative h-24 w-72 overflow-hidden rounded-xl bg-paper p-3 text-ink">
+          Score under a dialog scrim
+          <span data-testid="scrim" className="absolute inset-y-0 right-0 w-1/2 bg-scrim" />
+        </div>
+      </Section>
+    </div>
+  )
+}
+
+export const SurfacesLight: Story = {
+  render: Surfaces,
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('[data-status]').length).toBe(4)
+    const shadows = [...canvasElement.querySelectorAll<HTMLElement>('[data-elevation]')].map(
+      (element) => getComputedStyle(element).boxShadow,
+    )
+    await expect(new Set(shadows).size).toBe(3)
+    for (const shadow of shadows) await expect(shadow).not.toBe('none')
+  },
+}
+export const SurfacesDark: Story = { ...SurfacesLight, globals: { appearance: 'dark' } }
+export const SurfacesStage: Story = { ...SurfacesLight, globals: { appearance: 'stage' } }
+export const SurfacesIncreasedContrast: Story = {
+  ...SurfacesLight,
+  globals: { contrast: 'more' },
+}
+
+const RADII = [
+  ['rounded-sm', '6 px'],
+  ['rounded-md', '8 px · tooltips'],
+  ['rounded-lg', '10 px · controls'],
+  ['rounded-xl', '14 px · popovers'],
+  ['rounded-2xl', '18 px · cards, dialogs'],
+  ['rounded-3xl', '24 px · hero panels'],
+  ['rounded-full', 'chips, pills'],
+] as const
+
+function Shape() {
+  return (
+    <Section title="Radius scale">
+      <div className="flex flex-wrap items-end gap-6">
+        {RADII.map(([radius, use]) => (
+          <figure key={radius} className="m-0 flex flex-col items-center gap-2">
+            <span
+              data-radius={radius}
+              className={`block h-16 w-24 border border-input bg-surface-raised ${radius}`}
+            />
+            <figcaption className="text-center text-xs">
+              <code>{radius}</code>
+              <br />
+              {use}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </Section>
+  )
+}
+
+export const RadiusScale: Story = {
+  render: Shape,
+  play: async ({ canvasElement }) => {
+    const radius = (name: string) =>
+      getComputedStyle(canvasElement.querySelector(`[data-radius="${name}"]`) as Element)
+        .borderTopLeftRadius
+    await expect(radius('rounded-xl')).toBe('14px')
+    await expect(radius('rounded-2xl')).toBe('18px')
+    await expect(radius('rounded-3xl')).toBe('24px')
+  },
+}
+
 function Motion() {
   const [moved, setMoved] = useState(false)
   const durations = useLive(readDurations) ?? []
@@ -449,7 +619,71 @@ function Motion() {
           />
         </span>
       </div>
+      <MotionSamples />
     </Section>
+  )
+}
+
+/** Keyed on `run` so "Replay" restarts every one-shot animation. */
+function MotionSamples() {
+  const [run, setRun] = useState(0)
+  return (
+    <div className="flex flex-col gap-4">
+      <Button variant="outline" className="w-fit" onClick={() => setRun(run + 1)}>
+        Replay
+      </Button>
+      <div key={run} className="flex flex-wrap items-start gap-6">
+        <div
+          data-sample="rise-in"
+          className="w-40 animate-rise-in rounded-2xl bg-surface-raised p-4 shadow-1"
+        >
+          <code className="text-xs">animate-rise-in</code>
+        </div>
+        <div
+          data-sample="pop-in"
+          className="w-40 animate-pop-in rounded-2xl bg-surface-raised p-4 shadow-1"
+        >
+          <code className="text-xs">animate-pop-in</code>
+        </div>
+        <div className="flex w-40 items-center gap-3 rounded-2xl bg-surface-raised p-4 shadow-1">
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            className="size-8 shrink-0 fill-none stroke-success stroke-2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path
+              data-sample="check-draw"
+              d="m8 12.5 3 3 5-6"
+              pathLength={1}
+              strokeDasharray={1}
+              className="animate-check-draw"
+            />
+          </svg>
+          <code className="text-xs">animate-check-draw</code>
+        </div>
+        <ul className="stagger-children m-0 flex w-48 list-none flex-col gap-2 p-0">
+          {['Position', 'Loop and speed', 'Helpers'].map((label, index) => (
+            <li
+              key={label}
+              data-sample="stagger"
+              className="animate-rise-in rounded-xl bg-surface-raised px-3 py-2 text-sm shadow-1"
+              style={{ '--i': index } as React.CSSProperties}
+            >
+              {label}
+            </li>
+          ))}
+        </ul>
+        <div className="flex w-64 flex-col gap-2">
+          <span className="relative h-2 overflow-hidden rounded-full bg-surface-sunken">
+            <span className="absolute inset-y-0 left-0 w-2/5 animate-progress-indeterminate rounded-full bg-primary" />
+          </span>
+          <code className="text-xs">animate-progress-indeterminate</code>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -458,11 +692,25 @@ export const MotionReduced: Story = {
   render: Motion,
   globals: { motion: 'reduce' },
   play: async ({ canvasElement }) => {
-    await waitFor(() =>
-      expect(canvasElement.querySelector('[data-duration="--duration-slow"]')).toHaveTextContent(
-        '0ms',
-      ),
+    for (const token of MOTION_TOKENS) {
+      await waitFor(() =>
+        expect(canvasElement.querySelector(`[data-duration="${token}"]`)).toHaveTextContent('0ms'),
+      )
+    }
+    // Zero durations show the final frame, and the stagger no longer delays any sibling.
+    for (const sample of canvasElement.querySelectorAll<HTMLElement>('[data-sample="stagger"]')) {
+      await expect(getComputedStyle(sample).animationDelay).toBe('0s')
+      await expect(getComputedStyle(sample).opacity).toBe('1')
+    }
+  },
+}
+export const MotionStagger: Story = {
+  render: Motion,
+  play: async ({ canvasElement }) => {
+    const delays = [...canvasElement.querySelectorAll<HTMLElement>('[data-sample="stagger"]')].map(
+      (sample) => getComputedStyle(sample).animationDelay,
     )
+    await expect(delays).toEqual(['0s', '0.04s', '0.08s'])
   },
 }
 

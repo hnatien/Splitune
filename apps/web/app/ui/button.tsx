@@ -6,7 +6,7 @@ import { Spinner } from '@/ui/spinner'
 
 // Doc 26 §12.1. Focus uses the global 2 px outline; disabled keeps a ≥3:1 boundary (no opacity fade).
 const buttonStyles = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-colors select-none active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:border-input disabled:bg-muted disabled:text-muted-foreground aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "group/button relative inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-[color,background-color,border-color,transform] duration-(--duration-fast) ease-spring select-none active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:border-input disabled:bg-muted disabled:text-muted-foreground aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {

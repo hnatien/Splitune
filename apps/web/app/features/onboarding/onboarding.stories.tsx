@@ -156,7 +156,8 @@ export const Guide: Story = {
     )
     await waitFor(() => expect(play).toBeEnabled())
     await userEvent.click(play)
-    await expect(await body.findByText(/We've looped bars 3–6 at 70\s%/)).toBeVisible()
+    const tip = await body.findByText(/We've looped bars 3–6 at 70\s%/)
+    await waitFor(() => expect(tip).toBeVisible())
     await expect(body.getByRole('button', { name: 'Pause' })).toBeVisible()
     await userEvent.click(body.getByRole('button', { name: 'Pause' }))
   },
@@ -215,8 +216,15 @@ export const SaveFailed: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
     await expect(
-      await canvas.findByText("We couldn't save your progress. It's still on this device."),
+      await canvas.findByText(
+        "We couldn't save your progress. It's still on this device.",
+        undefined,
+        {
+          timeout: 10_000,
+        },
+      ),
     ).toBeVisible()
   },
 }

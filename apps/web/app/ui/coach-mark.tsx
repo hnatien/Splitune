@@ -23,7 +23,7 @@ function CoachMark({
       data-slot="coach-mark"
       role="status"
       className={cn(
-        'flex max-w-md items-start gap-3 rounded-xl border border-primary bg-popover p-4 text-popover-foreground shadow-2',
+        'flex max-w-md animate-pop-in items-start gap-3 rounded-2xl border border-primary bg-popover p-4 text-popover-foreground shadow-3',
         className,
       )}
     >

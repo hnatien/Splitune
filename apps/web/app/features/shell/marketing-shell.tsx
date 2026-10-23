@@ -1,14 +1,22 @@
 import { Link } from '@tanstack/react-router'
+import { MenuIcon } from 'lucide-react'
 import type * as React from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Wordmark } from '@/ui/brand'
-import { buttonVariants } from '@/ui/button'
+import { Button, buttonVariants } from '@/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/dropdown-menu'
 import { SystemBanners } from '../system/system-banners'
 import { SkipLink } from './skip-link'
 
-// Marketing shell (27 §1): 64 px bar with How it works · Pricing · Sign in · Try it free, legal
-// links in the footer; no app chrome. Signed-in visitors get "Library" instead of Sign in.
+// Marketing shell (27 §1): 64 px bar with How it works · Pricing · Sign in · Try an example song,
+// legal links in the footer; no app chrome. Phones reach How it works and Pricing through the Menu
+// button. Signed-in visitors get "Library" instead of Sign in.
 export function MarketingShell({
   signedIn,
   children,
@@ -20,7 +28,7 @@ export function MarketingShell({
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
       <SystemBanners />
-      <header className="border-b border-border">
+      <header className="border-b border-border bg-background [view-transition-name:app-header]">
         <div className="mx-auto flex min-h-16 max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-6 lg:px-8">
           <Link
             to="/"
@@ -33,6 +41,20 @@ export function MarketingShell({
             aria-label={m['nav.main']()}
             className="flex flex-1 flex-wrap items-center justify-end gap-1"
           >
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="ghost" className="sm:hidden" />}>
+                <MenuIcon aria-hidden />
+                {m['nav.menu']()}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem render={<Link to="/how-it-works" />}>
+                  {m['nav.how_it_works']()}
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link to="/pricing" />}>
+                  {m['nav.pricing']()}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link
               to="/how-it-works"
               className={cn(buttonVariants({ variant: 'ghost' }), 'max-sm:hidden')}
@@ -55,7 +77,7 @@ export function MarketingShell({
                   {m['nav.sign_in']()}
                 </Link>
                 <Link to="/start" className={buttonVariants({ variant: 'primary' })}>
-                  {m['nav.try_free']()}
+                  {m['home.cta_example']()}
                 </Link>
               </>
             )}

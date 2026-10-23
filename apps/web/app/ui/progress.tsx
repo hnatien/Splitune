@@ -1,7 +1,10 @@
 import { Progress as ProgressPrimitive } from '@base-ui/react/progress'
 import { cn } from '@/lib/utils'
 
-/** Determinate progress (uploads, analysis); label and value text sit above the bar. */
+/**
+ * Progress (uploads, analysis); label and value text sit above the bar. `value={null}` is
+ * indeterminate: a sliding bar for waiting with no estimate.
+ */
 function Progress({ className, children, value, ...props }: ProgressPrimitive.Root.Props) {
   return (
     <ProgressPrimitive.Root
@@ -22,7 +25,7 @@ function ProgressTrack({ className, ...props }: ProgressPrimitive.Track.Props) {
   return (
     <ProgressPrimitive.Track
       className={cn(
-        'relative flex h-2 w-full items-center overflow-hidden rounded-full border border-input bg-muted',
+        'relative flex h-2 w-full items-center overflow-hidden rounded-full border border-input bg-surface-sunken',
         className,
       )}
       data-slot="progress-track"
@@ -35,7 +38,10 @@ function ProgressIndicator({ className, ...props }: ProgressPrimitive.Indicator.
   return (
     <ProgressPrimitive.Indicator
       data-slot="progress-indicator"
-      className={cn('h-full bg-primary transition-[width] duration-(--duration-base)', className)}
+      className={cn(
+        'h-full bg-primary transition-[width] duration-(--duration-base) data-indeterminate:w-2/5 data-indeterminate:animate-progress-indeterminate',
+        className,
+      )}
       {...props}
     />
   )

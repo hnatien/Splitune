@@ -4,26 +4,38 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
 // Doc 26 §12.2, 27 §5.4: status icon + what happened + what it means (optional) + what you can do.
-// Status colour is text, icon and a hairline border on a muted well — never a saturated fill.
+// Status colour is the icon and a tinted surface (a hairline border returns under increased
+// contrast) — never a saturated fill, and the title carries the meaning.
 
 export type StatusTone = 'error' | 'warning' | 'info' | 'success'
 
-const TONES: Record<StatusTone, { icon: React.ReactNode; text: string; border: string }> = {
+const TONES: Record<
+  StatusTone,
+  { icon: React.ReactNode; text: string; surface: string; border: string }
+> = {
   error: {
     icon: <CircleXIcon aria-hidden />,
     text: 'text-destructive',
-    border: 'border-destructive',
+    surface: 'bg-destructive-surface',
+    border: 'contrast-more:border-destructive',
   },
   warning: {
     icon: <TriangleAlertIcon aria-hidden />,
     text: 'text-warning',
-    border: 'border-warning',
+    surface: 'bg-warning-surface',
+    border: 'contrast-more:border-warning',
   },
-  info: { icon: <InfoIcon aria-hidden />, text: 'text-info', border: 'border-info' },
+  info: {
+    icon: <InfoIcon aria-hidden />,
+    text: 'text-info',
+    surface: 'bg-info-surface',
+    border: 'contrast-more:border-info',
+  },
   success: {
     icon: <CircleCheckIcon aria-hidden />,
     text: 'text-success',
-    border: 'border-success',
+    surface: 'bg-success-surface',
+    border: 'contrast-more:border-success',
   },
 }
 
@@ -51,12 +63,17 @@ function InlineError({
     <div
       data-slot="inline-error"
       role={tone === 'error' ? 'alert' : 'status'}
-      className={cn('flex gap-3 rounded-lg border bg-muted p-4', style.border, className)}
+      className={cn(
+        'flex gap-3 rounded-xl border border-transparent p-4',
+        style.surface,
+        style.border,
+        className,
+      )}
     >
       <span className={cn('mt-0.5 shrink-0 [&_svg]:size-5', style.text)}>{style.icon}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="text-base font-medium text-foreground">{title}</p>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        {description && <p className="text-sm text-foreground">{description}</p>}
         {actions && <div className="mt-2 flex flex-wrap gap-3">{actions}</div>}
       </div>
     </div>
@@ -76,7 +93,8 @@ function Banner({ tone, title, description, actions, dismiss, className }: Banne
       data-slot="banner"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-muted px-4 py-3 sm:flex-nowrap',
+        'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent px-4 py-3 sm:flex-nowrap',
+        style.surface,
         style.border,
         className,
       )}
@@ -84,7 +102,7 @@ function Banner({ tone, title, description, actions, dismiss, className }: Banne
       <span className={cn('shrink-0 [&_svg]:size-5', style.text)}>{style.icon}</span>
       <p className="min-w-0 flex-1 basis-3xs text-sm text-foreground">
         <span className="font-medium">{title}</span>
-        {description && <span className="text-muted-foreground"> {description}</span>}
+        {description && <span> {description}</span>}
       </p>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       {dismiss && (

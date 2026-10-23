@@ -135,8 +135,13 @@ export const PrivacyExportFailed: Story = {
 export const PrivacyExportUnavailable: Story = {
   render: privacy(null),
   play: async ({ canvasElement }) => {
+    // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
     await expect(
-      await within(canvasElement).findByText("We couldn't check your data download. Try again."),
+      await within(canvasElement).findByText(
+        "We couldn't check your data download. Try again.",
+        undefined,
+        { timeout: 10_000 },
+      ),
     ).toBeVisible()
   },
 }

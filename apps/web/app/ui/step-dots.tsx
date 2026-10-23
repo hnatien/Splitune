@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
-// Onboarding progress (27 §3.3): one dot per step plus the "Step 2 of 5" text, so progress never
-// relies on the dots (colour and shape) alone.
+// Onboarding progress (27 §3.3): one dot per step (the current one a 24 px pill) plus the
+// "Step 2 of 5" text, so progress never relies on the dots (colour and shape) alone.
 
 function StepDots({
   step,
@@ -29,7 +29,7 @@ function StepDots({
               key={n}
               aria-current={n === step ? 'step' : undefined}
               className={cn(
-                'size-2.5 rounded-full border border-primary',
+                'size-2.5 rounded-full border border-primary transition-[width] duration-(--duration-base)',
                 n < step && 'bg-primary',
                 n === step && 'w-6 bg-primary',
               )}

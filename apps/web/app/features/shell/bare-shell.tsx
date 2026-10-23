@@ -9,7 +9,7 @@ import { SkipLink } from './skip-link'
 // column of at most 480 px.
 export function BareShell({ children }: { children: React.ReactNode }) {
   return (
-    <div data-density="browse" className="flex min-h-dvh flex-col">
+    <div data-density="browse" className="flex min-h-dvh flex-col bg-surface-sunken">
       <SkipLink />
       <SystemBanners />
       <header className="flex min-h-16 items-center justify-center px-4">

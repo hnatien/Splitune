@@ -114,6 +114,23 @@
   --blue-stage: oklch(0.72 0.08 239);
 
   /*
+   * Status tints (§4.8): the fill behind status messages and chips, at each status hue. Literal
+   * values so no ramp is re-valued; Light uses the highest L that stays inside sRGB at chroma 0.03.
+   */
+  --red-tint-light: oklch(0.94 0.03 27);
+  --red-tint-dark: oklch(0.3 0.05 27);
+  --red-tint-stage: oklch(0.24 0.04 27);
+  --green-tint-light: oklch(0.96 0.03 155);
+  --green-tint-dark: oklch(0.3 0.05 155);
+  --green-tint-stage: oklch(0.24 0.04 155);
+  --amber-tint-light: oklch(0.95 0.03 65);
+  --amber-tint-dark: oklch(0.3 0.05 75);
+  --amber-tint-stage: oklch(0.24 0.04 75);
+  --blue-tint-light: oklch(0.94 0.03 240);
+  --blue-tint-dark: oklch(0.3 0.05 240.5);
+  --blue-tint-stage: oklch(0.24 0.04 239);
+
+  /*
    * Categorical bases for stems (§4.4): Okabe-Ito hues. Dark keeps the original Okabe-Ito
    * guitar/bass/drums values; the rest were moved the smallest distance that keeps every pair
    * ≥12 ΔE2000 under simulated protanopia, deuteranopia and tritanopia (palette.test.ts).

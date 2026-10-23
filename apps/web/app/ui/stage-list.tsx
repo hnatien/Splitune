@@ -1,18 +1,21 @@
-import { CircleCheckIcon, CircleDashedIcon, CircleXIcon, TriangleAlertIcon } from 'lucide-react'
+import { CircleDashedIcon, CircleXIcon, TriangleAlertIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
+import { CircleCheckDrawIcon } from '@/ui/icons/check-draw'
 import { Progress, ProgressLabel, ProgressValue } from '@/ui/progress'
 import { Spinner } from '@/ui/spinner'
 
 // Doc 26 §12.2, §13: named stages with status icon + text, an honest ETA on the running stage and a
-// determinate overall bar. The list is not a live region; callers announce stage changes once.
+// determinate overall bar. The running stage gets an indeterminate bar of its own (decorative: the
+// ETA in words is the information) and a finished stage's tick draws itself. The list is not a live
+// region; callers announce stage changes once.
 
 export type StageStatus = 'queued' | 'running' | 'done' | 'fallback' | 'failed'
 
 const STATUS: Record<StageStatus, { icon: React.ReactNode; tone: string }> = {
   queued: { icon: <CircleDashedIcon aria-hidden />, tone: 'text-muted-foreground' },
   running: { icon: <Spinner />, tone: 'text-primary' },
-  done: { icon: <CircleCheckIcon aria-hidden />, tone: 'text-success' },
+  done: { icon: <CircleCheckDrawIcon aria-hidden />, tone: 'text-success' },
   fallback: { icon: <TriangleAlertIcon aria-hidden />, tone: 'text-warning' },
   failed: { icon: <CircleXIcon aria-hidden />, tone: 'text-destructive' },
 }
@@ -46,18 +49,25 @@ function StageList({ stages, progress, progressLabel, className }: StageListProp
           <li
             key={stage.id}
             data-status={stage.status}
-            className="flex min-h-target items-center gap-3 text-base"
+            className="flex min-h-target flex-col justify-center gap-1"
           >
-            <span
-              className={cn(
-                'grid shrink-0 place-items-center [&_svg]:size-5',
-                STATUS[stage.status].tone,
-              )}
-            >
-              {STATUS[stage.status].icon}
-            </span>
-            <span className="flex-1 font-medium">{stage.label}</span>
-            <span className="text-sm text-muted-foreground tabular-nums">{stage.statusText}</span>
+            <div className="flex items-center gap-3 text-base">
+              <span
+                className={cn(
+                  'grid shrink-0 place-items-center [&_svg]:size-5',
+                  STATUS[stage.status].tone,
+                )}
+              >
+                {STATUS[stage.status].icon}
+              </span>
+              <span className="flex-1 font-medium">{stage.label}</span>
+              <span className="text-sm text-muted-foreground tabular-nums">{stage.statusText}</span>
+            </div>
+            {stage.status === 'running' && (
+              <div aria-hidden className="pl-8">
+                <Progress value={null} />
+              </div>
+            )}
           </li>
         ))}
       </ol>

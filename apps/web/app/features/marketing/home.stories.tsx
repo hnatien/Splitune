@@ -27,7 +27,9 @@ export const SignedOut: Story = {
         name: 'Learn the songs you love, one loop at a time.',
       }),
     ).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Try it free' })).toBeVisible()
+    await expect(
+      within(canvas.getByRole('banner')).getByRole('link', { name: 'Try an example song' }),
+    ).toBeVisible()
   },
 }
 export const SignedIn: Story = { render: home(true) }

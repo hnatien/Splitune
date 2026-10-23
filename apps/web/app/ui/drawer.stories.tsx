@@ -43,3 +43,19 @@ export const Bottom: Story = { render: () => <MixerDrawer side="down" />, play: 
 export const Side: Story = { render: () => <MixerDrawer side="right" />, play: open }
 export const SideDark: Story = { ...Side, globals: { appearance: 'dark' } }
 export const BottomStage: Story = { ...Bottom, globals: { appearance: 'stage' } }
+
+/** Bottom sheet: 3xl top corners and a 36 × 4 px grab handle. */
+export const BottomSheetShape: Story = {
+  render: () => <MixerDrawer side="down" />,
+  play: async (context) => {
+    await open(context)
+    const popup = document.querySelector<HTMLElement>('[data-slot=drawer-popup]')
+    const handle = document.querySelector<HTMLElement>('[data-slot=drawer-swipe-handle]')
+    await expect(
+      Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius),
+    ).toBeGreaterThan(20)
+    const pill = getComputedStyle(handle as Element, '::after')
+    await expect(pill.width).toBe('36px')
+    await expect(pill.height).toBe('4px')
+  },
+}

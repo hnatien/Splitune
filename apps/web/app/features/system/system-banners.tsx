@@ -39,7 +39,7 @@ export function SystemBanners({ installHint = false }: { installHint?: boolean }
   }
 
   return (
-    <>
+    <div className="mx-auto flex w-full max-w-page flex-col gap-2 px-4 pt-3 empty:hidden md:px-6 lg:px-8">
       {!online && <Banner tone="warning" title={m['system.offline']()} />}
       {updateReady && !playing && (
         <Banner
@@ -79,7 +79,7 @@ export function SystemBanners({ installHint = false }: { installHint?: boolean }
           dismiss={{ label: m['system.dismiss'](), onDismiss: () => setDismissed(true) }}
         />
       )}
-    </>
+    </div>
   )
 }
 

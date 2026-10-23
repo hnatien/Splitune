@@ -4,7 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 // Status badges are text first ("Ready", "Rough tab", "Chords only") with an icon; status colour is
-// only ever text, icon and a hairline border (doc 26 §4.3, §5).
+// text, icon, a hairline border and a tinted surface, never colour alone (doc 26 §4.3, §4.8, §5).
 const badgeVariants = cva(
   'group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-2.5 text-xs font-medium whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3.5',
   {
@@ -13,10 +13,10 @@ const badgeVariants = cva(
         neutral: 'border-border bg-muted text-foreground',
         outline: 'border-input bg-transparent text-foreground',
         primary: 'border-transparent bg-accent text-accent-foreground',
-        success: 'border-success bg-transparent text-success',
-        warning: 'border-warning bg-transparent text-warning',
-        info: 'border-info bg-transparent text-info',
-        destructive: 'border-destructive bg-transparent text-destructive',
+        success: 'border-success bg-success-surface text-success',
+        warning: 'border-warning bg-warning-surface text-warning',
+        info: 'border-info bg-info-surface text-info',
+        destructive: 'border-destructive bg-destructive-surface text-destructive',
       },
     },
     defaultVariants: {

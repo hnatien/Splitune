@@ -13,3 +13,54 @@
 html {
   scroll-padding-top: calc(var(--spacing) * 18 + env(safe-area-inset-top));
 }
+
+/* Phone bottom tab bar (app shell): focused content scrolls clear of it (WCAG 2.4.11) and toasts
+   sit above it (--bottom-bar). The bar is under 4 rem tall; :has is used here only, and engines
+   without it just keep the default. */
+@media (width < 40rem) {
+  html:has([data-slot="bottom-tabs"]) {
+    --bottom-bar: calc(var(--spacing) * 16 + env(safe-area-inset-bottom));
+    scroll-padding-bottom: var(--bottom-bar);
+  }
+}
+
+/* Entrance stagger (26 §10): children set --i and an entrance animation; the cap makes the ninth
+   item and later enter with the eighth. --stagger is 0ms under reduced motion. */
+.stagger-children > * {
+  animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
+}
+
+/* Route transitions (26 §10): a root cross-fade, only where the browser has View Transitions.
+   Each pseudo-element has its own rule: an engine that doesn't know one drops the whole rule. */
+::view-transition-old(root) {
+  animation-duration: var(--duration-slower);
+  animation-timing-function: var(--ease-standard);
+}
+::view-transition-new(root) {
+  animation-duration: var(--duration-slower);
+  animation-timing-function: var(--ease-standard);
+}
+
+/* biome-ignore-start lint/complexity/noImportantStyles: the UA's view-transition animations must lose to this */
+/* Reduced motion (Settings, or the OS without a stored choice): navigation swaps instantly. */
+[data-motion="reduce"]::view-transition-group(*) {
+  animation: none !important;
+}
+[data-motion="reduce"]::view-transition-old(*) {
+  animation: none !important;
+}
+[data-motion="reduce"]::view-transition-new(*) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion])::view-transition-group(*) {
+    animation: none !important;
+  }
+  :root:not([data-motion])::view-transition-old(*) {
+    animation: none !important;
+  }
+  :root:not([data-motion])::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: view-transition reduced motion */

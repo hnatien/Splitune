@@ -28,7 +28,7 @@ function ChoiceCard({
       aria-disabled={unavailable || undefined}
       onClick={unavailable ? undefined : onClick}
       className={cn(
-        'flex min-h-target-practice w-full items-center gap-4 rounded-xl border border-input bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent forced-colors:hover:bg-card aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:hover:border-input aria-disabled:hover:bg-muted [&_svg]:size-8 [&_svg]:shrink-0',
+        'flex min-h-target-practice w-full items-center gap-4 rounded-2xl border border-transparent bg-surface-raised p-4 text-left shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input aria-disabled:cursor-not-allowed aria-disabled:border-input aria-disabled:bg-surface-sunken aria-disabled:shadow-none aria-disabled:hover:shadow-none [&_svg]:size-8 [&_svg]:shrink-0',
         className,
       )}
       {...props}
