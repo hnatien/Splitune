@@ -248,6 +248,33 @@ export const ScreenMayLock: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
     const tip = await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 })
     await waitFor(() => expect(tip).toBeVisible())
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }))
+    await expect(canvas.queryByText(m['practice.screen_tip']())).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
+  },
+}
+
+/** Storage blocked (privacy modes): Close still closes the tip on this page. */
+export const ScreenMayLockNoStorage: Story = {
+  beforeEach: () => {
+    Object.defineProperty(navigator, 'wakeLock', { value: undefined, configurable: true })
+    localStorage.removeItem('splitune.screen-tip')
+    const setItem = Storage.prototype.setItem
+    Storage.prototype.setItem = () => {
+      throw new DOMException('blocked', 'SecurityError')
+    }
+    return () => {
+      Storage.prototype.setItem = setItem
+      Reflect.deleteProperty(navigator, 'wakeLock')
+    }
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+    await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 })
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }))
+    await expect(canvas.queryByText(m['practice.screen_tip']())).toBeNull()
     await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
   },
 }
