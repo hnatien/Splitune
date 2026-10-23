@@ -22,9 +22,9 @@ export interface PracticeUi {
   /** The Loop button or key was used with no loop: the hint on how to pick bars shows. */
   loopHint: boolean
   hud: { message: string | null; sequence: number }
-  /** The header's Tab / Chords choice (piano: Chart / Notes / Staff, its Notes the roll); null is
-   * the layout's default (glance on phone portrait). */
-  view: 'tab' | 'staff' | 'chords' | null
+  /** The header's Tab / Notes / Chords choice (piano: Chart / Notes / Staff, its Notes the roll);
+   * null is the layout's default (glance on phone portrait). */
+  view: 'tab' | 'notes' | 'staff' | 'chords' | null
   /** "Show tab anyway" over a chords-only recommendation. */
   forceTab: boolean
   /** A URL import's video in its floating player (closed by default), and at its larger size. */

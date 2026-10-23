@@ -9,6 +9,7 @@ import {
   shiftDownbeat,
   snapToBar,
   tempoOctave,
+  tickOfPosition,
   tickToTime,
   timeToTick,
 } from '../src/index.ts'
@@ -73,6 +74,22 @@ describe('bar/beat labels', () => {
   it('maps global ticks to bar/beat/tick', () => {
     const grid = createBeatGrid(makeBeats())
     expect(positionOfTick(grid, 5 * PPQ + 240)).toEqual({ bar: 1, beat: 2, tick: 240 })
+  })
+
+  it('maps bar/beat/tick back to global ticks, pickups and extrapolated bars included', () => {
+    const grid = createBeatGrid(makeBeats({ pickup: 1, bars: 2 }))
+    for (const tick of [-3 * PPQ, -PPQ + 120, 0, PPQ + 480, 7 * PPQ + 959, 13 * PPQ, 30 * PPQ]) {
+      expect(tickOfPosition(grid, positionOfTick(grid, tick))).toBe(tick)
+    }
+    expect(tickOfPosition(grid, { bar: 0, beat: 1, tick: 0 })).toBe(PPQ)
+  })
+
+  it('maps positions on a grid whose bars change length', () => {
+    const beats = makeBeats({ bars: 3 })
+    beats.beats = beats.beats.map((b, i) => ({ ...b, is_downbeat: [0, 4, 7].includes(i) }))
+    const grid = createBeatGrid(beats)
+    expect(tickOfPosition(grid, { bar: 1, beat: 3, tick: 10 })).toBe(6 * PPQ + 10)
+    expect(tickOfPosition(grid, { bar: 2, beat: 1, tick: 0 })).toBe(7 * PPQ)
   })
 })
 

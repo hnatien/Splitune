@@ -184,6 +184,26 @@ export function positionOfTick(grid: BeatGrid, tick: number): GridPosition {
   return { bar, beat, tick: tick - i * PPQ }
 }
 
+// The global tick of a bar/beat/tick position (positionOfTick's inverse; a beat past the end of
+// its bar counts on into the next). Labels rise with the beat index, so a binary search finds it.
+export function tickOfPosition(grid: BeatGrid, position: GridPosition): number {
+  const n = grid.times.length
+  const last = beatLabel(grid, n - 1)
+  const longest = Math.max(grid.beatsPerBar, last.beat)
+  let lo = Math.floor(minTick(grid) / PPQ)
+  let hi = n + Math.max(0, position.bar - last.bar + 1) * longest
+  const before = (i: number) => {
+    const { bar, beat } = beatLabel(grid, i)
+    return bar < position.bar || (bar === position.bar && beat < position.beat)
+  }
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (before(mid)) lo = mid + 1
+    else hi = mid
+  }
+  return lo * PPQ + position.tick
+}
+
 // Beat index of the downbeat that starts the bar containing beat i, and that bar's length.
 export function barOfBeat(grid: BeatGrid, i: number): { start: number; length: number } {
   const start = i - (beatLabel(grid, i).beat - 1)

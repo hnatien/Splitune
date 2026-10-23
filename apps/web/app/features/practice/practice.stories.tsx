@@ -11,6 +11,10 @@ import { PracticeLoading } from './practice-loading'
 import { PracticePage } from './practice-page'
 import {
   ALL,
+  ALL_BASS,
+  BASS_LINE,
+  GUITAR_SHIFTS,
+  GUITAR_STRUMS,
   type Kind,
   type Patch,
   PIANO_CHORDS,
@@ -845,5 +849,216 @@ export const Edit: Story = {
     const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
     // Layers fade in (200 ms, 27 §3.7.3).
     await waitFor(() => expect(tab).toBeVisible())
+  },
+}
+
+// Guitar and bass Notes (step 18b): the part on lanes in tab order, moving onto a neck that lights
+// the fingers sounding now. The clock is scripted with → (a bar at a time), so what the neck shows
+// is checked against the bar it should be on.
+const guitarNotes = async (canvasElement: HTMLElement) => {
+  const canvas = await playable(canvasElement)
+  const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 20_000 })
+  await userEvent.click(within(view).getByRole('button', { name: 'Notes' }))
+  // The Notes code loads on demand.
+  const region = await canvas.findByRole('region', { name: 'Notes' }, { timeout: 20_000 })
+  await waitFor(() => expect(region).toBeVisible())
+  const neck = await waitFor(
+    () => {
+      const svg = region.querySelector('[data-slot=fretboard-diagram]')
+      expect(svg).not.toBeNull()
+      return svg as SVGElement
+    },
+    { timeout: 10_000 },
+  )
+  const lanes = region.querySelector('[data-slot=guitar-roll]') as HTMLCanvasElement
+  return { canvas, view, region, neck, lanes }
+}
+
+/** Steps the clock `bars` bars on (from the pickup the first → lands on bar 1) and waits for the
+ * neck to describe that bar. The keys go to the page, not the view switch. */
+const stepTo = async (neck: SVGElement, bars: number, label: RegExp) => {
+  ;(neck.ownerDocument.activeElement as HTMLElement | null)?.blur()
+  for (let i = 0; i < bars; i++) await userEvent.keyboard('{ArrowRight}')
+  await waitFor(() => expect(neck.getAttribute('aria-label')).toMatch(label), { timeout: 5_000 })
+}
+
+/** Guitar's Notes (21 V4, step 18b): Tab / Notes / Chords; the lanes and the neck share their
+ * rows; the neck follows the clock bar by bar; two taps on the lanes loop bars, as on the tab. */
+export const GuitarNotes: Story = {
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const { canvas, view, neck, lanes } = await guitarNotes(canvasElement)
+    const buttons = within(view).getAllByRole('button')
+    await expect(buttons.map((b) => b.textContent)).toEqual(['Tab', 'Notes', 'Chords'])
+    await expect(within(view).getByRole('button', { name: 'Notes' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    // The canvas is hidden from screen readers; the neck says what sounds.
+    await expect(lanes).toHaveAttribute('aria-hidden', 'true')
+    const n = neck.getBoundingClientRect()
+    const l = lanes.getBoundingClientRect()
+    await expect(Math.abs(n.height - l.height)).toBeLessThan(1)
+    await expect(Math.abs(n.right - l.left)).toBeLessThan(1)
+    await expect(within(neck as unknown as HTMLElement).getByText('e')).toBeInTheDocument()
+    // Bar 3 opens on the F chord's low F: string 6, fret 1.
+    await stepTo(neck, 3, /^Bar 3: F; string 6 fret 1$/)
+    await expect(neck.querySelectorAll('[data-slot=fret-now]')).toHaveLength(1)
+    // The note that just landed rings once (reduced motion: never).
+    await expect(neck.querySelectorAll('[data-slot=fret-ring]')).toHaveLength(1)
+    // A tap on the lanes arms bar 3; a bar on, a second tap makes it a loop of bars 3–4.
+    const tap = () => {
+      const box = lanes.getBoundingClientRect()
+      return userEvent.pointer({
+        keys: '[MouseLeft]',
+        target: lanes,
+        coords: { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 },
+      })
+    }
+    await tap()
+    await stepTo(neck, 1, /^Bar 4: F; /)
+    await tap()
+    await expect((await canvas.findAllByText(/^Loop · bars 3–4/))[0]).toBeVisible()
+    // Back to the tab.
+    await userEvent.click(within(view).getByRole('button', { name: 'Tab' }))
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    // Layers fade in (200 ms, 27 §3.7.3).
+    await waitFor(() => expect(tab).toBeVisible())
+    await expect(canvas.queryByRole('region', { name: 'Notes' })).toBeNull()
+  },
+}
+
+/** A loop on bars 3–4: shaded on the lanes, its next pass drawn past its end. */
+export const GuitarNotesLoop: Story = {
+  render: screen(ALL, {}, { loop: '3-4' }),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await guitarNotes(canvasElement)
+    await expect((await canvas.findAllByText(/^Loop · bars 3–4/))[0]).toBeVisible()
+  },
+}
+
+/** Strummed shapes: one stacked shape per strum, all its fingers lit at once. */
+export const GuitarNotesChords: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS }),
+  play: async ({ canvasElement }) => {
+    const { neck } = await guitarNotes(canvasElement)
+    // Bar 3's Fmaj7 (x x 3 2 1 0): three fingers and the open top string.
+    await stepTo(
+      neck,
+      3,
+      /^Bar 3: F; string 1 fret 0, string 2 fret 1, string 3 fret 2, string 4 fret 3$/,
+    )
+    await expect(neck.querySelectorAll('[data-slot=fret-now]')).toHaveLength(4)
+  },
+}
+
+/** A position shift: a whole bar in open position, then a line at the 7th–12th frets. The next
+ * note is off the neck's window, so a cue names its fret; on the bar the neck has moved there. */
+export const GuitarNotesShift: Story = {
+  render: screen(ALL, { notes: GUITAR_SHIFTS }),
+  play: async ({ canvasElement }) => {
+    const { neck } = await guitarNotes(canvasElement)
+    await stepTo(neck, 2, /^Bar 2: Am; /)
+    const cue = await waitFor(() => {
+      const shift = neck.querySelector('[data-slot=fret-shift]')
+      expect(shift).not.toBeNull()
+      return shift as SVGElement
+    })
+    await expect(cue).toHaveTextContent(/^Fret \d+ →$/)
+    await stepTo(neck, 1, /^Bar 3: F; string \d fret \d+$/)
+    await waitFor(() => expect(neck.querySelector('[data-slot=fret-shift]')).toBeNull())
+    await expect(neck.querySelectorAll('[data-slot=fret-now]')).toHaveLength(1)
+  },
+}
+
+/** Unsure notes keep the tab's marks: dashed outlines, "?" on the low ones; "Show uncertainty"
+ * off drops them. */
+export const GuitarNotesUncertain: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS }),
+  play: async ({ canvasElement }) => {
+    const { canvas, lanes } = await guitarNotes(canvasElement)
+    // Bar 6's second strum is probable (5 notes), bar 7's first unsure (6).
+    await expect(lanes).toHaveAttribute('data-medium', '5')
+    await expect(lanes).toHaveAttribute('data-low', '6')
+    await userEvent.click(canvas.getByRole('button', { name: /^Auto-transcribed/ }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('switch', { name: 'Show uncertainty' }))
+    await waitFor(() => expect(lanes).toHaveAttribute('data-low', '0'))
+    await expect(lanes).toHaveAttribute('data-medium', '0')
+  },
+}
+
+/** Left-handed (Settings → Profile): the neck is mirrored, its numbers aren't. */
+export const GuitarNotesLeftHanded: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS, leftHanded: true }),
+  play: async ({ canvasElement }) => {
+    const { neck } = await guitarNotes(canvasElement)
+    await expect(neck).toHaveAttribute('data-mirrored', 'true')
+    await stepTo(neck, 3, /^Bar 3: F; /)
+    // The first fret's dot sits right of the third's: the nut is on the right.
+    const dots = [...neck.querySelectorAll('[data-slot=fret-now]')]
+    const x = (fret: string) =>
+      dots.find((d) => d.textContent === fret)?.getBoundingClientRect().left ?? 0
+    await expect(x('1')).toBeGreaterThan(x('3'))
+  },
+}
+
+export const GuitarNotesDark: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS }, { loop: '3-4' }),
+  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    await guitarNotes(canvasElement)
+  },
+}
+
+export const GuitarNotesStage: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS }, { loop: '3-4' }),
+  globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    await guitarNotes(canvasElement)
+  },
+}
+
+/** Reduced motion: the lanes turn a bar at a time and only the playhead moves; no landing ring. */
+export const GuitarNotesReducedMotion: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS }),
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    const { neck } = await guitarNotes(canvasElement)
+    await stepTo(neck, 3, /^Bar 3: F; /)
+    await expect(neck.querySelectorAll('[data-slot=fret-ring]')).toHaveLength(0)
+  },
+}
+
+/** A 4-string bass: four lanes and strings named G D A E; roots and fifths. */
+export const BassNotes: Story = {
+  render: screen(ALL_BASS, { instrument: 'bass', notes: BASS_LINE }),
+  play: async ({ canvasElement }) => {
+    const { view, neck } = await guitarNotes(canvasElement)
+    await expect(
+      within(view)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Tab', 'Notes', 'Chords'])
+    const names = [...neck.querySelectorAll('text')].slice(0, 4).map((t) => t.textContent)
+    await expect(names).toEqual(['G', 'D', 'A', 'E'])
+    await stepTo(neck, 3, /^Bar 3: F; string 4 fret 1$/)
+  },
+}
+
+/** A capo on the 2nd fret: the tab recomputes in the Worker and the neck shows the capo at the
+ * nut, frets counted from it. */
+export const GuitarNotesCapo: Story = {
+  render: screen(ALL, { notes: GUITAR_STRUMS }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: /^Level and capo/ }))
+    const body = within(canvasElement.ownerDocument.body)
+    const up = await body.findByRole('button', { name: m['practice.capo_up']() })
+    await userEvent.click(up)
+    await userEvent.click(up)
+    await userEvent.keyboard('{Escape}')
+    const { neck } = await guitarNotes(canvasElement)
+    await waitFor(() => expect(neck).toHaveAttribute('data-capo', '2'))
   },
 }
