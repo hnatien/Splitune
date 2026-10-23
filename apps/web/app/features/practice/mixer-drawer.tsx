@@ -10,9 +10,10 @@ import { defaultMix, presetOf } from './model/mixer'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// MixerDrawer (12 §7, 27 §3.7.4): "Your part" first, presets at the top, M/S/volume per stem with
-// the rough-stem warning as text and icon, Reset mix. A right drawer at 320 px; a bottom sheet at
-// 70 % height on phones. Changes are instant (gains before the stretch).
+// MixerDrawer (12 §7, 27 §3.7.4): "Your part" first, presets at the top with a line saying what the
+// chosen one does, M/S/volume per stem on its own card with the rough-stem warning as text and
+// icon, Reset mix. A right drawer at 320 px; a bottom sheet at 70 % height on phones. Changes are
+// instant (gains before the stretch).
 
 const STEM_KIND: Record<string, StemKind> = {
   guitar: 'guitar',
@@ -50,13 +51,25 @@ export function MixerDrawer({ phone }: { phone: boolean }) {
             value={presetOf(channels, mix)}
             onValueChange={applyPreset}
             options={[
-              { value: 'part-loud', label: m['mixer.preset_part_loud']() },
-              { value: 'minus-one', label: m['mixer.preset_minus_one']() },
-              { value: 'original', label: m['mixer.preset_original']() },
+              {
+                value: 'part-loud',
+                label: m['mixer.preset_part_loud'](),
+                gloss: m['practice.preset_gloss_part_loud'](),
+              },
+              {
+                value: 'minus-one',
+                label: m['mixer.preset_minus_one'](),
+                gloss: m['practice.preset_gloss_minus_one'](),
+              },
+              {
+                value: 'original',
+                label: m['mixer.preset_original'](),
+                gloss: m['practice.preset_gloss_original'](),
+              },
             ]}
             className="flex-wrap"
           />
-          <div className="flex flex-col divide-y divide-border">
+          <div className="flex flex-col gap-2">
             {channels.map((channel) => {
               const state = mix[channel.stemId] ?? { gain_db: 0, muted: false, solo: false }
               const set = (patch: Partial<typeof state>) =>

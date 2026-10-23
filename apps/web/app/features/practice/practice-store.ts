@@ -19,6 +19,8 @@ export interface PracticeUi {
   shortcutsOpen: boolean
   /** The pass whose "Felt clean / Not yet" is being asked (0 = none). */
   promptPass: number
+  /** The Loop button or key was used with no loop: the hint on how to pick bars shows. */
+  loopHint: boolean
   hud: { message: string | null; sequence: number }
   /** Phone portrait: the tab instead of the glance view. */
   showTab: boolean
@@ -37,6 +39,7 @@ export const INITIAL_UI: PracticeUi = {
   mixerOpen: false,
   shortcutsOpen: false,
   promptPass: 0,
+  loopHint: false,
   hud: { message: null, sequence: 0 },
   showTab: false,
   forceTab: false,

@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
+import { Button } from './button.tsx'
 import { type TimelineBar, type TimelineLane, WaveformTimeline } from './waveform-timeline.tsx'
 
 // Doc 26 §12.2 WaveformTimeline: lanes per stem, bar ruler (or seconds before the beat grid),
-// loop band with handles, unsure-bar hatching, compact ruler (phone landscape).
+// loop band with handles (easing in and out), unsure-bar hatching, compact ruler (phone landscape).
 const meta = { title: 'Kit/WaveformTimeline' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -109,4 +110,68 @@ export const Dark: Story = {
 export const Stage: Story = {
   render: () => <Timeline loop={{ start: 5.3, end: 10.1 }} />,
   globals: { appearance: 'stage' },
+}
+
+const LOOP = { start: 5.3, end: 10.1 }
+
+/** A loop that comes and goes, to watch the band ease. */
+function LoopSwitch() {
+  const [on, setOn] = useState(false)
+  return (
+    <div className="flex flex-col gap-3">
+      <Button variant="outline" aria-pressed={on} onClick={() => setOn(!on)}>
+        Toggle loop
+      </Button>
+      <WaveformTimeline
+        lanes={LANES}
+        blockSeconds={BLOCK}
+        duration={DURATION}
+        bars={BARS}
+        loop={on ? LOOP : null}
+        position={() => 6.1}
+        onSeek={fn()}
+        labels={LABELS}
+      />
+    </div>
+  )
+}
+
+/** The loop edge's opacity at the bottom row of the canvas, where no waveform reaches. */
+function edgeAlpha(canvasElement: HTMLElement) {
+  const canvas = canvasElement.querySelector('canvas')
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) throw new Error('no timeline canvas')
+  const x = Math.round((LOOP.start / DURATION) * canvas.width)
+  return context.getImageData(x, canvas.height - 1, 1, 1).data[3] ?? 0
+}
+
+const toggle = async (canvasElement: HTMLElement) => {
+  const canvas = within(canvasElement)
+  // The canvas draws once it has measured its width.
+  await waitFor(() => expect(canvasElement.querySelector('canvas')?.width).toBeGreaterThan(0))
+  await expect(edgeAlpha(canvasElement)).toBe(0)
+  await userEvent.click(canvas.getByRole('button', { name: 'Toggle loop' }))
+}
+
+/** A new loop fades in over --duration-base: shortly after the press the edge is still partial. */
+export const LoopEasesIn: Story = {
+  render: () => <LoopSwitch />,
+  play: async ({ canvasElement }) => {
+    await toggle(canvasElement)
+    const early = edgeAlpha(canvasElement)
+    await waitFor(() => expect(edgeAlpha(canvasElement)).toBeGreaterThan(0))
+    await waitFor(() => expect(edgeAlpha(canvasElement)).toBe(255))
+    await expect(early).toBeLessThan(255)
+  },
+}
+
+/** Reduced motion draws the final band at once: no partial opacity is ever painted. */
+export const LoopJumpsWhenMotionIsReduced: Story = {
+  render: () => <LoopSwitch />,
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    await toggle(canvasElement)
+    await waitFor(() => expect(edgeAlpha(canvasElement)).toBeGreaterThan(0))
+    await expect(edgeAlpha(canvasElement)).toBe(255)
+  },
 }

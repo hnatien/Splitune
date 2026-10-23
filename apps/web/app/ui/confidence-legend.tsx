@@ -1,9 +1,17 @@
-import { useId } from 'react'
+import { lazy, Suspense, useId } from 'react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/ui/button'
+import { Popover, PopoverTrigger } from '@/ui/popover'
 import { Switch } from '@/ui/switch'
 
 // Doc 26 §5: always-visible "Auto-transcribed — may contain errors (v{model})" chip with the
 // "Show uncertainty" switch, and a key for the dashed box and "?" so the marks are explained.
+// Below `lg` the strip has no room for it, so ConfidenceLegendPopover opens the same legend from
+// a button; the popover's contents load on first open (12 §10 route budget).
+
+const LegendPanel = lazy(() =>
+  import('./confidence-legend-panel').then((module) => ({ default: module.ConfidenceLegendPanel })),
+)
 
 type ConfidenceLegendProps = {
   /** Catalogue `practice.legend`, already formatted with the model version. */
@@ -41,14 +49,14 @@ function ConfidenceLegend({
           <span className="inline-flex items-center gap-1.5">
             <span
               aria-hidden
-              className="inline-block size-5 rounded-sm border-[1.5px] border-dashed border-input"
+              className="inline-block size-5 rounded-sm border border-dashed border-input"
             />
             {labels.medium}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span
               aria-hidden
-              className="inline-grid size-5 place-items-center rounded-sm border-[1.5px] border-dashed border-input text-xs font-bold leading-none"
+              className="inline-grid size-5 place-items-center rounded-sm border border-dashed border-input text-xs font-bold leading-none"
             >
               ?
             </span>
@@ -66,4 +74,26 @@ function ConfidenceLegend({
   )
 }
 
-export { ConfidenceLegend }
+function ConfidenceLegendPopover({
+  buttonLabel,
+  className,
+  ...legend
+}: Omit<ConfidenceLegendProps, 'className'> & {
+  /** Catalogue `practice.legend_button`, e.g. "What do the dashes mean?". */
+  buttonLabel: string
+  className?: string
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger render={<Button variant="ghost" size="practice-2" className={className} />}>
+        {buttonLabel}
+      </PopoverTrigger>
+      <Suspense fallback={null}>
+        <LegendPanel {...legend} />
+      </Suspense>
+    </Popover>
+  )
+}
+
+export type { ConfidenceLegendProps }
+export { ConfidenceLegend, ConfidenceLegendPopover }

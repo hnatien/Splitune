@@ -4,12 +4,13 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { WithTooltip } from '@/ui/tooltip'
 
-// Doc 26 §8, §12.2: practice-size icon button with its label below at Stand/Floor distance (the
-// label is also the accessible name, WCAG 2.5.3) and a tooltip with the shortcut. Pass `pressed`
-// to make it a toggle (loop, metronome); `active` marks a running loop without toggling.
+// Doc 26 §8, §12.2: practice-size icon button with its label below from `md` up and at Stand/Floor
+// distance (the label is also the accessible name, WCAG 2.5.3) and a tooltip with the shortcut.
+// Pass `pressed` to make it a toggle (loop, metronome); `active` marks a running loop without
+// toggling. Neutral buttons sit raised on the sunken tray of their group.
 
 const base =
-  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-xl border font-medium transition-colors select-none disabled:pointer-events-none disabled:border-input disabled:bg-muted disabled:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0'
+  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-xl border font-medium transition-[color,background-color,border-color,transform] duration-(--duration-fast) ease-spring select-none active:scale-[0.97] disabled:pointer-events-none disabled:border-input disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0'
 
 const sizes = {
   practice: "min-h-target-practice min-w-target-practice px-3 [&_svg:not([class*='size-'])]:size-8",
@@ -20,7 +21,7 @@ const sizes = {
 const tones = {
   primary: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
   neutral:
-    'border-border bg-card text-foreground hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary data-[active]:border-primary data-[active]:bg-accent data-[active]:text-primary forced-colors:data-pressed:bg-card forced-colors:data-[active]:bg-card',
+    'border-border bg-surface-raised text-foreground shadow-1 hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary data-[active]:border-primary data-[active]:bg-accent data-[active]:text-primary forced-colors:data-pressed:bg-card forced-colors:data-[active]:bg-card',
 }
 
 type TransportButtonProps = {
@@ -58,7 +59,7 @@ function TransportButton({
       {icon}
       <span
         aria-hidden
-        className="hidden text-read-label leading-none in-data-[distance=floor]:block in-data-[distance=stand]:block"
+        className="hidden text-read-label leading-none group-data-pressed/transport:font-semibold group-data-[active]/transport:font-semibold md:block in-data-[distance=floor]:block in-data-[distance=stand]:block"
       >
         {label}
       </span>

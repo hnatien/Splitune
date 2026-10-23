@@ -10,7 +10,8 @@ import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
 import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
 import { Switch } from '@/ui/switch'
-import { OptionSelect } from '../common/option-select'
+import { OptionSegments } from '../common/option-segments'
+import { PanelSection } from '../common/panel-section'
 import { barRange, nudge, restSeconds } from './model/loops'
 import type { RestBetween } from './model/player-machine'
 import { usePractice } from './practice-context'
@@ -50,8 +51,7 @@ export function LoopPanel() {
         </>
       )}
       {clips.some((c) => c.name !== null) && (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">{m['practice.clips']()}</p>
+        <PanelSection title={m['practice.clips']()}>
           <ul className="flex flex-col gap-1">
             {clips
               .filter((c) => c.name !== null)
@@ -80,7 +80,7 @@ export function LoopPanel() {
                 </li>
               ))}
           </ul>
-        </div>
+        </PanelSection>
       )}
     </PopoverContent>
   )
@@ -96,7 +96,7 @@ function LoopFields() {
   const setBars = (from: number, to: number) =>
     practice.setLoop(barRange(grid, from - 1, to - 1), 'numeric')
   return (
-    <div className="flex flex-col gap-3">
+    <PanelSection title={m['practice.loop_section_bars']()}>
       <div className="flex items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <span aria-hidden className="text-sm font-medium">
@@ -164,7 +164,7 @@ function LoopFields() {
           ))}
         </div>
       )}
-    </div>
+    </PanelSection>
   )
 }
 
@@ -182,8 +182,8 @@ function RestAndCountIn() {
     bar: m['settings.rest_bar'](),
   }
   return (
-    <div className="flex flex-col gap-3">
-      <OptionSelect
+    <PanelSection title={m['practice.loop_section_repeats']()}>
+      <OptionSegments
         label={m['settings.rest']()}
         value={player.rest}
         options={(['none', 'beat', 'bar'] as const).map((value) => ({
@@ -201,7 +201,7 @@ function RestAndCountIn() {
           }
         }}
       />
-      <OptionSelect
+      <OptionSegments
         label={m['settings.count_in']()}
         value={player.countIn ? String(player.countInBars) : '0'}
         options={['0', '1', '2'].map((value) => ({
@@ -236,7 +236,7 @@ function RestAndCountIn() {
         />
         <Label htmlFor={promptId}>{m['practice.ask_after_pass']()}</Label>
       </div>
-    </div>
+    </PanelSection>
   )
 }
 
@@ -248,28 +248,30 @@ function SaveClip() {
   const clip = practice.clip
   if (!clip) return null
   return (
-    <form
-      className="flex items-end gap-2"
-      onSubmit={(event) => {
-        event.preventDefault()
-        const trimmed = name.trim()
-        if (!trimmed) return
-        void client.loops
-          .update({ id: practice.songId, loop_id: clip.id, name: trimmed })
-          .then(() =>
-            queryClient.invalidateQueries({
-              queryKey: orpc.loops.list.queryKey({ input: { id: practice.songId } }),
-            }),
-          )
-      }}
-    >
-      <div className="flex flex-1 flex-col gap-1.5">
-        <Label htmlFor={id}>{m['practice.clip_name']()}</Label>
-        <Input id={id} value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
-      </div>
-      <Button type="submit" variant="outline" disabled={name.trim() === ''}>
-        {m['practice.save_clip']()}
-      </Button>
-    </form>
+    <PanelSection title={m['practice.save_clip']()}>
+      <form
+        className="flex items-end gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const trimmed = name.trim()
+          if (!trimmed) return
+          void client.loops
+            .update({ id: practice.songId, loop_id: clip.id, name: trimmed })
+            .then(() =>
+              queryClient.invalidateQueries({
+                queryKey: orpc.loops.list.queryKey({ input: { id: practice.songId } }),
+              }),
+            )
+        }}
+      >
+        <div className="flex flex-1 flex-col gap-1.5">
+          <Label htmlFor={id}>{m['practice.clip_name']()}</Label>
+          <Input id={id} value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <Button type="submit" variant="outline" disabled={name.trim() === ''}>
+          {m['practice.save_clip']()}
+        </Button>
+      </form>
+    </PanelSection>
   )
 }

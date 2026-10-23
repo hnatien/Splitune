@@ -16,9 +16,9 @@ import { Slider } from '@/ui/slider'
 import { Toggle } from '@/ui/toggle'
 import { WithTooltip } from '@/ui/tooltip'
 
-// Doc 26 §4.4, §12.2: label + icon + colour rule (colour is never the only cue), M/S toggles,
-// fader paired with a dB field (WCAG 2.5.7), "Your part" tag with a 2 px left rule, rough-stem
-// warning with its reason, and a loading skeleton with the same layout.
+// Doc 26 §4.4, §12.2: a raised card per stem with label + icon + colour rule (colour is never the
+// only cue), M/S toggles, fader paired with a dB field (WCAG 2.5.7), "Your part" tag with a 2 px
+// left rule, rough-stem warning with its reason, and a loading skeleton with the same layout.
 
 const ICONS: Record<(typeof STEMS)[StemKind]['icon'], LucideIcon> = {
   guitar: GuitarIcon,
@@ -84,7 +84,7 @@ function StemRow({
       data-slot="stem-row"
       data-stem={stem}
       className={cn(
-        'grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 border-l-2 py-3 pr-3 pl-3 sm:grid-cols-[16rem_auto_1fr_auto]',
+        'grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border-l-2 bg-surface-raised p-3 shadow-1 sm:grid-cols-[16rem_auto_1fr_auto]',
         yourPart ? 'border-foreground' : 'border-transparent',
         className,
       )}
@@ -153,7 +153,7 @@ function StemRowSkeleton({ className }: { className?: string }) {
     <div
       data-slot="stem-row-skeleton"
       className={cn(
-        'grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 border-l-2 border-transparent py-3 pr-3 pl-3 sm:grid-cols-[16rem_auto_1fr_auto]',
+        'grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border-l-2 border-transparent bg-surface-raised p-3 shadow-1 sm:grid-cols-[16rem_auto_1fr_auto]',
         className,
       )}
     >

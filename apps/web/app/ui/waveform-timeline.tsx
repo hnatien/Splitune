@@ -8,8 +8,9 @@ import { Button } from '@/ui/button'
 // Doc 26 §12.2: the practice timeline on a canvas — peak (outer) and RMS (inner) per lane, a bar
 // ruler (or seconds before the beat grid exists), the loop band with edges and ≥44 px handles,
 // hatching on unsure bars (a pattern, never colour alone, 26 §5) and the now-line. Tap seeks;
-// zoom with the +/- buttons. The canvas is decorative for assistive tech: seeking and the loop
-// are reachable through the transport and the handles' keys.
+// zoom with the +/- buttons. The loop band eases in, out and between ranges over --duration-base
+// (straight to the end state under reduced motion). The canvas is decorative for assistive tech:
+// seeking and the loop are reachable through the transport and the handles' keys.
 
 export interface TimelineLane {
   id: string
@@ -54,6 +55,20 @@ type WaveformTimelineProps = {
 
 const ZOOMS = [1, 2, 4, 8]
 const RULER_PX = 20
+/** The loop band's ease, in milliseconds: `--duration-base`, which a canvas can't take from CSS. */
+const BAND_MS = 200
+
+/** The loop band as drawn: the range and how opaque it is, so it can ease in, out and between. */
+interface Band {
+  start: number
+  end: number
+  alpha: number
+}
+
+function reducedMotion() {
+  const motion = document.documentElement.getAttribute('data-motion')
+  return motion === 'reduce' || (!motion && matchMedia('(prefers-reduced-motion: reduce)').matches)
+}
 
 function colors() {
   const read = (name: TokenName) => readColor(name)
@@ -90,6 +105,11 @@ function WaveformTimeline({
   const [width, setWidth] = useState(0)
   const [offset, setOffset] = useState(0)
   const [palette, setPalette] = useState(colors)
+  const band = useRef<Band | null>(loop && { ...loop, alpha: 1 })
+  const tween = useRef<{ from: Band; to: Band; at: number } | null>(null)
+  const redraw = useRef(() => {})
+  const loopStart = loop?.start
+  const loopEnd = loop?.end
   const span = duration / zoom
   const viewStart = Math.min(offset, Math.max(0, duration - span))
   const x = (seconds: number) => ((seconds - viewStart) / Math.max(1e-6, span)) * width
@@ -120,99 +140,107 @@ function WaveformTimeline({
     c.width = Math.round(width * ratio)
     c.height = Math.round(height * ratio)
     context.setTransform(ratio, 0, 0, ratio, 0, 0)
-    context.clearRect(0, 0, width, height)
-    const x = (seconds: number) => ((seconds - viewStart) / Math.max(1e-6, span)) * width
-    const laneTop = compact ? height : RULER_PX
-    const laneHeight = compact ? 0 : (height - RULER_PX) / Math.max(1, lanes.length)
+    const draw = () => {
+      context.clearRect(0, 0, width, height)
+      const x = (seconds: number) => ((seconds - viewStart) / Math.max(1e-6, span)) * width
+      const laneTop = compact ? height : RULER_PX
+      const laneHeight = compact ? 0 : (height - RULER_PX) / Math.max(1, lanes.length)
 
-    if (loop) {
-      context.fillStyle = palette.loopFill
-      context.fillRect(x(loop.start), 0, x(loop.end) - x(loop.start), height)
-    }
-    // Unsure bars: 45° hatching over the lanes.
-    context.strokeStyle = palette.hatch
-    context.lineWidth = 1
-    for (const range of unsure) {
-      const left = x(range.start)
-      const right = x(range.end)
-      if (right < 0 || left > width) continue
-      context.save()
-      context.beginPath()
-      context.rect(left, laneTop, right - left, height - laneTop || height)
-      context.clip()
-      context.beginPath()
-      for (let p = left - height; p < right; p += 6) {
-        context.moveTo(p, height)
-        context.lineTo(p + height, 0)
+      const shown = band.current
+      if (shown) {
+        context.globalAlpha = shown.alpha
+        context.fillStyle = palette.loopFill
+        context.fillRect(x(shown.start), 0, x(shown.end) - x(shown.start), height)
+        context.globalAlpha = 1
       }
-      context.stroke()
-      context.restore()
-    }
-
-    lanes.forEach((lane, index) => {
-      const top = laneTop + index * laneHeight
-      const mid = top + laneHeight / 2
-      // Each lane fills its height (a quiet stem stays readable), at most 8× its level.
-      let loudest = 0
-      for (const value of lane.peaks) loudest = Math.max(loudest, Math.abs(value))
-      const gain = loudest > 0 ? Math.min(8, 1 / loudest) : 1
-      const firstBlock = Math.max(0, Math.floor(viewStart / blockSeconds))
-      const lastBlock = Math.min(lane.rms.length, Math.ceil((viewStart + span) / blockSeconds))
-      const step = Math.max(1, Math.floor((lastBlock - firstBlock) / Math.max(1, width)))
-      for (let b = firstBlock; b < lastBlock; b += step) {
-        let min = 0
-        let max = 0
-        let rms = 0
-        for (let k = b; k < Math.min(lastBlock, b + step); k++) {
-          min = Math.min(min, lane.peaks[2 * k] ?? 0)
-          max = Math.max(max, lane.peaks[2 * k + 1] ?? 0)
-          rms = Math.max(rms, lane.rms[k] ?? 0)
+      // Unsure bars: 45° hatching over the lanes.
+      context.strokeStyle = palette.hatch
+      context.lineWidth = 1
+      for (const range of unsure) {
+        const left = x(range.start)
+        const right = x(range.end)
+        if (right < 0 || left > width) continue
+        context.save()
+        context.beginPath()
+        context.rect(left, laneTop, right - left, height - laneTop || height)
+        context.clip()
+        context.beginPath()
+        for (let p = left - height; p < right; p += 6) {
+          context.moveTo(p, height)
+          context.lineTo(p + height, 0)
         }
-        const px = x(b * blockSeconds)
-        const w = Math.max(1, x((b + step) * blockSeconds) - px - 0.5)
-        const half = (laneHeight / 2 - 1) * gain
-        context.fillStyle = palette.peak
-        context.fillRect(px, mid - max * half, w, Math.max(1, (max - min) * half))
-        context.fillStyle = palette.rms
-        context.fillRect(px, mid - rms * half, w, Math.max(1, 2 * rms * half))
+        context.stroke()
+        context.restore()
       }
-    })
 
-    // Ruler: bar numbers (or seconds), thinned to what fits.
-    context.fillStyle = palette.text
-    context.strokeStyle = palette.rule
-    context.font = '12px Inter, ui-sans-serif, system-ui, sans-serif'
-    context.textBaseline = 'top'
-    const ticks = bars
-      ? bars.map((b) => ({ at: b.start, label: b.label }))
-      : Array.from({ length: Math.floor(duration) + 1 }, (_, s) => ({
-          at: s,
-          label: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`,
-        }))
-    let lastLabel = Number.NEGATIVE_INFINITY
-    for (const tick of ticks) {
-      const px = x(tick.at)
-      if (px < -1 || px > width + 1) continue
-      context.beginPath()
-      context.moveTo(px + 0.5, 0)
-      context.lineTo(px + 0.5, compact ? height : RULER_PX - 4)
-      context.stroke()
-      if (!compact && px - lastLabel >= 28) {
-        context.fillText(tick.label, px + 3, 2)
-        lastLabel = px
+      lanes.forEach((lane, index) => {
+        const top = laneTop + index * laneHeight
+        const mid = top + laneHeight / 2
+        // Each lane fills its height (a quiet stem stays readable), at most 8× its level.
+        let loudest = 0
+        for (const value of lane.peaks) loudest = Math.max(loudest, Math.abs(value))
+        const gain = loudest > 0 ? Math.min(8, 1 / loudest) : 1
+        const firstBlock = Math.max(0, Math.floor(viewStart / blockSeconds))
+        const lastBlock = Math.min(lane.rms.length, Math.ceil((viewStart + span) / blockSeconds))
+        const step = Math.max(1, Math.floor((lastBlock - firstBlock) / Math.max(1, width)))
+        for (let b = firstBlock; b < lastBlock; b += step) {
+          let min = 0
+          let max = 0
+          let rms = 0
+          for (let k = b; k < Math.min(lastBlock, b + step); k++) {
+            min = Math.min(min, lane.peaks[2 * k] ?? 0)
+            max = Math.max(max, lane.peaks[2 * k + 1] ?? 0)
+            rms = Math.max(rms, lane.rms[k] ?? 0)
+          }
+          const px = x(b * blockSeconds)
+          const w = Math.max(1, x((b + step) * blockSeconds) - px - 0.5)
+          const half = (laneHeight / 2 - 1) * gain
+          context.fillStyle = palette.peak
+          context.fillRect(px, mid - max * half, w, Math.max(1, (max - min) * half))
+          context.fillStyle = palette.rms
+          context.fillRect(px, mid - rms * half, w, Math.max(1, 2 * rms * half))
+        }
+      })
+
+      // Ruler: bar numbers (or seconds), thinned to what fits.
+      context.fillStyle = palette.text
+      context.strokeStyle = palette.rule
+      context.font = '12px Inter, ui-sans-serif, system-ui, sans-serif'
+      context.textBaseline = 'top'
+      const ticks = bars
+        ? bars.map((b) => ({ at: b.start, label: b.label }))
+        : Array.from({ length: Math.floor(duration) + 1 }, (_, s) => ({
+            at: s,
+            label: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`,
+          }))
+      let lastLabel = Number.NEGATIVE_INFINITY
+      for (const tick of ticks) {
+        const px = x(tick.at)
+        if (px < -1 || px > width + 1) continue
+        context.beginPath()
+        context.moveTo(px + 0.5, 0)
+        context.lineTo(px + 0.5, compact ? height : RULER_PX - 4)
+        context.stroke()
+        if (!compact && px - lastLabel >= 28) {
+          context.fillText(tick.label, px + 3, 2)
+          lastLabel = px
+        }
+      }
+      if (shown) {
+        context.globalAlpha = shown.alpha
+        context.fillStyle = palette.loopEdge
+        context.fillRect(x(shown.start) - 1, 0, 2, height)
+        context.fillRect(x(shown.end) - 1, 0, 2, height)
+        context.globalAlpha = 1
       }
     }
-    if (loop) {
-      context.fillStyle = palette.loopEdge
-      context.fillRect(x(loop.start) - 1, 0, 2, height)
-      context.fillRect(x(loop.end) - 1, 0, 2, height)
-    }
+    redraw.current = draw
+    draw()
   }, [
     lanes,
     blockSeconds,
     duration,
     bars,
-    loop,
     unsure,
     width,
     height,
@@ -222,11 +250,49 @@ function WaveformTimeline({
     palette,
   ])
 
-  // The now-line follows the clock; a zoomed view pages along with it.
+  // A new, moved or removed loop starts the band's ease from what is drawn now.
+  useEffect(() => {
+    const from = band.current
+    const to =
+      loopStart === undefined || loopEnd === undefined
+        ? null
+        : { start: loopStart, end: loopEnd, alpha: 1 }
+    if (from?.start === to?.start && from?.end === to?.end && from?.alpha === to?.alpha) return
+    if (reducedMotion()) {
+      tween.current = null
+      band.current = to
+      redraw.current()
+      return
+    }
+    const origin = from ?? (to && { ...to, alpha: 0 })
+    const target = to ?? (from && { ...from, alpha: 0 })
+    if (origin && target) tween.current = { from: origin, to: target, at: performance.now() }
+  }, [loopStart, loopEnd])
+
+  // The now-line follows the clock; a zoomed view pages along with it. The loop band's ease
+  // steps on the same frame.
   useEffect(() => {
     let frame = 0
     const tick = () => {
       frame = requestAnimationFrame(tick)
+      const move = tween.current
+      if (move) {
+        const done = Math.min(1, (performance.now() - move.at) / BAND_MS)
+        const k = 1 - (1 - done) ** 3
+        const mix = (a: number, b: number) => a + (b - a) * k
+        band.current =
+          done < 1
+            ? {
+                start: mix(move.from.start, move.to.start),
+                end: mix(move.from.end, move.to.end),
+                alpha: mix(move.from.alpha, move.to.alpha),
+              }
+            : move.to.alpha === 0
+              ? null
+              : move.to
+        if (done === 1) tween.current = null
+        redraw.current()
+      }
       const seconds = position()
       const line = nowLine.current
       if (!line || width === 0) return

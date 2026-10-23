@@ -2,16 +2,17 @@ import { PauseIcon, RepeatIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §12.2: "Loop · bars 17–20 · pass 3" in the top bar. States differ by icon, border style
-// and fill — off (outline), armed (dashed: A tapped, waiting for B), active (indigo), resting.
+// Doc 26 §12.2: "Loop · bars 17–20 · pass 3" in the top bar. States differ by icon, text, border
+// style and fill, never by colour alone — off (sunken, no edge), armed (dashed edge: A tapped,
+// waiting for B), active (solid 2 px edge on a raised fill), resting (active, muted text, pause icon).
 
 export type LoopState = 'off' | 'armed' | 'active' | 'resting'
 
 const styles: Record<LoopState, string> = {
-  off: 'border-input bg-card text-foreground',
-  armed: 'border-dashed border-primary bg-card text-foreground',
-  active: 'border-primary bg-accent text-accent-foreground',
-  resting: 'border-input bg-muted text-foreground',
+  off: 'border-transparent bg-surface-sunken text-foreground contrast-more:border-input',
+  armed: 'border-dashed border-loop-edge bg-surface-sunken text-foreground',
+  active: 'border-loop-edge bg-surface-raised text-foreground shadow-1',
+  resting: 'border-loop-edge bg-surface-raised text-muted-foreground shadow-1',
 }
 
 function LoopBadge({

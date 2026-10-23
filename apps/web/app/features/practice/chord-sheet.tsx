@@ -83,7 +83,7 @@ export function ChordSheet({
                 aria-current={current === bar ? 'true' : undefined}
                 onClick={() => onBarActivate(bar)}
                 className={cn(
-                  'flex min-h-24 w-full flex-col items-start gap-1 rounded-lg border-l-2 bg-transparent px-3 py-2 text-left',
+                  'flex min-h-24 w-full flex-col items-start gap-1 rounded-xl border-l-2 bg-transparent px-3 py-2 text-left',
                   inLoop ? 'border-score-loop-edge bg-score-loop-fill' : 'border-staff',
                   armed && 'outline-2 outline-dashed outline-score-loop-edge',
                   current === bar && 'border-b-2 border-b-ink bg-bar-current',

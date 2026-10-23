@@ -1,11 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { PauseIcon, PlayIcon, RepeatIcon, SkipBackIcon } from 'lucide-react'
+import {
+  MetronomeIcon,
+  PauseIcon,
+  PlayIcon,
+  RepeatIcon,
+  SkipBackIcon,
+  SlidersVerticalIcon,
+} from 'lucide-react'
 import { useState } from 'react'
-import { expect, fireEvent, fn, userEvent, within } from 'storybook/test'
+import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test'
+import { cn } from '@/lib/utils'
 import { COPY } from './fixtures.ts'
 import { CountInIcon } from './icons/index.tsx'
 import { LoopBadge } from './loop-badge.tsx'
 import { PassControl } from './pass-control.tsx'
+import { PedalHud } from './pedal-hud.tsx'
 import { SpeedControl } from './speed-control.tsx'
 import { TransportButton } from './transport-button.tsx'
 
@@ -13,57 +22,143 @@ const meta = { title: 'Kit/Transport' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
-function Transport() {
+const TABLET = { viewport: { value: 'tablet', isRotated: false } }
+// Inline presets show from 2xl (1536 px), wider than any of the addon's own viewports.
+const WIDE = { viewport: { value: 'wide', isRotated: false } }
+const WIDE_VIEWPORTS = {
+  viewport: {
+    options: {
+      wide: {
+        name: 'Wide',
+        styles: { width: '1600px', height: '900px' },
+        type: 'desktop' as const,
+      },
+    },
+  },
+}
+
+// The transport bar's three groups on their sunken trays, as the practice screen sets them; the
+// Mix button and the pass pair keep their place before stems and a loop exist.
+const TRAY = 'm-0 flex min-w-0 items-center gap-1.5 rounded-2xl border-0 bg-surface-sunken p-1'
+const FADE = 'col-start-1 row-start-1 transition-[opacity,scale] duration-(--duration-fast)'
+
+type TransportProps = {
+  loop?: boolean
+  stems?: boolean
+  best?: string | undefined
+  prompting?: boolean
+  onLoopHint?: () => void
+}
+
+function Transport({
+  loop = true,
+  stems = true,
+  best = COPY.bestTempo,
+  prompting = false,
+  onLoopHint = fn(),
+}: TransportProps) {
   const [playing, setPlaying] = useState(false)
-  const [loop, setLoop] = useState(true)
+  const [loopOn, setLoopOn] = useState(true)
   const [countIn, setCountIn] = useState(false)
+  const [mix, setMix] = useState(false)
   const [speed, setSpeed] = useState(70)
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <TransportButton
-        tone="primary"
-        icon={playing ? <PauseIcon aria-hidden /> : <PlayIcon aria-hidden />}
-        label={playing ? 'Pause' : 'Play'}
-        shortcut="Space"
-        onClick={() => setPlaying(!playing)}
-      />
-      <TransportButton icon={<SkipBackIcon aria-hidden />} label="Restart loop" shortcut="R" />
-      <TransportButton
-        icon={<RepeatIcon aria-hidden />}
-        label="Loop"
-        shortcut="L"
-        pressed={loop}
-        onPressedChange={setLoop}
-      />
-      <TransportButton
-        size="practice-2"
-        icon={<CountInIcon aria-hidden />}
-        label="Count-in"
-        shortcut="C"
-        pressed={countIn}
-        onPressedChange={setCountIn}
-      />
-      <SpeedControl
-        value={speed}
-        onValueChange={setSpeed}
-        bpm={120}
-        labels={{
-          speed: 'Speed',
-          decrease: 'Slower',
-          increase: 'Faster',
-          presets: 'Speed presets',
-        }}
-        shortcuts={{ decrease: '−', increase: '+' }}
+      <fieldset aria-label="Position" className={TRAY}>
+        <TransportButton icon={<SkipBackIcon aria-hidden />} label="Restart loop" shortcut="R" />
+        <TransportButton
+          tone="primary"
+          icon={
+            <span className="grid place-items-center">
+              <PauseIcon
+                aria-hidden
+                className={cn(FADE, playing ? 'scale-100' : 'scale-75 opacity-0')}
+              />
+              <PlayIcon
+                aria-hidden
+                className={cn(FADE, playing ? 'scale-75 opacity-0' : 'scale-100')}
+              />
+            </span>
+          }
+          label={playing ? 'Pause' : 'Play'}
+          shortcut="Space"
+          onClick={() => setPlaying(!playing)}
+        />
+      </fieldset>
+      <fieldset aria-label="Loop and speed" className={TRAY}>
+        {loop ? (
+          <TransportButton
+            icon={<RepeatIcon aria-hidden />}
+            label="Loop"
+            shortcut="L"
+            pressed={loopOn}
+            onPressedChange={setLoopOn}
+          />
+        ) : (
+          <TransportButton
+            icon={<RepeatIcon aria-hidden />}
+            label="Loop"
+            shortcut="L"
+            onClick={onLoopHint}
+          />
+        )}
+        <SpeedControl
+          value={speed}
+          onValueChange={setSpeed}
+          bpm={120}
+          labels={{
+            speed: 'Speed',
+            decrease: 'Slower',
+            increase: 'Faster',
+            presets: 'Speed presets',
+          }}
+          shortcuts={{ decrease: '−', increase: '+' }}
+        />
+      </fieldset>
+      <fieldset aria-label="Practice helpers" className={TRAY}>
+        <TransportButton
+          size="practice-2"
+          icon={<CountInIcon aria-hidden />}
+          label="Count-in"
+          shortcut="C"
+          pressed={countIn}
+          onPressedChange={setCountIn}
+        />
+        <TransportButton
+          size="practice-2"
+          icon={<MetronomeIcon aria-hidden />}
+          label="Metronome"
+          pressed={false}
+          onPressedChange={fn()}
+        />
+        <TransportButton
+          size="practice-2"
+          icon={<SlidersVerticalIcon aria-hidden />}
+          label="Mix"
+          pressed={mix && stems}
+          disabled={!stems}
+          onPressedChange={setMix}
+        />
+      </fieldset>
+      <PassControl
+        className={cn('ml-auto', !loop && 'invisible')}
+        inert={!loop}
+        prompting={prompting}
+        labels={{ prompt: COPY.passPrompt, clean: COPY.feltClean, notYet: COPY.notYet }}
+        best={best}
+        shortcuts={{ clean: 'C', notYet: 'N' }}
+        onClean={fn()}
+        onNotYet={fn()}
       />
     </div>
   )
 }
 
-export const Default: Story = { render: Transport }
+export const Default: Story = { render: () => <Transport /> }
 
 /** Acceptance (doc 26 §8): practice targets measure at least 64 × 64, practice-2 at least 48. */
 export const Targets: Story = {
-  render: Transport,
+  render: () => <Transport />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     for (const name of ['Play', 'Restart loop', 'Loop', 'Slower', 'Faster']) {
@@ -77,7 +172,7 @@ export const Targets: Story = {
 }
 
 export const LabelsAtTheStand: Story = {
-  render: Transport,
+  render: () => <Transport />,
   globals: { distance: 'stand', density: 'practice' },
   play: async ({ canvasElement }) => {
     const play = within(canvasElement).getByRole('button', { name: 'Play' })
@@ -86,7 +181,7 @@ export const LabelsAtTheStand: Story = {
 }
 
 export const KeyboardSpeed: Story = {
-  render: Transport,
+  render: () => <Transport />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole('button', { name: 'Faster' }))
@@ -94,8 +189,233 @@ export const KeyboardSpeed: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Faster' }))
     fireEvent.click(canvas.getByRole('button', { name: 'Slower' }), { shiftKey: true })
     await expect(canvas.getByRole('button', { name: /^Speed: 79/ })).toBeInTheDocument()
+    // The number counts up to it; the accessibility check waits for it to settle.
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^79/),
+    )
   },
 }
+
+/** Three labelled groups, each on its own tray. */
+export const Groups: Story = {
+  render: () => <Transport />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const position = canvas.getByRole('group', { name: 'Position' })
+    await expect(
+      within(position)
+        .getAllByRole('button')
+        .map((b) => b.ariaLabel),
+    ).toEqual(['Restart loop', 'Play'])
+    const loopSpeed = canvas.getByRole('group', { name: 'Loop and speed' })
+    await expect(within(loopSpeed).getByRole('button', { name: 'Loop' })).toBeVisible()
+    await expect(within(loopSpeed).getByRole('button', { name: /^Speed: / })).toBeVisible()
+    const helpers = canvas.getByRole('group', { name: 'Practice helpers' })
+    await expect(within(helpers).getAllByRole('button')).toHaveLength(3)
+  },
+}
+
+/** Tablets and up show every label under its icon, at desk distance too. */
+export const LabelsOnTablets: Story = {
+  render: () => <Transport />,
+  globals: { distance: 'desk', ...TABLET },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    for (const name of ['Play', 'Loop', 'Slower', 'Count-in', 'Mix']) {
+      await expect(within(canvas.getByRole('button', { name })).getByText(name)).toBeVisible()
+    }
+  },
+}
+
+/** From `2xl` the presets sit inline, the current speed pressed; the readout keeps the slider. */
+export const InlinePresets: Story = {
+  render: () => <Transport />,
+  globals: WIDE,
+  parameters: WIDE_VIEWPORTS,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const presets = await canvas.findByRole('group', { name: 'Speed presets' }, { timeout: 10_000 })
+    await expect(within(presets).getByRole('button', { name: /^70/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await userEvent.click(within(presets).getByRole('button', { name: /^85/ }))
+    await expect(canvas.getByRole('button', { name: /^Speed: 85/ })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^85/),
+    )
+    await expect(within(presets).getByRole('button', { name: /^85/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await expect(within(presets).getByRole('button', { name: /^70/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  },
+}
+export const InlinePresetsDark: Story = {
+  render: () => <Transport />,
+  globals: { ...WIDE, appearance: 'dark' },
+  parameters: WIDE_VIEWPORTS,
+}
+export const InlinePresetsStage: Story = {
+  render: () => <Transport />,
+  globals: { ...WIDE, appearance: 'stage', distance: 'stand' },
+  parameters: WIDE_VIEWPORTS,
+}
+
+/** Below `2xl` there are no inline presets: the readout's popover has them. */
+export const NoInlinePresetsOnTablets: Story = {
+  render: () => <Transport />,
+  globals: TABLET,
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByRole('group', { name: 'Speed presets' })).toBeNull()
+  },
+}
+
+/** The icon cross-fades between Play and Pause; the name stays exactly one of the two. */
+export const PlayPause: Story = {
+  render: () => <Transport />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+    await expect(canvas.getByRole('button', { name: 'Pause' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Play' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
+    await expect(canvas.getByRole('button', { name: 'Play' })).toBeVisible()
+  },
+}
+
+/** Mix keeps its place and waits for the stems. */
+export const MixBeforeStems: Story = {
+  render: () => <Transport stems={false} />,
+  play: async ({ canvasElement }) => {
+    const mix = within(canvasElement).getByRole('button', { name: 'Mix' })
+    await expect(mix).toBeVisible()
+    await expect(mix).toBeDisabled()
+  },
+}
+
+/** With no loop the Loop button works as a hint, not a toggle. */
+const onLoopHint = fn()
+export const LoopWithoutLoop: Story = {
+  render: () => <Transport loop={false} best={undefined} onLoopHint={onLoopHint} />,
+  play: async ({ canvasElement }) => {
+    const loop = within(canvasElement).getByRole('button', { name: 'Loop' })
+    await expect(loop).toBeEnabled()
+    await expect(loop).not.toHaveAttribute('aria-pressed')
+    await userEvent.click(loop)
+    await expect(onLoopHint).toHaveBeenCalledTimes(1)
+  },
+}
+
+/** No loop yet: the pass pair keeps its room, hidden and out of reach. */
+export const PassSlotReserved: Story = {
+  render: () => <Transport loop={false} best={undefined} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const pass = canvasElement.querySelector<HTMLElement>('[data-slot=pass-control]')
+    await expect(pass).not.toBeNull()
+    await expect(pass).not.toBeVisible()
+    await expect(pass).toHaveAttribute('inert')
+    await expect(pass?.getBoundingClientRect().width).toBeGreaterThan(0)
+    await expect(canvas.queryByRole('button', { name: 'Felt clean' })).toBeNull()
+  },
+}
+export const PassSlotShown: Story = {
+  render: () => <Transport />,
+  play: async ({ canvasElement }) => {
+    const pass = canvasElement.querySelector<HTMLElement>('[data-slot=pass-control]')
+    await expect(pass).toBeVisible()
+    await expect(pass).not.toHaveAttribute('inert')
+    await expect(within(canvasElement).getByRole('button', { name: 'Felt clean' })).toBeEnabled()
+  },
+}
+
+function NewBest() {
+  const [best, setBest] = useState(70)
+  return (
+    <PassControl
+      labels={{ prompt: COPY.passPrompt, clean: COPY.feltClean, notYet: COPY.notYet }}
+      best={`Best clean pass: ${best} %`}
+      onClean={() => setBest(85)}
+      onNotYet={fn()}
+    />
+  )
+}
+
+/** A new best draws a tick before it; the best a song opens with has none. */
+export const PassNewBest: Story = {
+  render: () => <NewBest />,
+  play: async ({ canvasElement }) => {
+    const tick = () => canvasElement.querySelector('.lucide-check-draw')
+    await expect(tick()).toBeNull()
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Felt clean' }))
+    await waitFor(() => expect(tick()).not.toBeNull())
+    await expect(within(canvasElement).getByText('Best clean pass: 85 %')).toBeVisible()
+  },
+}
+
+/** A pass waiting for its answer rings the tray. */
+export const PassPrompting: Story = {
+  render: () => <Transport prompting />,
+  play: async ({ canvasElement }) => {
+    const pass = canvasElement.querySelector<HTMLElement>('[data-slot=pass-control]')
+    await expect(pass).toHaveClass('ring-2')
+  },
+}
+
+/** The speed number counts to the new value; the name states it at once. */
+export const SpeedTween: Story = {
+  render: () => <Transport />,
+  globals: { motion: 'full' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Faster' }))
+    await expect(canvas.getByRole('button', { name: /^Speed: 75/ })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^75/),
+    )
+  },
+}
+export const SpeedJumpsUnderReducedMotion: Story = {
+  render: () => <Transport />,
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Faster' }))
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^75/),
+    )
+  },
+}
+
+function HudDemo() {
+  const [sequence, setSequence] = useState(1)
+  return (
+    <>
+      <button type="button" onClick={() => setSequence(sequence + 1)}>
+        Again
+      </button>
+      <PedalHud message="Loop on" sequence={sequence} icon={<RepeatIcon aria-hidden />} />
+    </>
+  )
+}
+
+/** Each press pops the HUD in again, even with the same text. */
+export const PedalHudRepeats: Story = {
+  render: () => <HudDemo />,
+  play: async ({ canvasElement }) => {
+    const hud = () => canvasElement.ownerDocument.querySelector('[data-slot=pedal-hud]')
+    await waitFor(() => expect(hud()).toHaveAttribute('data-visible'))
+    const first = hud()
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Again' }))
+    await waitFor(() => expect(hud()).not.toBe(first))
+    await expect(hud()).toHaveTextContent('Loop on')
+  },
+}
+export const PedalHudStage: Story = { render: () => <HudDemo />, globals: { appearance: 'stage' } }
 
 export const ActiveLoop: Story = {
   render: () => <TransportButton icon={<RepeatIcon aria-hidden />} label="Loop" active />,
@@ -140,7 +460,6 @@ const Gallery = () => (
   <div className="flex flex-col gap-6">
     <Transport />
     <LoopBadgesDemo />
-    <PassDemo />
   </div>
 )
 export const Dark: Story = { render: Gallery, globals: { appearance: 'dark' } }

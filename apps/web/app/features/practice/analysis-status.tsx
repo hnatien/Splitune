@@ -11,6 +11,7 @@ import { InlineError } from '@/ui/status-message'
 import { WorkerStatus } from '@/ui/worker-status'
 import { statsQuery, workerStatusQuery } from '../library/queries'
 import type { PracticeData } from './model/data'
+import { usePractice } from './practice-context'
 
 // The uploader loads only when an upload needs the learner (12 §10 route budget).
 const ResumeFilePrompt = lazy(() =>
@@ -20,7 +21,8 @@ const retryUpload = (songId: string) =>
   import('../import/upload-manager').then((uploads) => uploads.retryUpload(songId))
 
 // The analysis while it runs (27 §3.7.3): shown on the notation's paper until the tab arrives,
-// with the upload's needs, the worker's state and the stages with an honest ETA. Stage changes
+// with the upload's needs, the worker's state and the stages with an honest ETA, in a raised card.
+// Once the beats are found it says the original can already be looped and slowed. Stage changes
 // arrive over SSE; one polite announcement per change.
 
 export function analysisFailures(data: PracticeData): StageFailure[] {
@@ -37,6 +39,7 @@ export function analysisFailures(data: PracticeData): StageFailure[] {
 
 export function AnalysisStatus({ data, songId }: { data: PracticeData; songId: string }) {
   const { song, upload, analysis, live } = data
+  const { layers } = usePractice()
   const running =
     analysis.data && (analysis.data.status === 'queued' || analysis.data.status === 'running')
   // Stage times feed the ETA, which only a running analysis shows.
@@ -119,10 +122,14 @@ export function AnalysisStatus({ data, songId }: { data: PracticeData; songId: s
       )}
       {waiting && <WorkerStatus online={false} text={m['analysis.queued_offline']()} />}
       {analysis.data ? (
-        <section aria-labelledby="stages" className="flex flex-col gap-4">
-          <h2 id="stages" className="text-xl">
+        <section
+          aria-labelledby="stages"
+          className="flex flex-col gap-4 rounded-2xl bg-surface-raised p-6 text-foreground shadow-1"
+        >
+          <h2 id="stages" className="text-2xl">
             {m['practice.stages_title']()}
           </h2>
+          {layers.beats && !layers.tab && <p>{m['practice.can_loop_now']()}</p>}
           <StageList
             stages={stageRows(analysis.data, eta)}
             progress={progressPercent(analysis.data)}

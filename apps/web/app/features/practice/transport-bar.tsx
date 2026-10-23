@@ -18,10 +18,18 @@ import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
 // TransportBar (12 §2, 27 §3.7.1): at the bottom edge on every layout (closest to the hands at a
-// stand), safe-area aware. Practice targets for restart/play/loop/speed and the pass pair; 48 px
-// for count-in, metronome and the mixer. Count-in and metronome wait for the beat grid.
+// stand), safe-area aware. Three labelled groups on sunken trays: Position, Loop and speed,
+// Practice helpers. Practice targets for restart/play/loop/speed and the pass pair; 48 px for
+// count-in, metronome and the mixer. Count-in and metronome wait for the beat grid. Mix and the
+// pass pair keep their place before stems and a loop exist, so nothing moves when they arrive.
 
 const PLAYING = new Set(['countIn', 'playing', 'loopRest', 'assess', 'audition'])
+
+const TRAY = 'm-0 flex min-w-0 items-center border-0 gap-1.5 rounded-2xl bg-surface-sunken p-1'
+// The two icons of play and pause sit on top of each other and cross-fade.
+const FADE = 'col-start-1 row-start-1 transition-[opacity,scale] duration-(--duration-fast)'
+const SHOWN = 'opacity-100 scale-100'
+const HIDDEN = 'opacity-0 scale-75'
 
 export function TransportBar({ layout }: { layout: PracticeLayout }) {
   const practice = usePractice()
@@ -43,7 +51,7 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
         layout === 'tablet-portrait' && 'justify-center',
       )}
     >
-      <div className="flex items-center gap-3">
+      <fieldset aria-label={m['practice.group_position']()} className={TRAY}>
         <TransportButton
           icon={<SkipBackIcon aria-hidden />}
           label={loopActive ? m['practice.restart_loop']() : m['practice.previous_bar']()}
@@ -53,35 +61,52 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
         />
         <TransportButton
           tone="primary"
-          icon={playing ? <PauseIcon aria-hidden /> : <PlayIcon aria-hidden />}
+          icon={
+            <span className="grid place-items-center">
+              <PauseIcon aria-hidden className={cn(FADE, playing ? SHOWN : HIDDEN)} />
+              <PlayIcon aria-hidden className={cn(FADE, playing ? HIDDEN : SHOWN)} />
+            </span>
+          }
           label={playing ? m['practice.pause']() : m['practice.play']()}
           shortcut={m['practice.key_space']()}
           disabled={!ready}
           onClick={() => practice.togglePlay()}
         />
-        <TransportButton
-          icon={<RepeatIcon aria-hidden />}
-          label={m['practice.loop']()}
-          shortcut="L"
-          pressed={loopActive && player.loopOn}
-          disabled={!loopActive}
-          onPressedChange={(on) => send({ type: 'SET_LOOP_ON', on })}
+      </fieldset>
+      <fieldset aria-label={m['practice.group_loop_speed']()} className={TRAY}>
+        {loopActive ? (
+          <TransportButton
+            icon={<RepeatIcon aria-hidden />}
+            label={m['practice.loop']()}
+            shortcut="L"
+            pressed={player.loopOn}
+            disabled={!ready}
+            onPressedChange={(on) => send({ type: 'SET_LOOP_ON', on })}
+          />
+        ) : (
+          <TransportButton
+            icon={<RepeatIcon aria-hidden />}
+            label={m['practice.loop']()}
+            shortcut="L"
+            disabled={!ready}
+            onClick={() => usePracticeUi.setState({ loopHint: true })}
+          />
+        )}
+        <SpeedControl
+          value={player.speedPct}
+          onValueChange={(value) => practice.setSpeed(value)}
+          bpm={grid?.bpm}
+          labels={{
+            speed: m['practice.speed'](),
+            decrease: m['practice.slower'](),
+            increase: m['practice.faster'](),
+            presets: m['practice.speed_presets'](),
+          }}
+          shortcuts={{ decrease: '↓', increase: '↑' }}
         />
-      </div>
-      <SpeedControl
-        value={player.speedPct}
-        onValueChange={(value) => practice.setSpeed(value)}
-        bpm={grid?.bpm}
-        labels={{
-          speed: m['practice.speed'](),
-          decrease: m['practice.slower'](),
-          increase: m['practice.faster'](),
-          presets: m['practice.speed_presets'](),
-        }}
-        shortcuts={{ decrease: '↓', increase: '↑' }}
-      />
+      </fieldset>
       {!compact && (
-        <div className="flex items-center gap-2">
+        <fieldset aria-label={m['practice.group_helpers']()} className={TRAY}>
           <TransportButton
             size="practice-2"
             icon={<CountInIcon aria-hidden />}
@@ -98,23 +123,21 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
             disabled={!layers.beats}
             onPressedChange={(on) => send({ type: 'SET_METRONOME', on })}
           />
-          {layers.stems && (
-            <TransportButton
-              size="practice-2"
-              icon={<SlidersVerticalIcon aria-hidden />}
-              label={m['practice.mix']()}
-              pressed={mixerOpen}
-              onPressedChange={(open) => usePracticeUi.setState({ mixerOpen: open })}
-            />
-          )}
-        </div>
+          <TransportButton
+            size="practice-2"
+            icon={<SlidersVerticalIcon aria-hidden />}
+            label={m['practice.mix']()}
+            pressed={mixerOpen && layers.stems}
+            disabled={!layers.stems}
+            onPressedChange={(open) => usePracticeUi.setState({ mixerOpen: open })}
+          />
+        </fieldset>
       )}
-      {loopActive && (
+      {(loopActive || !compact) && (
         <PassControl
-          className={cn(
-            'ml-auto transition-opacity duration-(--duration-base)',
-            promptPass > 0 ? 'opacity-100' : 'opacity-90',
-          )}
+          className={cn('ml-auto', !loopActive && 'invisible')}
+          inert={!loopActive}
+          prompting={promptPass > 0}
           labels={{
             prompt: m['practice.pass_prompt'](),
             clean: m['practice.felt_clean'](),

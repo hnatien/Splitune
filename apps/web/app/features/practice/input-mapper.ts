@@ -73,6 +73,7 @@ export function useInputMapper({ desktop }: { desktop: boolean }) {
           return
         case 'toggleLoop':
           if (!player.loop) {
+            usePracticeUi.setState({ loopHint: true })
             showHud(m['practice.loop_off']())
             return
           }

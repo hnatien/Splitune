@@ -3,7 +3,7 @@ import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ChordChip, type ChordTiming } from '@/ui/chord-chip'
-import { ConfidenceLegend } from '@/ui/confidence-legend'
+import { ConfidenceLegend, ConfidenceLegendPopover } from '@/ui/confidence-legend'
 import { chordsAround } from './model/view-model'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
@@ -11,8 +11,9 @@ import { usePracticeUi } from './practice-store'
 // ChordStrip (12 §2, §4): beat-synchronous chips following the clock, the current one enlarged,
 // confidence by ink, dashed border and "?" (never colour alone); tap → editor sheet. The legend
 // sits at the end with the "Show uncertainty" switch. Chips that don't fit are clipped inside the
-// list, which fades at its end so a cut name doesn't read as a shorter chord (padded so focus rings
-// show); the list keeps at least 20rem and the legend wraps when the strip is narrower than both.
+// list, which fades at its end so a cut name doesn't read as a shorter chord (padded by --bleed so
+// the scaled current chip and its focus ring show); the list keeps at least 20rem and the legend
+// wraps when the strip is narrower than both. Below `lg` a button opens the legend in a popover.
 
 const BEFORE = 1
 const AFTER = 5
@@ -48,17 +49,28 @@ export function ChordStrip({ legend = true, className }: { legend?: boolean; cla
     data.analysis.data?.pipeline_version ??
     ''
 
+  const legendProps = {
+    text: m['practice.legend']({ model }),
+    labels: {
+      showUncertainty: m['practice.show_uncertainty'](),
+      medium: m['practice.probably'](),
+      low: m['practice.unsure'](),
+    },
+    showUncertainty,
+    onShowUncertaintyChange: (show: boolean) => update({ showUncertainty: show }),
+  }
+
   return (
     <div
       data-slot="chord-strip"
       className={cn(
-        'flex min-h-[5.5rem] shrink-0 items-center gap-3 overflow-hidden border-b border-border px-4 py-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter',
+        'flex min-h-[5.5rem] shrink-0 items-center gap-3 overflow-hidden border-b border-border px-(--bleed) py-2 [--bleed:calc(var(--spacing)*6)] in-data-[distance=floor]:min-h-[6.5rem] in-data-[distance=floor]:[--bleed:calc(var(--spacing)*14)] in-data-[distance=stand]:[--bleed:calc(var(--spacing)*8)] motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter',
         className,
       )}
     >
       <ol
         aria-label={m['practice.chords']()}
-        className="-m-1.5 flex min-w-80 flex-1 items-center gap-2 overflow-hidden p-1.5 mask-r-from-[calc(100%-var(--spacing)*6)]"
+        className="-m-(--bleed) flex min-w-80 flex-1 items-center gap-5 overflow-hidden p-(--bleed) mask-r-from-[calc(100%-var(--spacing)*6)] in-data-[distance=floor]:gap-10 in-data-[distance=stand]:gap-7"
       >
         {shown.map((chord) => {
           const position = chords.indexOf(chord)
@@ -85,17 +97,14 @@ export function ChordStrip({ legend = true, className }: { legend?: boolean; cla
         })}
       </ol>
       {legend && (
-        <ConfidenceLegend
-          className="hidden lg:inline-flex"
-          text={m['practice.legend']({ model })}
-          labels={{
-            showUncertainty: m['practice.show_uncertainty'](),
-            medium: m['practice.probably'](),
-            low: m['practice.unsure'](),
-          }}
-          showUncertainty={showUncertainty}
-          onShowUncertaintyChange={(show) => update({ showUncertainty: show })}
-        />
+        <>
+          <ConfidenceLegend className="hidden lg:inline-flex" {...legendProps} />
+          <ConfidenceLegendPopover
+            className="lg:hidden"
+            buttonLabel={m['practice.legend_button']()}
+            {...legendProps}
+          />
+        </>
       )}
     </div>
   )

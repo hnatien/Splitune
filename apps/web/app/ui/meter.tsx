@@ -12,7 +12,7 @@ function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
       {children}
       <MeterPrimitive.Track
         data-slot="meter-track"
-        className="relative h-2 w-full overflow-hidden rounded-full border border-input bg-muted"
+        className="relative h-2 w-full overflow-hidden rounded-full border border-input bg-surface-sunken"
       >
         <MeterPrimitive.Indicator data-slot="meter-indicator" className="h-full bg-foreground" />
       </MeterPrimitive.Track>
