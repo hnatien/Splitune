@@ -23,6 +23,19 @@ describe.each(CONTEXTS)('$name', ({ context }) => {
     }
   })
 
+  it('Notes digits read on the tinted note head over paper and the loop band', () => {
+    // A sure note's head is the instrument's mark at 30 % over the paper (GuitarRoll).
+    for (const mark of ['--fret-guitar', '--fret-bass'] as const) {
+      for (const under of ['--paper', '--score-loop-fill'] as const) {
+        const tint = tokens.color(mark).clone()
+        tint.alpha = 0.3
+        const head = over(tint, tokens.color('--paper'))
+        expect(contrast(tokens.color('--ink'), head)).toBeGreaterThanOrEqual(4.5)
+        expect(contrast(tokens.color('--ink'), tokens.color(under))).toBeGreaterThanOrEqual(4.5)
+      }
+    }
+  })
+
   it.each([...SEMANTIC_ROLES, ...COMPONENT_TOKENS].filter((name) => !NON_COLOURS.has(name)))(
     '%s is inside sRGB',
     (name) => {

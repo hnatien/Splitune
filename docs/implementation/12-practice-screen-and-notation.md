@@ -126,6 +126,11 @@ WCAG 2.2 AA (plus the design QA checklist in `28-ui-quality-and-design-review.md
 - alphaTab always draws "rendered by alphaTab" under the score (no setting); left as is.
 - Not built: profile sync of learned pedal keys (localStorage only), YouTube embed fallback (see doc 13).
 
+## Implementation notes (step 18b, 2026-10-24)
+- Guitar and bass Notes read the clock like the tab: note times are the tab's quantized positions on the beat grid (`tickOfPosition` → `tickToTime`), so the lanes, the neck and the tab cursor agree. The lanes' canvas and the neck's state each read `audio.position()` once per frame.
+- **Loop seam:** inside a loop the lanes draw past the loop's end into its next pass (each pass clipped at the end), and the neck takes the loop start's window in the loop's last half second, so the wrap neither blanks nor moves anything. A clock jump over 0.25 s between frames counts as a seek: the neck re-frames at once.
+- Notes load through the chord-sheet chunk (12 §10, 7.96 KB gzip); route JS 310,392 B of the 310 KB budget (317,440 B; raised by the owner on 2026-10-24), +335 B over `dev` built in the same checkout path (build output varies by path, so only same-path builds compare).
+
 ## Open questions
 - Page-flip vs scroll default for tab at different tempos (QX13) — A/B in beta.
 - Legibility at 1–2 m on phones (QX3) — test notation scale presets.
