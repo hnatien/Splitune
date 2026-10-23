@@ -21,9 +21,9 @@ const AlphaTabView = lazy(() =>
 )
 
 // NotationView (12 §2–3, 27 §3.7.3): on paper in every appearance. Before the tab exists it holds
-// the analysis status, then a chord-only sheet (for piano, the chord chart), then the tab (for
-// piano, the falling notes) — each layer fading in without moving the transport. Bars are buttons:
-// tap A then B loops them.
+// the analysis status, then a chord-only sheet (for piano, the chord chart), then the tab or, when
+// chosen, guitar's Notes (for piano, the falling notes) — each layer fading in without moving the
+// transport. Bars are buttons: tap A then B loops them.
 
 /** summary.recommended_view for the learner's part (05): the global chords-only fallback. */
 export function useRecommendedView() {
@@ -33,9 +33,10 @@ export function useRecommendedView() {
 }
 
 /**
- * What the paper shows, as the status bar's Tab / Chords switch reads it: chords (the chord sheet,
- * or the glance view on phone portrait, its default) or the tab (piano: the falling notes, its
- * Notes) once one exists and isn't held back by a chords-only recommendation.
+ * What the paper shows, as the status bar's view switch reads it: chords (the chord sheet, or the
+ * glance view on phone portrait, its default) or the notation (the tab or guitar's Notes; piano:
+ * the falling notes or the staff) once it exists and isn't held back by a chords-only
+ * recommendation.
  */
 export function useShownView(layout: PracticeLayout): 'tab' | 'chords' {
   const { layers } = usePractice()
@@ -52,6 +53,7 @@ export function NotationPane({
   selectedNoteId = null,
   onNoteActivate,
   onBarActivate,
+  compact = false,
   className,
 }: {
   interaction?: 'bars' | 'notes'
@@ -59,6 +61,8 @@ export function NotationPane({
   onNoteActivate?: (noteId: string) => void
   /** Instead of the loop's A/B taps (the editor selects bars). */
   onBarActivate?: (bar: number) => void
+  /** Phone landscape: guitar's Notes carry the chord the strip would. */
+  compact?: boolean
   className?: string
 }) {
   const practice = usePractice()
@@ -69,7 +73,7 @@ export function NotationPane({
   const recommended = useRecommendedView()
   const placeholderId = useId()
   const notation = chosen !== 'chords' && (!recommended.chordsOnly || forceTab)
-  if (layers.tab && notation) {
+  if (layers.tab && notation && chosen !== 'notes') {
     return (
       <TabView
         interaction={interaction}
@@ -80,13 +84,14 @@ export function NotationPane({
       />
     )
   }
-  if (layers.chords || layers.roll) {
+  if (layers.chords || layers.roll || layers.tab) {
     return (
       <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', className)} />}>
         <ChordSheet
           className={className}
           onBarActivate={activate}
-          notes={layers.roll && (notation || !layers.chords)}
+          notes={(layers.roll || layers.tab) && (notation || !layers.chords)}
+          compact={compact}
         />
       </Suspense>
     )

@@ -74,6 +74,8 @@
   --key-left-fg: oklch(0.2 0.01 75);
   --key-right: oklch(0.52 0.17 278);
   --key-right-fg: oklch(0.985 0.004 88);
+  --fret-guitar: oklch(0.6 0.13 64);
+  --fret-bass: var(--stem-bass);
   --waveform-peak: var(--input);
   --waveform-rms: var(--muted-foreground);
   --waveform-played: var(--foreground);
@@ -146,6 +148,8 @@
     --key-left-fg: oklch(0.2 0.01 75);
     --key-right: oklch(0.52 0.17 278);
     --key-right-fg: oklch(0.985 0.004 88);
+    --fret-guitar: oklch(0.53 0.12 62);
+    --fret-bass: oklch(0.5 0.14 252);
     --waveform-peak: var(--input);
     --waveform-rms: var(--muted-foreground);
     --waveform-played: var(--foreground);
@@ -218,6 +222,8 @@
   --key-left-fg: oklch(0.2 0.01 75);
   --key-right: oklch(0.52 0.17 278);
   --key-right-fg: oklch(0.985 0.004 88);
+  --fret-guitar: oklch(0.53 0.12 62);
+  --fret-bass: oklch(0.5 0.14 252);
   --waveform-peak: var(--input);
   --waveform-rms: var(--muted-foreground);
   --waveform-played: var(--foreground);
@@ -289,6 +295,8 @@
   --key-left-fg: oklch(0.14 0.01 75);
   --key-right: oklch(0.52 0.17 278);
   --key-right-fg: oklch(0.985 0.004 88);
+  --fret-guitar: var(--stem-guitar);
+  --fret-bass: var(--stem-bass);
   --waveform-peak: var(--input);
   --waveform-rms: var(--muted-foreground);
   --waveform-played: var(--foreground);
@@ -310,6 +318,8 @@
   --score-playhead: oklch(0.68 0.14 27);
   --staff: oklch(0.56 0.008 81);
   --bar-current: oklch(0.215 0.02 80);
+  --fret-guitar: var(--orange-stage);
+  --fret-bass: var(--sky-stage);
 }
 
 /* Roles shared by every appearance: aliases of the roles above. */
@@ -398,6 +408,8 @@
     --key-left-fg: HighlightText;
     --key-right: Highlight;
     --key-right-fg: HighlightText;
+    --fret-guitar: Highlight;
+    --fret-bass: Highlight;
     --hud-bg: Canvas;
     --hud-fg: CanvasText;
     --scrim: transparent;
