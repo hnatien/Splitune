@@ -45,6 +45,10 @@ if (existsSync(envFile)) {
   console.log('\nCreated .env from .env.example.')
 }
 
+// Model weights (~4 GB) into ML_MODELS_DIR from .env; files already in place are kept.
+process.loadEnvFile(envFile)
+run('uv', ['run', '--no-sync', 'python', 'scripts/fetch_models.py'], join(root, 'services/ml'))
+
 run('git', ['config', 'core.hooksPath', '.githooks'])
 if (!hasCommand('gitleaks')) {
   console.warn(

@@ -23,6 +23,22 @@ from .paths import REPO_ROOT
 REGISTER_DIR = REPO_ROOT / "compliance" / "register"
 _SHA256 = r"^[0-9a-f]{64}$"
 
+# Record → directory under ML_MODELS_DIR holding its weights (`scripts/fetch_models.py`). madmom's
+# models ship with the package, so they have no entry.
+WEIGHTS_DIRS = {
+    "basic-pitch": "basic-pitch",
+    "btc-large-voca": "btc",
+    "consonance-ace": "consonance-ace",
+    "transkun-v2": "transkun",
+    "yourmt3-moe": "yourmt3",
+    "panns-cnn14": "panns",
+    "bs-roformer-sw": "audio-separator",
+    "bs-roformer-viperx-1297": "audio-separator",
+    "htdemucs-6s": "audio-separator",
+    "htdemucs-ft": "audio-separator",
+    "mel-roformer-kim-vocals": "audio-separator",
+}
+
 
 class WeightsFile(BaseModel):
     name: str = Field(min_length=1)
@@ -93,3 +109,16 @@ def verify(record: ModelRecord, directory: Path) -> list[Path]:
             raise StageError("weights_mismatch", retry=False)
         paths.append(path)
     return paths
+
+
+def missing(models_dir: Path) -> list[str]:
+    """Records in WEIGHTS_DIRS with a weight file absent or of the wrong size under `models_dir`.
+    Sizes only, so it is cheap at worker start; stages still check every sha256 before loading."""
+    absent: list[str] = []
+    for record_id, subdir in WEIGHTS_DIRS.items():
+        for entry in model(record_id).weights.files:
+            path = models_dir / subdir / entry.name
+            if not path.is_file() or path.stat().st_size != entry.bytes:
+                absent.append(record_id)
+                break
+    return absent
