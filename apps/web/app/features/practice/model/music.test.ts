@@ -21,6 +21,8 @@ describe('effective music', () => {
     expect(out.tab?.noteMap.length).toBeGreaterThan(0)
     expect(out.tab?.alphaTex).toContain('\\staff {tabs}')
     expect(out.displayChords.map((c) => c.label)).toContain('A:min')
+    // Chord names ride above the bars of the tab.
+    expect(out.tab?.alphaTex).toMatch(/ch "Am\??"/)
   })
 
   it('applies chord and note corrections as overlays', () => {

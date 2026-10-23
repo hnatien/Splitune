@@ -1,5 +1,6 @@
 import { CheckIcon } from 'lucide-react'
 import { useId } from 'react'
+import { cn } from '@/lib/utils'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
 // Doc 26 §12.2, 27 §5.2: "Your part loud", "Minus-one", "Original". One is always selected; the
@@ -13,10 +14,19 @@ type MixPresetGroupProps = {
   options: { value: MixPreset; label: string; gloss: string }[]
   /** Group name, e.g. "Mix". */
   label: string
+  /** Vertical: a full-width list, for narrow panels like the mixer drawer. */
+  orientation?: 'horizontal' | 'vertical'
   className?: string
 }
 
-function MixPresetGroup({ value, onValueChange, options, label, className }: MixPresetGroupProps) {
+function MixPresetGroup({
+  value,
+  onValueChange,
+  options,
+  label,
+  orientation = 'horizontal',
+  className,
+}: MixPresetGroupProps) {
   const glossId = useId()
   return (
     <div data-slot="mix-preset-group" className="flex flex-col gap-2">
@@ -24,15 +34,20 @@ function MixPresetGroup({ value, onValueChange, options, label, className }: Mix
         aria-label={label}
         aria-describedby={glossId}
         size="practice-2"
+        orientation={orientation}
         value={value ? [value] : []}
         onValueChange={(next) => {
           const preset = next[0] as MixPreset | undefined
           if (preset) onValueChange(preset)
         }}
-        className={className}
+        className={cn(orientation === 'vertical' && 'w-full', className)}
       >
         {options.map((option) => (
-          <ToggleGroupItem key={option.value} value={option.value}>
+          <ToggleGroupItem
+            key={option.value}
+            value={option.value}
+            className={orientation === 'vertical' ? 'justify-start rounded-xl' : undefined}
+          >
             {value === option.value && <CheckIcon aria-hidden />}
             {option.label}
           </ToggleGroupItem>

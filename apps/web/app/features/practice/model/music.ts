@@ -93,6 +93,8 @@ export function computeMusic(input: MusicInput): MusicOutput {
         level,
         fingeringMode: input.options.fingeringMode,
         bands,
+        // Chord names sit over the bar where they change, as in every tab players know.
+        chordNames: true,
       },
     )
     return {

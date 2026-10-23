@@ -1,29 +1,42 @@
-import { usePracticeDefaults } from '@/lib/display-store'
+import { ChevronDownIcon } from 'lucide-react'
 import { m } from '@/lib/i18n'
-import { ConfidenceLegend } from '@/ui/confidence-legend'
-import { LevelToggle } from './level-toggle'
+import { Button } from '@/ui/button'
+import { CapoIcon } from '@/ui/icons'
+import { Popover, PopoverTrigger } from '@/ui/popover'
+import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
+import { LevelToggle, levelLabel } from './level-toggle'
 import { usePractice } from './practice-context'
 
-// Level and capo, and the legend where the chord strip has no room for it.
+// Level and capo at the chord strip's end (12 §2): one button names the level (and the capo when
+// one is set); the level toggle and the capo field open in a popover. It sits on the paper, so it
+// takes the score's ink and staff colours. Stage keeps the chrome out.
 export function ScoreTools() {
-  const { data } = usePractice()
-  const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
-  const update = usePracticeDefaults((s) => s.update)
-  const model = data.notes.data?.models[0]?.version ?? data.analysis.data?.pipeline_version ?? ''
+  const { options } = usePractice()
+  const summary = [
+    levelLabel(options.level),
+    options.capo > 0 ? m['practice.capo_fret']({ fret: String(options.capo) }) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border px-4 py-2 in-data-[appearance=stage]:hidden">
-      <LevelToggle />
-      <ConfidenceLegend
-        className="lg:hidden"
-        text={m['practice.legend']({ model })}
-        labels={{
-          showUncertainty: m['practice.show_uncertainty'](),
-          medium: m['practice.probably'](),
-          low: m['practice.unsure'](),
-        }}
-        showUncertainty={showUncertainty}
-        onShowUncertaintyChange={(show) => update({ showUncertainty: show })}
-      />
-    </div>
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            className="ml-auto shrink-0 border-staff bg-paper text-ink hover:bg-bar-current in-data-[appearance=stage]:hidden"
+            aria-label={`${m['practice.level_and_capo']()}: ${summary}`}
+          />
+        }
+      >
+        <CapoIcon aria-hidden />
+        {summary}
+        <ChevronDownIcon aria-hidden className="size-4" />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto gap-4">
+        <PopoverTitle>{m['practice.level_and_capo']()}</PopoverTitle>
+        <LevelToggle />
+      </PopoverContent>
+    </Popover>
   )
 }

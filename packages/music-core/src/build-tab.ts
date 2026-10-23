@@ -1,6 +1,6 @@
 import { SCHEMA_VERSION } from '@splitune/contracts'
 import { correctBassOctaves } from './bass/octave.ts'
-import { type BandThresholds, DEFAULT_BANDS } from './calibration/lookup.ts'
+import { type BandThresholds, confidenceBand, DEFAULT_BANDS } from './calibration/lookup.ts'
 import {
   applyBeatCorrections,
   applyChordCorrections,
@@ -52,7 +52,7 @@ export interface BuildTabOptions {
   quantize?: QuantizeOptions
   lowBandEnergy?: Readonly<Record<string, number>> // bass octave correction, per note id
   title?: string
-  chordNames?: boolean // chord names as alphaTex beat text (default off: the chord strip shows them)
+  chordNames?: boolean // chord names as alphaTex beat text, "?" after low-confidence ones (default off)
 }
 
 export type BuildTabWarning = 'keep_shapes_unavailable' | 'unplayable_notes'
@@ -262,7 +262,9 @@ export function buildTab(
   for (const segment of displayChords) {
     const parsed = parseChord(segment.label)
     if (parsed === null || parsed.kind !== 'chord') continue
-    const name = chordDisplayName(segment.label, segment.bass)
+    // A low-confidence chord keeps its "?" above the tab, as on the chord strip (26 §5).
+    const unsure = confidenceBand(segment.confidence, bands) === 'low' ? '?' : ''
+    const name = chordDisplayName(segment.label, segment.bass) + unsure
     if (chordMarks.at(-1)?.name === name) continue
     chordMarks.push({ onTick: snapTimeToGrid(grid, segment.t0, quantized.swingBars), name })
   }

@@ -2,17 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
+import { ChordShape } from './chord-shape'
 import { chordsAround } from './model/view-model'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
 // Glance view (26 §6.3, 27 §3.7.2): the phone-portrait default and the Floor distance — current
-// and next chord, bar.beat, loop and speed at reading sizes a learner can see from 1.5 m. The
-// current chord rises in when it changes; "Loop this bar" is the glance view's way to make a loop.
+// chord with its guitar shape, next chord, bar.beat, loop and speed at reading sizes a learner can
+// see from 1.5 m. The current chord rises in when it changes; "Loop this bar" is the glance view's
+// way to make a loop.
 
 export function GlanceView() {
-  const { view, audio, grid, player, tapBar } = usePractice()
-  const [now, setNow] = useState({ chord: '', index: -1, next: '', bar: 0, beat: 1 })
+  const { view, audio, grid, player, tapBar, data, options } = usePractice()
+  const [now, setNow] = useState({ chord: '', label: '', index: -1, next: '', bar: 0, beat: 1 })
   const last = useRef('')
   useEffect(() => {
     let frame = 0
@@ -23,6 +25,7 @@ export function GlanceView() {
       const at = grid?.positionAt(seconds) ?? { bar: 0, beat: 1 }
       const next = {
         chord: around.current?.name ?? '',
+        label: around.current?.label ?? '',
         index: around.current ? around.index : -1,
         next: around.next?.name ?? '',
         bar: at.bar,
@@ -44,13 +47,19 @@ export function GlanceView() {
       data-slot="glance-view"
       className="flex flex-1 flex-col items-center justify-center gap-4 bg-paper px-4 py-6 text-ink"
     >
-      <p
-        key={now.index}
-        className="animate-rise-in font-reading text-read-chord-current leading-none"
-        aria-live="off"
-      >
-        {now.chord || m['practice.no_chord']()}
-      </p>
+      <div key={now.index} className="flex animate-rise-in items-center gap-5">
+        <p className="font-reading text-read-chord-current leading-none" aria-live="off">
+          {now.chord || m['practice.no_chord']()}
+        </p>
+        {now.label && data.instrument === 'guitar' && (
+          <ChordShape
+            className="aspect-[60/72] h-[calc(var(--read-chord-current)*0.9)] shrink-0 text-ink"
+            label={now.label}
+            name={now.chord}
+            capo={options.capo}
+          />
+        )}
+      </div>
       {now.next && (
         <p className="font-reading text-read-chord text-ink">
           <span className="sr-only">{m['practice.next_chord']()} </span>

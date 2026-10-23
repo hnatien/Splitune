@@ -36,14 +36,19 @@ export type Patch = {
   stemsPurged?: boolean
   /** A stage that failed and fell back (27 §3.7.3 "Failed stage"). */
   failedStage?: string
+  /** A URL import with its downloaded video (13 §6a); an empty clip, so nothing is fetched. */
+  video?: boolean
 }
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
     const done = analysis(1, patch.running ? 'running' : 'done')
-    const run = patch.failedStage
+    const failed = patch.failedStage
       ? { ...done, stages: { ...done.stages, [patch.failedStage]: { status: 'failed' as const } } }
       : done
+    const run = patch.video
+      ? { ...failed, stages: { ...failed.stages, url_import: { status: 'done' as const } } }
+      : failed
     const entries = kinds.map((kind) => ({
       id: artefactId(kind),
       kind,
@@ -56,8 +61,15 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     const withArtefacts: z.infer<typeof Analysis> = { ...run, artefacts: entries }
     const song: z.infer<typeof SongDetail> = {
       ...detail(1, withArtefacts),
+      ...(patch.video ? { source_kind: 'url' as const } : {}),
       duration_s: 20.5,
       artefacts: entries,
+    }
+    if (patch.video) {
+      client.setQueryData(orpc.songs.mediaUrl.queryKey({ input: { id: song.id, kind: 'video' } }), {
+        url: 'data:video/mp4,',
+        expires_at: '2026-10-22T10:15:00Z',
+      })
     }
     client.setQueryData(orpc.songs.get.queryKey({ input: { id: song.id } }), song)
     client.setQueryData(orpc.analyses.get.queryKey({ input: { id: run.id } }), withArtefacts)

@@ -3,9 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
-import { track } from '@/lib/track'
 import { useOnline } from '@/lib/use-online'
-import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import { PedalHud } from '@/ui/pedal-hud'
 import { Banner, InlineError } from '@/ui/status-message'
@@ -13,7 +11,7 @@ import { FocusShell } from '../shell/focus-shell'
 import { ChordStrip } from './chord-strip'
 import { useInputMapper } from './input-mapper'
 import { isPhone, type PracticeLayout, usePracticeLayout } from './layout'
-import { NotationPane } from './notation-pane'
+import { NotationPane, useShownView } from './notation-pane'
 import {
   type FetchAudio,
   PracticeProvider,
@@ -33,9 +31,6 @@ const MixerDrawer = lazy(() =>
 )
 const EditorSheet = lazy(() =>
   import('./editor-sheet').then((module) => ({ default: module.EditorSheet })),
-)
-const ScoreTools = lazy(() =>
-  import('./score-tools').then((module) => ({ default: module.ScoreTools })),
 )
 const GlanceView = lazy(() =>
   import('./glance-view').then((module) => ({ default: module.GlanceView })),
@@ -112,11 +107,14 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
   }
   return (
     <FocusShell fill exit={practice.guest} status={<PracticeStatus layout={layout} />}>
-      <Suspense fallback={null}>
-        <PracticeBanners />
-      </Suspense>
-      <Interrupted />
-      <AudioProblem />
+      {/* Notices sit in one slim stack above the paper; it takes no room when there are none. */}
+      <div className="flex shrink-0 flex-col gap-2 px-4 py-2 empty:hidden md:px-6 [&>[data-slot=banner]]:py-1.5">
+        <Suspense fallback={null}>
+          <PracticeBanners />
+        </Suspense>
+        <Interrupted />
+        <AudioProblem />
+      </div>
       <Regions layout={layout} />
       <PracticeTimeline compact={layout === 'phone-landscape'} />
       <TransportBar layout={layout} />
@@ -126,90 +124,30 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
   )
 }
 
+// The paper: the chord strip over the tab (or the chord sheet), or the glance view on phone
+// portrait; a URL import's video floats over its corner when opened from the status bar.
 function Regions({ layout }: { layout: PracticeLayout }) {
   const { layers } = usePractice()
-  const showTab = usePracticeUi((s) => s.showTab)
-  const overlay = usePracticeUi((s) => s.videoOverlay)
+  const shown = useShownView(layout)
+  const videoOpen = usePracticeUi((s) => s.videoOpen)
   const video = useVideoUrl()
-  const hasVideo = Boolean(video.data)
-
-  if (layout === 'phone-portrait') {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        {layers.chords && (
-          <div className="flex justify-end px-4 pt-2">
-            <Button
-              variant="outline"
-              aria-pressed={showTab}
-              onClick={() => {
-                usePracticeUi.setState({ showTab: !showTab })
-                track('view_changed', { view: showTab ? 'glance' : 'tab' })
-              }}
-            >
-              {showTab ? m['practice.show_glance']() : m['practice.show_tab']()}
-            </Button>
-          </div>
-        )}
-        {showTab || !layers.chords ? (
-          <NotationPane />
-        ) : (
-          <Suspense fallback={null}>
-            <GlanceView />
-          </Suspense>
-        )}
-      </div>
-    )
-  }
-
-  const music = (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {layers.chords && (
-        <ChordStrip
-          className={cn(
-            layout === 'phone-landscape' && '[&_[data-slot=chord-chip]]:text-read-chord-current',
-          )}
-          legend={layout !== 'phone-landscape'}
-        />
-      )}
-      {layers.tab && layout !== 'phone-landscape' && (
-        <Suspense fallback={null}>
-          <ScoreTools />
-        </Suspense>
-      )}
-      <NotationPane />
-    </div>
-  )
-
-  if (hasVideo && overlay && layout !== 'tablet-portrait') {
-    return (
-      <div className="relative flex min-h-0 flex-1">
-        <Suspense fallback={null}>
-          <VideoPane className="absolute inset-0" />
-        </Suspense>
-        <div className="relative flex min-h-0 flex-1 flex-col bg-hud-bg [&_[data-slot=alphatab-view]]:bg-transparent">
-          {music}
-        </div>
-      </div>
-    )
-  }
-  if (hasVideo && (layout === 'tablet-landscape' || layout === 'desktop')) {
-    return (
-      <div className="grid min-h-0 flex-1 grid-cols-[2fr_3fr]">
-        <Suspense fallback={<div className="border-r border-border" />}>
-          <VideoPane className="border-r border-border" />
-        </Suspense>
-        {music}
-      </div>
-    )
-  }
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {hasVideo && (
-        <Suspense fallback={<div className="aspect-video max-h-[40dvh] shrink-0" />}>
-          <VideoPane className="aspect-video max-h-[40dvh] shrink-0" />
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {layout === 'phone-portrait' && shown === 'chords' ? (
+        <Suspense fallback={null}>
+          <GlanceView />
+        </Suspense>
+      ) : (
+        <>
+          {(layers.chords || layers.tab) && <ChordStrip compact={isPhone(layout)} />}
+          <NotationPane />
+        </>
+      )}
+      {video.data && videoOpen && (
+        <Suspense fallback={null}>
+          <VideoPane />
         </Suspense>
       )}
-      {music}
     </div>
   )
 }

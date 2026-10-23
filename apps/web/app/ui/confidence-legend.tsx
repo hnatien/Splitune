@@ -1,13 +1,14 @@
+import { InfoIcon } from 'lucide-react'
 import { lazy, Suspense, useId } from 'react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/ui/button'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import { Switch } from '@/ui/switch'
 
-// Doc 26 §5: always-visible "Auto-transcribed — may contain errors (v{model})" chip with the
-// "Show uncertainty" switch, and a key for the dashed box and "?" so the marks are explained.
-// Below `lg` the strip has no room for it, so ConfidenceLegendPopover opens the same legend from
-// a button; the popover's contents load on first open (12 §10 route budget).
+// Doc 26 §5: the "Auto-transcribed — may contain errors (v{model})" legend with the "Show
+// uncertainty" switch, and a key for the dashed box and "?" so the marks are explained. On the
+// practice screen ConfidenceLegendPopover keeps it one tap away behind an always-visible dashed
+// chip ("Auto-transcribed · v0.4.0"; its icon alone below `md`); the popover's contents load on
+// first open (12 §10 route budget).
 
 const LegendPanel = lazy(() =>
   import('./confidence-legend-panel').then((module) => ({ default: module.ConfidenceLegendPanel })),
@@ -79,14 +80,26 @@ function ConfidenceLegendPopover({
   className,
   ...legend
 }: Omit<ConfidenceLegendProps, 'className'> & {
-  /** Catalogue `practice.legend_button`, e.g. "What do the dashes mean?". */
+  /** Catalogue `practice.legend_short`, e.g. "Auto-transcribed · v0.4.0". */
   buttonLabel: string
   className?: string
 }) {
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="ghost" size="practice-2" className={className} />}>
-        {buttonLabel}
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            data-slot="confidence-legend-chip"
+            className={cn(
+              'inline-flex min-h-target min-w-target shrink-0 items-center justify-center gap-2 rounded-full border-[1.5px] border-dashed border-input px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+              className,
+            )}
+          />
+        }
+      >
+        <InfoIcon aria-hidden className="size-4 shrink-0" />
+        <span className="max-md:sr-only">{buttonLabel}</span>
       </PopoverTrigger>
       <Suspense fallback={null}>
         <LegendPanel {...legend} />

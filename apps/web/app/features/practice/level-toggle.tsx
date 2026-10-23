@@ -18,6 +18,9 @@ const LEVEL_LABEL: Record<string, () => string> = {
   full: () => m['practice.level_full'](),
 }
 
+/** The level's name as the toggle shows it ("As played"). */
+export const levelLabel = (level: string) => LEVEL_LABEL[level]?.() ?? ''
+
 export function LevelToggle({ capo = true }: { capo?: boolean }) {
   const { options, setOptions, data, layers } = usePractice()
   if (!layers.tab) return null
@@ -37,7 +40,7 @@ export function LevelToggle({ capo = true }: { capo?: boolean }) {
       >
         {levelsFor(instrument).map((level) => (
           <ToggleGroupItem key={level} value={level}>
-            {LEVEL_LABEL[level]?.()}
+            {levelLabel(level)}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>

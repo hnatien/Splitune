@@ -37,7 +37,7 @@ export function DisplayPanel() {
   const practice = usePracticeDefaults()
   const calibrationId = useId()
   return (
-    <PopoverContent align="end" className="max-h-[80dvh] w-[22rem] gap-4 overflow-y-auto">
+    <PopoverContent align="end" className="max-h-[80dvh] w-[24rem] gap-4 overflow-y-auto">
       <PopoverTitle>{m['practice.display']()}</PopoverTitle>
       <PanelSection title={m['practice.display_section_look']()}>
         <OptionSegments
@@ -73,8 +73,13 @@ export function DisplayPanel() {
             display.update({ distance: distance === 'auto' ? undefined : distance })
           }
         />
-        <div className="flex flex-col gap-2">
-          <Label id={calibrationId}>{m['settings.calibration']()}</Label>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <Label id={calibrationId}>{m['settings.calibration']()}</Label>
+            <span className="text-sm font-medium tabular-nums">
+              {formatPercent(display.calibration * 100)}
+            </span>
+          </div>
           <Slider
             aria-labelledby={calibrationId}
             thumbLabels={[m['settings.calibration']()]}
@@ -85,9 +90,6 @@ export function DisplayPanel() {
             value={display.calibration}
             onValueChange={(value) => display.update({ calibration: Number(value) })}
           />
-          <p className="text-sm text-muted-foreground tabular-nums">
-            {formatPercent(display.calibration * 100)}
-          </p>
         </div>
         <SwitchRow
           label={m['settings.hyperlegible']()}

@@ -37,10 +37,10 @@ const WIDE_VIEWPORTS = {
   },
 }
 
-// The transport bar's three groups on their sunken trays, as the practice screen sets them; the
-// Mix button and the pass pair keep their place before stems and a loop exist.
-const TRAY = 'm-0 flex min-w-0 items-center gap-1.5 rounded-2xl border-0 bg-surface-sunken p-1'
-const FADE = 'col-start-1 row-start-1 transition-[opacity,scale] duration-(--duration-fast)'
+// The transport bar as the practice screen sets it: restart and a round play (icons only, 26 §11),
+// the loop toggle joined to its badge, the speed capsule, the helpers, and the pass pair at the
+// right edge; Mix and the pass pair keep their place before stems and a loop exist.
+const FADE = 'col-start-1 row-start-1 size-9 transition-[opacity,scale] duration-(--duration-fast)'
 
 type TransportProps = {
   loop?: boolean
@@ -63,45 +63,65 @@ function Transport({
   const [mix, setMix] = useState(false)
   const [speed, setSpeed] = useState(70)
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <fieldset aria-label="Position" className={TRAY}>
-        <TransportButton icon={<SkipBackIcon aria-hidden />} label="Restart loop" shortcut="R" />
-        <TransportButton
-          tone="primary"
-          icon={
-            <span className="grid place-items-center">
-              <PauseIcon
-                aria-hidden
-                className={cn(FADE, playing ? 'scale-100' : 'scale-75 opacity-0')}
-              />
-              <PlayIcon
-                aria-hidden
-                className={cn(FADE, playing ? 'scale-75 opacity-0' : 'scale-100')}
-              />
-            </span>
-          }
-          label={playing ? 'Pause' : 'Play'}
-          shortcut="Space"
-          onClick={() => setPlaying(!playing)}
-        />
-      </fieldset>
-      <fieldset aria-label="Loop and speed" className={TRAY}>
-        {loop ? (
+    <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+        <fieldset aria-label="Position" className="m-0 flex items-center gap-2 border-0 p-0">
           <TransportButton
-            icon={<RepeatIcon aria-hidden />}
-            label="Loop"
-            shortcut="L"
-            pressed={loopOn}
-            onPressedChange={setLoopOn}
+            icon={<SkipBackIcon aria-hidden />}
+            label="Restart loop"
+            showLabel={false}
+            shortcut="R"
           />
-        ) : (
           <TransportButton
-            icon={<RepeatIcon aria-hidden />}
-            label="Loop"
-            shortcut="L"
-            onClick={onLoopHint}
+            tone="primary"
+            className="min-h-18 min-w-18 rounded-full"
+            icon={
+              <span className="grid place-items-center">
+                <PauseIcon
+                  aria-hidden
+                  className={cn(FADE, playing ? 'scale-100' : 'scale-75 opacity-0')}
+                />
+                <PlayIcon
+                  aria-hidden
+                  className={cn(FADE, playing ? 'scale-75 opacity-0' : 'scale-100')}
+                />
+              </span>
+            }
+            label={playing ? 'Pause' : 'Play'}
+            showLabel={false}
+            shortcut="Space"
+            onClick={() => setPlaying(!playing)}
           />
-        )}
+        </fieldset>
+        <fieldset
+          aria-label="Loop"
+          className="m-0 flex min-w-0 items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
+        >
+          {loop ? (
+            <TransportButton
+              icon={<RepeatIcon aria-hidden />}
+              label="Loop"
+              showLabel={false}
+              shortcut="L"
+              pressed={loopOn}
+              onPressedChange={setLoopOn}
+            />
+          ) : (
+            <TransportButton
+              icon={<RepeatIcon aria-hidden />}
+              label="Loop"
+              showLabel={false}
+              shortcut="L"
+              onClick={onLoopHint}
+            />
+          )}
+          <LoopBadge
+            state={loop ? (loopOn ? 'active' : 'off') : 'off'}
+            className="min-h-target-practice rounded-xl text-read-label"
+          >
+            {loop ? 'Loop · bars 17–20 · pass 3' : 'No loop — tap two bars'}
+          </LoopBadge>
+        </fieldset>
         <SpeedControl
           value={speed}
           onValueChange={setSpeed}
@@ -114,36 +134,43 @@ function Transport({
           }}
           shortcuts={{ decrease: '−', increase: '+' }}
         />
-      </fieldset>
-      <fieldset aria-label="Practice helpers" className={TRAY}>
-        <TransportButton
-          size="practice-2"
-          icon={<CountInIcon aria-hidden />}
-          label="Count-in"
-          shortcut="C"
-          pressed={countIn}
-          onPressedChange={setCountIn}
-        />
-        <TransportButton
-          size="practice-2"
-          icon={<MetronomeIcon aria-hidden />}
-          label="Metronome"
-          pressed={false}
-          onPressedChange={fn()}
-        />
-        <TransportButton
-          size="practice-2"
-          icon={<SlidersVerticalIcon aria-hidden />}
-          label="Mix"
-          pressed={mix && stems}
-          disabled={!stems}
-          onPressedChange={setMix}
-        />
-      </fieldset>
+        <fieldset
+          aria-label="Practice helpers"
+          className="m-0 flex items-center gap-2 border-0 p-0"
+        >
+          <TransportButton
+            size="practice-2"
+            icon={<CountInIcon aria-hidden />}
+            label="Count-in"
+            showLabel="wide"
+            shortcut="C"
+            pressed={countIn}
+            onPressedChange={setCountIn}
+          />
+          <TransportButton
+            size="practice-2"
+            icon={<MetronomeIcon aria-hidden />}
+            label="Metronome"
+            showLabel="wide"
+            pressed={false}
+            onPressedChange={fn()}
+          />
+          <TransportButton
+            size="practice-2"
+            icon={<SlidersVerticalIcon aria-hidden />}
+            label="Mix"
+            showLabel="wide"
+            pressed={mix && stems}
+            disabled={!stems}
+            onPressedChange={setMix}
+          />
+        </fieldset>
+      </div>
       <PassControl
-        className={cn('ml-auto', !loop && 'invisible')}
+        className={cn('ml-auto shrink-0', !loop && 'invisible')}
         inert={!loop}
         prompting={prompting}
+        question="How was pass 3?"
         labels={{ prompt: COPY.passPrompt, clean: COPY.feltClean, notYet: COPY.notYet }}
         best={best}
         shortcuts={{ clean: 'C', notYet: 'N' }}
@@ -171,12 +198,17 @@ export const Targets: Story = {
   },
 }
 
+/** At the stand every helper shows its label; the transport set stays icons with tooltips. */
 export const LabelsAtTheStand: Story = {
   render: () => <Transport />,
   globals: { distance: 'stand', density: 'practice' },
   play: async ({ canvasElement }) => {
-    const play = within(canvasElement).getByRole('button', { name: 'Play' })
-    await expect(within(play).getByText('Play')).toBeVisible()
+    const canvas = within(canvasElement)
+    const countIn = canvas.getByRole('button', { name: 'Count-in' })
+    await expect(within(countIn).getByText('Count-in')).toBeVisible()
+    await expect(
+      within(canvas.getByRole('button', { name: 'Play' })).queryByText('Play'),
+    ).toBeNull()
   },
 }
 
@@ -196,7 +228,7 @@ export const KeyboardSpeed: Story = {
   },
 }
 
-/** Three labelled groups, each on its own tray. */
+/** Labelled groups: position, the loop (toggle joined to its badge) and the helpers. */
 export const Groups: Story = {
   render: () => <Transport />,
   play: async ({ canvasElement }) => {
@@ -207,22 +239,27 @@ export const Groups: Story = {
         .getAllByRole('button')
         .map((b) => b.ariaLabel),
     ).toEqual(['Restart loop', 'Play'])
-    const loopSpeed = canvas.getByRole('group', { name: 'Loop and speed' })
-    await expect(within(loopSpeed).getByRole('button', { name: 'Loop' })).toBeVisible()
-    await expect(within(loopSpeed).getByRole('button', { name: /^Speed: / })).toBeVisible()
+    const loop = canvas.getByRole('group', { name: 'Loop' })
+    await expect(within(loop).getByRole('button', { name: 'Loop' })).toBeVisible()
+    await expect(within(loop).getByRole('button', { name: /^Loop · bars/ })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /^Speed: / })).toBeVisible()
     const helpers = canvas.getByRole('group', { name: 'Practice helpers' })
     await expect(within(helpers).getAllByRole('button')).toHaveLength(3)
   },
 }
 
-/** Tablets and up show every label under its icon, at desk distance too. */
-export const LabelsOnTablets: Story = {
+/** Wide screens label the helpers at desk distance too; the transport set stays icons (26 §11). */
+export const LabelsWhenWide: Story = {
   render: () => <Transport />,
-  globals: { distance: 'desk', ...TABLET },
+  parameters: WIDE_VIEWPORTS,
+  globals: { distance: 'desk', ...WIDE },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    for (const name of ['Play', 'Loop', 'Slower', 'Count-in', 'Mix']) {
+    for (const name of ['Count-in', 'Metronome', 'Mix']) {
       await expect(within(canvas.getByRole('button', { name })).getByText(name)).toBeVisible()
+    }
+    for (const name of ['Play', 'Slower']) {
+      await expect(within(canvas.getByRole('button', { name })).queryByText(name)).toBeNull()
     }
   },
 }

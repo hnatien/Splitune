@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react'
-import { useId, useState } from 'react'
+import { Fragment, useId, useState } from 'react'
 import { client, orpc } from '@/lib/api'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
@@ -26,7 +26,7 @@ export function LoopPanel() {
   const { player, grid, clips, clip, send } = practice
   const loop = player.loop
   return (
-    <PopoverContent align="end" className="w-[22rem] gap-4">
+    <PopoverContent align="end" className="max-h-[80dvh] w-[24rem] gap-4 overflow-y-auto">
       <PopoverTitle>{m['practice.loop_options']()}</PopoverTitle>
       {grid ? (
         <LoopFields />
@@ -95,75 +95,68 @@ function LoopFields() {
   const last = grid.lastBar + 1
   const setBars = (from: number, to: number) =>
     practice.setLoop(barRange(grid, from - 1, to - 1), 'numeric')
+  // Each edge on its own row: its bar number, then nudges by a sixteenth (12 §5).
+  const edges = [
+    {
+      edge: 'start' as const,
+      label: m['practice.from_bar'](),
+      name: m['practice.nudge_start'](),
+      value: loop ? loop.startBar + 1 : null,
+      set: (value: number) => setBars(value, Math.max(value, (loop?.endBar ?? value - 1) + 1)),
+    },
+    {
+      edge: 'end' as const,
+      label: m['practice.to_bar'](),
+      name: m['practice.nudge_end'](),
+      value: loop ? loop.endBar + 1 : null,
+      set: (value: number) => setBars(Math.min(value, (loop?.startBar ?? value - 1) + 1), value),
+    },
+  ]
   return (
     <PanelSection title={m['practice.loop_section_bars']()}>
-      <div className="flex items-end gap-3">
-        <div className="flex flex-col gap-1.5">
-          <span aria-hidden className="text-sm font-medium">
-            {m['practice.from_bar']()}
-          </span>
-          <NumberField
-            value={loop ? loop.startBar + 1 : null}
-            min={first}
-            max={last}
-            step={1}
-            inputLabel={m['practice.from_bar']()}
-            decrementLabel={m['practice.earlier']()}
-            incrementLabel={m['practice.later']()}
-            onValueChange={(value) =>
-              value !== null && setBars(value, Math.max(value, (loop?.endBar ?? value - 1) + 1))
-            }
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span aria-hidden className="text-sm font-medium">
-            {m['practice.to_bar']()}
-          </span>
-          <NumberField
-            value={loop ? loop.endBar + 1 : null}
-            min={first}
-            max={last}
-            step={1}
-            inputLabel={m['practice.to_bar']()}
-            decrementLabel={m['practice.earlier']()}
-            incrementLabel={m['practice.later']()}
-            onValueChange={(value) =>
-              value !== null && setBars(Math.min(value, (loop?.startBar ?? value - 1) + 1), value)
-            }
-          />
-        </div>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2">
+        {edges.map(({ edge, label, name, value, set }) => (
+          <Fragment key={edge}>
+            <span aria-hidden className="text-sm font-medium">
+              {label}
+            </span>
+            <NumberField
+              fill
+              value={value}
+              min={first}
+              max={last}
+              step={1}
+              inputLabel={label}
+              decrementLabel={m['practice.earlier']()}
+              incrementLabel={m['practice.later']()}
+              onValueChange={(next) => next !== null && set(next)}
+            />
+            {loop ? (
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  aria-label={m['practice.nudge_earlier']({ edge: name })}
+                  onClick={() => practice.setLoop(nudge(grid, loop, edge, -1))}
+                >
+                  <ChevronLeftIcon aria-hidden />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  aria-label={m['practice.nudge_later']({ edge: name })}
+                  onClick={() => practice.setLoop(nudge(grid, loop, edge, 1))}
+                >
+                  <ChevronRightIcon aria-hidden />
+                </Button>
+              </div>
+            ) : (
+              <span />
+            )}
+          </Fragment>
+        ))}
       </div>
-      {loop && (
-        <div className="grid grid-cols-2 gap-2">
-          {(['start', 'end'] as const).map((edge) => (
-            <div key={edge} className="flex items-center gap-1">
-              <span className="flex-1 text-sm">
-                {edge === 'start' ? m['practice.nudge_start']() : m['practice.nudge_end']()}
-              </span>
-              <Button
-                size="icon-sm"
-                variant="outline"
-                aria-label={m['practice.nudge_earlier']({
-                  edge: edge === 'start' ? m['practice.nudge_start']() : m['practice.nudge_end'](),
-                })}
-                onClick={() => practice.setLoop(nudge(grid, loop, edge, -1))}
-              >
-                <ChevronLeftIcon aria-hidden />
-              </Button>
-              <Button
-                size="icon-sm"
-                variant="outline"
-                aria-label={m['practice.nudge_later']({
-                  edge: edge === 'start' ? m['practice.nudge_start']() : m['practice.nudge_end'](),
-                })}
-                onClick={() => practice.setLoop(nudge(grid, loop, edge, 1))}
-              >
-                <ChevronRightIcon aria-hidden />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+      {loop && <p className="text-sm text-muted-foreground">{m['practice.nudge_hint']()}</p>}
     </PanelSection>
   )
 }

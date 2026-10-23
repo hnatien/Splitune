@@ -50,11 +50,14 @@ type WaveformTimelineProps = {
   }
   /** Compact ruler only (phone landscape, 27 §3.7.2). */
   compact?: boolean
+  /** A slim song overview above the transport: a small ruler over one lane, no zoom. */
+  overview?: boolean
   className?: string
 }
 
 const ZOOMS = [1, 2, 4, 8]
 const RULER_PX = 20
+const OVERVIEW_RULER_PX = 16
 /** The loop band's ease, in milliseconds: `--duration-base`, which a canvas can't take from CSS. */
 const BAND_MS = 200
 
@@ -96,6 +99,7 @@ function WaveformTimeline({
   onDragLoop,
   labels,
   compact = false,
+  overview = false,
   className,
 }: WaveformTimelineProps) {
   const host = useRef<HTMLDivElement>(null)
@@ -131,7 +135,8 @@ function WaveformTimeline({
     }
   }, [])
 
-  const height = compact ? 32 : 104
+  const height = compact ? 32 : overview ? 48 : 104
+  const ruler = compact ? 0 : overview ? OVERVIEW_RULER_PX : RULER_PX
   useEffect(() => {
     const c = canvas.current
     const context = c?.getContext('2d')
@@ -143,8 +148,8 @@ function WaveformTimeline({
     const draw = () => {
       context.clearRect(0, 0, width, height)
       const x = (seconds: number) => ((seconds - viewStart) / Math.max(1e-6, span)) * width
-      const laneTop = compact ? height : RULER_PX
-      const laneHeight = compact ? 0 : (height - RULER_PX) / Math.max(1, lanes.length)
+      const laneTop = compact ? height : ruler
+      const laneHeight = compact ? 0 : (height - ruler) / Math.max(1, lanes.length)
 
       const shown = band.current
       if (shown) {
@@ -205,7 +210,7 @@ function WaveformTimeline({
       // Ruler: bar numbers (or seconds), thinned to what fits.
       context.fillStyle = palette.text
       context.strokeStyle = palette.rule
-      context.font = '12px Inter, ui-sans-serif, system-ui, sans-serif'
+      context.font = `${overview ? 11 : 12}px Inter, ui-sans-serif, system-ui, sans-serif`
       context.textBaseline = 'top'
       const ticks = bars
         ? bars.map((b) => ({ at: b.start, label: b.label }))
@@ -219,7 +224,7 @@ function WaveformTimeline({
         if (px < -1 || px > width + 1) continue
         context.beginPath()
         context.moveTo(px + 0.5, 0)
-        context.lineTo(px + 0.5, compact ? height : RULER_PX - 4)
+        context.lineTo(px + 0.5, compact ? height : ruler - 4)
         context.stroke()
         if (!compact && px - lastLabel >= 28) {
           context.fillText(tick.label, px + 3, 2)
@@ -244,7 +249,9 @@ function WaveformTimeline({
     unsure,
     width,
     height,
+    ruler,
     compact,
+    overview,
     viewStart,
     span,
     palette,
@@ -363,7 +370,7 @@ function WaveformTimeline({
         {handle('start')}
         {handle('end')}
       </div>
-      {!compact && (
+      {!compact && !overview && (
         <div className="flex flex-col justify-center gap-1">
           <Button
             size="icon-sm"

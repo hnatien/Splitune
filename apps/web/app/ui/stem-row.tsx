@@ -18,7 +18,17 @@ import { WithTooltip } from '@/ui/tooltip'
 
 // Doc 26 §4.4, §12.2: a raised card per stem with label + icon + colour rule (colour is never the
 // only cue), M/S toggles, fader paired with a dB field (WCAG 2.5.7), "Your part" tag with a 2 px
-// left rule, rough-stem warning with its reason, and a loading skeleton with the same layout.
+// left rule, rough-stem warning with its reason, and a loading skeleton with the same layout. The
+// card lays out by its own width (a container query, since the mixer drawer is narrow on any
+// screen): stacked — name, fader, then M/S and the dB field — and one row from 42 rem.
+
+// Narrow: name and fader span both columns, M/S and the dB field share the last row. Wide: one row.
+const GRID =
+  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 @2xl:grid-cols-[14rem_auto_minmax(0,1fr)_auto] @2xl:gap-y-0'
+const NAME = 'col-span-2 @2xl:col-span-1'
+const FADER = 'col-span-2 @2xl:col-span-1 @2xl:col-start-3 @2xl:row-start-1'
+const TOGGLES = '@2xl:col-start-2 @2xl:row-start-1'
+const FIELD = 'justify-self-end @2xl:col-start-4 @2xl:row-start-1'
 
 const ICONS: Record<(typeof STEMS)[StemKind]['icon'], LucideIcon> = {
   guitar: GuitarIcon,
@@ -80,69 +90,72 @@ function StemRow({
 }: StemRowProps) {
   const Icon = ICONS[STEMS[stem].icon]
   return (
-    <div
-      data-slot="stem-row"
-      data-stem={stem}
-      className={cn(
-        'grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border-l-2 bg-surface-raised p-3 shadow-1 sm:grid-cols-[16rem_auto_1fr_auto]',
-        yourPart ? 'border-foreground' : 'border-transparent',
-        className,
-      )}
-    >
-      <div className="col-span-2 flex min-w-0 items-center gap-2 sm:col-span-1">
-        <span aria-hidden className={cn('h-8 w-1.5 shrink-0 rounded-full', RULE[stem])} />
-        <Icon aria-hidden className="size-6 shrink-0" />
-        <span className="truncate text-base font-semibold">{name}</span>
-        {yourPart && <Badge variant="primary">{yourPart}</Badge>}
-        {rough && (
-          <WithTooltip label={rough.reason}>
-            <Badge variant="warning" tabIndex={0} render={<span />}>
-              <TriangleAlertIcon aria-hidden />
-              {rough.label}
-              <span className="sr-only">: {rough.reason}</span>
-            </Badge>
-          </WithTooltip>
+    <div className={cn('@container', className)}>
+      <div
+        data-slot="stem-row"
+        data-stem={stem}
+        className={cn(
+          GRID,
+          'rounded-xl border-l-2 bg-surface-raised p-3 shadow-1',
+          yourPart ? 'border-foreground' : 'border-transparent',
         )}
+      >
+        <div className={cn(NAME, 'flex min-w-0 flex-wrap items-center gap-2')}>
+          <span aria-hidden className={cn('h-8 w-1.5 shrink-0 rounded-full', RULE[stem])} />
+          <Icon aria-hidden className="size-6 shrink-0" />
+          <span className="truncate text-base font-semibold">{name}</span>
+          {yourPart && <Badge variant="primary">{yourPart}</Badge>}
+          {rough && (
+            <WithTooltip label={rough.reason}>
+              <Badge variant="warning" tabIndex={0} render={<span />}>
+                <TriangleAlertIcon aria-hidden />
+                {rough.label}
+                <span className="sr-only">: {rough.reason}</span>
+              </Badge>
+            </WithTooltip>
+          )}
+        </div>
+        <Slider
+          className={FADER}
+          value={gainDb}
+          min={GAIN_RANGE.min}
+          max={GAIN_RANGE.max}
+          step={1}
+          largeStep={6}
+          onValueChange={(next) => onGainChange(Array.isArray(next) ? (next[0] ?? gainDb) : next)}
+          thumbLabels={[`${labels.volume} ${name}`]}
+        />
+        <div className={cn(TOGGLES, 'flex gap-2')}>
+          <Toggle
+            size="practice-2"
+            pressed={muted}
+            onPressedChange={onMutedChange}
+            aria-label={`${labels.mute} ${name}`}
+          >
+            M
+          </Toggle>
+          <Toggle
+            size="practice-2"
+            pressed={soloed}
+            onPressedChange={onSoloedChange}
+            aria-label={`${labels.solo} ${name}`}
+          >
+            S
+          </Toggle>
+        </div>
+        <NumberField
+          className={FIELD}
+          value={gainDb}
+          min={GAIN_RANGE.min}
+          max={GAIN_RANGE.max}
+          step={1}
+          onValueChange={(next) => next !== null && onGainChange(next)}
+          unit="dB"
+          inputLabel={`${labels.volume} ${name}`}
+          decrementLabel={`${labels.decrease} ${name}`}
+          incrementLabel={`${labels.increase} ${name}`}
+        />
       </div>
-      <div className="flex gap-2">
-        <Toggle
-          size="practice-2"
-          pressed={muted}
-          onPressedChange={onMutedChange}
-          aria-label={`${labels.mute} ${name}`}
-        >
-          M
-        </Toggle>
-        <Toggle
-          size="practice-2"
-          pressed={soloed}
-          onPressedChange={onSoloedChange}
-          aria-label={`${labels.solo} ${name}`}
-        >
-          S
-        </Toggle>
-      </div>
-      <Slider
-        value={gainDb}
-        min={GAIN_RANGE.min}
-        max={GAIN_RANGE.max}
-        step={1}
-        largeStep={6}
-        onValueChange={(next) => onGainChange(Array.isArray(next) ? (next[0] ?? gainDb) : next)}
-        thumbLabels={[`${labels.volume} ${name}`]}
-      />
-      <NumberField
-        className="col-span-2 sm:col-span-1"
-        value={gainDb}
-        min={GAIN_RANGE.min}
-        max={GAIN_RANGE.max}
-        step={1}
-        onValueChange={(next) => next !== null && onGainChange(next)}
-        unit="dB"
-        inputLabel={`${labels.volume} ${name}`}
-        decrementLabel={`${labels.decrease} ${name}`}
-        incrementLabel={`${labels.increase} ${name}`}
-      />
     </div>
   )
 }
@@ -150,20 +163,22 @@ function StemRow({
 /** Placeholder with the row's layout while stems load (no layout shift when they arrive). */
 function StemRowSkeleton({ className }: { className?: string }) {
   return (
-    <div
-      data-slot="stem-row-skeleton"
-      className={cn(
-        'grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border-l-2 border-transparent bg-surface-raised p-3 shadow-1 sm:grid-cols-[16rem_auto_1fr_auto]',
-        className,
-      )}
-    >
-      <Skeleton className="col-span-2 h-8 w-40 sm:col-span-1" />
-      <div className="flex gap-2">
-        <Skeleton className="size-target-practice-2" />
-        <Skeleton className="size-target-practice-2" />
+    <div className={cn('@container', className)}>
+      <div
+        data-slot="stem-row-skeleton"
+        className={cn(
+          GRID,
+          'rounded-xl border-l-2 border-transparent bg-surface-raised p-3 shadow-1',
+        )}
+      >
+        <Skeleton className={cn(NAME, 'h-8 w-40')} />
+        <Skeleton className={cn(FADER, 'h-2')} />
+        <div className={cn(TOGGLES, 'flex gap-2')}>
+          <Skeleton className="size-target-practice-2" />
+          <Skeleton className="size-target-practice-2" />
+        </div>
+        <Skeleton className={cn(FIELD, 'h-11 w-44')} />
       </div>
-      <Skeleton className="h-2" />
-      <Skeleton className="col-span-2 h-11 w-44 sm:col-span-1" />
     </div>
   )
 }

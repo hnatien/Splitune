@@ -6,7 +6,7 @@ import { type Beats, buildTab, type Chords, type Notes } from '@splitune/music-c
 import { describe, expect, it } from 'vitest'
 import { externalMediaHandler } from '../src/external-media.ts'
 import { barBoxes, barFraction, cursorAt, noteBoxes } from '../src/geometry.ts'
-import { applyTheme } from '../src/resources.ts'
+import { applyTheme, tabLineSpacing } from '../src/resources.ts'
 import { applyInk, applySyncPoints, loadScore, noteOf, resolveTimeline } from '../src/score.ts'
 import type { BarTimes, NoteMark } from '../src/types.ts'
 
@@ -91,6 +91,29 @@ describe('score model', () => {
     expect(resources.tablatureFont.size).toBe(36)
     expect(resources.barNumberFont.size).toBe(20)
     expect(resources.staffLineColor.rgba).toBe(staff.rgba)
+    expect(resources.engravingSettings.tabLineSpacing).toBe(tabLineSpacing(36))
+    const chordNames = resources.elementFonts.get(alphaTab.NotationElement.EffectChordNames)
+    expect(chordNames?.families).toEqual(['Inter', 'ui-sans-serif'])
+    expect(chordNames?.size).toBe(27)
+  })
+
+  it('spaces tab lines so stacked fret digits never touch', () => {
+    const grey = (v: number) => new alphaTab.model.Color(v, v, v).rgba
+    const bravura = alphaTab.EngravingSettings.bravuraDefaults.tabLineSpacing
+    // Digits are ~0.73 em tall: every reading size gets lines taller than its digits.
+    for (const px of [18, 24, 36, 45]) expect(tabLineSpacing(px)).toBeGreaterThan(px * 0.73 + 2)
+    expect(tabLineSpacing(36)).toBe(34)
+    // Small digits keep Bravura's own spacing.
+    expect(tabLineSpacing(8)).toBe(bravura)
+    // Each Settings has its own engraving copy: theming one score leaves the defaults alone.
+    applyTheme(new alphaTab.Settings(), {
+      family: 'Inter',
+      tabPx: 45,
+      barNumberPx: 20,
+      ink: { high: grey(0), medium: grey(51), low: grey(85) },
+      staff: grey(136),
+    })
+    expect(new alphaTab.Settings().display.resources.engravingSettings.tabLineSpacing).toBe(bravura)
   })
 })
 

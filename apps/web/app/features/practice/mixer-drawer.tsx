@@ -12,8 +12,9 @@ import { usePracticeUi } from './practice-store'
 
 // MixerDrawer (12 §7, 27 §3.7.4): "Your part" first, presets at the top with a line saying what the
 // chosen one does, M/S/volume per stem on its own card with the rough-stem warning as text and
-// icon, Reset mix. A right drawer at 320 px; a bottom sheet at 70 % height on phones. Changes are
-// instant (gains before the stretch).
+// icon, Reset mix. A right drawer at 352 px; a bottom sheet at 70 % height on phones. Presets are a
+// full-width list there, and each stem card stacks its controls. Changes are instant (gains before
+// the stretch).
 
 const STEM_KIND: Record<string, StemKind> = {
   guitar: 'guitar',
@@ -38,7 +39,7 @@ export function MixerDrawer({ phone }: { phone: boolean }) {
         className={
           phone
             ? '[--drawer-height:70dvh]'
-            : 'data-[swipe-axis=x]:sm:[--drawer-content-width:20rem]'
+            : 'data-[swipe-axis=x]:sm:[--drawer-content-width:22rem]'
         }
       >
         <DrawerHeader>
@@ -67,7 +68,7 @@ export function MixerDrawer({ phone }: { phone: boolean }) {
                 gloss: m['practice.preset_gloss_original'](),
               },
             ]}
-            className="flex-wrap"
+            orientation="vertical"
           />
           <div className="flex flex-col gap-2">
             {channels.map((channel) => {
@@ -78,7 +79,6 @@ export function MixerDrawer({ phone }: { phone: boolean }) {
               return (
                 <StemRow
                   key={channel.stemId}
-                  className="sm:grid-cols-[auto_1fr]"
                   stem={part ? (STEM_KIND[instrument] ?? 'other') : 'mix'}
                   name={part ? instrumentLabel(instrument) : m['mixer.backing']()}
                   yourPart={part ? m['mixer.your_part']() : undefined}

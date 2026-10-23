@@ -6,6 +6,7 @@ import { WithTooltip } from '@/ui/tooltip'
 
 // Doc 26 §8, §12.2: practice-size icon button with its label below from `md` up and at Stand/Floor
 // distance (the label is also the accessible name, WCAG 2.5.3) and a tooltip with the shortcut.
+// The universally known transport icons (restart, play, −/+) may drop the visible label (26 §11).
 // Pass `pressed` to make it a toggle (loop, metronome); `active` marks a running loop without
 // toggling. Neutral buttons sit raised on the sunken tray of their group.
 
@@ -28,6 +29,12 @@ type TransportButtonProps = {
   icon: React.ReactNode
   /** Verb naming the action ("Play", "Restart loop"); visible below the icon at Stand/Floor. */
   label: string
+  /**
+   * Show the label below the icon: from `md` (true), only from `xl` where the bar is crowded
+   * ('wide'), or never (false, for the universally known transport icons). Stand and Floor
+   * distances always show it unless false.
+   */
+  showLabel?: boolean | 'wide'
   shortcut?: string | string[] | undefined
   size?: keyof typeof sizes
   tone?: keyof typeof tones
@@ -44,6 +51,7 @@ type TransportButtonProps = {
 function TransportButton({
   icon,
   label,
+  showLabel = true,
   shortcut,
   size = 'practice',
   tone = 'neutral',
@@ -57,12 +65,17 @@ function TransportButton({
   const content = (
     <>
       {icon}
-      <span
-        aria-hidden
-        className="hidden text-read-label leading-none group-data-pressed/transport:font-semibold group-data-[active]/transport:font-semibold md:block in-data-[distance=floor]:block in-data-[distance=stand]:block"
-      >
-        {label}
-      </span>
+      {showLabel && (
+        <span
+          aria-hidden
+          className={cn(
+            'hidden text-read-label leading-none group-data-pressed/transport:font-semibold group-data-[active]/transport:font-semibold in-data-[distance=floor]:block in-data-[distance=stand]:block',
+            showLabel === 'wide' ? 'xl:block' : 'md:block',
+          )}
+        >
+          {label}
+        </span>
+      )}
     </>
   )
   const classes = cn(base, sizes[size], tones[tone], className)

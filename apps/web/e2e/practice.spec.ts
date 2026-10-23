@@ -371,7 +371,7 @@ test('on a phone the glance view shows the chord, bar and speed', async () => {
   await page.getByRole('button', { name: 'Play', exact: true }).click()
   await expect(glance.getByText(/^Bar \d+\.\d$/)).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Pause', exact: true }).click()
-  await page.getByRole('button', { name: 'Show tab' }).click()
+  await page.getByRole('group', { name: 'View' }).getByRole('button', { name: 'Tab' }).click()
   await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
     timeout: 30_000,
   })

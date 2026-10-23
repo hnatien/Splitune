@@ -13,6 +13,7 @@ function NumberField({
   decrementLabel,
   incrementLabel,
   inputLabel,
+  fill = false,
   ...props
 }: NumberFieldPrimitive.Root.Props & {
   unit?: string
@@ -20,6 +21,8 @@ function NumberField({
   incrementLabel: string
   /** Accessible name when no visible <Label htmlFor> points at the input. */
   inputLabel?: string
+  /** Stretch the field to its container's width (the input takes the room). */
+  fill?: boolean
 }) {
   const unitId = useId()
   return (
@@ -29,7 +32,12 @@ function NumberField({
       {...props}
     >
       <div className="flex items-center gap-2">
-        <NumberFieldPrimitive.Group className="flex items-stretch overflow-hidden rounded-lg border border-input bg-card">
+        <NumberFieldPrimitive.Group
+          className={cn(
+            'flex items-stretch overflow-hidden rounded-lg border border-input bg-card',
+            fill && 'min-w-0 flex-1',
+          )}
+        >
           <NumberFieldPrimitive.Decrement
             aria-label={decrementLabel}
             className="grid size-control place-items-center border-r border-input text-foreground hover:bg-muted data-disabled:text-muted-foreground [&_svg]:size-5"
@@ -39,7 +47,10 @@ function NumberField({
           <NumberFieldPrimitive.Input
             aria-label={inputLabel}
             aria-describedby={unit ? unitId : undefined}
-            className="w-16 bg-transparent text-center text-base font-medium tabular-nums focus-visible:-outline-offset-2"
+            className={cn(
+              'bg-transparent text-center text-base font-medium tabular-nums focus-visible:-outline-offset-2',
+              fill ? 'w-12 min-w-0 flex-1' : 'w-16',
+            )}
           />
           <NumberFieldPrimitive.Increment
             aria-label={incrementLabel}

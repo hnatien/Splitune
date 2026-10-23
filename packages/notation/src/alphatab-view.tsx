@@ -109,6 +109,9 @@ function createApi(host: HTMLElement, layout: 'page' | 'scroll'): alphaTab.Alpha
     alphaTab.NotationElement.ScoreCopyright,
     alphaTab.NotationElement.GuitarTuning,
     alphaTab.NotationElement.TrackNames,
+    // The transport shows the tempo, and transcribed dynamics are noise on a practice tab.
+    alphaTab.NotationElement.EffectTempo,
+    alphaTab.NotationElement.EffectDynamics,
   ]) {
     settings.notation.elements.set(element, false)
   }
@@ -290,7 +293,8 @@ export function AlphaTabView({
       data-slot="alphatab-view"
       data-layout={layout}
       className={[
-        'relative min-h-0 overscroll-contain bg-paper text-ink',
+        // Isolated: the overlay's layers stay below anything floating over the score (the video).
+        'relative isolate min-h-0 overscroll-contain bg-paper text-ink',
         layout === 'scroll' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto',
         className ?? '',
       ].join(' ')}
@@ -315,7 +319,7 @@ export function AlphaTabView({
                 className={
                   armed && !inLoop
                     ? 'absolute border-2 border-dashed border-score-loop-edge'
-                    : 'absolute border-y-2 border-score-loop-edge bg-score-loop-fill'
+                    : 'absolute bg-score-loop-fill'
                 }
                 style={boxStyle(bar)}
               />
@@ -323,6 +327,24 @@ export function AlphaTabView({
           })}
         </div>
         <div ref={host} className="relative z-10" />
+        {/* The loop reads as one quiet band: a rail along its top with A and B at its ends, not a
+            rule around every bar (a whole-song loop drew a cage over the score). */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
+          {loopIndexes !== null &&
+            overlay.bars.map((bar) =>
+              bar.index < loopIndexes.start || bar.index > loopIndexes.end ? null : (
+                <div
+                  key={`rail-${bar.index}-${bar.system}`}
+                  data-slot="loop-rail"
+                  className="absolute h-0.75 bg-score-loop-edge"
+                  style={{ left: bar.x, top: bar.y, width: bar.w }}
+                >
+                  {bar.index === loopIndexes.start && <LoopFlag edge="start" />}
+                  {bar.index === loopIndexes.end && <LoopFlag edge="end" />}
+                </div>
+              ),
+            )}
+        </div>
         <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
           {showUncertainty &&
             overlay.notes.map((note) =>
@@ -404,6 +426,22 @@ export function AlphaTabView({
         </div>
       </div>
     </section>
+  )
+}
+
+// The loop's ends, as on a DAW ruler: A where it starts, B where it ends (decorative — the bars'
+// pressed state and the loop badge carry the range for assistive tech).
+function LoopFlag({ edge }: { edge: 'start' | 'end' }) {
+  return (
+    <span
+      data-slot="loop-flag"
+      className={[
+        'absolute top-0 grid size-5 place-items-center rounded-b-md bg-score-loop-edge text-xs leading-none font-bold text-paper',
+        edge === 'start' ? 'left-0' : 'right-0',
+      ].join(' ')}
+    >
+      {edge === 'start' ? 'A' : 'B'}
+    </span>
   )
 }
 

@@ -22,11 +22,13 @@ export interface PracticeUi {
   /** The Loop button or key was used with no loop: the hint on how to pick bars shows. */
   loopHint: boolean
   hud: { message: string | null; sequence: number }
-  /** Phone portrait: the tab instead of the glance view. */
-  showTab: boolean
+  /** The header's Tab / Chords choice; null is the layout's default (glance on phone portrait). */
+  view: 'tab' | 'chords' | null
   /** "Show tab anyway" over a chords-only recommendation. */
   forceTab: boolean
-  videoOverlay: boolean
+  /** A URL import's video in its floating player (closed by default), and at its larger size. */
+  videoOpen: boolean
+  videoLarge: boolean
   /** Bar the count-in or metronome is on, for the visual beat counter. */
   beat: { index: number; accent: boolean; countIn: boolean } | null
   /** The screen can't be kept on here (no Wake Lock, or refused): the tip shows (24 §3). */
@@ -41,9 +43,10 @@ export const INITIAL_UI: PracticeUi = {
   promptPass: 0,
   loopHint: false,
   hud: { message: null, sequence: 0 },
-  showTab: false,
+  view: null,
   forceTab: false,
-  videoOverlay: false,
+  videoOpen: false,
+  videoLarge: false,
   beat: null,
   screenMayLock: false,
 }

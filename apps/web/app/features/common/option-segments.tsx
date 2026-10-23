@@ -2,7 +2,9 @@ import { useId } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
 // A labelled segmented choice over two to four options (loop rests, display appearance): the same
-// props as OptionSelect, but every option is visible at once. One is always selected.
+// props as OptionSelect, but every option is visible at once. One is always selected. Options size
+// to their labels and share the spare width, so a long label ("Follow system") never spills out of
+// its segment; when they don't fit one row they wrap inside a rounded track.
 export function OptionSegments<T extends string>({
   label,
   value,
@@ -22,7 +24,7 @@ export function OptionSegments<T extends string>({
       </span>
       <ToggleGroup
         aria-labelledby={id}
-        className="w-full flex-wrap"
+        className="w-full flex-wrap rounded-2xl"
         value={[value]}
         onValueChange={(next) => {
           const picked = next[0]
@@ -30,7 +32,11 @@ export function OptionSegments<T extends string>({
         }}
       >
         {options.map((option) => (
-          <ToggleGroupItem key={option.value} value={option.value} className="flex-1 px-3 text-sm">
+          <ToggleGroupItem
+            key={option.value}
+            value={option.value}
+            className="flex-auto rounded-xl px-3 text-sm"
+          >
             {option.label}
           </ToggleGroupItem>
         ))}

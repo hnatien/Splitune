@@ -6,6 +6,7 @@ import { useMediaQuery } from '@/lib/use-media-query'
 import { cn } from '@/lib/utils'
 import { AnalysisStatus } from './analysis-status'
 import { barText } from './bar-text'
+import type { PracticeLayout } from './layout'
 import { chordsInBar, noteName } from './model/view-model'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
@@ -30,6 +31,21 @@ export function useRecommendedView() {
   return { reasons: entry?.reasons ?? [], chordsOnly: entry?.recommended_view === 'chords_only' }
 }
 
+/**
+ * What the paper shows, as the status bar's Tab / Chords switch reads it: chords (the chord sheet,
+ * or the glance view on phone portrait, its default) or the tab once one exists and isn't held back
+ * by a chords-only recommendation.
+ */
+export function useShownView(layout: PracticeLayout): 'tab' | 'chords' {
+  const { layers, music } = usePractice()
+  const view = usePracticeUi((s) => s.view)
+  const forceTab = usePracticeUi((s) => s.forceTab)
+  const recommended = useRecommendedView()
+  const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
+  if (wanted === 'chords' && layers.chords) return 'chords'
+  return layers.tab && music?.tab && (!recommended.chordsOnly || forceTab) ? 'tab' : 'chords'
+}
+
 export function NotationPane({
   interaction = 'bars',
   selectedNoteId = null,
@@ -48,9 +64,10 @@ export function NotationPane({
   const activate = onBarActivate ?? practice.tapBar
   const { layers, music, data } = practice
   const forceTab = usePracticeUi((s) => s.forceTab)
+  const chosen = usePracticeUi((s) => s.view)
   const recommended = useRecommendedView()
   const placeholderId = useId()
-  if (layers.tab && music?.tab && (!recommended.chordsOnly || forceTab)) {
+  if (layers.tab && music?.tab && chosen !== 'chords' && (!recommended.chordsOnly || forceTab)) {
     return (
       <TabView
         interaction={interaction}

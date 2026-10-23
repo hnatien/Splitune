@@ -191,6 +191,21 @@ describe('buildTab → alphaTab', () => {
     )
   })
 
+  it('marks low-confidence chord names with "?" above the tab', () => {
+    const notes = makeNotes([{ onset_s: 0.5, offset_s: 1, pitch_midi: 57 }])
+    const chords = makeChords([
+      { t0: 0, t1: 4, label: 'A:min7', confidence: 0.95 },
+      { t0: 4, t1: 9, label: 'F:maj', confidence: 0.05 },
+    ])
+    const beats = makeBeats({ bars: 4, pickup: 0, numerator: 4, start: 0 })
+    const named = buildTab(notes, beats, {}, { chords, chordNames: true })
+    expect(named.alphaTex).toContain('ch "Am7"')
+    expect(named.alphaTex).toContain('ch "F?"')
+    expect(loadAlphaTex(named.alphaTex).diagnostics).toEqual([])
+    // Without chord names the tab carries none, marked or not.
+    expect(buildTab(notes, beats, {}, { chords }).alphaTex).not.toContain('ch "')
+  })
+
   it('loads the dense synthetic part', () => {
     const part = denseGuitarPart()
     const result = buildTab(part.notes, part.beats, {}, { chords: part.chords, chordNames: true })

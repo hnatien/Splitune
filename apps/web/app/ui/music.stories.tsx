@@ -24,7 +24,7 @@ function ChordStrip({
 }: {
   current?: number
   editable?: boolean
-  /** The strip's responsive legend: inline from `lg`, a button with a popover below. */
+  /** The practice screen's legend: a dashed chip that opens it in a popover. */
   popover?: boolean
 }) {
   const [show, setShow] = useState(true)
@@ -56,14 +56,11 @@ function ChordStrip({
         ))}
       </div>
       {popover ? (
-        <>
-          <ConfidenceLegend {...legend} className="hidden lg:inline-flex" />
-          <ConfidenceLegendPopover
-            {...legend}
-            className="self-start lg:hidden"
-            buttonLabel={m['practice.legend_button']()}
-          />
-        </>
+        <ConfidenceLegendPopover
+          {...legend}
+          className="self-start"
+          buttonLabel={m['practice.legend_short']({ model: '0.1.0' })}
+        />
       ) : (
         <ConfidenceLegend {...legend} />
       )}
@@ -129,14 +126,17 @@ export const IncreasedContrast: Story = {
 
 const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
 
-/** Below `lg` the inline legend is gone: a button opens the same legend in a popover. */
+/** The practice screen's dashed "Auto-transcribed · v0.1.0" chip (its icon alone on phones)
+ * opens the legend and the "Show uncertainty" switch in a popover. */
 export const LegendButton: Story = {
   render: () => <ChordStrip popover />,
   globals: { ...PHONE, distance: 'stand' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvasElement.querySelector('[data-slot=confidence-legend]')).not.toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: m['practice.legend_button']() }))
+    await expect(canvasElement.querySelector('[data-slot=confidence-legend]')).toBeNull()
+    await userEvent.click(
+      canvas.getByRole('button', { name: m['practice.legend_short']({ model: '0.1.0' }) }),
+    )
     // The popover's contents load on first open.
     const popup = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     // Popups fade in (26 §10).
@@ -170,15 +170,21 @@ const practiceStrip = () => (
     <PracticeProvider songId={SONG_ID} search={{}} fetchAudio={tone}>
       <div data-density="practice" className="max-w-4xl">
         <SeekIntoSong />
-        <PracticeChordStrip legend={false} />
+        <PracticeChordStrip />
       </div>
     </PracticeProvider>
   </AppStory>
 )
 
-/** The enlarged current chip, its focus ring included, stays inside the list and the strip. */
-const scaledChipFits: NonNullable<Story['play']> = async ({ canvasElement }) => {
-  const list = await within(canvasElement).findByRole('list', { name: 'Chords' })
+/** The current chord, set at the larger reading size, stays inside the list and the strip with
+ * its focus ring. */
+const currentChipFits: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  // The list appears once the chord layer has loaded.
+  const list = await within(canvasElement).findByRole(
+    'list',
+    { name: 'Chords' },
+    { timeout: 10_000 },
+  )
   const strip = canvasElement.querySelector('[data-slot=chord-strip]')
   const seek = within(canvasElement).getByRole('button', { name: 'Seek into the song' })
   const chip = await waitFor(
@@ -190,19 +196,12 @@ const scaledChipFits: NonNullable<Story['play']> = async ({ canvasElement }) => 
     },
     { timeout: 20_000 },
   )
-  // The scale is the ratio of the two reading sizes at this distance.
-  const size = (token: string) => {
-    const probe = document.createElement('span')
-    probe.style.fontSize = `var(${token})`
-    document.body.append(probe)
-    const px = Number.parseFloat(getComputedStyle(probe).fontSize)
-    probe.remove()
-    return px
-  }
-  const ratio = size('--read-chord-current') / size('--read-chord')
-  await waitFor(() =>
-    expect(chip.getBoundingClientRect().width / chip.offsetWidth).toBeCloseTo(ratio, 1),
-  )
+  const probe = document.createElement('span')
+  probe.style.fontSize = 'var(--read-chord-current)'
+  document.body.append(probe)
+  const current = Number.parseFloat(getComputedStyle(probe).fontSize)
+  probe.remove()
+  await expect(Number.parseFloat(getComputedStyle(chip).fontSize)).toBeCloseTo(current, 0)
   const ring = 4
   const box = chip.getBoundingClientRect()
   for (const clip of [list, strip]) {
@@ -217,7 +216,7 @@ export const CurrentChipDesk: Story = {
   render: practiceStrip,
   parameters: { layout: 'fullscreen' },
   globals: { distance: 'desk' },
-  play: scaledChipFits,
+  play: currentChipFits,
 }
 export const CurrentChipStand: Story = { ...CurrentChipDesk, globals: { distance: 'stand' } }
 export const CurrentChipFloor: Story = { ...CurrentChipDesk, globals: { distance: 'floor' } }

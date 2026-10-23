@@ -36,9 +36,30 @@ const font = (family: string, px: number, weight = alphaTab.model.FontWeight.Bol
   return value
 }
 
+/** Inter's digits are about 0.73 em tall: 0.92 em lines leave ~2 px above and below each digit. */
+const TAB_LINE_RATIO = 0.92
+
+/**
+ * Tab line spacing for a fret-digit size, so a stacked chord keeps a gap between its digits.
+ * Bravura's default (1.5 staff spaces) suits small digits; at reading sizes they overlapped.
+ */
+export function tabLineSpacing(tabPx: number): number {
+  return Math.max(
+    alphaTab.EngravingSettings.bravuraDefaults.tabLineSpacing,
+    Math.ceil(tabPx * TAB_LINE_RATIO),
+  )
+}
+
 export function applyTheme(settings: alphaTab.Settings, theme: ScoreTheme): void {
   const resources = settings.display.resources
+  // Each Settings owns a copy of the engraving defaults (bravuraDefaults clones them).
+  resources.engravingSettings.tabLineSpacing = tabLineSpacing(theme.tabPx)
   resources.tablatureFont = font(theme.family, theme.tabPx)
+  // Chord names over the bars: the reading family, bold, three quarters of the digit size.
+  resources.elementFonts.set(
+    alphaTab.NotationElement.EffectChordNames,
+    font(theme.family, Math.round(theme.tabPx * 0.75)),
+  )
   resources.barNumberFont = font(theme.family, theme.barNumberPx, alphaTab.model.FontWeight.Regular)
   resources.fretboardNumberFont = font(
     theme.family,

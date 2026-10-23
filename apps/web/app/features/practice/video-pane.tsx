@@ -1,8 +1,8 @@
-import { LayersIcon } from 'lucide-react'
+import { Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Toggle } from '@/ui/toggle'
+import { Button } from '@/ui/button'
 import { correctVideo } from './model/video-sync'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
@@ -10,7 +10,8 @@ import { useVideoUrl } from './video-url'
 
 // VideoPane (12 §2, 13 §6a): a URL import's downloaded video, muted (the stems are the sound),
 // slaved to the master clock — rate = engine rate, re-seek on a loop wrap or drift over 80 ms,
-// ±2 % nudges below that. Notation may lie over a local video (no embed rules apply to a file).
+// ±2 % nudges below that. The tab is the hero, so the video is a small player floating over the
+// paper's corner, opened from the status bar; it can grow, shrink and close.
 
 const CHECK_MS = 100
 
@@ -18,7 +19,7 @@ export function VideoPane({ className }: { className?: string }) {
   const { audio, player } = usePractice()
   const url = useVideoUrl()
   const video = useRef<HTMLVideoElement>(null)
-  const overlay = usePracticeUi((s) => s.videoOverlay)
+  const large = usePracticeUi((s) => s.videoLarge)
   const rate = player.speedPct / 100
 
   useEffect(() => {
@@ -48,9 +49,13 @@ export function VideoPane({ className }: { className?: string }) {
 
   if (!url.data) return null
   return (
-    <div
+    <figure
       data-slot="video-pane"
-      className={cn('relative min-h-[200px] overflow-hidden bg-background', className)}
+      className={cn(
+        'absolute right-4 bottom-4 z-(--z-sticky) m-0 aspect-video overflow-hidden rounded-xl border border-border bg-background shadow-3 motion-safe:animate-pop-in md:right-6',
+        large ? 'w-[min(36rem,calc(100%-2rem))]' : 'w-[min(20rem,calc(100%-2rem))]',
+        className,
+      )}
     >
       <video
         ref={video}
@@ -62,15 +67,24 @@ export function VideoPane({ className }: { className?: string }) {
         aria-label={m['practice.video']()}
         className="h-full w-full object-contain"
       />
-      <Toggle
-        size="practice-2"
-        pressed={overlay}
-        onPressedChange={(on) => usePracticeUi.setState({ videoOverlay: on })}
-        className="absolute top-2 right-2 bg-card"
-        aria-label={m['practice.notation_over_video']()}
-      >
-        <LayersIcon aria-hidden />
-      </Toggle>
-    </div>
+      <div className="absolute top-2 right-2 flex gap-1.5">
+        <Button
+          size="icon"
+          className="bg-hud-bg text-hud-fg hover:bg-hud-bg"
+          aria-label={large ? m['practice.video_smaller']() : m['practice.video_larger']()}
+          onClick={() => usePracticeUi.setState({ videoLarge: !large })}
+        >
+          {large ? <Minimize2Icon aria-hidden /> : <Maximize2Icon aria-hidden />}
+        </Button>
+        <Button
+          size="icon"
+          className="bg-hud-bg text-hud-fg hover:bg-hud-bg"
+          aria-label={m['practice.video_hide']()}
+          onClick={() => usePracticeUi.setState({ videoOpen: false })}
+        >
+          <XIcon aria-hidden />
+        </Button>
+      </div>
+    </figure>
   )
 }

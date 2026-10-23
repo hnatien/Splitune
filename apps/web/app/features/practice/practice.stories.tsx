@@ -118,13 +118,65 @@ export const Ready: Story = {
   },
 }
 
-/** A loop on bars 5–6 from the URL (`?loop=5-6`): band on score and timeline, badge, pass pair. */
+/** A loop on bars 5–6 from the URL (`?loop=5-6`): band, rail and A/B flags on the score, band on
+ * the overview, badge, pass pair. */
 export const LoopActive: Story = {
   render: screen(ALL, {}, { loop: '5-6' }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    // Every layout: the status bar's badge (the glance view repeats it on phones).
+    // Every layout: the transport's badge (the glance view repeats it on phones).
     await expect((await canvas.findAllByText(/Loop · bars 5–6/))[0]).toBeVisible()
+    await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    // One rail per looped bar, with A on the first and B on the last — not a rule round each bar.
+    await waitFor(() =>
+      expect(canvasElement.querySelectorAll('[data-slot=loop-rail]')).toHaveLength(2),
+    )
+    const flags = [...canvasElement.querySelectorAll('[data-slot=loop-flag]')]
+    await expect(flags.map((flag) => flag.textContent)).toEqual(['A', 'B'])
+    const shade = canvasElement.querySelector<HTMLElement>('[data-slot=loop-shade]')
+    await expect(shade && getComputedStyle(shade).borderTopWidth).toBe('0px')
+  },
+}
+
+/** The status bar's Tab / Chords switch: the chord sheet, then back to the tab. */
+export const ChordsView: Story = {
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    // The status bar's controls load with the bar.
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await userEvent.click(within(view).getByRole('button', { name: 'Chords' }))
+    const sheet = await canvas.findByRole('region', { name: 'Chord sheet' }, { timeout: 10_000 })
+    await waitFor(() => expect(sheet).toBeVisible())
+    await expect(canvas.queryByRole('region', { name: 'Tab' })).toBeNull()
+    await userEvent.click(within(view).getByRole('button', { name: 'Tab' }))
+    await expect(
+      await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 }),
+    ).toBeVisible()
+  },
+}
+
+/** A URL import's video: closed by default, a floating player from the status bar's toggle that
+ * grows, shrinks and closes. */
+export const WithVideo: Story = {
+  render: screen(ALL, { video: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const pane = () => canvasElement.querySelector<HTMLElement>('[data-slot=video-pane]')
+    await expect(pane()).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Video' }))
+    // The player's code loads on first open.
+    await waitFor(() => expect(pane()).toBeVisible(), { timeout: 10_000 })
+    const small = pane()?.getBoundingClientRect().width ?? 0
+    await userEvent.click(canvas.getByRole('button', { name: 'Larger video' }))
+    await waitFor(() => expect(pane()?.getBoundingClientRect().width ?? 0).toBeGreaterThan(small))
+    await userEvent.click(canvas.getByRole('button', { name: 'Hide video' }))
+    await waitFor(() => expect(pane()).toBeNull())
+    await expect(canvas.getByRole('button', { name: 'Video' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   },
 }
 
@@ -190,7 +242,7 @@ export const NotSavedOffline: Story = {
   },
 }
 
-/** Stage: chrome reduced to the transport and the loop badge; reading sizes +1 step. */
+/** Stage: chrome reduced to the transport, the overview and ⚙; reading sizes +1 step. */
 export const ReadyStage: Story = { render: screen(ALL), globals: { appearance: 'stage' } }
 
 export const ReadyAtTheStand: Story = {
@@ -231,7 +283,7 @@ const MANY_CHORDS = {
   }),
 }
 
-/** Many chords: the chips clip inside their own area and the legend keeps its space. */
+/** Many chords: the names clip inside their own area and level/capo keep their space. */
 export const ManyChords: Story = {
   render: screen(ALL, { chords: MANY_CHORDS }),
   play: async ({ canvasElement }) => {
@@ -340,7 +392,19 @@ export const DisplayPopover: Story = {
   play: opens(/^Display$/, m['nav.appearance']()),
 }
 
-/** The loop's options from the badge: from/to bars, clear, saved clips (12 §5). */
+/** The transcription chip in the status bar: the legend and the "Show uncertainty" switch. */
+export const LegendChip: Story = {
+  render: screen(ALL),
+  play: opens(/^Auto-transcribed · v/, /^Auto-transcribed — may contain errors/),
+}
+
+/** Level and capo from the chord strip's end (12 §2). */
+export const LevelAndCapo: Story = {
+  render: screen(ALL),
+  play: opens(/^Level and capo: As played/, m['practice.level_and_capo']()),
+}
+
+/** The loop's options from the transport's badge: from/to bars, clear, saved clips (12 §5). */
 export const LoopOptions: Story = {
   render: screen(ALL, {}, { loop: '5-6' }),
   play: opens(/^Loop · bars 5–6/, m['practice.loop_options']()),

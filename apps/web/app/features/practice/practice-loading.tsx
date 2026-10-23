@@ -5,8 +5,8 @@ import { FocusShell } from '../shell/focus-shell'
 /** The waiting text appears only when loading takes longer than this (27 §4). */
 const SLOW_MS = 1000
 
-// Practice loading state (27 §4): the regions that every layout has — paper, timeline, transport
-// at the bottom edge — so nothing moves when the song arrives; `slowText` ("Loading your song…")
+// Practice loading state (27 §4): the regions that every layout has — paper, song overview,
+// transport at the bottom edge — so nothing moves when the song arrives; `slowText` ("Loading your song…")
 // after 1 s. Its own module (route pending components are not code-split); the page passes the
 // text, so the route's entry chunk doesn't carry the message.
 export function PracticeLoading({ slowText }: { slowText?: string }) {
@@ -25,13 +25,13 @@ export function PracticeLoading({ slowText }: { slowText?: string }) {
           {slow ? slowText : null}
         </p>
       </div>
-      <div className="shrink-0 border-t border-border px-4 py-2 in-data-[appearance=stage]:hidden">
-        <Skeleton className="h-26 rounded-lg" />
+      <div className="shrink-0 px-4 pt-2 md:px-6">
+        <Skeleton className="h-12 rounded-lg" />
       </div>
-      <div className="flex shrink-0 gap-3 border-t border-border px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-        {['restart', 'play', 'loop'].map((key) => (
-          <Skeleton key={key} className="size-(--target-practice) rounded-full" />
-        ))}
+      <div className="flex shrink-0 items-center gap-3 border-t border-border px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-6">
+        <Skeleton className="size-(--target-practice) rounded-xl" />
+        <Skeleton className="size-18 rounded-full" />
+        <Skeleton className="h-(--target-practice) w-48 rounded-2xl" />
       </div>
     </FocusShell>
   )

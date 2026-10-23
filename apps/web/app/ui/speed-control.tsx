@@ -6,7 +6,7 @@ import { TransportButton } from '@/ui/transport-button'
 
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
 // (50–100 %, 25–200 % advanced) and presets 50/70/85/100, which also sit inline from `2xl`;
-// readout "70 % · 84 BPM". It lives in the transport's Loop-and-speed tray, so it has no fill.
+// readout "70 % · 84 BPM". A sunken capsule: raised −/+ (icons only, 26 §11) around a plain readout.
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
@@ -30,6 +30,8 @@ type SpeedControlProps = {
     presets: string
   }
   shortcuts?: { decrease?: string; increase?: string }
+  /** Phones: secondary-size steppers (48 px) so the transport fits two rows. */
+  compact?: boolean
   className?: string
 }
 
@@ -77,6 +79,7 @@ function SpeedControl({
   advanced = false,
   labels,
   shortcuts,
+  compact = false,
   className,
 }: SpeedControlProps) {
   const [min, max] = advanced ? [25, 200] : [50, 100]
@@ -86,10 +89,15 @@ function SpeedControl({
     set(value + direction * (event.shiftKey ? SPEED_FINE_STEP : SPEED_STEP))
 
   return (
-    <div data-slot="speed-control" className={cn('inline-flex items-center gap-1.5', className)}>
+    <div
+      data-slot="speed-control"
+      className={cn('inline-flex items-center gap-1 rounded-2xl bg-surface-sunken p-1', className)}
+    >
       <TransportButton
         icon={<MinusIcon aria-hidden />}
         label={labels.decrease}
+        showLabel={false}
+        size={compact ? 'practice-2' : 'practice'}
         shortcut={shortcuts?.decrease}
         disabled={value <= min}
         onClick={step(-1)}
@@ -97,7 +105,10 @@ function SpeedControl({
       <Popover>
         <PopoverTrigger
           aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}`}
-          className="flex min-h-target-practice min-w-24 flex-col items-center justify-center rounded-xl bg-surface-raised px-3 text-center shadow-1 hover:bg-muted"
+          className={cn(
+            'flex flex-col items-center justify-center rounded-xl px-3 text-center hover:bg-muted',
+            compact ? 'min-h-target-practice-2 min-w-20' : 'min-h-target-practice min-w-24',
+          )}
         >
           <span className="font-reading text-read-readout tabular-nums">
             {shown}
@@ -123,6 +134,8 @@ function SpeedControl({
       <TransportButton
         icon={<PlusIcon aria-hidden />}
         label={labels.increase}
+        showLabel={false}
+        size={compact ? 'practice-2' : 'practice'}
         shortcut={shortcuts?.increase}
         disabled={value >= max}
         onClick={step(1)}

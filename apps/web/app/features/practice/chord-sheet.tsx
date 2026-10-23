@@ -1,10 +1,8 @@
 import { chordShapes, transposeChord } from '@splitune/music-core'
-import { ChordDiagram } from '@splitune/notation'
-import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { m } from '@/lib/i18n'
-import { meQuery } from '@/lib/session'
 import { cn } from '@/lib/utils'
+import { ChordShape } from './chord-shape'
 import { chordsInBar } from './model/view-model'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
@@ -19,7 +17,6 @@ export function ChordSheet({
   onBarActivate: (bar: number) => void
 }) {
   const { grid, view, player, audio, data, options } = usePractice()
-  const me = useQuery(meQuery)
   const selection = usePracticeUi((s) => s.selection)
   const [current, setCurrent] = useState<number | null>(null)
   useEffect(() => {
@@ -49,22 +46,21 @@ export function ChordSheet({
     >
       {data.instrument === 'guitar' && (
         <ul aria-label={m['practice.chord_shapes']()} className="mb-4 flex flex-wrap gap-4">
-          {[...new Map(view.chords.map((c) => [c.name, c])).values()].map((chord) => {
-            const shape = chordShapes(transposeChord(chord.label, -options.capo))[0]
-            return shape ? (
+          {[...new Map(view.chords.map((c) => [c.name, c])).values()].map((chord) =>
+            chordShapes(transposeChord(chord.label, -options.capo)).length > 0 ? (
               <li key={chord.name} className="flex flex-col items-center gap-1">
-                <ChordDiagram
+                <ChordShape
                   className="h-20 w-16 text-ink"
-                  frets={shape.frets}
-                  mirrored={me.data?.handedness === 'left'}
-                  label={m['editor.diagram']({ chord: chord.name })}
+                  label={chord.label}
+                  name={chord.name}
+                  capo={options.capo}
                 />
                 <span aria-hidden className="font-reading text-read-label">
                   {chord.name}
                 </span>
               </li>
-            ) : null
-          })}
+            ) : null,
+          )}
         </ul>
       )}
       <ol className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
