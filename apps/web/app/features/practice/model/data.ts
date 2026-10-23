@@ -86,6 +86,13 @@ export function usePracticeData(songId: string) {
   const notesReady = entry.tab ?? (instrument === 'piano' ? entry.summary : undefined)
   const notes = useQuery(artefactDocQuery(notesReady ? entry.notes : undefined, Notes))
   const summary = useQuery(artefactDocQuery(entry.summary, Summary))
+  // Piano practises from its notes: while its notes stage is still to come (or its document is on
+  // the way) the screen holds the analysis status rather than opening on the chord chart alone.
+  const running = analysis.data?.status === 'queued' || analysis.data?.status === 'running'
+  const awaitingNotes =
+    instrument === 'piano' &&
+    analysis.data?.stages[`notes.${instrument}`] !== undefined &&
+    (running || (notesReady !== undefined && entry.notes !== undefined && notes.isPending))
   const ops = {
     beats: useOps(entry.beats),
     chords: useOps(entry.chords),
@@ -105,6 +112,7 @@ export function usePracticeData(songId: string) {
     ops,
     instrument,
     stemsExpired,
+    awaitingNotes,
   }
 }
 

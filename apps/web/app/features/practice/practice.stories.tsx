@@ -443,6 +443,27 @@ export const Piano: Story = {
   },
 }
 
+/** Piano while its notes are still being transcribed: the analysis status holds the paper and
+ * nothing plays yet, though the beat, stems and chords are in; it all opens with the notes. */
+export const PianoAwaitingNotes: Story = {
+  render: screen(
+    PIANO_KINDS.filter((kind) => kind !== 'summary'),
+    { ...PIANO, running: true },
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText(m['practice.placeholder_piano'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(canvas.getByRole('progressbar')).toBeVisible()
+    await expect(canvas.queryByText(m['practice.can_loop_now']())).toBeNull()
+    await expect(canvas.queryByRole('region', { name: 'Chord chart' })).toBeNull()
+    await expect(canvas.getByRole('button', { name: 'Play' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Count-in' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Mix' })).toBeDisabled()
+  },
+}
+
 /** Piano with a loop on bars 3–4 from the URL: those bars pressed, shaded and railed. */
 export const PianoLoop: Story = {
   render: screen(PIANO_KINDS, PIANO, { loop: '3-4' }),
