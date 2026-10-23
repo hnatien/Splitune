@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 // 26 §2/§6.3): re-read when the appearance, contrast, distance, reading font or calibration
 // changes. Sizes come from a probe element, because the reading tokens are calc() expressions.
 
-function readTheme(element: HTMLElement): ScoreTheme {
+export function readScoreTheme(element: HTMLElement): ScoreTheme {
   const token = (name: TokenName) => readColor(name, element)
   const probe = document.createElement('span')
   probe.style.position = 'absolute'
@@ -31,7 +31,7 @@ function readTheme(element: HTMLElement): ScoreTheme {
 }
 
 export function useScoreTheme(element: HTMLElement | null): ScoreTheme | undefined {
-  return useTokens(element, readTheme)
+  return useTokens(element, readScoreTheme)
 }
 
 /** Values read from the tokens in effect at `element`, re-read whenever they may have changed. */
@@ -52,6 +52,7 @@ export function useTokens<T>(element: HTMLElement | null, read: (element: HTMLEl
         'data-appearance',
         'data-contrast',
         'data-distance',
+        'data-motion',
         'data-reading-font',
         'data-score',
         'style',

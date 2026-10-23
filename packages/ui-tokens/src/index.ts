@@ -98,6 +98,8 @@ export const COMPONENT_TOKENS = [
   '--key-left-fg',
   '--key-right',
   '--key-right-fg',
+  '--fret-guitar',
+  '--fret-bass',
   '--waveform-peak',
   '--waveform-rms',
   '--waveform-played',
@@ -206,6 +208,12 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--staff', '--key-white', 3],
   // Falling notes: bar numbers over the loop band (notes are outlined in --staff or --ink)
   ['--conf-medium', '--score-loop-fill', 4.5],
+  // Guitar and bass Notes: sustain tails and finger rings on the paper and the loop band (the
+  // note heads are outlined in --ink; their tint is tested in contrast.test.ts)
+  ['--fret-guitar', '--paper', 3],
+  ['--fret-guitar', '--score-loop-fill', 3],
+  ['--fret-bass', '--paper', 3],
+  ['--fret-bass', '--score-loop-fill', 3],
   // Timeline chrome
   ['--loop-edge', '--card', 3],
   ['--playhead', '--card', 3],

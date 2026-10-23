@@ -360,6 +360,13 @@ Research (pianists' reading habits: lead sheets/chord charts for pop adults, eye
 - **Chord strip over the notes:** chords, beats and Piano options stay; the voicing keyboards are hidden (the roll has its own).
 - Loads on demand through the chord-sheet chunk: the practice route grew 103 B (139 B left).
 
+## Implementation notes (step 18b, guitar and bass Notes, 2026-10-24; owner chose the tab-lane direction)
+- **View switch (§3.7.1):** guitar and bass read **Tab / Notes / Chords** once the tab exists (Notes reuses `practice.view_notes`); session-only like piano's (`view: 'notes'`); Tab stays the default. `view_changed` sends `notes`.
+- **Notes (§3.7.3 paper):** the neck at the left (34 % of the paper, 200–440 px; 38 % on phones), the lanes to the right of its hit line, one bar of look-ahead. A tap on the lanes arms the bar under it, a second tap loops (as on the tab); the loop panel, keys and pedal work unchanged; notes are edited from the editor sheet and the edit page, as from the tab.
+- **Phone landscape (§3.7.2):** the chord strip gives way to the lanes; the chord now and next sit over the neck. Phone portrait keeps the glance view.
+- **Copy:** `practice.notes_now` "{bar}: {chord}; {notes}" with `practice.fret_position` "string {string} fret {fret}" (the neck's accessible name, e.g. "Bar 12: Am; string 2 fret 1, string 3 fret 2", changed at most once a second while playing, at once when paused); `practice.fret_shift` "Fret {fret}" on the shift cue.
+- Not built: a "low string on top" option (Rocksmith's order); 5-string bass and 7-string guitar draw from `tuning_midi`, but the Worker has no tuning option yet, so only the stories show them.
+
 ## Open questions
 - Bottom transport on tablets: confirm with the first usability round (reach from playing position vs. glare from the hand over the screen).
 - Whether to show the Display/distance step in onboarding or defer it to the first practice session (one fewer step vs. legibility from minute one).

@@ -9,7 +9,14 @@ import {
   confidenceBand,
   type Notes,
 } from '@splitune/music-core'
-import { type BarTimes, ChordDiagram, KeyboardDiagram, type NoteMark } from '@splitune/notation'
+import {
+  type BarTimes,
+  ChordDiagram,
+  FretboardDiagram,
+  type FretboardDiagramProps,
+  KeyboardDiagram,
+  type NoteMark,
+} from '@splitune/notation'
 import { AlphaTabView } from '@splitune/notation/view'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
@@ -190,5 +197,102 @@ export const Keyboards: Story = {
     await expect(
       canvas.getByRole('img', { name: 'No chord' }).querySelectorAll('[data-hand]'),
     ).toHaveLength(0)
+  },
+}
+
+const GUITAR = ['e', 'B', 'G', 'D', 'A', 'E']
+const neck = (props: Partial<FretboardDiagramProps> & Pick<FretboardDiagramProps, 'label'>) => (
+  <FretboardDiagram
+    names={GUITAR}
+    window={{ lo: 1, hi: 5 }}
+    width={420}
+    height={300}
+    readPx={28}
+    numberPx={16}
+    sounding={[]}
+    next={[]}
+    accent="var(--fret-guitar)"
+    {...props}
+  />
+)
+
+/** Fretboard (step 18b), the neck beside guitar's Notes lanes: Fmaj7 sounding in open position with
+ * the next shape (C) ghosted; up the neck at the 7th fret with a cue to the 12th; the same mirrored
+ * for a left-handed player; a capo on the 2nd fret; a 5-string bass. */
+export const Fretboards: Story = {
+  render: () => (
+    <div className="flex flex-wrap gap-6 bg-paper p-6 font-reading text-ink">
+      {neck({
+        label: 'Open position: Fmaj7 sounding, C next',
+        sounding: [
+          { string: 1, fret: 0, landed: true },
+          { string: 2, fret: 1, landed: true },
+          { string: 3, fret: 2, landed: true },
+          { string: 4, fret: 3, landed: true },
+        ],
+        next: [
+          { string: 5, fret: 3 },
+          { string: 4, fret: 2 },
+          { string: 2, fret: 1 },
+        ],
+        landing: 1,
+      })}
+      {neck({
+        label: 'Seventh position, the 12th fret next',
+        window: { lo: 7, hi: 11 },
+        sounding: [{ string: 1, fret: 7 }],
+        next: [{ string: 1, fret: 12 }],
+        shift: { fret: 12, label: 'Fret 12' },
+      })}
+      {neck({
+        label: 'Left-handed: seventh position, the 12th fret next',
+        window: { lo: 7, hi: 11 },
+        sounding: [{ string: 1, fret: 7 }],
+        shift: { fret: 12, label: 'Fret 12' },
+        mirrored: true,
+      })}
+      {neck({
+        label: 'Capo on the 2nd fret: Am shape',
+        capo: 2,
+        sounding: [
+          { string: 2, fret: 1 },
+          { string: 3, fret: 2 },
+          { string: 4, fret: 2 },
+          { string: 5, fret: 0 },
+        ],
+      })}
+      {neck({
+        label: 'Five-string bass: low B, fret 3',
+        names: ['G', 'D', 'A', 'E', 'B'],
+        accent: 'var(--fret-bass)',
+        sounding: [{ string: 5, fret: 3 }],
+        next: [{ string: 4, fret: 5 }],
+      })}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const open = canvas.getByRole('img', { name: /^Open position/ })
+    await expect(open.querySelectorAll('[data-slot=fret-now]')).toHaveLength(4)
+    // The strum that just landed rings once.
+    await expect(open.querySelectorAll('[data-slot=fret-ring]')).toHaveLength(4)
+    // The next shape's B-string 1st fret is already held: only the new fingers are ghosted.
+    await expect(open.querySelectorAll('[data-slot=fret-next]')).toHaveLength(2)
+    const up = canvas.getByRole('img', { name: /^Seventh position/ })
+    await expect(up.querySelector('[data-slot=fret-shift]')).toHaveTextContent('Fret 12 →')
+    // The 12th fret is outside the window: no ghost for it, the cue instead.
+    await expect(up.querySelectorAll('[data-slot=fret-next]')).toHaveLength(0)
+    const left = canvas.getByRole('img', { name: /^Left-handed/ })
+    await expect(left).toHaveAttribute('data-mirrored', 'true')
+    await expect(left.querySelector('[data-slot=fret-shift]')).toHaveTextContent('← Fret 12')
+    await expect(canvas.getByRole('img', { name: /^Capo/ })).toHaveAttribute('data-capo', '2')
+    const bass = canvas.getByRole('img', { name: /^Five-string/ })
+    await expect([...bass.querySelectorAll('text')].slice(0, 5).map((t) => t.textContent)).toEqual([
+      'G',
+      'D',
+      'A',
+      'E',
+      'B',
+    ])
   },
 }

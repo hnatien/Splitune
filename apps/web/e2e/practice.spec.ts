@@ -246,6 +246,26 @@ test('a capo change recomputes and redraws the tab', async ({ browserName }, inf
   await page.getByRole('button', { name: 'Capo down' }).click()
 })
 
+test("guitar's Notes follow the clock and go back to the tab", async () => {
+  test.skip(mobile, 'phones keep the glance view')
+  const view = page.getByRole('group', { name: 'View' })
+  await view.getByRole('button', { name: 'Notes' }).click()
+  const notes = page.getByRole('region', { name: 'Notes', exact: true })
+  await expect(notes).toBeVisible({ timeout: 30_000 })
+  // The lanes are a canvas hidden from screen readers; the neck says what sounds.
+  await expect(notes.locator('[data-slot=guitar-roll]')).toHaveAttribute('aria-hidden', 'true')
+  const neck = notes.locator('[data-slot=fretboard-diagram]')
+  await expect(neck).toHaveAttribute('aria-label', /^(Bar \d+|Pickup): /)
+  const before = await neck.getAttribute('aria-label')
+  await page.getByRole('button', { name: 'Play', exact: true }).click()
+  await expect(neck).not.toHaveAttribute('aria-label', before ?? '', { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  await view.getByRole('button', { name: 'Tab' }).click()
+  await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+    timeout: 30_000,
+  })
+})
+
 test('the practice screen is accessible', async () => {
   test.skip(mobile, 'phones below')
   await expectAccessible(page)

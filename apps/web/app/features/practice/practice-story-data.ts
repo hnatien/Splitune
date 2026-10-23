@@ -24,9 +24,13 @@ export type Kind =
   | 'tab.guitar'
   | 'summary'
   | 'notes.piano'
+  | 'notes.bass'
+  | 'tab.bass'
 /** Every artefact of the guitar song. */
 export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', 'summary']
-const IDS: Kind[] = [...ALL, 'notes.piano']
+/** Every artefact of the song as a bass part. */
+export const ALL_BASS: Kind[] = ['beats', 'stems', 'chords', 'notes.bass', 'tab.bass', 'summary']
+const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass']
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(IDS.indexOf(kind) + 1).padStart(12, '0')}`
 
@@ -41,7 +45,11 @@ export type Patch = {
   /** A URL import with its downloaded video (13 §6a); an empty clip, so nothing is fetched. */
   video?: boolean
   /** The learner's part, when not the fixture's guitar. */
-  instrument?: 'piano'
+  instrument?: 'piano' | 'bass'
+  /** The part's notes, instead of the fixture's guitar riff (or piano part). */
+  notes?: unknown
+  /** The learner plays left-handed (Settings → Profile). */
+  leftHanded?: boolean
 }
 
 // A piano song on the same 8 bars (4/4, bar n from 0.5 + 2.4 n s): E♭ major as the chord model
@@ -101,6 +109,70 @@ export const PIANO_NOTES = {
     })),
   ),
 }
+// Guitar and bass parts for Notes (step 18b) on the same grid, as notes.guitar / notes.bass: the
+// fixture's chords strummed (a strum's strings 6 ms apart, low to high), a line that climbs to the
+// 7th–12th frets and comes back (position shifts), and a root-and-fifth bass line.
+type Part = [bar: number, beat: number, beats: number, pitches: number[], confidence?: number]
+const partNotes = (instrument: 'guitar' | 'bass', part: Part[], strum = 0) => ({
+  ...notes,
+  artefact: `notes.${instrument}`,
+  instrument,
+  notes: part.flatMap(([bar, beat, beats, pitches, confidence = 0.92], i) =>
+    pitches.map((pitch_midi, k) => ({
+      id: `${instrument[0]}${String(i * 8 + k).padStart(6, '0')}`,
+      onset_s: Math.round((BAR(bar, beat) + k * strum) * 1000) / 1000,
+      offset_s: BAR(bar, beat + beats) - 0.05,
+      pitch_midi,
+      velocity: 72,
+      confidence,
+      confidence_raw: 1,
+      stem_id: instrument,
+    })),
+  ),
+})
+const AM = [45, 52, 57, 60, 64]
+const FMAJ7 = [53, 57, 60, 64]
+const C = [48, 52, 55, 60, 64]
+const G = [43, 47, 50, 55, 59, 67]
+export const GUITAR_STRUMS = partNotes(
+  'guitar',
+  [AM, AM, FMAJ7, FMAJ7, C, C, G, G].flatMap((shape, bar): Part[] => [
+    [bar, 0, 2, shape, bar === 6 ? 0.3 : 0.92],
+    [bar, 2, 2, shape, bar === 5 ? 0.55 : 0.92],
+  ]),
+  0.006,
+)
+export const GUITAR_SHIFTS = partNotes('guitar', [
+  [0, 0, 1, [57]],
+  [0, 1, 1, [60]],
+  [0, 2, 1, [64]],
+  [0, 3, 1, [62]],
+  [1, 0, 4, [57, 60, 64]],
+  [2, 0, 1, [76]],
+  [2, 1, 1, [74]],
+  [2, 2, 1, [72]],
+  [2, 3, 1, [71]],
+  [3, 0, 2, [76, 72], 0.55],
+  [3, 2, 2, [74]],
+  [4, 0, 1, [55]],
+  [4, 1, 1, [57]],
+  [4, 2, 2, [60, 64]],
+  [5, 0, 4, [52, 55, 60]],
+  [6, 0, 1, [67]],
+  [6, 1, 1, [69], 0.3],
+  [6, 2, 2, [71]],
+  [7, 0, 4, [43, 47, 50, 55, 59, 67]],
+])
+export const BASS_LINE = partNotes(
+  'bass',
+  [33, 33, 29, 29, 36, 36, 31, 31].flatMap((root, bar): Part[] => [
+    [bar, 0, 1, [root]],
+    [bar, 1, 1, [root + 7], bar === 3 ? 0.5 : 0.92],
+    [bar, 2, 1, [root + 12]],
+    [bar, 3, 1, [root + 7]],
+  ]),
+)
+
 const pianoSummary = (view: 'roll' | 'chords_only') => ({
   ...summary,
   per_instrument: [
@@ -190,7 +262,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     client.setQueryData(orpc.loops.list.queryKey({ input: { id: song.id } }), { items: [] })
     client.setQueryData(statsQuery.queryKey, STATS)
     client.setQueryData(workerStatusQuery.queryKey, WORKER_ONLINE)
-    client.setQueryData(meQuery.queryKey, ME)
+    client.setQueryData(meQuery.queryKey, patch.leftHanded ? { ...ME, handedness: 'left' } : ME)
     for (const kind of kinds) {
       client.setQueryData(
         orpc.artefacts.listCorrections.queryKey({ input: { id: artefactId(kind) } }),
@@ -201,7 +273,9 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
           ? patch.summary
           : kind === 'chords' && patch.chords
             ? patch.chords
-            : DOCS[kind]
+            : kind.startsWith('notes.') && patch.notes
+              ? patch.notes
+              : DOCS[kind]
       if (doc) client.setQueryData(['artefact-doc', artefactId(kind)], doc)
     }
   }

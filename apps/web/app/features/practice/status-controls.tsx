@@ -65,14 +65,16 @@ function Legend() {
   )
 }
 
-// Tab / Chords (the chord sheet; the glance view on phone portrait); piano's Chart / Notes / Staff
-// (the chord chart, the falling notes, the grand staff). Choosing Tab, Notes or Staff over a
-// chords-only recommendation is the banner's "Show tab anyway".
+// Tab / Notes / Chords (the tab, the lanes onto the neck, the chord sheet; the glance view on phone
+// portrait); piano's Chart / Notes / Staff (the chord chart, the falling notes, the grand staff).
+// Choosing a notation over a chords-only recommendation is the banner's "Show tab anyway".
 function ViewSwitch({ layout }: { layout: PracticeLayout }) {
   const shown = useShownView(layout)
   const chosen = usePracticeUi((s) => s.view)
   const { layers } = usePractice()
   const piano = layers.roll
+  // The second notation chosen over the first: piano's Staff, guitar's Notes.
+  const other = piano ? chosen === 'staff' && 'staff' : chosen === 'notes' && 'notes'
   const item = (value: string, label: string) => (
     <ToggleGroupItem key={value} value={value} className="px-4 text-sm">
       {label}
@@ -81,12 +83,12 @@ function ViewSwitch({ layout }: { layout: PracticeLayout }) {
   return (
     <ToggleGroup
       aria-label={m['practice.view']()}
-      value={[piano && shown === 'tab' && chosen === 'staff' ? 'staff' : shown]}
+      value={[shown === 'tab' && other ? other : shown]}
       onValueChange={(next) => {
         const view = next[0]
-        if (view === 'tab' || view === 'staff') {
+        if (view === 'tab' || view === 'staff' || view === 'notes') {
           usePracticeUi.setState({ view, forceTab: true })
-          track('view_changed', { view: view === 'staff' ? 'staff' : piano ? 'notes' : 'tab' })
+          track('view_changed', { view: view === 'tab' && piano ? 'notes' : view })
         } else if (view === 'chords') {
           usePracticeUi.setState({ view: 'chords' })
           track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
@@ -99,7 +101,11 @@ function ViewSwitch({ layout }: { layout: PracticeLayout }) {
             item('tab', m['practice.view_notes']()),
             item('staff', m['practice.view_staff']()),
           ]
-        : [item('tab', m['practice.view_tab']()), item('chords', m['practice.view_chords']())]}
+        : [
+            item('tab', m['practice.view_tab']()),
+            ...(layers.tab ? [item('notes', m['practice.view_notes']())] : []),
+            item('chords', m['practice.view_chords']()),
+          ]}
     </ToggleGroup>
   )
 }
