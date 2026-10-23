@@ -5,8 +5,12 @@ import {
   RepeatIcon,
   SkipBackIcon,
   SlidersVerticalIcon,
+  Volume1Icon,
+  Volume2Icon,
+  VolumeXIcon,
 } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useRef } from 'react'
+import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -14,6 +18,7 @@ import { CountInIcon } from '@/ui/icons'
 import { LoopBadge, type LoopState } from '@/ui/loop-badge'
 import { PassControl } from '@/ui/pass-control'
 import { Popover, PopoverTrigger } from '@/ui/popover'
+import { Slider } from '@/ui/slider'
 import { SpeedControl } from '@/ui/speed-control'
 import { TransportButton } from '@/ui/transport-button'
 import type { PracticeLayout } from './layout'
@@ -28,7 +33,7 @@ const LoopPanel = lazy(() =>
 // TransportBar (12 §2, 27 §3.7.1): at the bottom edge on every layout (closest to the hands at a
 // stand), safe-area aware: restart and a large round play; the loop (its on/off toggle joined to
 // the "Loop · bars 17–20 · pass 3" badge, which opens the loop's options); speed −/+ around
-// "70 % · 84 BPM"; count-in, metronome and the mixer; and at the right edge "How was pass 3?" with
+// "70 % · 84 BPM"; count-in, metronome and the mixer; master volume; and at the right edge "How was pass 3?" with
 // "Felt clean / Not yet". The controls wrap among themselves when the bar is narrow, the pass pair
 // keeps its edge (on phones it wraps with them, beside speed). Count-in and metronome wait for the
 // beat grid. Mix and the pass pair keep their place before stems and a loop exist, so nothing
@@ -168,7 +173,7 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
               size="practice-2"
               icon={<CountInIcon aria-hidden />}
               label={m['practice.count_in']()}
-              showLabel="wide"
+              showLabel={false}
               pressed={player.countIn && layers.beats}
               disabled={!layers.beats}
               onPressedChange={(on) => send({ type: 'SET_COUNT_IN', on })}
@@ -177,7 +182,7 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
               size="practice-2"
               icon={<MetronomeIcon aria-hidden />}
               label={m['practice.metronome']()}
-              showLabel="wide"
+              showLabel={false}
               pressed={player.metronome && layers.beats}
               disabled={!layers.beats}
               onPressedChange={(on) => send({ type: 'SET_METRONOME', on })}
@@ -186,13 +191,14 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
               size="practice-2"
               icon={<SlidersVerticalIcon aria-hidden />}
               label={m['practice.mix']()}
-              showLabel="wide"
+              showLabel={false}
               pressed={mixerOpen && layers.stems}
               disabled={!layers.stems}
               onPressedChange={(open) => usePracticeUi.setState({ mixerOpen: open })}
             />
           </fieldset>
         )}
+        {!compact && <VolumeControl />}
         {compact && pass}
       </div>
       {!compact && pass}
@@ -205,6 +211,49 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
           : ''}
       </span>
     </div>
+  )
+}
+
+// Master volume (per device), a sunken capsule like speed: mute, a fader and its "80 %" readout.
+// A tap on the track or on mute works without dragging (WCAG 2.5.7); unmute returns to the level
+// before muting. Phones keep their hardware keys.
+function VolumeControl() {
+  const volume = usePracticeDefaults((s) => s.volumePct)
+  const update = usePracticeDefaults((s) => s.update)
+  const restore = useRef(volume > 0 ? volume : 100)
+  const label = m['practice.volume']()
+  const Icon = volume === 0 ? VolumeXIcon : volume < 50 ? Volume1Icon : Volume2Icon
+  return (
+    <fieldset
+      aria-label={label}
+      className="m-0 flex items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
+    >
+      <TransportButton
+        size="practice-2"
+        icon={<Icon aria-hidden />}
+        label={m['practice.mute']()}
+        showLabel={false}
+        pressed={volume === 0}
+        onPressedChange={(muted) => {
+          if (muted) restore.current = volume
+          update({ volumePct: muted ? 0 : restore.current })
+        }}
+      />
+      <div className="w-36 px-3">
+        <Slider
+          value={volume}
+          step={1}
+          largeStep={10}
+          onValueChange={(next) =>
+            update({ volumePct: Array.isArray(next) ? (next[0] ?? 0) : next })
+          }
+          thumbLabels={[label]}
+        />
+      </div>
+      <span aria-hidden className="min-w-14 pr-2 text-right text-base tabular-nums">
+        {formatPercent(volume)}
+      </span>
+    </fieldset>
   )
 }
 

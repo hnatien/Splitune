@@ -131,6 +131,29 @@ export const Ready: Story = {
   },
 }
 
+/** Master volume on the transport: the fader by keyboard, mute, and unmute back to that level. */
+export const Volume: Story = {
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const group = canvas.getByRole('group', { name: 'Volume' })
+    const fader = within(group).getByRole('slider', { name: 'Volume' })
+    fader.focus()
+    await userEvent.keyboard('{PageDown}')
+    await expect(fader).toHaveAttribute('aria-valuenow', '90')
+    const mute = within(group).getByRole('button', { name: 'Mute' })
+    await userEvent.click(mute)
+    await expect(mute).toHaveAttribute('aria-pressed', 'true')
+    await expect(fader).toHaveAttribute('aria-valuenow', '0')
+    await userEvent.click(mute)
+    await expect(fader).toHaveAttribute('aria-valuenow', '90')
+    // The level is stored per device: leave the next story at full volume.
+    fader.focus()
+    await userEvent.keyboard('{End}')
+    await expect(fader).toHaveAttribute('aria-valuenow', '100')
+  },
+}
+
 /** A loop on bars 5–6 from the URL (`?loop=5-6`): band, rail and A/B flags on the score, band on
  * the overview, badge, pass pair. */
 export const LoopActive: Story = {
