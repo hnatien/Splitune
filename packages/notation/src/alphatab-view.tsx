@@ -83,6 +83,8 @@ interface Overlay {
 }
 
 const EMPTY: Overlay = { bars: [], notes: [], markers: [] }
+// One empty list for every render: the overlay effect depends on `markers`.
+const NO_MARKERS: readonly BeatMarker[] = []
 const LOOK_AHEAD_PX = 8
 
 function createApi(host: HTMLElement, layout: 'page' | 'scroll'): alphaTab.AlphaTabApi {
@@ -122,7 +124,7 @@ export function AlphaTabView({
   tex,
   noteMap,
   marks,
-  markers = [],
+  markers = NO_MARKERS,
   times,
   theme,
   layout,

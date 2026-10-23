@@ -17,6 +17,43 @@ const pickupNotes = makeNotes([
   { id: 'd3', onset_s: 2, offset_s: 3, pitch_midi: 57 },
 ])
 
+// Piano notes as [pitch, onset_s, offset_s].
+const pianoNotes = (rows: [number, number, number][]) =>
+  makeNotes(
+    rows.map(([pitch_midi, onset_s, offset_s]) => ({ pitch_midi, onset_s, offset_s })),
+    'piano',
+  )
+
+// Two hands in E♭ (the chords' key is written D#): a melody over a held B♭, a bass E♭ held under
+// a moving left hand, a tie over the bar line.
+const twoHands = pianoNotes([
+  [79, 0.5, 1],
+  [80, 1, 1.5],
+  [82, 1.5, 2],
+  [87, 2, 3.5],
+  [86, 3.5, 4.5],
+  [70, 0.5, 2.5],
+  [39, 0.5, 4.5],
+  [46, 1, 1.5],
+  [51, 1.5, 2],
+  [55, 2, 2.5],
+  [44, 2.5, 3.5],
+  [48, 2.5, 3.5],
+])
+
+// A pickup into A minor, its leading tone spelled G#.
+const pianoPickup = pianoNotes([
+  [76, 0.5, 1],
+  [69, 1, 2],
+  [72, 1, 3],
+  [76, 1, 3],
+  [45, 1, 3],
+  [52, 1.5, 2],
+  [68, 3, 3.5],
+  [69, 3.5, 5],
+  [40, 3, 5],
+])
+
 const CASES: Record<string, { command: string; input: unknown }> = {
   'key.fixture': {
     command: 'key',
@@ -67,6 +104,29 @@ const CASES: Record<string, { command: string; input: unknown }> = {
         { t0: 2.5, t1: 4.5, label: 'F:maj/3' },
       ]),
       options: { level: 'roots' },
+    },
+  },
+  'build-piano.two-hands': {
+    command: 'build-piano',
+    input: {
+      notes: twoHands,
+      beats: makeBeats({ bars: 2 }),
+      chords: {
+        ...makeChords([{ t0: 0.5, t1: 4.5, label: 'D#:maj' }]),
+        key: { tonic: 'D#', mode: 'major', confidence: 0.8 },
+      },
+      options: { title: 'Two hands' },
+    },
+  },
+  'build-piano.pickup': {
+    command: 'build-piano',
+    input: {
+      notes: pianoPickup,
+      beats: makeBeats({ bars: 2, pickup: 1 }),
+      chords: {
+        ...makeChords([{ t0: 1, t1: 5, label: 'A:min' }]),
+        key: { tonic: 'A', mode: 'minor', confidence: 0.8 },
+      },
     },
   },
   'quantize.fixture-nudged': {

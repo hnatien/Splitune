@@ -71,6 +71,8 @@ export interface CursorPosition extends Rect {
 
 // The beat cursor: inside the bar, x interpolates between the rendered beats around the playing
 // tick (so it sits on a note when the note sounds), and between the last beat and the bar end.
+// Beats come from every staff and voice (a grand staff's left hand moves while the right holds),
+// one per tick: staves line their beats up at the same x.
 export function cursorAt(
   lookup: Lookup,
   score: alphaTab.model.Score,
@@ -84,7 +86,15 @@ export function cursorAt(
   if (!masterBar || !bounds) return undefined
   const system = bounds.staffSystemBounds?.realBounds ?? bounds.realBounds
   const tick = where.fraction * masterBar.calculateDuration()
-  const beats = bounds.bars[0]?.beats ?? []
+  const byStart = new Map<number, alphaTab.rendering.BeatBounds>()
+  for (const bar of bounds.bars) {
+    for (const beat of bar.beats) {
+      if (beat.beat.isEmpty) continue
+      const seen = byStart.get(beat.beat.playbackStart)
+      if (!seen || beat.onNotesX < seen.onNotesX) byStart.set(beat.beat.playbackStart, beat)
+    }
+  }
+  const beats = [...byStart.values()].sort((a, b) => a.beat.playbackStart - b.beat.playbackStart)
   const left = bounds.realBounds.x
   const right = bounds.realBounds.x + bounds.realBounds.w
   let x = left + where.fraction * bounds.realBounds.w

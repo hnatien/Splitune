@@ -4,6 +4,7 @@ import {
   applyChordCorrections,
   applyNoteCorrections,
 } from '../corrections/apply.ts'
+import { type PianoNoteRef, toPianoAlphaTex } from '../export/alphatex-piano.ts'
 import { createBeatGrid, tickToTime } from '../grid/beatgrid.ts'
 import { type QuantizeOptions, quantizeNotes } from '../quantize/quantize.ts'
 import type { Beats, Chords, CorrectionOp, Notes } from '../types.ts'
@@ -11,7 +12,7 @@ import { type Hand, type HandSplitOptions, splitHands } from './hands.ts'
 
 // The piano counterpart of buildTab (21 V4), called by the web Worker: effective artefacts
 // (corrections) → quantize → one sounding note per key at a time → hand split. The result is
-// renderer-independent: a falling-notes roll reads the times, a grand staff the ticks and hands.
+// renderer-independent: a falling-notes roll reads the times, the grand staff its alphaTex.
 
 export interface PianoCorrections {
   notes?: readonly CorrectionOp[]
@@ -24,6 +25,7 @@ export interface BuildPianoOptions {
   bands?: BandThresholds
   quantize?: QuantizeOptions
   hands?: HandSplitOptions
+  title?: string
 }
 
 export interface PianoNote {
@@ -42,6 +44,9 @@ export interface PianoNote {
 export interface PianoScore {
   notes: PianoNote[] // by onset, then pitch
   swingBars: number[]
+  alphaTex: string // the grand staff (export/alphatex-piano.ts)
+  alphaTexFirstBar: number
+  noteMap: PianoNoteRef[] // rendered alphaTab note (staff, bar, voice, beat, note) → note id
   effective: { notes: Notes; beats: Beats; chords?: Chords }
   skippedCorrections: { notes: number[]; beats: number[]; chords: number[] }
 }
@@ -112,11 +117,30 @@ export function buildPianoScore(
     }
   })
 
+  const tex = toPianoAlphaTex({
+    grid,
+    meterDenominator: effBeats.value.meter.denominator,
+    tempo: effBeats.value.bpm,
+    notes: out.map((n) => ({
+      noteId: n.id,
+      pitch: n.pitch,
+      hand: n.hand,
+      onTick: n.onTick,
+      offTick: n.offTick,
+    })),
+    swingBars: quantized.swingBars,
+    ...(effChords === undefined ? {} : { key: effChords.value.key }),
+    ...(options.title === undefined ? {} : { title: options.title }),
+  })
+
   const effective: PianoScore['effective'] = { notes: effNotes.value, beats: effBeats.value }
   if (effChords !== undefined) effective.chords = effChords.value
   return {
     notes: out,
     swingBars: quantized.swingBars,
+    alphaTex: tex.tex,
+    alphaTexFirstBar: tex.firstBar,
+    noteMap: tex.noteMap,
     effective,
     skippedCorrections: {
       notes: effNotes.skipped,

@@ -535,6 +535,7 @@
   "practice.view_chords": "Chords",
   "practice.view_chart": "Chart",
   "practice.view_notes": "Notes",
+  "practice.view_staff": "Staff",
   "practice.view_tab": "Tab",
   "practice.voicing": "Voicing",
   "practice.voicing_label": "{chord}: left hand {left}, right hand {right}",

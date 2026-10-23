@@ -70,7 +70,7 @@ describe('effective music', () => {
     expect(out.displayChords.length).toBeGreaterThan(0)
   })
 
-  it('gives piano the hand-split notes for the roll, with corrections, and no tab', () => {
+  it('gives piano the hand-split notes and the grand staff, with corrections, and no tab', () => {
     const piano = { ...(notes as Notes), artefact: 'notes.piano', instrument: 'piano' } as Notes
     const out = computeMusic(
       input({
@@ -83,5 +83,12 @@ describe('effective music', () => {
     expect(out.piano?.notes.some((n) => n.id === 'n000000')).toBe(false)
     expect(new Set(out.piano?.notes.map((n) => n.hand))).toEqual(new Set(['left', 'right']))
     expect(out.displayChords.length).toBeGreaterThan(0)
+    // The staff maps every note once, the deleted one not at all, on both staves.
+    const staff = out.piano?.staff
+    expect(staff?.alphaTex).toContain('\\clef F4')
+    expect(staff?.noteMap.map((r) => r.noteId).sort()).toEqual(
+      out.piano?.notes.map((n) => n.id).sort(),
+    )
+    expect(new Set(staff?.noteMap.map((r) => r.staff))).toEqual(new Set([0, 1]))
   })
 })

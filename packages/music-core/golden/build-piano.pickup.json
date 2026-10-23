@@ -1,0 +1,363 @@
+{
+  "command": "build-piano",
+  "input": {
+    "notes": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "notes.piano",
+      "instrument": "piano",
+      "duration_s": 6,
+      "notes": [
+        {
+          "id": "n000000",
+          "onset_s": 0.5,
+          "offset_s": 1,
+          "pitch_midi": 76,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000001",
+          "onset_s": 1,
+          "offset_s": 2,
+          "pitch_midi": 69,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000002",
+          "onset_s": 1,
+          "offset_s": 3,
+          "pitch_midi": 72,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000003",
+          "onset_s": 1,
+          "offset_s": 3,
+          "pitch_midi": 76,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000004",
+          "onset_s": 1,
+          "offset_s": 3,
+          "pitch_midi": 45,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000005",
+          "onset_s": 1.5,
+          "offset_s": 2,
+          "pitch_midi": 52,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000006",
+          "onset_s": 3,
+          "offset_s": 3.5,
+          "pitch_midi": 68,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000007",
+          "onset_s": 3.5,
+          "offset_s": 5,
+          "pitch_midi": 69,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        },
+        {
+          "id": "n000008",
+          "onset_s": 3,
+          "offset_s": 5,
+          "pitch_midi": 40,
+          "confidence": 0.9,
+          "stem_id": "piano"
+        }
+      ]
+    },
+    "beats": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "beats",
+      "duration_s": 6,
+      "beats": [
+        {
+          "id": "b0000",
+          "t": 0.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": -1,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0001",
+          "t": 1,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 0,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0002",
+          "t": 1.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0003",
+          "t": 2,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0004",
+          "t": 2.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0005",
+          "t": 3,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 1,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0006",
+          "t": 3.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0007",
+          "t": 4,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0008",
+          "t": 4.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 4
+        }
+      ],
+      "bpm": 120,
+      "meter": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "tempo_octave_ambiguous": false,
+      "first_downbeat_t": 1
+    },
+    "chords": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "chords",
+      "duration_s": 5,
+      "vocabulary": "majmin",
+      "segments": [
+        {
+          "id": "c0000",
+          "t0": 1,
+          "t1": 5,
+          "label": "A:min",
+          "confidence": 0.9,
+          "top_k": [],
+          "beat_aligned": true
+        }
+      ],
+      "key": {
+        "tonic": "A",
+        "mode": "minor",
+        "confidence": 0.8
+      },
+      "inputs_fused": [
+        "mixture"
+      ]
+    }
+  },
+  "expected": {
+    "notes": [
+      {
+        "note_id": "n000000",
+        "pitch": 76,
+        "hand": "right",
+        "on_tick": 0,
+        "off_tick": 960
+      },
+      {
+        "note_id": "n000004",
+        "pitch": 45,
+        "hand": "left",
+        "on_tick": 960,
+        "off_tick": 4800
+      },
+      {
+        "note_id": "n000001",
+        "pitch": 69,
+        "hand": "right",
+        "on_tick": 960,
+        "off_tick": 2880
+      },
+      {
+        "note_id": "n000002",
+        "pitch": 72,
+        "hand": "right",
+        "on_tick": 960,
+        "off_tick": 4800
+      },
+      {
+        "note_id": "n000003",
+        "pitch": 76,
+        "hand": "right",
+        "on_tick": 960,
+        "off_tick": 4800
+      },
+      {
+        "note_id": "n000005",
+        "pitch": 52,
+        "hand": "left",
+        "on_tick": 1920,
+        "off_tick": 2880
+      },
+      {
+        "note_id": "n000008",
+        "pitch": 40,
+        "hand": "left",
+        "on_tick": 4800,
+        "off_tick": 8640
+      },
+      {
+        "note_id": "n000006",
+        "pitch": 68,
+        "hand": "right",
+        "on_tick": 4800,
+        "off_tick": 5760
+      },
+      {
+        "note_id": "n000007",
+        "pitch": 69,
+        "hand": "right",
+        "on_tick": 5760,
+        "off_tick": 8640
+      }
+    ],
+    "swing_bars": [],
+    "alphatex": "\\track \"Piano\"\n\\staff {score} \\tuning piano \\instrument acousticgrandpiano\n\\ts (4 4) \\tempo 120 \\ks Aminor \\ac E5.4 |\n(A4 C5 E5).1 |\nG#4.4 A4.4 A4{t}.2\n\\staff {score} \\tuning piano\n\\voice\n\\clef F4 \\ks Aminor r.4 |\nr.4 E3.4 r.2 |\nE2.1\n\\voice\n |\nA2.1 |\n\n",
+    "note_map": [
+      {
+        "noteId": "n000000",
+        "staff": 0,
+        "bar": 0,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "noteId": "n000001",
+        "staff": 0,
+        "bar": 1,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "noteId": "n000002",
+        "staff": 0,
+        "bar": 1,
+        "voice": 0,
+        "beat": 0,
+        "note": 1
+      },
+      {
+        "noteId": "n000003",
+        "staff": 0,
+        "bar": 1,
+        "voice": 0,
+        "beat": 0,
+        "note": 2
+      },
+      {
+        "noteId": "n000006",
+        "staff": 0,
+        "bar": 2,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "noteId": "n000007",
+        "staff": 0,
+        "bar": 2,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "noteId": "n000005",
+        "staff": 1,
+        "bar": 1,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "noteId": "n000008",
+        "staff": 1,
+        "bar": 2,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "noteId": "n000004",
+        "staff": 1,
+        "bar": 1,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      }
+    ]
+  }
+}

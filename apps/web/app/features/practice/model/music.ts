@@ -13,6 +13,7 @@ import {
   keyNoteNames,
   type Notes,
   type PianoNote,
+  type PianoScore,
   simplifyChords,
   type TabLevel,
 } from '@splitune/music-core'
@@ -54,14 +55,21 @@ export interface MusicTab {
   notes: Notes['notes']
 }
 
+export interface MusicStaff {
+  alphaTex: string
+  firstBar: number
+  noteMap: PianoScore['noteMap']
+}
+
 export interface MusicOutput {
   beats: Beats
   chords?: Chords | undefined
   /** Labels as shown at this level (sevenths simplified to triads where the level says so). */
   displayChords: ChordSegment[]
   tab?: MusicTab | undefined
-  /** Piano notes on the beat grid with their hands (21 V4), for the falling-notes roll. */
-  piano?: { notes: PianoNote[] } | undefined
+  /** Piano notes on the beat grid with their hands (21 V4): the falling-notes roll and the grand
+   * staff's alphaTex. */
+  piano?: { notes: PianoNote[]; staff: MusicStaff } | undefined
   bands: BandThresholds
   /** Every pitch class's name in the song's key (C major's without one): E♭, not D#. */
   noteNames: string[]
@@ -151,7 +159,18 @@ export function computeMusic(input: MusicInput): MusicOutput {
           input.options.level === 'simplified' ? 'simplified' : 'as_transcribed',
         )
       : [],
-    ...(piano ? { piano: { notes: piano.notes } } : {}),
+    ...(piano
+      ? {
+          piano: {
+            notes: piano.notes,
+            staff: {
+              alphaTex: piano.alphaTex,
+              firstBar: piano.alphaTexFirstBar,
+              noteMap: piano.noteMap,
+            },
+          },
+        }
+      : {}),
     bands,
     noteNames: namesFor(chords),
   }

@@ -11,14 +11,18 @@ export interface NoteMark {
   octave?: '8va' | '8vb'
 }
 
-/** Rendered alphaTab note (bar, voice, beat, note index) → note id; music-core's `noteMap`. */
+/**
+ * Rendered alphaTab note (staff, bar, voice, beat, note index) → note id; music-core's `noteMap`.
+ * A tab has one staff and its notes a string; the piano's grand staff has two.
+ */
 export interface NoteRef {
   noteId: string
+  staff?: number
   bar: number
   voice: number
   beat: number
   note: number
-  string: number
+  string?: number
 }
 
 /**

@@ -2,7 +2,13 @@ import * as alphaTab from '@coderline/alphatab'
 import beats from '@splitune/contracts/fixtures/beats.json'
 import chords from '@splitune/contracts/fixtures/chords.json'
 import notes from '@splitune/contracts/fixtures/notes.guitar.json'
-import { type Beats, buildTab, type Chords, type Notes } from '@splitune/music-core'
+import {
+  type Beats,
+  buildPianoScore,
+  buildTab,
+  type Chords,
+  type Notes,
+} from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
 import { externalMediaHandler } from '../src/external-media.ts'
 import { barBoxes, barFraction, cursorAt, noteBoxes } from '../src/geometry.ts'
@@ -117,38 +123,31 @@ describe('score model', () => {
   })
 })
 
-describe('timeline geometry', () => {
-  it('finds the bar and the played fraction of it', () => {
-    expect(barFraction(timeline, 0)).toEqual({ index: 0, fraction: 0 })
-    expect(barFraction(timeline, 0.5)).toEqual({ index: 0, fraction: 0 })
-    expect(barFraction(timeline, 0.5 + 0.9)?.fraction).toBeCloseTo(0.375)
-    expect(barFraction(timeline, 0.5 + 3 * BAR_S + 0.3)).toEqual({ index: 3, fraction: 0.125 })
-    expect(barFraction(timeline, 100)).toEqual({ index: BARS - 1, fraction: 1 })
-  })
-
-  // A hand-made lookup: two systems of four bars, 100 px per bar, beats evenly spaced.
-  function lookup(s: alphaTab.model.Score) {
-    const beatsByObject = new Map<alphaTab.model.Beat, unknown>()
-    const systems = [0, 1].map((systemIndex) => {
-      const system = {
-        index: systemIndex,
-        realBounds: { x: 0, y: systemIndex * 200, w: 400, h: 150 },
+// A hand-made lookup: two systems of four bars, 100 px per bar, beats placed by their time in
+// the bar (as alphaTab lines up the staves), every staff and voice.
+function lookup(s: alphaTab.model.Score) {
+  const beatsByObject = new Map<alphaTab.model.Beat, unknown>()
+  const systems = [0, 1].map((systemIndex) => {
+    const system = {
+      index: systemIndex,
+      realBounds: { x: 0, y: systemIndex * 200, w: 400, h: 150 },
+      bars: [] as unknown[],
+    }
+    for (let i = 0; i < 4; i++) {
+      const index = systemIndex * 4 + i
+      const length = s.masterBars[index]?.calculateDuration() ?? 1
+      const masterBar = {
+        index,
+        realBounds: { x: i * 100, y: systemIndex * 200 + 20, w: 100, h: 100 },
+        staffSystemBounds: system,
         bars: [] as unknown[],
       }
-      for (let i = 0; i < 4; i++) {
-        const index = systemIndex * 4 + i
-        const bar = s.tracks[0]?.staves[0]?.bars[index]
-        const masterBar = {
-          index,
-          realBounds: { x: i * 100, y: systemIndex * 200 + 20, w: 100, h: 100 },
-          staffSystemBounds: system,
-          bars: [] as unknown[],
-        }
-        const beatsInBar = bar?.voices[0]?.beats ?? []
-        const beatBounds = beatsInBar.map((beat, k) => {
+      for (const staff of s.tracks[0]?.staves ?? []) {
+        const beatsInBar = staff.bars[index]?.voices.flatMap((voice) => voice.beats) ?? []
+        const beatBounds = beatsInBar.map((beat) => {
           const bounds = {
             beat,
-            onNotesX: i * 100 + 10 + (k * 80) / beatsInBar.length,
+            onNotesX: i * 100 + 10 + (beat.playbackStart * 80) / length,
             notes: beat.notes.map((note) => ({
               note,
               noteHeadBounds: { x: i * 100 + 10, y: systemIndex * 200 + 40, w: 8, h: 10 },
@@ -158,15 +157,25 @@ describe('timeline geometry', () => {
           return bounds
         })
         masterBar.bars.push({ beats: beatBounds })
-        system.bars.push(masterBar)
       }
-      return system
-    })
-    return {
-      staffSystems: systems,
-      findBeat: (beat: alphaTab.model.Beat) => beatsByObject.get(beat) ?? null,
-    } as unknown as alphaTab.rendering.BoundsLookup
-  }
+      system.bars.push(masterBar)
+    }
+    return system
+  })
+  return {
+    staffSystems: systems,
+    findBeat: (beat: alphaTab.model.Beat) => beatsByObject.get(beat) ?? null,
+  } as unknown as alphaTab.rendering.BoundsLookup
+}
+
+describe('timeline geometry', () => {
+  it('finds the bar and the played fraction of it', () => {
+    expect(barFraction(timeline, 0)).toEqual({ index: 0, fraction: 0 })
+    expect(barFraction(timeline, 0.5)).toEqual({ index: 0, fraction: 0 })
+    expect(barFraction(timeline, 0.5 + 0.9)?.fraction).toBeCloseTo(0.375)
+    expect(barFraction(timeline, 0.5 + 3 * BAR_S + 0.3)).toEqual({ index: 3, fraction: 0.125 })
+    expect(barFraction(timeline, 100)).toEqual({ index: BARS - 1, fraction: 1 })
+  })
 
   it('boxes every bar at its system height', () => {
     const boxes = barBoxes(lookup(score()))
@@ -206,6 +215,52 @@ describe('timeline geometry', () => {
     expect(boxes).toHaveLength(built.noteMap.length)
     expect(boxes[0]).toMatchObject({ noteId: first?.noteId, level: 'low', timingFlagged: true })
     expect(boxes[1]?.level).toBe('high')
+  })
+})
+
+describe('grand staff', () => {
+  // Bar 1: the right hand holds a whole note while the left plays quarters.
+  const pianoNotes: Notes = {
+    ...(notes as Notes),
+    artefact: 'notes.piano',
+    instrument: 'piano',
+    notes: [
+      { pitch: 72, onset: 0.5, offset: 2.9 },
+      ...[0, 1, 2, 3].map((beat) => ({
+        pitch: [36, 43, 48, 43][beat] as number,
+        onset: 0.5 + beat * 0.6,
+        offset: 1.1 + beat * 0.6,
+      })),
+    ].map((n, i) => ({
+      id: `p${i}`,
+      onset_s: n.onset,
+      offset_s: n.offset,
+      pitch_midi: n.pitch,
+      confidence: 0.9,
+      stem_id: 'piano',
+    })),
+  }
+  const piano = buildPianoScore(pianoNotes, beats as Beats)
+  const pianoScore = () => loadScore(piano.alphaTex, new alphaTab.Settings())
+  const pianoTimeline = resolveTimeline(pianoScore(), times)
+
+  it('maps notes on both staves', () => {
+    const s = pianoScore()
+    expect(piano.noteMap.map((r) => r.staff)).toEqual([0, 1, 1, 1, 1])
+    for (const ref of piano.noteMap) {
+      const note = noteOf(s, ref)
+      expect(note?.realValue, ref.noteId).toBe(piano.notes.find((n) => n.id === ref.noteId)?.pitch)
+    }
+  })
+
+  it('moves the cursor with the left hand while the right holds', () => {
+    const s = pianoScore()
+    const l = lookup(s)
+    // The right hand's whole note alone would spread the bar evenly (beat 1 at x = 25); the left
+    // hand's quarters put each beat on its note (x = 10 + 20 per beat; the bar starts at its edge).
+    for (const beat of [1, 2, 3]) {
+      expect(cursorAt(l, s, pianoTimeline, 0.5 + beat * 0.6)?.x).toBeCloseTo(10 + beat * 20)
+    }
   })
 })
 

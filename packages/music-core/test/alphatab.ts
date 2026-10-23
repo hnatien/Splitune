@@ -33,3 +33,20 @@ export function barDurationMismatches(score: alphaTab.model.Score): number[] {
     return total === master.calculateDuration() ? [] : [i]
   })
 }
+
+// The same for every staff and voice; a voice left empty in a bar (a second voice's rest) counts
+// as filled. Entries are "staff:bar:voice".
+export function voiceDurationMismatches(score: alphaTab.model.Score): string[] {
+  const staves = score.tracks[0]?.staves ?? []
+  return staves.flatMap((staff, s) =>
+    staff.bars.flatMap((bar, i) => {
+      const master = score.masterBars[i]
+      if (master === undefined || master.isAnacrusis) return []
+      return bar.voices.flatMap((voice, v) => {
+        if (voice.isEmpty) return []
+        const total = voice.beats.reduce((sum, beat) => sum + beat.playbackDuration, 0)
+        return total === master.calculateDuration() ? [] : [`${s}:${i}:${v}`]
+      })
+    }),
+  )
+}

@@ -164,9 +164,9 @@ export const ChordsView: Story = {
     await waitFor(() => expect(sheet).toBeVisible())
     await expect(canvas.queryByRole('region', { name: 'Tab' })).toBeNull()
     await userEvent.click(within(view).getByRole('button', { name: 'Tab' }))
-    await expect(
-      await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 }),
-    ).toBeVisible()
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    // Layers fade in (200 ms, 27 §3.7.3).
+    await waitFor(() => expect(tab).toBeVisible())
   },
 }
 
@@ -502,7 +502,7 @@ const pianoNotes = async (canvasElement: HTMLElement) => {
 }
 
 /** Piano notes (21 V4): the transcribed notes fall onto a keyboard the width of the roll, hands
- * by lightness and L/R; the status bar's Chart / Notes switch, Notes by default once the notes
+ * by lightness and L/R; the status bar's Chart / Notes / Staff switch, Notes by default once the notes
  * pass the quality gate; the strip keeps its chords but drops its voicing keyboards. */
 export const PianoNotes: Story = {
   render: screen(PIANO_NOTES_KINDS, PIANO_NOTES),
@@ -523,7 +523,7 @@ export const PianoNotes: Story = {
 
     const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
     const buttons = within(view).getAllByRole('button')
-    await expect(buttons.map((b) => b.textContent)).toEqual(['Chart', 'Notes'])
+    await expect(buttons.map((b) => b.textContent)).toEqual(['Chart', 'Notes', 'Staff'])
     await expect(within(view).getByRole('button', { name: 'Notes' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -577,6 +577,108 @@ export const PianoNotesStage: Story = {
   globals: { appearance: 'stage' },
   play: async ({ canvasElement }) => {
     await pianoNotes(canvasElement)
+  },
+}
+
+const pianoStaff = async (canvasElement: HTMLElement) => {
+  const { canvas } = await pianoNotes(canvasElement)
+  const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+  await userEvent.click(within(view).getByRole('button', { name: 'Staff' }))
+  // The staff's code and alphaTab load on demand.
+  const region = await canvas.findByRole('region', { name: 'Staff' }, { timeout: 20_000 })
+  await waitFor(() => expect(region).toBeVisible())
+  // Bars become buttons once alphaTab has drawn the score.
+  await waitFor(() => expect(region.querySelectorAll('[data-slot=bar-target]')).toHaveLength(8), {
+    timeout: 20_000,
+  })
+  return { canvas, view, region }
+}
+
+/** Piano's Staff (21 V4): the notes on a grand staff, right hand on the treble and left on the
+ * bass, spelled in E♭ under its key signature; bars named with their chords and notes, unsure
+ * notes marked as on the tab; the cursor follows the audio clock; Notes goes back to the roll. */
+export const PianoStaff: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES),
+  play: async ({ canvasElement }) => {
+    const { canvas, view, region } = await pianoStaff(canvasElement)
+    await expect(within(view).getByRole('button', { name: 'Staff' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    const staff = within(region)
+    await expect(
+      staff.getByRole('button', { name: 'Bar 1: No chord; notes G4, B♭4, E♭5, D5' }),
+    ).toBeVisible()
+    await expect(
+      staff.getByRole('button', { name: /^Bar 3: A♭maj7, B♭7; notes A♭2, / }),
+    ).toBeVisible()
+    // The B♭7 half bar is unsure and the G♯m7 one probable: dashed outlines, "?" on the unsure.
+    await expect(
+      region.querySelectorAll('[data-slot=note-mark][data-confidence=low]'),
+    ).toHaveLength(4)
+    await expect(
+      region.querySelectorAll('[data-slot=note-mark][data-confidence=medium]'),
+    ).toHaveLength(4)
+
+    // The cursor follows the audio clock: → twice (to bar 1, then bar 2, 2.9 s) puts it on bar 2's
+    // first notes.
+    const cursor = region.querySelector('[data-slot=notation-cursor]') as HTMLElement
+    const start = cursor.getBoundingClientRect().left
+    ;(canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur()
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}')
+    await waitFor(() => expect(Number(cursor.getAttribute('data-time'))).toBeCloseTo(2.9, 2))
+    const bar2 = staff.getByRole('button', { name: /^Bar 2:/ }).getBoundingClientRect()
+    const at = cursor.getBoundingClientRect().left
+    await expect(at).toBeGreaterThan(start)
+    await expect(at).toBeGreaterThanOrEqual(bar2.left)
+    await expect(at).toBeLessThan(bar2.left + bar2.width / 2)
+
+    await userEvent.click(within(view).getByRole('button', { name: 'Notes' }))
+    const roll = await canvas.findByRole('region', { name: 'Notes' }, { timeout: 10_000 })
+    await waitFor(() => expect(roll).toBeVisible())
+    await expect(canvas.queryByRole('region', { name: 'Staff' })).toBeNull()
+  },
+}
+
+/** A loop over bars 3–4: those staff bars pressed, shaded and railed, A and B at its ends. */
+export const PianoStaffLoop: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
+  play: async ({ canvasElement }) => {
+    const { region } = await pianoStaff(canvasElement)
+    const pressed = [...region.querySelectorAll('[data-slot=bar-target][aria-pressed=true]')].map(
+      (bar) => bar.getAttribute('data-bar'),
+    )
+    await expect(pressed).toEqual(['2', '3'])
+    await waitFor(() => expect(region.querySelectorAll('[data-slot=loop-rail]')).toHaveLength(2))
+  },
+}
+
+/** Below the quality gate: Staff, like Notes, shows the transcription anyway. */
+export const PianoStaffBelowGate: Story = {
+  render: screen(PIANO_NOTES_KINDS, { ...PIANO, summary: PIANO_SUMMARY_BELOW_GATE }),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await pianoChart(canvasElement)
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await userEvent.click(within(view).getByRole('button', { name: 'Staff' }))
+    const region = await canvas.findByRole('region', { name: 'Staff' }, { timeout: 20_000 })
+    await waitFor(() => expect(region).toBeVisible())
+    await expect(canvas.queryByText(m['practice.chords_only_piano']())).toBeNull()
+  },
+}
+
+export const PianoStaffDark: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
+  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    await pianoStaff(canvasElement)
+  },
+}
+
+export const PianoStaffStage: Story = {
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
+  globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    await pianoStaff(canvasElement)
   },
 }
 

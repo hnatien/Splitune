@@ -14,9 +14,8 @@ export function loadScore(tex: string, settings: alphaTab.Settings): alphaTab.mo
 
 /** The alphaTab note a NoteRef points at (undefined when the score doesn't have it). */
 export function noteOf(score: alphaTab.model.Score, ref: NoteRef): alphaTab.model.Note | undefined {
-  return score.tracks[0]?.staves[0]?.bars[ref.bar]?.voices[ref.voice]?.beats[ref.beat]?.notes[
-    ref.note
-  ]
+  return score.tracks[0]?.staves[ref.staff ?? 0]?.bars[ref.bar]?.voices[ref.voice]?.beats[ref.beat]
+    ?.notes[ref.note]
 }
 
 /** The rendered bars' times: as many bars as the score has, from the beat grid. */

@@ -1,5 +1,5 @@
 // JSON-in/JSON-out CLI for the Python eval harness and language-neutral golden tests:
-//   node src/cli.ts <fret|quantize|build-tab|key> < input.json > output.json
+//   node src/cli.ts <fret|quantize|build-tab|build-piano|key> < input.json > output.json
 // (or `pnpm --silent --filter @splitune/music-core cli <command>`). Invalid input exits with
 // code 2 and an ErrorEnvelope-shaped JSON object on stderr.
 import { Beats, Chords, CorrectionOp, Notes } from '@splitune/contracts'
@@ -10,6 +10,7 @@ import { fretConfig } from './fret/config.ts'
 import { assignFrets, groupIntoSteps } from './fret/dp.ts'
 import { createBeatGrid } from './grid/beatgrid.ts'
 import { estimateKey } from './harmony/key.ts'
+import { buildPianoScore } from './piano/build-piano.ts'
 import { quantizeNotes } from './quantize/quantize.ts'
 
 const Ops = z.array(CorrectionOp)
@@ -74,6 +75,16 @@ const BuildTabInput = z.object({
       chord_names: z.boolean().optional(),
     })
     .optional(),
+})
+
+const BuildPianoInput = z.object({
+  notes: Notes,
+  beats: Beats,
+  chords: Chords.optional(),
+  corrections: z
+    .object({ notes: Ops.optional(), beats: Ops.optional(), chords: Ops.optional() })
+    .optional(),
+  options: z.object({ title: z.string().optional() }).optional(),
 })
 
 function defined<T extends object>(value: T): { [K in keyof T]: Exclude<T[K], undefined> } {
@@ -183,6 +194,30 @@ export function runBuildTab(raw: unknown): unknown {
   }
 }
 
+// Piano notes with their hands, and the grand staff (21 V4).
+export function runBuildPiano(raw: unknown): unknown {
+  const input = BuildPianoInput.parse(raw)
+  const c = input.corrections ?? {}
+  const result = buildPianoScore(
+    input.notes,
+    input.beats,
+    defined({ notes: c.notes, beats: c.beats, chords: c.chords }),
+    defined({ chords: input.chords, title: input.options?.title }),
+  )
+  return {
+    notes: result.notes.map((n) => ({
+      note_id: n.id,
+      pitch: n.pitch,
+      hand: n.hand,
+      on_tick: n.onTick,
+      off_tick: n.offTick,
+    })),
+    swing_bars: result.swingBars,
+    alphatex: result.alphaTex,
+    note_map: result.noteMap,
+  }
+}
+
 // Key from chord segments (and optionally notes): the music-core estimator for the chords stage.
 const KeyInput = z.object({
   segments: Chords.shape.segments,
@@ -207,6 +242,7 @@ export const COMMANDS: Readonly<Record<string, (raw: unknown) => unknown>> = {
   fret: runFret,
   quantize: runQuantize,
   'build-tab': runBuildTab,
+  'build-piano': runBuildPiano,
   key: runKey,
 }
 

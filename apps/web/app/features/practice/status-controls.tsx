@@ -65,39 +65,41 @@ function Legend() {
   )
 }
 
-// Tab / Chords (the chord sheet; the glance view on phone portrait); piano's Chart / Notes (the
-// chord chart and the falling notes). Choosing Tab or Notes over a chords-only recommendation is
-// the banner's "Show tab anyway".
+// Tab / Chords (the chord sheet; the glance view on phone portrait); piano's Chart / Notes / Staff
+// (the chord chart, the falling notes, the grand staff). Choosing Tab, Notes or Staff over a
+// chords-only recommendation is the banner's "Show tab anyway".
 function ViewSwitch({ layout }: { layout: PracticeLayout }) {
   const shown = useShownView(layout)
+  const chosen = usePracticeUi((s) => s.view)
   const { layers } = usePractice()
   const piano = layers.roll
-  const tab = (
-    <ToggleGroupItem key="tab" value="tab" className="px-4 text-sm">
-      {piano ? m['practice.view_notes']() : m['practice.view_tab']()}
-    </ToggleGroupItem>
-  )
-  const chords = (
-    <ToggleGroupItem key="chords" value="chords" className="px-4 text-sm">
-      {piano ? m['practice.view_chart']() : m['practice.view_chords']()}
+  const item = (value: string, label: string) => (
+    <ToggleGroupItem key={value} value={value} className="px-4 text-sm">
+      {label}
     </ToggleGroupItem>
   )
   return (
     <ToggleGroup
       aria-label={m['practice.view']()}
-      value={[shown]}
+      value={[piano && shown === 'tab' && chosen === 'staff' ? 'staff' : shown]}
       onValueChange={(next) => {
         const view = next[0]
-        if (view === 'tab') {
-          usePracticeUi.setState({ view: 'tab', forceTab: true })
-          track('view_changed', { view: piano ? 'notes' : 'tab' })
+        if (view === 'tab' || view === 'staff') {
+          usePracticeUi.setState({ view, forceTab: true })
+          track('view_changed', { view: view === 'staff' ? 'staff' : piano ? 'notes' : 'tab' })
         } else if (view === 'chords') {
           usePracticeUi.setState({ view: 'chords' })
           track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
         }
       }}
     >
-      {piano ? [chords, tab] : [tab, chords]}
+      {piano
+        ? [
+            item('chords', m['practice.view_chart']()),
+            item('tab', m['practice.view_notes']()),
+            item('staff', m['practice.view_staff']()),
+          ]
+        : [item('tab', m['practice.view_tab']()), item('chords', m['practice.view_chords']())]}
     </ToggleGroup>
   )
 }
