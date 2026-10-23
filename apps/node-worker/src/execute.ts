@@ -436,7 +436,12 @@ async function executeCleanup(
   }
 }
 
-// Error class names only: messages may carry keys or URLs (06 §3, no user content in logs).
+// Error class names only: messages may carry keys or URLs (06 §3, no user content in logs). A failed
+// query names its Postgres SQLSTATE instead (42P01: missing table), since its class says nothing.
 export function errorName(error: unknown): string {
-  return error instanceof Error ? error.name : typeof error
+  if (!(error instanceof Error)) return typeof error
+  const { cause } = error
+  if (cause instanceof Error && 'code' in cause && typeof cause.code === 'string')
+    return `${error.name}:${cause.code}`
+  return error.name
 }
