@@ -1,8 +1,10 @@
-// `pnpm dev:all`: the local stack (docker compose), then web, node-worker and ml-worker, in one
-// dashboard with the Splitune mark, live status and logs. Without a terminal (piped, CI) it prints
-// prefixed log lines instead. Stopping sends one SIGINT to each pnpm, which passes it on, so workers
-// finish their running job first; a second q or Ctrl-C kills every process group outright.
-import { execFileSync, spawn } from 'node:child_process'
+// `pnpm dev:all`: the local stack (docker compose, then migrations), then web, node-worker and
+// ml-worker, in one dashboard with the Splitune mark, live status and logs. Without a terminal
+// (piped, CI) it prints prefixed log lines instead. Stopping sends one SIGINT to each pnpm, which
+// passes it on, so workers finish their running job first; a second q or Ctrl-C kills every process
+// group outright. Windows has neither, so there stopping kills each process tree at once.
+import { execFile, execFileSync, spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
@@ -10,6 +12,9 @@ import { fileURLToPath } from 'node:url'
 import { createTheme, parseLogLine, renderFrame, visibleLogs } from './dev/render.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+if (existsSync(join(root, '.env'))) {
+  process.loadEnvFile(join(root, '.env'))
+}
 const MAX_LOG_LINES = 5000
 const FRAME_MS = 100
 
@@ -18,7 +23,12 @@ const SERVICES = [
     id: 'stack',
     label: 'stack',
     kind: 'task',
-    command: ['docker', 'compose', '-f', 'infra/docker-compose.yml', 'up', '-d'],
+    // --wait: migrations need Postgres healthy. Migrating here keeps the local schema in step with
+    // the workers, which otherwise log failed claims against tables that don't exist yet.
+    commands: [
+      ['docker', 'compose', '-f', 'infra/docker-compose.yml', 'up', '-d', '--wait'],
+      ['pnpm', '--silent', 'db:migrate'],
+    ],
     readyDetail: 'postgres :5432 · s3 :8333 · mailpit :8025',
   },
   {
@@ -101,16 +111,29 @@ function log(serviceId, raw) {
   }
 }
 
-function start(service) {
-  const [command, ...args] = service.command
+async function start(service) {
   service.status = 'starting'
   service.detail = undefined
   service.exitCode = undefined
   service.startedAt = Date.now()
-  // detached: its own process group, so a forced quit can kill pnpm and everything it started.
+  if (!service.commands) return run(service, service.command)
+  // A task's commands run in order and stop at the first failure.
+  for (const command of service.commands) {
+    if (state.quitting || !(await run(service, command))) return false
+  }
+  service.status = 'ready'
+  service.detail = service.readyDetail
+  return true
+}
+
+function run(service, [command, ...args]) {
+  // detached: its own process group, so a forced quit can kill pnpm and everything it started. Not
+  // on Windows, where it leaves pnpm without a console and each cmd.exe under it opens a window;
+  // windowsHide gives the tree one hidden console instead (taskkill needs no group).
   const child = spawn(command, args, {
     cwd: root,
-    detached: true,
+    detached: process.platform !== 'win32',
+    windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   service.pid = child.pid
@@ -128,11 +151,11 @@ function start(service) {
       children.delete(service.id)
       service.pid = undefined
       service.exitCode = code ?? signal
-      if (service.kind === 'task' && code === 0) {
-        service.status = 'ready'
-        service.detail = service.readyDetail
-      } else {
-        service.status = code === 0 || service.status === 'stopping' ? 'stopped' : 'failed'
+      // A task step that succeeded stays starting: start() marks the task ready after its last one.
+      if (service.kind !== 'task' || code !== 0) {
+        // While quitting, a child may exit before stop() marks it (a console Ctrl-C reaches it too).
+        const stopping = service.status === 'stopping' || state.quitting
+        service.status = code === 0 || stopping ? 'stopped' : 'failed'
       }
       resolve(code === 0)
     })
@@ -141,9 +164,15 @@ function start(service) {
 
 // SIGINT goes to pnpm alone: pnpm and uv each forward it, so signalling the whole group would reach
 // the ML worker twice, and its second-signal handler exits at once without finishing the job.
+// On Windows process.kill terminates pnpm alone and orphans the worker under it, so taskkill ends
+// the whole tree instead; a job it interrupts is reclaimed once its heartbeat goes stale.
 function signal(service, name, { group = false } = {}) {
   const child = children.get(service.id)
   if (!child?.pid) return
+  if (process.platform === 'win32') {
+    execFile('taskkill', ['/pid', String(child.pid), '/t', '/f'], () => {})
+    return
+  }
   try {
     process.kill(group ? -child.pid : child.pid, name)
   } catch (error) {
