@@ -1,19 +1,23 @@
+import { KeyboardDiagram } from '@splitune/notation'
 import { useEffect, useRef, useState } from 'react'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
+import { ChordSymbol } from '@/ui/chord-chip'
 import { ChordShape } from './chord-shape'
-import { chordsAround } from './model/view-model'
+import { chordsAround, noteName } from './model/view-model'
+import { usePianoVoicings } from './piano-voicing'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
 // Glance view (26 §6.3, 27 §3.7.2): the phone-portrait default and the Floor distance — current
-// chord with its guitar shape, next chord, bar.beat, loop and speed at reading sizes a learner can
-// see from 1.5 m. The current chord rises in when it changes; "Loop this bar" is the glance view's
-// way to make a loop.
+// chord with its guitar shape (for piano, its voicing on a keyboard below it), next chord,
+// bar.beat, loop and speed at reading sizes a learner can see from 1.5 m. The current chord rises
+// in when it changes; "Loop this bar" is the glance view's way to make a loop.
 
 export function GlanceView() {
   const { view, audio, grid, player, tapBar, data, options } = usePractice()
+  const voicings = usePianoVoicings()
   const [now, setNow] = useState({ chord: '', label: '', index: -1, next: '', bar: 0, beat: 1 })
   const last = useRef('')
   useEffect(() => {
@@ -41,6 +45,7 @@ export function GlanceView() {
     return () => cancelAnimationFrame(frame)
   }, [audio, grid, view])
 
+  const voicing = voicings[now.index]
   return (
     <section
       aria-label={m['practice.glance']()}
@@ -49,7 +54,7 @@ export function GlanceView() {
     >
       <div key={now.index} className="flex animate-rise-in items-center gap-5">
         <p className="font-reading text-read-chord-current leading-none" aria-live="off">
-          {now.chord || m['practice.no_chord']()}
+          {now.chord ? <ChordSymbol name={now.chord} /> : m['practice.no_chord']()}
         </p>
         {now.label && data.instrument === 'guitar' && (
           <ChordShape
@@ -60,10 +65,19 @@ export function GlanceView() {
           />
         )}
       </div>
+      {data.instrument === 'piano' && (
+        <KeyboardDiagram
+          className="h-auto w-full max-w-reading"
+          left={voicing?.left ?? []}
+          right={voicing?.right ?? []}
+          label={voicing?.label ?? m['practice.no_chord']()}
+          middleC={noteName(60)}
+        />
+      )}
       {now.next && (
         <p className="font-reading text-read-chord text-ink">
           <span className="sr-only">{m['practice.next_chord']()} </span>
-          {now.next}
+          <ChordSymbol name={now.next} />
         </p>
       )}
       {grid && (

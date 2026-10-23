@@ -9,7 +9,7 @@ import {
   confidenceBand,
   type Notes,
 } from '@splitune/music-core'
-import { type BarTimes, ChordDiagram, type NoteMark } from '@splitune/notation'
+import { type BarTimes, ChordDiagram, KeyboardDiagram, type NoteMark } from '@splitune/notation'
 import { AlphaTabView } from '@splitune/notation/view'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
@@ -147,5 +147,48 @@ export const Diagrams: Story = {
       'data-mirrored',
       'true',
     )
+  },
+}
+
+/** Piano keyboard (V13): E♭maj7 with the bass in the left hand and G B♭ D in the right, L and R on
+ * the keys, middle C labelled; the same chord with the right hand only; an empty keyboard (N.C.). */
+export const Keyboards: Story = {
+  render: () => (
+    <div className="flex flex-col gap-6 bg-paper p-6 text-ink">
+      <KeyboardDiagram
+        className="h-28 w-auto"
+        left={[39]}
+        right={[55, 58, 62]}
+        label="E♭maj7: left hand E♭, right hand G B♭ D"
+        middleC="C4"
+      />
+      <KeyboardDiagram
+        className="h-16 w-auto"
+        left={[]}
+        right={[56, 61, 65]}
+        label="B♭m7: right hand A♭ D♭ F"
+        marks={false}
+      />
+      <KeyboardDiagram className="h-16 w-auto" left={[]} right={[]} label="No chord" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const keys = canvas.getByRole('img', { name: /^E♭maj7/ })
+    const pressed = [...keys.querySelectorAll('[data-hand]')].map((key) => [
+      key.getAttribute('data-midi'),
+      key.getAttribute('data-hand'),
+    ])
+    await expect(pressed).toEqual([
+      ['55', 'right'],
+      ['62', 'right'],
+      ['39', 'left'],
+      ['58', 'right'],
+    ])
+    await expect(within(keys).getAllByText('R')).toHaveLength(3)
+    await expect(within(keys).getByText('L')).toBeVisible()
+    await expect(
+      canvas.getByRole('img', { name: 'No chord' }).querySelectorAll('[data-hand]'),
+    ).toHaveLength(0)
   },
 }

@@ -351,8 +351,10 @@ const DISPLAY_SUFFIX: Readonly<Record<string, string>> = {
 }
 
 // Chart name for display ("A:min7/b7" → "Am7/G"); the slash bass comes from the label or from
-// ChordSegment.bass. Unparseable labels are returned unchanged; N is shown as "N.C.".
-export function chordDisplayName(label: string, bass?: string): string {
+// ChordSegment.bass. Unparseable labels are returned unchanged; N is shown as "N.C.". `names`
+// (`keyNoteNames`) respells the root and bass for the song's key; without it they keep the
+// label's own spelling.
+export function chordDisplayName(label: string, bass?: string, names?: readonly string[]): string {
   const parsed = parseChord(label)
   if (parsed === null) return label
   if (parsed.kind === 'none') return 'N.C.'
@@ -361,6 +363,11 @@ export function chordDisplayName(label: string, bass?: string): string {
     parsed.shorthand === null ? '' : (DISPLAY_SUFFIX[parsed.shorthand] ?? `:${parsed.shorthand}`)
   const extras = parsed.degrees.length > 0 ? `(${parsed.degrees.join(',')})` : ''
   const spelling = spellingOf(parsed.rootName, 'auto')
-  const bassName = bass ?? (parsed.bassPc === null ? undefined : pcName(parsed.bassPc, spelling))
-  return `${parsed.rootName}${suffix}${extras}${bassName === undefined ? '' : `/${bassName}`}`
+  const bassPc = bass === undefined ? parsed.bassPc : pcOfName(bass)
+  const bassName =
+    names && bassPc !== null
+      ? names[bassPc]
+      : (bass ?? (parsed.bassPc === null ? undefined : pcName(parsed.bassPc, spelling)))
+  const rootName = names?.[parsed.root] ?? parsed.rootName
+  return `${rootName}${suffix}${extras}${bassName === undefined ? '' : `/${bassName}`}`
 }

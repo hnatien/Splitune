@@ -1,8 +1,7 @@
-import { lazy, Suspense, useState } from 'react'
+import { useState } from 'react'
 import { client } from '@/lib/api'
 import { useDisplay } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
-import { instrumentLabel } from '@/lib/instruments'
 import { isFallback, stageFailureMessage } from '@/lib/reasons'
 import { track } from '@/lib/track'
 import { Button } from '@/ui/button'
@@ -14,15 +13,9 @@ import { usePracticeUi } from './practice-store'
 
 // Practice banners (27 §3.7.3, §5.6): the chords-only fallback with "Show tab anyway", stage
 // fallbacks ("Stems are unavailable right now…"), stems removed after 180 days unused with
-// "Re-create stems", the once-only "Is this your guitar?" audition when stems arrive, and the
-// evening "Practising in the dark? Try Stage" hint (26 §2), and once per device, where the screen
+// "Re-create stems", the evening "Practising in the dark? Try Stage" hint (26 §2), and once per device, where the screen
 // can't be kept on, the "Keep screen on" tip from the first play (24 §3).
 
-const WrongInstrument = lazy(() =>
-  import('./wrong-instrument').then((module) => ({ default: module.WrongInstrument })),
-)
-
-const AUDITION_KEY = 'splitune.audition'
 const STAGE_HINT_KEY = 'splitune.stage-hint'
 const SCREEN_TIP_KEY = 'splitune.screen-tip'
 
@@ -60,19 +53,11 @@ export function PracticeBanners() {
   const update = useDisplay((s) => s.update)
   const [, rerender] = useState(0)
   const failures = analysisFailures(data).filter(isFallback)
-  const songId = data.song.data?.id ?? ''
   const reason = recommended.reasons.find((r) => r in VIEW_REASON)
-  // Example songs are Splitune's own, already checked: no "Is this your guitar?".
-  const auditionPending =
-    layers.stems &&
-    songId !== '' &&
-    data.song.data?.source_kind !== 'example' &&
-    !storedOnce(AUDITION_KEY, songId)
   const evening = new Date().getHours() >= 20
   const stageHint = evening && appearance !== 'stage' && !storedOnce(STAGE_HINT_KEY, 'shown')
   const played = state !== 'loading' && state !== 'ready'
   const screenTip = screenMayLock && played && !storedOnce(SCREEN_TIP_KEY, 'shown')
-  const [wrongOpen, setWrongOpen] = useState(false)
 
   return (
     <>
@@ -101,30 +86,6 @@ export function PracticeBanners() {
         <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
       ))}
       {data.stemsExpired && <StemsExpired />}
-      {auditionPending && data.song.data && (
-        <Banner
-          tone="info"
-          title={m['analysis.wrong_instrument']({
-            instrument: instrumentLabel(data.song.data.instrument).toLowerCase(),
-          })}
-          actions={
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  rememberOnce(AUDITION_KEY, songId)
-                  rerender((n) => n + 1)
-                }}
-              >
-                {m['practice.audition_yes']()}
-              </Button>
-              <Button variant="ghost" onClick={() => setWrongOpen(true)}>
-                {m['practice.audition_wrong']()}
-              </Button>
-            </>
-          }
-        />
-      )}
       {stageHint && (
         <Banner
           tone="info"
@@ -161,19 +122,6 @@ export function PracticeBanners() {
             },
           }}
         />
-      )}
-      {wrongOpen && data.song.data && (
-        <Suspense fallback={null}>
-          <WrongInstrument
-            songId={songId}
-            current={data.song.data.instrument}
-            analysisType={data.analysis.data?.type === 'lite' ? 'lite' : 'full'}
-            onClose={() => {
-              setWrongOpen(false)
-              rememberOnce(AUDITION_KEY, songId)
-            }}
-          />
-        </Suspense>
       )}
     </>
   )

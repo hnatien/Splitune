@@ -8,7 +8,7 @@ import { GlanceView } from '../features/practice/glance-view.tsx'
 import { PracticeProvider, usePractice } from '../features/practice/practice-context.tsx'
 import { SONG_ID, seed, tone } from '../features/practice/practice-story-data.ts'
 import { Button } from './button.tsx'
-import { ChordChip } from './chord-chip.tsx'
+import { ChordChip, ChordSymbol, chordText } from './chord-chip.tsx'
 import { ConfidenceLegend, ConfidenceLegendPopover } from './confidence-legend.tsx'
 import { COPY, FIXTURE_CHORDS } from './fixtures.ts'
 
@@ -88,6 +88,26 @@ export const Levels: Story = {
       'low',
     )
     await expect(canvas.getByRole('button', { name: 'C' })).toHaveAttribute('aria-current', 'true')
+  },
+}
+
+/** Chord symbols as charts print them: ♭/♯ glyphs, the quality raised, the slash bass smaller. */
+export const Symbols: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-baseline gap-8 bg-paper p-6 font-reading text-read-chord-current font-bold text-ink">
+      {['Ebmaj7', 'Abm7', 'Bb7', 'F#m7b5', 'C/E', 'Am7/G', 'Db', 'N.C.'].map((name) => (
+        <ChordSymbol key={name} name={name} />
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('maj7').closest('[data-slot=chord-symbol]')).toHaveTextContent(
+      'E♭maj7',
+    )
+    await expect(chordText('F#m7b5')).toBe('F♯m7♭5')
+    await expect(chordText('Am7/Gb')).toBe('Am7/G♭')
+    await expect(canvas.getByText('N.C.')).toBeVisible()
   },
 }
 

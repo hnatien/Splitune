@@ -4,12 +4,22 @@ import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ChordShape } from './chord-shape'
 import { chordsInBar } from './model/view-model'
+import { PianoChart } from './piano-chart'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
 // Chords-only sheet (27 §3.7.3 "+ chords", and the chords_only fallback): bars with their chords,
-// the current bar ruled, tap to loop.
-export function ChordSheet({
+// the current bar ruled, tap to loop. Piano reads the chord chart instead; it comes in this chunk so
+// the route's JS carries one lazy import for both (12 §10).
+export function ChordSheet(props: {
+  className?: string | undefined
+  onBarActivate: (bar: number) => void
+}) {
+  const { data } = usePractice()
+  return data.instrument === 'piano' ? <PianoChart {...props} /> : <BarSheet {...props} />
+}
+
+function BarSheet({
   className,
   onBarActivate,
 }: {

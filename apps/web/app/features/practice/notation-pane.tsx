@@ -21,8 +21,8 @@ const AlphaTabView = lazy(() =>
 )
 
 // NotationView (12 §2–3, 27 §3.7.3): on paper in every appearance. Before the tab exists it holds
-// the analysis status, then a chord-only sheet, then the tab — each layer fading in without moving
-// the transport. Bars are buttons: tap A then B loops them.
+// the analysis status, then a chord-only sheet (for piano, the chord chart), then the tab — each
+// layer fading in without moving the transport. Bars are buttons: tap A then B loops them.
 
 /** summary.recommended_view for the learner's part (05): the global chords-only fallback. */
 export function useRecommendedView() {

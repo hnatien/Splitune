@@ -44,4 +44,46 @@ describe('view model', () => {
     expect(noteName(45)).toBe('A2')
     expect(noteName(64)).toBe('E4')
   })
+
+  it('spells chords for the song key, without a tab too (piano)', () => {
+    const flatKey = {
+      ...(chords as Chords),
+      key: { tonic: 'D#', mode: 'major' as const, confidence: 0.8 },
+      segments: (chords as Chords).segments.map((s, i) => ({
+        ...s,
+        label: ['N', 'D#:maj7', 'G#:min7', 'A#:7', 'G#:maj'][i] ?? s.label,
+        top_k:
+          i === 1
+            ? [
+                { label: 'G:min', prob: 0.2 },
+                { label: 'D#:maj', prob: 0.1 },
+              ]
+            : [],
+      })),
+    }
+    const piano = computeMusic({
+      beats: beats as Beats,
+      chords: flatKey,
+      ops: { beats: [], chords: [], notes: [] },
+      beatsRev: 0,
+      options: { capo: 0, level: 'as_transcribed', fingeringMode: 'easiest' },
+    })
+    const spelled = buildViewModel(piano, practiceGrid(piano.beats))
+    expect(spelled.chords.map((c) => c.name)).toEqual(['Ebmaj7', 'Abm7', 'Bb7', 'Ab'])
+    expect(spelled.chords[0]?.alternatives.map((a) => a.name)).toEqual(['Gm', 'Eb'])
+  })
+
+  it('simplifies a chart without a tab to triads at the simplified level', () => {
+    const simple = computeMusic({
+      beats: beats as Beats,
+      chords: {
+        ...(chords as Chords),
+        segments: (chords as Chords).segments.slice(1, 2).map((s) => ({ ...s, label: 'A:min7' })),
+      },
+      ops: { beats: [], chords: [], notes: [] },
+      beatsRev: 0,
+      options: { capo: 0, level: 'simplified', fingeringMode: 'easiest' },
+    })
+    expect(simple.displayChords.map((c) => c.label)).toEqual(['A:min'])
+  })
 })

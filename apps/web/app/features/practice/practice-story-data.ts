@@ -38,6 +38,37 @@ export type Patch = {
   failedStage?: string
   /** A URL import with its downloaded video (13 §6a); an empty clip, so nothing is fetched. */
   video?: boolean
+  /** The learner's part, when not the fixture's guitar. */
+  instrument?: 'piano'
+}
+
+// A piano song on the same 8 bars (4/4, bar n from 0.5 + 2.4 n s): E♭ major as the chord model
+// labels it, with sharps (D#:maj7), so the chart's key spelling shows. An N.C. bar, a change on
+// beat 3 (an unsure A#:7) and a slash-free run of E♭maj7 over two bars.
+const BAR = (n: number, beat = 0) => Math.round((0.5 + n * 2.4 + beat * 0.6) * 10) / 10
+const PIANO_SEGMENTS: [string, number, number, number][] = [
+  ['N', 0, BAR(1), 0.9],
+  ['D#:maj7', BAR(1), BAR(2), 0.9],
+  ['G#:maj7', BAR(2), BAR(2, 2), 0.88],
+  ['A#:7', BAR(2, 2), BAR(3), 0.2],
+  ['D#:maj7', BAR(3), BAR(5), 0.92],
+  ['G#:min7', BAR(5), BAR(5, 2), 0.6],
+  ['B:maj7', BAR(5, 2), BAR(6), 0.8],
+  ['F:min7', BAR(6), BAR(7), 0.9],
+  ['G#:maj', BAR(7), 20.5, 0.9],
+]
+export const PIANO_CHORDS = {
+  ...chords,
+  key: { tonic: 'D#', mode: 'major', confidence: 0.74 },
+  segments: PIANO_SEGMENTS.map(([label, t0, t1, confidence], i) => ({
+    id: `p${String(i).padStart(4, '0')}`,
+    confidence,
+    t0,
+    t1,
+    label,
+    top_k: [{ label, prob: confidence }],
+    beat_aligned: true,
+  })),
 }
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
@@ -62,6 +93,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     const song: z.infer<typeof SongDetail> = {
       ...detail(1, withArtefacts),
       ...(patch.video ? { source_kind: 'url' as const } : {}),
+      ...(patch.instrument ? { instrument: patch.instrument } : {}),
       duration_s: 20.5,
       artefacts: entries,
     }

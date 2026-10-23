@@ -24,6 +24,10 @@ export type PracticeDefaults = {
   notationLayout: 'page' | 'scroll'
   /** How late this device's output is heard beyond what the browser reports (Bluetooth, 11 §3). */
   soundDelayMs: number
+  /** Piano chord chart: right hand led smoothly from chord to chord, or each in root position. */
+  pianoVoicing: 'smooth' | 'root'
+  /** Piano chord chart: hands shown on the keyboard. */
+  pianoHands: 'both' | 'right'
 }
 
 /** The engine clamps its display offset to ±150 ms (`MAX_DISPLAY_OFFSET`, 11 §3). */
@@ -37,6 +41,8 @@ export const DEFAULT_PRACTICE: PracticeDefaults = {
   passPrompt: false,
   notationLayout: 'page',
   soundDelayMs: 0,
+  pianoVoicing: 'smooth',
+  pianoHands: 'both',
 }
 
 // Storage can be missing (SSR) or throw (privacy modes, blocked storage): preferences then last

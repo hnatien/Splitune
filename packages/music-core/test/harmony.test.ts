@@ -5,6 +5,7 @@ import {
   chordShapes,
   estimateKey,
   formatChord,
+  keyNoteNames,
   parseChord,
   shapeDifficulty,
   simplifyToTriad,
@@ -56,6 +57,50 @@ describe('chordDisplayName (display, separate from Harte formatting)', () => {
 
   it('uses ChordSegment.bass for the slash', () => {
     expect(chordDisplayName('G:maj', 'B')).toBe('G/B')
+  })
+
+  it('respells the root and bass for the key when given its names', () => {
+    const eb = keyNoteNames({ tonic: 'Eb', mode: 'major' })
+    expect(chordDisplayName('D#:maj7', undefined, eb)).toBe('Ebmaj7')
+    expect(chordDisplayName('G#:min7', undefined, eb)).toBe('Abm7')
+    expect(chordDisplayName('A#:7/3', undefined, eb)).toBe('Bb7/D')
+    expect(chordDisplayName('G#:maj', 'C', eb)).toBe('Ab/C')
+    expect(chordDisplayName('N', undefined, eb)).toBe('N.C.')
+  })
+})
+
+describe('keyNoteNames', () => {
+  const scale = (tonic: string, mode: 'major' | 'minor', pcs: number[]) =>
+    pcs.map((pc) => keyNoteNames({ tonic, mode })[pc])
+
+  it('names the scale with its own letters', () => {
+    expect(scale('Eb', 'major', [3, 5, 7, 8, 10, 0, 2])).toEqual([
+      'Eb',
+      'F',
+      'G',
+      'Ab',
+      'Bb',
+      'C',
+      'D',
+    ])
+    expect(scale('D#', 'major', [3, 8, 10])).toEqual(['Eb', 'Ab', 'Bb'])
+    expect(scale('F#', 'minor', [6, 8, 9, 1])).toEqual(['F#', 'G#', 'A', 'C#'])
+    expect(scale('Gb', 'major', [11])).toEqual(['Cb'])
+  })
+
+  it('raises the leading tone in minor keys', () => {
+    expect(scale('D', 'minor', [1, 10])).toEqual(['C#', 'Bb'])
+    expect(scale('A', 'minor', [8])).toEqual(['G#'])
+  })
+
+  it("spells the other notes in the key's style", () => {
+    expect(scale('Eb', 'major', [1, 6, 11])).toEqual(['Db', 'Gb', 'B'])
+    expect(scale('E', 'major', [3, 10])).toEqual(['D#', 'A#'])
+    expect(scale('C', 'major', [1, 3, 8, 10])).toEqual(['C#', 'Eb', 'Ab', 'Bb'])
+  })
+
+  it('falls back to common chart spellings for an unreadable tonic', () => {
+    expect(keyNoteNames({ tonic: 'N', mode: 'major' })[3]).toBe('Eb')
   })
 })
 

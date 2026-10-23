@@ -1,8 +1,10 @@
+import { pcOfName } from '@splitune/music-core'
 import { EllipsisIcon, SettingsIcon } from 'lucide-react'
 import { lazy, Suspense } from 'react'
 import { m } from '@/lib/i18n'
 import { instrumentLabel } from '@/lib/instruments'
 import { Button } from '@/ui/button'
+import { chordText } from '@/ui/chord-chip'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import type { PracticeLayout } from './layout'
 import { usePractice } from './practice-context'
@@ -19,15 +21,25 @@ const DisplayPanel = lazy(() =>
   import('./display-popover').then((module) => ({ default: module.DisplayPanel })),
 )
 
-// Status bar content (27 §3.7.1): song title (truncates) and part, then the transcription chip
+// Status bar content (27 §3.7.1): song title (truncates) and part with the key and tempo, then the transcription chip
 // (its legend and "Show uncertainty" in a popover, 26 §5), the Tab / Chords view, the video
 // toggle when the import has one, ⚙ Display and ⋯ (shortcuts, the editor on desktop, key
 // bindings). The loop lives in the transport, next to the hands. Stage drops the title, part
 // and ⋯ (⚙ is the way back out of Stage).
 
 export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
-  const { data, songId, guest, grid } = usePractice()
+  const { data, songId, guest, grid, music } = usePractice()
   const song = data.song.data
+  const key = music?.chords?.key
+  const tonicPc = key ? pcOfName(key.tonic) : null
+  // Static message calls only: a computed m[...] would bundle every message into the route.
+  const tonic = tonicPc !== null ? chordText(music?.noteNames[tonicPc] ?? '') : ''
+  const keyName =
+    !key || !tonic
+      ? ''
+      : key.mode === 'major'
+        ? m['practice.key_major']({ tonic })
+        : m['practice.key_minor']({ tonic })
   return (
     <>
       {/* Phones keep the controls, read from the stand, whole: the title is for screen readers
@@ -39,6 +51,7 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
         {song && (
           <span className="truncate text-sm leading-5 text-muted-foreground">
             {instrumentLabel(song.instrument)}
+            {keyName ? ` · ${keyName}` : ''}
             {grid ? ` · ${Math.round(grid.bpm)} BPM` : ''}
           </span>
         )}

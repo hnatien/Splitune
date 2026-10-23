@@ -35,7 +35,6 @@ const CATALOGUE: Record<string, string> = {
   'analysis.stems_unavailable':
     "Stems are unavailable right now; chords and beat are ready. This didn't use an analysis.",
   'analysis.failed': "We couldn't analyse this song. This didn't use an analysis.",
-  'analysis.wrong_instrument': 'Is this your {instrument}?',
   'practice.chords_only':
     "We're not confident in the note-level tab for this song — showing chords.",
   'practice.rough_stem': 'This stem may contain bits of other instruments.',

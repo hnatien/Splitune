@@ -244,6 +244,12 @@
   --color-score-playhead: var(--score-playhead);
   --color-staff: var(--staff);
   --color-bar-current: var(--bar-current);
+  --color-key-white: var(--key-white);
+  --color-key-black: var(--key-black);
+  --color-key-left: var(--key-left);
+  --color-key-left-fg: var(--key-left-fg);
+  --color-key-right: var(--key-right);
+  --color-key-right-fg: var(--key-right-fg);
   --color-waveform-peak: var(--waveform-peak);
   --color-waveform-rms: var(--waveform-rms);
   --color-waveform-played: var(--waveform-played);

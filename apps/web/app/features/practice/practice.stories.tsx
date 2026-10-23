@@ -9,7 +9,15 @@ import { GlanceView } from './glance-view'
 import { PracticeProvider, type PracticeSearch } from './practice-context'
 import { PracticeLoading } from './practice-loading'
 import { PracticePage } from './practice-page'
-import { ALL, type Kind, type Patch, SONG_ID, seed, tone } from './practice-story-data'
+import {
+  ALL,
+  type Kind,
+  type Patch,
+  PIANO_CHORDS,
+  SONG_ID,
+  seed,
+  tone,
+} from './practice-story-data'
 
 // The practice screen (27 §3.7) on the contracts' 8-bar Am–F–C–G fixture: the progressive states
 // as artefacts land (§3.7.3), the chords-only fallback, the editor and mixer overlays, Dark and
@@ -86,7 +94,7 @@ export const PedalBeforeLoop: Story = {
   },
 }
 
-/** + stems + chords: the chord strip and the chord sheet, the mixer, the audition banner. */
+/** + stems + chords: the chord strip and the chord sheet, and the mixer. */
 export const Chords: Story = {
   render: screen(['beats', 'stems', 'chords'], { running: true }),
   play: async ({ canvasElement }) => {
@@ -372,6 +380,129 @@ export const Glance: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('region', { name: 'Current chord' })).toBeVisible()
+  },
+}
+
+const PIANO: Patch = { instrument: 'piano', chords: PIANO_CHORDS }
+const PIANO_KINDS: Kind[] = ['beats', 'stems', 'chords', 'summary']
+
+const pianoChart = async (canvasElement: HTMLElement) => {
+  const canvas = await playable(canvasElement)
+  // The chart's code loads on demand.
+  const chart = await canvas.findByRole('region', { name: 'Chord chart' }, { timeout: 10_000 })
+  // Layers fade in (200 ms, 27 §3.7.3).
+  await waitFor(() => expect(chart).toBeVisible())
+  return { canvas, chart: within(chart), element: chart }
+}
+
+/** Piano (V13): the chord chart, spelled in the song's key (E♭ major, though the model says
+ * D#), four bars to a line, each chord once where it changes; the strip's keyboard voicing. */
+export const Piano: Story = {
+  render: screen(PIANO_KINDS, PIANO),
+  play: async ({ canvasElement }) => {
+    const { canvas, chart, element } = await pianoChart(canvasElement)
+    await expect(chart.getByRole('button', { name: /^Bar 1\s*,\s*No chord$/ })).toBeVisible()
+    await expect(
+      chart.getByRole('button', { name: /^Bar 3\s*,\s*A♭maj7\s*,\s*B♭7\s*,\s*Unsure$/ }),
+    ).toBeVisible()
+    // Bar 5 carries bar 4's E♭maj7 on: named for screen readers, only slashes on the paper.
+    await expect(chart.getByRole('button', { name: /^Bar 5\s*,\s*E♭maj7$/ })).toBeVisible()
+    const written = [
+      ...element.querySelectorAll('[data-slot=chart-chord] [data-slot=chord-symbol]'),
+    ]
+    await expect(written.map((c) => c.textContent)).toEqual([
+      'E♭maj7',
+      'A♭maj7',
+      'B♭7',
+      'E♭maj7',
+      'A♭m7',
+      'Bmaj7',
+      'Fm7',
+      'A♭',
+    ])
+    // A late chord ends at its barline rather than being clipped by it.
+    for (const chord of element.querySelectorAll('[data-slot=chart-chord]')) {
+      const barline = (
+        chord.closest('[data-slot=bar-target]') as HTMLElement
+      ).getBoundingClientRect()
+      await expect(chord.getBoundingClientRect().right).toBeLessThanOrEqual(barline.right)
+    }
+    await expect(element.querySelectorAll('ol[data-line]')).toHaveLength(2)
+    await expect(canvas.getByText(/E♭ major/)).toBeVisible()
+    // The strip's keyboards: now (empty under N.C.) and the next chord's voicing (wide strips).
+    await expect(await canvas.findByRole('img', { name: 'No chord' })).toBeVisible()
+    // The strip fills in on its first animation frame.
+    await expect(
+      await canvas.findByRole('img', {
+        name: 'E♭maj7: left hand E♭, right hand G B♭ D',
+        hidden: true,
+      }),
+    ).toBeInTheDocument()
+  },
+}
+
+/** Piano with a loop on bars 3–4 from the URL: those bars pressed, shaded and railed. */
+export const PianoLoop: Story = {
+  render: screen(PIANO_KINDS, PIANO, { loop: '3-4' }),
+  play: async ({ canvasElement }) => {
+    const { chart } = await pianoChart(canvasElement)
+    const pressed = chart
+      .getAllByRole('button')
+      .filter((bar) => bar.getAttribute('aria-pressed') === 'true')
+      .map((bar) => bar.getAttribute('data-bar'))
+    await expect(pressed).toEqual(['2', '3'])
+  },
+}
+
+/** Piano options: chords as played or as triads, the voicing and the hands. */
+export const PianoOptions: Story = {
+  render: screen(PIANO_KINDS, PIANO),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(
+      await canvas.findByRole('button', { name: /^Piano options/ }, { timeout: 10_000 }),
+    )
+    const body = within(canvasElement.ownerDocument.body)
+    const popup = await body.findByRole('dialog', { name: 'Piano options' }, { timeout: 10_000 })
+    await userEvent.click(within(popup).getByRole('button', { name: 'Root position' }))
+    await userEvent.click(within(popup).getByRole('button', { name: 'Right only' }))
+    await expect(
+      await canvas.findByRole('img', { name: 'E♭maj7: right hand G B♭ D', hidden: true }),
+    ).toBeInTheDocument()
+    await userEvent.click(within(popup).getByRole('button', { name: 'Simple (triads)' }))
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('button', { name: /^Piano options: Root position · Simple/ }),
+      ).toBeVisible(),
+    )
+  },
+}
+
+export const PianoDark: Story = {
+  render: screen(PIANO_KINDS, PIANO, { loop: '3-4' }),
+  globals: { appearance: 'dark' },
+}
+
+export const PianoStage: Story = {
+  render: screen(PIANO_KINDS, PIANO, { loop: '3-4' }),
+  globals: { appearance: 'stage' },
+}
+
+/** Piano on a phone (glance view): the current chord, its voicing on a keyboard, the next chord. */
+export const PianoGlance: Story = {
+  render: () => (
+    <AppStory path={`/songs/${SONG_ID}/practice`} seed={seed(PIANO_KINDS, PIANO)}>
+      <PracticeProvider songId={SONG_ID} search={{}} fetchAudio={tone}>
+        <div data-density="practice" className="flex h-[40rem] flex-col">
+          <GlanceView />
+        </div>
+      </PracticeProvider>
+    </AppStory>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('region', { name: 'Current chord' })).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: 'No chord' })).toBeVisible()
   },
 }
 

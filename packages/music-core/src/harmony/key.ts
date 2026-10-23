@@ -1,5 +1,5 @@
 import type { ChordSegment, Key, Note } from '../types.ts'
-import { parseChord, pcName } from './chordtools.ts'
+import { parseChord, pcName, pcOfName } from './chordtools.ts'
 
 // Krumhansl–Kessler probe-tone profiles, index 0 = tonic.
 const MAJOR_PROFILE = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
@@ -101,4 +101,41 @@ export function estimateKey(
     tonicPc: best.tonicPc,
     ranking,
   }
+}
+
+const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11]
+const MINOR_STEPS = [0, 2, 3, 5, 7, 8, 10]
+const LETTERS = 'CDEFGAB'
+
+function letterName(letter: string, pc: number): string {
+  // Accidentals needed to bring the letter to pc, in −6…+5 semitones.
+  const shift = ((((pc - (pcOfName(letter) as number)) % 12) + 18) % 12) - 6
+  return letter + (shift > 0 ? '#'.repeat(shift) : 'b'.repeat(-shift))
+}
+
+// The name of every pitch class in a key, index = pitch class: the scale's own letters (E♭ major
+// has A♭ and B♭, never G# or A#), the raised leading tone in minor (D minor's C#), and the key's
+// accidental style for the other notes (flats in flat keys; C major and A minor keep each note's
+// most common chart spelling). Chord charts spell roots and basses with it.
+export function keyNoteNames(key: Pick<Key, 'tonic' | 'mode'>): string[] {
+  const tonicPc = pcOfName(key.tonic)
+  if (tonicPc === null) return Array.from({ length: 12 }, (_, pc) => pcName(pc, 'auto'))
+  const minor = key.mode === 'minor'
+  const flat = minor ? FLAT_MINOR.has(tonicPc) : FLAT_MAJOR.has(tonicPc)
+  const plain = minor ? tonicPc === 9 : tonicPc === 0
+  const names = Array.from({ length: 12 }, (_, pc) =>
+    pcName(pc, flat ? 'flat' : plain ? 'auto' : 'sharp'),
+  )
+  const tonic = pcName(tonicPc, flat ? 'flat' : 'sharp')
+  const start = LETTERS.indexOf(tonic.charAt(0))
+  const steps = minor ? MINOR_STEPS : MAJOR_STEPS
+  steps.forEach((step, degree) => {
+    const pc = (tonicPc + step) % 12
+    names[pc] = letterName(LETTERS.charAt((start + degree) % 7), pc)
+  })
+  if (minor) {
+    const leading = (tonicPc + 11) % 12
+    names[leading] = letterName(LETTERS.charAt((start + 6) % 7), leading)
+  }
+  return names
 }

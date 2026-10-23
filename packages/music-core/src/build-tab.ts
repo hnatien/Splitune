@@ -11,7 +11,8 @@ import { type AlphaTexNoteRef, toAlphaTex } from './export/alphatex.ts'
 import { type FingeringMode, type FretWeights, fretConfig } from './fret/config.ts'
 import { assignFrets, type FretStep } from './fret/dp.ts'
 import { createBeatGrid, positionOfTick, tickToTime } from './grid/beatgrid.ts'
-import { chordDisplayName, parseChord } from './harmony/chordtools.ts'
+import { chordDisplayName, parseChord, pcOfName, transposeNoteName } from './harmony/chordtools.ts'
+import { keyNoteNames } from './harmony/key.ts'
 import { bassRoots, type LevelNote, simplifyChords, simplifyGuitar } from './level/simplify.ts'
 import { type QuantizeOptions, quantizeNotes, snapTimeToGrid } from './quantize/quantize.ts'
 import { resolveShapes, transposeSegments } from './transpose/transpose.ts'
@@ -259,12 +260,18 @@ export function buildTab(
   if (quantized.swingBars.length > 0) tab.swing_bars = quantized.swingBars
 
   const chordMarks: { onTick: number; name: string }[] = []
+  // Names follow the song's key (A♭ and B♭7 in E♭ major), moved with the playback transposition.
+  const key = effChords?.value.key
+  const names =
+    key && pcOfName(key.tonic) !== null
+      ? keyNoteNames({ mode: key.mode, tonic: transposeNoteName(key.tonic, semitones) })
+      : undefined
   for (const segment of displayChords) {
     const parsed = parseChord(segment.label)
     if (parsed === null || parsed.kind !== 'chord') continue
     // A low-confidence chord keeps its "?" above the tab, as on the chord strip (26 §5).
     const unsure = confidenceBand(segment.confidence, bands) === 'low' ? '?' : ''
-    const name = chordDisplayName(segment.label, segment.bass) + unsure
+    const name = chordDisplayName(segment.label, segment.bass, names) + unsure
     if (chordMarks.at(-1)?.name === name) continue
     chordMarks.push({ onTick: snapTimeToGrid(grid, segment.t0, quantized.swingBars), name })
   }

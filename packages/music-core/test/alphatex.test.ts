@@ -206,6 +206,25 @@ describe('buildTab → alphaTab', () => {
     expect(buildTab(notes, beats, {}, { chords }).alphaTex).not.toContain('ch "')
   })
 
+  it('spells chord names for the key, following the playback transposition', () => {
+    const notes = makeNotes([{ onset_s: 0.5, offset_s: 1, pitch_midi: 63 }])
+    const chords = {
+      ...makeChords([
+        { t0: 0, t1: 4, label: 'D#:maj7' },
+        { t0: 4, t1: 9, label: 'A#:7' },
+      ]),
+      key: { tonic: 'D#', mode: 'major' as const, confidence: 0.8 },
+    }
+    const beats = makeBeats({ bars: 4, pickup: 0, numerator: 4, start: 0 })
+    const named = buildTab(notes, beats, {}, { chords, chordNames: true })
+    expect(named.alphaTex).toContain('ch "Ebmaj7"')
+    expect(named.alphaTex).toContain('ch "Bb7"')
+    // Up a semitone the song is in E major: sharps.
+    const up = buildTab(notes, beats, {}, { chords, chordNames: true, transpose: { semitones: 1 } })
+    expect(up.alphaTex).toContain('ch "Emaj7"')
+    expect(up.alphaTex).toContain('ch "B7"')
+  })
+
   it('loads the dense synthetic part', () => {
     const part = denseGuitarPart()
     const result = buildTab(part.notes, part.beats, {}, { chords: part.chords, chordNames: true })

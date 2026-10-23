@@ -9,6 +9,7 @@ import {
   type Chords,
   type CorrectionOp,
   DEFAULT_BANDS,
+  keyNoteNames,
   type Notes,
   simplifyChords,
   type TabLevel,
@@ -57,7 +58,13 @@ export interface MusicOutput {
   displayChords: ChordSegment[]
   tab?: MusicTab | undefined
   bands: BandThresholds
+  /** Every pitch class's name in the song's key (C major's without one): E♭, not D#. */
+  noteNames: string[]
 }
+
+// Spelled here, in the Worker, so the key speller stays out of the route's JS (12 §10).
+const namesFor = (chords: Chords | undefined) =>
+  keyNoteNames(chords?.key ?? { tonic: 'C', mode: 'major' })
 
 // The notes stage records the calibration bands it used (as finalize reads them, 08).
 const RecordedBands = z.object({
@@ -102,6 +109,7 @@ export function computeMusic(input: MusicInput): MusicOutput {
       chords: built.effective.chords,
       displayChords: built.displayChords,
       bands,
+      noteNames: namesFor(built.effective.chords),
       tab: {
         alphaTex: built.alphaTex,
         firstBar: built.alphaTexFirstBar,
@@ -120,7 +128,14 @@ export function computeMusic(input: MusicInput): MusicOutput {
   return {
     beats,
     chords,
-    displayChords: chords ? simplifyChords(chords.segments, 'as_transcribed') : [],
+    // Without a tab the level only simplifies the chords (piano's "Simple": triads).
+    displayChords: chords
+      ? simplifyChords(
+          chords.segments,
+          input.options.level === 'simplified' ? 'simplified' : 'as_transcribed',
+        )
+      : [],
     bands,
+    noteNames: namesFor(chords),
   }
 }

@@ -58,6 +58,8 @@ export function noteName(midi: number): string {
 export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewModel {
   const bands: BandThresholds = music.bands
   const confidence = (c: number) => confidenceBand(c, bands)
+  // Spelled for the song's key: E♭maj7 in E♭ major, not the model's D#maj7.
+  const names = music.noteNames
   const chords: ChordModel[] = music.displayChords.flatMap((segment: ChordSegment) => {
     const parsed = parseChord(segment.label)
     if (parsed === null || parsed.kind !== 'chord') return []
@@ -65,7 +67,7 @@ export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewMode
     return [
       {
         id: segment.id,
-        name: chordDisplayName(segment.label, segment.bass),
+        name: chordDisplayName(segment.label, segment.bass, names),
         label: segment.label,
         bass: segment.bass,
         confidence: confidence(segment.confidence),
@@ -75,7 +77,11 @@ export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewMode
         beat: at.beat,
         alternatives: segment.top_k
           .filter((k) => k.label !== segment.label && parseChord(k.label)?.kind === 'chord')
-          .map((k) => ({ label: k.label, name: chordDisplayName(k.label), prob: k.prob })),
+          .map((k) => ({
+            label: k.label,
+            name: chordDisplayName(k.label, undefined, names),
+            prob: k.prob,
+          })),
       },
     ]
   })

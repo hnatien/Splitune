@@ -15,12 +15,16 @@ const ChordShape = lazy(() =>
 const ScoreTools = lazy(() =>
   import('./score-tools').then((module) => ({ default: module.ScoreTools })),
 )
+const PianoStrip = lazy(() =>
+  import('./piano-strip').then((module) => ({ default: module.PianoStrip })),
+)
 
 // ChordStrip (12 §2, §4): the top of the paper — "now → next". The current chord follows the clock
 // at the larger reading size with its guitar shape beside it; the next chords run after it as
 // plain names, confidence by ink, dashed outline and "?" (never colour alone); tap any → editor
 // sheet. Level and capo sit at the strip's end. The names that don't fit fade out at the end, so
 // a cut name doesn't read as a shorter chord; the list's padding keeps focus rings unclipped.
+// Piano gets its own strip with the voicing on a keyboard (piano-strip.tsx), except on phones.
 
 const AFTER = 6
 
@@ -77,7 +81,11 @@ export function ChordStrip({
         className,
       )}
     >
-      {layers.chords && (
+      {layers.chords && data.instrument === 'piano' && !compact ? (
+        <Suspense fallback={null}>
+          <PianoStrip chip={chip} />
+        </Suspense>
+      ) : layers.chords ? (
         <ol
           aria-label={m['practice.chords']()}
           className="-m-1.5 flex min-w-0 flex-1 items-center gap-2 overflow-hidden p-1.5 mask-r-from-[calc(100%-var(--spacing)*8)] in-data-[distance=stand]:gap-4"
@@ -104,7 +112,7 @@ export function ChordStrip({
             </li>
           ))}
         </ol>
-      )}
+      ) : null}
       {layers.tab && !compact && (
         <Suspense fallback={null}>
           <ScoreTools />
