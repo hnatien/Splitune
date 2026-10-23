@@ -81,6 +81,7 @@ export class PracticeAudio implements PlayerEngine {
   #stopAt: number | null = null
   #metronome = false
   #displayOffset = 0
+  #volume = 1
   #position = 0
   #beats: BeatMarker[] = []
   #mixer: ChannelMix[] = []
@@ -198,6 +199,7 @@ export class PracticeAudio implements PlayerEngine {
     engine.setLoop(this.#loop)
     engine.setStopAt(this.#stopAt)
     engine.setDisplayOffset(this.#displayOffset)
+    engine.setVolume(this.#volume)
     if (this.#title) engine.setMediaMetadata({ title: this.#title })
     await engine.ready
     await this.#load(engine)
@@ -242,6 +244,12 @@ export class PracticeAudio implements PlayerEngine {
   setDisplayOffset(seconds: number): void {
     this.#displayOffset = seconds
     this.#engine?.setDisplayOffset(seconds)
+  }
+
+  /** Master volume as a linear gain over the stems and the click. */
+  setVolume(gain: number): void {
+    this.#volume = gain
+    this.#engine?.setVolume(gain)
   }
 
   position(): number {

@@ -28,6 +28,7 @@ export const MAX_DISPLAY_OFFSET = 0.15
 const REPORT_SECONDS = 0.02
 const GLITCH_CHECK_MS = 1000
 const TONALITY_LIMIT_HZ = 8000
+const VOLUME_RAMP = 0.015
 
 export interface EngineOptions {
   // Defaults to a new AudioContext at 48 kHz (create the engine from a user gesture). Tests pass
@@ -112,14 +113,16 @@ export async function createEngine(options: EngineOptions = {}): Promise<Engine>
     outputChannelCount: [2],
     processorOptions,
   })
-  node.connect(options.destination ?? context.destination)
+  // Master volume: a gain after the processor, so it scales the stems and the click together.
+  const output = context.createGain()
+  node.connect(output).connect(options.destination ?? context.destination)
   const tier =
     options.tier ??
     initialTier({
       deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
       hardwareConcurrency: navigator.hardwareConcurrency,
     })
-  return new Engine(context, node, {
+  return new Engine(context, node, output, {
     ownsContext,
     tier,
     adaptive: options.adaptive ?? true,
@@ -131,6 +134,7 @@ export class Engine {
   readonly context: BaseAudioContext
   readonly sampleRate: number
   readonly #node: AudioWorkletNode
+  readonly #output: GainNode
   readonly #ownsContext: boolean
   readonly #clock = new PositionClock()
   readonly #timestampLag = new TimestampLag()
@@ -149,11 +153,13 @@ export class Engine {
   constructor(
     context: BaseAudioContext,
     node: AudioWorkletNode,
+    output: GainNode,
     options: { ownsContext: boolean; tier: Tier; adaptive: boolean; keepScreenOn: boolean },
   ) {
     this.context = context
     this.sampleRate = context.sampleRate
     this.#node = node
+    this.#output = output
     this.#ownsContext = options.ownsContext
     this.#wakeLock =
       options.keepScreenOn && context instanceof AudioContext ? new ScreenWakeLock() : null
@@ -288,6 +294,11 @@ export class Engine {
     this.send({ type: 'clickGain', gain })
   }
 
+  // Linear master gain over everything heard; a short ramp so a dragged slider doesn't click.
+  setVolume(gain: number): void {
+    this.#output.gain.setTargetAtTime(Math.max(0, gain), this.context.currentTime, VOLUME_RAMP)
+  }
+
   // Bluetooth headphones and odd devices: shifts the clock by ±150 ms (settings slider).
   setDisplayOffset(seconds: number): void {
     this.#displayOffset = Math.min(MAX_DISPLAY_OFFSET, Math.max(-MAX_DISPLAY_OFFSET, seconds))
@@ -353,6 +364,7 @@ export class Engine {
     this.#wakeLock?.dispose()
     this.#node.port.onmessage = null
     this.#node.disconnect()
+    this.#output.disconnect()
     if (this.context instanceof AudioContext) {
       this.context.removeEventListener('statechange', this.#onStateChange)
       if (this.#ownsContext) await this.context.close()

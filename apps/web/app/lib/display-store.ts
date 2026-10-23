@@ -24,6 +24,8 @@ export type PracticeDefaults = {
   notationLayout: 'page' | 'scroll'
   /** How late this device's output is heard beyond what the browser reports (Bluetooth, 11 §3). */
   soundDelayMs: number
+  /** Master volume of the practice player, 0–100 %. */
+  volumePct: number
   /** Piano chord chart: right hand led smoothly from chord to chord, or each in root position. */
   pianoVoicing: 'smooth' | 'root'
   /** Piano chord chart: hands shown on the keyboard. */
@@ -41,6 +43,7 @@ export const DEFAULT_PRACTICE: PracticeDefaults = {
   passPrompt: false,
   notationLayout: 'page',
   soundDelayMs: 0,
+  volumePct: 100,
   pianoVoicing: 'smooth',
   pianoHands: 'both',
 }

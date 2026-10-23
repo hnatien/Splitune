@@ -213,6 +213,9 @@ export function PracticeProvider({
 
   const soundDelayMs = defaults.soundDelayMs
   useEffect(() => audio.setDisplayOffset(soundDelayMs / 1000), [audio, soundDelayMs])
+  // Squared so the slider's travel follows loudness rather than linear amplitude.
+  const volumePct = defaults.volumePct
+  useEffect(() => audio.setVolume((volumePct / 100) ** 2), [audio, volumePct])
 
   // Effective music: recomputed in the Worker when an input it depends on changes.
   const beatsDoc = data.beats.data

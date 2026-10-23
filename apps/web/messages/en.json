@@ -497,6 +497,8 @@
   "practice.loop_this_bar": "Loop this bar",
   "practice.metronome": "Metronome",
   "practice.mix": "Mix",
+  "practice.volume": "Volume",
+  "practice.mute": "Mute",
   "practice.more": "More",
   "practice.move_downbeat": "Move downbeat",
   "practice.next_at_bar": "Next · bar {bar}",
