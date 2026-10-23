@@ -53,6 +53,31 @@ test('static files and the API carry nosniff and a referrer policy', async ({ re
   expect(header(api.headers(), 'cache-control')).toBe('no-store')
 })
 
+test('self-hosted fonts and icons are cached as immutable, hashed assets too', async ({
+  request,
+}) => {
+  const html = await (await request.get('/')).text()
+  const script = html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1]
+  for (const path of [
+    script ?? '',
+    '/fonts/InterVariable.woff2',
+    '/fonts/AtkinsonHyperlegibleNext.woff2',
+    '/icons/icon-192.png',
+    '/icons/apple-touch-icon.png',
+  ]) {
+    const response = await request.get(path)
+    expect(response.status(), path).toBe(200)
+    const headers = response.headers()
+    expect(header(headers, 'cache-control'), path).toMatch(/max-age=31536000.*immutable/)
+    expect(header(headers, 'x-content-type-options'), path).toBe('nosniff')
+  }
+  // Files that keep their name across deploys are revalidated.
+  for (const path of ['/sw.js', '/manifest.webmanifest']) {
+    const headers = (await request.get(path)).headers()
+    expect(header(headers, 'cache-control'), path).not.toContain('immutable')
+  }
+})
+
 test('a resource the policy forbids is blocked and reported', async ({ page, browserName }) => {
   const reported = page.waitForRequest(
     (request) => request.url().endsWith('/internal/csp-report') && request.method() === 'POST',

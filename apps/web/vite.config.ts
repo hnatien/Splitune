@@ -23,6 +23,9 @@ export default defineConfig(({ command, mode }) => {
     const { NODE_ENV: _mode, ...env } = loadEnv(mode, '../..', '')
     Object.assign(process.env, { ...env, ...process.env })
   }
+  // Self-hosted fonts and icons keep fixed names (fonts.css, the preload, the manifest), so a
+  // changed file needs a new name: browsers keep these for a year without revalidating.
+  const immutable = { headers: { 'cache-control': 'public, max-age=31536000, immutable' } }
   return {
     server: { port: 3000, strictPort: true },
     resolve: { alias },
@@ -33,7 +36,11 @@ export default defineConfig(({ command, mode }) => {
       nitro({
         preset: 'node',
         compressPublicAssets: true,
-        routeRules: { '/**': { headers: BASE_HEADERS } },
+        routeRules: {
+          '/**': { headers: BASE_HEADERS },
+          '/fonts/**': immutable,
+          '/icons/**': immutable,
+        },
       }),
       ...sharedPlugins(),
       babel({ presets: [reactCompilerPreset()] }),
