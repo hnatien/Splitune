@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd agent for the Splitune ML worker on the owner's Mac (25-personal-mode.md §5-6).
+  launchd agent for the Splitune ML worker on the owner's Mac (25-personal-mode.md §5-6), against
+  production.
 
-  Install (replace __REPO__ with the absolute checkout path, __USER_HOME__ with $HOME):
-    uv sync --project services/ml/islands/torch && uv sync --project services/ml/islands/onnx-cpu
-    sed -e "s#__REPO__#$PWD#g" -e "s#__USER_HOME__#$HOME#g" \
-      services/ml/deploy/com.splitune.ml-worker.plist > ~/Library/LaunchAgents/com.splitune.ml-worker.plist
-    mkdir -p ~/Library/Logs/Splitune
-    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.splitune.ml-worker.plist
-  Restart:  launchctl kickstart -k gui/$(id -u)/com.splitune.ml-worker
-  Remove:   launchctl bootout gui/$(id -u)/com.splitune.ml-worker
+  Installed with `pnpm workers install`, which fills in __REPO__ (the checkout) and __USER_HOME__
+  ($HOME); run `uv sync --project services/ml/islands/torch` and
+  `uv sync --project services/ml/islands/onnx-cpu` first.
 
-  Settings come from __REPO__/.env and .env.worker (ML_DATABASE_URL with the ml_worker role,
-  bucket credentials, FFMPEG_BIN_DIR); nothing secret belongs in this file. On SIGTERM the worker
-  stops claiming and finishes running jobs within ExitTimeOut; anything cut off is re-queued by
-  the stale-lock sweep (120 s).
+  Settings come from __REPO__/.env.worker only (SPLITUNE_ENV_FILE; never .env): ML_DATABASE_URL
+  with the ml_worker role, bucket credentials, FFMPEG_BIN_DIR. Nothing secret belongs in this
+  file. On SIGTERM the worker stops claiming and finishes running jobs within ExitTimeOut;
+  anything cut off is re-queued by the stale-lock sweep (120 s).
 -->
 <plist version="1.0">
 <dict>
@@ -36,6 +32,8 @@
     <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>ML_MODE</key>
     <string>local</string>
+    <key>SPLITUNE_ENV_FILE</key>
+    <string>__REPO__/.env.worker</string>
   </dict>
   <key>RunAtLoad</key>
   <true/>

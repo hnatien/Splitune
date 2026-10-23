@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import signal
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -11,6 +12,7 @@ from splitune_ml_core.errors import StageError
 from splitune_ml_core.keys import cache_key, is_safe_key
 from splitune_ml_core.logs import JsonFormatter, redact
 from splitune_ml_core.paths import CONTRACT_FIXTURES_DIR
+from splitune_ml_core.settings import find_env_files
 from splitune_ml_core.worker import ShutdownSignals
 
 REF = contracts.ModelRef(
@@ -129,3 +131,33 @@ def test_different_second_signal_forces_exit_at_once() -> None:
     clock.now += 0.1
     signals(signal.SIGINT, None)
     assert forced == [True]
+
+
+def test_env_files_default_to_the_nearest_dot_env_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("SPLITUNE_ENV_FILE", raising=False)
+    (tmp_path / ".env").write_text("S3_BUCKET=local\n")
+    (tmp_path / ".env.worker").write_text("S3_BUCKET=production\n")
+    nested = tmp_path / "services" / "ml"
+    nested.mkdir(parents=True)
+    assert find_env_files(nested) == (tmp_path / ".env",)
+
+
+def test_env_files_named_by_splitune_env_file_replace_dot_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".env").write_text("S3_BUCKET=local\n")
+    worker = tmp_path / ".env.worker"
+    worker.write_text("S3_BUCKET=production\n")
+    monkeypatch.setenv("SPLITUNE_ENV_FILE", str(worker))
+    assert find_env_files(tmp_path) == (worker,)
+
+
+def test_a_missing_splitune_env_file_fails_instead_of_falling_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".env").write_text("S3_BUCKET=local\n")
+    monkeypatch.setenv("SPLITUNE_ENV_FILE", str(tmp_path / ".env.worker"))
+    with pytest.raises(FileNotFoundError):
+        find_env_files(tmp_path)

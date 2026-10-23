@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import socket
 from pathlib import Path
 from typing import Literal
@@ -11,11 +12,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def find_env_files(start: Path | None = None) -> tuple[Path, ...]:
-    """`.env` and `.env.worker` from the nearest directory (cwd upwards) that has a `.env`."""
+    """The file named by `SPLITUNE_ENV_FILE`, else `.env` from the nearest directory (cwd upwards).
+
+    The Mac's production workers (launchd) name `.env.worker`, which holds their whole
+    configuration; everything else reads only the local `.env`, so a development worker never
+    reaches production (25-personal-mode.md §6).
+    """
+    named = os.environ.get("SPLITUNE_ENV_FILE")
+    if named:
+        path = Path(named).expanduser()
+        if not path.is_file():
+            raise FileNotFoundError(f"SPLITUNE_ENV_FILE {path} does not exist")
+        return (path,)
     here = (start or Path.cwd()).resolve()
     for directory in (here, *here.parents):
         if (directory / ".env").is_file():
-            return tuple(p for p in (directory / ".env", directory / ".env.worker") if p.is_file())
+            return (directory / ".env",)
     return ()
 
 

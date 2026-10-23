@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent for the Splitune node worker on the owner's Mac (25-personal-mode.md §5-6):
+  finalize, lifecycle jobs, nightly pg_dump and the digest, against production.
+
+  Installed with `pnpm workers install`, which fills in __REPO__ (the checkout), __USER_HOME__
+  ($HOME) and __NODE__ (the Node 24 binary that ran it). Settings come from __REPO__/.env.worker
+  only (never .env); nothing secret belongs in this file. On SIGTERM the worker stops claiming
+  and finishes its running job within ExitTimeOut.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.splitune.node-worker</string>
+  <key>WorkingDirectory</key>
+  <string>__REPO__/apps/node-worker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE__</string>
+    <string>--env-file=__REPO__/.env.worker</string>
+    <string>src/main.ts</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ExitTimeOut</key>
+  <integer>60</integer>
+  <key>StandardOutPath</key>
+  <string>__USER_HOME__/Library/Logs/Splitune/node-worker.log</string>
+  <key>StandardErrorPath</key>
+  <string>__USER_HOME__/Library/Logs/Splitune/node-worker.log</string>
+</dict>
+</plist>

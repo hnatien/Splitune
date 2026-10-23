@@ -5,7 +5,8 @@
   "description": "Mac Node worker: finalize (music-core tab, alphaTex, summary) — docs/implementation/06-ml-pipeline-service.md §2",
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env --env-file-if-exists=../../.env.worker src/main.ts",
+    "dev": "node --env-file-if-exists=../../.env src/main.ts",
+    "start": "node --env-file=../../.env.worker src/main.ts",
     "typecheck": "tsc -p .",
     "test": "vitest run"
   },
