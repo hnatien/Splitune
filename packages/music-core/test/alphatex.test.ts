@@ -120,6 +120,20 @@ describe('toAlphaTex', () => {
     expect(diagnostics).toEqual([])
     expect(barDurationMismatches(score)).toEqual([])
   })
+
+  it('never writes a dotted quarter in a swing bar', () => {
+    // A swing bar whose first note is the last triplet of beat 2 opens with 1600 ticks of rest:
+    // a dotted quarter (1440) would leave 160 ticks off the triplet grid.
+    const tex = toAlphaTex({
+      ...base,
+      swingBars: [0],
+      events: [{ noteId: 's', onTick: 1600, offTick: 1920, string: 3, fret: 2 }],
+    })
+    expect(tex.tex).toContain('r.4 r.8 {tu 3} r.8 {tu 3} 2.3.8 {tu 3} r.2')
+    const { score, diagnostics } = loadAlphaTex(tex.tex)
+    expect(diagnostics).toEqual([])
+    expect(barDurationMismatches(score)).toEqual([])
+  })
 })
 
 describe('buildTab → alphaTab', () => {

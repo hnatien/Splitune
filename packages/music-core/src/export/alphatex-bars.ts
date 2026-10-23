@@ -25,10 +25,10 @@ const STRAIGHT_DURATIONS: Duration[] = [
   { ticks: 120, token: '32', props: [], unit: 120 },
 ]
 
-// Swing bars hold only whole beats (or longer) and triplet eighths, so every tuplet group is a
-// complete beat of three.
+// Swing bars hold only whole numbers of beats and triplet eighths, so every tuplet group is a
+// complete beat of three. A dotted quarter is a beat and a half, off the triplet grid.
 const SWING_DURATIONS: Duration[] = [
-  ...STRAIGHT_DURATIONS.filter((d) => d.ticks >= 960),
+  ...STRAIGHT_DURATIONS.filter((d) => d.ticks % PPQ === 0),
   { ticks: 320, token: '8', props: ['tu 3'], unit: 320 },
 ]
 
