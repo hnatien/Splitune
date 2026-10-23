@@ -15,8 +15,10 @@ import { AttemptOutcome } from './practice.ts'
 
 const Ms = z.number().int().nonnegative().max(86_400_000)
 const Pct = z.number().int().min(25).max(200)
-// `model_id@version`, e.g. "basic_pitch@0.4.0" (Trust dashboard: rates per model).
-const ModelTag = z.string().regex(/^[A-Za-z0-9_./-]{1,80}@[A-Za-z0-9_.+-]{1,40}$/)
+// `model_id@version`, e.g. "basic_pitch@0.4.0" (Trust dashboard: rates per model). Ids and
+// versions are the stages' and the register's own ("bs_roformer:BS-Roformer-SW",
+// "panns/cnn14@mAP=0.431", "0.17.dev0@27f032e"); no spaces, query strings or other free text.
+const ModelTag = z.string().regex(/^[A-Za-z0-9_./:-]{1,80}@[A-Za-z0-9_.+=@-]{1,80}$/)
 // Machine codes only (06 §3), never exception text.
 const Code = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/)
 
