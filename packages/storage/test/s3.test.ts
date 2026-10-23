@@ -64,7 +64,10 @@ describe('presigned PUT and GET', () => {
     await fetch(put, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{}' })
 
     const signed = new URL(await storage.presignGet(key, { expiresIn: 1 }))
-    expect((await fetch(`${signed.origin}${signed.pathname}`)).status).toBe(403)
+    // SeaweedFS answers 403; Cloudflare R2 answers 400 InvalidArgument (no Authorization).
+    const unsigned = await fetch(`${signed.origin}${signed.pathname}`)
+    expect([400, 403]).toContain(unsigned.status)
+    expect(await unsigned.text()).not.toBe('{}')
     await new Promise((resolve) => setTimeout(resolve, 2100))
     expect((await fetch(signed)).status).toBe(403)
   })
