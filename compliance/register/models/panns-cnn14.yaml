@@ -9,9 +9,9 @@ weights:
   licence: "not separately stated (Zenodo record 3987831)"
   url: https://zenodo.org/record/3987831/files/Cnn14_mAP%3D0.431.pth
   # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
-  sha256: "9e3e9b72885f77020116a7d34810761e6eac0d65c4669068f62bf0537711c3af"
+  sha256: "9ca8a17113fc2c95a4682bae55f68c5dd47e3e0f472719fb68479ad2dc67aed5"
   files:
-    - { name: cnn14.onnx, sha256: "6031a7cfcda816ff3f4d3e1b633b1f5a81f473bd3a3bf4716cb355269a237f2b", bytes: 327331902 }
+    - { name: cnn14.onnx, sha256: "75201c264004b64bb3a38c59e694eac590a03eec8e479964240b2a28faebb164", bytes: 327331902 }
 training_data: [{ name: AudioSet, licence: CC-BY-4.0 labels / YouTube audio, commercial_ok: false }]
 tier: amber
 tier_reason: "trained on YouTube audio (AudioSet)"
