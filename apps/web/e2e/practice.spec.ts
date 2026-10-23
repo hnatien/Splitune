@@ -340,7 +340,9 @@ test('layers appear one by one without moving the transport', async () => {
   boxes.push(await box())
 
   released = ['beats']
-  await expect(page.getByRole('list', { name: 'Bars' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('You can already loop and slow the original')).toBeVisible({
+    timeout: 15_000,
+  })
   boxes.push(await box())
 
   released = ['beats', 'stems']

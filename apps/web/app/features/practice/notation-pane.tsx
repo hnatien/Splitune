@@ -21,8 +21,8 @@ const AlphaTabView = lazy(() =>
 )
 
 // NotationView (12 §2–3, 27 §3.7.3): on paper in every appearance. Before the tab exists it holds
-// the analysis status (bar numbers once beats land), then a chord-only sheet, then the tab — each
-// layer fading in without moving the transport. Bars are buttons: tap A then B loops them.
+// the analysis status, then a chord-only sheet, then the tab — each layer fading in without moving
+// the transport. Bars are buttons: tap A then B loops them.
 
 /** summary.recommended_view for the learner's part (05): the global chords-only fallback. */
 export function useRecommendedView() {
@@ -85,8 +85,8 @@ export function NotationPane({
       </Suspense>
     )
   }
-  // Before any bar exists the pane may scroll with nothing focusable in it, so the region itself
-  // takes focus (WCAG 2.1.1); practice keys still reach the input mapper from here.
+  // The placeholder may scroll with nothing focusable in it, so the region itself takes focus
+  // (WCAG 2.1.1); practice keys still reach the input mapper from here.
   return (
     <section
       aria-labelledby={placeholderId}
@@ -100,45 +100,8 @@ export function NotationPane({
       <p id={placeholderId} className="text-center text-read-label">
         {m['practice.placeholder']()}
       </p>
-      {layers.beats && <BarNumbers onBarActivate={activate} />}
       <AnalysisStatus data={data} songId={practice.songId} />
     </section>
-  )
-}
-
-function BarNumbers({ onBarActivate }: { onBarActivate: (bar: number) => void }) {
-  const { grid, player } = usePractice()
-  const selection = usePracticeUi((s) => s.selection)
-  if (!grid) return null
-  return (
-    <ol
-      aria-label={m['practice.bars']()}
-      className="flex w-full max-w-reading flex-wrap gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter"
-    >
-      {grid.bars.map((bar) => {
-        const inLoop =
-          player.loop !== null && bar >= player.loop.startBar && bar <= player.loop.endBar
-        const armed = selection.kind === 'armed' && selection.bar === bar
-        return (
-          <li key={bar}>
-            <button
-              type="button"
-              data-slot="bar-target"
-              data-bar={bar}
-              aria-pressed={inLoop}
-              onClick={() => onBarActivate(bar)}
-              className={cn(
-                'min-h-target-practice-2 min-w-target-practice-2 rounded-lg border px-3 font-reading text-read-bar-number tabular-nums',
-                inLoop ? 'border-score-loop-edge bg-score-loop-fill' : 'border-staff',
-                armed && 'border-dashed border-score-loop-edge',
-              )}
-            >
-              {bar < 0 ? m['practice.pickup']() : bar + 1}
-            </button>
-          </li>
-        )
-      })}
-    </ol>
   )
 }
 

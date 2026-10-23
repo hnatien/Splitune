@@ -134,7 +134,41 @@ describe('parseLogLine', () => {
     })
     expect(parseLogLine(line)).toEqual({
       level: 'warn',
-      text: 'job retried  job_id=j1  slots={"cpu0":["decode"]}',
+      text: 'job retried  job_id=j1  slots=cpu0:decode',
+      detail: [],
+    })
+  })
+
+  it('cuts ids to 8 characters, shows seconds and drops the worker id', () => {
+    const line = JSON.stringify({
+      level: 'info',
+      msg: 'stage done',
+      worker_id: 'ml-host',
+      job_id: '6f1c2a3b-1111-4222-8333-944445555666',
+      stage: 'beats',
+      wall_s: 12.345,
+    })
+    expect(parseLogLine(line).text).toBe('stage done  job_id=6f1c2a3b  stage=beats  wall=12.3s')
+  })
+
+  it('turns a Python traceback into where and what, on lines of their own', () => {
+    const line = JSON.stringify({
+      level: 'error',
+      msg: 'stage crashed',
+      exc_type: 'KeyError',
+      exc: [
+        'Traceback (most recent call last):',
+        '  File "/repo/services/ml/packages/core/executor.py", line 792, in execute',
+        '    run()',
+        '  File "/repo/services/ml/.venv/lib/python3.12/site-packages/torch/nn.py", line 9, in run',
+        '    x[k]',
+        "KeyError: 'beats'",
+      ].join('\n'),
+    })
+    expect(parseLogLine(line, { root: '/repo' })).toEqual({
+      level: 'error',
+      text: 'stage crashed',
+      detail: ['at torch/nn.py:9 in run', "KeyError: 'beats'"],
     })
   })
 
@@ -146,7 +180,34 @@ describe('parseLogLine', () => {
     expect(parseLogLine('\x1b[32m➜\x1b[39m  Local:\thttp://localhost:3000/\x07')).toEqual({
       level: 'info',
       text: '➜  Local:  http://localhost:3000/',
+      detail: [],
     })
+  })
+
+  it('drops the report pnpm adds after a script fails', () => {
+    expect(parseLogLine('[ELIFECYCLE] Command failed with exit code 1.')).toBeNull()
+    expect(parseLogLine('Error: ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL')).toBeNull()
+    expect(parseLogLine('  × "pnpm recursive run" failed in /repo/apps/web')).toBeNull()
+  })
+
+  it('shortens stack frames and drops Node internals', () => {
+    const frame =
+      '    at httpServerStart (file:///repo/node_modules/.pnpm/vite@8.3.4_esbuild@0.28.2/node_modules/vite/dist/node/chunks/node.js:14706:10)'
+    expect(parseLogLine(frame, { root: '/repo' }).text).toBe(
+      '    at httpServerStart (vite/dist/node/chunks/node.js:14706:10)',
+    )
+    expect(
+      parseLogLine(
+        '    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)',
+      ),
+    ).toBeNull()
+  })
+
+  it('names containers by service and drops the Vite clock', () => {
+    expect(parseLogLine(' Container splitune-postgres-1 Running').text).toBe('postgres running')
+    expect(parseLogLine('5:08:43 PM [vite] (client) Re-optimizing dependencies').text).toBe(
+      '[vite] (client) Re-optimizing dependencies',
+    )
   })
 
   it('flags plain lines that look like errors', () => {
@@ -209,6 +270,22 @@ describe('renderFrame', () => {
     expect(text).toMatch(/✕ ml-worker {4}exited 1/)
   })
 
+  it('keeps every detail clear of the pid column', () => {
+    const state = makeState()
+    state.services[2].status = 'ready'
+    state.services[2].detail = `worker started  slots=${'cpu0:decode '.repeat(20)}`
+    state.services[3].detail = 'x'.repeat(200)
+    const rows = plain(
+      renderFrame(state, { cols: 120, rows: 40, theme: createTheme(1) }).lines,
+    ).filter((line) => /^ {2}[●·✕○]/.test(line))
+    const pidColumn = rows[1].indexOf('pid 4123')
+    for (const line of rows) {
+      expect(line).toHaveLength(120)
+      expect(line.slice(pidColumn - 3, pidColumn)).toBe('   ')
+    }
+    expect(rows[2]).toMatch(/… {3}pid 4124/)
+  })
+
   it('shows no uptime for the one-shot stack task', () => {
     const state = makeState()
     state.services[0].startedAt = now - 30_000
@@ -229,6 +306,21 @@ describe('renderFrame', () => {
     })
     const rule = plain(lines).findIndex((line) => /^─+$/.test(line))
     expect(rule + 1 + logHeight + 1).toBe(40)
+  })
+
+  it('names what r restarts: everything on the all tab, else the focused service', () => {
+    const footer = (focus) =>
+      plain(
+        renderFrame(makeState({ focus }), { cols: 120, rows: 40, theme: createTheme(1) }).lines,
+      ).at(-1)
+    expect(footer(null)).toContain('←→ logs')
+    expect(footer(null)).toContain('r restart all')
+    expect(footer('web')).toContain('r restart web')
+  })
+
+  it('labels log tabs without number keys', () => {
+    const { lines } = renderFrame(makeState(), { cols: 120, rows: 40, theme: createTheme(1) })
+    expect(plain(lines).join('\n')).toMatch(/Logs {2}all {3}stack {3}web {3}node-worker/)
   })
 
   it('tells the user how to force quit while stopping', () => {

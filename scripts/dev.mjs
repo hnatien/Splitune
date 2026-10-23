@@ -75,8 +75,9 @@ const children = new Map()
 const interactive = process.stdout.isTTY && process.stdin.isTTY
 
 function log(serviceId, raw) {
-  const { level, text } = parseLogLine(raw)
-  if (!text) return
+  const parsed = parseLogLine(raw, { root })
+  if (!parsed?.text) return
+  const { level, text, detail } = parsed
   const service = state.services.find((s) => s.id === serviceId)
   if (service.ready && service.status === 'starting') {
     const match = service.ready.exec(text)
@@ -88,13 +89,15 @@ function log(serviceId, raw) {
   // Web keeps its URL as the detail; the workers show what they did last.
   if (service.kind !== 'task' && service.id !== 'web' && service.status === 'ready')
     service.detail = text
+  const lines = [text, ...detail.map((line) => `  ${line}`)]
   if (interactive) {
-    state.logs.push({ service: serviceId, level, text })
+    for (const line of lines) state.logs.push({ service: serviceId, level, text: line })
     if (state.logs.length > MAX_LOG_LINES) state.logs.splice(0, state.logs.length - MAX_LOG_LINES)
     // Keep a scrolled view anchored on the same lines while new ones arrive.
-    if (state.scroll > 0 && (!state.focus || state.focus === serviceId)) state.scroll++
+    if (state.scroll > 0 && (!state.focus || state.focus === serviceId))
+      state.scroll += lines.length
   } else {
-    process.stdout.write(`${serviceId.padEnd(12)}│ ${text}\n`)
+    for (const line of lines) process.stdout.write(`${serviceId.padEnd(12)}│ ${line}\n`)
   }
 }
 
@@ -160,19 +163,26 @@ function stop(service) {
 // Runs the stack, then starts whichever services aren't already up (all of them the first time).
 async function startAll() {
   const [stack, ...apps] = state.services
+  for (const service of apps) if (!children.has(service.id)) service.detail = undefined
   if (!(await start(stack))) {
     for (const service of apps)
-      if (service.status === 'pending') service.detail = 'stack did not start; press 1 for its log'
+      if (!children.has(service.id)) service.detail = 'stack did not start; see its log'
     return
   }
   if (state.quitting) return
   for (const service of apps) if (!children.has(service.id)) start(service)
 }
 
+// One restart at a time, so a repeated r doesn't signal pnpm twice or run the stack twice.
+let restarting = false
 async function restart(service) {
+  if (state.quitting || restarting) return
+  restarting = true
+  if (service) await stop(service)
+  else await Promise.all(state.services.map(stop))
+  restarting = false
   if (state.quitting) return
-  await stop(service)
-  if (service.kind === 'task') startAll()
+  if (!service || service.kind === 'task') startAll()
   else start(service)
 }
 
@@ -232,15 +242,15 @@ function onKey(key) {
   const logHeight = Math.max(1, state.logHeight)
   if (key === '\x03' || key === 'q') {
     quit()
-  } else if (/^[0-9]$/.test(key) && Number(key) <= state.services.length) {
-    state.focus = key === '0' ? null : state.services[Number(key) - 1].id
-    state.scroll = 0
-  } else if (key === 'a') {
-    state.focus = null
+  } else if (key === '\x1b[D' || key === 'h' || key === '\x1b[C' || key === 'l') {
+    // Tabs run all, then each service, wrapping at both ends.
+    const tabs = [null, ...state.services.map((s) => s.id)]
+    const step = key === '\x1b[D' || key === 'h' ? -1 : 1
+    state.focus = tabs[(tabs.indexOf(state.focus) + step + tabs.length) % tabs.length]
     state.scroll = 0
   } else if (key === 'r') {
-    const service = state.services.find((s) => s.id === state.focus)
-    if (service) restart(service)
+    // The all tab restarts everything; a service's tab restarts just that service.
+    restart(state.services.find((s) => s.id === state.focus))
   } else if (key === '\x1b[A' || key === 'k') {
     state.scroll = Math.min(state.scroll + 1, visibleLogs(state, logHeight).maxScroll)
   } else if (key === '\x1b[B' || key === 'j') {

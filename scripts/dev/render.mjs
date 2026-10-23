@@ -64,10 +64,65 @@ export function formatDuration(ms) {
   return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
 }
 
-const LOG_FIELDS_SKIPPED = new Set(['ts', 'at', 'level', 'logger', 'service', 'msg', 'message'])
+// Fields the dashboard already shows (service, level) or that only matter in production logs.
+const LOG_FIELDS_SKIPPED = new Set([
+  'ts',
+  'at',
+  'level',
+  'logger',
+  'service',
+  'msg',
+  'message',
+  'worker_id',
+  'exc',
+  'exc_type',
+])
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// pnpm's own report after a script fails: the service row already says it exited.
+const PNPM_NOISE = [
+  /^\[?ELIFECYCLE\]?\s/,
+  /ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL/,
+  /"pnpm recursive run" failed/,
+]
+// Vite prefixes its messages with a wall-clock time.
+const CLOCK_PREFIX = /^\d{1,2}:\d{2}:\d{2} [AP]M /
 
-// The workers log one JSON object per line; show its level, message and remaining fields compactly.
-export function parseLogLine(raw) {
+// Paths relative to the checkout, without the package-store or virtualenv prefix.
+export function shortenPaths(text, root) {
+  let out = text
+    .replace(/file:\/\//g, '')
+    .replace(/[^\s("']*\/node_modules\/\.pnpm\/[^/]+\/node_modules\//g, '')
+    .replace(/[^\s("']*\/site-packages\//g, '')
+  if (root) out = out.replaceAll(`${root}/`, '')
+  return out
+}
+
+function formatValue(key, value) {
+  if (typeof value === 'number' && key.endsWith('_s')) return `${Math.round(value * 10) / 10}s`
+  if (typeof value === 'string') return UUID.test(value) ? value.slice(0, 8) : value
+  if (Array.isArray(value)) return value.join(',')
+  if (value && typeof value === 'object')
+    return Object.entries(value)
+      .map(([k, v]) => `${k}:${formatValue(k, v)}`)
+      .join(' ')
+  return String(value)
+}
+
+// A Python traceback becomes two lines: where it was raised and what was raised.
+function tracebackDetail(exc, root) {
+  const lines = exc.split('\n').filter((line) => line.trim())
+  const frame = lines.findLast((line) => line.trim().startsWith('File "'))
+  const where = frame?.match(/File "([^"]+)", line (\d+), in (\S+)/)
+  const detail = where ? [`at ${shortenPaths(where[1], root)}:${where[2]} in ${where[3]}`] : []
+  const raised = lines.at(-1)?.trim()
+  if (raised) detail.push(shortenPaths(raised, root))
+  return detail
+}
+
+// One child output line for display: `{ level, text, detail }`, or null for lines that only repeat
+// what the service row shows. The workers log one JSON object per line; it becomes its message and
+// remaining fields, with ids cut to 8 characters and durations in seconds.
+export function parseLogLine(raw, { root } = {}) {
   const text = sanitize(raw).trimEnd()
   if (text.startsWith('{')) {
     try {
@@ -76,16 +131,31 @@ export function parseLogLine(raw) {
       if (typeof message === 'string') {
         const fields = Object.entries(entry)
           .filter(([key]) => !LOG_FIELDS_SKIPPED.has(key))
-          .map(
-            ([key, value]) => `${key}=${typeof value === 'string' ? value : JSON.stringify(value)}`,
-          )
-        return { level: levelOf(entry.level), text: [message, ...fields].join('  ') }
+          .map(([key, value]) => `${key.replace(/_s$/, '')}=${formatValue(key, value)}`)
+        return {
+          level: levelOf(entry.level),
+          text: sanitize([message, ...fields].join('  ')),
+          detail:
+            typeof entry.exc === 'string' ? tracebackDetail(entry.exc, root).map(sanitize) : [],
+        }
       }
     } catch {
       // Not JSON after all: shown as plain text below.
     }
   }
-  return { level: /\b(error|failed|exception|traceback)\b/i.test(text) ? 'error' : 'info', text }
+  if (PNPM_NOISE.some((pattern) => pattern.test(text.trim()))) return null
+  // docker compose: "Container splitune-postgres-1 Running" → "postgres running".
+  const container = text.trim().match(/^Container splitune-(\S+?)-\d+\s+(\w+)$/)
+  if (container)
+    return { level: 'info', text: `${container[1]} ${container[2].toLowerCase()}`, detail: [] }
+  // Node's own frames say nothing about our code.
+  if (/^\s*at .*\(?node:internal\//.test(text)) return null
+  const line = shortenPaths(text.replace(CLOCK_PREFIX, ''), root)
+  return {
+    level: /\b(error|failed|exception|traceback)\b/i.test(line) ? 'error' : 'info',
+    text: line,
+    detail: [],
+  }
 }
 
 function levelOf(level) {
@@ -177,16 +247,25 @@ function header(state, width, theme, compact) {
   return [top, ...lines, bottom]
 }
 
-function serviceRow(service, state, width, theme) {
-  const [glyph, glyphStyle, word, wordStyle] = statusCell(service, state.tick, theme)
-  const right = []
+// Columns kept clear between a service's detail and its pid and uptime.
+const DETAIL_GAP = 3
+
+// The pid and uptime, right-aligned in their own column.
+function serviceRight(service, state, width) {
+  if (width < PID_MIN_WIDTH) return ''
   const running =
     service.kind !== 'task' && (service.status === 'ready' || service.status === 'starting')
-  if (width >= PID_MIN_WIDTH && service.pid) right.push(`pid ${service.pid}`)
-  if (width >= PID_MIN_WIDTH && running && service.startedAt)
-    right.push(formatDuration(state.now - service.startedAt).padStart(7))
-  const rightText = right.join('   ')
+  const pid = service.pid ? `pid ${service.pid}` : ''
+  const uptime =
+    running && service.startedAt ? formatDuration(state.now - service.startedAt).padStart(7) : ''
+  return [pid, uptime].filter(Boolean).join('   ')
+}
+
+function serviceRow(service, state, width, theme, rightWidth) {
+  const [glyph, glyphStyle, word, wordStyle] = statusCell(service, state.tick, theme)
   const focused = state.focus === service.id
+  // Every row truncates its detail at the same column, clear of the widest pid and uptime.
+  const reserved = rightWidth ? rightWidth + DETAIL_GAP + 2 : 0
   const left = row(
     [
       [focused ? '› ' : '  ', theme.accent],
@@ -196,20 +275,18 @@ function serviceRow(service, state, width, theme) {
       [word.padEnd(STATUS_WIDTH), wordStyle],
       [service.detail ?? '', service.status === 'ready' ? theme.plain : theme.dim],
     ],
-    Math.max(0, width - rightText.length - 2),
+    Math.max(0, width - reserved),
   )
-  return `${left}${theme.dim(rightText)}  `
+  if (!rightWidth) return left
+  const right = serviceRight(service, state, width).padStart(rightWidth)
+  return `${left}${' '.repeat(DETAIL_GAP)}${theme.dim(right)}  `
 }
 
 function tabs(state, theme) {
-  const names = [
-    { id: null, label: 'all', key: '0' },
-    ...state.services.map((s, i) => ({ id: s.id, label: s.label, key: String(i + 1) })),
-  ]
+  const names = [{ id: null, label: 'all' }, ...state.services]
   const segments = [['  Logs  ', theme.bold]]
   for (const tab of names) {
     const active = state.focus === tab.id
-    segments.push([`${tab.key} `, theme.dim])
     segments.push([
       tab.label,
       active ? (text) => theme.underline(theme.accent(theme.bold(text))) : theme.dim,
@@ -261,7 +338,12 @@ export function renderFrame(state, { cols, rows, theme }) {
   const width = Math.max(20, cols)
   // Keep at least a few log lines on short terminals: the logo goes first.
   const lines = [...header(state, width, theme, rows < 24), '']
-  for (const service of state.services) lines.push(serviceRow(service, state, width, theme))
+  const rightWidth = Math.max(
+    0,
+    ...state.services.map((service) => serviceRight(service, state, width).length),
+  )
+  for (const service of state.services)
+    lines.push(serviceRow(service, state, width, theme, rightWidth))
   lines.push('')
 
   const footerLines = 1
@@ -273,17 +355,18 @@ export function renderFrame(state, { cols, rows, theme }) {
   for (const entry of entries) lines.push(logRow(entry, state, width, theme))
   while (lines.length < rows - footerLines) lines.push('')
 
+  const focused = state.services.find((s) => s.id === state.focus)
   const keys = state.quitting
     ? [['  stopping services · press q again to force quit', theme.yellow]]
     : [
-        [`  0-${state.services.length}`, theme.bold],
+        ['  ←→', theme.bold],
         [' logs   ', theme.dim],
         ['↑↓', theme.bold],
         [' scroll   ', theme.dim],
         ['End', theme.bold],
         [' follow   ', theme.dim],
         ['r', theme.bold],
-        [' restart   ', theme.dim],
+        [` restart ${focused?.label ?? 'all'}   `, theme.dim],
         ['q', theme.bold],
         [' quit', theme.dim],
       ]

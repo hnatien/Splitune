@@ -60,12 +60,15 @@ export const Analysing: Story = {
   },
 }
 
-/** + beats: bar numbers, bar-snapped loops, count-in available. */
+/** + beats: bar-snapped loops on the timeline, count-in available; the paper keeps the status. */
 export const BeatsFound: Story = {
   render: screen(['beats'], { running: true }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    await expect(await canvas.findByRole('list', { name: 'Bars' })).toBeVisible()
+    await expect(
+      await canvas.findByText('You can already loop and slow the original'),
+    ).toBeVisible()
+    await expect(canvas.queryByRole('list', { name: 'Bars' })).toBeNull()
     await expect(canvas.getByRole('button', { name: 'Count-in' })).toBeEnabled()
   },
 }

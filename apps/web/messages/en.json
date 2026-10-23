@@ -388,7 +388,6 @@
   "practice.bar_beat": "Bar {bar}.{beat}",
   "practice.bar_prefix": "Bar",
   "practice.bar_text": "{bar}: {chords}; notes {notes}",
-  "practice.bars": "Bars",
   "practice.bars_range": "Bars {bars}",
   "practice.beat_off": "Metronome off the beat?",
   "practice.best_tempo": "Best clean pass: {pct} %",
