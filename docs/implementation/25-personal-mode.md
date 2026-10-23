@@ -29,7 +29,7 @@ confidence: medium
 | Workers | Modal + API-side finalize | **On the Mac or Windows PC (WSL2 with NVIDIA GPU):** `ml-worker` (Python, MPS or CUDA) and `node-worker` (music-core finalize, sweepers, lifecycle). Keeping workers off Railway lets `app` sleep and avoids paying for idle polling |
 | ML compute | Modal L4 | Native Python on the Mac or Windows PC / WSL2 (PyTorch MPS or CUDA; ONNX; CPU fallback) |
 | Separation | AudioShake / Music.AI / LALAL.AI | Self-hosted open models (§3) |
-| Auth email | Resend | Free SMTP account (or passkeys/Google OAuth only); Mailpit for local dev |
+| Auth email | Resend | **Mailpit**, locally and as a Railway `mailpit` service reached over the private network (Hobby blocks outbound SMTP); the owner reads sign-in links in its basic-auth web UI. Google OAuth optional |
 | Payments | Stripe Managed Payments / Paddle | `MockBillingProvider` (§2) |
 | Errors/traces | Sentry, Axiom | Railway logs + structured JSON; optional Railway tracing (OTel) on `app`; optional local `grafana/otel-lgtm` for the Mac workers |
 | Product analytics, flags | PostHog | `analytics_events` table + SQL/Grafana dashboards; flags in a `feature_flags` table |

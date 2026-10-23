@@ -382,22 +382,21 @@ def test_mock_separation_chain_uploads_stem_audio(
 
 
 def models_subset(tmp_path: Path, records: list[str]) -> Path:
-    """A models dir holding only these register entries (symlinks to the downloaded weights)."""
+    """A models dir holding only these register entries (links to the downloaded weights)."""
     from splitune_ml_core import register
 
     real = Path("~/.cache/splitune/models").expanduser()
-    folders = {
-        "panns-cnn14": "panns",
-        "basic-pitch": "basic-pitch",
-        "consonance-ace": "consonance-ace",
-        "btc-large-voca": "btc",
-    }
     for record_id in records:
         record = register.model(record_id)
-        folder = folders.get(record_id, "audio-separator")
+        folder = register.WEIGHTS_DIRS[record_id]
         (tmp_path / "models" / folder).mkdir(parents=True, exist_ok=True)
         for entry in record.weights.files:
-            (tmp_path / "models" / folder / entry.name).symlink_to(real / folder / entry.name)
+            link = tmp_path / "models" / folder / entry.name
+            try:
+                link.symlink_to(real / folder / entry.name)
+            except OSError:
+                # Windows creates symlinks only in Developer Mode; a hard link needs no privilege.
+                link.hardlink_to(real / folder / entry.name)
     return tmp_path / "models"
 
 
