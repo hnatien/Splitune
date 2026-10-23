@@ -18,7 +18,7 @@ import { Ajv2020 } from 'ajv/dist/2020.js'
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
 import { z } from 'zod'
-import { backupDatabase } from '../src/backup.ts'
+import { backupDatabase, pgDumpTarget } from '../src/backup.ts'
 import type { LifecycleConfig } from '../src/config.ts'
 import { renderDigest, sendDigest } from '../src/digest.ts'
 import { expireExports, sweepStems } from '../src/lifecycle.ts'
@@ -408,6 +408,19 @@ describe('pg-dump', () => {
       await owner.query(`drop database if exists ${scratch} with (force)`)
       await rm(dir, { recursive: true, force: true })
     }
+  })
+
+  it("passes pg_dump a libpq URL: no password, Railway's no-verify TLS as require", () => {
+    const railway = pgDumpTarget(
+      'postgres://maintenance:p%40ss@proxy.example:42309/railway?sslmode=no-verify',
+    )
+    expect(railway).toEqual({
+      dbname: 'postgres://maintenance@proxy.example:42309/railway?sslmode=require',
+      password: 'p@ss',
+    })
+    expect(pgDumpTarget('postgres://maintenance:pw@localhost:5432/splitune').dbname).toBe(
+      'postgres://maintenance@localhost:5432/splitune',
+    )
   })
 
   it('fails with a code, not pg_dump output, and leaves no partial file', async () => {

@@ -19,6 +19,19 @@ const DUMP_NAME = /^splitune-\d{8}T\d{6}Z\.dump$/
 const stamp = (now: Date) =>
   `${now.toISOString().replaceAll('-', '').replaceAll(':', '').slice(0, 15)}Z`
 
+/**
+ * pg_dump's connection: the URL without its password (that goes in PGPASSWORD), with
+ * node-postgres's `sslmode=no-verify` (Railway's self-signed certificate over the TCP proxy)
+ * spelt as libpq's equivalent `require`, which pg_dump would otherwise refuse.
+ */
+export function pgDumpTarget(databaseUrl: string): { dbname: string; password: string } {
+  const url = new URL(databaseUrl)
+  const password = decodeURIComponent(url.password)
+  url.password = ''
+  if (url.searchParams.get('sslmode') === 'no-verify') url.searchParams.set('sslmode', 'require')
+  return { dbname: url.toString(), password }
+}
+
 export async function backupDatabase(
   dump: NonNullable<LifecycleConfig['dump']>,
   now = new Date(),
@@ -40,9 +53,7 @@ export async function backupDatabase(
   }
   const name = `splitune-${stamp(now)}.dump`
   const partial = join(dump.dir, `${name}.partial`)
-  const url = new URL(dump.databaseUrl)
-  const password = decodeURIComponent(url.password)
-  url.password = ''
+  const { dbname, password } = pgDumpTarget(dump.databaseUrl)
   try {
     await run(
       dump.bin,
@@ -51,7 +62,7 @@ export async function backupDatabase(
         '--no-owner',
         ...skipped.map((schema) => `--exclude-schema=${schema}`),
         `--file=${partial}`,
-        `--dbname=${url.toString()}`,
+        `--dbname=${dbname}`,
       ],
       { env: { ...process.env, PGPASSWORD: password }, maxBuffer: 1024 * 1024 },
     )
