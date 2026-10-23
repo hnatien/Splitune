@@ -3,7 +3,7 @@
   "examples": [
     {
       "id": "ill-fate",
-      "build": "20261022T090536Z",
+      "build": "20261023T022733Z",
       "title": "Ill Fate",
       "artist": "Hollow Ground",
       "instrument": "guitar",
@@ -12,62 +12,62 @@
       "audio_hash": "39d46cd58f325d2b95f10d8334f74f74e77cfe2af1ba298d13ec00d503669ab0",
       "song_id": "ce08f26d-3197-42e0-9dd4-a8300cf4e9c0",
       "analysis": {
-        "id": "236935a1-62ed-46e4-bab6-42af68ffd0db",
+        "id": "ad12ef6c-837c-4762-94b1-06459d5b88bb",
         "pipeline_version": "examples",
         "recommended_view": "tab",
         "stages": {
           "decode": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:36.713Z",
-            "finished_at": "2026-10-22T09:05:36.855Z"
+            "started_at": "2026-10-23T02:27:38.354Z",
+            "finished_at": "2026-10-23T02:27:42.032Z"
           },
           "beats": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:36.876Z",
-            "finished_at": "2026-10-22T09:05:36.898Z"
+            "started_at": "2026-10-23T02:27:43.071Z",
+            "finished_at": "2026-10-23T02:27:47.946Z"
           },
           "tag": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:36.876Z",
-            "finished_at": "2026-10-22T09:05:36.898Z"
+            "started_at": "2026-10-23T02:27:43.139Z",
+            "finished_at": "2026-10-23T02:27:47.027Z"
           },
           "separate": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:36.908Z",
-            "finished_at": "2026-10-22T09:05:36.926Z"
+            "started_at": "2026-10-23T02:27:48.685Z",
+            "finished_at": "2026-10-23T02:28:15.349Z"
           },
           "stem_post": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:36.932Z",
-            "finished_at": "2026-10-22T09:05:37.039Z"
+            "started_at": "2026-10-23T02:28:16.252Z",
+            "finished_at": "2026-10-23T02:28:26.105Z"
           },
           "chords": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:37.049Z",
-            "finished_at": "2026-10-22T09:05:37.470Z"
+            "started_at": "2026-10-23T02:28:26.898Z",
+            "finished_at": "2026-10-23T02:28:29.868Z"
           },
           "notes.guitar": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:37.049Z",
-            "finished_at": "2026-10-22T09:05:37.098Z"
+            "started_at": "2026-10-23T02:28:26.929Z",
+            "finished_at": "2026-10-23T02:28:29.947Z"
           },
           "finalize": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:37.479Z",
-            "finished_at": "2026-10-22T09:05:37.497Z"
+            "started_at": "2026-10-23T02:28:31.238Z",
+            "finished_at": "2026-10-23T02:28:33.588Z"
           }
         },
-        "created_at": "2026-10-22T09:05:36.683Z",
-        "finished_at": "2026-10-22T09:05:37.497Z"
+        "created_at": "2026-10-23T02:27:35.198Z",
+        "finished_at": "2026-10-23T02:28:33.588Z"
       },
       "artefacts": [
         {
-          "id": "aa2238f2-3fc4-4847-90b6-a2f009f38115",
+          "id": "71d118b6-6da0-4b7f-84b3-ba62ce65eead",
           "kind": "beats",
           "version": 1,
           "path": "beats.json",
-          "bytes": 6794,
-          "sha256": "7da3b589ce02f1f9846229948cc34b3428a34971d24b80b3b310f436cc69de23",
+          "bytes": 6059,
+          "sha256": "8bc096e7dcdb3cb88c6d56e23f0b97ffb86a813a109b5a51b940c41441c4b68a",
           "model_refs": [
             {
               "model_id": "beat_this/final0",
@@ -79,12 +79,12 @@
           ]
         },
         {
-          "id": "77680813-0b60-4a40-9625-21e6c9d69054",
+          "id": "f707fad8-3ab7-4062-a4f8-b27a7742d971",
           "kind": "chords",
           "version": 1,
           "path": "chords.json",
           "bytes": 3464,
-          "sha256": "8d17a9c2cf92dd46b8f471249910c934f372e4f8a14494aeb94dc6ebb16ec821",
+          "sha256": "318c7d20677038c5aa27b2d25c2f158a8848ec88385608484db985d1ec5fafd7",
           "model_refs": [
             {
               "model_id": "btc/large_voca",
@@ -96,12 +96,12 @@
           ]
         },
         {
-          "id": "e9f7fd79-6f5c-47fe-83f8-084dc1516e41",
+          "id": "bd9bcaba-54ee-4add-aa8f-2bcbdb65d360",
           "kind": "notes.guitar",
           "version": 1,
           "path": "notes.guitar.json",
-          "bytes": 7123,
-          "sha256": "500771df6e7efc42d4ee3433cce2d837f45f7cdfb9a45c80e1e30c8822529729",
+          "bytes": 6463,
+          "sha256": "004383fee5ad5d21b44d5b061ff98eb968b84034dfcba394f457b5ad55c68808",
           "model_refs": [
             {
               "model_id": "basic_pitch/icassp_2022",
@@ -113,12 +113,12 @@
           ]
         },
         {
-          "id": "73405ba9-0037-4f17-8bfd-a28d4db1416d",
+          "id": "108fb41e-bad1-4c86-8710-aedd0ff755bc",
           "kind": "stems",
           "version": 1,
           "path": "stems.json",
-          "bytes": 2323,
-          "sha256": "58ece0bbd3d0029a3e4e5059165bb5ea819bb551038b653b986239f9b7bf0916",
+          "bytes": 2152,
+          "sha256": "0ad5b6a15b6b17e4cea7cd4350e96d1c9526dad49944d3106b80c547281f175b",
           "model_refs": [
             {
               "model_id": "bs_roformer:BS-Roformer-SW",
@@ -130,21 +130,21 @@
           ]
         },
         {
-          "id": "f3ac62a2-2b80-4640-9ff4-9786c4a75a1c",
+          "id": "cdb1f1b0-efd6-4911-866f-aec2334aab39",
           "kind": "summary",
           "version": 1,
           "path": "summary.json",
           "bytes": 266,
-          "sha256": "b234120045e7a179351ff8c366ed48aa3069ab666795484cdb1c1404bf20acf7",
+          "sha256": "623f44d312835a5168c5a925ab46aa7a2b8ab729b254d75c69c6790c667898e0",
           "model_refs": []
         },
         {
-          "id": "60778851-3852-40ab-9be7-13d04d515487",
+          "id": "bf311d6c-9e06-4535-a524-05a5fc926f01",
           "kind": "tab.guitar",
           "version": 1,
           "path": "tab.guitar.json",
           "bytes": 6382,
-          "sha256": "b2e41565017db5f6845feece1396e7d4bd4aae94a70793d3d30bd59fd3696e8f",
+          "sha256": "fd5db1fea543641387c50bd08f7815348f8fac1258d59c14211c928cda812cd2",
           "model_refs": []
         }
       ],
@@ -160,7 +160,7 @@
     },
     {
       "id": "stitch-up",
-      "build": "20261022T090538Z",
+      "build": "20261023T022842Z",
       "title": "Stitch Up",
       "artist": "Bobby Nobody",
       "instrument": "guitar",
@@ -169,62 +169,62 @@
       "audio_hash": "f46d67b32b3a745d86744784d1d60815ba25eb5f8e962dd7eab4ff4e0aadd6ba",
       "song_id": "5bef00a9-1265-4f90-b139-e53274535947",
       "analysis": {
-        "id": "ae327af2-0ceb-4de7-9e6d-0530ed3d6b2e",
+        "id": "541f382c-cd8d-4aeb-b2ea-bf9283cc04d5",
         "pipeline_version": "examples",
         "recommended_view": "tab",
         "stages": {
           "decode": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.106Z",
-            "finished_at": "2026-10-22T09:05:39.220Z"
+            "started_at": "2026-10-23T02:28:47.573Z",
+            "finished_at": "2026-10-23T02:28:50.101Z"
           },
           "beats": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.231Z",
-            "finished_at": "2026-10-22T09:05:39.267Z"
+            "started_at": "2026-10-23T02:28:51.842Z",
+            "finished_at": "2026-10-23T02:28:54.246Z"
           },
           "tag": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.231Z",
-            "finished_at": "2026-10-22T09:05:39.267Z"
+            "started_at": "2026-10-23T02:28:51.833Z",
+            "finished_at": "2026-10-23T02:28:54.583Z"
           },
           "separate": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.278Z",
-            "finished_at": "2026-10-22T09:05:39.302Z"
+            "started_at": "2026-10-23T02:28:55.868Z",
+            "finished_at": "2026-10-23T02:29:17.869Z"
           },
           "stem_post": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.308Z",
-            "finished_at": "2026-10-22T09:05:39.423Z"
+            "started_at": "2026-10-23T02:29:19.200Z",
+            "finished_at": "2026-10-23T02:29:29.418Z"
           },
           "chords": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.430Z",
-            "finished_at": "2026-10-22T09:05:39.836Z"
+            "started_at": "2026-10-23T02:29:30.391Z",
+            "finished_at": "2026-10-23T02:29:33.247Z"
           },
           "notes.guitar": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.430Z",
-            "finished_at": "2026-10-22T09:05:39.472Z"
+            "started_at": "2026-10-23T02:29:30.606Z",
+            "finished_at": "2026-10-23T02:29:33.207Z"
           },
           "finalize": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:39.847Z",
-            "finished_at": "2026-10-22T09:05:39.869Z"
+            "started_at": "2026-10-23T02:29:34.262Z",
+            "finished_at": "2026-10-23T02:29:36.569Z"
           }
         },
-        "created_at": "2026-10-22T09:05:39.077Z",
-        "finished_at": "2026-10-22T09:05:39.869Z"
+        "created_at": "2026-10-23T02:28:44.436Z",
+        "finished_at": "2026-10-23T02:29:36.569Z"
       },
       "artefacts": [
         {
-          "id": "0e664b05-233e-4d59-8ae2-35a6acf46d92",
+          "id": "66c779e3-a927-4d6b-ac81-d25102e8115e",
           "kind": "beats",
           "version": 1,
           "path": "beats.json",
-          "bytes": 7223,
-          "sha256": "b14344ab80128a7e96d4f8dd6c7610e9ce1a1a74beb0d8c8557248ed5df1e726",
+          "bytes": 6427,
+          "sha256": "a65fc14bb90ba70043a82be734dca36cd4070fb608ac9b258f3d6644a8f0e436",
           "model_refs": [
             {
               "model_id": "beat_this/final0",
@@ -236,12 +236,12 @@
           ]
         },
         {
-          "id": "d546b075-95cb-4db1-884a-7c953702e02f",
+          "id": "f754a488-4e80-4b21-ace7-38932755051d",
           "kind": "chords",
           "version": 1,
           "path": "chords.json",
           "bytes": 4637,
-          "sha256": "4bf37a490fddf8fe8861beccfd359d6aa36a12d2108d4752db67de6218b79a6e",
+          "sha256": "3b70e0f288f911fa3de7251224c58a02df118dc21a0cee3c6a2c4764dcb87388",
           "model_refs": [
             {
               "model_id": "btc/large_voca",
@@ -253,12 +253,12 @@
           ]
         },
         {
-          "id": "60877d19-6ffa-4d78-b4ae-a3225a497f12",
+          "id": "d81b8edc-85d6-4696-a8e1-2a6b1a7bde94",
           "kind": "notes.guitar",
           "version": 1,
           "path": "notes.guitar.json",
-          "bytes": 31032,
-          "sha256": "d29c64b26fa16d642d5766ea2bfcda0cc363c496a006548b1fe05f1136f2be8c",
+          "bytes": 28004,
+          "sha256": "f9dafd6c833b6b48005ebf708a80e8bbf29b9fb9c53360974c66fd8aa63e5de4",
           "model_refs": [
             {
               "model_id": "basic_pitch/icassp_2022",
@@ -270,12 +270,12 @@
           ]
         },
         {
-          "id": "0a98e1f9-8885-405d-8229-ddaf5b492e29",
+          "id": "a8f6fd86-9319-40dc-806f-1bc6a1aabd30",
           "kind": "stems",
           "version": 1,
           "path": "stems.json",
-          "bytes": 2327,
-          "sha256": "4d9af6e2fbc8f8af45e79a58f1924acb8adee789b140b4576787864cc57d0929",
+          "bytes": 2156,
+          "sha256": "bf36274095dfde2305b9e99c6c94b40efea46c60d8e92066be720eb35766de7d",
           "model_refs": [
             {
               "model_id": "bs_roformer:BS-Roformer-SW",
@@ -287,21 +287,21 @@
           ]
         },
         {
-          "id": "067d1623-6380-493e-ba67-0a2ec758e3d6",
+          "id": "e0ead4d1-88a5-4fb0-b56c-7cbc9bd9f6da",
           "kind": "summary",
           "version": 1,
           "path": "summary.json",
           "bytes": 266,
-          "sha256": "1109c9998e2b5a90e26565934470b0444f95916fc203521691cea178a52eb2fd",
+          "sha256": "6287f378d4623dab602a10ec904737f587dcdeb029fb3689a51038f57829b1d0",
           "model_refs": []
         },
         {
-          "id": "086d9ccc-94ee-4da5-8acb-854a4bc8b74f",
+          "id": "a9e0a5c6-0942-4992-8864-e553d13f25f7",
           "kind": "tab.guitar",
           "version": 1,
           "path": "tab.guitar.json",
-          "bytes": 32541,
-          "sha256": "c3ded5714085454694700bafdd851972025da3559837f915900c7c6b72b064cd",
+          "bytes": 32539,
+          "sha256": "c9621f555be1d2ad5dbcc20f4f7f87aa66a4ce00d03365021d3ea7d820244ae9",
           "model_refs": []
         }
       ],
@@ -317,7 +317,7 @@
     },
     {
       "id": "stitch-up-bass",
-      "build": "20261022T090541Z",
+      "build": "20261023T022945Z",
       "title": "Stitch Up",
       "artist": "Bobby Nobody",
       "instrument": "bass",
@@ -326,62 +326,62 @@
       "audio_hash": "f46d67b32b3a745d86744784d1d60815ba25eb5f8e962dd7eab4ff4e0aadd6ba",
       "song_id": "dff42ca4-4f24-4aa5-b75b-81d363ea99b1",
       "analysis": {
-        "id": "e81fd1be-0fb3-4a47-b1be-b66d0510bdbe",
+        "id": "11b632f6-0891-451c-833e-f1557070e0d1",
         "pipeline_version": "examples",
         "recommended_view": "tab",
         "stages": {
           "decode": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:41.554Z",
-            "finished_at": "2026-10-22T09:05:41.688Z"
+            "started_at": "2026-10-23T02:29:50.582Z",
+            "finished_at": "2026-10-23T02:29:53.202Z"
           },
           "beats": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:41.714Z",
-            "finished_at": "2026-10-22T09:05:41.797Z"
+            "started_at": "2026-10-23T02:29:54.669Z",
+            "finished_at": "2026-10-23T02:29:56.948Z"
           },
           "tag": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:41.714Z",
-            "finished_at": "2026-10-22T09:05:41.793Z"
+            "started_at": "2026-10-23T02:29:54.630Z",
+            "finished_at": "2026-10-23T02:29:56.598Z"
           },
           "separate": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:41.822Z",
-            "finished_at": "2026-10-22T09:05:41.867Z"
+            "started_at": "2026-10-23T02:29:57.919Z",
+            "finished_at": "2026-10-23T02:30:19.408Z"
           },
           "stem_post": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:41.881Z",
-            "finished_at": "2026-10-22T09:05:42.019Z"
+            "started_at": "2026-10-23T02:30:20.546Z",
+            "finished_at": "2026-10-23T02:30:28.799Z"
           },
           "chords": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:42.031Z",
-            "finished_at": "2026-10-22T09:05:42.497Z"
+            "started_at": "2026-10-23T02:30:29.696Z",
+            "finished_at": "2026-10-23T02:30:32.538Z"
           },
           "notes.bass": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:42.031Z",
-            "finished_at": "2026-10-22T09:05:42.070Z"
+            "started_at": "2026-10-23T02:30:29.732Z",
+            "finished_at": "2026-10-23T02:30:32.769Z"
           },
           "finalize": {
             "status": "done",
-            "started_at": "2026-10-22T09:05:42.507Z",
-            "finished_at": "2026-10-22T09:05:42.528Z"
+            "started_at": "2026-10-23T02:30:33.789Z",
+            "finished_at": "2026-10-23T02:30:35.987Z"
           }
         },
-        "created_at": "2026-10-22T09:05:41.531Z",
-        "finished_at": "2026-10-22T09:05:42.528Z"
+        "created_at": "2026-10-23T02:29:47.412Z",
+        "finished_at": "2026-10-23T02:30:35.987Z"
       },
       "artefacts": [
         {
-          "id": "ccbc66b1-b6de-466e-a98f-bd514cc26522",
+          "id": "b7ca9da0-29d8-4743-b873-fc38d566d6b4",
           "kind": "beats",
           "version": 1,
           "path": "beats.json",
           "bytes": 7223,
-          "sha256": "5a3652e440cf0334e9584fa9851f2764edeaca17cbd569eb3b7e13f2eb070366",
+          "sha256": "82fb5595de6c6d4abe98959f488d942de184e482e6a69c5e823b890aa26b7b0d",
           "model_refs": [
             {
               "model_id": "beat_this/final0",
@@ -393,12 +393,12 @@
           ]
         },
         {
-          "id": "5f7bf932-e136-471c-a566-6f45caf1b918",
+          "id": "fbb45876-fbcb-49fe-a5b5-0fa7fd540d78",
           "kind": "chords",
           "version": 1,
           "path": "chords.json",
           "bytes": 4637,
-          "sha256": "52aaf1f325cf8e2a1d481bcac1d3e0dc8705edd382a92ab4e92f4a75bed8d5e2",
+          "sha256": "dc5ae198c8d73f87bbfa7d9485bbfe91654e7b89accb0b98dfecb7ce1e5f2e22",
           "model_refs": [
             {
               "model_id": "btc/large_voca",
@@ -410,12 +410,12 @@
           ]
         },
         {
-          "id": "06615947-da93-4923-9a45-456e634744b4",
+          "id": "71be330a-d44a-4cdc-8089-71ea1647e4d3",
           "kind": "notes.bass",
           "version": 1,
           "path": "notes.bass.json",
-          "bytes": 13902,
-          "sha256": "aa2989b1cd53c47a66b6669d8fb9cb177ed703de42435fac679fd819a7a9226e",
+          "bytes": 12592,
+          "sha256": "53d227644fada9ec805c98c8f790dc8ad51ecdacded7b29014729ad6734ee92c",
           "model_refs": [
             {
               "model_id": "basic_pitch/icassp_2022",
@@ -427,12 +427,12 @@
           ]
         },
         {
-          "id": "2a12e8e1-51bd-45f9-b56f-6ed234276ad2",
+          "id": "84b092b7-9c1c-4676-8e27-03a433ad9b99",
           "kind": "stems",
           "version": 1,
           "path": "stems.json",
-          "bytes": 1992,
-          "sha256": "a472a00aa48b146211a2d9ecfb9b882b65e2071d216460ffd7a5e4b516d07e77",
+          "bytes": 1848,
+          "sha256": "dfb0b6fa9a96c5df3d405220ecd110b1a9a23941a3a9f7df7efb0527d84b62be",
           "model_refs": [
             {
               "model_id": "bs_roformer:BS-Roformer-SW",
@@ -444,21 +444,21 @@
           ]
         },
         {
-          "id": "cd5e7902-44f6-434c-a8e2-3850ed621087",
+          "id": "e73d7c38-fa4b-449c-8488-d201feb2941d",
           "kind": "summary",
           "version": 1,
           "path": "summary.json",
           "bytes": 264,
-          "sha256": "1ed26510ad5c4a503f82e8f51c926ed3e31d7141fb1794422cbc28105c70242b",
+          "sha256": "c8bd9611eead130f5d3a78d189427bfb69d8e97f463be892b67463fc73fe7441",
           "model_refs": []
         },
         {
-          "id": "aedca959-f448-46bf-acdb-4a11bf6354c6",
+          "id": "65ebbd59-3240-4966-b50b-a9cbd7bc386d",
           "kind": "tab.bass",
           "version": 1,
           "path": "tab.bass.json",
           "bytes": 13583,
-          "sha256": "a5a235f2d63a556346511d742281cc722f2a40cb3a838af54b2e039cfa37cbd8",
+          "sha256": "e64f8ab2a0c6bbd8ef326b05fef08082416dff3896da4eb73bc2f4b9323a1deb",
           "model_refs": []
         }
       ],
