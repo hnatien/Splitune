@@ -21,7 +21,7 @@ from types import FrameType
 import psycopg
 from psycopg import sql
 
-from . import __version__
+from . import __version__, register
 from . import queue as q
 from .backends import Backend, FixtureBackend, IslandBackend
 from .db import connect, create_pool
@@ -223,6 +223,19 @@ class Worker:
                 "cache_scope": self.settings.cache_scope,
             },
         )
+        if self.settings.ml_mode == "local":
+            self.warn_missing_weights()
+
+    def warn_missing_weights(self) -> None:
+        """Says at start which models' weights are not in ML_MODELS_DIR, rather than letting each
+        stage fail later with weights_missing."""
+        models_dir = self.settings.models_dir.expanduser()
+        missing = register.missing(models_dir)
+        if missing:
+            log.warning(
+                "model weights missing; run `uv run python scripts/fetch_models.py` in services/ml",
+                extra={"models_dir": str(models_dir), "records": missing},
+            )
 
     def shutdown(self, timeout_s: float | None = None) -> None:
         """Stops claiming and waits for running jobs to finish."""
