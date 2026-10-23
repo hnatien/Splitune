@@ -6,7 +6,7 @@ Web-first practice app for instrument learners: bring a song (upload, recording 
 `docs/implementation/25-personal-mode.md` is binding and overrides docs 00–24: Railway Hobby (`app` + Postgres), Cloudflare R2 free tier (bucket `splitune-media`), ML and Node workers on the owner's Mac, mock billing, no copyright gating. Never create, scale or enable billable Railway or Cloudflare resources without asking first.
 
 ## Where things live
-- `docs/` (research + `docs/implementation/` specs) and `prompts/` (one prompt per implementation step) are **local-only and untracked**. Never `git add` them or change their ignore rules. Progress log: `docs/implementation/PROGRESS.md`.
+- `docs/` (research + `docs/implementation/` specs) and `prompts/` (one prompt per implementation step) are tracked in git. Progress log: `docs/implementation/PROGRESS.md`.
 - Precedence when docs disagree: `25-personal-mode.md` → `docs/implementation/README.md` → the step's implementation doc → research docs.
 - `apps/` (web, api, listening), `packages/` (contracts, music-core, audio-dsp, audio-engine, notation, ui-tokens, analytics, config), `services/ml` (uv workspace), `compliance/register`, `infra/` (docker-compose, railway).
 
@@ -37,3 +37,4 @@ Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `s
 ## Git
 - Integration branch is `dev` (no `main`). Work on `impl/<NN>-<short-name>` from `dev`; Conventional Commits explaining why; stage files explicitly; no push/PR/merge unless asked.
 - Never commit generated artefacts, model weights, audio files or secrets.
+- Commit doc and prompt changes (specs, `PROGRESS.md`) together with the step they describe.
