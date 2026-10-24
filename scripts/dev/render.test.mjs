@@ -215,6 +215,30 @@ describe('parseLogLine', () => {
     expect(parseLogLine('Traceback (most recent call last):').level).toBe('error')
   })
 
+  it('redraws a tqdm bar with box-drawing glyphs instead of #', () => {
+    const parsed = parseLogLine(' 90%|########  | 28/31 [00:32<00:03,  1.17s/it]')
+    expect(parsed.progress).toEqual({
+      label: undefined,
+      percent: 90,
+      done: '28',
+      total: '31',
+      elapsed: '0:32',
+      remaining: '0:03',
+      rate: '1.17s/it',
+    })
+    expect(parsed.text).toBe(`${'━'.repeat(21)}╸──   90%  28/31  0:32 · 0:03 left · 1.17s/it`)
+    expect(parsed.text).not.toContain('#')
+  })
+
+  it('keeps a bar label, drops unknown times and the time left once finished', () => {
+    expect(parseLogLine('Separating:   0%|          | 0/31 [00:00<?, ?it/s]').text).toBe(
+      `Separating  ${'─'.repeat(24)}    0%  0/31  0:00`,
+    )
+    expect(parseLogLine('100%|##########| 31/31 [00:36<00:00,  1.16s/it]').text).toBe(
+      `${'━'.repeat(24)}  100%  31/31  0:36 · 1.16s/it`,
+    )
+  })
+
   it('keeps a line that only looks like JSON', () => {
     expect(parseLogLine('{not json').text).toBe('{not json')
   })
@@ -303,6 +327,20 @@ describe('renderFrame', () => {
   it('hides pid and uptime on a narrow terminal', () => {
     const { lines } = renderFrame(makeState(), { cols: 70, rows: 40, theme: createTheme(1) })
     expect(plain(lines).join('\n')).not.toContain('pid 4123')
+  })
+
+  it('colours a progress bar: accent while running, green once finished', () => {
+    const entry = (line) => ({ service: 'ml-worker', ...parseLogLine(line) })
+    const state = makeState({
+      logs: [
+        entry(' 50%|#####     | 5/10 [00:05<00:05,  1.00s/it]'),
+        entry('100%|##########| 10/10 [00:10<00:00,  1.00s/it]'),
+      ],
+    })
+    const { lines } = renderFrame(state, { cols: 120, rows: 40, theme: createTheme(24) })
+    const [running, finished] = lines.filter((line) => line.includes('━'))
+    expect(running).toContain(`\x1b[38;2;108;114;221m${'━'.repeat(12)}\x1b[39m`)
+    expect(finished).toContain(`\x1b[32m${'━'.repeat(24)}\x1b[39m`)
   })
 
   it('reports the log height it drew', () => {
