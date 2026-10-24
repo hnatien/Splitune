@@ -151,11 +151,70 @@ export function parseLogLine(raw, { root } = {}) {
   // Node's own frames say nothing about our code.
   if (/^\s*at .*\(?node:internal\//.test(text)) return null
   const line = shortenPaths(text.replace(CLOCK_PREFIX, ''), root)
+  const progress = parseProgress(line)
+  if (progress) {
+    return {
+      level: 'info',
+      text: progressSegments(progress, createTheme(1))
+        .map(([segment]) => segment)
+        .join(''),
+      detail: [],
+      progress,
+    }
+  }
   return {
     level: /\b(error|failed|exception|traceback)\b/i.test(line) ? 'error' : 'info',
     text: line,
     detail: [],
   }
+}
+
+// tqdm's default bar, e.g. "Separating:  90%|########  | 28/31 [00:32<00:03,  1.17s/it]". Each
+// carriage-return redraw arrives as a line of its own.
+const TQDM =
+  /^(?:(.+?):\s*)?(\d{1,3})%\|[^|]*\|\s*(\S+)\/(\S+)\s+\[([^<\]]+)<([^,\]]+),\s*([^,\]]*)[^\]]*\]$/
+const BAR_WIDTH = 24
+
+// "00:32" → "0:32"; tqdm's "?" (not known yet) → undefined.
+function clock(value) {
+  const trimmed = value.trim()
+  return trimmed.startsWith('?') ? undefined : trimmed.replace(/^0(\d)/, '$1')
+}
+
+export function parseProgress(text) {
+  const match = TQDM.exec(text.trim())
+  if (!match) return null
+  const [, label, percent, done, total, elapsed, remaining, rate] = match
+  return {
+    label: label?.trim() || undefined,
+    percent: Math.min(100, Number(percent)),
+    done,
+    total,
+    elapsed: clock(elapsed),
+    remaining: clock(remaining),
+    rate: clock(rate),
+  }
+}
+
+// A thin bar in half-cell steps: heavy where done, light where left, so it reads without colour.
+export function progressSegments(progress, theme) {
+  const halves = Math.round((progress.percent / 100) * BAR_WIDTH * 2)
+  const full = Math.floor(halves / 2)
+  const filled = '━'.repeat(full) + (halves % 2 ? '╸' : '')
+  const finished = progress.percent === 100
+  const times = [
+    progress.elapsed,
+    finished ? undefined : progress.remaining && `${progress.remaining} left`,
+    progress.rate,
+  ].filter(Boolean)
+  return [
+    [progress.label ? `${progress.label}  ` : '', theme.plain],
+    [filled, finished ? theme.green : theme.accent],
+    ['─'.repeat(BAR_WIDTH - Array.from(filled).length), theme.dim],
+    [`  ${String(progress.percent).padStart(3)}%`, theme.bold],
+    [`  ${progress.done}/${progress.total}`, theme.plain],
+    [times.length ? `  ${times.join(' · ')}` : '', theme.dim],
+  ]
 }
 
 function levelOf(level) {
@@ -309,15 +368,10 @@ function logRow(entry, state, width, theme) {
         [entry.service.padEnd(LABEL_WIDTH), theme.dim],
         ['│ ', theme.dim],
       ]
-  return row(
-    [
-      ['  ', theme.plain],
-      glyph,
-      ...label,
-      [entry.text, entry.level === 'error' ? theme.red : theme.plain],
-    ],
-    width,
-  )
+  const text = entry.progress
+    ? progressSegments(entry.progress, theme)
+    : [[entry.text, entry.level === 'error' ? theme.red : theme.plain]]
+  return row([['  ', theme.plain], glyph, ...label, ...text], width)
 }
 
 // The visible log lines: the tail of the focused service's (or everyone's) log, `scroll` lines up.
