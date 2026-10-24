@@ -1,6 +1,6 @@
 # audio-dsp
 
-The practice DSP behind `@splitune/audio-engine` (docs/implementation/11-audio-engine.md §2, §7): a C++17 engine that mixes up to eight Int16 stereo stems at a source read position, time-stretches and pitch-shifts the submix with one [Signalsmith Stretch](https://github.com/Signalsmith-Audio/signalsmith-stretch) instance, loops in the input domain with an 8 ms equal-power crossfade, adds count-in and metronome clicks after the stretch, and reports the heard position. The same sources build `dsp.wasm` for the web and a static library for native hosts (docs/implementation/22-native-apps.md).
+The practice DSP behind `@splitune/audio-engine` (docs/specs/11-audio-engine.md §2, §7): a C++17 engine that mixes up to eight Int16 stereo stems at a source read position, time-stretches and pitch-shifts the submix with one [Signalsmith Stretch](https://github.com/Signalsmith-Audio/signalsmith-stretch) instance, loops in the input domain with an 8 ms equal-power crossfade, adds count-in and metronome clicks after the stretch, and reports the heard position. The same sources build `dsp.wasm` for the web and a static library for native hosts (docs/specs/22-native-apps.md).
 
 - `include/splitune/dsp.h` — the C ABI (`dsp_create`, `dsp_stem_alloc`, `dsp_set_gain`, `dsp_set_rate`, `dsp_set_transpose`, `dsp_set_loop`, `dsp_set_beats`, `dsp_play`, `dsp_pause`, `dsp_seek`, `dsp_process`, `dsp_heard`, `dsp_latency`, …). Single-threaded; call it from the audio thread.
 - `src/engine.{hpp,cpp}` — the engine; `src/dsp.cpp` — the ABI.

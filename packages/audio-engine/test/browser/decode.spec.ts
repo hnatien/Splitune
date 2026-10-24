@@ -1,4 +1,4 @@
-// Stem alignment (docs/implementation/18-testing-strategy.md §2): AAC and Opus encodes of a known
+// Stem alignment (docs/specs/18-testing-strategy.md §2): AAC and Opus encodes of a known
 // PCM decode, through both decode paths, to exactly the timeline length at 48 kHz with zero
 // offset. Fixtures are encoded here with the same settings as the separation stage
 // (services/ml/packages/stage_separation/src/stage_separation/encode.py).

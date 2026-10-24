@@ -1,5 +1,5 @@
 /*
- * Tailwind v4 mapping for the "Music Stand" tokens (docs/implementation/26-design-system.md §3,
+ * Tailwind v4 mapping for the "Music Stand" tokens (docs/specs/26-design-system.md §3,
  * §6–§10). Import after `tailwindcss`, primitives.css and themes.css.
  *
  * The default palette is cleared, so only semantic colours exist as utilities (`bg-card`,

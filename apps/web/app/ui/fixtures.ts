@@ -4,7 +4,7 @@ import summaryArtefact from '@splitune/contracts/fixtures/summary.json'
 import { confidenceBand, parseChord } from '@splitune/music-core'
 import type { ConfidenceLevel, StemKind } from '@splitune/ui-tokens'
 
-// Story data (docs/implementation/28-ui-quality-and-design-review.md §2): the contracts' 8-bar
+// Story data (docs/specs/28-ui-quality-and-design-review.md §2): the contracts' 8-bar
 // Am–F–C–G example and copy from the message catalogue (27 §5.6). Step 10 replaces the copy with
 // Paraglide messages; components themselves take every string as a prop.
 

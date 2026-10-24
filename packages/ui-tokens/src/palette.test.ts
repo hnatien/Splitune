@@ -1,5 +1,5 @@
 // Categorical stem colours stay distinguishable under simulated colour-vision deficiency
-// (docs/implementation/28-ui-quality-and-design-review.md §3): ΔE2000 ≥ 12 for every pair, in
+// (docs/specs/28-ui-quality-and-design-review.md §3): ΔE2000 ≥ 12 for every pair, in
 // every appearance and contrast context, for normal vision and full protanopia, deuteranopia and
 // tritanopia (Machado, Oliveira & Fernandes 2009, severity 1.0, applied in linear sRGB).
 import Color from 'colorjs.io'

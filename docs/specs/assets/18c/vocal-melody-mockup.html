@@ -1,0 +1,1209 @@
+<meta charset="utf-8">
+<title>Vocal Melody View</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
+<style>
+/*
+ * Tier 1 — primitives (docs/specs/26-design-system.md §3, §4).
+ * OKLCH ramps and bases. Only semantic roles in themes.css reference these; Tailwind never sees
+ * them and components never use them. Ramps run from the surface end (1) to the text end (12) of
+ * their appearance, so steps 1–5 are surfaces, 6–8 borders, 9–10 secondary text, 11–12 text.
+ */
+:root {
+  /* Warm graphite neutrals — Light chrome */
+  --gray-1: oklch(0.995 0.003 85);
+  --gray-2: oklch(0.972 0.005 85);
+  --gray-3: oklch(0.94 0.006 85);
+  --gray-4: oklch(0.91 0.007 85);
+  --gray-5: oklch(0.885 0.008 85);
+  --gray-6: oklch(0.8 0.009 83);
+  --gray-7: oklch(0.62 0.01 80);
+  --gray-8: oklch(0.52 0.011 78);
+  --gray-9: oklch(0.47 0.012 75);
+  --gray-10: oklch(0.37 0.012 75);
+  --gray-11: oklch(0.2 0.012 75);
+  --gray-12: oklch(0.16 0.01 75);
+
+  /* Dark chrome (never pure black) */
+  --gray-dark-1: oklch(0.2 0.008 75);
+  --gray-dark-2: oklch(0.235 0.008 75);
+  --gray-dark-3: oklch(0.27 0.008 75);
+  --gray-dark-4: oklch(0.3 0.008 75);
+  --gray-dark-5: oklch(0.33 0.008 75);
+  --gray-dark-6: oklch(0.42 0.009 78);
+  --gray-dark-7: oklch(0.56 0.01 80);
+  --gray-dark-8: oklch(0.64 0.01 80);
+  --gray-dark-9: oklch(0.72 0.01 85);
+  --gray-dark-10: oklch(0.82 0.008 85);
+  --gray-dark-11: oklch(0.94 0.006 85);
+  --gray-dark-12: oklch(0.97 0.004 85);
+
+  /* Stage chrome (dim rooms; off-white, never #fff) */
+  --gray-stage-1: oklch(0.15 0.006 75);
+  --gray-stage-2: oklch(0.175 0.006 75);
+  --gray-stage-3: oklch(0.2 0.006 75);
+  --gray-stage-4: oklch(0.24 0.006 75);
+  --gray-stage-5: oklch(0.29 0.006 75);
+  --gray-stage-6: oklch(0.38 0.007 78);
+  --gray-stage-7: oklch(0.52 0.008 80);
+  --gray-stage-8: oklch(0.6 0.009 80);
+  --gray-stage-9: oklch(0.74 0.01 80);
+  --gray-stage-10: oklch(0.82 0.011 80);
+  --gray-stage-11: oklch(0.9 0.012 80);
+  --gray-stage-12: oklch(0.95 0.008 80);
+
+  /* Indigo ink — the one accent (hue 278) */
+  --indigo-1: oklch(0.985 0.005 275);
+  --indigo-2: oklch(0.965 0.014 278);
+  --indigo-3: oklch(0.94 0.024 278);
+  --indigo-4: oklch(0.92 0.036 277);
+  --indigo-5: oklch(0.88 0.055 278);
+  --indigo-6: oklch(0.82 0.08 278);
+  --indigo-7: oklch(0.72 0.12 278);
+  --indigo-8: oklch(0.6 0.16 278);
+  --indigo-9: oklch(0.47 0.19 278);
+  --indigo-10: oklch(0.42 0.18 278);
+  --indigo-11: oklch(0.36 0.151 278);
+  --indigo-12: oklch(0.25 0.1 278);
+
+  --indigo-dark-1: oklch(0.18 0.041 279);
+  --indigo-dark-2: oklch(0.22 0.045 278);
+  --indigo-dark-3: oklch(0.3 0.06 278);
+  --indigo-dark-4: oklch(0.34 0.07 278);
+  --indigo-dark-5: oklch(0.4 0.085 278);
+  --indigo-dark-6: oklch(0.48 0.1 278);
+  --indigo-dark-7: oklch(0.58 0.12 278);
+  --indigo-dark-8: oklch(0.66 0.13 278);
+  --indigo-dark-9: oklch(0.74 0.13 278);
+  --indigo-dark-10: oklch(0.79 0.11 278);
+  --indigo-dark-11: oklch(0.86 0.06 278);
+  --indigo-dark-12: oklch(0.93 0.03 278);
+
+  --indigo-stage-1: oklch(0.15 0.03 276);
+  --indigo-stage-2: oklch(0.2 0.04 277);
+  --indigo-stage-3: oklch(0.26 0.051 277);
+  --indigo-stage-4: oklch(0.3 0.06 278);
+  --indigo-stage-5: oklch(0.36 0.07 278);
+  --indigo-stage-6: oklch(0.44 0.08 278);
+  --indigo-stage-7: oklch(0.54 0.09 278);
+  --indigo-stage-8: oklch(0.63 0.095 278);
+  --indigo-stage-9: oklch(0.72 0.1 278);
+  --indigo-stage-10: oklch(0.77 0.09 278);
+  --indigo-stage-11: oklch(0.84 0.06 279);
+  --indigo-stage-12: oklch(0.92 0.03 278);
+
+  /* Score surface: paper and ink, with the two lighter inks for confidence (§5) */
+  --paper-light: oklch(0.99 0.006 88);
+  --paper-dark: oklch(0.93 0.008 88);
+  --paper-stage: oklch(0.165 0.006 75);
+  --ink-light: oklch(0.18 0.01 75);
+  --ink-stage: oklch(0.9 0.012 80);
+  --ink-medium-light: oklch(0.36 0.01 74);
+  --ink-medium-stage: oklch(0.78 0.011 82);
+  --ink-low-light: oklch(0.46 0.012 73);
+  --ink-low-dark: oklch(0.45 0.012 73);
+  --ink-low-stage: oklch(0.7 0.01 78);
+
+  /* Status bases */
+  --red-light: oklch(0.52 0.19 27);
+  --red-dark: oklch(0.7 0.161 27);
+  --red-stage: oklch(0.68 0.13 27);
+  --green-light: oklch(0.5 0.12 155);
+  --green-dark: oklch(0.74 0.131 155);
+  --green-stage: oklch(0.72 0.099 155);
+  --amber-light: oklch(0.53 0.115 65);
+  --amber-dark: oklch(0.8 0.12 75);
+  --amber-stage: oklch(0.78 0.1 75);
+  --blue-light: oklch(0.5 0.11 240);
+  --blue-dark: oklch(0.74 0.1 240.5);
+  --blue-stage: oklch(0.72 0.08 239);
+
+  /*
+   * Status tints (§4.8): the fill behind status messages and chips, at each status hue. Literal
+   * values so no ramp is re-valued; Light uses the highest L that stays inside sRGB at chroma 0.03.
+   */
+  --red-tint-light: oklch(0.94 0.03 27);
+  --red-tint-dark: oklch(0.3 0.05 27);
+  --red-tint-stage: oklch(0.24 0.04 27);
+  --green-tint-light: oklch(0.96 0.03 155);
+  --green-tint-dark: oklch(0.3 0.05 155);
+  --green-tint-stage: oklch(0.24 0.04 155);
+  --amber-tint-light: oklch(0.95 0.03 65);
+  --amber-tint-dark: oklch(0.3 0.05 75);
+  --amber-tint-stage: oklch(0.24 0.04 75);
+  --blue-tint-light: oklch(0.94 0.03 240);
+  --blue-tint-dark: oklch(0.3 0.05 240.5);
+  --blue-tint-stage: oklch(0.24 0.04 239);
+
+  /*
+   * Categorical bases for stems (§4.4): Okabe-Ito hues. Dark keeps the original Okabe-Ito
+   * guitar/bass/drums values; the rest were moved the smallest distance that keeps every pair
+   * ≥12 ΔE2000 under simulated protanopia, deuteranopia and tritanopia (palette.test.ts).
+   */
+  --orange-light: oklch(0.656 0.135 68);
+  --orange-dark: oklch(0.753 0.157 77);
+  --orange-stage: oklch(0.763 0.117 69);
+  --sky-light: oklch(0.489 0.162 256);
+  --sky-dark: oklch(0.735 0.117 236);
+  --sky-stage: oklch(0.719 0.102 235);
+  --vermillion-light: oklch(0.539 0.167 40);
+  --vermillion-dark: oklch(0.621 0.17 47.5);
+  --vermillion-stage: oklch(0.627 0.143 42);
+  --purple-light: oklch(0.556 0.119 348);
+  --purple-dark: oklch(0.661 0.112 343);
+  --purple-stage: oklch(0.658 0.094 344);
+  --jade-light: oklch(0.554 0.085 140);
+  --jade-dark: oklch(0.607 0.128 164);
+  --jade-stage: oklch(0.621 0.084 158);
+  --cyan-light: oklch(0.587 0.113 229);
+  --cyan-dark: oklch(0.86 0.04 235);
+  --cyan-stage: oklch(0.84 0.05 225);
+}
+
+/*
+ * Tier 2 — semantic roles and tier 3 — component tokens, per appearance
+ * (docs/specs/26-design-system.md §2–§4).
+ *
+ * <html data-appearance="light|dark|stage" data-contrast="more|normal"> is set before first paint
+ * by the inline appearance script; without JS the prefers-color-scheme / prefers-contrast blocks
+ * apply. Semantic roles point at primitives. Component tokens point at a semantic role, or carry
+ * their own tuned value (they never point at a ramp step, so retuning a ramp can't silently move
+ * a contrast-checked score colour). Every value is contrast-tested in src/contrast.test.ts.
+ *
+ * The prefers-color-scheme block repeats the Dark block; tokens.test.ts keeps the two identical.
+ */
+
+:root,
+[data-appearance="light"] {
+  color-scheme: light;
+
+  --background: var(--gray-2);
+  --foreground: var(--gray-11);
+  --card: var(--gray-1);
+  --card-foreground: var(--gray-11);
+  --popover: var(--gray-1);
+  --popover-foreground: var(--gray-11);
+  --primary: var(--indigo-9);
+  --primary-foreground: var(--indigo-1);
+  --secondary: var(--gray-3);
+  --secondary-foreground: var(--gray-11);
+  --muted: var(--gray-3);
+  --muted-foreground: var(--gray-9);
+  --accent: var(--indigo-3);
+  --accent-foreground: var(--indigo-11);
+  --destructive: var(--red-light);
+  --border: var(--gray-5);
+  --input: var(--gray-7);
+  --ring: var(--indigo-9);
+  --success: var(--green-light);
+  --warning: var(--amber-light);
+  --info: var(--blue-light);
+  --surface-raised: var(--gray-1);
+  --surface-sunken: var(--gray-3);
+  --success-surface: var(--green-tint-light);
+  --warning-surface: var(--amber-tint-light);
+  --info-surface: var(--blue-tint-light);
+  --destructive-surface: var(--red-tint-light);
+  --paper: var(--paper-light);
+  --ink: var(--ink-light);
+  --conf-medium: var(--ink-medium-light);
+  --conf-low: var(--ink-low-light);
+  --stem-guitar: var(--orange-light);
+  --stem-bass: var(--sky-light);
+  --stem-drums: var(--vermillion-light);
+  --stem-vocals: var(--purple-light);
+  --stem-keys: var(--jade-light);
+  --stem-other: var(--cyan-light);
+  --muted-foreground-more: var(--gray-10);
+  --border-more: var(--gray-6);
+  --input-more: var(--gray-8);
+  --elevation-1: 0 1px 2px oklch(0.2 0.01 75 / 0.06), 0 1px 3px oklch(0.2 0.01 75 / 0.04);
+  --elevation-2: 0 2px 4px oklch(0.2 0.01 75 / 0.04), 0 8px 24px -4px oklch(0.2 0.01 75 / 0.12);
+  --elevation-3: 0 4px 8px oklch(0.2 0.01 75 / 0.06), 0 20px 48px -8px oklch(0.2 0.01 75 / 0.2);
+  --read-scale: 1;
+
+  --loop-fill: oklch(0.92 0.036 277);
+  --loop-edge: var(--primary);
+  --playhead: oklch(0.55 0.2 27);
+  --score-loop-fill: oklch(0.92 0.036 277);
+  --score-loop-edge: oklch(0.47 0.19 278);
+  --score-playhead: oklch(0.55 0.2 27);
+  --staff: oklch(0.6 0.01 85);
+  --bar-current: oklch(0.955 0.03 90);
+  --key-white: oklch(0.985 0.004 88);
+  --key-black: oklch(0.2 0.01 75);
+  --key-left: oklch(0.63 0.12 55);
+  --key-left-fg: oklch(0.2 0.01 75);
+  --key-right: oklch(0.52 0.17 278);
+  --key-right-fg: oklch(0.985 0.004 88);
+  --waveform-peak: var(--input);
+  --waveform-rms: var(--muted-foreground);
+  --waveform-played: var(--foreground);
+  --scrim: oklch(0.2 0.01 75 / 0.4);
+  --hud-bg: color-mix(in oklab, var(--foreground) 82%, transparent);
+  --hud-bg-more: var(--foreground);
+  --hud-fg: var(--background);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance]) {
+    color-scheme: dark;
+
+    --background: var(--gray-dark-1);
+    --foreground: var(--gray-dark-11);
+    --card: var(--gray-dark-2);
+    --card-foreground: var(--gray-dark-11);
+    --popover: var(--gray-dark-2);
+    --popover-foreground: var(--gray-dark-11);
+    --primary: var(--indigo-dark-9);
+    --primary-foreground: var(--indigo-dark-1);
+    --secondary: var(--gray-dark-3);
+    --secondary-foreground: var(--gray-dark-11);
+    --muted: var(--gray-dark-3);
+    --muted-foreground: var(--gray-dark-9);
+    --accent: var(--indigo-dark-3);
+    --accent-foreground: var(--indigo-dark-11);
+    --destructive: var(--red-dark);
+    --border: var(--gray-dark-5);
+    --input: var(--gray-dark-7);
+    --ring: var(--indigo-dark-9);
+    --success: var(--green-dark);
+    --warning: var(--amber-dark);
+    --info: var(--blue-dark);
+    --surface-raised: var(--gray-dark-3);
+    --surface-sunken: var(--gray-dark-2);
+    --success-surface: var(--green-tint-dark);
+    --warning-surface: var(--amber-tint-dark);
+    --info-surface: var(--blue-tint-dark);
+    --destructive-surface: var(--red-tint-dark);
+    --paper: var(--paper-dark);
+    --ink: var(--ink-light);
+    --conf-medium: var(--ink-medium-light);
+    --conf-low: var(--ink-low-dark);
+    --stem-guitar: var(--orange-dark);
+    --stem-bass: var(--sky-dark);
+    --stem-drums: var(--vermillion-dark);
+    --stem-vocals: var(--purple-dark);
+    --stem-keys: var(--jade-dark);
+    --stem-other: var(--cyan-dark);
+    --muted-foreground-more: var(--gray-dark-10);
+    --border-more: var(--gray-dark-6);
+    --input-more: var(--gray-dark-8);
+    --elevation-1: inset 0 1px 0 0 oklch(1 0 0 / 0.05), 0 1px 2px oklch(0 0 0 / 0.4);
+    --elevation-2: inset 0 1px 0 0 oklch(1 0 0 / 0.05), 0 8px 24px -8px oklch(0 0 0 / 0.55);
+    --elevation-3: inset 0 1px 0 0 oklch(1 0 0 / 0.06), 0 24px 48px -12px oklch(0 0 0 / 0.65);
+    --read-scale: 1;
+
+    --loop-fill: oklch(0.3 0.06 278);
+    --loop-edge: var(--primary);
+    --playhead: oklch(0.7 0.161 27);
+    --score-loop-fill: oklch(0.86 0.049 278);
+    --score-loop-edge: oklch(0.47 0.19 278);
+    --score-playhead: oklch(0.55 0.2 27);
+    --staff: oklch(0.56 0.01 78);
+    --bar-current: oklch(0.895 0.03 90);
+    --key-white: oklch(0.985 0.004 88);
+    --key-black: oklch(0.2 0.01 75);
+    --key-left: oklch(0.63 0.12 55);
+    --key-left-fg: oklch(0.2 0.01 75);
+    --key-right: oklch(0.52 0.17 278);
+    --key-right-fg: oklch(0.985 0.004 88);
+    --waveform-peak: var(--input);
+    --waveform-rms: var(--muted-foreground);
+    --waveform-played: var(--foreground);
+    --scrim: oklch(0 0 0 / 0.6);
+    --hud-bg: color-mix(in oklab, var(--foreground) 90%, transparent);
+    --hud-bg-more: var(--foreground);
+    --hud-fg: var(--background);
+  }
+}
+
+[data-appearance="dark"] {
+  color-scheme: dark;
+
+  --background: var(--gray-dark-1);
+  --foreground: var(--gray-dark-11);
+  --card: var(--gray-dark-2);
+  --card-foreground: var(--gray-dark-11);
+  --popover: var(--gray-dark-2);
+  --popover-foreground: var(--gray-dark-11);
+  --primary: var(--indigo-dark-9);
+  --primary-foreground: var(--indigo-dark-1);
+  --secondary: var(--gray-dark-3);
+  --secondary-foreground: var(--gray-dark-11);
+  --muted: var(--gray-dark-3);
+  --muted-foreground: var(--gray-dark-9);
+  --accent: var(--indigo-dark-3);
+  --accent-foreground: var(--indigo-dark-11);
+  --destructive: var(--red-dark);
+  --border: var(--gray-dark-5);
+  --input: var(--gray-dark-7);
+  --ring: var(--indigo-dark-9);
+  --success: var(--green-dark);
+  --warning: var(--amber-dark);
+  --info: var(--blue-dark);
+  --surface-raised: var(--gray-dark-3);
+  --surface-sunken: var(--gray-dark-2);
+  --success-surface: var(--green-tint-dark);
+  --warning-surface: var(--amber-tint-dark);
+  --info-surface: var(--blue-tint-dark);
+  --destructive-surface: var(--red-tint-dark);
+  --paper: var(--paper-dark);
+  --ink: var(--ink-light);
+  --conf-medium: var(--ink-medium-light);
+  --conf-low: var(--ink-low-dark);
+  --stem-guitar: var(--orange-dark);
+  --stem-bass: var(--sky-dark);
+  --stem-drums: var(--vermillion-dark);
+  --stem-vocals: var(--purple-dark);
+  --stem-keys: var(--jade-dark);
+  --stem-other: var(--cyan-dark);
+  --muted-foreground-more: var(--gray-dark-10);
+  --border-more: var(--gray-dark-6);
+  --input-more: var(--gray-dark-8);
+  --elevation-1: inset 0 1px 0 0 oklch(1 0 0 / 0.05), 0 1px 2px oklch(0 0 0 / 0.4);
+  --elevation-2: inset 0 1px 0 0 oklch(1 0 0 / 0.05), 0 8px 24px -8px oklch(0 0 0 / 0.55);
+  --elevation-3: inset 0 1px 0 0 oklch(1 0 0 / 0.06), 0 24px 48px -12px oklch(0 0 0 / 0.65);
+  --read-scale: 1;
+
+  --loop-fill: oklch(0.3 0.06 278);
+  --loop-edge: var(--primary);
+  --playhead: oklch(0.7 0.161 27);
+  --score-loop-fill: oklch(0.86 0.049 278);
+  --score-loop-edge: oklch(0.47 0.19 278);
+  --score-playhead: oklch(0.55 0.2 27);
+  --staff: oklch(0.56 0.01 78);
+  --bar-current: oklch(0.895 0.03 90);
+  --key-white: oklch(0.985 0.004 88);
+  --key-black: oklch(0.2 0.01 75);
+  --key-left: oklch(0.63 0.12 55);
+  --key-left-fg: oklch(0.2 0.01 75);
+  --key-right: oklch(0.52 0.17 278);
+  --key-right-fg: oklch(0.985 0.004 88);
+  --waveform-peak: var(--input);
+  --waveform-rms: var(--muted-foreground);
+  --waveform-played: var(--foreground);
+  --scrim: oklch(0 0 0 / 0.6);
+  --hud-bg: color-mix(in oklab, var(--foreground) 90%, transparent);
+  --hud-bg-more: var(--foreground);
+  --hud-fg: var(--background);
+}
+
+[data-appearance="stage"] {
+  color-scheme: dark;
+
+  --background: var(--gray-stage-1);
+  --foreground: var(--gray-stage-11);
+  --card: var(--gray-stage-2);
+  --card-foreground: var(--gray-stage-11);
+  --popover: var(--gray-stage-2);
+  --popover-foreground: var(--gray-stage-11);
+  --primary: var(--indigo-stage-9);
+  --primary-foreground: var(--indigo-stage-1);
+  --secondary: var(--gray-stage-3);
+  --secondary-foreground: var(--gray-stage-11);
+  --muted: var(--gray-stage-3);
+  --muted-foreground: var(--gray-stage-9);
+  --accent: var(--indigo-stage-3);
+  --accent-foreground: var(--indigo-stage-11);
+  --destructive: var(--red-stage);
+  --border: var(--gray-stage-5);
+  --input: var(--gray-stage-7);
+  --ring: var(--indigo-stage-9);
+  --success: var(--green-stage);
+  --warning: var(--amber-stage);
+  --info: var(--blue-stage);
+  --surface-raised: var(--gray-stage-3);
+  --surface-sunken: var(--gray-stage-2);
+  --success-surface: var(--green-tint-stage);
+  --warning-surface: var(--amber-tint-stage);
+  --info-surface: var(--blue-tint-stage);
+  --destructive-surface: var(--red-tint-stage);
+  --paper: var(--paper-stage);
+  --ink: var(--ink-stage);
+  --conf-medium: var(--ink-medium-stage);
+  --conf-low: var(--ink-low-stage);
+  --stem-guitar: var(--orange-stage);
+  --stem-bass: var(--sky-stage);
+  --stem-drums: var(--vermillion-stage);
+  --stem-vocals: var(--purple-stage);
+  --stem-keys: var(--jade-stage);
+  --stem-other: var(--cyan-stage);
+  --muted-foreground-more: var(--gray-stage-10);
+  --border-more: var(--gray-stage-6);
+  --input-more: var(--gray-stage-8);
+  --elevation-1: inset 0 1px 0 0 oklch(1 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.4);
+  --elevation-2: inset 0 1px 0 0 oklch(1 0 0 / 0.04), 0 8px 24px -8px oklch(0 0 0 / 0.55);
+  --elevation-3: inset 0 1px 0 0 oklch(1 0 0 / 0.04), 0 24px 48px -12px oklch(0 0 0 / 0.65);
+  --read-scale: 1.25;
+
+  --loop-fill: oklch(0.27 0.05 278);
+  --loop-edge: var(--primary);
+  --playhead: oklch(0.68 0.14 27);
+  --score-loop-fill: oklch(0.27 0.05 278);
+  --score-loop-edge: oklch(0.72 0.1 278);
+  --score-playhead: oklch(0.68 0.14 27);
+  --staff: oklch(0.56 0.008 81);
+  --bar-current: oklch(0.215 0.02 80);
+  --key-white: oklch(0.9 0.006 85);
+  --key-black: oklch(0.2 0.01 75);
+  --key-left: oklch(0.6 0.12 55);
+  --key-left-fg: oklch(0.14 0.01 75);
+  --key-right: oklch(0.52 0.17 278);
+  --key-right-fg: oklch(0.985 0.004 88);
+  --waveform-peak: var(--input);
+  --waveform-rms: var(--muted-foreground);
+  --waveform-played: var(--foreground);
+  --scrim: oklch(0 0 0 / 0.6);
+  --hud-bg: color-mix(in oklab, var(--border) 94%, transparent);
+  --hud-bg-more: var(--border);
+  --hud-fg: var(--foreground);
+}
+
+/* Score "match appearance" in Dark (26 §2, Settings -> Display -> Score): the music surfaces take
+   Stage's score colours, without Stage's size step. Paper stays the default. */
+[data-appearance="dark"][data-score="match"] {
+  --paper: var(--paper-stage);
+  --ink: var(--ink-stage);
+  --conf-medium: var(--ink-medium-stage);
+  --conf-low: var(--ink-low-stage);
+  --score-loop-fill: oklch(0.27 0.05 278);
+  --score-loop-edge: oklch(0.72 0.1 278);
+  --score-playhead: oklch(0.68 0.14 27);
+  --staff: oklch(0.56 0.008 81);
+  --bar-current: oklch(0.215 0.02 80);
+}
+
+/* Roles shared by every appearance: aliases of the roles above. */
+:root,
+[data-appearance] {
+  --stem-mix: var(--muted-foreground);
+  --chart-1: var(--stem-guitar);
+  --chart-2: var(--stem-bass);
+  --chart-3: var(--stem-drums);
+  --chart-4: var(--stem-vocals);
+  --chart-5: var(--stem-keys);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--card-foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --focus-width: 2px;
+}
+
+/* Increased contrast (§2): muted text and borders one step stronger, translucent fills opaque. */
+:root[data-contrast="more"] {
+  --muted-foreground: var(--muted-foreground-more);
+  --border: var(--border-more);
+  --input: var(--input-more);
+  --hud-bg: var(--hud-bg-more);
+  --focus-width: 3px;
+}
+
+@media (prefers-contrast: more) {
+  :root:not([data-contrast]) {
+    --muted-foreground: var(--muted-foreground-more);
+    --border: var(--border-more);
+    --input: var(--input-more);
+    --hud-bg: var(--hud-bg-more);
+    --focus-width: 3px;
+  }
+}
+
+/*
+ * Forced colours (Windows High Contrast): roles yield to system colours. The doubled selectors
+ * outrank the (0,2,0) fallback and contrast blocks above. Components that tint a selected or
+ * pressed surface with bg-accent behind ordinary text drop the tint there (forced-colors:…:bg-card):
+ * CanvasText on Highlight is unreadable; the Highlight border still marks the state.
+ */
+@media (forced-colors: active) {
+  :root:root,
+  [data-appearance][data-appearance] {
+    --background: Canvas;
+    --foreground: CanvasText;
+    --card: Canvas;
+    --card-foreground: CanvasText;
+    --popover: Canvas;
+    --popover-foreground: CanvasText;
+    --primary: Highlight;
+    --primary-foreground: HighlightText;
+    --secondary: Canvas;
+    --secondary-foreground: CanvasText;
+    --muted: Canvas;
+    --muted-foreground: CanvasText;
+    --accent: Highlight;
+    --accent-foreground: HighlightText;
+    --border: CanvasText;
+    --input: CanvasText;
+    --ring: Highlight;
+    --surface-raised: Canvas;
+    --surface-sunken: Canvas;
+    --success-surface: Canvas;
+    --warning-surface: Canvas;
+    --info-surface: Canvas;
+    --destructive-surface: Canvas;
+    --paper: Canvas;
+    --ink: CanvasText;
+    --conf-medium: CanvasText;
+    --conf-low: CanvasText;
+    --loop-edge: Highlight;
+    --score-loop-edge: Highlight;
+    --playhead: CanvasText;
+    --score-playhead: CanvasText;
+    --staff: CanvasText;
+    --key-white: Canvas;
+    --key-black: CanvasText;
+    --key-left: Highlight;
+    --key-left-fg: HighlightText;
+    --key-right: Highlight;
+    --key-right-fg: HighlightText;
+    --hud-bg: Canvas;
+    --hud-fg: CanvasText;
+    --scrim: transparent;
+  }
+}
+
+</style>
+<style>
+/* Layout: page chrome around one device frame drawn at its real CSS size and scaled to fit;
+   inside the frame only Splitune's tokens are used (data-appearance on the frame). */
+:root {
+  --page-bg: oklch(0.955 0.006 85);
+  --page-fg: oklch(0.2 0.01 75);
+  --page-muted: oklch(0.45 0.012 75);
+  --page-line: oklch(0.86 0.008 85);
+  --page-raised: oklch(0.995 0.003 85);
+  --page-accent: oklch(0.47 0.19 278);
+  --page-accent-fg: oklch(0.985 0.004 88);
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page-bg: oklch(0.19 0.008 80); --page-fg: oklch(0.93 0.01 85); --page-muted: oklch(0.72 0.01 85);
+    --page-line: oklch(0.32 0.01 80); --page-raised: oklch(0.24 0.008 80); --page-accent: oklch(0.75 0.11 278);
+    --page-accent-fg: oklch(0.18 0.01 75); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page-bg: oklch(0.19 0.008 80); --page-fg: oklch(0.93 0.01 85); --page-muted: oklch(0.72 0.01 85);
+  --page-line: oklch(0.32 0.01 80); --page-raised: oklch(0.24 0.008 80); --page-accent: oklch(0.75 0.11 278);
+  --page-accent-fg: oklch(0.18 0.01 75); color-scheme: dark;
+}
+body { margin: 0; background: var(--page-bg); color: var(--page-fg); font: 15px/1.5 var(--sans); }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; max-width: 1240px; margin: 0 auto; display: grid; gap: 16px; }
+.page h1 { font-size: 22px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.page .lede { margin: 0; color: var(--page-muted); max-width: 76ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--page-line); border-radius: 999px; padding: 3px; background: var(--page-raised); gap: 2px; }
+.seg button, .tog { font: 500 13px/1 var(--sans); color: var(--page-fg); background: none; border: 0; border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--page-accent); color: var(--page-accent-fg); }
+.tog { border: 1px solid var(--page-line); background: var(--page-raised); }
+.tog[aria-pressed="true"] { border-color: var(--page-accent); box-shadow: inset 0 0 0 1px var(--page-accent); }
+.seg button:focus-visible, .tog:focus-visible, input:focus-visible, .device button:focus-visible { outline: 2px solid var(--page-accent); outline-offset: 2px; }
+.label { font: 600 11px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--page-muted); margin-right: 4px; }
+.scrub { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
+.scrub input { flex: 1; min-width: 0; accent-color: var(--page-accent); }
+.scrub output { font: 500 13px/1 var(--sans); font-variant-numeric: tabular-nums; min-width: 9ch; }
+.viewport { overflow: hidden; border-radius: 14px; }
+.live { margin: 0; font-size: 13px; color: var(--page-muted); min-height: 1.5em; }
+.keys { margin: 0; font-size: 13px; color: var(--page-muted); }
+.keys kbd { font: 600 12px/1 var(--sans); border: 1px solid var(--page-line); border-bottom-width: 2px; border-radius: 5px; padding: 2px 6px; background: var(--page-raised); color: var(--page-fg); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.notes section { background: var(--page-raised); border: 1px solid var(--page-line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.notes h2 { margin: 0 0 6px; font-size: 15px; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li { margin: 2px 0; }
+
+/* The device frame: Splitune tokens only. */
+.device { width: 1180px; height: 820px; transform-origin: 0 0; display: flex; flex-direction: column; background: var(--background); color: var(--foreground); font-family: var(--sans); overflow: hidden; }
+.device button { font: inherit; color: inherit; cursor: pointer; }
+.status { flex: none; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--background); }
+.status .back { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500; white-space: nowrap; }
+.status .title { min-width: 0; flex: 1; }
+.status .title b { display: block; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status .title span { display: block; font-size: 14px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status .phrasenow { display: none; }
+.legend { border: 1.5px dashed var(--input); border-radius: 999px; padding: 8px 14px; font-size: 14px; color: var(--muted-foreground); white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.views { display: flex; background: var(--muted); border-radius: 999px; padding: 4px; }
+.views span { padding: 10px 16px; border-radius: 999px; font-size: 15px; font-weight: 500; }
+.views span.on { background: var(--card); box-shadow: inset 0 0 0 2px var(--ring); }
+.icon { width: 44px; height: 44px; display: grid; place-items: center; flex: none; }
+
+/* Phrase strip: replaces the chord strip in the Melody view. */
+.strip { flex: none; height: 96px; display: flex; align-items: center; gap: 28px; padding: 0 24px; background: var(--paper); color: var(--ink); border-bottom: 1px solid var(--border); }
+.strip .cell { display: grid; gap: 4px; min-width: 0; }
+.strip small { font: 600 12px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--conf-medium); }
+.strip .now b { font-size: 32px; font-weight: 650; line-height: 1.1; white-space: nowrap; }
+.strip .now b span { font-size: 20px; font-weight: 550; color: var(--conf-medium); }
+.strip .start b, .strip .next b { font-size: 24px; font-weight: 600; line-height: 1.1; white-space: nowrap; }
+.strip .start b span, .strip .next b span { font-size: 16px; font-weight: 500; color: var(--conf-medium); }
+.strip .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.strip .chip { border: 1px solid var(--input); border-radius: 10px; padding: 12px 16px; font-size: 16px; font-weight: 500; background: var(--card); color: var(--foreground); white-space: nowrap; display: flex; gap: 8px; align-items: center; }
+.paper { flex: 1; min-height: 0; position: relative; background: var(--paper); }
+.paper canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.overview { flex: none; height: 48px; position: relative; background: var(--background); border-top: 1px solid var(--border); }
+.overview canvas { position: absolute; inset: 6px 16px; width: calc(100% - 32px); height: calc(100% - 12px); cursor: pointer; }
+.transport { flex: none; display: flex; align-items: center; gap: 12px; padding: 14px 24px 16px; background: var(--background); border-top: 1px solid var(--border); }
+.tbtn { width: 64px; height: 64px; border-radius: 12px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--border); flex: none; padding: 0; }
+.tbtn.play { border-radius: 999px; width: 72px; height: 72px; background: var(--primary); color: var(--primary-foreground); border: 0; }
+.tbtn.on { background: var(--accent); color: var(--accent-foreground); border-color: var(--ring); }
+.capsule { display: flex; align-items: center; gap: 8px; background: var(--muted); border-radius: 16px; padding: 6px; min-width: 0; }
+.capsule .text { padding: 0 12px; font-size: 15px; font-weight: 500; white-space: nowrap; }
+.capsule .speed { text-align: center; min-width: 96px; }
+.capsule .speed b { display: block; font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.capsule .speed span { font-size: 13px; color: var(--muted-foreground); }
+.guide { display: flex; background: var(--muted); border-radius: 16px; padding: 6px; gap: 4px; align-items: center; }
+.guide .gl { padding: 0 8px 0 10px; font-size: 13px; font-weight: 600; color: var(--muted-foreground); white-space: nowrap; }
+.guide button { border: 0; background: none; border-radius: 12px; padding: 0 14px; height: 52px; font-size: 15px; font-weight: 500; }
+.guide button[aria-pressed="true"] { background: var(--card); box-shadow: inset 0 0 0 2px var(--ring); }
+
+/* Phone landscape, 27 §3.7.2: status 48 (phrase folded in), notes, 32 px ruler, one transport row. */
+.device.phone { width: 844px; height: 390px; }
+.phone .status { height: 48px; gap: 8px; padding: 0 12px; }
+.phone .status .back span, .phone .legend .long, .phone .hide-phone { display: none; }
+.phone .legend { padding: 6px 10px; font-size: 13px; }
+.phone .views span { padding: 7px 12px; font-size: 14px; }
+.phone .icon { width: 40px; height: 40px; }
+.phone .strip { display: none; }
+.phone .status .phrasenow { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; font-size: 20px; font-weight: 650; }
+.phone .status .phrasenow span { font-size: 14px; font-weight: 600; color: var(--muted-foreground); }
+.phone .status .title b { font-size: 14px; }
+.phone .status .title span { font-size: 12px; }
+.phone .overview { height: 32px; }
+.phone .overview canvas { inset: 4px 12px; width: calc(100% - 24px); height: calc(100% - 8px); }
+.phone .transport { padding: 6px 12px 8px; gap: 8px; }
+.phone .tbtn { width: 52px; height: 52px; }
+.phone .tbtn.play { width: 56px; height: 56px; }
+.phone .capsule .speed { min-width: 64px; }
+.phone .capsule .speed b { font-size: 17px; }
+.phone .capsule .text { padding: 0 6px; font-size: 13px; }
+.phone .guide button { height: 44px; padding: 0 10px; font-size: 13px; }
+.phone .guide .gl { display: none; }
+[data-appearance="stage"] .status .title span, [data-appearance="stage"] .legend { color: var(--muted-foreground); }
+</style>
+
+<div class="page">
+  <h1>Vocal Melody view: piano-roll with phrase markers</h1>
+  <p class="lede">The vocal notes as a horizontal melody roll (time runs left to right, pitch goes up) with lyrics-free phrase markers. Each phrase can be looped and cued. <strong>The data is synthetic</strong>: 70 BPM, A♭ major, 89 bars, shaped exactly like <code>notes.vocals</code> (raw Basic Pitch onsets with timing jitter, the three confidence bands, a few octave slips). Phrases are found on the client from the notes alone. Press play, scrub, or tap a phrase.</p>
+  <div class="controls">
+    <span><span class="label">Look</span><span class="seg" data-key="app"><button data-v="light">Light</button><button data-v="dark">Dark</button><button data-v="stage">Stage</button></span></span>
+    <span><span class="label">Size</span><span class="seg" data-key="size"><button data-v="tablet">Tablet 1180×820</button><button data-v="phone">Phone 844×390</button></span></span>
+    <span><span class="label">Note labels</span><span class="seg" data-key="labels"><button data-v="names">Names</button><button data-v="degrees">Scale degrees</button><button data-v="off">Off</button></span></span>
+    <span><span class="label">Pitch window</span><span class="seg" data-key="window"><button data-v="follow">Follow phrase</button><button data-v="whole">Whole song</button></span></span>
+  </div>
+  <div class="controls">
+    <button class="tog" id="play" type="button">Play</button>
+    <span class="seg" data-key="speed"><button data-v="0.5">50 %</button><button data-v="0.75">75 %</button><button data-v="1">100 %</button></span>
+    <button class="tog" data-flag="tones" type="button">Sine tones</button>
+    <button class="tog" data-flag="contour" type="button">Contour lines</button>
+    <button class="tog" data-flag="f0" type="button">f0 curve (later)</button>
+    <button class="tog" data-flag="reduced" type="button">Reduced motion</button>
+    <label class="scrub"><span class="label">Time</span><input id="time" type="range" min="0" max="300" step="0.01"><output id="timeOut"></output></label>
+  </div>
+  <p class="keys"><kbd>Space</kbd> play · <kbd>[</kbd> <kbd>]</kbd> previous / next phrase · <kbd>L</kbd> loop this phrase · <kbd>N</kbd> hear the phrase's first note · tap a phrase marker to loop it</p>
+  <div class="viewport" id="viewport">
+    <div class="device" id="device" data-appearance="light">
+      <div class="status">
+        <div class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg><span>Back to library</span></div>
+        <div class="title"><b>瞬</b><span>Vocals · A♭ major · 70 BPM</span></div>
+        <div class="phrasenow"><b id="phoneNow"></b><span id="phoneStart"></span></div>
+        <div class="legend"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span class="long">Auto-transcribed · </span>v2682317</div>
+        <div class="views"><span class="on">Melody</span><span>Chords</span></div>
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
+        <div class="icon hide-phone"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></div>
+      </div>
+      <div class="strip">
+        <div class="cell now"><small id="nowLabel"></small><b id="nowPhrase"></b></div>
+        <div class="cell start"><small>Starts on</small><b id="startNote"></b></div>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--conf-medium); flex: none"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <div class="cell next"><small id="nextLabel"></small><b id="nextPhrase"></b></div>
+        <div class="right">
+          <div class="chip" title="5th–95th percentile of confident notes">Range <b id="range"></b></div>
+          <button class="chip" id="cueBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>First note</button>
+        </div>
+      </div>
+      <div class="paper" id="paper"><canvas id="roll" aria-hidden="true"></canvas></div>
+      <div class="overview"><canvas id="over" aria-hidden="true"></canvas></div>
+      <div class="transport">
+        <div class="tbtn hide-phone"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v16M19 5 9 12l10 7z"/></svg></div>
+        <button class="tbtn play" id="playBtn" type="button" aria-label="Play"><svg id="playIcon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 4 13 8-13 8z"/></svg></button>
+        <div class="capsule"><button class="tbtn" id="loopBtn" type="button" aria-label="Loop this phrase"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></button><span class="text" id="loopText"></span></div>
+        <div class="capsule hide-phone"><div class="tbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></div><div class="speed"><b id="speedPct"></b><span id="speedBpm"></span></div><div class="tbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div></div>
+        <div class="guide" role="group" aria-label="Guide vocal"><span class="gl">Guide vocal</span><button type="button" data-guide="on">On</button><button type="button" data-guide="quiet">Quiet</button><button type="button" data-guide="off">Off</button></div>
+      </div>
+    </div>
+  </div>
+  <p class="live" id="live"></p>
+  <div class="notes">
+    <section>
+      <h2>Melody roll</h2>
+      <ul>
+        <li>Time runs left to right, as in the guitar Notes view and the waveform. Pitch goes up. The now line sits a fifth of the way in, with about two bars of look-ahead.</li>
+        <li>The pitch rail shows the key: in-key rows are paper, out-of-key rows are sunken, and the tonic (A♭) rows are ruled. Labels show note names or scale degrees, and you can turn them off once you know the song.</li>
+        <li>“Follow phrase” fits the rows to the notes on screen (at least an octave), easing over 400 ms, so labels stay at reading size. “Whole song” keeps one fixed map for spatial memory. On a phone it is about 11 px per row.</li>
+        <li>Confidence matches the guitar view: medium is lighter ink, low is a dashed outline with “?”. Octave slips are left as transcribed, and stay low-confidence.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Phrases without lyrics</h2>
+      <ul>
+        <li>A phrase is a run of notes split at rests of at least ¾ beat (0.6 s minimum). Runs longer than 4 bars split at their largest gap. There's no new ML stage: it's a pure function of <code>notes.vocals</code> and the beat grid, so it stays re-runnable when notes are corrected.</li>
+        <li>Markers along the top: the phrase number and its bar span, and a breath mark (’) where each phrase ends. Tap one to loop it. Phrase loops snap to beats with one beat of pre-roll, because sung phrases rarely start on a downbeat.</li>
+        <li>Repeated phrases (same interval shape, within 1 semitone) share a letter, A A′ B…, which works like lyrics for finding the chorus again. In the mockup this is approximate.</li>
+        <li>The strip shows this phrase, its first note (with a “First note” cue so you can pitch-match before you come in), the next phrase and the countdown to it, and your vocal range.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Singer controls</h2>
+      <ul>
+        <li>Guide vocal On / Quiet / Off is the vocal stem's level in the mixer, brought forward because it's the main thing a singer changes. The rest of the mixer stays where it is.</li>
+        <li>Everything is keyboard and pedal operable: previous/next phrase, loop the phrase, first-note cue.</li>
+        <li>Range is the 5th–95th percentile of confident notes. That makes “Transpose to fit my range” cheap once pitch shift lands (V-feature, ±3 semitone warning on vocal stems).</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Later, on the same canvas</h2>
+      <ul>
+        <li>“f0 curve (later)” shows where the RMVPE pitch curve would draw: scoops, glides and vibrato over the notes, which research recommends for singers. It needs the <code>f0.vocals</code> stage, which isn't built yet.</li>
+        <li>A live mic curve would use the same axes (v1 mic step), and lyrics would go in the phrase band once there's a licensed source.</li>
+        <li>Open: should a single bar tap on a vocal song loop the enclosing phrase instead of the bar (practice-tool-patterns: “extend to the enclosing phrase”)?</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+// ---- synthetic notes.vocals --------------------------------------------------------------
+const BPM = 70, BEAT = 60 / BPM, BAR = 4 * BEAT, BARS = 89, DURATION = BARS * BAR
+const TONIC = 8 // A♭
+const SCALE = [0, 2, 4, 5, 7, 9, 11].map((s) => (s + TONIC) % 12)
+const NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B']
+const DEG = ['1', '♭2', '2', '♭3', '3', '4', '♯4', '5', '♭6', '6', '♭7', '7']
+const nameOf = (m) => `${NAMES[m % 12]}${Math.floor(m / 12) - 1}`
+const degreeOf = (m) => DEG[(m - TONIC + 120) % 12]
+const inKey = (m) => SCALE.includes(m % 12)
+
+function rng(seed) {
+  return () => {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+const R = rng(23)
+// Scale-degree index → midi, around A♭3 (56).
+const degMidi = (i) => 56 + Math.floor(i / 7) * 12 + [0, 2, 4, 5, 7, 9, 11][((i % 7) + 7) % 7]
+
+function template(len, centre) {
+  const out = []
+  let beats = 0, deg = centre + Math.floor(R() * 3) - 1
+  while (beats < len * 4 - 2) {
+    const d = [0.5, 0.5, 0.5, 1, 1, 1, 1.5, 0.75, 2][Math.floor(R() * 9)]
+    const dd = Math.min(d, len * 4 - 2 - beats)
+    out.push({ b: beats, d: dd, deg })
+    beats += dd
+    const step = [-2, -1, -1, 0, 1, 1, 2, 3, -3][Math.floor(R() * 9)]
+    deg = Math.max(centre - 4, Math.min(centre + 5, deg + step))
+  }
+  out.push({ b: beats, d: 2, deg: centre + (R() < 0.5 ? 0 : 2) })
+  return out
+}
+const T = { A: template(2, 5), B: template(2, 6), C: template(3, 4), D: template(2, 8), E: template(2, 9), F: template(3, 7) }
+// [bars of rest before, phrases]: intro, verse, verse, chorus, instrumental break, verse, chorus, chorus.
+const FORM = [[2, 'ABAC'], [1, 'ABAC'], [1, 'DEDF'], [3, 'ABAC'], [1, 'DEDF'], [1, 'DEDF']]
+const notes = []
+let t = 0
+for (const [rest, seq] of FORM) {
+  t = Math.ceil(t / BAR + rest) * BAR + BEAT * 0.5
+  for (const k of seq) {
+    for (const n of T[k]) {
+      const onset = t + n.b * BEAT + (R() - 0.5) * 0.06
+      let pitch = degMidi(n.deg)
+      let c = 0.62 + 0.38 * R() - (n.d <= 0.5 ? 0.12 : 0)
+      if (R() < 0.025) { pitch += R() < 0.5 ? 12 : -12; c = 0.2 + 0.2 * R() }
+      notes.push({ onset_s: onset, offset_s: onset + n.d * BEAT * (0.82 + 0.12 * R()), pitch_midi: pitch, confidence: c, band: c >= 0.7 ? 'high' : c >= 0.5 ? 'medium' : 'low' })
+    }
+    t += (T[k].at(-1).b + 2) * BEAT + [1, 1.5, 2, 2][Math.floor(R() * 4)] * BEAT
+  }
+}
+notes.sort((a, b) => a.onset_s - b.onset_s)
+
+// ---- phrases (the algorithm the build would use) -----------------------------------------
+const GAP = Math.max(0.6, 0.75 * BEAT)
+const runs = []
+for (const n of notes) {
+  const r = runs.at(-1)
+  if (r && n.onset_s - Math.max(...r.map((m) => m.offset_s)) < GAP) r.push(n)
+  else runs.push([n])
+}
+// Runs longer than 4 bars split at their largest gap between notes.
+const split = (r) => {
+  if (r.at(-1).offset_s - r[0].onset_s <= 4 * BAR || r.length < 4) return [r]
+  let at = 1
+  for (let i = 2; i < r.length - 1; i++) if (r[i].onset_s - r[i - 1].offset_s > r[at].onset_s - r[at - 1].offset_s) at = i
+  return [...split(r.slice(0, at)), ...split(r.slice(at))]
+}
+const phrases = runs.flatMap(split).map((ns) => ({ notes: ns, start: ns[0].onset_s, end: Math.max(...ns.map((n) => n.offset_s)) }))
+const beatFloor = (t) => Math.floor(t / BEAT + 0.15) * BEAT
+const beatCeil = (t) => Math.ceil(t / BEAT - 0.15) * BEAT
+const barOf = (t) => Math.floor(t / BAR + 1e-6) + 1
+// Pitch classes, so an octave slip still matches its repeat.
+const shape = (p) => p.notes.map((n) => n.pitch_midi % 12)
+let letter = 0
+phrases.forEach((p, i) => {
+  p.i = i
+  p.loopStart = Math.max(0, beatFloor(p.start) - BEAT)
+  p.loopEnd = beatCeil(p.end)
+  p.bar0 = barOf(p.start); p.bar1 = barOf(p.end - 0.01)
+  p.first = p.notes.find((n) => n.band !== 'low') ?? p.notes[0]
+  const s = shape(p)
+  const twin = phrases.slice(0, i).find((q) => { const t = shape(q), k = Math.min(t.length, s.length); return Math.abs(t.length - s.length) <= 1 && k >= 4 && t.slice(0, k).filter((c, j) => c === s[j]).length >= k - 1 })
+  p.tag = twin ? twin.tag : String.fromCharCode(65 + letter++)
+})
+const confident = notes.filter((n) => n.band !== 'low').map((n) => n.pitch_midi).sort((a, b) => a - b)
+const RANGE = [confident[Math.floor(confident.length * 0.05)], confident[Math.floor(confident.length * 0.95)]]
+const SONG_LO = Math.min(...notes.map((n) => n.pitch_midi)), SONG_HI = Math.max(...notes.map((n) => n.pitch_midi))
+const CHORDS = 'Dbmaj7 Ab|Dbm|Ab|Abm7 Bbm7|Bbm7|Ab Eb7|Ab|Cm7 Fm7|Bb7 Ab|Ab|Ab|Ab Db|Cm7 Gbm7|Bbm7 Ab|Ab|Dbmaj7|Cm7 Fm7|Bbm7|Eb7|Ebm7|Ab|Db|Eb|Eb|B7|Bbm7 Eb|Fm7|Fm7|Dbmaj7|Dbm|Cm7|Fm7|Dbmaj7 Dbm|Dbm|Cm7|F7|Bbm7|Eb7|N|N|N|Fm7|Db|Eb|Fm7|Fm7|Db|Cm7 Fm7|Bbm7 Ebm7|Ebm7 Ab|Dbmaj7 Eb|Cm7 F7|Fm7|Fm7|Dbmaj7|Dbm|Cm7|Fm7|Dbmaj7|Dbm|Cm7|F7|Bbm7|Eb7|Cm7|Cm7 Fm7'.split('|')
+const chordAt = (bar) => (CHORDS[bar - 1] ?? CHORDS[((bar - 1) % 44) + 22]).split(' ').map((c) => c === 'N' ? '' : c.replace('b', '♭').replace(/(\w)b/, '$1♭'))
+
+// Later f0 (synthetic): onset scoop and vibrato on long notes; glides fill short gaps inside a phrase.
+function f0At(n, t) {
+  const age = t - n.onset_s
+  let cents = 0
+  if (age < 0.09) cents = -60 * (1 - age / 0.09)
+  if (n.offset_s - n.onset_s > 0.6 && age > 0.3) cents += 25 * Math.min(1, (age - 0.3) / 0.2) * Math.sin(2 * Math.PI * 5.5 * age)
+  return n.pitch_midi + cents / 100
+}
+
+// ---- state -------------------------------------------------------------------------------
+const params = new URLSearchParams(location.search)
+const S = {
+  app: params.get('app') ?? 'light', size: params.get('size') ?? 'tablet', labels: params.get('labels') ?? 'names',
+  window: params.get('window') ?? 'follow', speed: Number(params.get('speed') ?? 1), guide: 'quiet',
+  tones: false, contour: !params.has('nocontour'), f0: params.has('f0'), reduced: params.has('reduced'),
+  playing: false, t: Number(params.get('t') ?? phrases[3].loopStart + BEAT * 2), loop: params.has('loop') ? 3 : null,
+}
+let view = { lo: 56, hi: 72 }, colors = {}
+
+const $ = (id) => document.getElementById(id)
+const device = $('device'), roll = $('roll'), over = $('over'), live = $('live')
+
+function readColors() {
+  const cs = getComputedStyle(device)
+  for (const k of ['paper', 'ink', 'conf-medium', 'conf-low', 'stem-vocals', 'staff', 'bar-current', 'score-loop-fill', 'score-loop-edge', 'score-playhead', 'surface-sunken', 'muted-foreground', 'border', 'primary', 'primary-foreground', 'accent', 'accent-foreground', 'waveform-peak', 'waveform-played', 'foreground', 'background', 'loop-fill', 'loop-edge', 'playhead'])
+    colors[k] = cs.getPropertyValue(`--${k}`).trim()
+}
+
+function phraseAt(t) {
+  let cur = null
+  for (const p of phrases) { if (p.loopStart <= t + 1e-6) cur = p; else break }
+  return cur
+}
+const nextPhrase = (t) => phrases.find((p) => p.start > t + 0.05)
+
+// ---- drawing -----------------------------------------------------------------------------
+function fit(c) {
+  const r = c.getBoundingClientRect(), dpr = Math.max(2, devicePixelRatio)
+  const w = c.offsetWidth, h = c.offsetHeight
+  if (c.width !== w * dpr || c.height !== h * dpr) { c.width = w * dpr; c.height = h * dpr }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0)
+  return { g, w, h, r }
+}
+function rr(g, x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, Math.min(r, h / 2, w / 2)) }
+
+function targetWindow(t) {
+  if (S.window === 'whole') return { lo: SONG_LO - 1, hi: SONG_HI + 1 }
+  const vis = notes.filter((n) => n.offset_s > t - BAR && n.onset_s < t + 2.5 * BAR && n.band !== 'low')
+  if (!vis.length) return view
+  let lo = Math.min(...vis.map((n) => n.pitch_midi)) - 2, hi = Math.max(...vis.map((n) => n.pitch_midi)) + 2
+  while (hi - lo < 12) { hi++; if (hi - lo < 12) lo-- }
+  return { lo, hi }
+}
+
+function drawRoll(now, dt) {
+  const { g, w, h } = fit(roll)
+  const phone = S.size === 'phone'
+  const band = phone ? 30 : 40, chordLane = phone ? 0 : 26, rail = phone ? 52 : 72
+  const top = band + chordLane, bottom = h - 6
+  const nowX = rail + (w - rail) * 0.2
+  const pps = (w - nowX) / (2.1 * BAR)
+  const X = (t) => nowX + (t - now) * pps
+  const tgt = targetWindow(now)
+  const k = S.reduced || dt > 0.5 ? 1 : 1 - Math.exp(-dt / 0.12)
+  view = { lo: view.lo + (tgt.lo - view.lo) * k, hi: view.hi + (tgt.hi - view.hi) * k }
+  const rows = view.hi - view.lo + 1, rowH = (bottom - top) / rows
+  const Y = (m) => top + (view.hi - m) * rowH
+  g.fillStyle = colors.paper; g.fillRect(0, 0, w, h)
+
+  // pitch rows
+  g.save(); g.beginPath(); g.rect(0, top, w, bottom - top); g.clip()
+  for (let m = Math.floor(view.lo) - 1; m <= Math.ceil(view.hi) + 1; m++) {
+    const y = Y(m)
+    if (!inKey(m)) { g.fillStyle = colors.ink; g.globalAlpha = 0.045; g.fillRect(rail, y, w - rail, rowH); g.globalAlpha = 1 }
+    if (m % 12 === TONIC) { const yc = Math.round(y + rowH / 2) + 0.5; g.strokeStyle = colors.staff; g.globalAlpha = 0.7; g.lineWidth = 1; g.beginPath(); g.moveTo(rail, yc); g.lineTo(w, yc); g.stroke(); g.globalAlpha = 1 }
+  }
+  // loop band
+  if (S.loop != null) {
+    const p = phrases[S.loop]
+    g.fillStyle = colors['score-loop-fill']; g.globalAlpha = 0.6; g.fillRect(X(p.loopStart), top, X(p.loopEnd) - X(p.loopStart), bottom - top); g.globalAlpha = 1
+  }
+  // bars and beats
+  const t0 = now - (nowX - rail) / pps, t1 = now + (w - nowX) / pps
+  for (let b = Math.floor(t0 / BEAT); b <= t1 / BEAT; b++) {
+    const x = Math.round(X(b * BEAT)) + 0.5
+    g.strokeStyle = colors.staff; g.globalAlpha = b % 4 === 0 ? 0.85 : 0.22; g.lineWidth = 1
+    g.beginPath(); g.moveTo(x, top); g.lineTo(x, bottom); g.stroke(); g.globalAlpha = 1
+  }
+  // contour lines inside phrases
+  const visible = notes.filter((n) => n.offset_s > t0 && n.onset_s < t1)
+  if (S.contour) {
+    g.strokeStyle = colors['conf-medium']; g.lineWidth = 1.25; g.globalAlpha = 0.55
+    for (const p of phrases) {
+      if (p.end < t0 || p.start > t1) continue
+      const ns = p.notes.filter((n) => n.band !== 'low')
+      g.beginPath()
+      ns.forEach((n, i) => { if (i) { const a = ns[i - 1]; g.moveTo(X(a.offset_s), Y(a.pitch_midi) + rowH / 2); g.lineTo(X(n.onset_s), Y(n.pitch_midi) + rowH / 2) } })
+      g.stroke()
+    }
+    g.globalAlpha = 1
+  }
+  // notes
+  const fontPx = Math.max(11, Math.min(18, rowH * 0.62))
+  g.font = `600 ${fontPx}px Inter, system-ui, sans-serif`; g.textBaseline = 'middle'
+  for (const n of visible) {
+    const x0 = X(n.onset_s), x1 = X(n.offset_s), y = Y(n.pitch_midi) + 1.5, hh = rowH - 3
+    const past = n.offset_s < now, active = n.onset_s <= now && n.offset_s > now
+    rr(g, x0, y, Math.max(4, x1 - x0), hh, Math.min(8, hh / 2.5))
+    if (n.band === 'low') {
+      g.setLineDash([4, 3]); g.strokeStyle = colors['conf-low']; g.lineWidth = 1.5; g.stroke(); g.setLineDash([])
+    } else {
+      g.fillStyle = colors['stem-vocals']; g.globalAlpha = active ? 0.9 : past ? 0.18 : 0.38; g.fill(); g.globalAlpha = 1
+      g.strokeStyle = n.band === 'medium' ? colors['conf-medium'] : colors.ink
+      g.globalAlpha = past ? 0.45 : 1; g.lineWidth = active ? 2.5 : 1.5; g.stroke(); g.globalAlpha = 1
+    }
+    const label = n.band === 'low' ? '?' : S.labels === 'names' ? nameOf(n.pitch_midi).replace(/\d/, '') : S.labels === 'degrees' ? degreeOf(n.pitch_midi) : ''
+    if (label && x1 - x0 > g.measureText(label).width + 10) {
+      g.fillStyle = active ? colors.paper : n.band === 'high' ? colors.ink : colors['conf-medium']
+      if (active && S.app !== 'light') g.fillStyle = colors.ink
+      g.globalAlpha = past ? 0.5 : 1; g.fillText(label, x0 + 6, y + hh / 2 + 0.5); g.globalAlpha = 1
+    }
+  }
+  // f0 preview
+  if (S.f0) {
+    g.strokeStyle = colors.ink; g.lineWidth = 1.5; g.lineJoin = 'round'
+    for (const p of phrases) {
+      if (p.end < t0 || p.start > t1) continue
+      const ns = p.notes.filter((n) => n.band !== 'low')
+      g.beginPath()
+      ns.forEach((n, i) => {
+        const prev = ns[i - 1]
+        if (prev && n.onset_s - prev.offset_s < 0.2) g.lineTo(X(n.onset_s), Y(f0At(n, n.onset_s + 0.09)) + rowH / 2)
+        for (let t = n.onset_s + (prev && n.onset_s - prev.offset_s < 0.2 ? 0.09 : 0); t <= n.offset_s; t += 0.01) {
+          const x = X(t), y = Y(f0At(n, t)) + rowH / 2
+          t === n.onset_s ? g.moveTo(x, y) : g.lineTo(x, y)
+        }
+      })
+      g.stroke()
+    }
+  }
+  // breath marks
+  g.font = `700 ${phone ? 18 : 22}px Inter, system-ui, sans-serif`; g.fillStyle = colors['conf-medium']
+  for (const p of phrases) { if (p.end > t0 && p.end < t1) { const last = p.notes.at(-1); g.fillText('’', X(p.end) + 4, Y(last.pitch_midi) - 2) } }
+  g.restore()
+
+  // phrase band
+  g.fillStyle = colors.paper; g.fillRect(0, 0, w, band)
+  g.strokeStyle = colors.border; g.lineWidth = 1; g.beginPath(); g.moveTo(0, band + 0.5); g.lineTo(w, band + 0.5); g.stroke()
+  const cur = phraseAt(now)
+  for (const p of phrases) {
+    if (p.loopEnd < t0 || p.loopStart > t1) continue
+    const x0 = Math.max(rail + 2, X(p.start)), x1 = X(p.end)
+    if (x1 - x0 < 6) continue
+    const isCur = cur === p && now <= p.end + 0.3, looped = S.loop === p.i
+    rr(g, x0, 6, x1 - x0, band - 12, 8)
+    g.fillStyle = looped ? colors.accent : isCur ? colors['bar-current'] : colors.paper; g.fill()
+    g.strokeStyle = looped ? colors['score-loop-edge'] : isCur ? colors.ink : colors.staff; g.lineWidth = looped || isCur ? 2 : 1; g.stroke()
+    g.font = `${isCur ? 700 : 600} ${phone ? 13 : 15}px Inter, system-ui, sans-serif`
+    g.fillStyle = looped ? colors['accent-foreground'] : colors.ink
+    const text = phone ? `${p.i + 1} ${p.tag}` : `${p.i + 1} · ${p.tag}${phrases.slice(0, p.i).some((q) => q.tag === p.tag) ? '′' : ''}  bars ${p.bar0}–${p.bar1}`
+    g.save(); g.beginPath(); g.rect(x0, 0, x1 - x0 - 6, band); g.clip(); g.fillText(text, x0 + 10, band / 2); g.restore()
+  }
+  // chord lane
+  if (chordLane) {
+    g.font = `500 14px Inter, system-ui, sans-serif`; g.fillStyle = colors['conf-medium']
+    for (let b = Math.max(1, Math.floor(t0 / BAR)); b <= t1 / BAR + 1; b++) {
+      const cs = chordAt(b)
+      const xb = X((b - 1) * BAR)
+      if (xb > rail) { g.fillStyle = colors['muted-foreground']; g.font = `600 12px Inter, system-ui, sans-serif`; g.fillText(String(b), xb + 5, band + chordLane / 2) }
+      g.font = `500 14px Inter, system-ui, sans-serif`; g.fillStyle = colors['conf-medium']
+      cs.forEach((c, i) => { const x = X((b - 1) * BAR + (i * BAR) / cs.length) + (i ? 6 : 28); if (x > rail) g.fillText(c, x, band + chordLane / 2) })
+    }
+  }
+  // rail
+  g.fillStyle = colors.paper; g.fillRect(0, top, rail, bottom - top + 6)
+  g.strokeStyle = colors.border; g.beginPath(); g.moveTo(rail + 0.5, top); g.lineTo(rail + 0.5, h); g.stroke()
+  g.textBaseline = 'middle'
+  const labelEvery = rowH < 15 ? 2 : 1
+  const activeNote = notes.find((n) => n.onset_s <= now && n.offset_s > now && n.band !== 'low')
+  for (let m = Math.ceil(view.lo); m <= Math.floor(view.hi); m++) {
+    if (!inKey(m)) continue
+    const deg = SCALE.indexOf(m % 12)
+    if (labelEvery === 2 && deg % 2 === 1) continue
+    const y = Y(m) + rowH / 2
+    const hot = activeNote && activeNote.pitch_midi === m
+    if (hot) { rr(g, 4, y - Math.min(14, rowH / 2), rail - 8, Math.min(28, rowH), 6); g.fillStyle = colors['stem-vocals']; g.globalAlpha = 0.9; g.fill(); g.globalAlpha = 1 }
+    g.font = `${m % 12 === TONIC ? 700 : 500} ${Math.min(15, Math.max(11, rowH * 0.6))}px Inter, system-ui, sans-serif`
+    g.fillStyle = hot ? colors.paper : m % 12 === TONIC ? colors.ink : colors['conf-medium']
+    if (hot && S.app !== 'light') g.fillStyle = colors.ink
+    g.fillText(S.labels === 'degrees' ? degreeOf(m) : nameOf(m), 10, y + 0.5)
+  }
+  // playhead
+  g.strokeStyle = colors['score-playhead']; g.lineWidth = 2
+  g.beginPath(); g.moveTo(nowX, band); g.lineTo(nowX, h); g.stroke()
+  roll._hit = { band, X, pps, nowX, rail }
+}
+
+function drawOverview(now) {
+  const { g, w, h } = fit(over)
+  const X = (t) => (t / DURATION) * w
+  g.clearRect(0, 0, w, h)
+  for (const p of phrases) {
+    const x0 = X(p.start), x1 = X(p.end), mid = h / 2
+    const amp = Math.min(h / 2 - 2, (Math.max(...p.notes.map((n) => n.pitch_midi)) - 50) / 26 * (h / 2))
+    g.fillStyle = p.end < now ? colors['muted-foreground'] : colors['waveform-peak']
+    rr(g, x0, mid - amp, Math.max(2, x1 - x0 - 1), amp * 2, 2); g.fill()
+  }
+  if (S.loop != null) {
+    const p = phrases[S.loop]
+    g.fillStyle = colors['loop-fill']; g.globalAlpha = 0.55; g.fillRect(X(p.loopStart), 0, X(p.loopEnd) - X(p.loopStart), h); g.globalAlpha = 1
+    g.strokeStyle = colors['loop-edge']; g.lineWidth = 2; g.strokeRect(X(p.loopStart), 1, X(p.loopEnd) - X(p.loopStart), h - 2)
+  }
+  g.strokeStyle = colors.playhead; g.lineWidth = 2; g.beginPath(); g.moveTo(X(now), 0); g.lineTo(X(now), h); g.stroke()
+}
+
+// ---- text --------------------------------------------------------------------------------
+function updateText(now) {
+  const p = phraseAt(now) ?? phrases[0], nx = nextPhrase(now)
+  const inside = now >= p.loopStart && now <= p.end + 0.3
+  const twin = phrases.slice(0, p.i).some((q) => q.tag === p.tag) ? '′' : ''
+  $('nowLabel').textContent = inside ? `Phrase ${p.i + 1} of ${phrases.length}` : 'Rest'
+  $('nowPhrase').innerHTML = inside ? `${p.tag}${twin} <span>bars ${p.bar0}–${p.bar1}</span>` : '—'
+  const first = (inside ? p : nx ?? p).first
+  $('startNote').innerHTML = `${nameOf(first.pitch_midi)} <span>(${degreeOf(first.pitch_midi)})</span>`
+  if (nx) {
+    const beats = Math.max(0, (nx.start - now) / BEAT)
+    $('nextLabel').textContent = `Next · in ${beats < 10 ? beats.toFixed(1) : Math.round(beats)} beats`
+    $('nextPhrase').innerHTML = `${nx.i + 1} · ${nx.tag} <span>on ${nameOf(nx.first.pitch_midi)}</span>`
+  } else { $('nextLabel').textContent = 'Next'; $('nextPhrase').textContent = 'End' }
+  $('phoneNow').textContent = inside ? `Phrase ${p.i + 1} ${p.tag}${twin}` : 'Rest'
+  $('phoneStart').textContent = `starts ${nameOf(first.pitch_midi)}`
+  $('range').textContent = `${nameOf(RANGE[0])}–${nameOf(RANGE[1])}`
+  $('loopText').textContent = S.loop != null ? `Phrase ${S.loop + 1} · bars ${phrases[S.loop].bar0}–${phrases[S.loop].bar1}` : S.size === 'phone' ? 'No loop' : 'No loop — tap a phrase'
+  $('loopBtn').classList.toggle('on', S.loop != null)
+  $('speedPct').textContent = `${Math.round(S.speed * 100)} %`; $('speedBpm').textContent = `${Math.round(BPM * S.speed)} BPM`
+  $('time').value = now; $('timeOut').textContent = `${Math.floor(now / 60)}:${String(Math.floor(now % 60)).padStart(2, '0')} · bar ${barOf(now)}`
+  live.textContent = inside ? `Phrase ${p.i + 1} (${p.tag}${twin}), bars ${p.bar0} to ${p.bar1}, starts on ${nameOf(p.first.pitch_midi)}.` : `Rest. Next phrase ${nx ? nx.i + 1 : ''} starts on ${nx ? nameOf(nx.first.pitch_midi) : ''}.`
+}
+
+// ---- audio (sine tones, optional) --------------------------------------------------------
+let ac = null
+function tone(m, dur, gain = 0.12) {
+  ac ??= new AudioContext()
+  const o = ac.createOscillator(), v = ac.createGain(), t = ac.currentTime
+  o.type = 'sine'; o.frequency.value = 440 * 2 ** ((m - 69) / 12)
+  v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(gain, t + 0.02); v.gain.setValueAtTime(gain, t + Math.max(0.03, dur - 0.05)); v.gain.linearRampToValueAtTime(0, t + dur)
+  o.connect(v).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02)
+}
+function cue() {
+  const p = S.loop != null ? phrases[S.loop] : (() => { const c = phraseAt(S.t); return c && S.t <= c.start ? c : nextPhrase(S.t) ?? c })()
+  if (p) tone(p.first.pitch_midi, 0.9, 0.18)
+}
+
+// ---- loop --------------------------------------------------------------------------------
+let last = performance.now()
+function frame(ts) {
+  const dt = Math.min(1, (ts - last) / 1000); last = ts
+  if (S.playing) {
+    const prev = S.t
+    S.t += dt * S.speed
+    if (S.loop != null && S.t >= phrases[S.loop].loopEnd) S.t = phrases[S.loop].loopStart
+    if (S.t >= DURATION) { S.t = DURATION; setPlaying(false) }
+    if (S.tones && S.t > prev) for (const n of notes) if (n.onset_s > prev && n.onset_s <= S.t && n.band !== 'low') tone(n.pitch_midi, (n.offset_s - n.onset_s) / S.speed)
+  }
+  drawRoll(S.t, dt); drawOverview(S.t); updateText(S.t)
+  requestAnimationFrame(frame)
+}
+
+// ---- controls ----------------------------------------------------------------------------
+function setPlaying(on) {
+  S.playing = on
+  $('play').textContent = on ? 'Pause' : 'Play'; $('play').setAttribute('aria-pressed', on)
+  $('playBtn').setAttribute('aria-label', on ? 'Pause' : 'Play')
+  $('playIcon').innerHTML = on ? '<path d="M8 5v14M16 5v14"/>' : '<path d="m7 4 13 8-13 8z"/>'
+  if (on && ac?.state === 'suspended') ac.resume()
+}
+function setLoop(i) {
+  S.loop = i
+  if (i != null && (S.t < phrases[i].loopStart || S.t > phrases[i].loopEnd)) S.t = phrases[i].loopStart
+}
+function jumpPhrase(dir) {
+  const cur = phraseAt(S.t) ?? phrases[0]
+  const target = phrases[Math.max(0, Math.min(phrases.length - 1, cur.i + dir))]
+  if (S.loop != null) S.loop = target.i
+  S.t = target.loopStart
+}
+function sync() {
+  device.dataset.appearance = S.app
+  device.classList.toggle('phone', S.size === 'phone')
+  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.querySelectorAll('button')) b.setAttribute('aria-pressed', String(String(S[seg.dataset.key]) === b.dataset.v))
+  for (const b of document.querySelectorAll('[data-flag]')) b.setAttribute('aria-pressed', String(S[b.dataset.flag]))
+  for (const b of document.querySelectorAll('[data-guide]')) b.setAttribute('aria-pressed', String(S.guide === b.dataset.guide))
+  readColors(); scale()
+}
+function scale() {
+  const vp = $('viewport'), dw = S.size === 'phone' ? 844 : 1180, dh = S.size === 'phone' ? 390 : 820
+  const s = Math.min(1, vp.clientWidth / dw)
+  device.style.transform = `scale(${s})`; vp.style.height = `${dh * s}px`
+}
+document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return
+  const k = seg.dataset.key; S[k] = k === 'speed' ? Number(b.dataset.v) : b.dataset.v
+  if (k === 'window' || k === 'size') view = targetWindow(S.t)
+  sync()
+}))
+document.querySelectorAll('[data-flag]').forEach((b) => b.addEventListener('click', () => { S[b.dataset.flag] = !S[b.dataset.flag]; if (b.dataset.flag === 'tones' && S.tones) { ac ??= new AudioContext(); ac.resume() } sync() }))
+document.querySelectorAll('[data-guide]').forEach((b) => b.addEventListener('click', () => { S.guide = b.dataset.guide; sync() }))
+$('play').addEventListener('click', () => setPlaying(!S.playing))
+$('playBtn').addEventListener('click', () => setPlaying(!S.playing))
+$('loopBtn').addEventListener('click', () => setLoop(S.loop != null ? null : (phraseAt(S.t) ?? phrases[0]).i))
+$('cueBtn').addEventListener('click', cue)
+$('time').addEventListener('input', (e) => { S.t = Number(e.target.value); if (S.loop != null && (S.t < phrases[S.loop].loopStart || S.t > phrases[S.loop].loopEnd)) S.loop = null })
+roll.addEventListener('click', (e) => {
+  const h = roll._hit; if (!h) return
+  const r = roll.getBoundingClientRect(), sx = roll.offsetWidth / r.width
+  const x = (e.clientX - r.left) * sx, y = (e.clientY - r.top) * sx
+  const t = S.t + (x - h.nowX) / h.pps
+  if (y <= h.band) { const p = phrases.find((q) => t >= q.start - 0.1 && t <= q.end + 0.1); if (p) setLoop(S.loop === p.i ? null : p.i) }
+  else if (x > h.rail) { S.t = Math.max(0, t); if (S.loop != null && (S.t < phrases[S.loop].loopStart || S.t > phrases[S.loop].loopEnd)) S.loop = null }
+})
+over.addEventListener('click', (e) => { const r = over.getBoundingClientRect(); S.t = ((e.clientX - r.left) / r.width) * DURATION; if (S.loop != null) S.loop = null })
+addEventListener('keydown', (e) => {
+  if (e.target.closest('input')) return
+  if (e.code === 'Space') { e.preventDefault(); setPlaying(!S.playing) }
+  else if (e.key === '[') jumpPhrase(-1)
+  else if (e.key === ']') jumpPhrase(1)
+  else if (e.key === 'l' || e.key === 'L') $('loopBtn').click()
+  else if (e.key === 'n' || e.key === 'N') cue()
+})
+addEventListener('resize', scale)
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors)
+$('time').max = DURATION
+sync(); view = targetWindow(S.t)
+document.fonts?.ready.then(readColors)
+requestAnimationFrame(frame)
+</script>

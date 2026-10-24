@@ -8,7 +8,7 @@ export const PROCESSOR_NAME = 'splitune-processor'
 
 export interface ProcessorOptions {
   module: WebAssembly.Module
-  // Frames between position reports (~20 ms, docs/implementation/11-audio-engine.md §2).
+  // Frames between position reports (~20 ms, docs/specs/11-audio-engine.md §2).
   reportInterval: number
 }
 

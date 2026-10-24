@@ -1,4 +1,4 @@
-// Main-thread engine API (docs/implementation/11-audio-engine.md). Owns the AudioContext and the
+// Main-thread engine API (docs/specs/11-audio-engine.md). Owns the AudioContext and the
 // SplituneProcessor node, speaks the command/event protocol, and turns position reports into the
 // master clock. Public times are seconds on the decoded-PCM timeline.
 import { dspUrl, processorUrl } from './assets.ts'

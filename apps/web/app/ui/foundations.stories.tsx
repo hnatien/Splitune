@@ -41,7 +41,7 @@ import { Button } from './button.tsx'
 import { applyDisplay } from './display.ts'
 import { CUSTOM_ICONS } from './icons/index.tsx'
 
-// Foundations (docs/implementation/26-design-system.md §4–§11, 28 §2): what the tokens resolve to in
+// Foundations (docs/specs/26-design-system.md §4–§11, 28 §2): what the tokens resolve to in
 // the current appearance, contrast, distance and motion settings, read live from the cascade.
 
 const meta = { title: 'Foundations/Overview', parameters: { layout: 'padded' } } satisfies Meta

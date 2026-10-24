@@ -12,7 +12,7 @@ import {
   wholeWindow,
 } from './melody.ts'
 
-// Vocal Melody roll (step 18c, mockup docs/implementation/18c): the sung notes as a horizontal
+// Vocal Melody roll (step 18c, mockup docs/specs/assets/18c): the sung notes as a horizontal
 // piano-roll, time left to right onto a now line a fifth of the way in (what was just sung stays
 // in view), pitch upwards against a rail that shows the key: out-of-key rows faintly shaded, the
 // tonic ruled, the pitch being sung ringed. Notes carry their name or scale degree when they fit;

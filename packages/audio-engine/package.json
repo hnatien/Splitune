@@ -2,7 +2,7 @@
   "name": "@splitune/audio-engine",
   "version": "0.1.0",
   "private": true,
-  "description": "AudioWorklet engine — docs/implementation/11-audio-engine.md",
+  "description": "AudioWorklet engine — docs/specs/11-audio-engine.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
