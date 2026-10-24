@@ -1309,7 +1309,11 @@ Legacy reproduces P2 on this PC (0.836 item-weighted).
 - Time: about 17 s per 30 s (separation about 12 s).
 
 **Verification**
-- `services/ml`: `ruff check` clean; `ruff format --check` 126 files formatted; `pyright` (with `--pythonpath D:/venvs/s24-ml/Scripts/python.exe`) 0 errors; `pytest eval/tests` 26 passed.
+- `services/ml`: `ruff check` clean; `ruff format --check` 126 files formatted; `pyright` (with `--pythonpath D:/venvs/s24-ml/Scripts/python.exe`) 0 errors; `pytest eval/tests` 26 passed. The full suite: 214 passed, 1 skipped, 6 failed. All 6 are in packages this branch doesn't change (`git diff dev -- services/ml/packages` is empty), so they come from this Windows/CUDA PC or from step 09c, not this work:
+  - `test_recovery` ×2: worker kill / SIGTERM;
+  - `test_cpu_fallback_uses_the_small_model`;
+  - `test_specs_follow_the_notes_config`: expects the `mps` slot that step 09c renamed `gpu`;
+  - `test_stem_post` ×2: mix-minus level −13.1 dB vs < −15.
 - `packages/music-core` `pnpm test`: the `build-piano` goldens pass. 6 `build-tab` golden tests fail because they still expect `schema_version` 1.4.0 while `dev` emits 1.5.0 since step 09c; they fail on `dev` too and were left alone.
 - `npx biome check packages/music-core/src/cli.ts` clean.
 
