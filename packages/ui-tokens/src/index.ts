@@ -1,4 +1,4 @@
-// Typed names and metadata for the "Music Stand" tokens (docs/implementation/26-design-system.md).
+// Typed names and metadata for the "Music Stand" tokens (docs/specs/26-design-system.md).
 // CSS in this package is the source of truth; JS consumers (waveform canvas, alphaTab resources,
 // meters) read live values with readToken()/readColor() and re-read them on appearance change.
 
@@ -258,7 +258,7 @@ export type StemKind = keyof typeof STEMS
 
 /**
  * Confidence encoding (§5): ordinal, never hue. Ink value → dashed outline → "?" glyph.
- * Bands come from docs/implementation/05-analysis-schema.md.
+ * Bands come from docs/specs/05-analysis-schema.md.
  */
 export const CONFIDENCE = {
   high: { ink: '--ink', outline: 'none', glyph: null },

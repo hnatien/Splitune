@@ -1,5 +1,5 @@
 // WCAG 2.2 contrast and sRGB gamut of every semantic and component colour, in every appearance ×
-// contrast context (docs/implementation/26-design-system.md §4.6, 28-ui-quality-and-design-review.md §3).
+// contrast context (docs/specs/26-design-system.md §4.6, 28-ui-quality-and-design-review.md §3).
 import Color from 'colorjs.io'
 import { describe, expect, it } from 'vitest'
 import { COMPONENT_TOKENS, CONTRAST_PAIRS, SEMANTIC_ROLES } from './index.ts'

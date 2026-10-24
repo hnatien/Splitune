@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reproducible WOFF2 subsets of the self-hosted fonts (docs/implementation/26-design-system.md §6.1).
+# Reproducible WOFF2 subsets of the self-hosted fonts (docs/specs/26-design-system.md §6.1).
 # Downloads pinned upstream files, checks their SHA-256, subsets them with pyftsubset keeping every
 # OpenType layout feature (Fontsource subsets strip tnum/cv*/ss*) and the variation axes, and writes
 # WOFF2 plus the OFL licences to apps/web/public/fonts/. Run from anywhere: scripts/fonts/subset.sh

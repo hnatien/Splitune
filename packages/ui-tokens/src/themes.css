@@ -1,6 +1,6 @@
 /*
  * Tier 2 — semantic roles and tier 3 — component tokens, per appearance
- * (docs/implementation/26-design-system.md §2–§4).
+ * (docs/specs/26-design-system.md §2–§4).
  *
  * <html data-appearance="light|dark|stage" data-contrast="more|normal"> is set before first paint
  * by the inline appearance script; without JS the prefers-color-scheme / prefers-contrast blocks

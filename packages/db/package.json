@@ -2,7 +2,7 @@
   "name": "@splitune/db",
   "version": "0.0.0",
   "private": true,
-  "description": "Postgres schema, migrations, RLS, repositories and job queue \u2014 docs/implementation/03-data-model-and-storage.md",
+  "description": "Postgres schema, migrations, RLS, repositories and job queue \u2014 docs/specs/03-data-model-and-storage.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

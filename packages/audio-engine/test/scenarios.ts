@@ -1,4 +1,4 @@
-// Offline-render scenarios (docs/implementation/18-testing-strategy.md §2). Each one sets up the
+// Offline-render scenarios (docs/specs/18-testing-strategy.md §2). Each one sets up the
 // engine with commands, renders, measures, and checks the measurements. The same scenarios run
 // in Node through ProcessorCore (test/engine.test.ts) and in Chromium, Firefox and WebKit through
 // the real AudioWorklet in an OfflineAudioContext (test/browser/offline.spec.ts).

@@ -1,5 +1,5 @@
 // Measurements on rendered audio, shared by the Node tests and the browser harness
-// (docs/implementation/18-testing-strategy.md §2).
+// (docs/specs/18-testing-strategy.md §2).
 import type { ProcessorEvent } from '../src/protocol.ts'
 
 type Position = Extract<ProcessorEvent, { type: 'position' }>

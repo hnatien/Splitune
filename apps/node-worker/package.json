@@ -2,7 +2,7 @@
   "name": "@splitune/node-worker",
   "version": "0.0.0",
   "private": true,
-  "description": "Mac Node worker: finalize (music-core tab, alphaTex, summary) — docs/implementation/06-ml-pipeline-service.md §2",
+  "description": "Mac Node worker: finalize (music-core tab, alphaTex, summary) — docs/specs/06-ml-pipeline-service.md §2",
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env src/main.ts",

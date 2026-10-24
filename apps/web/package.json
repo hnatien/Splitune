@@ -2,7 +2,7 @@
   "name": "@splitune/web",
   "version": "0.0.0",
   "private": true,
-  "description": "Web app (TanStack Start PWA) \u2014 docs/implementation/10-web-app-architecture.md",
+  "description": "Web app (TanStack Start PWA) \u2014 docs/specs/10-web-app-architecture.md",
   "type": "module",
   "scripts": {
     "generate": "paraglide-js compile --project ./project.inlang --outdir ./app/paraglide --emit-ts-declarations && tsr generate",

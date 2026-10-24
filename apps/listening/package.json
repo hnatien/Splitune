@@ -2,7 +2,7 @@
   "name": "@splitune/listening",
   "version": "0.0.0",
   "private": true,
-  "description": "Blind listening test app (Prototype 1) — docs/implementation/08-evaluation-harness-and-prototypes.md",
+  "description": "Blind listening test app (Prototype 1) — docs/specs/08-evaluation-harness-and-prototypes.md",
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env src/server.ts",
