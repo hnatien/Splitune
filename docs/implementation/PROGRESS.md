@@ -1261,6 +1261,7 @@ Branch `impl/18c-vocal-melody` from `dev`. **Owner, 2026-10-24:** asked whether 
 - `pnpm lint`: Biome clean (2 pre-existing infos); `check-ui-tokens` fails on `packages/notation/src/fretboard-diagram.tsx:64` (`ease-out`), untouched here and failing on `dev`.
 - **Budget:** practice route 315.8 KB gzip vs 314.5 KB for `dev` built in the same checkout (+1.3 KB); **`dev` is already over the 310 KB budget.** The melody (6.5 KB gzip) and phrase strip (3.7 KB) load only for vocal songs.
 
+**Budget raised:** the owner raised the practice route budget to 320 KB ("Raise the practice route budget to 320 KB in bundle-budget.mjs and doc 10, noting dev was already at 314.5 KB"); `bundle-budget.mjs --enforce` passes at 315.8 KB.
+
 **Not done / needs the owner**
-- Budget decision (raise it, or trim the route; this step adds 1.3 KB).
 - Not checked: a real vocal song end to end, phone landscape (the compact strip has no story), WebKit, a screen reader by ear.
