@@ -15,6 +15,49 @@ export type AnalysisLiveState = {
   lastEvent: Event | undefined
 }
 
+/** Live state of the analysis it was collected for, so a re-run starts without the old run's. */
+export type ScopedLiveState = { analysisId: string | undefined; live: AnalysisLiveState }
+
+const IDLE: AnalysisLiveState = { waitingFor: undefined, failures: [], lastEvent: undefined }
+
+export function liveStateOf(
+  scoped: ScopedLiveState,
+  analysisId: string | undefined,
+): AnalysisLiveState {
+  return scoped.analysisId === analysisId ? scoped.live : IDLE
+}
+
+export function applyEvent(
+  scoped: ScopedLiveState,
+  analysisId: string,
+  event: Event,
+): ScopedLiveState {
+  const previous = liveStateOf(scoped, analysisId)
+  return {
+    analysisId,
+    live: {
+      waitingFor:
+        event.type === 'analysis.waiting'
+          ? event.runner
+          : event.type === 'stage.started'
+            ? undefined
+            : previous.waitingFor,
+      failures:
+        event.type === 'stage.failed'
+          ? [
+              ...previous.failures.filter((f) => f.stage !== event.stage),
+              {
+                stage: event.stage,
+                errorCode: event.error_code,
+                ...(event.fallback ? { fallback: event.fallback } : {}),
+              },
+            ]
+          : previous.failures,
+      lastEvent: event,
+    },
+  }
+}
+
 /**
  * Follows GET /v1/analyses/{id}/events (04 SSE) and keeps the Query cache current: each stage
  * change refetches the analysis, `analysis.done` also refreshes the song and the library.
@@ -25,11 +68,7 @@ export function useAnalysisEvents(
   songId: string,
 ): AnalysisLiveState {
   const queryClient = useQueryClient()
-  const [state, setState] = useState<AnalysisLiveState>({
-    waitingFor: undefined,
-    failures: [],
-    lastEvent: undefined,
-  })
+  const [state, setState] = useState<ScopedLiveState>({ analysisId: undefined, live: IDLE })
 
   useEffect(() => {
     if (!analysisId || typeof EventSource === 'undefined') return
@@ -47,26 +86,7 @@ export function useAnalysisEvents(
         return
       }
       if (parsed.type === 'progress') return
-      setState((previous) => ({
-        waitingFor:
-          parsed.type === 'analysis.waiting'
-            ? parsed.runner
-            : parsed.type === 'stage.started'
-              ? undefined
-              : previous.waitingFor,
-        failures:
-          parsed.type === 'stage.failed'
-            ? [
-                ...previous.failures.filter((f) => f.stage !== parsed.stage),
-                {
-                  stage: parsed.stage,
-                  errorCode: parsed.error_code,
-                  ...(parsed.fallback ? { fallback: parsed.fallback } : {}),
-                },
-              ]
-            : previous.failures,
-        lastEvent: parsed,
-      }))
+      setState((previous) => applyEvent(previous, analysisId, parsed))
       void queryClient.invalidateQueries({ queryKey: analysisKey })
       if (parsed.type === 'analysis.done') {
         source.close()
@@ -79,5 +99,5 @@ export function useAnalysisEvents(
     return () => source.close()
   }, [analysisId, songId, queryClient])
 
-  return state
+  return liveStateOf(state, analysisId)
 }

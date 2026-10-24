@@ -24,6 +24,7 @@
     "db:studio": "pnpm --filter @splitune/db studio",
     "seed": "pnpm --filter @splitune/db seed",
     "workers": "node scripts/workers.mjs",
+    "workers:prod": "node scripts/dev.mjs --prod-workers",
     "examples:build": "node --env-file-if-exists=.env apps/api/scripts/examples/build.ts",
     "secrets:scan": "gitleaks git --redact --verbose",
     "audit:deps": "node scripts/audit.mjs"

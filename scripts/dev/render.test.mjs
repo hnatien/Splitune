@@ -37,6 +37,7 @@ function makeState(overrides = {}) {
     tick: 0,
     now,
     quitting: false,
+    mode: 'local dev',
     branch: 'dev',
     cwd: '~/Projects/Splitune',
     ...overrides,
@@ -259,6 +260,12 @@ describe('renderFrame', () => {
   it('falls back to one header line on a short terminal', () => {
     const { lines } = renderFrame(makeState(), { cols: 120, rows: 16, theme: createTheme(1) })
     expect(plain(lines)[0]).toMatch(/^✻ Splitune local dev · dev/)
+  })
+
+  it('names production workers in the header', () => {
+    const state = makeState({ mode: 'PRODUCTION workers' })
+    const { lines } = renderFrame(state, { cols: 120, rows: 16, theme: createTheme(1) })
+    expect(plain(lines)[0]).toMatch(/^✻ Splitune PRODUCTION workers · dev/)
   })
 
   it('gives every status a glyph and a word, not only a colour', () => {

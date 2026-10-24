@@ -3,6 +3,11 @@
 // (piped, CI) it prints prefixed log lines instead. Stopping sends one SIGINT to each pnpm, which
 // passes it on, so workers finish their running job first; a second q or Ctrl-C kills every process
 // group outright. Windows has neither, so there stopping kills each process tree at once.
+//
+// `pnpm workers:prod` (--prod-workers): the same dashboard for a machine's production workers in
+// the foreground, e.g. a Windows PC without launchd (25-personal-mode.md §6). Only the two workers,
+// both reading .env.worker; .env is never loaded, because inherited variables win over an env file
+// in both workers and would point them at the local stack.
 import { execFile, execFileSync, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -12,11 +17,34 @@ import { fileURLToPath } from 'node:url'
 import { createTheme, parseLogLine, renderFrame, visibleLogs } from './dev/render.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-if (existsSync(join(root, '.env'))) {
+const prodWorkers = process.argv.includes('--prod-workers')
+const WORKER_ENV_FILE = join(root, '.env.worker')
+if (prodWorkers) {
+  if (!existsSync(WORKER_ENV_FILE)) {
+    throw new Error('.env.worker is missing: copy .env.worker.example and fill it in first')
+  }
+} else if (existsSync(join(root, '.env'))) {
   process.loadEnvFile(join(root, '.env'))
 }
 const MAX_LOG_LINES = 5000
 const FRAME_MS = 100
+
+const PROD_WORKERS = [
+  {
+    id: 'node-worker',
+    label: 'node-worker',
+    command: ['pnpm', '--silent', '--filter', '@splitune/node-worker', 'run', 'start'],
+    ready: /^worker started\b/,
+  },
+  {
+    id: 'ml-worker',
+    label: 'ml-worker',
+    command: ['pnpm', '--silent', '--filter', '@splitune/ml', 'run', 'ml-worker'],
+    // What the Mac's launchd agent sets (services/ml/deploy).
+    env: { ML_MODE: 'local', SPLITUNE_ENV_FILE: WORKER_ENV_FILE },
+    ready: /^worker started\b/,
+  },
+]
 
 const SERVICES = [
   {
@@ -63,7 +91,7 @@ function gitBranch() {
 }
 
 const state = {
-  services: SERVICES.map((def) => ({
+  services: (prodWorkers ? PROD_WORKERS : SERVICES).map((def) => ({
     ...def,
     status: 'pending',
     detail: undefined,
@@ -78,6 +106,7 @@ const state = {
   now: Date.now(),
   quitting: false,
   logHeight: 0,
+  mode: prodWorkers ? 'PRODUCTION workers' : 'local dev',
   branch: gitBranch(),
   cwd: root.startsWith(homedir()) ? `~${root.slice(homedir().length)}` : root,
 }
@@ -134,6 +163,7 @@ function run(service, [command, ...args]) {
     cwd: root,
     detached: process.platform !== 'win32',
     windowsHide: true,
+    env: { ...process.env, ...service.env },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   service.pid = child.pid
@@ -189,11 +219,13 @@ function stop(service) {
   return exited
 }
 
-// Runs the stack, then starts whichever services aren't already up (all of them the first time).
+// Runs the stack (if any), then starts whichever services aren't already up (all of them the first
+// time).
 async function startAll() {
-  const [stack, ...apps] = state.services
+  const stack = state.services.find((s) => s.kind === 'task')
+  const apps = state.services.filter((s) => s !== stack)
   for (const service of apps) if (!children.has(service.id)) service.detail = undefined
-  if (!(await start(stack))) {
+  if (stack && !(await start(stack))) {
     for (const service of apps)
       if (!children.has(service.id)) service.detail = 'stack did not start; see its log'
     return

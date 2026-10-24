@@ -1229,3 +1229,14 @@ Built in the worktree `.claude/worktrees/guitar-notes-18b` on `impl/18b-guitar-n
 - No "low string on top" option; no tuning option in the Worker, so 5-string bass / 7-string guitar exist only in stories.
 
 **Local leftovers:** the test account has a new song "Borderline (18b test)" (`220102de-…`); SeaweedFS CORS was widened to :3010 during the run and restored from `infra/seaweedfs/cors.json`; the worktree's `.env` was removed.
+
+## 2026-10-24 — Production workers on the Windows PC (`pnpm workers:prod`)
+Branch `impl/prod-workers-windows` from `dev`. **Symptom:** "Processing machine offline" while the Windows PC ran workers: `pnpm dev:all` reads only `.env`, so its workers heartbeat into local Postgres; production only ever saw `ml-mac`/`node-mac`, which stopped at 04:00 UTC.
+
+- `scripts/dev.mjs --prod-workers` (`pnpm workers:prod`): the `dev:all` dashboard with only node-worker (`run start`) and ml-worker (`SPLITUNE_ENV_FILE=.env.worker`, `ML_MODE=local`); `.env` is not loaded, since inherited variables win over the env file in both workers. Header reads "PRODUCTION workers".
+- One machine's ML worker at a time (owner's choice, 2026-10-24: "i will decide myself by turning on which one"). Decoded audio and raw separated stems are worker-local and `audio_hash` follows the FFmpeg build (the PC has 9.0.1, the Mac 8.1), so a stage handed across machines fails: started by hand next to the Mac, `ml-windows` failed "Risk It All" (analysis `9790850e…`) `stem_post`, `chords` and `notes.guitar` with `decoded_audio_mismatch`; it finished `partial` ("Analyse again" re-runs it). Sharing those intermediates through R2 (~70–100 MB per song) or pinning an analysis to its machine were considered and not built.
+- The PC's `.env.worker` (git-ignored): `ml-windows`/`node-windows`, Windows `FFMPEG_BIN_DIR`, `ML_GPU_SLOTS=1`, `ML_TORCH_DEVICE=cuda`, `PG_DUMP_DIR` empty (the Mac keeps the backup).
+
+**Verification**
+- `npx biome check scripts package.json`: clean. `npx vitest run --dir scripts`: 45/45 (1 new: header names production workers).
+- `pnpm workers:prod` in a terminal (with the FFmpeg preflight that was later dropped): header "PRODUCTION workers"; node-worker started and production's `worker_heartbeats` showed `node-windows` 5 s old; Ctrl-C left no worker processes. The ML worker's launch without the preflight was not re-run here (the owner's hand-started `ml-windows` was live); it is the same command and environment the owner ran by hand, which heartbeat as `ml-windows`. 
