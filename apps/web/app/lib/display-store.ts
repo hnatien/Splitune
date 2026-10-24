@@ -30,6 +30,10 @@ export type PracticeDefaults = {
   pianoVoicing: 'smooth' | 'root'
   /** Piano chord chart: hands shown on the keyboard. */
   pianoHands: 'both' | 'right'
+  /** Vocal Melody: what the notes say (note names, scale degrees or nothing). */
+  melodyLabels: 'names' | 'degrees' | 'off'
+  /** Vocal Melody: the pitch window follows what's on screen, or holds the whole song. */
+  melodyWindow: 'follow' | 'whole'
 }
 
 /** The engine clamps its display offset to ±150 ms (`MAX_DISPLAY_OFFSET`, 11 §3). */
@@ -46,6 +50,8 @@ export const DEFAULT_PRACTICE: PracticeDefaults = {
   volumePct: 100,
   pianoVoicing: 'smooth',
   pianoHands: 'both',
+  melodyLabels: 'names',
+  melodyWindow: 'follow',
 }
 
 // Storage can be missing (SSR) or throw (privacy modes, blocked storage): preferences then last
