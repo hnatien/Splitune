@@ -131,6 +131,12 @@ WCAG 2.2 AA (plus the design QA checklist in `28-ui-quality-and-design-review.md
 - **Loop seam:** inside a loop the lanes draw past the loop's end into its next pass (each pass clipped at the end), and the neck takes the loop start's window in the loop's last half second, so the wrap neither blanks nor moves anything. A clock jump over 0.25 s between frames counts as a seek: the neck re-frames at once.
 - Notes load through the chord-sheet chunk (12 §10, 7.96 KB gzip); route JS 310,392 B of the 310 KB budget (317,440 B; raised by the owner on 2026-10-24), +335 B over `dev` built in the same checkout path (build output varies by path, so only same-path builds compare).
 
+
+## Implementation notes (step 18c, 2026-10-24)
+- Vocals' notes load with the summary (they have no tab), go through corrections in the Worker (`buildMelody`, music-core) and keep their sung timing: no quantization, since phrasing off the beat is what a singer copies. The Worker also returns the phrases, the range and the key's scale.
+- The roll and the strip each read `audio.position()` once per frame; the strip's state changes only when the phrase, the next phrase or the beat count does. Inside a loop the roll draws the next pass past the loop's end (`rollStretches`, shared with the guitar lanes), and the past to the left of the now line as it was.
+- The melody and the phrase strip load through the chord-sheet and chord-strip chunks (12 §10).
+
 ## Open questions
 - Page-flip vs scroll default for tab at different tempos (QX13) — A/B in beta.
 - Legibility at 1–2 m on phones (QX3) — test notation scale presets.

@@ -35,8 +35,8 @@ export function useRecommendedView() {
 /**
  * What the paper shows, as the status bar's view switch reads it: chords (the chord sheet, or the
  * glance view on phone portrait, its default) or the notation (the tab or guitar's Notes; piano:
- * the falling notes or the staff) once it exists and isn't held back by a chords-only
- * recommendation.
+ * the falling notes or the staff; vocals: the melody) once it exists and isn't held back by a
+ * chords-only recommendation.
  */
 export function useShownView(layout: PracticeLayout): 'tab' | 'chords' {
   const { layers } = usePractice()
@@ -45,7 +45,9 @@ export function useShownView(layout: PracticeLayout): 'tab' | 'chords' {
   const recommended = useRecommendedView()
   const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
   if (wanted === 'chords' && layers.chords) return 'chords'
-  return (layers.tab || layers.roll) && (!recommended.chordsOnly || forceTab) ? 'tab' : 'chords'
+  return (layers.tab || layers.roll || layers.melody) && (!recommended.chordsOnly || forceTab)
+    ? 'tab'
+    : 'chords'
 }
 
 export function NotationPane({
@@ -84,13 +86,14 @@ export function NotationPane({
       />
     )
   }
-  if (layers.chords || layers.roll || layers.tab) {
+  const notesLayer = layers.roll || layers.tab || layers.melody
+  if (layers.chords || notesLayer) {
     return (
       <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', className)} />}>
         <ChordSheet
           className={className}
           onBarActivate={activate}
-          notes={(layers.roll || layers.tab) && (notation || !layers.chords)}
+          notes={notesLayer && (notation || !layers.chords)}
           compact={compact}
         />
       </Suspense>
@@ -111,7 +114,9 @@ export function NotationPane({
       <p id={placeholderId} className="text-center text-read-label">
         {data.instrument === 'piano'
           ? m['practice.placeholder_piano']()
-          : m['practice.placeholder']()}
+          : data.instrument === 'vocals'
+            ? m['practice.placeholder_vocals']()
+            : m['practice.placeholder']()}
       </p>
       <AnalysisStatus data={data} songId={practice.songId} />
     </section>

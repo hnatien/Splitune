@@ -55,6 +55,12 @@ export function noteName(midi: number): string {
   return `${pcName(((midi % 12) + 12) % 12, 'sharp')}${Math.floor(midi / 12) - 1}`
 }
 
+/** A pitch named in the song's key with its octave (E♭4, not D#4), with ♭ and ♯ glyphs. */
+export function spelledNote(midi: number, names: readonly string[]): string {
+  const name = names[((midi % 12) + 12) % 12] ?? pcName(((midi % 12) + 12) % 12, 'sharp')
+  return `${name.replace('b', '♭').replace('#', '♯')}${Math.floor(midi / 12) - 1}`
+}
+
 export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewModel {
   const bands: BandThresholds = music.bands
   const confidence = (c: number) => confidenceBand(c, bands)

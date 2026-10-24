@@ -71,25 +71,29 @@ export function PracticeBanners() {
 
   return (
     <>
-      {recommended.chordsOnly && !forceTab && (layers.tab || layers.roll) && (
+      {recommended.chordsOnly && !forceTab && (layers.tab || layers.roll || layers.melody) && (
         <Banner
           tone="info"
           title={
             layers.roll
               ? m['practice.chords_only_piano']()
-              : reason
-                ? (VIEW_REASON[reason]?.() ?? m['practice.chords_only']())
-                : m['practice.chords_only']()
+              : layers.melody
+                ? m['practice.chords_only_vocals']()
+                : reason
+                  ? (VIEW_REASON[reason]?.() ?? m['practice.chords_only']())
+                  : m['practice.chords_only']()
           }
           actions={
             <Button
               variant="outline"
               onClick={() => {
                 usePracticeUi.setState({ forceTab: true })
-                track('view_changed', { view: layers.roll ? 'notes' : 'tab' })
+                track('view_changed', { view: layers.roll || layers.melody ? 'notes' : 'tab' })
               }}
             >
-              {layers.roll ? m['practice.show_notes_anyway']() : m['practice.show_tab_anyway']()}
+              {layers.roll || layers.melody
+                ? m['practice.show_notes_anyway']()
+                : m['practice.show_tab_anyway']()}
             </Button>
           }
         />

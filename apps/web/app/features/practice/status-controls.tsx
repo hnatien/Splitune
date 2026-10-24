@@ -20,8 +20,10 @@ export function StatusControls({ layout }: { layout: PracticeLayout }) {
   const videoOpen = usePracticeUi((s) => s.videoOpen)
   return (
     <>
-      {(layers.chords || layers.tab || layers.roll) && <Legend />}
-      {layers.chords && (layers.tab || layers.roll) && <ViewSwitch layout={layout} />}
+      {(layers.chords || layers.tab || layers.roll || layers.melody) && <Legend />}
+      {layers.chords && (layers.tab || layers.roll || layers.melody) && (
+        <ViewSwitch layout={layout} />
+      )}
       {video.data && (
         <Toggle
           variant="default"
@@ -66,7 +68,8 @@ function Legend() {
 }
 
 // Tab / Notes / Chords (the tab, the lanes onto the neck, the chord sheet; the glance view on phone
-// portrait); piano's Chart / Notes / Staff (the chord chart, the falling notes, the grand staff).
+// portrait); piano's Chart / Notes / Staff (the chord chart, the falling notes, the grand staff);
+// vocals' Melody / Chords.
 // Choosing a notation over a chords-only recommendation is the banner's "Show tab anyway".
 function ViewSwitch({ layout }: { layout: PracticeLayout }) {
   const shown = useShownView(layout)
@@ -88,24 +91,28 @@ function ViewSwitch({ layout }: { layout: PracticeLayout }) {
         const view = next[0]
         if (view === 'tab' || view === 'staff' || view === 'notes') {
           usePracticeUi.setState({ view, forceTab: true })
-          track('view_changed', { view: view === 'tab' && piano ? 'notes' : view })
+          track('view_changed', {
+            view: view === 'tab' && (piano || layers.melody) ? 'notes' : view,
+          })
         } else if (view === 'chords') {
           usePracticeUi.setState({ view: 'chords' })
           track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
         }
       }}
     >
-      {piano
-        ? [
-            item('chords', m['practice.view_chart']()),
-            item('tab', m['practice.view_notes']()),
-            item('staff', m['practice.view_staff']()),
-          ]
-        : [
-            item('tab', m['practice.view_tab']()),
-            ...(layers.tab ? [item('notes', m['practice.view_notes']())] : []),
-            item('chords', m['practice.view_chords']()),
-          ]}
+      {layers.melody
+        ? [item('tab', m['practice.view_melody']()), item('chords', m['practice.view_chords']())]
+        : piano
+          ? [
+              item('chords', m['practice.view_chart']()),
+              item('tab', m['practice.view_notes']()),
+              item('staff', m['practice.view_staff']()),
+            ]
+          : [
+              item('tab', m['practice.view_tab']()),
+              ...(layers.tab ? [item('notes', m['practice.view_notes']())] : []),
+              item('chords', m['practice.view_chords']()),
+            ]}
     </ToggleGroup>
   )
 }
