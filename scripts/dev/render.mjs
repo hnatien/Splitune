@@ -188,7 +188,7 @@ const HEADER_MAX_WIDTH = 100
 const PID_MIN_WIDTH = 90
 
 function header(state, width, theme, compact) {
-  const meta = ['local dev', state.branch, state.cwd].filter(Boolean).join(' · ')
+  const meta = [state.mode, state.branch, state.cwd].filter(Boolean).join(' · ')
   const boxWidth = Math.min(width, HEADER_MAX_WIDTH)
   const inner = boxWidth - 4
   if (compact || inner < WORDMARK[0].length) {
