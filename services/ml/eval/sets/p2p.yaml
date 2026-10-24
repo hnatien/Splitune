@@ -1,0 +1,878 @@
+# Built locally by `eval/p2p.py build`; only this list is committed. `p2p` holds the
+# recipe of each excerpt (source, window, renderer, band, augmentation).
+id: p2p
+description: 'Step 24 P2p: piano transcription on real pianos and rendered pop piano, solo and in Slakh2100
+  bands (eval/p2p.py plan, seed 24)'
+licence: MAPS CC-BY-NC-SA-2.0-FR, SMD CC-BY-NC-SA-3.0, POP909 MIT, Slakh2100 CC-BY-4.0, sample libraries
+  under their own licences (research use)
+provenance: Zenodo 18160555 (MAPS), 13753319 (SMD v2), 4599666 (Slakh2100 redux test split), github.com/music-x-lab/POP909-Dataset;
+  rendered and mixed by eval/p2p.py build
+root: ~/datasets/p2p
+split: test
+tasks:
+- notes
+- sep
+items:
+- id: real-solo-00
+  audio: real-solo-00/mixture.wav
+  annotations:
+    notes: real-solo-00/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: fit
+    labels: acoustic solo ENSTDkCl
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkCl/MUS/MAPS_MUS-mz_333_2_ENSTDkCl.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-01
+  audio: real-solo-01/mixture.wav
+  annotations:
+    notes: real-solo-01/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: test
+    labels: acoustic solo ENSTDkCl
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkCl/MUS/MAPS_MUS-schu_143_3_ENSTDkCl.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-02
+  audio: real-solo-02/mixture.wav
+  annotations:
+    notes: real-solo-02/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: fit
+    labels: acoustic solo ENSTDkCl
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkCl/MUS/MAPS_MUS-liz_et_trans5_ENSTDkCl.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-03
+  audio: real-solo-03/mixture.wav
+  annotations:
+    notes: real-solo-03/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: test
+    labels: acoustic solo ENSTDkCl
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkCl/MUS/MAPS_MUS-deb_menu_ENSTDkCl.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-band-00
+  audio: real-band-00/mixture.wav
+  annotations:
+    notes: real-band-00/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: fit
+    labels: acoustic band ENSTDkCl dense
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkCl/MUS/MAPS_MUS-mz_570_1_ENSTDkCl.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track02053
+      t0: 30.0
+      density: dense
+      level: featured
+- id: real-band-01
+  audio: real-band-01/mixture.wav
+  annotations:
+    notes: real-band-01/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: test
+    labels: acoustic band ENSTDkCl sparse
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkCl/MUS/MAPS_MUS-grieg_butterfly_ENSTDkCl.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track01952
+      t0: 30.0
+      density: sparse
+      level: featured
+- id: real-solo-04
+  audio: real-solo-04/mixture.wav
+  annotations:
+    notes: real-solo-04/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: fit
+    labels: acoustic solo ENSTDkAm
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkAm/MUS/MAPS_MUS-schub_d760_3_ENSTDkAm.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-05
+  audio: real-solo-05/mixture.wav
+  annotations:
+    notes: real-solo-05/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: test
+    labels: acoustic solo ENSTDkAm
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkAm/MUS/MAPS_MUS-scn16_4_ENSTDkAm.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-06
+  audio: real-solo-06/mixture.wav
+  annotations:
+    notes: real-solo-06/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: fit
+    labels: acoustic solo ENSTDkAm
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkAm/MUS/MAPS_MUS-liz_rhap12_ENSTDkAm.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-07
+  audio: real-solo-07/mixture.wav
+  annotations:
+    notes: real-solo-07/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: test
+    labels: acoustic solo ENSTDkAm
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkAm/MUS/MAPS_MUS-chpn_op7_1_ENSTDkAm.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-band-02
+  audio: real-band-02/mixture.wav
+  annotations:
+    notes: real-band-02/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: fit
+    labels: acoustic band ENSTDkAm dense
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkAm/MUS/MAPS_MUS-scn15_6_ENSTDkAm.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track01996
+      t0: 30.0
+      density: dense
+      level: featured
+- id: real-band-03
+  audio: real-band-03/mixture.wav
+  annotations:
+    notes: real-band-03/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: test
+    labels: acoustic band ENSTDkAm sparse
+  p2p:
+    source:
+      kind: maps
+      midi: maps/ENSTDkAm/MUS/MAPS_MUS-chpn-p15_ENSTDkAm.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track01898
+      t0: 30.0
+      density: sparse
+      level: featured
+- id: real-band-04
+  audio: real-band-04/mixture.wav
+  annotations:
+    notes: real-band-04/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: fit
+    labels: acoustic band SMD dense
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Brahms_Op005-01_002_20110315-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track01993
+      t0: 30.0
+      density: dense
+      level: featured
+- id: real-band-05
+  audio: real-band-05/mixture.wav
+  annotations:
+    notes: real-band-05/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: test
+    labels: acoustic band SMD sparse
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Rachmaninoff_Op036-01_007_20110315-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track01936
+      t0: 30.0
+      density: sparse
+      level: featured
+- id: real-band-06
+  audio: real-band-06/mixture.wav
+  annotations:
+    notes: real-band-06/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: fit
+    labels: acoustic band SMD dense
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Bach_BWV849-02_001_20090916-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track01881
+      t0: 30.0
+      density: dense
+      level: featured
+- id: real-band-07
+  audio: real-band-07/mixture.wav
+  annotations:
+    notes: real-band-07/ref.keyoff.csv
+  tags:
+    tier: real-band
+    split: test
+    labels: acoustic band SMD sparse
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Haydn_HobXVINo52-01_008_20110315-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+    band:
+      track: Track02069
+      t0: 30.0
+      density: sparse
+      level: featured
+- id: real-solo-08
+  audio: real-solo-08/mixture.wav
+  annotations:
+    notes: real-solo-08/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: fit
+    labels: acoustic solo SMD
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Liszt_VariationenBachmotivWeinenKlagenSorgenZagen_001_20090916-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-09
+  audio: real-solo-09/mixture.wav
+  annotations:
+    notes: real-solo-09/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: test
+    labels: acoustic solo SMD
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Chopin_Op028-17_005_20100611-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-10
+  audio: real-solo-10/mixture.wav
+  annotations:
+    notes: real-solo-10/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: fit
+    labels: acoustic solo SMD
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Beethoven_Op027No1-02_003_20090916-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+- id: real-solo-11
+  audio: real-solo-11/mixture.wav
+  annotations:
+    notes: real-solo-11/ref.keyoff.csv
+  tags:
+    tier: real-solo
+    split: test
+    labels: acoustic solo SMD
+  p2p:
+    source:
+      kind: smd
+      midi: smd/midi/Chopin_Op028-11_003_20100611-SMD.mid
+    window:
+    - 15.0
+    - 45.0
+- id: pop-solo-00
+  audio: pop-solo-00/mixture.wav
+  annotations:
+    notes: pop-solo-00/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: fit
+    labels: acoustic solo salamander heavy-pedal
+  p2p:
+    source:
+      kind: pop909
+      song: '353'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: salamander
+    pedal: bars
+    augment: {}
+- id: pop-solo-01
+  audio: pop-solo-01/mixture.wav
+  annotations:
+    notes: pop-solo-01/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: test
+    labels: acoustic solo splendid heavy-pedal room
+  p2p:
+    source:
+      kind: pop909
+      song: '508'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: splendid
+    pedal: bars
+    augment:
+      room: true
+- id: pop-solo-02
+  audio: pop-solo-02/mixture.wav
+  annotations:
+    notes: pop-solo-02/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: fit
+    labels: acoustic solo headroom heavy-pedal
+  p2p:
+    source:
+      kind: pop909
+      song: '472'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: headroom
+    pedal: bars
+    augment: {}
+- id: pop-solo-03
+  audio: pop-solo-03/mixture.wav
+  annotations:
+    notes: pop-solo-03/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: test
+    labels: acoustic solo upright heavy-pedal phone
+  p2p:
+    source:
+      kind: pop909
+      song: 018
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: upright
+    pedal: bars
+    augment:
+      phone: true
+- id: pop-solo-04
+  audio: pop-solo-04/mixture.wav
+  annotations:
+    notes: pop-solo-04/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: fit
+    labels: electric solo rhodes
+  p2p:
+    source:
+      kind: pop909
+      song: '425'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: rhodes
+    pedal: null
+    augment: {}
+- id: pop-solo-05
+  audio: pop-solo-05/mixture.wav
+  annotations:
+    notes: pop-solo-05/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: test
+    labels: electric solo wurlitzer room
+  p2p:
+    source:
+      kind: pop909
+      song: '076'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: wurlitzer
+    pedal: null
+    augment:
+      room: true
+- id: pop-solo-06
+  audio: pop-solo-06/mixture.wav
+  annotations:
+    notes: pop-solo-06/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: fit
+    labels: acoustic solo salamander off-a440
+  p2p:
+    source:
+      kind: pop909
+      song: '821'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: salamander
+    pedal: null
+    augment:
+      detune_cents: 30
+- id: pop-solo-07
+  audio: pop-solo-07/mixture.wav
+  annotations:
+    notes: pop-solo-07/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: test
+    labels: electric solo cp80
+  p2p:
+    source:
+      kind: pop909
+      song: '773'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: cp80
+    pedal: null
+    augment: {}
+- id: pop-solo-08
+  audio: pop-solo-08/mixture.wav
+  annotations:
+    notes: pop-solo-08/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: fit
+    labels: keys solo harpsichord
+  p2p:
+    source:
+      kind: pop909
+      song: '641'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: harpsichord
+    pedal: null
+    augment: {}
+- id: pop-solo-09
+  audio: pop-solo-09/mixture.wav
+  annotations:
+    notes: pop-solo-09/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: test
+    labels: keys solo clavinet phone
+  p2p:
+    source:
+      kind: pop909
+      song: '571'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: clavinet
+    pedal: null
+    augment:
+      phone: true
+- id: pop-solo-10
+  audio: pop-solo-10/mixture.wav
+  annotations:
+    notes: pop-solo-10/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: fit
+    labels: acoustic solo splendid off-a440
+  p2p:
+    source:
+      kind: pop909
+      song: '832'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: splendid
+    pedal: null
+    augment:
+      detune_cents: -25
+- id: pop-solo-11
+  audio: pop-solo-11/mixture.wav
+  annotations:
+    notes: pop-solo-11/ref.keyoff.csv
+  tags:
+    tier: pop-solo
+    split: test
+    labels: acoustic solo upright room
+  p2p:
+    source:
+      kind: pop909
+      song: '024'
+      tracks:
+      - MELODY
+      - PIANO
+    start_after_s: 20.0
+    render: upright
+    pedal: null
+    augment:
+      room: true
+- id: pop-band-00
+  audio: pop-band-00/mixture.wav
+  annotations:
+    notes: pop-band-00/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: acoustic band salamander dense featured
+  p2p:
+    source:
+      kind: pop909
+      song: '882'
+      tracks:
+      - PIANO
+    render: salamander
+    band:
+      track: Track01989
+      t0: 20.0
+      density: dense
+      level: featured
+    double: null
+- id: pop-band-01
+  audio: pop-band-01/mixture.wav
+  annotations:
+    notes: pop-band-01/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: acoustic band headroom sparse featured doubled
+  p2p:
+    source:
+      kind: pop909
+      song: '106'
+      tracks:
+      - PIANO
+    render: headroom
+    band:
+      track: Track01962
+      t0: 20.0
+      density: sparse
+      level: featured
+    double: guitar
+- id: pop-band-02
+  audio: pop-band-02/mixture.wav
+  annotations:
+    notes: pop-band-02/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: electric band rhodes dense featured
+  p2p:
+    source:
+      kind: pop909
+      song: '584'
+      tracks:
+      - PIANO
+    render: rhodes
+    band:
+      track: Track01903
+      t0: 20.0
+      density: dense
+      level: featured
+    double: null
+- id: pop-band-03
+  audio: pop-band-03/mixture.wav
+  annotations:
+    notes: pop-band-03/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: acoustic band splendid sparse buried
+  p2p:
+    source:
+      kind: pop909
+      song: '341'
+      tracks:
+      - PIANO
+    render: splendid
+    band:
+      track: Track02084
+      t0: 20.0
+      density: sparse
+      level: buried
+    double: null
+- id: pop-band-04
+  audio: pop-band-04/mixture.wav
+  annotations:
+    notes: pop-band-04/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: acoustic band upright dense featured doubled
+  p2p:
+    source:
+      kind: pop909
+      song: '562'
+      tracks:
+      - PIANO
+    render: upright
+    band:
+      track: Track01906
+      t0: 20.0
+      density: dense
+      level: featured
+    double: synth
+- id: pop-band-05
+  audio: pop-band-05/mixture.wav
+  annotations:
+    notes: pop-band-05/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: electric band wurlitzer sparse featured
+  p2p:
+    source:
+      kind: pop909
+      song: '834'
+      tracks:
+      - PIANO
+    render: wurlitzer
+    band:
+      track: Track01877
+      t0: 20.0
+      density: sparse
+      level: featured
+    double: null
+- id: pop-band-06
+  audio: pop-band-06/mixture.wav
+  annotations:
+    notes: pop-band-06/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: acoustic band salamander dense featured doubled
+  p2p:
+    source:
+      kind: pop909
+      song: '036'
+      tracks:
+      - PIANO
+    render: salamander
+    band:
+      track: Track01901
+      t0: 20.0
+      density: dense
+      level: featured
+    double: guitar
+- id: pop-band-07
+  audio: pop-band-07/mixture.wav
+  annotations:
+    notes: pop-band-07/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: acoustic band splendid sparse buried
+  p2p:
+    source:
+      kind: pop909
+      song: '908'
+      tracks:
+      - PIANO
+    render: splendid
+    band:
+      track: Track02005
+      t0: 20.0
+      density: sparse
+      level: buried
+    double: null
+- id: pop-band-08
+  audio: pop-band-08/mixture.wav
+  annotations:
+    notes: pop-band-08/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: acoustic band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track01899
+    window:
+    - 80.0
+    - 110.0
+- id: pop-band-09
+  audio: pop-band-09/mixture.wav
+  annotations:
+    notes: pop-band-09/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: acoustic band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track02026
+    window:
+    - 90.0
+    - 120.0
+- id: pop-band-10
+  audio: pop-band-10/mixture.wav
+  annotations:
+    notes: pop-band-10/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: acoustic band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track01963
+    window:
+    - 170.0
+    - 200.0
+- id: pop-band-11
+  audio: pop-band-11/mixture.wav
+  annotations:
+    notes: pop-band-11/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: acoustic band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track01967
+    window:
+    - 130.0
+    - 160.0
+- id: pop-band-12
+  audio: pop-band-12/mixture.wav
+  annotations:
+    notes: pop-band-12/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: acoustic band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track02017
+    window:
+    - 150.0
+    - 180.0
+- id: pop-band-13
+  audio: pop-band-13/mixture.wav
+  annotations:
+    notes: pop-band-13/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: electric band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track01917
+    window:
+    - 20.0
+    - 50.0
+- id: pop-band-14
+  audio: pop-band-14/mixture.wav
+  annotations:
+    notes: pop-band-14/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: fit
+    labels: electric band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track02074
+    window:
+    - 220.0
+    - 250.0
+- id: pop-band-15
+  audio: pop-band-15/mixture.wav
+  annotations:
+    notes: pop-band-15/ref.keyoff.csv
+  tags:
+    tier: pop-band
+    split: test
+    labels: electric band slakh-native dense
+  p2p:
+    source:
+      kind: slakh
+      track: Track02096
+    window:
+    - 100.0
+    - 130.0

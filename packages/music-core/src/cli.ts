@@ -211,6 +211,7 @@ export function runBuildPiano(raw: unknown): unknown {
       hand: n.hand,
       on_tick: n.onTick,
       off_tick: n.offTick,
+      residual_flagged: n.residualFlagged,
     })),
     swing_bars: result.swingBars,
     alphatex: result.alphaTex,

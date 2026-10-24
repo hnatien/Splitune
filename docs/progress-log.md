@@ -1267,3 +1267,50 @@ Branch `impl/18c-vocal-melody` from `dev`. **Owner, 2026-10-24:** asked whether 
 
 **Not done / needs the owner**
 - Not checked: a real vocal song end to end, phone landscape (the compact strip has no story), WebKit, a screen reader by ear.
+
+## 2026-10-25 — Step 24: Piano accuracy — Phases 0–1 (test set, harness, baseline; in progress)
+Branch `impl/24-piano-accuracy` from `dev` (`0eea044`), in worktree `.claude/worktrees/s24-piano` (another session was switching branches in the main checkout). Its own CUDA venv is `D:/venvs/s24-ml`; the shared `services/ml/.venv` is untouched.
+
+**Owner decisions:**
+- 2026-10-24: approved the Phase 0 plan and test set.
+- Chose to stream the 104 GB Slakh2100 redux archive, keeping only its test split (7.5 GB). It was streamed from the Hugging Face mirror `projectlosangeles/Slakh2100` (same 104,322,767,708-byte file) because Zenodo gave ~1 MB/s per connection.
+- No owner songs supplied yet.
+- Timing machine not chosen; timings here are this PC (RTX 3060, CUDA).
+
+**Phase 0** (`docs/research/ml/transcription-piano.md` §"2026-10 re-check"):
+- The pip `2.0.pt` is Transkun V2 NoExt (the KeyOff fine-tune). Its offsets are key releases, so gap 6's premise was wrong.
+- Aria-AMT (447 MB, MAPS 90.6, needs its own Python 3.11 / torchaudio ≤ 2.5 env) and the Edwards et al. robust Kong (MAPS 88.4) are the transcriber candidates. No 2025–26 piano model has released weights.
+- BS-Roformer-SW already tops MVSep's piano leaderboard. The only other open piano separator scores 4.90 dB.
+- PM2S / MIDI2ScoreTransformer for hands. PIG is offline, so ASAP staves are the reference.
+
+**Phase 1, built:**
+- `eval/p2p.py` (plan / build / separate / predict --chain / hands / report) and `eval/sets/p2p.yaml`, a registered set of 48 excerpts in four tiers plus P2's items as `legacy`. Definition in specs/08 "Implementation notes (step 24)".
+- Rendering uses sfizz 1.2.3 (`--use-eot`) and FluidSynth 2.6.1 with sample libraries from sfzinstruments and GeneralUser GS. Tools and datasets live under `D:\datasets` (`~/datasets` junction), with `_tools/` holding the downloaders (`pdl.py` parallel ranges, `resume_stream.py`).
+- `eval/tests/test_p2p.py` covers pedal extension, windows, top line, key shift and pickup beats.
+- music-core CLI `build-piano` now returns `residual_flagged` per note; the two `build-piano` goldens were refreshed.
+
+**Baseline** (`services/ml/eval/results/p2p/2026-10-24-baseline.md`): BS-Roformer-SW → Transkun mono, pedal dropped, constant confidence.
+
+Onset F1 on the chosen input:
+| tier | chosen | clean | mixture |
+|---|---|---|---|
+| real-solo | 0.923 | 0.923 | — |
+| real-band | 0.960 | — | — |
+| pop-solo | 0.847 | 0.924 | — |
+| pop-band | 0.876 | 0.947 | 0.661 |
+| legacy | 0.833 | — | — |
+
+Legacy reproduces P2 on this PC (0.836 item-weighted).
+
+- On real pianos, onset+offset F1 is 0.62 against key-release references vs 0.38 against pedal-extended ones.
+- Separation hurts harpsichord, clavinet, phone and roomy recordings; electric pianos are fine.
+- Calibration: one band, 0.917 held-out precision.
+- Hands: 0.881 on ASAP staves.
+- Time: about 17 s per 30 s (separation about 12 s).
+
+**Verification**
+- `services/ml`: `ruff check` clean; `ruff format --check` 126 files formatted; `pyright` (with `--pythonpath D:/venvs/s24-ml/Scripts/python.exe`) 0 errors; `pytest eval/tests` 26 passed.
+- `packages/music-core` `pnpm test`: the `build-piano` goldens pass. 6 `build-tab` golden tests fail because they still expect `schema_version` 1.4.0 while `dev` emits 1.5.0 since step 09c; they fail on `dev` too and were left alone.
+- `npx biome check packages/music-core/src/cli.ts` clean.
+
+**Next:** the owner's OK on the Phase 2–6 plan and hours (stop point 2); the owner's songs for the unreferenced tier. Re-run with `uv run python eval/p2p.py build|separate|predict|report` (datasets under `~/datasets`).
