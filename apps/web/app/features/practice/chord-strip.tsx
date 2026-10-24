@@ -5,6 +5,7 @@ import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ChordChip, type ChordTiming } from '@/ui/chord-chip'
 import { type ChordModel, chordsAround } from './model/view-model'
+import { useShownView } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
@@ -18,13 +19,17 @@ const ScoreTools = lazy(() =>
 const PianoStrip = lazy(() =>
   import('./piano-strip').then((module) => ({ default: module.PianoStrip })),
 )
+const PhraseStrip = lazy(() =>
+  import('./phrase-strip').then((module) => ({ default: module.PhraseStrip })),
+)
 
 // ChordStrip (12 §2, §4): the top of the paper — "now → next". The current chord follows the clock
 // at the larger reading size with its guitar shape beside it; the next chords run after it as
 // plain names, confidence by ink, dashed outline and "?" (never colour alone); tap any → editor
 // sheet. Level and capo sit at the strip's end. The names that don't fit fade out at the end, so
 // a cut name doesn't read as a shorter chord; the list's padding keeps focus rings unclipped.
-// Piano gets its own strip with the voicing on a keyboard (piano-strip.tsx), except on phones.
+// Piano gets its own strip with the voicing on a keyboard (piano-strip.tsx), except on phones;
+// over vocals' melody the strip follows the phrases instead (phrase-strip.tsx).
 
 const AFTER = 6
 
@@ -37,6 +42,9 @@ export function ChordStrip({
   className?: string
 }) {
   const { view, audio, layers, data, options } = usePractice()
+  // Phones in portrait show the glance view instead, so the desktop default stands for the rest.
+  const shown = useShownView('desktop')
+  const melody = layers.melody && shown === 'tab'
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
   const chords = view?.chords ?? []
   const [index, setIndex] = useState(-1)
@@ -81,7 +89,11 @@ export function ChordStrip({
         className,
       )}
     >
-      {layers.chords && data.instrument === 'piano' && !compact ? (
+      {melody ? (
+        <Suspense fallback={null}>
+          <PhraseStrip compact={compact} />
+        </Suspense>
+      ) : layers.chords && data.instrument === 'piano' && !compact ? (
         <Suspense fallback={null}>
           <PianoStrip chip={chip} />
         </Suspense>

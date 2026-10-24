@@ -2,6 +2,7 @@ import chords from '@splitune/contracts/fixtures/chords.json'
 import summary from '@splitune/contracts/fixtures/summary.json'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { EditPage } from './edit-page'
@@ -23,6 +24,9 @@ import {
   SONG_ID,
   seed,
   tone,
+  VOCAL_LINE,
+  VOCAL_STEMS,
+  VOCAL_SUMMARY,
 } from './practice-story-data'
 
 // The practice screen (27 §3.7) on the contracts' 8-bar Am–F–C–G fixture: the progressive states
@@ -1060,5 +1064,225 @@ export const GuitarNotesCapo: Story = {
     await userEvent.keyboard('{Escape}')
     const { neck } = await guitarNotes(canvasElement)
     await waitFor(() => expect(neck).toHaveAttribute('data-capo', '2'))
+  },
+}
+
+const VOCALS: Patch = {
+  instrument: 'vocals',
+  notes: VOCAL_LINE,
+  stems: VOCAL_STEMS,
+  summary: VOCAL_SUMMARY,
+}
+const VOCAL_KINDS: Kind[] = ['beats', 'stems', 'chords', 'notes.vocals', 'summary']
+
+const vocalMelody = async (canvasElement: HTMLElement) => {
+  const canvas = await playable(canvasElement)
+  // The melody's code loads on demand.
+  const region = await canvas.findByRole('region', { name: 'Melody' }, { timeout: 20_000 })
+  // Layers fade in (200 ms, 27 §3.7.3).
+  await waitFor(() => expect(region).toBeVisible())
+  const roll = region.querySelector('[data-slot=melody-roll]') as HTMLCanvasElement
+  const strip = await waitFor(() => {
+    const found = canvasElement.querySelector<HTMLElement>('[data-slot=phrase-strip]')
+    if (!found) throw new Error('no phrase strip yet')
+    return found
+  })
+  const text = (slot: string) => strip.querySelector(`[data-slot=${slot}]`)?.textContent ?? ''
+  const hud = () => canvasElement.ownerDocument.querySelector('[data-slot=pedal-hud]')
+  // Practice keys reach the page, not a focused button.
+  ;(canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur()
+  return { canvas, region, roll, strip, text, hud }
+}
+
+/** Vocals' Melody (step 18c): Melody / Chords; the roll under the phrase strip; phrase by phrase
+ * from the keyboard ([ and ]), L loops the phrase, P plays the note it starts on. */
+export const VocalMelody: Story = {
+  render: screen(VOCAL_KINDS, VOCALS),
+  play: async ({ canvasElement }) => {
+    const { canvas, region, roll, strip, text, hud } = await vocalMelody(canvasElement)
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await expect(
+      within(view)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Melody', 'Chords'])
+    await expect(within(view).getByRole('button', { name: 'Melody' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    // The canvas is hidden from screen readers; the picture around it says what is sung.
+    await expect(roll).toHaveAttribute('aria-hidden', 'true')
+    await expect(roll).toHaveAttribute('data-phrases', '4')
+    await expect(within(region).getByRole('img', { name: /^Rest, / })).toBeInTheDocument()
+    // The phrase strip replaces the chord strip: before the first phrase, it shows the next one.
+    await expect(canvasElement.querySelector('[data-slot=chord-strip] ol')).toBeNull()
+    await expect(text('phrase-now')).toBe('—')
+    await expect(text('phrase-start')).toBe('E4 (5)')
+    await expect(text('phrase-next')).toBe('1 · A on E4')
+
+    // Two bars on, the first phrase's G4 is being sung.
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}')
+    await waitFor(() => expect(roll).toHaveAttribute('data-sung', '67'))
+    await waitFor(() =>
+      expect(
+        within(region).getByRole('img', { name: 'Phrase 1, A, Bar 2: singing G4' }),
+      ).toBeInTheDocument(),
+    )
+    await expect(text('phrase-now')).toBe('Abars 1–2')
+
+    // The next phrase: entered a beat early, B starts on C5 (♭3 in A minor).
+    await userEvent.keyboard(']')
+    await waitFor(() => expect(hud()).toHaveTextContent('Phrase 2'))
+    // In the rest before it, the strip points at it.
+    await waitFor(() => expect(text('phrase-now')).toBe('—'))
+    await expect(text('phrase-start')).toBe('C5 (♭3)')
+    await expect(text('phrase-next')).toBe('2 · B on C5')
+    // L loops it (its bars), P plays its first note.
+    await userEvent.keyboard('l')
+    await expect((await canvas.findAllByText(/^Loop · bars 3–4/))[0]).toBeVisible()
+    await expect(within(strip).getByRole('button', { name: 'Loop this phrase' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await userEvent.keyboard('p')
+    await waitFor(() => expect(hud()).toHaveTextContent('C5'))
+    // Back a phrase ("[[" types "["): the loop moves with it.
+    await userEvent.keyboard('[[')
+    await expect((await canvas.findAllByText(/^Loop · bars 1–2/))[0]).toBeVisible()
+
+    // Chords, and back.
+    await userEvent.click(within(view).getByRole('button', { name: 'Chords' }))
+    const sheet = await canvas.findByRole('region', { name: 'Chord sheet' }, { timeout: 10_000 })
+    await waitFor(() => expect(sheet).toBeVisible())
+    await expect(canvasElement.querySelector('[data-slot=phrase-strip]')).toBeNull()
+    await userEvent.click(within(view).getByRole('button', { name: 'Melody' }))
+    await vocalMelody(canvasElement)
+  },
+}
+
+/** A phrase sung again is named by the same letter: the third phrase is A′. */
+export const VocalMelodyRepeat: Story = {
+  render: screen(VOCAL_KINDS, VOCALS),
+  play: async ({ canvasElement }) => {
+    const { text, hud } = await vocalMelody(canvasElement)
+    await userEvent.keyboard(']]]')
+    await waitFor(() => expect(hud()).toHaveTextContent('Phrase 3'))
+    await waitFor(() => expect(text('phrase-next')).toBe('3 · A′ on E4'))
+  },
+}
+
+/** A loop on bars 3–4 is the second phrase's: the strip's phrase loop shows it on. */
+export const VocalMelodyLoop: Story = {
+  render: screen(VOCAL_KINDS, VOCALS, { loop: '3-4' }),
+  play: async ({ canvasElement }) => {
+    const { canvas, strip } = await vocalMelody(canvasElement)
+    await expect((await canvas.findAllByText(/^Loop · bars 3–4/))[0]).toBeVisible()
+    await expect(within(strip).getByRole('button', { name: 'Loop this phrase' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  },
+}
+
+/** The guide vocal: the vocal stem on, quiet or off, from the strip; M (mute part) turns it off. */
+export const VocalMelodyGuide: Story = {
+  render: screen(VOCAL_KINDS, VOCALS),
+  play: async ({ canvasElement }) => {
+    const { strip } = await vocalMelody(canvasElement)
+    const guide = await within(strip).findByRole('group', { name: 'Guide vocal' })
+    const level = (name: string) => within(guide).getByRole('button', { name })
+    await waitFor(() => expect(level('On')).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(level('Quiet'))
+    await expect(level('Quiet')).toHaveAttribute('aria-pressed', 'true')
+    ;(canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur()
+    await userEvent.keyboard('m')
+    await waitFor(() => expect(level('Off')).toHaveAttribute('aria-pressed', 'true'))
+  },
+}
+
+/** Melody options: scale degrees instead of names, and the whole song's pitches instead of the
+ * phrase's. */
+export const VocalMelodyOptions: Story = {
+  render: screen(VOCAL_KINDS, VOCALS),
+  play: async ({ canvasElement }) => {
+    const { strip, roll } = await vocalMelody(canvasElement)
+    // Following the first phrases: E4–C5 with room, an octave and more.
+    await waitFor(() => expect(roll).toHaveAttribute('data-window', '62-74'))
+    await userEvent.click(within(strip).getByRole('button', { name: 'Melody options' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('button', { name: 'Scale degrees' }))
+    await waitFor(() => expect(roll).toHaveAttribute('data-labels', 'degrees'))
+    await userEvent.click(body.getByRole('button', { name: 'Whole song' }))
+    // The whole song, without the low-confidence octave slip.
+    await waitFor(() => expect(roll).toHaveAttribute('data-window', '62-76'))
+    // The options are this device's: put them back for the stories after this one.
+    await userEvent.click(body.getByRole('button', { name: 'Names' }))
+    await userEvent.click(body.getByRole('button', { name: 'Follow the phrase' }))
+    await waitFor(() => expect(roll).toHaveAttribute('data-labels', 'names'))
+    await userEvent.keyboard('{Escape}')
+  },
+}
+
+/** Uncertain notes: one medium, one low (the octave slip), dashed on the roll. */
+export const VocalMelodyUncertain: Story = {
+  render: screen(VOCAL_KINDS, VOCALS),
+  play: async ({ canvasElement }) => {
+    // A device default: an earlier story may have turned it off.
+    usePracticeDefaults.getState().update({ showUncertainty: true })
+    const { roll } = await vocalMelody(canvasElement)
+    await expect(roll).toHaveAttribute('data-medium', '1')
+    await expect(roll).toHaveAttribute('data-low', '1')
+  },
+}
+
+/** Below the quality gate: chords by default, "Show notes anyway" opens the melody. */
+export const VocalMelodyBelowGate: Story = {
+  render: screen(VOCAL_KINDS, {
+    ...VOCALS,
+    summary: {
+      ...VOCAL_SUMMARY,
+      per_instrument: VOCAL_SUMMARY.per_instrument.map((entry) => ({
+        ...entry,
+        recommended_view: 'chords_only',
+        reasons: ['quality_gate_failed'],
+      })),
+    },
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByText(m['practice.chords_only_vocals'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(canvas.queryByRole('region', { name: 'Melody' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Show notes anyway' }))
+    await vocalMelody(canvasElement)
+  },
+}
+
+export const VocalMelodyDark: Story = {
+  render: screen(VOCAL_KINDS, VOCALS, { loop: '3-4' }),
+  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    await vocalMelody(canvasElement)
+  },
+}
+
+export const VocalMelodyStage: Story = {
+  render: screen(VOCAL_KINDS, VOCALS, { loop: '3-4' }),
+  globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    const { strip } = await vocalMelody(canvasElement)
+    // Stage keeps the options out, as for piano.
+    await expect(within(strip).queryByRole('button', { name: 'Melody options' })).toBeNull()
+  },
+}
+
+/** Reduced motion: the roll turns a page at a time and the pitch window jumps instead of easing. */
+export const VocalMelodyReducedMotion: Story = {
+  render: screen(VOCAL_KINDS, VOCALS),
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    const { roll } = await vocalMelody(canvasElement)
+    await waitFor(() => expect(roll).toHaveAttribute('data-window', '62-74'))
   },
 }
