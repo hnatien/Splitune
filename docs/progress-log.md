@@ -1318,3 +1318,97 @@ Legacy reproduces P2 on this PC (0.836 item-weighted).
 - `npx biome check packages/music-core/src/cli.ts` clean.
 
 **Next:** the owner's OK on the Phase 2–6 plan and hours (stop point 2); the owner's songs for the unreferenced tier. Re-run with `uv run python eval/p2p.py build|separate|predict|report` (datasets under `~/datasets`).
+
+## 2026-10-25 — Step 24: Piano accuracy — Phases 2–6 (shipped; owner checks pending)
+Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run Phases 2-6 as planned. Time on this PC (RTX 3060) counts for the ~30 % budget." Mid-run the GPU was shared with two other step sessions and the production worker; CUDA "illegal memory access" crashes were retried automatically (`D:\datasets\_tools\retry.sh`). Quiet-GPU timings are the final report's.
+
+**Measured (eval/results/p2p/2026-10-24-phases.md, every candidate; 2026-10-24-final.md, baseline vs shipped):**
+- **Gap 3, mixture fallback:** YourMT3+ beats Transkun on band mixtures, 0.727 vs 0.684 (POP909 0.823 vs 0.703; Slakh 0.734 vs 0.620). It loses on Disklavier piano in a band (0.624 vs 0.729). Shipped.
+- **Gap 7, stereo:** onsets even; onset+offset +0.011 (better on 32 items, worse on 17). Shipped.
+- **Gap 5, bleed:** a 45 dB silence gate lifts held-out onset F1 0.855 → 0.873 and precision 0.880 → 0.919. The gain is on legacy BabySlakh, where the piano rests. Velocity, duration and confidence floors add nothing. Shipped.
+  - Found during verification: the gate dropped onsets placed a few ms before an attack that follows silence. It now also accepts the next frame.
+  - Segment joins add no errors (0.218 vs 0.221 errors per note).
+- **Gap 4, confidence:** the mean of the semi-CRF onset marginal and the velocity peak scores AUROC 0.885 held-out. Agreement with YourMT3+ (0.878) needs a second model pass. Calibration: 26 knots, ECE 0.361 → 0.009; bands high 0.953 / medium 0.638 / low 0.552 precision. No confidence floor. Shipped.
+- **Gap 2, input:**
+  - PANNs alone would wrongly bypass about 5 of 57 band songs.
+  - htdemucs_6s drums + bass + vocals below −15 dB catches 24/24 solos with 0/57 wrong bypasses, in about 3 s per 30 s. Shipped as `solo_check`; the chain is skipped when it fires.
+  - Separators: BS-Roformer-SW keeps the best stem (12.5 dB uSDR; Transkun 0.869 on its stems). Vocals-first 12.4 dB / 0.873, but its only gain is on solos, which the bypass covers. The SW + htdemucs_6s average 8.9 / 0.864. htdemucs_6s 5.0 / 0.676.
+- **Gap 8, transcribers** (stems):
+
+  | model | onset F1 |
+  |---|---|
+  | Transkun V2 NoExt (kept) | 0.869 |
+  | V2 Aug | 0.869 (key offsets 0.485 vs 0.570) |
+  | robust Kong | 0.837 |
+  | Aria-AMT | 0.822 |
+  | V2 | 0.812 |
+
+  The wheel's checkpoint is the KeyOff fine-tune. Agreement ensembles lower F1 (0.881 → 0.824–0.870). No fine-tuning.
+- **Gap 6, pedal:** offsets are already key releases (0.62 against key-release references vs 0.38 pedal-extended on real pianos). The pedal is kept as `Notes.sustain` and drawn as `\spd`/`\spu` marks under the bass staff. The roll keeps played length.
+- **Gap 9:**
+  - Electric pianos render-transcribe at 0.93–0.98 (P2's 0.68 was Slakh patches). Harpsichord/clavinet improve to 0.94 via the bypass.
+  - Hands: PM2S 0.927 vs `splitHands` 0.885 on 21 unseen ASAP pieces (0.912 vs 0.881 on all 231). Shipped as `Note.hand`.
+  - Off-grid share: 0.14–0.16 on real pianos, 0.02–0.04 on rendered pop. `quantize/` is untouched.
+- **End to end, chosen input onset F1:**
+
+  | tier | baseline | shipped |
+  |---|---|---|
+  | real-solo | 0.923 | 0.928 |
+  | real-band | 0.960 | 0.960 |
+  | pop-solo | 0.847 | 0.920 |
+  | pop-band | 0.876 | 0.877 |
+  | legacy | 0.833 | 0.869 |
+
+  Onset+offset improves under both conventions on every tier. Time per 30 s:
+  - solo 18.6 → 5.5 (real) and 17.9 → 6.3 (pop);
+  - band 17.3 → 17.3 (real) and 16.4 → 20.1 (pop, +23 %, within the 30 % budget);
+  - legacy 32.5 → 31.7.
+
+**Built**
+- Contracts 1.6.0: `Separation.solo_bypass`, `Notes.sustain`, `Note.hand`. Generated files and the `build-tab` goldens' schema version were refreshed.
+- `stage_separation`: `solo_check` config and run.
+- `stage_notes`:
+  - per-source transcriber (`mixture:`), with an island guard in `notes_placement`;
+  - Transkun `stereo` / `confidence` / `gate_db` / floors, plus semi-CRF scores and pedal (`transcribe_detailed`, `transcribe_with_pedal`);
+  - `pm2s_hands` (vendored MIT model code, register `pm2s-hand-part`, `fetch_models.py pm2s`).
+- Calibration tables `transkun-v2@2.0.1.piano.json` (26 knots) and `yourmt3-moe@….piano.json` (0.747).
+- Configs: `notes.personal.yaml` piano; `separation.personal.yaml` piano; `views.yaml` `changes` entry (gate unchanged).
+- music-core: `buildPianoScore` uses `Note.hand` when complete, snaps `sustain` to the 16th grid, and the alphaTex grand staff gets pedal marks. The CLI `build-piano` reports `residual_flagged`.
+- Web story fixture: piano sustain.
+- Eval:
+  - `p2p.py`: `detail`, `compare`, `sweep`, `confidence`, `calibrate`, `tags`, `aria`, `kong`, separator composites, chains `yourmt3` / `final`, PM2S in `hands`;
+  - `eval/aria_amt.py`, which runs Aria-AMT in-process on Windows from its own venv `D:/venvs/aria`.
+- Docs: specs 05, 06, 08, 21 and the research doc.
+
+**Cache keys invalidated:** every piano `separate` (solo-check params) and every `notes.piano` (new transcriber params, hands, mixture choice, calibration tables).
+
+**Verification**
+- `services/ml`:
+  - `ruff check` / `ruff format --check`: clean.
+  - `pyright` (worktree venv): 0 errors.
+  - `pytest`: 198 passed, 1 skipped, 4 failed, 26 errors. Since then, the Transkun stage test was updated and passes (`packages/stage_notes` 14/14, plus 4 clean-up tests).
+  - The 26 errors need Postgres, which was down (Docker not running) at the time.
+  - The 3 remaining failures are the pre-existing ones: `test_cpu_fallback_uses_the_small_model` and `test_stem_post` ×2. The earlier `test_specs_follow_the_notes_config` (`mps` → `gpu`) is fixed.
+- `pnpm contracts:check`: up to date.
+- `pnpm typecheck`: 13/13 turbo tasks; the ML package was checked directly because turbo doesn't pass `UV_PROJECT_ENVIRONMENT` (pyright 0, `tsc` ok).
+- `pnpm lint`: Biome clean, but the UI-token check fails on `packages/notation/src/fretboard-diagram.tsx:64` (`ease-out`). That file is from step 18b on `dev` and untouched here.
+- Unit tests:
+  - music-core 163/163;
+  - notation 37/37;
+  - contracts 45/45;
+  - audio-engine 53/53;
+  - analytics 19/19;
+  - ui-tokens 1262/1262;
+  - web unit 136/136.
+  - listening, storage, node-worker and db suites need Postgres/S3 (not running); `views.yaml` was parsed through `views.ts` by hand.
+- Stories (`practice.stories.tsx`, Piano*): Chromium 17/17 (one flake on the first run). WebKit times out at 15 s on every practice story on this PC, untouched ones included (WebKit 2370 freshly installed on Windows); not checked on the Mac.
+
+**Not done / needs the owner**
+- **The owner's songs:** no excerpts were supplied, so no real songs from the library have been re-analysed end to end, and there are no Notes/Staff screenshots of them. P2p has no owner tier.
+- **Electric-piano/keys gate (stop point 4), proposed:** piano → Chart when the song's mean calibrated confidence is < 0.80. On P2p this gates 4 songs with mean onset F1 0.516 and none above 0.9. At 0.85 it gates 8, including one at 0.894. Not built.
+- **Production workers after merging:**
+  - `git pull`;
+  - `uv sync` for the torch island;
+  - `scripts/fetch_models.py pm2s`;
+  - `pnpm workers restart`.
+- Not run: the dedicated small piano separator (MVSep 4.90 dB), MIDI2ScoreTransformer / Cluster-and-Separate hands, fine-tuning.

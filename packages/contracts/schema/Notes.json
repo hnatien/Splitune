@@ -66,6 +66,12 @@
         },
         "f0": {
           "$ref": "#/$defs/F0Track"
+        },
+        "sustain": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PedalInterval"
+          }
         }
       },
       "required": [
@@ -199,6 +205,13 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "hand": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
         }
       },
       "required": [
@@ -237,6 +250,23 @@
         "hop_s",
         "hz",
         "voicing_prob"
+      ]
+    },
+    "PedalInterval": {
+      "type": "object",
+      "properties": {
+        "on_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "off_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "on_s",
+        "off_s"
       ]
     }
   },

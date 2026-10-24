@@ -15,6 +15,9 @@ import { type Bar, barsToRender, barZeroTick, quote, split } from './alphatex-ba
 // - each hand writes up to two `\voice`s: a chord that keeps ringing over the hand's next onset
 //   moves to a second voice, so a held bass note sits under a moving line (stems up in the first
 //   voice, down in the second).
+// - the sustain pedal (notes.piano `sustain`, step 24) as bar markers under the bass staff:
+//   `\spd <ratio>` where it goes down, `\spu <ratio>` where it comes up, ratio = position in the
+//   bar; a pedal held over a bar line simply has no marker in the bars between.
 // Bars, durations and pickups follow the tab writer (alphatex-bars.ts); `noteMap` carries the
 // staff as well as bar, voice, beat and note.
 
@@ -34,6 +37,12 @@ export interface PianoAlphaTexInput {
   swingBars: readonly number[]
   key?: Pick<Key, 'tonic' | 'mode'>
   title?: string
+  sustain?: readonly PedalSpan[]
+}
+
+export interface PedalSpan {
+  onTick: number
+  offTick: number
 }
 
 export interface PianoNoteRef {
@@ -137,6 +146,25 @@ function clefsOf(notes: readonly PianoTexNote[], bars: readonly Bar[], initial: 
 }
 
 // alphaTex pitch: the key's spelling of the pitch class, the octave of its letter (B#3 is C4).
+// Pedal markers of one bar, in order (an up and a down on the same tick: up first, a re-pedal).
+function pedalTags(spans: readonly PedalSpan[], bar: Bar): string[] {
+  const length = bar.endTick - bar.startTick
+  const marks: [number, number, string][] = []
+  for (const span of spans) {
+    for (const [tick, order, tag] of [
+      [span.onTick, 1, 'spd'],
+      [span.offTick, 0, 'spu'],
+    ] as const) {
+      if (tick >= bar.startTick && tick < bar.endTick) {
+        marks.push([tick, order, tag])
+      }
+    }
+  }
+  return marks
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+    .map(([tick, , tag]) => `\\${tag} ${Number(((tick - bar.startTick) / length).toFixed(3))}`)
+}
+
 function speller(key: Pick<Key, 'tonic' | 'mode'>): (midi: number) => string {
   const names = keyNoteNames(key)
   return (midi) => {
@@ -236,6 +264,7 @@ export function toPianoAlphaTex(input: PianoAlphaTexInput): PianoAlphaTexResult 
           // Each staff carries its own key signature.
           if (barNumber === 0 && ks !== undefined) tags.push(`\\ks ${ks}`)
           if (staff === 0 && bar.pickup) tags.push('\\ac')
+          if (staff === 1) tags.push(...pedalTags(input.sustain ?? [], bar))
           texts[barNumber] = [...tags, texts[barNumber]].join(' ')
         })
       }

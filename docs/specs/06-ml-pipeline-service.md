@@ -203,6 +203,22 @@ Code: `services/ml/packages/stage_notes` (`notes.guitar|bass|vocals`), `services
 - The executor sets `analyses.status = running` on the first stage and writes `analyses.progress` + a `progress` event after each stage finishes or fails for good.
 - Node worker: `delete_prefix` (payload `{ user_id, prefixes }`, each prefix inside the user's, `deletePrefix` re-checks); finalize `params.profile` (`lite`: only missing chords make it partial); no recorded beats → analysis `failed`, finalize `skipped`, job done; song status set at the end.
 
+## Implementation notes (step 24, 2026-10-25)
+- **`separate`: solo check (piano).** `separation.personal.yaml` `instruments.piano.solo_check: {model: htdemucs_6s, threshold_db: -15}` runs htdemucs_6s first (about 3 s per 30 s on the RTX 3060).
+  - When its drums + bass + vocals outputs are below −15 dB of the mixture, that run becomes the separation (`solo_bypass.applied`) and the chain (BS-Roformer-SW) is skipped.
+  - Otherwise the chain runs as before, and the check's cost adds to the stage's `gpu_s`.
+  - P2p: 24/24 solo excerpts caught, 0/57 band excerpts.
+  - The check settings (model, threshold, its inference) are in the stage params, so the separation cache key changes for piano analyses.
+- **`notes.piano`:**
+  - `notes.personal.yaml` instruments take an optional `mixture: {transcriber, params}`, used when there is no stem (`stems_unavailable`, no piano stem). Piano uses YourMT3+ there. The mixture transcriber must run in the same island as the stem one (`notes_placement` checks this). `describe` picks the transcriber by source, so the key follows it.
+  - A solo bypass transcribes the mixture with the stem transcriber (Transkun) and reports `done`.
+  - Transkun params are now `stereo` (feed both channels), `confidence` (`constant | onset | interval | velocity | onset_velocity`), `gate_db` (drop notes whose onset is more than this far below the input's 95th-percentile 46 ms frame level), `min_velocity`, `min_duration_s` and `min_confidence`. Shipped: `{stereo: true, gate_db: 45, confidence: onset_velocity}`.
+  - Scores come from the semi-CRF's forward-backward marginals, computed per 16 s segment on the GPU (`stage_notes.transkun`).
+  - `hands: pm2s` adds a hand per note (`stage_notes.pm2s_hands`, vendored MIT model code, weights `pm2s-hand-part` via `scripts/fetch_models.py pm2s`) and its model ref.
+  - Sustain-pedal events go to `Notes.sustain`.
+  - All of these are stage params, so every `notes.piano` cache key changes.
+- **Islands:** unchanged. YourMT3+, Transkun and PM2S all run in the torch island's GPU slot.
+
 ## Open questions
 - Final vendor (P1) and contract terms (QL5, QM8); AudioShake credit price is not public.
 - ~~Whether Beat This! on CPU meets ≤10 s for a 4-min song~~ — yes on the M4 Mac: final0 2.6 s, small0 1.8 s warm (step 06).

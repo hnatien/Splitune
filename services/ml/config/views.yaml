@@ -40,3 +40,6 @@ changes:
   - date: 2026-10-23
     change: "piano notation supported (falling-notes roll); quality_gate piano pass by Prototype 2"
     models: [transkun-v2@2.0.1]
+  - date: 2026-10-25
+    change: "piano chain re-measured on P2p (step 24): solo check, YourMT3+ mixture fallback, stereo Transkun with a 45 dB gate, calibrated per-note confidence, PM2S hands; quality_gate piano stays pass (chosen-input onset F1 0.876-0.960 on band tiers, 0.920-0.928 solo); a per-song mean-confidence gate is proposed, not applied"
+    models: [transkun-v2@2.0.1, yourmt3-moe@mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b80_ps2, pm2s-hand-part@zenodo-10520196, htdemucs-6s]

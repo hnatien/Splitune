@@ -852,7 +852,14 @@ def cmd_build(args: argparse.Namespace) -> int:
 # A chain is one way of producing notes.piano: the separator, the notes config overrides and how
 # `chosen` picks its input. Phases 2-6 add chains; `baseline` is production on 2026-10-24.
 CHAINS: dict[str, dict[str, Any]] = {
-    "baseline": {"separator": "bs_roformer_sw", "notes": {}, "bypass": None},
+    "baseline": {"separator": "bs_roformer_sw", "notes": {}},
+    "yourmt3": {"separator": "bs_roformer_sw", "notes": {"transcriber": "yourmt3"}},
+    # Step 24's shipped chain: config/notes.personal.yaml and separation.personal.yaml as they are.
+    "final": {
+        "separator": "bs_roformer_sw",
+        "notes": None,
+        "solo_check": {"model": "htdemucs_6s", "threshold_db": -15.0},
+    },
 }
 
 
@@ -869,18 +876,61 @@ def has_band(item: dict[str, Any]) -> bool:
     return "band" in item["tags"]
 
 
-def cmd_separate(args: argparse.Namespace) -> int:
+# Composite separators (Phase 4): an average of two models' stems, and vocals removed by the
+# vocal model before BS-Roformer-SW runs on the remainder.
+COMPOSITES = {
+    "ens_sw_6s": ("bs_roformer_sw", "htdemucs_6s"),
+    "vocals_then_sw": ("mel_roformer_kim_vocals", "bs_roformer_sw"),
+}
+SEPARATORS = ("bs_roformer_sw", "htdemucs_6s", *COMPOSITES)
+
+
+def separate_one(name: str, mixture: Path, out: Path) -> float:
+    """Runs one configured model (or a composite) into `out`; returns its GPU seconds."""
     from stage_separation import config, models  # torch + audio-separator: only here
 
-    separator = CHAINS[args.chain]["separator"]
-    spec = config.load().models[separator]
+    cfg = config.load()
+    if name not in COMPOSITES:
+        result = models.separate(name, cfg.models[name], mixture, out)
+        return result.seconds
+    first, second = COMPOSITES[name]
+    if name == "ens_sw_6s":
+        seconds = 0.0
+        folders = [
+            out.parent
+            / ("sep" if m == "bs_roformer_sw" and (out.parent / "sep").is_dir() else f"sep-{m}")
+            for m in (first, second)
+        ]
+        for model, folder in zip((first, second), folders, strict=True):
+            if not (folder / "timing.json").is_file():
+                write_json(
+                    folder / "timing.json",
+                    {"seconds": separate_one(model, mixture, folder), "audio_s": WINDOW_S},
+                )
+            seconds += float(json.loads((folder / "timing.json").read_text())["seconds"])
+        a, b = folders
+        out.mkdir(parents=True, exist_ok=True)
+        for stem in ("piano", "guitar", "bass", "drums", "vocals", "other"):
+            if (a / f"{stem}.wav").is_file() and (b / f"{stem}.wav").is_file():
+                x, y = read_stereo(a / f"{stem}.wav"), read_stereo(b / f"{stem}.wav")
+                n = min(len(x), len(y))
+                write(out / f"{stem}.wav", (x[:n] + y[:n]) * np.float32(0.5))
+        return seconds
+    vocal = models.separate(first, cfg.models[first], mixture, out / "stage1")
+    rest = models.separate(second, cfg.models[second], vocal.files["other"], out)
+    if "vocals" in vocal.files:
+        write(out / "vocals.wav", read_stereo(vocal.files["vocals"]))
+    return vocal.seconds + rest.seconds
+
+
+def cmd_separate(args: argparse.Namespace) -> int:
     for item in load_items(args.tier):
-        out = stem_dir(item, separator)
+        out = stem_dir(item, args.separator)
         if (out / "piano.wav").is_file():
             continue
-        result = models.separate(separator, spec, Path(item["dir"]) / "mixture.wav", out)
-        write_json(out / "timing.json", {"seconds": result.seconds, "audio_s": WINDOW_S})
-        print(f"{separator} {item['id']}: {result.seconds:.1f}s", flush=True)
+        seconds = separate_one(args.separator, Path(item["dir"]) / "mixture.wav", out)
+        write_json(out / "timing.json", {"seconds": seconds, "audio_s": WINDOW_S})
+        print(f"{args.separator} {item['id']}: {seconds:.1f}s", flush=True)
     return 0
 
 
@@ -888,7 +938,8 @@ def notes_config(chain: dict[str, Any], path: Path) -> None:
     base = cast(
         dict[str, Any], yaml.safe_load((ML_ROOT / "config" / "notes.personal.yaml").read_text())
     )
-    base["instruments"]["piano"].update(chain["notes"])
+    if chain["notes"] is not None:
+        base["instruments"]["piano"] = {"transcriber": "transkun", **chain["notes"]}
     path.write_text(yaml.safe_dump(base), encoding="utf-8")
 
 
@@ -897,10 +948,47 @@ def run_path(chain: str, condition: str, item: dict[str, Any]) -> Path:
 
 
 def chosen_source(chain: dict[str, Any], item: dict[str, Any]) -> str:
-    """The input the chain transcribes: production separates whenever a piano stem exists."""
-    if chain["bypass"] is None:
-        return "stem"
-    raise NotImplementedError(chain["bypass"])
+    """What `chosen` feeds notes.piano: always the separation, which (with a bypass threshold)
+    may tell the stage to use the mixture."""
+    return "stem"
+
+
+def bypass_decision(chain: dict[str, Any], item: dict[str, Any]) -> dict[str, Any] | None:
+    """The `separate` stage's solo check (`solo_bypass`) on the item's stored stems of the check
+    model."""
+    check = chain.get("solo_check")
+    if check is None:
+        return None
+    from stage_separation import config
+    from stage_separation.separate import solo_bypass
+
+    spec = config.load().models[check["model"]]
+    folder = stem_dir(item, check["model"])
+    files = {
+        name: folder / f"{name}.wav" for name in spec.outputs if (folder / f"{name}.wav").is_file()
+    }
+    mixture = read_stereo(Path(item["dir"]) / "mixture.wav")
+    energy = float(np.sum(np.square(mixture, dtype=np.float64)))
+    return solo_bypass(spec, files, "piano", len(mixture), energy, float(check["threshold_db"]))
+
+
+def separation_seconds(chain: dict[str, Any], item: dict[str, Any], chosen: bool) -> float:
+    """GPU seconds the chain's separate stage spends on the item: the solo check, then the chain's
+    separator unless the check fired."""
+
+    def timed(separator: str) -> float:
+        path = stem_dir(item, separator) / "timing.json"
+        return (
+            float(json.loads(path.read_text(encoding="utf-8"))["seconds"])
+            if path.is_file()
+            else 0.0
+        )
+
+    decision = bypass_decision(chain, item) if chosen else None
+    check = timed(chain["solo_check"]["model"]) if decision is not None else 0.0
+    return check + (
+        0.0 if decision is not None and decision["applied"] else timed(chain["separator"])
+    )
 
 
 def cmd_predict(args: argparse.Namespace) -> int:
@@ -935,6 +1023,7 @@ def cmd_predict(args: argparse.Namespace) -> int:
                         for i in ("piano", "guitar", "bass", "drums")
                         if (sep_dir / f"{i}.wav").is_file()
                     }
+                    decision = bypass_decision(chain, item) if condition == "chosen" else None
                     inputs["separation"] = str(
                         local.separation(
                             decoded,
@@ -942,6 +1031,7 @@ def cmd_predict(args: argparse.Namespace) -> int:
                             "piano",
                             chain["separator"],
                             Path(tmp) / "separation.json",
+                            {"solo_bypass": decision} if decision else None,
                         )
                     )
                 started = time.monotonic()
@@ -953,6 +1043,26 @@ def cmd_predict(args: argparse.Namespace) -> int:
                     {"seconds": seconds, "audio_s": decoded.duration_s},
                 )
                 print(f"{args.chain} {condition} {item['id']}: {seconds:.1f}s", flush=True)
+    return 0
+
+
+def cmd_tags(args: argparse.Namespace) -> int:
+    """The shipped `tag` stage (PANNs) on every mixture → <item>/tags.json, timed."""
+    with tempfile.TemporaryDirectory() as tmp:
+        local = LocalRun(Path(tmp) / "work")
+        for item in load_items(args.tier):
+            dest = Path(item["dir"]) / "tags.json"
+            if dest.is_file():
+                continue
+            decoded = local.decode(Path(item["dir"]) / "mixture.wav")
+            started = time.monotonic()
+            local.keep(local.run("tag", {}, decoded), "tags", dest)
+            seconds = time.monotonic() - started
+            write_json(
+                dest.with_suffix(".timing.json"),
+                {"seconds": seconds, "audio_s": decoded.duration_s},
+            )
+            print(f"tags {item['id']}: {seconds:.1f}s", flush=True)
     return 0
 
 
@@ -1058,16 +1168,35 @@ def asap_annotations(path: Path) -> tuple[list[float], list[bool]]:
     return times, down
 
 
+PM2S = DATA / "_models" / "pm2s" / "src"  # a checkout of github.com/cheriell/PM2S (its split)
+
+
+def pm2s_valid_pieces() -> set[str]:
+    """ASAP folders PM2S never trained on: every performance in its validation split."""
+    rows = list(csv.DictReader((PM2S / "dev" / "metadata" / "metadata.csv").open(encoding="utf-8")))
+    folders: dict[str, set[str]] = {}
+    for r in rows:
+        if r["source"] == "ASAP":
+            folder = str(Path(r["performance_MIDI_external"].removeprefix("{ASAP}/")).parent)
+            folders.setdefault(folder.replace("\\", "/"), set()).add(r["split"])
+    return {f for f, splits in folders.items() if splits == {"valid"}}
+
+
 def cmd_hands(_: argparse.Namespace) -> int:
-    """splitHands (through buildPianoScore) on ASAP score MIDI: track 0 = treble staff (right
-    hand), track 1 = bass staff; per-note agreement, one row per piece."""
+    """Hands on ASAP score MIDI (track 0 = treble staff = right hand, track 1 = bass staff):
+    splitHands through buildPianoScore and the shipped PM2S hands (stage_notes.pm2s_hands),
+    per-note agreement per piece.
+    PM2S trained on ASAP's other pieces; `pm2s_valid` marks the ones it never saw."""
+    from stage_notes import pm2s_hands
+
+    valid = pm2s_valid_pieces()
     rows: list[dict[str, Any]] = []
     for score in sorted(ASAP.rglob("midi_score.mid")):
         midi = pretty_midi.PrettyMIDI(str(score))
         if len(midi.instruments) != 2:
             continue
         labelled = sorted(
-            (float(n.start), float(n.end), int(n.pitch), staff)
+            (float(n.start), float(n.end), int(n.pitch), staff, int(n.velocity))
             for staff, inst in enumerate(midi.instruments)
             for n in inst.notes
             if 21 <= n.pitch <= 108
@@ -1075,24 +1204,39 @@ def cmd_hands(_: argparse.Namespace) -> int:
         times, down = asap_annotations(score.with_name("midi_score_annotations.txt"))
         duration = float(midi.get_end_time()) + 1.0
         built = piano_score(
-            [(a, b, p, 0.9) for a, b, p, _ in labelled],
+            [(a, b, p, 0.9) for a, b, p, _, _ in labelled],
             beats_artefact(times, down, duration),
             duration,
         )
         hand = {n["note_id"]: n["hand"] for n in built}
-        correct = sum(
-            1
-            for i, (_, _, _, staff) in enumerate(labelled)
-            if hand.get(f"n{i:06d}") == ("right" if staff == 0 else "left")
+        right = [staff == 0 for *_, staff, _ in labelled]
+        split_ok = sum(
+            hand.get(f"n{i:06d}") == ("right" if r else "left") for i, r in enumerate(right)
         )
+        predicted = pm2s_hands.hands(
+            [a for a, *_ in labelled],
+            [b for _, b, *_ in labelled],
+            [p for _, _, p, _, _ in labelled],
+            [v for *_, v in labelled],
+        )
+        piece = score.parent.relative_to(ASAP).as_posix()
         rows.append(
             {
-                "piece": str(score.parent.relative_to(ASAP)),
+                "piece": piece,
                 "notes": len(labelled),
-                "correct": correct,
+                "correct": split_ok,
+                # PM2S part 0 is the right hand (checked against the staves).
+                "pm2s_correct": sum(
+                    (h == "right") == r for h, r in zip(predicted, right, strict=True)
+                ),
+                "pm2s_valid": piece in valid,
             }
         )
-        print(f"hands {rows[-1]['piece']}: {correct / len(labelled):.3f}", flush=True)
+        print(
+            f"hands {piece}: {split_ok / len(labelled):.3f} "
+            f"pm2s {rows[-1]['pm2s_correct'] / len(labelled):.3f}",
+            flush=True,
+        )
     write_json(ROOT / "hands.json", rows)
     return 0
 
@@ -1220,14 +1364,10 @@ def scores(
             m, _ = scoring.notes(keyoff, est)
             hit = matched(keyoff, est)
             timing = json.loads(path.with_suffix(".timing.json").read_text(encoding="utf-8"))
-            sep_seconds = 0.0
             source = chosen_source(chain, item) if condition == "chosen" else condition
-            if source == "stem":
-                sep_timing = stem_dir(item, chain["separator"]) / "timing.json"
-                if sep_timing.is_file():
-                    sep_seconds = float(
-                        json.loads(sep_timing.read_text(encoding="utf-8"))["seconds"]
-                    )
+            sep_seconds = (
+                separation_seconds(chain, item, condition == "chosen") if source == "stem" else 0.0
+            )
             rows.append(
                 {
                     "chain": chain_name,
@@ -1259,6 +1399,479 @@ def scores(
                     for j, n in enumerate(notes)
                 ]
     return rows, confidence
+
+
+# --- Transkun detail runs, clean-up sweep and confidence ---------------------------------------
+
+DETAIL = ROOT / "detail"
+INPUTS = ("clean", "stem", "mixture")
+SWEEP_GRID: dict[str, tuple[Any, ...]] = {
+    "min_velocity": (0, 15, 25, 35),
+    "min_duration_s": (0.0, 0.03, 0.06, 0.1),
+    "gate_db": (None, 25.0, 35.0, 45.0),
+}
+FLOORS = {
+    "onset": (0.5, 0.8, 0.9),
+    "interval": (0.1, 0.2, 0.3),
+    "velocity": (0.1, 0.15),
+    "onset_velocity": (0.4, 0.5, 0.55),
+}
+
+
+def input_audio(item: dict[str, Any], condition: str, separator: str = "bs_roformer_sw") -> Path:
+    base = Path(item["dir"])
+    if condition == "stem":
+        return stem_dir(item, separator) / "piano.wav"
+    return base / ("piano.wav" if condition == "clean" else "mixture.wav")
+
+
+def load_transkun(weights: str | None) -> Any:
+    """The shipped Transkun wrapper, optionally with another checkpoint (eval only)."""
+    from stage_notes.transkun import Transkun
+
+    model = Transkun()
+    if weights:
+        import torch
+        from splitune_ml_core.device import torch_device
+        from transkun import ModelTransformer  # pyright: ignore[reportMissingTypeStubs]
+
+        folder = Path(weights)
+        conf = ModelTransformer.Config()
+        conf.__dict__.update(json.loads((folder / "model.conf").read_text())["Model"]["config"])
+        net = ModelTransformer.TransKun(conf=conf)
+        checkpoint = torch.load(str(folder / "checkpoint.pt"), map_location="cpu")
+        net.load_state_dict(checkpoint.get("best_state_dict", checkpoint.get("state_dict")))
+        model._model = net.to(torch_device()).eval()  # pyright: ignore[reportPrivateUsage]
+    return model
+
+
+def cmd_detail(args: argparse.Namespace) -> int:
+    """Shipped Transkun.transcribe_detailed per item and input: every note with its three scores
+    and the sustain pedal, so clean-up params and confidence can be studied offline."""
+    from stage_notes.transkun import TRANSKUN_DEFAULTS
+
+    model = load_transkun(args.weights)
+    params = {**TRANSKUN_DEFAULTS, "segment_s": args.segment, "hop_s": args.hop}
+    for item in load_items(args.tier):
+        for condition in args.condition:
+            dest = DETAIL / args.name / condition / f"{item['id']}.json"
+            source = input_audio(item, condition, args.separator)
+            if dest.is_file() or not source.is_file():
+                continue
+            audio = read_stereo(source)
+            started = time.monotonic()
+            detailed = model.transcribe_detailed(
+                audio if args.stereo else audio.mean(axis=1), params
+            )
+            seconds = time.monotonic() - started
+            write_json(
+                dest,
+                {
+                    "notes": [
+                        [
+                            n.onset_s,
+                            n.offset_s,
+                            n.pitch_midi,
+                            n.velocity,
+                            n.onset,
+                            n.interval,
+                            n.velocity_peak,
+                        ]
+                        for n in detailed.notes
+                    ],
+                    "pedal": detailed.pedal,
+                    "seconds": seconds,
+                    "audio_s": len(audio) / RATE,
+                },
+            )
+            print(
+                f"{args.name} {condition} {item['id']}: {len(detailed.notes)} notes {seconds:.1f}s",
+                flush=True,
+            )
+    return 0
+
+
+ARIA_PYTHON = Path("D:/venvs/aria/Scripts/python.exe")
+ARIA_CHECKPOINT = DATA / "_models" / "aria" / "piano-medium-double-1.0.safetensors"
+
+
+def cmd_aria(args: argparse.Namespace) -> int:
+    """Aria-AMT (eval/aria_amt.py in its own venv) on every input, then its MIDI as a detail run
+    (`DETAIL/aria/...`): notes with velocity, scores 1.0 (it reports none), sustain from CC64."""
+    jobs: list[tuple[str, str]] = []
+    targets: list[tuple[Path, Path]] = []
+    for item in load_items(args.tier):
+        for condition in args.condition:
+            source = input_audio(item, condition)
+            dest = DETAIL / "aria" / condition / f"{item['id']}.json"
+            midi = ROOT / "aria-midi" / condition / f"{item['id']}.mid"
+            if dest.is_file() or not source.is_file():
+                continue
+            jobs.append((str(source), str(midi)))
+            targets.append((midi, dest))
+    job_file = ROOT / "aria-jobs.json"
+    write_json(job_file, jobs)
+    env = {**os.environ, "TQDM_DISABLE": "1"}
+    subprocess.run(
+        [str(ARIA_PYTHON), "-I", str(EVAL / "aria_amt.py"), str(ARIA_CHECKPOINT), str(job_file)],
+        check=True,
+        env=env,
+    )
+    for midi, dest in targets:
+        timing = json.loads(midi.with_suffix(".json").read_text(encoding="utf-8"))
+        notes: list[list[float]] = []
+        pedal: list[tuple[float, float]] = []
+        if midi.is_file():
+            data = pretty_midi.PrettyMIDI(str(midi))
+            notes = [
+                [a, b, p, v, 1.0, 1.0, 1.0] for a, b, p, v in midi_notes(data) if 21 <= p <= 108
+            ]
+            pedal = midi_pedal(data)
+        write_json(
+            dest,
+            {"notes": notes, "pedal": pedal, "seconds": timing["seconds"], "audio_s": WINDOW_S},
+        )
+    return 0
+
+
+KONG_CHECKPOINT = DATA / "_models" / "kong" / "high_resolution_MAESTRO_augmentations.pth"
+
+
+def kong_model() -> Any:
+    """Kong et al.'s note model with Edwards et al.'s augmentation-trained weights (Zenodo
+    10610212, CC-BY-4.0; note only, no pedal head), in piano_transcription_inference's own
+    transcriber. Built directly: its constructor re-downloads checkpoints under 160 MB and loads
+    weights non-strictly."""
+    import torch
+    from piano_transcription_inference import (  # pyright: ignore[reportMissingTypeStubs]
+        PianoTranscription,
+        config,
+    )
+    from piano_transcription_inference.models import (  # pyright: ignore[reportMissingTypeStubs]
+        Regress_onset_offset_frame_velocity_CRNN,
+    )
+
+    model = PianoTranscription.__new__(PianoTranscription)
+    model.segment_samples = 16000 * 10
+    model.frames_per_second = config.frames_per_second
+    model.classes_num = config.classes_num
+    model.onset_threshold, model.offset_threshod, model.frame_threshold = 0.3, 0.3, 0.1
+    model.pedal_offset_threshold = 0.2
+    net = Regress_onset_offset_frame_velocity_CRNN(
+        frames_per_second=config.frames_per_second, classes_num=config.classes_num
+    )
+    checkpoint = torch.load(str(KONG_CHECKPOINT), map_location="cpu", weights_only=False)
+    net.load_state_dict(checkpoint["model"], strict=True)
+    model.model = net.cuda().eval()
+    return model
+
+
+def cmd_kong(args: argparse.Namespace) -> int:
+    """The robust Kong model on every input → detail run `kong` (scores 1.0: it reports none)."""
+    model = kong_model()
+    for item in load_items(args.tier):
+        for condition in args.condition:
+            source = input_audio(item, condition)
+            dest = DETAIL / "kong" / condition / f"{item['id']}.json"
+            if dest.is_file() or not source.is_file():
+                continue
+            mono = read_stereo(source).mean(axis=1)
+            audio = np.asarray(resample_poly(mono, 16000, RATE), dtype=np.float32)
+            started = time.monotonic()
+            out = model.transcribe(audio, None)
+            seconds = time.monotonic() - started
+            notes = [
+                [
+                    float(e["onset_time"]),
+                    float(e["offset_time"]),
+                    int(e["midi_note"]),
+                    int(e["velocity"]),
+                    1.0,
+                    1.0,
+                    1.0,
+                ]
+                for e in out["est_note_events"]
+                if 21 <= int(e["midi_note"]) <= 108
+            ]
+            write_json(dest, {"notes": notes, "pedal": [], "seconds": seconds, "audio_s": WINDOW_S})
+            print(f"kong {condition} {item['id']}: {len(notes)} notes {seconds:.1f}s", flush=True)
+    return 0
+
+
+def load_detail(name: str, condition: str, item: dict[str, Any]) -> list[Any] | None:
+    from stage_notes.transkun import TranskunNote
+
+    path = DETAIL / name / condition / f"{item['id']}.json"
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return [TranskunNote(a, b, int(p), int(v), o, i, w) for a, b, p, v, o, i, w in data["notes"]]
+
+
+def events(notes: list[Any]) -> formats.NoteEvents:
+    rows = sorted((n.onset_s, n.offset_s, float(n.pitch_midi)) for n in notes)
+    return formats.NoteEvents(
+        np.array([[a, b] for a, b, _ in rows]).reshape(-1, 2), np.array([p for *_, p in rows])
+    )
+
+
+def detail_scores(
+    name: str, condition: str, items: list[dict[str, Any]], params: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """Onset and onset+offset F1 per item for a detail run, after clean_up with `params`."""
+    from stage_notes.transkun import TRANSKUN_DEFAULTS, clean_up
+
+    rows: list[dict[str, Any]] = []
+    for item in items:
+        notes = load_detail(name, condition, item)
+        if notes is None:
+            continue
+        if params:
+            mono = (
+                read_stereo(input_audio(item, condition)).mean(axis=1)
+                if params.get("gate_db")
+                else np.zeros(1, np.float32)
+            )
+            notes = clean_up(notes, mono, {**TRANSKUN_DEFAULTS, **params})
+        keyoff, _ = ref_notes(item, "keyoff")
+        pedoff = ref_notes(item, "pedoff")[0] if item["tier"] != "legacy" else keyoff
+        est = events(notes)
+        m, _ = scoring.notes(keyoff, est)
+        rows.append(
+            {
+                "item": item["id"],
+                "tier": item["tier"],
+                "split": item["split"],
+                "tags": " ".join(item["tags"]),
+                "onset_f1": m["onset_f1"],
+                "onset_precision": m["onset_precision"],
+                "onset_recall": m["onset_recall"],
+                "onoff_keyoff_f1": m["onset_offset_f1"],
+                "onoff_pedoff_f1": offset_f1(pedoff, est),
+            }
+        )
+    return rows
+
+
+def tier_means(rows: list[dict[str, Any]], key: str = "onset_f1") -> str:
+    return " | ".join(cell(mean([r for r in rows if r["tier"] == t], key)) for t in TIERS)
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Detail runs side by side (raw, no clean-up): onset F1 per tier for one input."""
+    items = load_items(args.tier)
+    out = [
+        f"| run ({args.condition}) | "
+        + " | ".join(TIERS)
+        + " | all | on+off key | on+off pedal | s / 30 s |",
+        "|---|" + "---|" * (len(TIERS) + 4),
+    ]
+    for name in args.name:
+        rows = detail_scores(name, args.condition, items)
+        folder = DETAIL / name / args.condition
+        timings = [
+            json.loads((folder / f"{i['id']}.json").read_text(encoding="utf-8"))
+            for i in items
+            if (folder / f"{i['id']}.json").is_file()
+        ]
+        per30 = (
+            statistics.fmean(t["seconds"] * 30 / t["audio_s"] for t in timings)
+            if timings
+            else float("nan")
+        )
+        out.append(
+            f"| {name} | {tier_means(rows)} | {cell(mean(rows, 'onset_f1'))} | "
+            f"{cell(mean(rows, 'onoff_keyoff_f1'))} | {cell(mean(rows, 'onoff_pedoff_f1'))} | "
+            f"{cell(per30)} |"
+        )
+    text = "\n".join(out)
+    print(text)
+    if args.out:
+        Path(args.out).write_text(text + "\n", encoding="utf-8")
+    return 0
+
+
+def fit_mean(rows: list[dict[str, Any]]) -> float:
+    return mean([r for r in rows if r["split"] == "fit"], "onset_f1")
+
+
+def cmd_sweep(args: argparse.Namespace) -> int:
+    """Clean-up params on one detail run's stem notes: chosen on the fit split by mean onset F1
+    over all tiers, reported on the held-out split (per tier)."""
+    import itertools
+
+    items = load_items(args.tier)
+    combos: list[dict[str, Any]] = [
+        dict(zip(SWEEP_GRID, v, strict=True)) for v in itertools.product(*SWEEP_GRID.values())
+    ]
+    combos += [{"confidence": k, "min_confidence": f} for k, fs in FLOORS.items() for f in fs]
+    results: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    for combo in [{}, *combos]:
+        results.append((combo, detail_scores(args.name, "stem", items, combo)))
+        print(f"sweep {combo}", flush=True)
+    ranked = sorted(results, key=lambda r: -fit_mean(r[1]))
+    out = [
+        f"## Clean-up sweep on `{args.name}` stems (fit → held-out onset F1)",
+        "",
+        "| params | fit | held-out | held-out P | held-out R | "
+        + " | ".join(f"held-out {t}" for t in TIERS)
+        + " |",
+        "|---|---|---|---|---|" + "---|" * len(TIERS),
+    ]
+    for combo, rows in [results[0], *ranked[:8]]:
+        test = [r for r in rows if r["split"] == "test"]
+        label = ", ".join(f"{k}={v}" for k, v in combo.items()) or "none (raw)"
+        out.append(
+            f"| {label} | {cell(fit_mean(rows))} | {cell(mean(test, 'onset_f1'))} | "
+            f"{cell(mean(test, 'onset_precision'))} | {cell(mean(test, 'onset_recall'))} | "
+            f"{tier_means(test)} |"
+        )
+    text = "\n".join(out) + "\n"
+    (ROOT / f"sweep-{args.name}.md").write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
+def auroc(values: list[float], labels: list[int]) -> float:
+    """Probability that a correct note scores above a wrong one (ties count half)."""
+    x = np.asarray(values, dtype=np.float64)
+    y = np.asarray(labels, dtype=bool)
+    pos, neg = int(y.sum()), int((~y).sum())
+    if not pos or not neg:
+        return float("nan")
+    order = np.argsort(x, kind="stable")
+    ranks = np.empty(len(x))
+    ranks[order] = np.arange(1, len(x) + 1)
+    for v in np.unique(x):
+        tie = x == v
+        ranks[tie] = ranks[tie].mean()
+    return float((ranks[y].sum() - pos * (pos + 1) / 2) / (pos * neg))
+
+
+def cmd_confidence(args: argparse.Namespace) -> int:
+    """How well each per-note score separates correct from wrong stem notes (AUROC on held-out
+    notes), and what an isotonic fit on the fit split does to the bands."""
+    from splitune_eval.calibration import fit_isotonic
+    from splitune_ml_core import calibration as cal
+    from splitune_ml_core import contracts as ct
+
+    items = load_items(args.tier)
+    data: dict[str, dict[str, tuple[list[float], list[int]]]] = {}
+    for item in items:
+        notes = load_detail(args.name, "stem", item)
+        if notes is None:
+            continue
+        keyoff, _ = ref_notes(item, "keyoff")
+        notes = sorted(notes, key=lambda n: (n.onset_s, n.offset_s, n.pitch_midi))
+        hit = matched(keyoff, events(notes))
+        other = run_path("yourmt3", "stem", item)
+        agree = matched(est_notes(other)[0], events(notes)) if other.is_file() else None
+        candidates: dict[str, list[float]] = {
+            "onset": [n.onset for n in notes],
+            "interval": [n.interval for n in notes],
+            "velocity": [n.velocity_peak for n in notes],
+            "onset*interval": [n.onset * n.interval for n in notes],
+            "onset_velocity": [n.score("onset_velocity") for n in notes],
+        }
+        if agree is not None:
+            candidates["yourmt3 agrees"] = [float(j in agree) for j in range(len(notes))]
+            candidates["interval + agree"] = [
+                0.5 * n.interval + 0.5 * (j in agree) for j, n in enumerate(notes)
+            ]
+        for kind, values in candidates.items():
+            bucket = data.setdefault(kind, {"fit": ([], []), "test": ([], [])})[item["split"]]
+            bucket[0].extend(values)
+            bucket[1].extend(int(j in hit) for j in range(len(notes)))
+    out = [
+        f"## Per-note confidence candidates (`{args.name}` stems)",
+        "",
+        "| score | held-out notes | AUROC fit | AUROC held-out | ECE after isotonic | "
+        "high: share / precision | medium | low |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for kind, split in data.items():
+        (fx, fy), (tx, ty) = split["fit"], split["test"]
+        table = ct.CalibrationTable(
+            model_id="p2p",
+            version="p2p",
+            method="isotonic",
+            knots=fit_isotonic(fx, fy),
+            bands=ct.Bands(high=0.7, medium=0.4),
+            fitted_on="p2p",
+        )
+        calibrated = [cal.calibrate(x, table) for x in tx]
+        rel = reliability(calibrated, ty)
+        bands: list[str] = []
+        for lo, hi in ((0.7, 1.01), (0.4, 0.7), (-1.0, 0.4)):
+            ys = [y for c, y in zip(calibrated, ty, strict=True) if lo <= c < hi]
+            share = len(ys) / len(ty)
+            bands.append(f"{share:.2f} / {cell(float(np.mean(ys)) if ys else float('nan'))}")
+        out.append(
+            f"| {kind} | {len(ty)} | {cell(auroc(fx, fy))} | {cell(auroc(tx, ty))} | "
+            f"{rel.ece:.3f} | " + " | ".join(bands) + " |"
+        )
+    text = "\n".join(out) + "\n"
+    (ROOT / f"confidence-{args.name}.md").write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
+CALIBRATION_DIR = ML_ROOT / "config" / "calibration"
+TRANSCRIBER_RECORDS = {"transkun": "transkun-v2", "yourmt3": "yourmt3-moe"}
+
+
+def raw_labels(
+    chain: str, condition: str, items: list[dict[str, Any]], split: str
+) -> tuple[list[float], list[int]]:
+    """(confidence_raw, correct onset) of every predicted note of one split."""
+    xs: list[float] = []
+    ys: list[int] = []
+    for item in items:
+        if item["split"] != split:
+            continue
+        path = run_path(chain, condition, item)
+        if not path.is_file():
+            continue
+        est, _, notes = est_notes(path)
+        hit = matched(ref_notes(item, "keyoff")[0], est)
+        xs += [float(n.confidence_raw or 0.0) for n in notes]
+        ys += [int(j in hit) for j in range(len(notes))]
+    return xs, ys
+
+
+def cmd_calibrate(args: argparse.Namespace) -> int:
+    """Isotonic table for one transcriber's piano notes, fitted on the fit split of a chain's
+    `condition` notes and checked on the held-out split
+    → config/calibration/<record>@<version>.piano.json."""
+    from splitune_eval.calibration import fit_isotonic
+    from splitune_ml_core import calibration, contracts, register
+
+    items = load_items(args.tier)
+    fx, fy = raw_labels(args.chain, args.condition, items, "fit")
+    tx, ty = raw_labels(args.chain, args.condition, items, "test")
+    record = register.model(TRANSCRIBER_RECORDS[args.transcriber])
+    table = contracts.CalibrationTable(
+        model_id=record.id,
+        version=record.version,
+        method="isotonic",
+        knots=fit_isotonic(fx, fy),
+        bands=contracts.Bands(high=0.7, medium=0.4),
+        fitted_on=f"p2p-{args.chain}-{args.condition}-fit",
+    )
+    path = CALIBRATION_DIR / f"{record.id}@{record.version}.piano.json"
+    path.write_text(contracts.dump_json(table) + "\n", encoding="utf-8")
+    raw = reliability(tx, ty)
+    cal = reliability([calibration.calibrate(x, table) for x in tx], ty)
+    text = (
+        f"## {args.transcriber} / piano ({args.chain}, {args.condition})\n\n"
+        f"fit on {len(fx)} notes, tested on {len(tx)} held-out notes (precision "
+        f"{np.mean(ty):.3f}); table `{path.relative_to(ML_ROOT)}`, {len(table.knots)} knots\n\n"
+        f"ECE raw **{raw.ece:.3f}** → calibrated **{cal.ece:.3f}** (10 equal-width bins)\n\n"
+        + cal.table(raw)
+    )
+    (ROOT / f"calibration-{args.transcriber}.md").write_text(text, encoding="utf-8")
+    print(text)
+    return 0
 
 
 # --- report --------------------------------------------------------------------------------------
@@ -1350,7 +1963,9 @@ def cmd_report(args: argparse.Namespace) -> int:
         "+ notes.piano on this PC (RTX 3060, CUDA), per 30 s of audio.",
         "",
         "Tiers are reported apart; `legacy` is P2's MAESTRO + MUSDB band and BabySlakh items "
-        "(key-release references only).",
+        "(key-release references only). `clean` and `mixture` inputs reach notes.piano without a "
+        "stem, so a chain with a mixture transcriber (`final`: YourMT3+) transcribes them with it; "
+        "`chosen` is what an analysis does.",
         "",
     ]
     for chain in args.chain:
@@ -1396,27 +2011,53 @@ def cmd_report(args: argparse.Namespace) -> int:
                 )
             out += ["", rel.table()]
         out += ["", f"## {chain}: input choice", ""]
-        bypass = CHAINS[chain]["bypass"]
-        if bypass is None:
-            solo = sum(1 for i in items if "solo" in i["tags"])
+        solo = [i for i in items if "solo" in i["tags"]]
+        if CHAINS[chain].get("solo_check") is None:
             out.append(
-                f"No solo-piano bypass: every mixture is separated (bypass recall 0 of {solo} "
-                "solo items; no electric-piano gate)."
+                f"No solo-piano bypass: every mixture is separated (bypass recall 0 of "
+                f"{len(solo)} solo items)."
+            )
+        else:
+            fired = {
+                i["id"]
+                for i in items
+                if (d := bypass_decision(CHAINS[chain], i)) is not None and d["applied"]
+            }
+            hits = sum(1 for i in solo if i["id"] in fired)
+            wrong = sorted(i["id"] for i in items if "solo" not in i["tags"] and i["id"] in fired)
+            out.append(
+                f"Solo check {CHAINS[chain]['solo_check']} (drums + bass + vocals outputs vs "
+                f"mixture): recall {hits} of {len(solo)} solo items; wrong bypasses on band items "
+                f"{len(wrong)} of {len(items) - len(solo)}"
+                + (f" ({', '.join(wrong)})" if wrong else "")
+                + ". Missed solos: "
+                + (", ".join(sorted(i["id"] for i in solo if i["id"] not in fired)) or "none")
+                + "."
             )
     hands = ROOT / "hands.json"
     if hands.is_file():
         data = cast(list[dict[str, Any]], json.loads(hands.read_text(encoding="utf-8")))
-        notes = sum(r["notes"] for r in data)
-        correct = sum(r["correct"] for r in data)
-        accs = [r["correct"] / r["notes"] for r in data]
         out += [
             "",
-            "## Hands (splitHands via buildPianoScore vs ASAP score staves)",
+            "## Hands (vs ASAP score staves; staff, not physical hand)",
             "",
-            f"{len(data)} pieces, {notes} notes: per-note agreement **{correct / notes:.3f}** "
-            f"(median piece {statistics.median(accs):.3f}, worst {min(accs):.3f}). Staff, not "
-            "physical hand: ASAP's two MIDI tracks are the treble and bass staves of the score.",
+            "| pieces | notes | splitHands | PM2S hand-part |",
+            "|---|---|---|---|",
         ]
+        for label, sel in (
+            ("all", data),
+            (
+                "PM2S never trained on (its validation split)",
+                [r for r in data if r.get("pm2s_valid")],
+            ),
+        ):
+            notes = sum(r["notes"] for r in sel)
+            if notes:
+                out.append(
+                    f"| {label}: {len(sel)} | {notes} | "
+                    f"{sum(r['correct'] for r in sel) / notes:.3f} | "
+                    f"{sum(r.get('pm2s_correct', 0) for r in sel) / notes:.3f} |"
+                )
     out += ["", f"Per-item rows: `{csv_path.name}`. Command: `{' '.join(sys.argv)}`", ""]
     (RESULTS / f"{stem}.md").write_text("\n".join(out), encoding="utf-8")
     print("\n".join(out))
@@ -1431,14 +2072,54 @@ def main() -> int:
     p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
     p.add_argument("--force", action="store_true")
     p.set_defaults(fn=cmd_build)
-    for name, fn in (("separate", cmd_separate), ("predict", cmd_predict)):
-        p = sub.add_parser(name)
-        p.add_argument("--chain", choices=list(CHAINS), default="baseline")
-        p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
-        if name == "predict":
-            p.add_argument("--condition", nargs="+", choices=CONDITIONS, default=list(CONDITIONS))
-        p.set_defaults(fn=fn)
+    p = sub.add_parser("separate")
+    p.add_argument("--separator", choices=SEPARATORS, default="bs_roformer_sw")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.set_defaults(fn=cmd_separate)
+    p = sub.add_parser("predict")
+    p.add_argument("--chain", choices=list(CHAINS), default="baseline")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--condition", nargs="+", choices=CONDITIONS, default=list(CONDITIONS))
+    p.set_defaults(fn=cmd_predict)
     sub.add_parser("hands").set_defaults(fn=cmd_hands)
+    p = sub.add_parser("tags")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.set_defaults(fn=cmd_tags)
+    p = sub.add_parser("detail")
+    p.add_argument("--name", required=True)
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--condition", nargs="+", choices=INPUTS, default=list(INPUTS))
+    p.add_argument("--stereo", action="store_true")
+    p.add_argument("--separator", choices=SEPARATORS, default="bs_roformer_sw")
+    p.add_argument("--weights", help="folder with checkpoint.pt + model.conf (eval only)")
+    p.add_argument("--segment", type=float, default=16.0)
+    p.add_argument("--hop", type=float, default=8.0)
+    p.set_defaults(fn=cmd_detail)
+    p = sub.add_parser("aria")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--condition", nargs="+", choices=INPUTS, default=["stem", "clean"])
+    p.set_defaults(fn=cmd_aria)
+    p = sub.add_parser("calibrate")
+    p.add_argument("--chain", choices=list(CHAINS), required=True)
+    p.add_argument("--transcriber", choices=list(TRANSCRIBER_RECORDS), default="transkun")
+    p.add_argument("--condition", choices=CONDITIONS, default="chosen")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.set_defaults(fn=cmd_calibrate)
+    p = sub.add_parser("kong")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--condition", nargs="+", choices=INPUTS, default=["stem", "clean"])
+    p.set_defaults(fn=cmd_kong)
+    p = sub.add_parser("compare")
+    p.add_argument("--name", nargs="+", required=True)
+    p.add_argument("--condition", choices=INPUTS, default="stem")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--out")
+    p.set_defaults(fn=cmd_compare)
+    for name, fn in (("sweep", cmd_sweep), ("confidence", cmd_confidence)):
+        p = sub.add_parser(name)
+        p.add_argument("--name", required=True)
+        p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+        p.set_defaults(fn=fn)
     p = sub.add_parser("report")
     p.add_argument("--chain", nargs="+", choices=list(CHAINS), default=["baseline"])
     p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))

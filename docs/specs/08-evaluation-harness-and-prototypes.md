@@ -150,6 +150,36 @@ Executable plans for the seven prototypes defined in `research/ml/pipeline-overv
   Calibration bands are empty: every note sits in "high" at 0.918, held-out precision 0.917. Hands: 0.881 of 644,613 ASAP notes on the right staff. Time: about 17 s per 30 s of audio on the RTX 3060 (separation about 12 s).
 - **Caveats:** rendered acoustic solo pianos are close to trivial (Salamander 1.0). The hard cells are separation on harpsichord/clavinet and phone audio, dense and doubled bands, and the mixture fallback. Real band items sit on synthetic Slakh bands, which separate easily (21 dB uSDR). The owner's songs are still the unreferenced tier.
 
+## Implementation notes (step 24 phases 2–6, 2026-10-25)
+- **Harness additions** (`eval/p2p.py`):
+  - `detail` runs the shipped `Transkun.transcribe_detailed` with all per-note scores and the pedal, with optional `--stereo`, `--separator` and `--weights` (an alternative checkpoint).
+  - `compare`, `sweep` (clean-up params chosen on fit, reported held-out) and `confidence` (AUROC, isotonic ECE, band precision) work on those runs.
+  - `tags` runs the shipped tag stage. `calibrate` fits the piano tables.
+  - `aria` runs Aria-AMT through `eval/aria_amt.py` in its own venv. `kong` runs the robust Kong model.
+  - `separate --separator` takes `htdemucs_6s`, `vocals_then_sw` and `ens_sw_6s`.
+  - `hands` compares `splitHands` with the shipped PM2S hands.
+  - Chains: `baseline`, `yourmt3`, `final` (the shipped config, with the shipped solo-check decision in `chosen`).
+- **Results:** `eval/results/p2p/2026-10-24-phases.md` (every candidate per phase) and `2026-10-24-final.md` (baseline vs shipped).
+
+  Shipped chain vs baseline, chosen input:
+
+  | tier | onset F1 | onset+offset F1, key | onset+offset F1, pedal |
+  |---|---|---|---|
+  | real-solo | 0.923 → 0.928 | 0.622 → 0.630 | 0.377 → 0.382 |
+  | real-band | 0.960 → 0.960 | 0.613 → 0.625 | 0.330 → 0.344 |
+  | pop-solo | 0.847 → **0.920** | 0.509 → 0.608 | 0.503 → 0.610 |
+  | pop-band | 0.876 → 0.877 | 0.623 → 0.638 | 0.617 → 0.631 |
+  | legacy | 0.833 → 0.869 | 0.539 → 0.552 | 0.539 → 0.552 |
+
+  - Calibration: held-out ECE 0.009, bands high 0.953 / medium 0.638 / low 0.552 precision.
+  - Hands: PM2S 0.927 vs `splitHands` 0.885 on unseen ASAP pieces.
+  - Time per 30 s on the RTX 3060, chosen input:
+    - solos 18.6 → 5.5 (real) and 17.9 → 6.3 (pop);
+    - band 17.3 → 17.2 (real) and 16.4 → 20.1 (pop, +23 %: the solo check runs first);
+    - legacy 32.5 → 31.7.
+    - Separation seconds come from the same stored runs in both chains. The baseline's notes timings were taken while other jobs shared the GPU, so small differences are noise.
+- **Not done:** the owner's songs (the unreferenced tier). The per-song mean-confidence gate for keys and electric pianos is proposed (mean calibrated confidence < 0.80 → Chart: 4 songs gated, mean onset F1 0.516, none above 0.9) and waits for the owner.
+
 ## Open questions
 - Who owns rater recruitment and compensation for P1/P7 (learners and teachers)?
 - Can we obtain written R&D permission to benchmark `htdemucs_6s`/community checkpoints internally? (Benchmarking only; never shipped — D8.)

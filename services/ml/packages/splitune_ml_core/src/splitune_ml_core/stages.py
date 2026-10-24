@@ -138,8 +138,13 @@ def notes_placement(instrument: str) -> tuple[Island, Slot]:
     raw = os.environ.get("ML_NOTES_CONFIG")
     path = Path(raw).expanduser() if raw else NOTES_CONFIG
     config = cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
-    transcriber = str(config["instruments"][instrument]["transcriber"])
-    return TRANSCRIBER_ISLANDS[transcriber]
+    spec = cast(dict[str, Any], config["instruments"][instrument])
+    placement = TRANSCRIBER_ISLANDS[str(spec["transcriber"])]
+    # The stage runs in one island, so a mixture transcriber must live in the same one.
+    mixture = cast(dict[str, Any] | None, spec.get("mixture"))
+    if mixture and TRANSCRIBER_ISLANDS[str(mixture["transcriber"])] != placement:
+        raise ValueError(f"notes.{instrument}: mixture transcriber runs in another island")
+    return placement
 
 
 def notes_spec(instrument: str) -> StageSpec:
