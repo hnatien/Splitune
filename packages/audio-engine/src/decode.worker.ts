@@ -1,6 +1,6 @@
 // Decode Worker: Mediabunny demux + WebCodecs AudioDecoder, placed on the timeline by sample
 // timestamp, resampled to the AudioContext rate and converted to stem PCM
-// (docs/implementation/11-audio-engine.md §4). AAC priming: FFmpeg's encoder writes an MP4 edit
+// (docs/specs/11-audio-engine.md §4). AAC priming: FFmpeg's encoder writes an MP4 edit
 // list, which Mediabunny applies (the priming gets negative timestamps); AudioToolbox, which
 // encodes stems on the Mac worker, writes only the iTunes gapless record, applied here.
 import { ALL_FORMATS, AudioSampleSink, BufferSource, Input } from 'mediabunny'

@@ -1,4 +1,4 @@
-"""Pydantic models generated from packages/contracts (docs/implementation/05-analysis-schema.md).
+"""Pydantic models generated from packages/contracts (docs/specs/05-analysis-schema.md).
 
 Writers serialise with `dump_json`: optional fields are omitted rather than written as null,
 because the Zod readers treat a missing field and null differently.

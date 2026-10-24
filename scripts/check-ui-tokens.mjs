@@ -1,4 +1,4 @@
-// Part of `pnpm lint` (docs/implementation/28-ui-quality-and-design-review.md §3): colours come only
+// Part of `pnpm lint` (docs/specs/28-ui-quality-and-design-review.md §3): colours come only
 // from @splitune/ui-tokens, and focus is never removed without a replacement.
 // - Raw colour literals (#hex, rgb(), hsl(), oklch()…) in apps/** and packages/** source outside
 //   packages/ui-tokens. SVG icons use currentColor; static brand files in public/ aren't source.
@@ -88,7 +88,7 @@ for (const file of files) {
 }
 
 if (violations.length > 0) {
-  console.error('UI token violations (docs/implementation/26-design-system.md §3, §9, §10):')
+  console.error('UI token violations (docs/specs/26-design-system.md §3, §9, §10):')
   for (const violation of violations) console.error(`  ${violation}`)
   process.exit(1)
 }

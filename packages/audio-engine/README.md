@@ -1,6 +1,6 @@
 # audio-engine
 
-The practice audio engine (docs/implementation/11-audio-engine.md): an AudioWorklet (`SplituneProcessor`) running `dsp.wasm` from `@splitune/audio-dsp`, which mixes the stems, time-stretches and pitch-shifts the submix with one Signalsmith Stretch instance, loops seamlessly, synthesises count-in and metronome clicks and reports the heard position; a decode path that turns stem files into the engine's PCM; and the master clock every display follows.
+The practice audio engine (docs/specs/11-audio-engine.md): an AudioWorklet (`SplituneProcessor`) running `dsp.wasm` from `@splitune/audio-dsp`, which mixes the stems, time-stretches and pitch-shifts the submix with one Signalsmith Stretch instance, loops seamlessly, synthesises count-in and metronome clicks and reports the heard position; a decode path that turns stem files into the engine's PCM; and the master clock every display follows.
 
 All public times are **seconds on the decoded-PCM timeline**. The AudioContext runs at **48 kHz**; stems are decoded to that rate.
 
@@ -102,6 +102,6 @@ PW_FIREFOX_WS_ENDPOINT=ws://127.0.0.1:3333/ pnpm --filter @splitune/audio-engine
 pnpm --filter @splitune/audio-engine demo   # http://localhost:5175
 ```
 
-Loads two stem files (optionally with their `stems.json` for the duration) or synthetic test stems, and drives every control: play/pause/seek, count-in, metronome, speed 50–100 % with presets, transpose, loop by bars, mute/solo, tier. **Measure** plays both stems at 0.5× for N seconds at a fixed tier and reports worklet load, underruns and the latencies the browser reports (Prototype 7). AudioWorklet needs a secure context: phones on the LAN need HTTPS in front of the dev server (`vite --host` behind Tailscale serve, or Caddy + mkcert; docs/implementation/25-personal-mode.md).
+Loads two stem files (optionally with their `stems.json` for the duration) or synthetic test stems, and drives every control: play/pause/seek, count-in, metronome, speed 50–100 % with presets, transpose, loop by bars, mute/solo, tier. **Measure** plays both stems at 0.5× for N seconds at a fixed tier and reports worklet load, underruns and the latencies the browser reports (Prototype 7). AudioWorklet needs a secure context: phones on the LAN need HTTPS in front of the dev server (`vite --host` behind Tailscale serve, or Caddy + mkcert; docs/specs/25-personal-mode.md).
 
-Manual checklist (docs/implementation/18-testing-strategy.md §2, 24-browser-compatibility.md §6): no audible click at the loop seam at 100 % and 70 %; 0.5× quality; count-in lands on the downbeat; mute/solo without clicks; cursor matches what you hear (adjust the display offset for Bluetooth); a phone call or Siri pauses with "Tap to resume"; Measure at 0.5× with no underruns.
+Manual checklist (docs/specs/18-testing-strategy.md §2, 24-browser-compatibility.md §6): no audible click at the loop seam at 100 % and 70 %; 0.5× quality; count-in lands on the downbeat; mute/solo without clicks; cursor matches what you hear (adjust the display offset for Bluetooth); a phone call or Siri pauses with "Tap to resume"; Measure at 0.5× with no underruns.

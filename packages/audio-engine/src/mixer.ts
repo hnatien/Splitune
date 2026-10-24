@@ -1,4 +1,4 @@
-// Mute/solo resolve to per-stem gains on the main thread (docs/implementation/11-audio-engine.md
+// Mute/solo resolve to per-stem gains on the main thread (docs/specs/11-audio-engine.md
 // §2): with any stem soloed only soloed stems sound, at their solo gain (stems.json
 // `gain_to_unity_db`); otherwise muted stems are silent.
 

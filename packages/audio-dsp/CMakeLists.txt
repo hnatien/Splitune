@@ -62,7 +62,7 @@ if(EMSCRIPTEN)
     -sSTACK_SIZE=256KB
     -sABORTING_MALLOC=0)
 else()
-  # Static library for native hosts (docs/implementation/22-native-apps.md) and a smoke test.
+  # Static library for native hosts (docs/specs/22-native-apps.md) and a smoke test.
   add_library(splitune_dsp STATIC ${SPLITUNE_DSP_SOURCES})
   target_link_libraries(splitune_dsp PUBLIC splitune_dsp_options)
   add_executable(dsp_smoke test/smoke.cpp)
