@@ -25,6 +25,12 @@ describe('key map', () => {
     expect(actionFor('x', {})).toBeUndefined()
   })
 
+  it('maps the vocal phrase keys', () => {
+    expect(actionFor('[', {})).toBe('previousPhrase')
+    expect(actionFor(']', {})).toBe('nextPhrase')
+    expect(actionFor('P', {})).toBe('cueNote')
+  })
+
   it('lets a learned key win and keeps one learned key per action', () => {
     let learned = learn({}, 'clean', 'b')
     expect(actionFor('b', learned)).toBe('clean')

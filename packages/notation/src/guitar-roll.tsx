@@ -59,7 +59,7 @@ const HIT = 2
 const FRET_LABELS = Array.from({ length: 25 }, (_, fret) => String(fret))
 // A chord name's parts as ChordSymbol sets them (26 §12.2, step 17d): letter, ♭/♯ lifted, minor's
 // "m" on the line, the quality raised and smaller, a slash bass slightly smaller.
-const PART_STYLES = [
+export const PART_STYLES = [
   { size: 1, rise: 0, weight: 700 },
   { size: 0.8, rise: -0.16, weight: 600 },
   { size: 1, rise: 0, weight: 700 },
@@ -117,7 +117,8 @@ interface Frame {
   lanesKey: string
 }
 
-function chordParts(name: string): string[] {
+/** A chord name split into PART_STYLES' parts (empty when absent). */
+export function chordParts(name: string): string[] {
   const match = /^([A-G])([#b♯♭]?)(.*?)(?:\/([A-G][#b♯♭]?))?$/.exec(name)
   if (!match) return [name, '', '', '', '']
   const sign = (s: string) => s.replace('#', '♯').replace('b', '♭')

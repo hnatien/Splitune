@@ -6,6 +6,7 @@ import {
   estimateKey,
   formatChord,
   keyNoteNames,
+  keyScale,
   parseChord,
   shapeDifficulty,
   simplifyToTriad,
@@ -66,6 +67,13 @@ describe('chordDisplayName (display, separate from Harte formatting)', () => {
     expect(chordDisplayName('A#:7/3', undefined, eb)).toBe('Bb7/D')
     expect(chordDisplayName('G#:maj', 'C', eb)).toBe('Ab/C')
     expect(chordDisplayName('N', undefined, eb)).toBe('N.C.')
+  })
+})
+
+describe('keyScale', () => {
+  it('gives the pitch classes of a key from its tonic', () => {
+    expect(keyScale({ tonic: 'Ab', mode: 'major' })).toEqual([8, 10, 0, 1, 3, 5, 7])
+    expect(keyScale({ tonic: 'F#', mode: 'minor' })).toEqual([6, 8, 9, 11, 1, 2, 4])
   })
 })
 
