@@ -81,9 +81,10 @@ export function usePracticeData(songId: string) {
   const beats = useQuery(artefactDocQuery(entry.beats, Beats))
   const stems = useQuery(artefactDocQuery(entry.stems, Stems))
   const chords = useQuery(artefactDocQuery(entry.chords, Chords))
-  // Notes are read once the tab exists: the tab layer appears with finalize (27 §3.7.3). Piano has
-  // no tab: its falling notes appear with the summary.
-  const notesReady = entry.tab ?? (instrument === 'piano' ? entry.summary : undefined)
+  // Notes are read once the tab exists: the tab layer appears with finalize (27 §3.7.3). Piano and
+  // vocals have no tab: their notes appear with the summary.
+  const notesReady =
+    entry.tab ?? (instrument === 'piano' || instrument === 'vocals' ? entry.summary : undefined)
   const notes = useQuery(artefactDocQuery(notesReady ? entry.notes : undefined, Notes))
   const summary = useQuery(artefactDocQuery(entry.summary, Summary))
   // Piano practises from its notes: while its notes stage is still to come (or its document is on

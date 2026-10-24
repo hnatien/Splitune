@@ -16,10 +16,17 @@ const practice = {
   player: { loop: null as object | null, loopOn: false, speedPct: 70 },
   state: 'ready',
   send: vi.fn(),
+  layers: { melody: false },
+  grid: {},
+  music: { melody: { phrases: [] } },
+  audio: { position: () => 12 },
+  loopPhrase: vi.fn(),
 }
 vi.mock('./practice-context', () => ({ usePractice: () => practice }))
 vi.mock('./keys-store', () => ({ useKeys: { getState: () => ({ learned: {} }) } }))
 vi.mock('./model/practice-sync', () => ({ noteInput: () => {} }))
+// The phrase being sung at 12 s (step 18c).
+vi.mock('./model/phrases', () => ({ phraseAtTime: () => 2 }))
 
 const { useInputMapper } = await import('./input-mapper')
 
@@ -43,6 +50,8 @@ describe('input mapper: toggle loop', () => {
     practice.send.mockClear()
     practice.player.loop = null
     practice.player.loopOn = false
+    practice.layers.melody = false
+    practice.loopPhrase.mockClear()
     useInputMapper({ desktop: true })
   })
 
@@ -52,6 +61,13 @@ describe('input mapper: toggle loop', () => {
     expect(usePracticeUi.getState().loopHint).toBe(true)
     expect(usePracticeUi.getState().hud.message).toBe('No loop — tap two bars')
     expect(practice.send).not.toHaveBeenCalled()
+  })
+
+  it('with no loop on a sung song, loops the phrase being sung', () => {
+    practice.layers.melody = true
+    press('l')
+    expect(practice.loopPhrase).toHaveBeenCalledWith(2)
+    expect(usePracticeUi.getState().loopHint).toBe(false)
   })
 
   it('with a loop, toggles it and leaves the hint alone', () => {

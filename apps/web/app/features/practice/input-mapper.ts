@@ -3,6 +3,7 @@ import { m } from '@/lib/i18n'
 import { useKeys } from './keys-store'
 import { type Action, actionFor, ignoredTarget } from './model/keymap'
 import { toggleMutePart } from './model/mixer'
+import { phraseAtTime } from './model/phrases'
 import { noteInput } from './model/practice-sync'
 import { usePractice } from './practice-context'
 import { showHud, usePracticeUi } from './practice-store'
@@ -72,6 +73,15 @@ export function useInputMapper({ desktop }: { desktop: boolean }) {
           else showHud(m['practice.loop_off']())
           return
         case 'toggleLoop':
+          // A sung song with no loop yet loops the phrase being sung.
+          if (!player.loop && practice.layers.melody && practice.grid) {
+            const phrases = practice.music?.melody?.phrases ?? []
+            const index = phraseAtTime(practice.grid, phrases, practice.audio.position())
+            if (index >= 0) {
+              practice.loopPhrase(index)
+              return
+            }
+          }
           if (!player.loop) {
             usePracticeUi.setState({ loopHint: true })
             showHud(m['practice.loop_off']())
@@ -95,6 +105,13 @@ export function useInputMapper({ desktop }: { desktop: boolean }) {
           )
           return
         }
+        case 'previousPhrase':
+        case 'nextPhrase':
+          practice.stepPhrase(action === 'nextPhrase' ? 1 : -1)
+          return
+        case 'cueNote':
+          practice.cueNote()
+          return
       }
     }
     window.addEventListener('keydown', onKey)
@@ -144,5 +161,11 @@ export function actionLabel(action: Action): string {
       return m['shortcuts.toggle_loop']()
     case 'mutePart':
       return m['shortcuts.mute_part']()
+    case 'previousPhrase':
+      return m['shortcuts.previous_phrase']()
+    case 'nextPhrase':
+      return m['shortcuts.next_phrase']()
+    case 'cueNote':
+      return m['shortcuts.cue_note']()
   }
 }
