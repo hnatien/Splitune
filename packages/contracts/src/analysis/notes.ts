@@ -12,6 +12,9 @@ export const Note = Confidence.extend({
   stem_id: z.string().min(1),
   // Bass: energy share of the stem at the f0 of pitch − 12 (octave correction, 07 §3).
   low_band_energy: z.number().min(0).max(1).optional(),
+  // Guitar/bass: the audio string cue, a probability per string (string 1 = highest first) for
+  // the fret DP (07 §5); strings that cannot play the pitch are 0.
+  string_probs: z.array(z.number().min(0).max(1)).min(4).max(7).optional(),
 }).register(contracts, { id: 'Note' })
 
 // Vocals only. Frame i is at i * hop_s on the decoded-PCM timeline.
@@ -23,11 +26,41 @@ export const F0Track = z
   })
   .register(contracts, { id: 'F0Track' })
 
+export const TuningName = z
+  .enum([
+    'standard',
+    'half_step_down',
+    'full_step_down',
+    'drop_d',
+    'drop_c_sharp',
+    'drop_c',
+    'other',
+  ])
+  .register(contracts, { id: 'TuningName' })
+
+// Guitar/bass: the recording's tuning (07 §6.1). The notes were transcribed after compensating
+// a4_cents (the whole recording's offset from A440); `suggested` is the likely open-string tuning,
+// which finalize applies to the tab only above its confidence threshold.
+export const RecordingTuning = z
+  .object({
+    a4_cents: z.number().min(-50).max(50),
+    a4_strength: z.number().min(0).max(1),
+    suggested: z
+      .object({
+        name: TuningName,
+        tuning_midi: z.array(z.number().int().min(0).max(127)).min(4).max(7), // string 1 first
+        confidence: z.number().min(0).max(1),
+      })
+      .optional(),
+  })
+  .register(contracts, { id: 'RecordingTuning' })
+
 export const Notes = ArtefactHeader.extend({
   artefact: z.string().regex(/^notes\.(guitar|bass|piano|vocals|other)$/),
   instrument: Instrument,
   notes: z.array(Note),
   f0: F0Track.optional(),
+  tuning: RecordingTuning.optional(),
 }).register(contracts, { id: 'Notes' })
 
 export const DrumHit = Confidence.extend({

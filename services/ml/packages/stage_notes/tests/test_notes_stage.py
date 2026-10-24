@@ -108,6 +108,24 @@ def test_guitar_notes_from_the_isolated_stem(tmp_path: Path) -> None:
     # Identity calibration until P2 fits a table; the bands are recorded for finalize.
     assert notes.params["calibration"]["bands"] == {"high": 0.7, "medium": 0.4}
     assert notes.params["source"] != "mixture"
+    assert notes.tuning is not None
+    assert abs(notes.tuning.a4_cents) < 5
+    assert notes.tuning.suggested is not None
+    assert notes.tuning.suggested.name == "standard"
+
+
+def test_guitar_notes_compensate_a_recording_off_a440(tmp_path: Path) -> None:
+    stem = phrase(RATE, cents=30.0)
+    decoded = write_stereo(tmp_path / "decoded.flac", stem)
+    inputs = {"separation": str(separation(tmp_path, tmp_path / "cache", "guitar", stem))}
+    out = guitar.run(job(tmp_path, guitar, inputs, decoded, len(stem)))
+    notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
+    assert notes.tuning is not None
+    assert notes.tuning.a4_cents == pytest.approx(30, abs=5)
+    assert {45, 52, 57, 60, 64} <= {n.pitch_midi for n in notes.notes}
+    onsets = sorted(n.onset_s for n in notes.notes if n.pitch_midi == 60)
+    assert onsets
+    assert onsets[0] == pytest.approx(2.0, abs=0.05)  # times mapped back
 
 
 def test_mixture_fallback_and_bass_low_band_energy(tmp_path: Path) -> None:
@@ -168,8 +186,8 @@ def test_specs_follow_the_notes_config() -> None:
     for instrument in ("guitar", "bass", "piano", "vocals"):
         spec = STAGES[f"notes.{instrument}"]
         assert spec.module == f"stage_notes.{instrument}"
-        # Basic Pitch runs in the CPU slot, Transkun (piano) on MPS.
-        placement = ("torch", "mps") if instrument == "piano" else ("onnx-cpu", "cpu")
+        # Basic Pitch runs in the CPU slot, Transkun (piano) in the GPU slot.
+        placement = ("torch", "gpu") if instrument == "piano" else ("onnx-cpu", "cpu")
         assert (spec.island, spec.slot) == placement
         assert spec.outputs == {"notes": f"notes.{instrument}"}
         assert spec.optional_downloads == ("separation", "stems")
