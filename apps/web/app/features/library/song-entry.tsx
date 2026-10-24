@@ -189,6 +189,10 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
     onSuccess: () => {
       toast.add({ title: m['library.analysis_started'](), type: 'success' })
       void refresh()
+      // The practice page reads the new run from the song's latest_analysis, not the list.
+      void queryClient.invalidateQueries({
+        queryKey: orpc.songs.get.queryKey({ input: { id: song.id } }),
+      })
       // The allowance meter in the shell reads route context.
       void reloadMe(queryClient).then(() => router.invalidate())
     },
