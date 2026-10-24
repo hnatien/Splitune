@@ -1240,3 +1240,28 @@ Branch `impl/prod-workers-windows` from `dev`. **Symptom:** "Processing machine 
 **Verification**
 - `npx biome check scripts package.json`: clean. `npx vitest run --dir scripts`: 45/45 (1 new: header names production workers).
 - `pnpm workers:prod` in a terminal (with the FFmpeg preflight that was later dropped): header "PRODUCTION workers"; node-worker started and production's `worker_heartbeats` showed `node-windows` 5 s old; Ctrl-C left no worker processes. The ML worker's launch without the preflight was not re-run here (the owner's hand-started `ml-windows` was live); it is the same command and environment the owner ran by hand, which heartbeat as `ml-windows`. 
+
+## 2026-10-24 — Step 18c: Vocal Melody view (done; not merged)
+Branch `impl/18c-vocal-melody` from `dev`. **Owner, 2026-10-24:** asked whether vocals were supported (they fell through to the generic chord grid), asked for "a mockup of a melody piano-roll from notes/vocals.json plus lyrics-free phrase markers, before building", then "Looks good. Build the vocal Melody view from this design … including stories for its states." Mockup and screenshots in `docs/implementation/18c/` (synthetic data shaped like `notes.vocals`: reading the production song needed TLS verification turned off against the production database, which was refused).
+
+**Built**
+- **music-core:** `buildMelody` (`melody/build-melody.ts`): corrections, sung timing kept (no quantization), phrases (a rest of ¾ beat, 0.6 s at least, ends one; over four bars splits at the largest gap), bars per phrase, first sure note, repeat letters by pitch class (≤ 1 note different, so octave slips still match), range as the 5th–95th percentile of sure notes. `keyScale` (key → seven pitch classes).
+- **notation:** `MelodyRoll` (canvas, 26 §implementation notes 18c) and `melody.ts` (`followWindow`, `wholeWindow`, `phraseIndexAt`, `degreeName`); `chordParts`/`PART_STYLES` exported from the guitar roll and shared.
+- **ui-tokens:** `--melody-vocals` (tier 3, every appearance + Dark score-match + forced colours), 2 contrast pairs, added to the tint test.
+- **Web:** vocals' notes load with the summary; the Worker returns `melody` (notes, phrases, range, scale). New layer `melody`; status bar **Melody / Chords**; `vocal-melody.tsx` (roll, accessible name per phrase/bar/sung note, ≤ 1/s while playing) and `phrase-strip.tsx` (phrase now, starts on + degree + **First note** cue, next phrase with beats, range, phrase loop, **Guide vocal** On / Quiet −12 dB / Off on the part's mixer level, **Melody options**: labels names/degrees/none, pitch window follow/whole). `PracticeAudio.cue` (sine over the stems). Context `stepPhrase` / `loopPhrase` / `cueNote`; keys `[` `]` `P`, and `L` with no loop loops the phrase being sung. `model/phrases.ts` (entry a beat before the first note, phrase loop = its bars), mixer `guideLevel`/`withGuide`, `spelledNote`. Chords-only banner for vocals (`practice.chords_only_vocals`).
+- **Stories:** Screens/Practice `VocalMelody` (switch, strip before/inside phrases, sung G4 by keyboard, `]` `L` `P` `[`, Chords and back), `VocalMelodyRepeat` (A′), `VocalMelodyLoop`, `VocalMelodyGuide`, `VocalMelodyOptions`, `VocalMelodyUncertain`, `VocalMelodyBelowGate`, `VocalMelodyDark`, `VocalMelodyStage`, `VocalMelodyReducedMotion`.
+- **Docs:** implementation notes (step 18c) in 26, 27 and 12.
+
+**Deviations from the mockup:** phrase loops are bar-snapped like every loop (not beat-snapped with one beat of pre-roll); the guide vocal sits in the strip, not the transport; no f0 curve (needs `f0.vocals`); analytics reuse `loop_created: tap` and `view_changed: notes` (no contract change).
+
+**Verification**
+- `pnpm typecheck` (web) exit 0; `tsc` notation, music-core, ui-tokens: 0 errors.
+- Unit: music-core 154/160 — the 6 failures are the golden files (`schema_version` 1.4.0 vs 1.5.0 since step 09c), failing on `dev` too; 9 new melody + 1 keyScale tests pass. notation 37/37 (6 new), ui-tokens 1262/1262, web 136/136 (new: phrases, melody in the Worker, keymap, guide vocal, `L` on a sung song).
+- `npx vitest run --project storybook` (Chromium): 457/458 on a warm cache; the one failure was this step's story reading a device default an earlier story had changed (fixed, practice file then 68/69 with Piano Notes' known fade-in flake, which passed on two reruns). The first cold run had 48 failures across unrelated files after Vite re-optimised `hash-wasm` mid-run (as in step 18b). **WebKit not run:** Playwright's WebKit isn't installed on this PC.
+- `pnpm lint`: Biome clean (2 pre-existing infos); `check-ui-tokens` fails on `packages/notation/src/fretboard-diagram.tsx:64` (`ease-out`), untouched here and failing on `dev`.
+- **Budget:** practice route 315.8 KB gzip vs 314.5 KB for `dev` built in the same checkout (+1.3 KB); **`dev` is already over the 310 KB budget.** The melody (6.5 KB gzip) and phrase strip (3.7 KB) load only for vocal songs.
+
+**Budget raised:** the owner raised the practice route budget to 320 KB ("Raise the practice route budget to 320 KB in bundle-budget.mjs and doc 10, noting dev was already at 314.5 KB"); `bundle-budget.mjs --enforce` passes at 315.8 KB.
+
+**Not done / needs the owner**
+- Not checked: a real vocal song end to end, phone landscape (the compact strip has no story), WebKit, a screen reader by ear.

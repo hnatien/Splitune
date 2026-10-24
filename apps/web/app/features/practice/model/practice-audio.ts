@@ -90,6 +90,7 @@ export class PracticeAudio implements PlayerEngine {
   #listener: (event: AudioEvent) => void = () => undefined
   #offs: (() => void)[] = []
   #wakeLock: { acquire(): Promise<boolean>; release(): Promise<void> } | null = null
+  #cueContext: AudioContext | null = null
   lanes: Lane[] = []
 
   constructor() {
@@ -275,6 +276,27 @@ export class PracticeAudio implements PlayerEngine {
     this.#engine?.setMediaMetadata({ title })
   }
 
+  /** A sine at `pitch` (MIDI): the note a singer pitches a phrase from (step 18c). It sounds over
+   * the stems, outside their mixer, at the master volume; before the first play it gets a context
+   * of its own, created in this gesture. */
+  cue(pitch: number, seconds = 0.9): void {
+    if (!this.#engine && !this.#cueContext) this.#cueContext = new AudioContext()
+    const context = this.#engine?.context ?? this.#cueContext
+    if (!context) return
+    const at = context.currentTime
+    const tone = context.createOscillator()
+    const envelope = context.createGain()
+    const peak = 0.25 * this.#volume
+    tone.frequency.value = 440 * 2 ** ((pitch - 69) / 12)
+    envelope.gain.setValueAtTime(0, at)
+    envelope.gain.linearRampToValueAtTime(peak, at + 0.02)
+    envelope.gain.setValueAtTime(peak, at + seconds - 0.08)
+    envelope.gain.linearRampToValueAtTime(0, at + seconds)
+    tone.connect(envelope).connect(context.destination)
+    tone.start(at)
+    tone.stop(at + seconds + 0.02)
+  }
+
   /** The engine once the first gesture created it (diagnostics and tests). */
   get engine(): Engine | null {
     return this.#engine
@@ -283,6 +305,7 @@ export class PracticeAudio implements PlayerEngine {
   async dispose(): Promise<void> {
     for (const off of this.#offs) off()
     void this.#wakeLock?.release()
+    void this.#cueContext?.close()
     const engine = this.#engine ?? (this.#creating ? await this.#creating.catch(() => null) : null)
     this.#engine = null
     this.#creating = null
