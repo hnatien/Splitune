@@ -26,11 +26,12 @@ export type Kind =
   | 'notes.piano'
   | 'notes.bass'
   | 'tab.bass'
+  | 'notes.vocals'
 /** Every artefact of the guitar song. */
 export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', 'summary']
 /** Every artefact of the song as a bass part. */
 export const ALL_BASS: Kind[] = ['beats', 'stems', 'chords', 'notes.bass', 'tab.bass', 'summary']
-const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass']
+const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass', 'notes.vocals']
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(IDS.indexOf(kind) + 1).padStart(12, '0')}`
 
@@ -45,7 +46,9 @@ export type Patch = {
   /** A URL import with its downloaded video (13 §6a); an empty clip, so nothing is fetched. */
   video?: boolean
   /** The learner's part, when not the fixture's guitar. */
-  instrument?: 'piano' | 'bass'
+  instrument?: 'piano' | 'bass' | 'vocals'
+  /** The stems, when not the fixture's guitar ones. */
+  stems?: unknown
   /** The part's notes, instead of the fixture's guitar riff (or piano part). */
   notes?: unknown
   /** The learner plays left-handed (Settings → Profile). */
@@ -173,6 +176,105 @@ export const BASS_LINE = partNotes(
   ]),
 )
 
+// A sung line for vocals' Melody (step 18c) on the same grid, in the fixture's A minor, as
+// notes.vocals: four phrases a bar and a half long with a rest between, the third singing the
+// first again (A, B, A′, C), sung a little off the beat as voices are. The third phrase has a
+// medium-confidence note and the last a low one (an octave slip).
+type Sung = [pitch: number, beats: number, confidence?: number]
+const VOCAL_PHRASES: [bar: number, beat: number, Sung[]][] = [
+  [
+    0,
+    1,
+    [
+      [64, 1],
+      [67, 1],
+      [69, 1],
+      [67, 1],
+      [64, 2],
+    ],
+  ],
+  [
+    2,
+    1,
+    [
+      [72, 1],
+      [71, 1],
+      [69, 1],
+      [67, 1],
+      [69, 2],
+    ],
+  ],
+  [
+    4,
+    1,
+    [
+      [64, 1],
+      [67, 1, 0.55],
+      [69, 1],
+      [67, 1],
+      [64, 2],
+    ],
+  ],
+  [
+    6,
+    1,
+    [
+      [67, 1],
+      [69, 1],
+      [84, 1, 0.2],
+      [74, 1],
+      [72, 2],
+    ],
+  ],
+]
+const JITTER = [0.02, -0.015, 0.01, -0.02, 0.015, 0]
+export const VOCAL_LINE = {
+  ...notes,
+  artefact: 'notes.vocals',
+  instrument: 'vocals',
+  models: [{ ...notes.models[0], model_id: 'basic-pitch/0.4.0', version: '0.4.0' }],
+  notes: VOCAL_PHRASES.flatMap(([bar, beat, sung], p) => {
+    let at = beat
+    return sung.map(([pitch_midi, beats, confidence = 0.9], k) => {
+      const onset = BAR(bar, at) + (JITTER[(p + k) % JITTER.length] ?? 0)
+      at += beats
+      return {
+        id: `v${String(p * 8 + k).padStart(6, '0')}`,
+        onset_s: Math.round(onset * 1000) / 1000,
+        offset_s: Math.round((onset + beats * 0.6 * 0.9) * 1000) / 1000,
+        pitch_midi,
+        velocity: 72,
+        confidence,
+        confidence_raw: 1,
+        stem_id: 'vocals',
+      }
+    })
+  }),
+}
+/** The vocal song's stems: the vocals and the song without them. */
+export const VOCAL_STEMS = {
+  ...stems,
+  stems: stems.stems.map((stem) =>
+    stem.kind === 'isolated' && stem.instrument === 'guitar'
+      ? { ...stem, stem_id: 'vocals', instrument: 'vocals' }
+      : stem.kind === 'mix_minus'
+        ? { ...stem, stem_id: 'mix_minus_vocals' }
+        : stem,
+  ),
+}
+export const VOCAL_SUMMARY = {
+  ...summary,
+  per_instrument: [
+    {
+      instrument: 'vocals',
+      note_confidence_mean: 0.82,
+      fraction_low_conf: 0.05,
+      recommended_view: 'f0',
+      reasons: [],
+    },
+  ],
+}
+
 const pianoSummary = (view: 'roll' | 'chords_only') => ({
   ...summary,
   per_instrument: [
@@ -271,11 +373,13 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
       const doc =
         kind === 'summary' && patch.summary
           ? patch.summary
-          : kind === 'chords' && patch.chords
-            ? patch.chords
-            : kind.startsWith('notes.') && patch.notes
-              ? patch.notes
-              : DOCS[kind]
+          : kind === 'stems' && patch.stems
+            ? patch.stems
+            : kind === 'chords' && patch.chords
+              ? patch.chords
+              : kind.startsWith('notes.') && patch.notes
+                ? patch.notes
+                : DOCS[kind]
       if (doc) client.setQueryData(['artefact-doc', artefactId(kind)], doc)
     }
   }

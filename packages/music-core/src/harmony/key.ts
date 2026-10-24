@@ -139,3 +139,9 @@ export function keyNoteNames(key: Pick<Key, 'tonic' | 'mode'>): string[] {
   }
   return names
 }
+
+/** A key's seven pitch classes, the tonic first (natural minor); C major without a known tonic. */
+export function keyScale(key: Pick<Key, 'tonic' | 'mode'>): number[] {
+  const tonicPc = pcOfName(key.tonic) ?? 0
+  return (key.mode === 'minor' ? MINOR_STEPS : MAJOR_STEPS).map((step) => (tonicPc + step) % 12)
+}

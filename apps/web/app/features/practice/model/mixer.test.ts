@@ -2,7 +2,16 @@ import type { Stems } from '@splitune/contracts'
 import stems from '@splitune/contracts/fixtures/stems.json'
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
-import { defaultMix, mixChannels, presetMix, presetOf, resolveMix, toggleMutePart } from './mixer'
+import {
+  defaultMix,
+  guideLevel,
+  mixChannels,
+  presetMix,
+  presetOf,
+  resolveMix,
+  toggleMutePart,
+  withGuide,
+} from './mixer'
 
 const channels = mixChannels(stems as z.infer<typeof Stems>, 'guitar')
 const PART = 'guitar'
@@ -46,5 +55,19 @@ describe('mixer', () => {
     const muted = toggleMutePart(channels, defaultMix(channels))
     expect(muted[PART]?.muted).toBe(true)
     expect(toggleMutePart(channels, muted)[PART]?.muted).toBe(false)
+  })
+})
+
+describe('guide vocal', () => {
+  it('reads and sets the part as on, quiet or off, leaving the backing alone', () => {
+    const start = defaultMix(channels)
+    expect(guideLevel(channels, start)).toBe('on')
+    const quiet = withGuide(channels, start, 'quiet')
+    expect(quiet[PART]).toEqual({ gain_db: -12, muted: false, solo: false })
+    expect(quiet[BACKING]).toEqual(start[BACKING])
+    expect(guideLevel(channels, quiet)).toBe('quiet')
+    expect(guideLevel(channels, withGuide(channels, quiet, 'off'))).toBe('off')
+    expect(guideLevel(channels, withGuide(channels, quiet, 'on'))).toBe('on')
+    expect(guideLevel([], start)).toBeNull()
   })
 })

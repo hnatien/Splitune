@@ -91,4 +91,24 @@ describe('effective music', () => {
     )
     expect(new Set(staff?.noteMap.map((r) => r.staff))).toEqual(new Set([0, 1]))
   })
+
+  it('gives vocals the melody and its phrases, with corrections, and no tab', () => {
+    const vocals = { ...(notes as Notes), artefact: 'notes.vocals', instrument: 'vocals' } as Notes
+    const out = computeMusic(
+      input({
+        notes: vocals,
+        ops: { beats: [], chords: [], notes: [{ op: 'delete_note', note_id: 'n000000' }] },
+      }),
+    )
+    expect(out.tab).toBeUndefined()
+    expect(out.piano).toBeUndefined()
+    expect(out.melody?.notes.length).toBe(vocals.notes.length - 1)
+    expect(out.melody?.notes.some((n) => n.id === 'n000000')).toBe(false)
+    // Every note sits in exactly one phrase, in order.
+    const covered = out.melody?.phrases.flatMap((p) =>
+      Array.from({ length: p.to - p.from + 1 }, (_, i) => p.from + i),
+    )
+    expect(covered).toEqual(out.melody?.notes.map((_, i) => i))
+    expect(out.displayChords.length).toBeGreaterThan(0)
+  })
 })

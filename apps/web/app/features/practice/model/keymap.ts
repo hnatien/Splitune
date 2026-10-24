@@ -12,6 +12,9 @@ export const ACTIONS = [
   'notYet',
   'toggleLoop',
   'mutePart',
+  'previousPhrase',
+  'nextPhrase',
+  'cueNote',
 ] as const
 
 export type Action = (typeof ACTIONS)[number]
@@ -26,6 +29,10 @@ export const DEFAULT_KEYS: Record<Action, string[]> = {
   notYet: ['n'],
   toggleLoop: ['l'],
   mutePart: ['m'],
+  // Vocals (step 18c): phrase by phrase, and the note a phrase starts on.
+  previousPhrase: ['['],
+  nextPhrase: [']'],
+  cueNote: ['p'],
 }
 
 /** Learned keys per action, added to the defaults (one learned key per action). */
