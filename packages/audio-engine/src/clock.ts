@@ -1,4 +1,4 @@
-// Master clock (docs/implementation/11-audio-engine.md §3). The worklet reports the source frame
+// Master clock (docs/specs/11-audio-engine.md §3). The worklet reports the source frame
 // leaving it at an AudioContext frame (stretcher latency already compensated); the main thread
 // works out which context frame the listener hears now and extrapolates from the reports.
 import type { ProcessorEvent, Transport } from './protocol.ts'

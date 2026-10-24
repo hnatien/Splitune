@@ -1,7 +1,7 @@
 [project]
 name = "splitune-ml"
 version = "0.0.0"
-description = "Splitune ML pipeline workspace (docs/implementation/06-ml-pipeline-service.md)"
+description = "Splitune ML pipeline workspace (docs/specs/06-ml-pipeline-service.md)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "splitune-ml-core",

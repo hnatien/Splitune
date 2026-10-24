@@ -44,7 +44,7 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      # Storybook story tests run in Chromium and WebKit (docs/implementation/28-ui-quality-and-design-review.md §2);
+      # Storybook story tests run in Chromium and WebKit (docs/specs/28-ui-quality-and-design-review.md §2);
       # the web E2E journeys add Firefox (24-browser-compatibility.md §6).
       - name: Playwright version
         id: playwright

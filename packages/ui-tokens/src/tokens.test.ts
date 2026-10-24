@@ -1,4 +1,4 @@
-// Token structure (docs/implementation/28-ui-quality-and-design-review.md §3): every role exists in
+// Token structure (docs/specs/28-ui-quality-and-design-review.md §3): every role exists in
 // every appearance, tiers only point downwards, and the no-JS fallbacks match the attribute paths.
 
 import Color from 'colorjs.io'

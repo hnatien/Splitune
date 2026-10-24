@@ -1,5 +1,5 @@
 /*
- * Self-hosted fonts (docs/implementation/26-design-system.md §6.1). Files live in
+ * Self-hosted fonts (docs/specs/26-design-system.md §6.1). Files live in
  * apps/web/public/fonts/, made by scripts/fonts/subset.sh (SIL OFL 1.1; licences beside them).
  * Only the Inter roman file is preloaded; italic and Atkinson Hyperlegible Next load on first use.
  */

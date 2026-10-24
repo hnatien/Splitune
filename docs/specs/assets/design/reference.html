@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en" data-appearance="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Splitune — Music Stand reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Atkinson+Hyperlegible+Next:wght@400..700&display=swap" rel="stylesheet">
+<style>
+/* Values copied from docs/specs/26-design-system.md §4 (illustrative; packages/ui-tokens is binding). */
+:root, [data-appearance="light"] {
+  --background:#f7f6f2; --card:#fefdfb; --muted:#edebe7; --border:#dbd9d3; --input:#898680;
+  --foreground:#191510; --muted-foreground:#5f5a54; --paper:#fdfcf7; --ink:#14110d;
+  --primary:#4943c1; --primary-foreground:#f9fafe; --accent:#e7eafc; --accent-foreground:#302b89; --ring:#4943c1;
+  --destructive:#be2323; --success:#0b7643; --warning:#985b0b; --info:#0e6a9b;
+  --conf-medium:#403c37; --conf-low:#5c5751; --loop-fill:#dee3fd; --loop-edge:#4943c1; --playhead:#cc2827;
+  --score-loop-fill:#dee3fd; --score-loop-edge:#4943c1; --score-playhead:#cc2827; --staff:#83807a;
+  --stem-guitar:#b46d10; --stem-bass:#1f689d; --stem-drums:#bf4306; --stem-vocals:#a84e7c; --stem-keys:#1c7b5a; --stem-other:#127d9d;
+  --shadow-2:0 4px 16px rgb(25 21 16 / .10); --shadow-3:0 12px 40px rgb(25 21 16 / .16);
+  --hud-bg:rgb(25 21 16 / .82); --hud-fg:#f7f6f2; --read-scale:1;
+  color-scheme: light;
+}
+[data-appearance="dark"] {
+  --background:#181612; --card:#201e1a; --muted:#292622; --border:#383531; --input:#78746e;
+  --foreground:#edebe7; --muted-foreground:#a7a49e; --paper:#eae8e2; --ink:#14110d;
+  --primary:#98a2fc; --primary-foreground:#0e0f23; --accent:#272a4b; --accent-foreground:#c7cef9; --ring:#98a2fc;
+  --destructive:#f27166; --success:#5ec386; --warning:#ebb25f; --info:#6db3e4;
+  --conf-medium:#403c37; --conf-low:#59544e; --loop-fill:#272a4b; --loop-edge:#98a2fc; --playhead:#f27166;
+  --score-loop-fill:#c9cff2; --score-loop-edge:#4943c1; --score-playhead:#cc2827; --staff:#78746e;
+  --stem-guitar:#e69f00; --stem-bass:#56b4e9; --stem-drums:#d55e00; --stem-vocals:#cc79a7; --stem-keys:#009e73; --stem-other:#86c1d9;
+  --shadow-2:none; --shadow-3:none; --hud-bg:rgb(237 235 231 / .9); --hud-fg:#181612; --read-scale:1;
+  color-scheme: dark;
+}
+[data-appearance="stage"] {
+  --background:#0d0b08; --card:#12100e; --muted:#181613; --border:#2d2b28; --input:#6b6864;
+  --foreground:#e2ddd5; --muted-foreground:#aeaaa4; --paper:#100e0b; --ink:#e2ddd5;
+  --primary:#969ee3; --primary-foreground:#080a18; --accent:#1e213c; --accent-foreground:#c1c7f2; --ring:#969ee3;
+  --destructive:#dd766c; --success:#6fb789; --warning:#ddae6c; --info:#75acd2;
+  --conf-medium:#bbb7b0; --conf-low:#a29e98; --loop-fill:#21243f; --loop-edge:#969ee3; --playhead:#e27368;
+  --score-loop-fill:#21243f; --score-loop-edge:#969ee3; --score-playhead:#e27368; --staff:#77746f;
+  --stem-guitar:#d19853; --stem-bass:#63a8cf; --stem-drums:#d3754f; --stem-vocals:#ce84a7; --stem-keys:#58a484; --stem-other:#7cadc1;
+  --shadow-2:none; --shadow-3:none; --hud-bg:rgb(226 221 213 / .9); --hud-fg:#0d0b08; --read-scale:1.25;
+  color-scheme: dark;
+}
+[data-distance="desk"] { --read-base: .667; } [data-distance="stand"] { --read-base: 1; }
+:root { --read-base: 1; --radius: 10px; --ease: cubic-bezier(.2,0,0,1);
+  --read-tab: calc(36px * var(--read-base) * var(--read-scale));
+  --read-chord: calc(32px * var(--read-base) * var(--read-scale));
+  --read-chord-current: calc(48px * var(--read-base) * var(--read-scale));
+  --read-readout: calc(28px * var(--read-base) * var(--read-scale));
+  --read-bar: calc(20px * var(--read-base) * var(--read-scale));
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background .2s var(--ease), color .2s var(--ease); }
+.hyper .reading { font-family: "Atkinson Hyperlegible Next", Inter, sans-serif; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+button { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 64px; }
+
+/* page header */
+.page-top { position: sticky; top: 0; z-index: 10; background: color-mix(in oklab, var(--background) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.page-top .wrap { display: flex; align-items: center; gap: 16px; padding: 12px 24px; flex-wrap: wrap; }
+.wordmark { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.02em; font-size: 20px; }
+.page-top .spacer { flex: 1; }
+.seg { display: inline-flex; background: var(--muted); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; border-radius: 999px; padding: 6px 14px; min-height: 36px; font-size: 14px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted-foreground); }
+h1 { font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem); letter-spacing: -.025em; line-height: 1.05; margin: 48px 0 12px; font-weight: 650; }
+.lede { font-size: 18px; color: var(--muted-foreground); max-width: 68ch; margin: 0 0 32px; }
+h2 { font-size: 24px; letter-spacing: -.01em; margin: 56px 0 6px; font-weight: 600; }
+.sub { color: var(--muted-foreground); margin: 0 0 20px; font-size: 15px; max-width: 72ch; }
+.overline { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 600; }
+
+/* ---------- practice frame ---------- */
+.frame-outer { border-radius: 28px; padding: 14px; background: #0b0a09; box-shadow: var(--shadow-3); max-width: 1208px; overflow: hidden; }
+.frame-fit { position: relative; }
+.frame { width: 1180px; height: 820px; transform-origin: 0 0; position: absolute; left: 0; top: 0; border-radius: 16px; overflow: hidden; background: var(--background); display: grid; grid-template-rows: auto auto 1fr auto auto; position: relative; }
+.status { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--card); min-height: 52px; }
+.status .back { display: inline-flex; align-items: center; gap: 4px; color: var(--muted-foreground); font-size: 15px; border: 0; background: none; padding: 6px 8px; border-radius: 8px; }
+.status .title { font-weight: 600; font-size: 16px; }
+.status .meta { color: var(--muted-foreground); font-size: 14px; }
+.loop-badge { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; background: var(--accent); color: var(--accent-foreground); border-radius: 999px; padding: 6px 14px 6px 10px; font-weight: 600; font-size: var(--read-bar); }
+.icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 10px; color: var(--muted-foreground); cursor: pointer; }
+.icon-btn:hover { background: var(--muted); }
+
+.chords { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: var(--background); border-bottom: 1px solid var(--border); overflow: hidden; }
+.chip { font-weight: 650; font-size: var(--read-chord); line-height: 1; padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--card); color: var(--foreground); min-width: 2.4em; text-align: center; transition: transform .2s var(--ease); }
+.chip.past { color: var(--muted-foreground); }
+.chip.current { font-size: var(--read-chord-current); border: 2px solid var(--primary); box-shadow: 0 0 0 4px var(--accent); }
+.chip.med { border-style: dashed; color: var(--muted-foreground); border-color: var(--input); }
+.chip.low { border-style: dashed; border-color: var(--input); color: var(--muted-foreground); }
+.chip.low::after { content: "?"; font-size: .55em; vertical-align: super; margin-left: 2px; }
+.legend { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted-foreground); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--card); white-space: nowrap; }
+.legend .sw { display: inline-flex; align-items: center; gap: 4px; }
+.legend .box { width: 14px; height: 14px; border: 1.5px dashed var(--input); border-radius: 3px; }
+
+.score { background: var(--background); padding: 14px 18px; display: flex; min-height: 0; }
+.paper { flex: 1; background: var(--paper); border-radius: var(--radius); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.paper svg { width: 100%; height: 100%; display: block; }
+.paper text { font-family: inherit; }
+
+.timeline { background: var(--card); border-top: 1px solid var(--border); padding: 8px 18px 10px; }
+.ruler { display: grid; grid-template-columns: repeat(16, 1fr); font-size: 12px; color: var(--muted-foreground); height: 18px; position: relative; }
+.ruler span { border-left: 1px solid var(--border); padding-left: 4px; }
+.lanes { position: relative; display: grid; gap: 4px; }
+.lane { height: 26px; display: flex; align-items: center; gap: 1px; position: relative; }
+.lane i { flex: 1; border-radius: 1px; background: currentColor; opacity: .9; }
+.lane .tag { position: absolute; left: 0; top: -1px; font-size: 11px; font-weight: 600; background: var(--card); padding: 0 6px 0 0; color: var(--foreground); z-index: 1; display: flex; align-items: center; gap: 6px; }
+.lane .tag::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: currentColor; }
+.loopband { position: absolute; top: -18px; bottom: 0; background: color-mix(in oklab, var(--loop-fill) 70%, transparent); border-left: 2px solid var(--loop-edge); border-right: 2px solid var(--loop-edge); }
+.loopband::before, .loopband::after { content: ""; position: absolute; top: -2px; width: 14px; height: 20px; background: var(--loop-edge); border-radius: 4px; }
+.loopband::before { left: -8px; } .loopband::after { right: -8px; }
+.hatch { position: absolute; top: -18px; height: 18px; background: repeating-linear-gradient(135deg, var(--input) 0 2px, transparent 2px 7px); opacity: .7; }
+.nowline { position: absolute; top: -18px; bottom: 0; width: 2px; background: var(--playhead); }
+
+.transport { display: flex; align-items: center; gap: 12px; padding: 12px 18px 16px; background: var(--card); border-top: 1px solid var(--border); }
+.tbtn { min-width: 64px; height: 64px; border-radius: 16px; border: 1.5px solid var(--border); background: var(--card); display: grid; place-items: center; color: var(--foreground); cursor: pointer; transition: background .1s var(--ease); }
+.tbtn:hover { background: var(--muted); }
+.tbtn.primary { background: var(--primary); color: var(--primary-foreground); border-color: transparent; width: 76px; height: 76px; border-radius: 999px; }
+.tbtn.on { background: var(--accent); color: var(--accent-foreground); border-color: var(--primary); }
+.tbtn.s2 { min-width: 48px; height: 48px; border-radius: 12px; }
+.speed { display: flex; align-items: center; gap: 6px; background: var(--muted); border-radius: 18px; padding: 6px; }
+.speed .val { min-width: 150px; text-align: center; line-height: 1.1; }
+.speed .val b { display: block; font-size: var(--read-readout); font-weight: 650; }
+.speed .val small { color: var(--muted-foreground); font-size: 13px; }
+.speed .tbtn { border: 0; background: var(--card); }
+.pass { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.pass .best { font-size: 13px; color: var(--muted-foreground); text-align: right; line-height: 1.2; margin-right: 6px; }
+.pass .best b { display: block; color: var(--foreground); font-size: 16px; }
+.pbtn { height: 64px; padding: 0 22px; border-radius: 16px; font-weight: 600; font-size: 17px; border: 1.5px solid var(--border); background: var(--card); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.pbtn.clean { border-color: var(--success); color: var(--success); }
+.hud { transition: opacity .3s var(--ease); position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); background: var(--hud-bg); color: var(--hud-fg); padding: 14px 26px; border-radius: 16px; font-size: var(--read-readout); font-weight: 650; display: flex; align-items: center; gap: 12px; }
+.hud kbd { font: 600 13px Inter, sans-serif; border: 1px solid currentColor; border-radius: 6px; padding: 2px 6px; opacity: .7; }
+
+/* ---------- components ---------- */
+.grid { display: grid; gap: 16px; }
+.cards { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: grid; gap: 10px; transition: box-shadow .2s var(--ease); }
+.card:hover { box-shadow: var(--shadow-2); }
+.card .t { font-weight: 600; font-size: 18px; line-height: 1.3; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground); }
+.badge.ok { color: var(--success); border-color: color-mix(in oklab, var(--success) 40%, var(--border)); background: transparent; }
+.badge.warn { color: var(--warning); border-color: color-mix(in oklab, var(--warning) 40%, var(--border)); background: transparent; }
+.badge.busy { color: var(--info); border-color: color-mix(in oklab, var(--info) 40%, var(--border)); background: transparent; }
+.small { font-size: 14px; color: var(--muted-foreground); }
+.mini-wave { height: 36px; display: flex; align-items: center; gap: 2px; color: var(--stem-guitar); }
+.mini-wave i { flex: 1; background: currentColor; border-radius: 1px; opacity: .85; }
+.progress { height: 6px; background: var(--muted); border-radius: 99px; overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--primary); border-radius: 99px; }
+.btn { min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.btn.primary { background: var(--primary); color: var(--primary-foreground); border-color: transparent; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.destructive { color: var(--destructive); }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.stem { display: grid; grid-template-columns: 4px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.stem:last-child { border-bottom: 0; }
+.stem .rule { height: 36px; border-radius: 2px; background: currentColor; }
+.stem .name { font-weight: 600; display: flex; gap: 8px; align-items: center; color: var(--foreground); }
+.ms { display: flex; gap: 6px; }
+.ms button { width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--card); font-weight: 700; cursor: pointer; color: var(--foreground); }
+.ms button[aria-pressed="true"] { background: var(--accent); color: var(--accent-foreground); border-color: var(--primary); }
+.fader { width: 140px; height: 6px; border-radius: 99px; background: var(--muted); position: relative; }
+.fader span { position: absolute; inset: 0 auto 0 0; background: var(--primary); border-radius: 99px; }
+.fader span::after { content: ""; position: absolute; right: -11px; top: -8px; width: 22px; height: 22px; border-radius: 50%; background: var(--card); border: 2px solid var(--primary); }
+.tag-you { font-size: 11px; font-weight: 700; color: var(--accent-foreground); background: var(--accent); border-radius: 6px; padding: 2px 6px; }
+.banner { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--border); border-left: 3px solid var(--warning); background: var(--card); border-radius: 10px; padding: 12px 14px; }
+.banner.info { border-left-color: var(--info); }
+.banner p { margin: 0; }
+.stages { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 15px; }
+.stages li { display: flex; align-items: center; gap: 10px; }
+.stages .eta { margin-left: auto; color: var(--muted-foreground); font-size: 13px; }
+
+/* foundations */
+.swatches { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.sw-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card); font-size: 13px; }
+.sw-card .c { height: 64px; display: flex; align-items: flex-end; padding: 8px; font-weight: 600; }
+.sw-card .l { padding: 8px 10px; display: grid; gap: 2px; }
+.sw-card code { font-size: 12px; color: var(--muted-foreground); }
+.type-row { display: grid; grid-template-columns: 140px 1fr; gap: 16px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.type-row code { font-size: 12px; color: var(--muted-foreground); }
+.conf-demo { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+.conf-demo .item { display: grid; justify-items: center; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
+.fret { font: 650 34px/1 Inter, sans-serif; font-variant-numeric: tabular-nums; padding: 4px 8px; border-radius: 6px; background: var(--paper); color: var(--ink); }
+.fret.m { color: var(--conf-medium); outline: 1.5px dashed var(--conf-medium); outline-offset: 2px; }
+.fret.l { color: var(--conf-low); outline: 1.5px dashed var(--conf-low); outline-offset: 2px; }
+.fret.l::after { content: "?"; font-size: .5em; vertical-align: super; }
+.fret.t { text-decoration: underline dotted 2px; text-underline-offset: 6px; }
+footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted-foreground); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="page-top">
+  <div class="wrap">
+    <div class="wordmark" aria-label="Splitune">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 14c3 0 3-7 6-7s3 14 6 14 3-7 4-7" fill="none" stroke="var(--foreground)" stroke-width="2.4" stroke-linecap="round"/><path d="M19 14c2 0 3-4 6-4M19 14c2 0 3 4 6 4" fill="none" stroke="var(--primary)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      Splitune <span class="overline" style="margin-left:6px">Music Stand · design reference</span>
+    </div>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="Appearance" id="appearance">
+      <button aria-pressed="true" data-v="light">Light</button><button aria-pressed="false" data-v="dark">Dark</button><button aria-pressed="false" data-v="stage">Stage</button>
+    </div>
+    <div class="seg" role="group" aria-label="Reading distance" id="distance">
+      <button aria-pressed="false" data-v="desk">Desk</button><button aria-pressed="true" data-v="stand">Stand</button>
+    </div>
+    <label class="check"><input type="checkbox" id="hyper"> Hyperlegible</label>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>The music is the brightest thing on screen.</h1>
+  <p class="lede">Paper score, quiet graphite chrome, one indigo accent for everything you can act on. Uncertain transcription looks like a draft — lighter ink, dashed outline, a question mark — never a colour code. Switch appearance and distance above; values come from <code>specs/26-design-system.md</code>.</p>
+
+  <p class="overline">Practice · tablet landscape (1180 × 820, shown scaled)</p>
+  <div class="frame-outer"><div class="frame-fit" id="fit">
+    <div class="frame" id="frame">
+      <div class="status">
+        <button class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Library</button>
+        <span class="title">Morning Light</span><span class="meta">· Guitar · Rhythm</span>
+        <span class="loop-badge num"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>Bars 5–8 · pass 3</span>
+        <button class="icon-btn" aria-label="Display settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      </div>
+      <div class="chords reading" aria-label="Chord strip">
+        <span class="chip past">Am</span><span class="chip past">F</span><span class="chip current">C</span><span class="chip low">G</span><span class="chip">Am</span><span class="chip med">Fmaj7</span>
+        <span class="legend"><span class="sw"><span class="box"></span>Unsure</span>Auto-transcribed — may contain errors (v1.2)</span>
+      </div>
+      <div class="score"><div class="paper reading" id="paper"></div></div>
+      <div class="timeline" aria-label="Timeline">
+        <div class="ruler num" id="ruler"></div>
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="transport">
+        <button class="tbtn" aria-label="Restart loop"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 20 9 12l10-8v16z"/><path d="M5 19V5"/></svg></button>
+        <button class="tbtn primary" aria-label="Pause"><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg></button>
+        <button class="tbtn on" aria-label="Loop on" aria-pressed="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></button>
+        <div class="speed reading" role="group" aria-label="Speed">
+          <button class="tbtn" aria-label="Slower"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <div class="val num"><b>70&nbsp;%</b><small>84&nbsp;BPM</small></div>
+          <button class="tbtn" aria-label="Faster"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+        </div>
+        <button class="tbtn s2 on" aria-label="Count-in on" aria-pressed="true" style="font-weight:700;font-size:13px">1·2·3·4</button>
+        <button class="tbtn s2" aria-label="Metronome"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 11.4V9.1"/><path d="m12 17 6.6-6.6"/><circle cx="20" cy="9" r="2"/><path d="M8.5 3h7l3.3 17.3A1.5 1.5 0 0 1 17.3 22H6.7a1.5 1.5 0 0 1-1.5-1.7Z"/><path d="M6.6 17h10.8"/></svg></button>
+        <button class="tbtn s2" aria-label="Mixer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></button>
+        <div class="pass">
+          <div class="best num">Best clean pass<b>65&nbsp;%</b></div>
+          <button class="pbtn clean"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Felt clean</button>
+          <button class="pbtn">Not yet</button>
+        </div>
+      </div>
+      <div class="hud num" id="hud" role="status"><kbd>↑</kbd> Speed 70&nbsp;%</div>
+    </div>
+  </div></div>
+
+  <h2>Library and import</h2>
+  <p class="sub">Cards lead with the title and what you can do next; status is a word plus an icon, never a coloured dot alone.</p>
+  <div class="grid cards">
+    <article class="card">
+      <div class="mini-wave" data-wave="40" style="color:var(--stem-guitar)"></div>
+      <div class="t">Morning Light</div>
+      <div class="row"><span class="badge ok">✓ Ready</span><span class="small">Guitar · 3 days ago</span></div>
+      <div class="small num">Best 85&nbsp;% on bars 17–20</div>
+    </article>
+    <article class="card">
+      <div class="mini-wave" data-wave="40" style="color:var(--stem-bass)"></div>
+      <div class="t">Harbour Lights (live at the Roundhouse)</div>
+      <div class="row"><span class="badge warn">⚠ Rough tab</span><span class="small">Bass · yesterday</span></div>
+      <div class="small">Live recording — separation is rougher</div>
+    </article>
+    <article class="card">
+      <div class="mini-wave" data-wave="40" style="color:var(--stem-other)"></div>
+      <div class="t">Paper Planes</div>
+      <div class="row"><span class="badge busy">◔ Analysing 3/5</span><span class="small num">About 2 min left</span></div>
+      <div class="progress" aria-label="Analysis progress"><span style="width:60%"></span></div>
+    </article>
+  </div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="panel">
+      <p class="overline" style="margin-top:0">Mixer</p>
+      <div class="stem" style="color:var(--stem-guitar)"><span class="rule"></span><span class="name">Guitar <span class="tag-you">Your part</span></span><span class="fader"><span style="width:78%"></span></span><span class="ms"><button aria-pressed="false">M</button><button aria-pressed="false">S</button></span></div>
+      <div class="stem" style="color:var(--stem-bass)"><span class="rule"></span><span class="name">Bass</span><span class="fader"><span style="width:55%"></span></span><span class="ms"><button aria-pressed="false">M</button><button aria-pressed="false">S</button></span></div>
+      <div class="stem" style="color:var(--stem-drums)"><span class="rule"></span><span class="name">Drums</span><span class="fader"><span style="width:55%"></span></span><span class="ms"><button aria-pressed="true">M</button><button aria-pressed="false">S</button></span></div>
+      <div class="stem" style="color:var(--stem-vocals)"><span class="rule"></span><span class="name">Vocals <span class="badge warn" style="font-size:11px">⚠ Rough</span></span><span class="fader"><span style="width:40%"></span></span><span class="ms"><button aria-pressed="false">M</button><button aria-pressed="false">S</button></span></div>
+    </div>
+    <div class="panel" style="display:grid;gap:14px;align-content:start">
+      <p class="overline" style="margin:0">Progressive analysis</p>
+      <ul class="stages">
+        <li><span style="color:var(--success)">✓</span> Beat and bars <span class="eta">done</span></li>
+        <li><span style="color:var(--success)">✓</span> Separating your part <span class="eta">done</span></li>
+        <li><span style="color:var(--info)">◔</span> Chords <span class="eta num">about 20 s</span></li>
+        <li><span style="color:var(--muted-foreground)">○</span> Tab <span class="eta">queued</span></li>
+      </ul>
+      <div class="banner"><span style="color:var(--warning)">⚠</span><p>We're not confident in the note-level tab for this song — showing chords. <button class="btn ghost" style="min-height:32px;padding:0 6px;color:var(--primary)">Show tab anyway</button></p></div>
+      <div class="banner info"><span style="color:var(--info)">ⓘ</span><p class="small" style="color:var(--foreground)">4 of 5 Lite analyses left · resets 1&nbsp;Dec</p></div>
+      <div class="row"><button class="btn primary">Start practising</button><button class="btn">Record yourself</button><button class="btn destructive">Delete song</button></div>
+    </div>
+  </div>
+
+  <h2>Confidence encoding</h2>
+  <p class="sub">Three ordinal levels plus a timing flag. Ink value, then outline, then glyph — all at 4.5:1 or better. Same rule on tab, chord chips, timeline and badges.</p>
+  <div class="panel conf-demo reading">
+    <div class="item"><span class="fret">12</span>High</div>
+    <div class="item"><span class="fret m">7</span>Medium</div>
+    <div class="item"><span class="fret l">5</span>Low</div>
+    <div class="item"><span class="fret t">3</span>Timing unsure</div>
+    <div class="item"><span class="chip low" style="font-size:28px">G</span>Chord, low</div>
+  </div>
+
+  <h2>Colour roles</h2>
+  <p class="sub">Semantic tokens only; components never see primitives. Contrast ratios are verified per appearance in <code>26</code> §4.6.</p>
+  <div class="grid swatches" id="swatches"></div>
+
+  <h2>Type</h2>
+  <p class="sub">Inter 4.1 Variable for everything; tabular figures for anything live. Reading sizes scale with the distance preset.</p>
+  <div class="panel">
+    <div class="type-row"><code>text-4xl · 36</code><span style="font-size:36px;font-weight:650;letter-spacing:-.02em;line-height:1.1">Learn it one loop at a time</span></div>
+    <div class="type-row"><code>text-2xl · 24</code><span style="font-size:24px;font-weight:600">Library</span></div>
+    <div class="type-row"><code>text-lg · 18</code><span style="font-size:18px;font-weight:500">Morning Light</span></div>
+    <div class="type-row"><code>text-base · 16</code><span>Bring a song. Splitune isolates your part and lets you loop any bar.</span></div>
+    <div class="type-row"><code>text-sm · 14</code><span class="small">Guitar · last practised 3 days ago</span></div>
+    <div class="type-row"><code>--read-tab</code><span class="reading num" style="font-size:var(--read-tab);font-weight:650">0 2 3 5 7 10 12</span></div>
+  </div>
+
+  <footer>Illustrative reference for <code>docs/specs/26-design-system.md</code> and <code>specs/27-screens-flows-and-content.md</code>. Binding values live in <code>packages/ui-tokens</code> (step 10a). Fonts load from Google Fonts here for convenience only; the app self-hosts them.</footer>
+</main>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const seed = (n) => { let x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  const bars = (el, count, shape) => { el.innerHTML = Array.from({ length: count }, (_, i) => `<i style="height:${Math.round((shape(i) * 0.85 + 0.15) * 100)}%"></i>`).join(''); };
+
+  document.querySelectorAll('[data-wave]').forEach((el, k) => bars(el, +el.dataset.wave, (i) => 0.35 + 0.65 * Math.abs(Math.sin(i * 0.45 + k)) * seed(i + k * 9)));
+
+  // Timeline: 16 bars, loop 5–8, unsure 12–13, now-line inside bar 6.
+  document.getElementById('ruler').innerHTML = Array.from({ length: 16 }, (_, i) => `<span>${i + 1}</span>`).join('');
+  const lanes = document.getElementById('lanes');
+  lanes.innerHTML = `<div class="loopband" style="left:25%;width:25%"></div><div class="hatch" style="left:68.75%;width:12.5%" title="Unsure bars"></div><div class="nowline" style="left:33.5%"></div>`
+    + [['Guitar · your part', 'var(--stem-guitar)', 0], ['Mix', 'var(--muted-foreground)', 3]].map(([n, c, k]) => `<div class="lane" style="color:${c}"><span class="tag">${n}</span>${''}</div>`).join('');
+  lanes.querySelectorAll('.lane').forEach((el, k) => { const tag = el.innerHTML; bars(el, 160, (i) => (0.25 + 0.75 * Math.abs(Math.sin(i * 0.33 + k * 2))) * (0.55 + 0.45 * seed(i * (k + 1)))); el.insertAdjacentHTML('afterbegin', tag); });
+
+  // Tab: 4 bars (5–8), 6 strings, eighth notes; one medium, one low, one timing-flagged note.
+  const paper = document.getElementById('paper');
+  const W = 1100, H = 400, left = 74, right = 20, top = 84, gap = 42;
+  const barW = (W - left - right) / 4;
+  const frets = [
+    [[5, 0], [4, 2], [3, 2], [2, 1], [3, 2], [4, 2], [2, 1], [3, 2]],
+    [[4, 3], [3, 2], [2, 1], [1, 1], [2, 1], [3, 2], [1, 1], [2, 1]],
+    [[5, 3], [4, 2], [3, 0], [2, 1], [3, 0], [4, 2], [2, 1], [3, 0]],
+    [[6, 3], [5, 2], [4, 0], [3, 0], [4, 0], [5, 2], [3, 0], [4, 0]],
+  ];
+  const flags = { '2-3': 'm', '3-1': 'l', '1-6': 't' };
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Tab, bars 5 to 8">`;
+  s += `<rect x="${left + barW}" y="${top - 26}" width="${barW * 2}" height="${gap * 5 + 52}" rx="8" fill="var(--score-loop-fill)"/>`;
+  s += `<rect x="${left + barW}" y="${top - 26}" width="3" height="${gap * 5 + 52}" fill="var(--score-loop-edge)"/><rect x="${left + barW * 3 - 3}" y="${top - 26}" width="3" height="${gap * 5 + 52}" fill="var(--score-loop-edge)"/>`;
+  s += `<rect x="${left + barW}" y="${top + gap * 5 + 34}" width="${barW}" height="3" fill="var(--ink)"/>`;
+  for (let i = 0; i < 6; i++) s += `<line x1="${left}" x2="${W - right}" y1="${top + i * gap}" y2="${top + i * gap}" stroke="var(--staff)" stroke-width="1.4"/>`;
+  for (let b = 0; b <= 4; b++) s += `<line x1="${left + b * barW}" x2="${left + b * barW}" y1="${top}" y2="${top + gap * 5}" stroke="var(--ink)" stroke-width="${b === 0 || b === 4 ? 2 : 1.2}"/>`;
+  ['T', 'A', 'B'].forEach((ch, i) => { s += `<text x="${left - 38}" y="${top + 48 + i * 46}" font-size="32" font-weight="700" fill="var(--ink)">${ch}</text>`; });
+  frets.forEach((bar, b) => {
+    s += `<text x="${left + b * barW + 6}" y="${top - 40}" font-weight="600" fill="var(--ink)" opacity=".8" style="font-size:var(--read-bar)">${b + 5}</text>`;
+    bar.forEach(([str, fret], n) => {
+      const x = left + b * barW + 28 + n * ((barW - 40) / 8);
+      const y = top + (str - 1) * gap;
+      const f = flags[`${b}-${n}`];
+      const color = f === 'm' ? 'var(--conf-medium)' : f === 'l' ? 'var(--conf-low)' : 'var(--ink)';
+      s += `<rect x="${x - 18}" y="${y - 18}" width="36" height="36" fill="${b === 1 || b === 2 ? 'var(--score-loop-fill)' : 'var(--paper)'}"/>`;
+      if (f === 'm' || f === 'l') s += `<rect x="${x - 20}" y="${y - 22}" width="40" height="44" rx="6" fill="none" stroke="${color}" stroke-width="1.8" stroke-dasharray="4 3"/>`;
+      s += `<text x="${x}" y="${y + 12}" text-anchor="middle" font-weight="650" fill="${color}" style="font-size:var(--read-tab);font-variant-numeric:tabular-nums">${fret}</text>`;
+      if (f === 'l') s += `<text x="${x + 21}" y="${y - 10}" font-size="20" font-weight="700" fill="${color}">?</text>`;
+      if (f === 't') s += `<line x1="${x - 10}" x2="${x + 10}" y1="${y + 20}" y2="${y + 20}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="2 3"/>`;
+      s += `<line x1="${x}" x2="${x}" y1="${top + gap * 5 + 8}" y2="${top + gap * 5 + 26}" stroke="var(--ink)" stroke-width="1.5"/>`;
+    });
+  });
+  const nowX = left + barW * 1.38;
+  s += `<rect x="${nowX - 1.5}" y="${top - 30}" width="3" height="${gap * 5 + 60}" rx="1.5" fill="var(--score-playhead)"/>`;
+  s += `</svg>`;
+  paper.innerHTML = s;
+
+  // Swatches
+  const roles = [['--background', 'Background'], ['--card', 'Card'], ['--muted', 'Muted'], ['--paper', 'Paper (score)'], ['--foreground', 'Foreground'], ['--muted-foreground', 'Muted text'], ['--primary', 'Primary · indigo ink'], ['--accent', 'Accent (selected)'], ['--destructive', 'Destructive'], ['--success', 'Success'], ['--warning', 'Warning'], ['--info', 'Info'], ['--stem-guitar', 'Stem · guitar'], ['--stem-bass', 'Stem · bass'], ['--stem-drums', 'Stem · drums'], ['--stem-vocals', 'Stem · vocals'], ['--stem-keys', 'Stem · keys'], ['--stem-other', 'Stem · other']];
+  const sw = document.getElementById('swatches');
+  const paint = () => { const cs = getComputedStyle(root); sw.innerHTML = roles.map(([v, n]) => `<div class="sw-card"><div class="c" style="background:var(${v})"></div><div class="l"><b>${n}</b><code>${v} ${cs.getPropertyValue(v).trim()}</code></div></div>`).join(''); };
+  paint();
+
+  const group = (id, attr) => document.getElementById(id).addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    root.setAttribute(attr, b.dataset.v); paint();
+  });
+  group('appearance', 'data-appearance');
+  group('distance', 'data-distance');
+  root.setAttribute('data-distance', 'stand');
+
+  // Render the tablet frame at its real size (1180 × 820 CSS px) and scale it to fit.
+  const fit = document.getElementById('fit'), frame = document.getElementById('frame');
+  const scale = () => { const k = Math.min(1, fit.clientWidth / 1180); frame.style.transform = `scale(${k})`; fit.style.height = `${820 * k}px`; };
+  new ResizeObserver(scale).observe(fit); scale();
+
+  // Pedal HUD: shows for 1.2 s after a speed change (arrow keys or the −/+ buttons).
+  const hud = document.getElementById('hud'), val = document.querySelector('.speed .val');
+  let pct = 70, timer;
+  const showHud = (key) => { hud.innerHTML = `<kbd>${key}</kbd> Speed ${pct}&nbsp;%`; val.innerHTML = `<b>${pct}&nbsp;%</b><small>${Math.round(120 * pct / 100)}&nbsp;BPM</small>`; hud.style.opacity = '1'; clearTimeout(timer); timer = setTimeout(() => { hud.style.opacity = '0'; }, 1200); };
+  const step = (d, key) => { pct = Math.max(50, Math.min(100, pct + d)); showHud(key); };
+  document.querySelector('[aria-label="Slower"]').addEventListener('click', () => step(-5, '↓'));
+  document.querySelector('[aria-label="Faster"]').addEventListener('click', () => step(5, '↑'));
+  document.addEventListener('keydown', (e) => { if (e.key === 'ArrowUp') { e.preventDefault(); step(5, '↑'); } if (e.key === 'ArrowDown') { e.preventDefault(); step(-5, '↓'); } });
+  timer = setTimeout(() => { hud.style.opacity = '0'; }, 2500);
+  document.getElementById('hyper').addEventListener('change', (e) => root.classList.toggle('hyper', e.target.checked));
+})();
+</script>
+</body>
+</html>

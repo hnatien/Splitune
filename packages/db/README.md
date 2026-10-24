@@ -1,7 +1,7 @@
 # @splitune/db
 
 Postgres schema (Drizzle), migrations, roles and RLS, user-scoped repositories and the job queue.
-Spec: `docs/implementation/03-data-model-and-storage.md` (local docs), security model: `17-security.md` §2.
+Spec: `docs/specs/03-data-model-and-storage.md` (local docs), security model: `17-security.md` §2.
 
 ```bash
 pnpm db:migrate                    # apply migrations to DATABASE_URL (run as the database owner)

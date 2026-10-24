@@ -5,7 +5,7 @@ import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.base.ts'
 
 // `unit`: plain Node tests. `storybook`: every story rendered as a test in Chromium and WebKit
-// with axe (a11y.test = 'error'), per docs/implementation/28-ui-quality-and-design-review.md §2.
+// with axe (a11y.test = 'error'), per docs/specs/28-ui-quality-and-design-review.md §2.
 export default mergeConfig(
   viteConfig,
   defineConfig({

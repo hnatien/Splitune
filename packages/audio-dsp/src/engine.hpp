@@ -11,7 +11,7 @@ namespace splitune {
 
 // The practice engine behind the C ABI in include/splitune/dsp.h. Reads the stems at a source
 // position, mixes them, feeds one Signalsmith Stretch instance and adds clicks after the stretch
-// (docs/implementation/11-audio-engine.md §2). The heard position follows the stretcher's
+// (docs/specs/11-audio-engine.md §2). The heard position follows the stretcher's
 // "processing time": input runs inputLatency() frames ahead of it and output leaves
 // outputLatency() frames behind it (§3).
 class Engine {

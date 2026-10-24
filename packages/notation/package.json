@@ -2,7 +2,7 @@
   "name": "@splitune/notation",
   "version": "0.0.0",
   "private": true,
-  "description": "alphaTab wrapper \u2014 docs/implementation/12-practice-screen-and-notation.md",
+  "description": "alphaTab wrapper \u2014 docs/specs/12-practice-screen-and-notation.md",
   "type": "module",
   "sideEffects": false,
   "exports": {
