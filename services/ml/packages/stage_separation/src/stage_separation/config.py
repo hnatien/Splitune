@@ -53,10 +53,19 @@ class ModelSpec(BaseModel):
         return self
 
 
+class SoloCheck(BaseModel):
+    # A fast model run before the chain: when its drums, bass and vocals outputs together stay
+    # below `threshold_db` of the mixture, the song is the instrument alone, its run is the
+    # separation and the chain is skipped (notes then use the mixture).
+    model: str
+    threshold_db: float
+
+
 class InstrumentSpec(BaseModel):
     chain: list[str] = Field(min_length=1)
     mix_minus: Literal["subtract", "complement"]
     quality: Literal["good", "rough"]
+    solo_check: SoloCheck | None = None
 
 
 class SeparationConfig(BaseModel):
@@ -77,6 +86,12 @@ class SeparationConfig(BaseModel):
                     raise ValueError(f"{name}: {model} has no {name} output")
                 if spec.mix_minus == "complement" and len(outputs) < 2:
                     raise ValueError(f"{name}: {model} has no complement")
+            check = spec.solo_check
+            if check is not None and (
+                check.model not in self.models
+                or name not in self.models[check.model].outputs.values()
+            ):
+                raise ValueError(f"{name}: solo check model {check.model} has no {name} output")
         return self
 
 

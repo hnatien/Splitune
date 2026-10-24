@@ -89,6 +89,21 @@
           "items": {
             "$ref": "#/$defs/SeparationAttempt"
           }
+        },
+        "solo_bypass": {
+          "type": "object",
+          "properties": {
+            "rhythm_db": {
+              "type": "number"
+            },
+            "applied": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "rhythm_db",
+            "applied"
+          ]
         }
       },
       "required": [

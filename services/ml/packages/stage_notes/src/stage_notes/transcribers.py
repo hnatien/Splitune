@@ -12,7 +12,7 @@ import threading
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol, runtime_checkable
 
 import numpy as np
 import onnxruntime as ort  # pyright: ignore[reportMissingTypeStubs]
@@ -47,6 +47,15 @@ class NoteTranscriber(Protocol):
     def model_ref(self) -> contracts.ModelRef: ...
 
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]: ...
+
+
+@runtime_checkable
+class PedalTranscriber(NoteTranscriber, Protocol):
+    """A transcriber that also hears the sustain pedal (piano: Transkun)."""
+
+    def transcribe_with_pedal(
+        self, mono: NDArray[np.float32], params: dict[str, Any]
+    ) -> tuple[list[NoteEvent], list[tuple[float, float]]]: ...
 
 
 def models_dir() -> Path:
@@ -131,10 +140,17 @@ class BasicPitch:
         ]
 
 
-class InstrumentSpec(BaseModel):
+class SourceSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
     transcriber: str
     params: dict[str, Any] = Field(default_factory=dict[str, Any])
+
+
+class InstrumentSpec(SourceSpec):
+    # The transcriber for the mixture, when there is no stem for the instrument (default: the same).
+    mixture: SourceSpec | None = None
+    # A hand per note (piano): "pm2s" runs the PM2S hand-part model after transcription.
+    hands: Literal["pm2s"] | None = None
 
 
 class NotesConfig(BaseModel):
@@ -173,15 +189,23 @@ def get(name: str) -> NoteTranscriber:
         return _instances[name]
 
 
-def for_instrument(instrument: str) -> tuple[NoteTranscriber, dict[str, Any]]:
+def hands_model(instrument: str) -> str | None:
+    spec = load_config().instruments.get(instrument)
+    return spec.hands if spec is not None else None
+
+
+def for_instrument(instrument: str, source: str = "stem") -> tuple[NoteTranscriber, dict[str, Any]]:
+    """The transcriber and its effective params for the instrument's stem or, with
+    `source="mixture"`, for the mixture (its `mixture` entry when the config has one)."""
     spec = load_config().instruments.get(instrument)
     if spec is None:
         raise StageError("invalid_params", retry=False)
-    transcriber = get(spec.transcriber)
-    unknown = set(spec.params) - set(transcriber.defaults)
+    chosen: SourceSpec = spec.mixture if source == "mixture" and spec.mixture else spec
+    transcriber = get(chosen.transcriber)
+    unknown = set(chosen.params) - set(transcriber.defaults)
     if unknown:
         raise StageError("invalid_params", retry=False)
-    effective = {**transcriber.defaults, **spec.params}
+    effective = {**transcriber.defaults, **chosen.params}
     if "instrument" in transcriber.defaults:  # multi-instrument models filter by instrument
         effective["instrument"] = instrument
     return transcriber, effective

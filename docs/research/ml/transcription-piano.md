@@ -237,6 +237,49 @@ Approved by the owner on 2026-10-24, with Slakh2100's test split streamed from t
 - **Time:** about 17 s per 30 s on the RTX 3060 (BS-Roformer-SW about 12 s, `notes.piano` about 5 s).
 - **Remaining ceiling:** rendered acoustic solo pianos are near 1.0, so that tier can't show gains. The owner's real songs remain the missing tier.
 
+### Step 24 phases 2–6 (measured 2026-10-25)
+Full tables: `services/ml/eval/results/p2p/2026-10-24-phases.md` and `2026-10-24-final.md`.
+- **Transcribers on separated stems** (mean onset F1 over 81 items):
+
+  | model | onset F1 |
+  |---|---|
+  | Transkun V2 NoExt (kept) | 0.869 |
+  | V2 Aug | 0.869 (worse key-release offsets: 0.485 vs 0.570) |
+  | robust Kong (Edwards et al.) | 0.837 |
+  | Aria-AMT | 0.822 |
+  | V2 | 0.812 |
+
+  On real Disklavier pianos Aria-AMT ties Transkun (0.928 vs 0.923), but it loses on rendered pop piano and is several times slower.
+  - **Practical notes on running the candidates:**
+    - Aria-AMT's driver is POSIX-only, so it was driven in-process with soundfile input.
+    - A file of exactly one 30 s chunk is cut at about 20 s unless padded.
+    - Kong's pip package loads checkpoints non-strictly and re-downloads anything under 160 MB, so the robust weights were loaded directly.
+- **Ensembles:** keeping only notes a second model agrees with costs more recall than it gains in precision (F1 0.881 → 0.824–0.870).
+- **Per-note confidence from Transkun itself works:**
+  - semi-CRF onset marginal: AUROC 0.839;
+  - velocity-distribution peak: 0.864;
+  - their mean: 0.885;
+  - agreement with YourMT3+: 0.878.
+
+  The interval marginal is weak (0.58).
+- **Separation:**
+  - BS-Roformer-SW still gives the best piano stem: 12.5 dB uSDR on band items, vs vocals-first 12.4, SW + htdemucs_6s average 8.9, htdemucs_6s 5.0.
+  - htdemucs_6s's drums + bass + vocals energy is the best solo-piano detector found: 24/24 solos, 0/57 bands at −15 dB.
+  - PANNs tags alone would wrongly bypass about 5 band songs.
+- **Mixture:** YourMT3+ beats Transkun on pop band mixtures (0.823 vs 0.703 POP909, 0.734 vs 0.620 Slakh) but not on classical piano in a band.
+- **Hands:** PM2S 0.927 vs `splitHands` 0.885 on unseen ASAP pieces (staves). MIDI2ScoreTransformer and Cluster-and-Separate were not run: PM2S already wins, and they need MuseScore or a quantized score.
+- **Remaining ceiling per tier** (shipped, chosen input):
+
+  | tier | onset F1 | where the errors are |
+  |---|---|---|
+  | real-solo | 0.928 | Disklavier recordings with rubato and pedal; offsets 0.63 |
+  | real-band | 0.960 | Slakh bands separate easily |
+  | pop-solo | 0.920 | phone audio 0.77 and a roomy upright 0.89 remain |
+  | pop-band | 0.876 | dense bands 0.868, piano doubled by guitar or synth 0.767 |
+  | legacy | 0.869 | BabySlakh electric-piano patches |
+
+  The owner's real songs are still the missing measurement.
+
 ## Implications for Splitune
 - **Default piano path:**
   1. Piano stem (or the original audio, if the video is solo piano).

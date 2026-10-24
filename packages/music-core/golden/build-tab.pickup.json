@@ -198,7 +198,7 @@
   },
   "expected": {
     "tab": {
-      "schema_version": "1.4.0",
+      "schema_version": "1.6.0",
       "artefact": "tab.guitar",
       "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
       "notes_ref": {

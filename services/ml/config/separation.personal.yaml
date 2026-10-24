@@ -52,7 +52,14 @@ models:
 # quality: the default quality_hint of the isolated stem (doc 08 P1 fail rule marks weak ones rough).
 instruments:
   guitar: {chain: [bs_roformer_sw, htdemucs_6s], mix_minus: subtract, quality: good}
-  piano: {chain: [bs_roformer_sw, htdemucs_6s], mix_minus: subtract, quality: good}
+  piano:
+    chain: [bs_roformer_sw, htdemucs_6s]
+    mix_minus: subtract
+    quality: good
+    # Step 24 (eval/results/p2p): htdemucs_6s (~3 s per 30 s on the RTX 3060) runs first; with its
+    # drums + bass + vocals below -15 dB of the mixture the song is solo piano (24/24 solo
+    # excerpts, 0/57 band excerpts) and the chain is skipped.
+    solo_check: {model: htdemucs_6s, threshold_db: -15}
   bass: {chain: [bs_roformer_sw, htdemucs_ft, htdemucs_6s], mix_minus: subtract, quality: good}
   drums: {chain: [bs_roformer_sw, htdemucs_ft, htdemucs_6s], mix_minus: subtract, quality: good}
   vocals:

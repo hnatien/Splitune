@@ -34,6 +34,8 @@ from .config import ModelSpec, SeparationConfig
 log = logging.getLogger("splitune.separate")
 
 Role = Literal["target", "complement", "extra"]
+# One model run: its name, map entry, register ref and output files.
+type SeparationRun = tuple[str, ModelSpec, contracts.ModelRef, models.Result]
 # A model may pad or trim a few samples at the end; anything bigger means a broken run.
 MAX_LENGTH_DRIFT = 0.01
 
@@ -67,6 +69,12 @@ def plan(
         "inference": {name: cfg.models[name].inference for name in spec.chain},
         "mix_minus": spec.mix_minus,
         "keep": keep,
+        "solo_check": None
+        if spec.solo_check is None
+        else {
+            **spec.solo_check.model_dump(),
+            "inference": cfg.models[spec.solo_check.model].inference,
+        },
         "config_version": cfg.version,
     }
 
@@ -91,6 +99,31 @@ def roles(spec: ModelSpec, params: dict[str, Any]) -> dict[str, Role]:
         elif params["mix_minus"] == "complement":
             out[name] = "complement"
     return out
+
+
+RHYTHM = ("drums", "bass", "vocals")
+
+
+def solo_bypass(
+    spec: ModelSpec,
+    files: dict[str, Path],
+    target: str,
+    frames: int,
+    mixture_energy: float,
+    threshold_db: float,
+) -> dict[str, Any]:
+    """Energy of the model's drums, bass and vocals outputs (whichever it has, never the target)
+    relative to the mixture; below `threshold_db` the song is the target instrument alone."""
+    rhythm = [
+        load_stem(files.get(stem), frames)
+        for stem, instrument in spec.outputs.items()
+        if instrument in RHYTHM and instrument != target
+    ]
+    if not rhythm:
+        return {"rhythm_db": 0.0, "applied": False}
+    energy = float(np.sum(np.square(sum(rhythm), dtype=np.float64)))
+    level = 10.0 * np.log10((energy + 1e-12) / (mixture_energy + 1e-12))
+    return {"rhythm_db": round(float(level), 1), "applied": bool(level < threshold_db)}
 
 
 def load_stem(path: Path | None, frames: int) -> NDArray[np.float32]:
@@ -136,24 +169,55 @@ def run(job: StageJob) -> StageOutput:
     workdir = Path(job.workdir)
     data, _ = sf.read(job.decoded_path, dtype="float32", always_2d=True)
     frames = len(data)
+    mixture_energy = float(np.sum(np.square(data, dtype=np.float64)))
     mixture = workdir / "mixture.wav"
     sf.write(str(mixture), data, 44100, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
     del data
 
-    attempts: list[dict[str, str]] = []
-    for name in params["chain"]:
+    def attempt(name: str) -> SeparationRun:
         spec = cfg.models[name]
+        ref = models.model_ref(spec)
+        return name, spec, ref, models.separate(name, spec, mixture, workdir / "separated" / name)
+
+    chosen: SeparationRun | None = None
+    bypass: dict[str, Any] | None = None
+    seconds = 0.0
+    check = params.get("solo_check")
+    if check is not None:
         try:
-            ref = models.model_ref(spec)
-            result = models.separate(name, spec, mixture, workdir / "separated" / name)
-            kept = roles(spec, params)
-            stems = {stem: load_stem(result.files.get(stem), frames) for stem in kept}
-            break
+            checked = attempt(str(check["model"]))
+            seconds += checked[3].seconds
+            bypass = solo_bypass(
+                checked[1],
+                checked[3].files,
+                params["instrument"],
+                frames,
+                mixture_energy,
+                float(check["threshold_db"]),
+            )
+            if bypass["applied"]:
+                chosen = checked
         except StageError as exc:
-            log.warning("separation model failed", extra={"model": name, "error_code": exc.code})
-            attempts.append({"model": name, "error_code": exc.code})
-    else:
-        raise StageError("stems_unavailable", retry=False)
+            log.warning(
+                "solo check failed", extra={"model": check["model"], "error_code": exc.code}
+            )
+    attempts: list[dict[str, str]] = []
+    if chosen is None:
+        for candidate in params["chain"]:
+            try:
+                chosen = attempt(candidate)
+                seconds += chosen[3].seconds
+                break
+            except StageError as exc:
+                log.warning(
+                    "separation model failed", extra={"model": candidate, "error_code": exc.code}
+                )
+                attempts.append({"model": candidate, "error_code": exc.code})
+        else:
+            raise StageError("stems_unavailable", retry=False)
+    name, spec, ref, result = chosen
+    kept = roles(spec, params)
+    stems = {stem: load_stem(result.files.get(stem), frames) for stem in kept}
 
     directory = run_id(job, name, spec, ref, kept)
     cache = Path(job.cache_dir) / "separated"
@@ -172,6 +236,7 @@ def run(job: StageJob) -> StageOutput:
         entries.append(entry)
 
     device = models.device()
+    extra: dict[str, Any] = {} if bypass is None else {"solo_bypass": bypass}
     document = contracts.Separation.model_validate(
         {
             "schema_version": contracts.SCHEMA_VERSION,
@@ -191,6 +256,7 @@ def run(job: StageJob) -> StageOutput:
             "device": device,
             "stems": entries,
             "failed_attempts": attempts,
+            **extra,
         }
     )
     out = workdir / "separation.json"
@@ -202,7 +268,7 @@ def run(job: StageJob) -> StageOutput:
         files={"separation": str(out)},
         model_refs=[ref],
         metrics={
-            metric: result.seconds,
+            metric: seconds,
             "peak_vram_mb": result.peak_mb,
             "audio_s": float(job.duration_s),
         },

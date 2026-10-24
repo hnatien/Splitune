@@ -111,6 +111,11 @@ export const PIANO_NOTES = {
       stem_id: 'piano',
     })),
   ),
+  // The sustain pedal (step 24): down just after each chord bar's downbeat, lifted at the next.
+  sustain: [1, 2, 3, 5, 6, 7].map((bar) => ({
+    on_s: BAR(bar) + 0.1,
+    off_s: BAR(bar + 1),
+  })),
 }
 // Guitar and bass parts for Notes (step 18b) on the same grid, as notes.guitar / notes.bass: the
 // fixture's chords strummed (a strum's strings 6 ms apart, low to high), a line that climbs to the

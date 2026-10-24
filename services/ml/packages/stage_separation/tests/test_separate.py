@@ -220,8 +220,9 @@ class FakeModels:
     """Stands in for audio-separator: fails the models in `broken`, else writes each output as
     a scaled copy of the input."""
 
-    def __init__(self, broken: dict[str, str]) -> None:
+    def __init__(self, broken: dict[str, str], silent: tuple[str, ...] = ()) -> None:
         self.broken = broken
+        self.silent = silent  # outputs written as silence (a solo instrument has no drums)
         self.calls: list[str] = []
 
     def separate(self, name: str, spec: ModelSpec, audio: Path, output_dir: Path) -> models.Result:
@@ -233,7 +234,8 @@ class FakeModels:
         files: dict[str, Path] = {}
         for stem in spec.outputs:
             path = output_dir / f"{stem}.wav"
-            sf.write(str(path), data / len(spec.outputs), RATE, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+            level = 0.0 if stem in self.silent else 1 / len(spec.outputs)
+            sf.write(str(path), data * level, RATE, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
             files[stem] = path
         return models.Result(files=files, seconds=0.5, peak_mb=0.0)
 
@@ -354,3 +356,53 @@ def test_a_warm_model_writes_each_run_into_its_own_directory(tmp_path: Path) -> 
     assert {p.parent.name for p in second.files.values()} == {"second"}
     assert set(second.files) == set(first.files)
     models.release()
+
+
+def test_solo_bypass_measures_the_rhythm_outputs_against_the_mixture(tmp_path: Path) -> None:
+    from stage_separation.separate import solo_bypass
+
+    frames = 44100
+    rng = np.random.default_rng(0)
+    mixture = rng.standard_normal((frames, 2)).astype(np.float32)
+    quiet = (1e-3 * mixture).astype(np.float32)  # -60 dB
+    files: dict[str, Path] = {}
+    for name, audio in (("drums", quiet), ("bass", quiet), ("piano", mixture)):
+        files[name] = tmp_path / f"{name}.wav"
+        sf.write(str(files[name]), audio, 44100, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+    spec = config.load().models["bs_roformer_sw"]
+    energy = float(np.sum(np.square(mixture, dtype=np.float64)))
+    solo = solo_bypass(spec, files, "piano", frames, energy, -20.0)
+    assert solo["applied"]
+    assert solo["rhythm_db"] < -50
+    files["drums"] = files["piano"]  # a loud drum output: a band
+    band = solo_bypass(spec, files, "piano", frames, energy, -20.0)
+    assert not band["applied"]
+    assert band["rhythm_db"] > -1
+
+
+@pytest.mark.parametrize(
+    ("silent", "calls", "provider", "applied"),
+    [
+        (("drums", "bass", "vocals"), ["htdemucs_6s"], "htdemucs_6s", True),
+        ((), ["htdemucs_6s", "bs_roformer_sw"], "bs_roformer:BS-Roformer-SW", False),
+    ],
+)
+def test_the_solo_check_runs_first_and_skips_the_chain_for_a_solo_piano(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    silent: tuple[str, ...],
+    calls: list[str],
+    provider: str,
+    applied: bool,
+) -> None:
+    fake = FakeModels({}, silent)
+    monkeypatch.setattr(models, "separate", fake.separate)
+    params = separate.plan(config.load(), {"instrument": "piano"}, None)
+    assert params["solo_check"]["model"] == "htdemucs_6s"
+    out = separate.run(make_job(tmp_path, params))
+    assert fake.calls == calls
+    doc = contracts.Separation.model_validate(json.loads(Path(out.files["separation"]).read_text()))
+    assert doc.provider == provider
+    assert doc.solo_bypass is not None
+    assert doc.solo_bypass.applied is applied
+    assert out.metrics["gpu_s" if doc.device != "cpu" else "cpu_s"] == 0.5 * len(calls)

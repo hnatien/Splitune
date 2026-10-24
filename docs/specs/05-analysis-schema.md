@@ -345,6 +345,16 @@ Contract additions made with `packages/music-core` (all optional, so `SCHEMA_VER
 - **Per-instrument object names** follow `packages/storage`: `notes.<instrument>.json`, `tab.<instrument>.json`, `render/<instrument>.alphatex` (doc tables above say `notes/{instrument}.json`).
 - Analysis end state: finalize sets `analyses.status` to `done`, or `partial` when chords, stems or a requested instrument's notes are missing, with an `analysis.done` event carrying the summary artefact id; a permanently failed finalize sets `failed`.
 
+## Implementation notes (step 24, 2026-10-25)
+Schema `1.6.0` (additive; `pnpm contracts:gen` regenerated the JSON Schemas and Pydantic models):
+- **`Separation.solo_bypass`** `{rhythm_db, applied}` (optional). It records the separate stage's solo-instrument check: the energy of a fast model's drums, bass and vocals outputs relative to the mixture.
+  - `applied: true` means the song is the target instrument alone. That model's run is the separation, the configured chain was skipped, and the notes stage transcribes the mixture.
+  - This is not a fallback: `status: done`, no `fallback_reason`; notes carry `stem_id: "mixture"`.
+  - Piano only, via `solo_check` in `separation.personal.yaml`.
+- **`Notes.sustain`**: `[{on_s, off_s}]` (optional). The sustain-pedal down intervals on the decoded-PCM timeline, written by `notes.piano` (Transkun's pedal events). music-core snaps them to the 16th grid and the grand staff draws them as pedal marks. Note offsets stay key releases (V2 NoExt), so the pedal is never folded into durations.
+- **`Note.hand`**: `left | right` (optional). The hand per piano note from the PM2S hand-part model in `notes.piano`. When every note has one, `buildPianoScore` uses them instead of `splitHands`.
+- **Piano confidence is no longer constant.** `confidence_raw` is the mean of the semi-CRF onset marginal and the velocity-distribution peak, calibrated by `config/calibration/transkun-v2@2.0.1.piano.json`. Mixture-fallback notes (YourMT3+) are calibrated by `yourmt3-moe@….piano.json`.
+
 ## Implications for other docs
 - `03-data-model-and-storage.md`: `analyses`, `artefacts`, `correction_ops` tables and the storage layout.
 - `06-ml-pipeline-service.md`: every stage writes its artefact atomically (temp key, then rename via copy) and updates `manifest`.
