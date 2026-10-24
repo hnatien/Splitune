@@ -24,8 +24,8 @@ describe.each(CONTEXTS)('$name', ({ context }) => {
   })
 
   it('Notes digits read on the tinted note head over paper and the loop band', () => {
-    // A sure note's head is the instrument's mark at 30 % over the paper (GuitarRoll).
-    for (const mark of ['--fret-guitar', '--fret-bass'] as const) {
+    // A sure note's head is the instrument's mark at 30 % over the paper (GuitarRoll, MelodyRoll).
+    for (const mark of ['--fret-guitar', '--fret-bass', '--melody-vocals'] as const) {
       for (const under of ['--paper', '--score-loop-fill'] as const) {
         const tint = tokens.color(mark).clone()
         tint.alpha = 0.3

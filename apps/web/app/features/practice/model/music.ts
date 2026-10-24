@@ -4,6 +4,7 @@ import {
   type BandThresholds,
   type Beats,
   type BuildTabResult,
+  buildMelody,
   buildPianoScore,
   buildTab,
   type ChordSegment,
@@ -11,6 +12,8 @@ import {
   type CorrectionOp,
   DEFAULT_BANDS,
   keyNoteNames,
+  keyScale,
+  type Melody,
   type Notes,
   type PianoNote,
   type PianoScore,
@@ -21,7 +24,7 @@ import { z } from 'zod'
 import { defaultLevel, levelsFor } from './levels'
 
 // The effective music of a song (12 §4, 07): artefacts ⊕ corrections, then music-core's tab (or,
-// for piano, the hand-split notes of the roll) and display chords for the chosen capo, level and
+// for piano, the hand-split notes of the roll; for vocals, the melody and its phrases) and display chords for the chosen capo, level and
 // fingering. Pure, so it runs in the Worker
 // (music.worker.ts) and in tests; nothing here touches the DOM.
 
@@ -70,6 +73,8 @@ export interface MusicOutput {
   /** Piano notes on the beat grid with their hands (21 V4): the falling-notes roll and the grand
    * staff's alphaTex. */
   piano?: { notes: PianoNote[]; staff: MusicStaff } | undefined
+  /** Vocals: the sung notes on their own timing, their phrases and the singer's range (step 18c). */
+  melody?: (Pick<Melody, 'notes' | 'phrases' | 'range'> & { scale: number[] }) | undefined
   bands: BandThresholds
   /** Every pitch class's name in the song's key (C major's without one): E♭, not D#. */
   noteNames: string[]
@@ -136,18 +141,20 @@ export function computeMusic(input: MusicInput): MusicOutput {
       },
     }
   }
+  const corrections = { notes: input.ops.notes, beats: input.ops.beats, chords: input.ops.chords }
+  const extra = input.chords ? { chords: input.chords } : {}
+  const melody =
+    input.notes && instrument === 'vocals'
+      ? buildMelody(input.notes, input.beats, corrections, { ...extra, bands })
+      : undefined
   const piano =
     input.notes && instrument === 'piano'
-      ? buildPianoScore(
-          input.notes,
-          input.beats,
-          { notes: input.ops.notes, beats: input.ops.beats, chords: input.ops.chords },
-          { ...(input.chords ? { chords: input.chords } : {}), bands },
-        )
+      ? buildPianoScore(input.notes, input.beats, corrections, { ...extra, bands })
       : undefined
-  const beats = piano?.effective.beats ?? applyBeatCorrections(input.beats, input.ops.beats).value
+  const effective = piano?.effective ?? melody?.effective
+  const beats = effective?.beats ?? applyBeatCorrections(input.beats, input.ops.beats).value
   const chords =
-    piano?.effective.chords ??
+    effective?.chords ??
     (input.chords && applyChordCorrections(input.chords, input.ops.chords).value)
   return {
     beats,
@@ -168,6 +175,16 @@ export function computeMusic(input: MusicInput): MusicOutput {
               firstBar: piano.alphaTexFirstBar,
               noteMap: piano.noteMap,
             },
+          },
+        }
+      : {}),
+    ...(melody
+      ? {
+          melody: {
+            notes: melody.notes,
+            phrases: melody.phrases,
+            range: melody.range,
+            scale: keyScale(chords?.key ?? { tonic: 'C', mode: 'major' }),
           },
         }
       : {}),

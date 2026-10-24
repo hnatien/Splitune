@@ -68,7 +68,7 @@ export function makeBeats(
 
 export function makeNotes(
   notes: Partial<Note>[],
-  instrument: 'guitar' | 'bass' | 'piano' = 'guitar',
+  instrument: 'guitar' | 'bass' | 'piano' | 'vocals' = 'guitar',
 ): Notes {
   return {
     ...HEADER,
