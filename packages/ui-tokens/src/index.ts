@@ -100,6 +100,7 @@ export const COMPONENT_TOKENS = [
   '--key-right-fg',
   '--fret-guitar',
   '--fret-bass',
+  '--melody-vocals',
   '--waveform-peak',
   '--waveform-rms',
   '--waveform-played',
@@ -214,6 +215,10 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--fret-guitar', '--score-loop-fill', 3],
   ['--fret-bass', '--paper', 3],
   ['--fret-bass', '--score-loop-fill', 3],
+  // Vocal Melody: the note being sung and the rail's pitch now on the paper and the loop band (note
+  // outlines are --ink; their tint is tested in contrast.test.ts)
+  ['--melody-vocals', '--paper', 3],
+  ['--melody-vocals', '--score-loop-fill', 3],
   // Timeline chrome
   ['--loop-edge', '--card', 3],
   ['--playhead', '--card', 3],

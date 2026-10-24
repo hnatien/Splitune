@@ -106,3 +106,31 @@ export function toggleMutePart(channels: readonly MixChannel[], mix: Mix): Mix {
   if (!part || !current) return mix
   return { ...mix, [part.stemId]: { ...current, muted: !current.muted } }
 }
+
+export type GuideLevel = 'on' | 'quiet' | 'off'
+
+/** A guide vocal held back but still there to lean on (step 18c). */
+export const QUIET_GUIDE_DB = -12
+
+/** The part's level as the singer's Guide vocal switch reads it, or null without stems. */
+export function guideLevel(channels: readonly MixChannel[], mix: Mix): GuideLevel | null {
+  const part = channels.find((c) => c.role === 'part')
+  const current = part && mix[part.stemId]
+  if (!current) return null
+  if (current.muted) return 'off'
+  return current.gain_db <= QUIET_GUIDE_DB / 2 ? 'quiet' : 'on'
+}
+
+/** The mix with the part (the guide vocal) on at unity, quiet, or muted; the backing as it was. */
+export function withGuide(channels: readonly MixChannel[], mix: Mix, level: GuideLevel): Mix {
+  const part = channels.find((c) => c.role === 'part')
+  if (!part) return mix
+  return {
+    ...mix,
+    [part.stemId]: {
+      gain_db: level === 'quiet' ? QUIET_GUIDE_DB : 0,
+      muted: level === 'off',
+      solo: false,
+    },
+  }
+}

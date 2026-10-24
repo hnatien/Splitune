@@ -124,8 +124,8 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
   )
 }
 
-// The paper: the chord strip over the tab (or the chord sheet), or the glance view on phone
-// portrait; a URL import's video floats over its corner when opened from the status bar. On phone
+// The paper: the chord strip over the tab (or the chord sheet; over vocals' melody, the phrase
+// strip), or the glance view on phone portrait; a URL import's video floats over its corner when opened from the status bar. On phone
 // landscape guitar's Notes take the strip's room and show its chord themselves.
 function Regions({ layout }: { layout: PracticeLayout }) {
   const { layers } = usePractice()
@@ -142,7 +142,7 @@ function Regions({ layout }: { layout: PracticeLayout }) {
         </Suspense>
       ) : (
         <>
-          {(layers.chords || layers.tab) && !(notes && shown === 'tab') && (
+          {(layers.chords || layers.tab || layers.melody) && !(notes && shown === 'tab') && (
             <ChordStrip compact={isPhone(layout)} />
           )}
           <NotationPane compact={notes} />
