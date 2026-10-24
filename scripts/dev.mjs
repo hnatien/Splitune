@@ -116,7 +116,7 @@ const interactive = process.stdout.isTTY && process.stdin.isTTY
 function log(serviceId, raw) {
   const parsed = parseLogLine(raw, { root })
   if (!parsed?.text) return
-  const { level, text, detail } = parsed
+  const { level, text, detail, progress } = parsed
   const service = state.services.find((s) => s.id === serviceId)
   if (service.ready && service.status === 'starting') {
     const match = service.ready.exec(text)
@@ -130,12 +130,20 @@ function log(serviceId, raw) {
     service.detail = text
   const lines = [text, ...detail.map((line) => `  ${line}`)]
   if (interactive) {
-    for (const line of lines) state.logs.push({ service: serviceId, level, text: line })
+    // A progress bar redraws in place while it is still the service's latest line; a finished bar
+    // stays, so the next one starts a line of its own (tqdm repeats its last frame on close).
+    const previous = progress && state.logs.findLast((entry) => entry.service === serviceId)
+    if (previous?.progress && (previous.progress.percent < 100 || previous.text === text)) {
+      Object.assign(previous, { level, text, progress })
+      return
+    }
+    for (const line of lines) state.logs.push({ service: serviceId, level, text: line, progress })
     if (state.logs.length > MAX_LOG_LINES) state.logs.splice(0, state.logs.length - MAX_LOG_LINES)
     // Keep a scrolled view anchored on the same lines while new ones arrive.
     if (state.scroll > 0 && (!state.focus || state.focus === serviceId))
       state.scroll += lines.length
-  } else {
+  } else if (!progress || progress.percent === 100) {
+    // Piped output can't redraw, so a bar prints once, when it finishes.
     for (const line of lines) process.stdout.write(`${serviceId.padEnd(12)}│ ${line}\n`)
   }
 }
