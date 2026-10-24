@@ -224,63 +224,72 @@
         "pitch": 76,
         "hand": "right",
         "on_tick": 0,
-        "off_tick": 960
+        "off_tick": 960,
+        "residual_flagged": false
       },
       {
         "note_id": "n000004",
         "pitch": 45,
         "hand": "left",
         "on_tick": 960,
-        "off_tick": 4800
+        "off_tick": 4800,
+        "residual_flagged": false
       },
       {
         "note_id": "n000001",
         "pitch": 69,
         "hand": "right",
         "on_tick": 960,
-        "off_tick": 2880
+        "off_tick": 2880,
+        "residual_flagged": false
       },
       {
         "note_id": "n000002",
         "pitch": 72,
         "hand": "right",
         "on_tick": 960,
-        "off_tick": 4800
+        "off_tick": 4800,
+        "residual_flagged": false
       },
       {
         "note_id": "n000003",
         "pitch": 76,
         "hand": "right",
         "on_tick": 960,
-        "off_tick": 4800
+        "off_tick": 4800,
+        "residual_flagged": false
       },
       {
         "note_id": "n000005",
         "pitch": 52,
         "hand": "left",
         "on_tick": 1920,
-        "off_tick": 2880
+        "off_tick": 2880,
+        "residual_flagged": false
       },
       {
         "note_id": "n000008",
         "pitch": 40,
         "hand": "left",
         "on_tick": 4800,
-        "off_tick": 8640
+        "off_tick": 8640,
+        "residual_flagged": false
       },
       {
         "note_id": "n000006",
         "pitch": 68,
         "hand": "right",
         "on_tick": 4800,
-        "off_tick": 5760
+        "off_tick": 5760,
+        "residual_flagged": false
       },
       {
         "note_id": "n000007",
         "pitch": 69,
         "hand": "right",
         "on_tick": 5760,
-        "off_tick": 8640
+        "off_tick": 8640,
+        "residual_flagged": false
       }
     ],
     "swing_bars": [],

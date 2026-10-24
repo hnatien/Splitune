@@ -28,7 +28,7 @@ What is built, as of **2026-10-24**. Details, verification and open items for ea
 | s21 | Guitar/bass Notes view | Done | E2E run; real devices; tuning option in the Worker | Step 18b (Phase 1 design, Phase 2 build) |
 | s22 | Guitar accuracy | Not started | Needs the owner's songs, tabs and time budget | — |
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
-| s24 | Piano accuracy | Not started | Needs the owner's OK on plan and time budget | — |
+| s24 | Piano accuracy | In progress | Phases 0–1 done (P2p test set, harness, baseline); Phases 2–6 wait for the owner's OK on the phase plan; the owner's songs not yet supplied | Step 24 |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.
