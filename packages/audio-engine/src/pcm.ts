@@ -1,5 +1,5 @@
 // Decoded channels → the engine's stem format: interleaved stereo Int16 at the context rate,
-// exactly `frames` long (docs/implementation/11-audio-engine.md §4), plus waveform peaks.
+// exactly `frames` long (docs/specs/11-audio-engine.md §4), plus waveform peaks.
 
 export const PEAK_BLOCK = 512
 

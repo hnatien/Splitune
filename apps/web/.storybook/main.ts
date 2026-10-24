@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 import { DISPLAY_SCRIPT } from '../app/ui/display.ts'
 
-// Storybook 10 workbench (docs/implementation/28-ui-quality-and-design-review.md §2). The head gets
+// Storybook 10 workbench (docs/specs/28-ui-quality-and-design-review.md §2). The head gets
 // the same inline display script and font preload as the app, so stories prove the real theming
 // path, including no flash on load.
 const config: StorybookConfig = {

@@ -1,5 +1,5 @@
 /*
- * C ABI of the Splitune practice DSP (docs/implementation/11-audio-engine.md §2, §7).
+ * C ABI of the Splitune practice DSP (docs/specs/11-audio-engine.md §2, §7).
  *
  * One engine mixes up to SPLITUNE_DSP_MAX_STEMS Int16 stereo stems at a source read position,
  * time-stretches and pitch-shifts the submix with one Signalsmith Stretch instance, loops in the
@@ -36,7 +36,7 @@ enum {
 /* Transport states (dsp_transport). */
 enum { DSP_STOPPED = 0, DSP_COUNT_IN = 1, DSP_PLAYING = 2 };
 
-/* Stretch presets (dsp_set_quality); docs/implementation/11-audio-engine.md §6. */
+/* Stretch presets (dsp_set_quality); docs/specs/11-audio-engine.md §6. */
 enum { DSP_QUALITY_DEFAULT = 0, DSP_QUALITY_CHEAPER = 1 };
 
 typedef struct SplituneDspEvent {

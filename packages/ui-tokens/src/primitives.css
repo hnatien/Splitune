@@ -1,5 +1,5 @@
 /*
- * Tier 1 — primitives (docs/implementation/26-design-system.md §3, §4).
+ * Tier 1 — primitives (docs/specs/26-design-system.md §3, §4).
  * OKLCH ramps and bases. Only semantic roles in themes.css reference these; Tailwind never sees
  * them and components never use them. Ramps run from the surface end (1) to the text end (12) of
  * their appearance, so steps 1–5 are surfaces, 6–8 borders, 9–10 secondary text, 11–12 text.

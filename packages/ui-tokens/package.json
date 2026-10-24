@@ -2,7 +2,7 @@
   "name": "@splitune/ui-tokens",
   "version": "0.0.0",
   "private": true,
-  "description": "Music Stand design tokens: CSS, Tailwind mapping and typed metadata — docs/implementation/26-design-system.md",
+  "description": "Music Stand design tokens: CSS, Tailwind mapping and typed metadata — docs/specs/26-design-system.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

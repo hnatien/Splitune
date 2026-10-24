@@ -1,4 +1,4 @@
-// Platform integration (docs/implementation/11-audio-engine.md §5, 24-browser-compatibility.md
+// Platform integration (docs/specs/11-audio-engine.md §5, 24-browser-compatibility.md
 // §3): audio session, Media Session and Screen Wake Lock, each feature-detected.
 
 // Safari 16.4+: "playback" keeps practice audio playing with the iOS ringer switch on silent.

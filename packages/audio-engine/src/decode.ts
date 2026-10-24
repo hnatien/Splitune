@@ -1,4 +1,4 @@
-// Stem decoding (docs/implementation/11-audio-engine.md §4, 24-browser-compatibility.md §3):
+// Stem decoding (docs/specs/11-audio-engine.md §4, 24-browser-compatibility.md §3):
 // WebCodecs in the decode Worker where AudioDecoder exists, else decodeAudioData (which resamples
 // to the context rate natively). Both trim to the timeline length from stems.json, so encoder
 // priming and padding never shift a stem against the others.

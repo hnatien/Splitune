@@ -1,4 +1,4 @@
-"""Tab metrics for Prototype 3 (docs/implementation/08-evaluation-harness-and-prototypes.md).
+"""Tab metrics for Prototype 3 (docs/specs/08-evaluation-harness-and-prototypes.md).
 
 Reads GuitarSet JAMS annotations and scores string/fret assignments produced by
 `packages/music-core` (through its Node CLI, so the evaluated code is the shipped code).

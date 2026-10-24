@@ -1,5 +1,5 @@
 # check=skip=InvalidDefaultArgInFrom
-# Reproducible dsp.wasm build (docs/implementation/02-repo-tooling-and-ci.md §2). The Emscripten
+# Reproducible dsp.wasm build (docs/specs/02-repo-tooling-and-ci.md §2). The Emscripten
 # image is pinned by digest in emsdk-version; scripts/build.mjs passes it in and exports
 # /dsp.wasm to dist/.
 ARG EMSDK_IMAGE

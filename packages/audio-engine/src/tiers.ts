@@ -1,4 +1,4 @@
-// CPU tiers and degradation (docs/implementation/11-audio-engine.md §6). Tiers only ever step
+// CPU tiers and degradation (docs/specs/11-audio-engine.md §6). Tiers only ever step
 // down within a session: high (default preset) → mid (cheaper preset, split computation) → low
 // (also no pitch shift). Each step reports `audio_underrun` for telemetry.
 

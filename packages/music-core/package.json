@@ -2,7 +2,7 @@
   "name": "@splitune/music-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Music algorithms \u2014 docs/implementation/07-music-algorithms.md",
+  "description": "Music algorithms \u2014 docs/specs/07-music-algorithms.md",
   "type": "module",
   "sideEffects": false,
   "exports": {

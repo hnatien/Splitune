@@ -3,7 +3,7 @@ import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 
 // Machine codes → catalogue copy (27 §5.6). The UI renders by code only; unknown codes fall back
-// to analysis.failed. The pipeline codes are the list of step 09 (PROGRESS.md "Machine codes").
+// to analysis.failed. The pipeline codes are the list of step 09 (docs/progress-log.md "Machine codes").
 
 /** Copy for a fallback the analysis took instead of a failed stage (stage.failed.fallback). */
 const FALLBACKS: Record<string, () => string> = {

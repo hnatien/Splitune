@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 // End-to-end journeys against the production build (`pnpm --filter @splitune/web build`) with the
 // mock-mode Mac workers (e2e/global-setup.ts): Chromium, Firefox and WebKit on desktop, plus phone
-// and tablet viewports (docs/implementation/24-browser-compatibility.md §6). Projects run one after
+// and tablet viewports (docs/specs/24-browser-compatibility.md §6). Projects run one after
 // another: they share one server, one Mac worker pair and the per-IP sign-in limit.
 // The full matrix runs nightly; E2E_SMOKE=1 (`e2e:smoke`, every PR) runs the core journeys on the
 // three desktop engines (18 §1).
