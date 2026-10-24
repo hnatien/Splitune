@@ -41,6 +41,7 @@ import {
   resolveMix,
 } from './model/mixer'
 import type { MusicInput, MusicOptions, MusicOutput } from './model/music'
+import { cuePhrase, loopedPhrase, phraseAtTime, phraseEntry, phraseLoop } from './model/phrases'
 import { type PlayerContext, type PlayerState, playerMachine } from './model/player-machine'
 import { createResumeWriter, type ResumeState } from './model/player-state'
 import { type AudioInput, type Lane, PracticeAudio } from './model/practice-audio'
@@ -53,7 +54,7 @@ import {
   startSession,
 } from './model/practice-sync'
 import { type MusicState, useMusic } from './model/use-music'
-import { buildViewModel, type ViewModel } from './model/view-model'
+import { buildViewModel, spelledNote, type ViewModel } from './model/view-model'
 import { INITIAL_UI, showHud, usePracticeUi } from './practice-store'
 
 // PracticeProvider (12 §2): the player machine, the audio adapter, the effective music from the
@@ -80,6 +81,8 @@ export interface Layers {
   tab: boolean
   /** Piano's falling notes (its notation layer: piano has no tab). */
   roll: boolean
+  /** The vocal melody and its phrases (vocals' notation layer, step 18c). */
+  melody: boolean
 }
 
 export interface PracticeValue {
@@ -119,6 +122,12 @@ export interface PracticeValue {
   undo: () => void
   redo: () => void
   hearBar: (bar: number) => void
+  /** Vocals: to the next or previous phrase (a phrase loop moves with it). */
+  stepPhrase: (direction: 1 | -1) => void
+  /** Vocals: loop a phrase's bars, or stop looping it. */
+  loopPhrase: (index: number) => void
+  /** Vocals: play the first note of the phrase about to be sung (or the looped one). */
+  cueNote: () => void
   artefactFor: (kind: Edit['kind']) => ArtefactEntry | undefined
 }
 
@@ -296,6 +305,7 @@ export function PracticeProvider({
     chords: (view?.chords.length ?? 0) > 0 && !holding,
     tab: data.entry.tab !== undefined && music?.tab !== undefined,
     roll: (music?.piano?.notes.length ?? 0) > 0 && !holding,
+    melody: (music?.melody?.notes.length ?? 0) > 0 && !holding,
   }
   // The load in flight (or done) and its key: a re-render never cancels it, a new source does.
   const loading = useRef<{ key: string; abort: AbortController } | null>(null)
@@ -678,6 +688,56 @@ export function PracticeProvider({
     actor.send({ type: 'AUDITION', start: grid.barStart(bar), end: grid.barEnd(bar) })
   }
 
+  const phrases = music?.melody?.phrases ?? []
+  const stepPhrase = (direction: 1 | -1) => {
+    if (!grid || phrases.length === 0) {
+      showHud(m['practice.hud_no_phrases']())
+      return
+    }
+    const now = audio.position()
+    const current = phraseAtTime(grid, phrases, now)
+    // Back: to this phrase's start, or the previous one's when already near it.
+    const nearStart = current >= 0 && now - phraseEntry(grid, phrases, current) < 0.5
+    const target = Math.max(
+      0,
+      Math.min(
+        phrases.length - 1,
+        direction === 1 ? current + 1 : nearStart ? current - 1 : current,
+      ),
+    )
+    const phrase = phrases[target]
+    if (!phrase) return
+    if (loopedPhrase(phrases, player.loop) >= 0) setLoop(phraseLoop(grid, phrase))
+    actor.send({ type: 'SEEK', seconds: phraseEntry(grid, phrases, target) })
+    showHud(m['practice.hud_phrase']({ n: String(target + 1) }))
+  }
+
+  const loopPhrase = (index: number) => {
+    const phrase = phrases[index]
+    if (!grid || !phrase) return
+    if (player.loopOn && loopedPhrase(phrases, player.loop) === index) {
+      setLoop(null)
+      showHud(m['practice.hud_loop_off']())
+      return
+    }
+    const range = phraseLoop(grid, phrase)
+    setLoop(range, 'tap')
+    actor.send({ type: 'SEEK', seconds: phraseEntry(grid, phrases, index) })
+    showHud(m['practice.hud_loop']({ bars: `${range.startBar + 1}–${range.endBar + 1}` }))
+  }
+
+  const cueNote = () => {
+    const melody = music?.melody
+    const phrase = melody?.phrases[cuePhrase(phrases, audio.position(), player.loop)]
+    const note = phrase && melody?.notes[phrase.first]
+    if (!note || !music) {
+      showHud(m['practice.hud_no_phrases']())
+      return
+    }
+    audio.cue(note.pitch)
+    showHud(spelledNote(note.pitch, music.noteNames))
+  }
+
   const value: PracticeValue = {
     songId,
     guest,
@@ -730,6 +790,9 @@ export function PracticeProvider({
       if (redoCorrection()) showHud(m['editor.redone']())
     },
     hearBar,
+    stepPhrase,
+    loopPhrase,
+    cueNote,
     artefactFor,
   }
   return <Context.Provider value={value}>{children}</Context.Provider>
