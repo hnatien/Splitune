@@ -73,6 +73,7 @@ const BuildTabInput = z.object({
         .optional(),
       title: z.string().optional(),
       chord_names: z.boolean().optional(),
+      weights: z.record(z.string(), z.number()).optional(), // FretWeights overrides (eval sweeps)
     })
     .optional(),
 })
@@ -184,6 +185,7 @@ export function runBuildTab(raw: unknown): unknown {
           : defined({ semitones: o.transpose.semitones, keepShapes: o.transpose.keep_shapes }),
       title: o.title,
       chordNames: o.chord_names,
+      weights: o.weights,
     }),
   )
   return {

@@ -17,6 +17,7 @@ export interface FretNote {
   pitch: number // sounding MIDI pitch
   endTime?: number // seconds; lets the DP avoid cutting off a string that is still ringing
   pin?: { string: number; fret: number } // user correction (set_note string/fret)
+  stringProbs?: readonly number[] // audio string cue per string (string 1 first), notes.string_probs
 }
 
 export interface FretStep {
@@ -130,9 +131,12 @@ function shapeSets(
   return sets
 }
 
+// Probabilities below this count as this (a wrong cue costs at most −ln of it per note).
+const MIN_STRING_PROB = 0.02
+
 function localCost(
   positions: readonly (Position | null)[],
-  pitches: readonly number[],
+  notes: readonly PreparedNote[],
   config: FretConfig,
   shapes: readonly Set<string>[],
 ): Candidate {
@@ -145,6 +149,7 @@ function localCost(
   let maxFret = Number.NEGATIVE_INFINITY
   let strings = 0
   let single: Candidate['single'] = null
+  let cue = 0
   positions.forEach((p, i) => {
     if (p === null) return
     count++
@@ -157,10 +162,15 @@ function localCost(
       minFret = Math.min(minFret, p.fret)
       maxFret = Math.max(maxFret, p.fret)
     }
-    single = { string: p.string, fret: p.fret, pitch: pitches[i] as number }
+    const prepared = notes[i] as PreparedNote
+    single = { string: p.string, fret: p.fret, pitch: prepared.pitch }
+    const probs = prepared.note.stringProbs
+    if (w.stringCue !== 0 && probs !== undefined && !prepared.outOfRange) {
+      cue -= Math.log(Math.max(probs[p.string - 1] ?? 0, MIN_STRING_PROB))
+    }
   })
   if (count !== 1) single = null
-  let local = 0
+  let local = w.stringCue * cue
   if (count > 0) {
     local += w.fretHeight * (heightSum / count) - w.openString * open
     if (fretted > 0) local += w.span * (maxFret - minFret)
@@ -193,10 +203,9 @@ function enumerate(
       a - b,
   )
   const current: (Position | null)[] = notes.map(() => null)
-  const pitches = notes.map((n) => n.pitch)
   const walk = (depth: number, used: number, lo: number, hi: number): void => {
     if (depth === order.length) {
-      out.push(localCost(current, pitches, config, shapes))
+      out.push(localCost(current, notes, config, shapes))
       return
     }
     const index = order[depth] as number
@@ -276,7 +285,7 @@ function stepCandidates(
   return [
     localCost(
       notes.map(() => null),
-      [],
+      notes,
       config,
       [],
     ),

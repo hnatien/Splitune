@@ -5,7 +5,9 @@ extra, aligned by `stems.json`'s offset), so transcription never sees the AAC en
 separation (stems_unavailable) or without a stem for this instrument the decoded mixture is used
 and the stage reports `fallback` / `notes_on_mixture`. Confidence = the transcriber's raw
 confidence through `config/calibration/<record>@<version>[.<instrument>].json`. Bass notes also
-carry `low_band_energy` for music-core's octave correction (07 §3).
+carry `low_band_energy` for music-core's octave correction (07 §3). With `a4_compensation` the
+source's offset from A440 is estimated (tuning.py), the transcriber compensates it and the artefact
+records it under `tuning`, with the likely open-string tuning when `tuning_suggestion` is on.
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ from splitune_ml_core.stage_api import StageDescription, StageJob, StageOutput
 from stage_separation import dsp
 from stage_separation.stem_post import load_raw
 
-from . import transcribers
+from . import transcribers, tuning
 from .lowband import low_band_energy
 
 MIXTURE = "mixture"
@@ -112,7 +114,32 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     table = calibration.load(transcriber.record, ref.version, instrument)
     stem_id, audio = load_source(job, instrument)
     mono = audio.mean(axis=1).astype(np.float32)
+    recording: dict[str, Any] | None = None
+    if params.get("a4_compensation"):
+        offset = tuning.a4_offset(mono)
+        params = {**params, "a4_cents": offset.cents}
+        recording = {"a4_cents": offset.cents, "a4_strength": offset.strength}
     events = sorted(transcriber.transcribe(mono, params), key=lambda e: (e.onset_s, e.pitch_midi))
+    if recording is not None and params.get("tuning_suggestion") and instrument in tuning.TUNINGS:
+        suggestion = tuning.suggest_tuning(
+            [
+                tuning.NoteLike(
+                    e.pitch_midi,
+                    e.offset_s - e.onset_s,
+                    calibration.calibrate(e.confidence_raw, table),
+                )
+                for e in events
+            ],
+            instrument,
+            min_low_notes=int(params["tuning_min_low_notes"]),
+            min_confidence=float(params["tuning_min_confidence"]),
+            min_duration_s=float(params["tuning_min_duration_s"]),
+        )
+        recording["suggested"] = {
+            "name": suggestion.name,
+            "tuning_midi": list(suggestion.tuning_midi),
+            "confidence": suggestion.confidence,
+        }
     notes: list[dict[str, Any]] = []
     for i, e in enumerate(events):
         if e.offset_s <= e.onset_s:
@@ -144,10 +171,11 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "sample_rate": 44100,
             "duration_s": job.duration_s,
             "models": [ref.model_dump(mode="json")],
-            "params": params,
+            "params": job.params,
             "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "instrument": instrument,
             "notes": notes,
+            **({} if recording is None else {"tuning": recording}),
         }
     )
     out = Path(job.workdir) / f"notes.{instrument}.json"

@@ -34,6 +34,7 @@ import csv
 import json
 import os
 import re
+import shutil
 import statistics
 import subprocess
 import sys
@@ -693,15 +694,47 @@ class Variant:
 
     separator: str = "bs_roformer_sw"
     transcriber: str | None = None  # None = notes.personal.yaml's
-    params: dict[str, Any] | None = None  # None = notes.personal.yaml's (else replaces them)
+    overrides: dict[str, Any] = field(default_factory=dict[str, Any])  # on top of its params
     note: str = ""
+    notes_from: str | None = None  # reuse another variant's notes (tab-only variants)
+    string_cue: float = 0.0  # fret DP weight of the audio string cue (0 = off)
+    cue_model: str = "clean"  # p2g_strings.py model: trained on clean and/or stem features
 
 
 VARIANTS: dict[str, Variant] = {
     "baseline": Variant(
-        note="production on 2026-10-24: BS-Roformer-SW → Basic Pitch (P2 thresholds)"
+        overrides={"a4_compensation": False, "tuning_suggestion": False},
+        note="production on 2026-10-24: BS-Roformer-SW → Basic Pitch (P2 thresholds)",
     ),
+    "a4comp": Variant(
+        overrides={"a4_compensation": True, "tuning_suggestion": False},
+        note="baseline + A4 compensation",
+    ),
+    "tuning": Variant(
+        overrides={"a4_compensation": True, "tuning_suggestion": True},
+        note="a4comp + open-string tuning suggestion (applied by buildTab)",
+    ),
+    "decode": Variant(
+        overrides={
+            "a4_compensation": True,
+            "tuning_suggestion": True,
+            "onset_threshold": 0.7,
+            "energy_tol": 16,
+        },
+        note="tuning + decoding from the sweep (onset threshold 0.7, energy_tol 16)",
+    ),
+    **{
+        f"cue{w:g}": Variant(
+            overrides={"a4_compensation": True, "tuning_suggestion": True},
+            notes_from="tuning",
+            string_cue=w,
+            note=f"tuning + audio string cue (classifier on clean audio), DP weight {w:g}",
+        )
+        for w in (0.25, 0.5, 1.0, 2.0)
+    },
 }
+# Off-A440 (note accuracy only) and whole semitones down (half/full step down: also tabbed).
+DETUNE_CENTS = (20.0, -20.0, 35.0, -35.0, 50.0, -50.0, -100.0, -200.0)
 
 
 def notes_config(variant: Variant, path: Path) -> None:
@@ -712,13 +745,28 @@ def notes_config(variant: Variant, path: Path) -> None:
     if variant.transcriber is not None and variant.transcriber != guitar["transcriber"]:
         guitar["transcriber"] = variant.transcriber
         guitar["params"] = {}
-    if variant.params is not None:
-        guitar["params"] = variant.params
+    guitar["params"] = {**guitar.get("params", {}), **variant.overrides}
     path.write_text(yaml.safe_dump(base), encoding="utf-8")
 
 
 def conditions() -> list[str]:
     return ["clean", *(f"{c}.{b}" for b in BANDS for c in ("stem", "mix"))]
+
+
+def detune_conditions() -> list[str]:
+    """The hard-band stem re-pitched (tape speed) by each of DETUNE_CENTS."""
+    return [f"detune{c:+.0f}" for c in DETUNE_CENTS]
+
+
+def detune_cents(condition: str) -> float | None:
+    return float(condition.removeprefix("detune")) if condition.startswith("detune") else None
+
+
+def detuned_stem(item: Item, separator: str, cents: float) -> Path:
+    path = ROOT / "detune" / separator / f"{item.id}{cents:+.0f}.wav"
+    if not path.is_file():
+        write(path, resampled_by(read(stem_path(item, separator, "hard")), cents))
+    return path
 
 
 def run_dir(variant: str) -> Path:
@@ -727,6 +775,13 @@ def run_dir(variant: str) -> Path:
 
 def cmd_predict(args: argparse.Namespace) -> int:
     variant = VARIANTS[args.variant]
+    if variant.notes_from is not None:
+        for source in sorted(run_dir(variant.notes_from).glob("*/*.notes.json")):
+            dest = run_dir(args.variant) / source.parent.name / source.name
+            if not dest.is_file():
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, dest)
+        return 0
     timing_path = run_dir(args.variant) / "timing.json"
     timing = (
         cast(dict[str, float], json.loads(timing_path.read_text())) if timing_path.is_file() else {}
@@ -742,13 +797,17 @@ def cmd_predict(args: argparse.Namespace) -> int:
                 if dest.is_file():
                     continue
                 kind = condition.partition(".")[2]
-                source = item.dir / (
-                    "guitar.wav" if condition == "clean" else f"mixture.{kind}.wav"
-                )
+                cents = detune_cents(condition)
+                if cents is not None:
+                    source = detuned_stem(item, variant.separator, cents)
+                else:
+                    source = item.dir / (
+                        "guitar.wav" if condition == "clean" else f"mixture.{kind}.wav"
+                    )
                 decoded = local.decode(source)
                 inputs: dict[str, str] = {}
-                if condition.startswith("stem."):
-                    stem = stem_path(item, variant.separator, kind)
+                if condition.startswith("stem.") or cents is not None:
+                    stem = source if cents is not None else stem_path(item, variant.separator, kind)
                     if not stem.is_file():
                         continue
                     inputs["separation"] = str(
@@ -774,10 +833,23 @@ def cmd_predict(args: argparse.Namespace) -> int:
 FINGERING = ("easiest", "as_played")
 
 
-def tab_options(item: Item, fingering: str, tuning: str) -> dict[str, Any]:
+TAB_TUNINGS = ("standard", "reference", "suggested")
+
+
+def item_ref(item: Item, condition: str) -> GuitarRef:
+    cents = detune_cents(condition)
+    return item.ref() if cents is None else repitched(item.ref(), cents)
+
+
+def tab_options(item: Item, condition: str, fingering: str, tuning: str) -> dict[str, Any]:
+    """`standard`: standard tuning, no capo (production before step 22); `reference`: the
+    excerpt's true tuning and capo; `suggested`: no tuning option, so buildTab applies the notes
+    artefact's tuning suggestion as finalize and the practice screen do."""
     options: dict[str, Any] = {"fingering_mode": fingering}
-    if tuning == "reference":
-        ref = item.ref()
+    if tuning == "standard":
+        options["tuning_midi"] = list(STANDARD)
+    elif tuning == "reference":
+        ref = item_ref(item, condition)
         options |= {"tuning_midi": list(ref.tuning_midi), "capo": ref.capo}
     return options
 
@@ -802,17 +874,57 @@ def build_tab(notes: Path, item: Item, options: dict[str, Any]) -> dict[str, Any
     return cast(dict[str, Any], json.loads(result.stdout)["tab"])
 
 
+def condition_audio(item: Item, condition: str, separator: str) -> Path:
+    cents = detune_cents(condition)
+    if cents is not None:
+        return detuned_stem(item, separator, cents)
+    if condition == "clean":
+        return item.dir / "guitar.wav"
+    kind = condition.partition(".")[2]
+    return (
+        stem_path(item, separator, kind)
+        if condition.startswith("stem.")
+        else item.dir / f"mixture.{kind}.wav"
+    )
+
+
+def with_string_cue(notes: Path, item: Item, condition: str, variant: Variant) -> Path:
+    """The notes with `string_probs` from the string classifier on the condition's audio (what the
+    notes stage would add), cached next to them."""
+    from p2g_strings import OUT, string_probs
+
+    dest = notes.with_name(f"{condition}.cue.{variant.cue_model}.notes-json")
+    if not dest.is_file():
+        document = json.loads(notes.read_text(encoding="utf-8"))
+        mono = read(condition_audio(item, condition, variant.separator)).mean(axis=1)
+        model = OUT / f"model.{variant.cue_model}.pt"
+        probs = string_probs(mono, document["notes"], model)
+        for note, p in zip(document["notes"], probs, strict=True):
+            note["string_probs"] = p
+        write_json(dest, document)
+    return dest
+
+
 def cmd_tab(args: argparse.Namespace) -> int:
+    variant = VARIANTS[args.variant]
     for item in load_items():
         for notes in sorted((run_dir(args.variant) / item.id).glob("*.notes.json")):
             condition = notes.name.removesuffix(".notes.json")
+            cents = detune_cents(condition)
+            if cents is not None and cents % 100:
+                continue  # off-A440 detunes: note accuracy only
+            source = notes
+            if variant.string_cue:
+                source = with_string_cue(notes, item, condition, variant)
             for fingering in FINGERING:
                 for tuning in args.tuning:
                     dest = notes.parent / f"{condition}.tab.{fingering}.{tuning}.json"
                     if dest.is_file():
                         continue
-                    tab = build_tab(notes, item, tab_options(item, fingering, tuning))
-                    write_json(dest, tab)
+                    options = tab_options(item, condition, fingering, tuning)
+                    if variant.string_cue:
+                        options["weights"] = {"stringCue": variant.string_cue}
+                    write_json(dest, build_tab(source, item, options))
         print(f"tab {args.variant} {item.id}", flush=True)
     return 0
 
@@ -838,6 +950,28 @@ def estimates(notes_path: Path, tab: dict[str, Any] | None) -> list[EstNote]:
             )
         )
     return out
+
+
+TUNING_NAMES: dict[tuple[int, ...], str] = {
+    (64, 59, 55, 50, 45, 40): "standard",
+    (63, 58, 54, 49, 44, 39): "half_step_down",
+    (62, 57, 53, 48, 43, 38): "full_step_down",
+    (64, 59, 55, 50, 45, 38): "drop_d",
+    (63, 58, 54, 49, 44, 37): "drop_c_sharp",
+    (62, 57, 53, 48, 43, 36): "drop_c",
+}
+
+
+def applied_tuning(notes_path: Path) -> str:
+    """The tuning buildTab uses with no tuning option: the suggestion at or above music-core's
+    TUNING_SUGGESTION_MIN_CONFIDENCE (read from its tab output), else standard."""
+    tab_path = notes_path.with_name(
+        notes_path.name.replace(".notes.json", ".tab.easiest.suggested.json")
+    )
+    if not tab_path.is_file():
+        return "standard"
+    tab = json.loads(tab_path.read_text(encoding="utf-8"))
+    return TUNING_NAMES.get(tuple(tab["tuning_midi"]), "other")
 
 
 def note_events(notes: list[RefNote] | list[EstNote]) -> formats.NoteEvents:
@@ -880,9 +1014,10 @@ def score_rows(variant: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for item in load_items():
         ref = item.ref()
-        ref_notes = list(ref.notes)
         for notes_path in sorted((run_dir(variant) / item.id).glob("*.notes.json")):
             condition = notes_path.name.removesuffix(".notes.json")
+            cents = detune_cents(condition)
+            ref_notes = list((ref if cents is None else repitched(ref, cents)).notes)
             est = estimates(notes_path, None)
             metrics, _ = scoring.notes(note_events(ref_notes), note_events(est))
             folded, _ = scoring.notes(fold(note_events(ref_notes)), fold(note_events(est)))
@@ -898,6 +1033,10 @@ def score_rows(variant: str) -> list[dict[str, Any]]:
                 "onset_recall": metrics["onset_recall"],
                 "onset_offset_f1": metrics["onset_offset_f1"],
                 "pitch_class_f1": folded["onset_f1"],
+                "true_tuning": TUNING_NAMES.get(
+                    tuple(item_ref(item, condition).tuning_midi), "other"
+                ),
+                "tab_tuning": applied_tuning(notes_path),
             }
             if ref.has_bends:
                 bends = bend_counts(ref_notes, est)
@@ -1056,6 +1195,104 @@ def tab_cells(sel: list[dict[str, Any]]) -> list[str]:
     return cells
 
 
+SWEEP_GRID: dict[str, tuple[Any, ...]] = {
+    "infer_onsets": (True, False),
+    "melodia_trick": (True, False),
+    "onset_threshold": (0.5, 0.6, 0.7, 0.8),
+    "frame_threshold": (0.4, 0.5, 0.6, 0.7),
+    "min_note_ms": (58.0, 90.0, 127.7),
+    "energy_tol": (6, 11, 16),
+}
+
+
+def is_fit(item: Item) -> bool:
+    """Sweep/calibration fit split: about a third of each source; the rest is held out."""
+    return item.id.startswith(("gs-03_", "gs2-", "idmt-AR-")) or (
+        item.id.startswith("techs-music") and int(item.id[-2:]) % 3 == 0
+    )
+
+
+def cmd_sweep(args: argparse.Namespace) -> int:
+    """Basic Pitch decoding options on the hard-band stems (production separator, with the
+    variant's A4 compensation): posteriors once per item, the shipped `notes_polyphonic` for every
+    combination of SWEEP_GRID; chosen on the fit split by mean onset F1, reported on both."""
+    import itertools
+
+    from stage_notes import basic_pitch as bp
+    from stage_notes import transcribers
+    from stage_notes import tuning as tuning_mod
+
+    variant = VARIANTS[args.variant]
+    model = cast(transcribers.BasicPitch, transcribers.get("basic_pitch"))
+    base = {
+        **transcribers.BASIC_PITCH_DEFAULTS,
+        **cast(
+            dict[str, Any],
+            yaml.safe_load((ML_ROOT / "config" / "notes.personal.yaml").read_text())["instruments"][
+                "guitar"
+            ]["params"],
+        ),
+        **variant.overrides,
+    }
+    combos = [
+        dict(zip(SWEEP_GRID, v, strict=True)) for v in itertools.product(*SWEEP_GRID.values())
+    ]
+    scores: dict[str, list[list[float]]] = {"fit": [], "held-out": []}
+    for item in load_items():
+        mono = read(stem_path(item, variant.separator, "hard")).mean(axis=1)
+        stretch = 1.0
+        if base["a4_compensation"]:
+            cents = tuning_mod.a4_offset(mono).cents
+            if abs(cents) >= transcribers.A4_MIN_CENTS:
+                mono, stretch = tuning_mod.retuned(mono, cents)
+        posteriors = model.posteriors(mono)
+        times = bp.frame_times(posteriors.contour.shape[0]) / stretch
+        ref = note_events(list(item.ref().notes))
+        row: list[float] = []
+        for combo in combos:
+            params = {**base, **combo}
+            raw = bp.notes_polyphonic(
+                posteriors,
+                onset_thresh=float(params["onset_threshold"]),
+                frame_thresh=float(params["frame_threshold"]),
+                min_note_len=bp.min_note_frames(float(params["min_note_ms"])),
+                min_freq=params["min_freq_hz"],
+                max_freq=params["max_freq_hz"],
+                infer_onsets=bool(params["infer_onsets"]),
+                melodia_trick=bool(params["melodia_trick"]),
+                energy_tol=int(params["energy_tol"]),
+            )
+            est = [EstNote(float(times[n.start]), float(times[n.end]), n.pitch_midi) for n in raw]
+            row.append(scoring.notes(ref, note_events(est))[0]["onset_f1"])
+        scores["fit" if is_fit(item) else "held-out"].append(row)
+        print(f"sweep {item.id}", flush=True)
+    fit = np.mean(np.array(scores["fit"]), axis=0)
+    held = np.mean(np.array(scores["held-out"]), axis=0)
+    current = combos.index({k: base[k] for k in SWEEP_GRID})
+    ranked = [int(k) for k in np.argsort(-fit)[:8]]
+    lines = [
+        f"## Basic Pitch decoding, hard-band stems, `{args.variant}` "
+        f"({len(scores['fit'])} fit / {len(scores['held-out'])} held-out items; onset F1)",
+        "",
+        "| " + " | ".join(SWEEP_GRID) + " | fit | held-out |",
+        "|" + "---|" * (len(SWEEP_GRID) + 2),
+    ]
+    for k in [*ranked, *([current] if current not in ranked else [])]:
+        mark = " (current)" if k == current else ""
+        cells = [str(combos[k][name]) for name in SWEEP_GRID]
+        lines.append(f"| {' | '.join(cells)}{mark} | {fit[k]:.3f} | {held[k]:.3f} |")
+    for name, values in SWEEP_GRID.items():  # each option alone, the rest at the current values
+        alone = [
+            f"{v}: {held[combos.index({**{n: base[n] for n in SWEEP_GRID}, name: v})]:.3f}"
+            for v in values
+        ]
+        lines.append(f"\n- {name} alone (held-out): " + ", ".join(alone))
+    text = "\n".join(lines) + "\n"
+    (ROOT / f"sweep-{args.variant}.md").write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     rows = [r for v in args.variant for r in score_rows(v)]
     RESULTS.mkdir(parents=True, exist_ok=True)
@@ -1154,6 +1391,48 @@ def cmd_report(args: argparse.Namespace) -> int:
             )
     out += [
         "",
+        "## Tuning in the tab (`easiest`): standard vs the applied suggestion vs the truth",
+        "",
+        "Semitone-detuned stems are the hard-band stems played back 100/200 cents lower: their "
+        "true tuning is half/full step down (drop D items become drop C#/C). Applied right = "
+        "the suggestion buildTab used equals the true tuning; applied wrong on standard = a "
+        "non-standard tuning used on a standard-tuned excerpt.",
+        "",
+        "| variant | condition | true tuning | items | Tab F1 std | Tab F1 suggested | Tab F1 true "
+        "| unplayable std | unplayable suggested | applied right | applied wrong on standard |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for v in args.variant:
+        for c in ("stem.hard", "detune-100", "detune-200"):
+            sel_c = select(rows, variant=v, condition=c)
+            for truth in sorted({r["true_tuning"] for r in sel_c}):
+                sel = select(sel_c, true_tuning=truth)
+                cells: list[str] = []
+                for key in ("easiest.standard", "easiest.suggested", "easiest.reference"):
+                    counts = pooled(sel, key)
+                    cells.append(fmt(counts.f1) if counts else "-")
+                cells += [
+                    fmt(mean(sel, "unplayable_share.easiest.standard")),
+                    fmt(mean(sel, "unplayable_share.easiest.suggested")),
+                    str(sum(r["tab_tuning"] == truth != "standard" for r in sel)),
+                    str(sum(truth == "standard" != r["tab_tuning"] for r in sel)),
+                ]
+                out.append(f"| {v} | {c} | {truth} | {len(sel)} | " + " | ".join(cells) + " |")
+    detuned = [r for r in rows if detune_cents(r["condition"]) is not None]
+    if detuned:
+        shifts = ["stem.hard", *detune_conditions()]
+        out += [
+            "",
+            "## Detuned stems (hard-band stem re-pitched by tape speed; onset F1, all items)",
+            "",
+            "| variant | " + " | ".join(shifts) + " |",
+            "|---|" + "---|" * len(shifts),
+        ]
+        for v in args.variant:
+            cells = [fmt(mean(select(rows, variant=v, condition=c), "onset_f1")) for c in shifts]
+            out.append(f"| {v} | " + " | ".join(cells) + " |")
+    out += [
+        "",
         f"## Quantization ({focus}, `easiest`, standard tuning)",
         "",
         "Residual-flagged = share of tab events whose onset is > 60 ms from the grid (1/16, or "
@@ -1228,14 +1507,15 @@ def main() -> int:
     sub.add_parser("beats").set_defaults(fn=cmd_beats)
     p = sub.add_parser("predict")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
-    p.add_argument("--condition", nargs="+", choices=conditions())
+    p.add_argument("--condition", nargs="+", choices=conditions() + detune_conditions())
     p.set_defaults(fn=cmd_predict)
     p = sub.add_parser("tab")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
-    p.add_argument(
-        "--tuning", nargs="+", choices=["standard", "reference"], default=["standard", "reference"]
-    )
+    p.add_argument("--tuning", nargs="+", choices=TAB_TUNINGS, default=list(TAB_TUNINGS))
     p.set_defaults(fn=cmd_tab)
+    p = sub.add_parser("sweep")
+    p.add_argument("--variant", choices=list(VARIANTS), default="a4comp")
+    p.set_defaults(fn=cmd_sweep)
     p = sub.add_parser("report")
     p.add_argument("--variant", nargs="+", choices=list(VARIANTS), default=["baseline"])
     p.add_argument("--focus", choices=conditions(), default="stem.hard")

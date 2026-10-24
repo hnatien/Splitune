@@ -41,7 +41,7 @@ export interface TabCorrections {
 
 export interface BuildTabOptions {
   chords?: Chords
-  tuningMidi?: readonly number[]
+  tuningMidi?: readonly number[] // default: tabTuning (a confident suggestion, else standard)
   capo?: number
   maxFret?: number
   maxSpan?: number
@@ -70,11 +70,35 @@ export interface BuildTabResult {
   warnings: BuildTabWarning[]
 }
 
+// The notes stage's tuning suggestion (notes.tuning.suggested, 07 §6.1) is used when the caller
+// gives no tuning and its confidence reaches this (step 22, services/ml/eval/results/p2g/).
+export const TUNING_SUGGESTION_MIN_CONFIDENCE = 0.3
+
+// The tab's open strings: the caller's, else a confident suggestion for this instrument's string
+// count, else the instrument's standard tuning (undefined).
+export function tabTuning(
+  notes: Notes,
+  tuningMidi?: readonly number[],
+): readonly number[] | undefined {
+  if (tuningMidi !== undefined) return tuningMidi
+  const suggested = notes.tuning?.suggested
+  const strings = notes.instrument === 'bass' ? 4 : 6
+  if (
+    suggested === undefined ||
+    suggested.confidence < TUNING_SUGGESTION_MIN_CONFIDENCE ||
+    suggested.tuning_midi.length !== strings
+  ) {
+    return undefined
+  }
+  return suggested.tuning_midi
+}
+
 const GUITAR_LEVELS: readonly TabLevel[] = ['chords_only', 'simplified', 'as_transcribed']
 const BASS_LEVELS: readonly TabLevel[] = ['roots', 'full']
 
 interface PlacedNote extends LevelNote {
   pin?: FretPin
+  stringProbs?: readonly number[]
   endTime: number
 }
 
@@ -122,7 +146,8 @@ export function buildTab(
     mode: fingeringMode,
     capo: shapes.capo,
   }
-  if (options.tuningMidi !== undefined) configInput.tuningMidi = options.tuningMidi
+  const tuningMidi = tabTuning(notes, options.tuningMidi)
+  if (tuningMidi !== undefined) configInput.tuningMidi = tuningMidi
   if (options.maxFret !== undefined) configInput.maxFret = options.maxFret
   if (options.maxSpan !== undefined) configInput.maxSpan = options.maxSpan
   if (options.weights !== undefined) configInput.weights = options.weights
@@ -159,8 +184,9 @@ export function buildTab(
       endTime: tickToTime(grid, q.offTick),
     }
     const pin = effNotes.pins.get(note.id)
-    // Pins are fingerings of the sounding pitch; a transposition invalidates them.
+    // Pins and the audio string cue describe the sounding pitch; a transposition invalidates them.
     if (pin !== undefined && semitones === 0) out.pin = pin
+    if (note.string_probs !== undefined && semitones === 0) out.stringProbs = note.string_probs
     return out
   })
 
@@ -199,6 +225,7 @@ export function buildTab(
           pitch: n.pitch,
           endTime: n.endTime,
           ...(n.pin === undefined ? {} : { pin: n.pin }),
+          ...(n.stringProbs === undefined ? {} : { stringProbs: n.stringProbs }),
         })),
     }
     if (chord !== undefined) step.chord = chord

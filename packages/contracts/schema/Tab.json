@@ -185,6 +185,11 @@
         "unplayable": {
           "type": "boolean"
         },
+        "bend_cents": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 400
+        },
         "hand": {
           "type": "string",
           "enum": [

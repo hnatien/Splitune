@@ -25,6 +25,7 @@ from splitune_ml_core.errors import StageError
 from splitune_ml_core.paths import ML_ROOT
 
 from . import basic_pitch as bp
+from . import tuning
 
 RATE = 44100
 CONFIG_PATH = ML_ROOT / "config" / "notes.personal.yaml"
@@ -64,7 +65,8 @@ def ref_for(record_id: str, model_id: str) -> contracts.ModelRef:
     )
 
 
-# basic-pitch's predict() defaults, plus the confidence window.
+# basic-pitch's predict() defaults, plus the confidence window and the recording's A4 offset
+# compensation (the stage estimates the offset and passes it as `a4_cents`, tuning.py).
 BASIC_PITCH_DEFAULTS: dict[str, Any] = {
     "onset_threshold": 0.5,
     "frame_threshold": 0.3,
@@ -72,8 +74,18 @@ BASIC_PITCH_DEFAULTS: dict[str, Any] = {
     "min_freq_hz": None,
     "max_freq_hz": None,
     "melodia_trick": True,
+    "infer_onsets": True,
+    "energy_tol": bp.ENERGY_TOL,
     "confidence_frames": 3,
+    "a4_compensation": False,
+    # Open-string tuning suggestion (needs a4_compensation; tuning.suggest_tuning). Thresholds:
+    # the most sensitive setting without a false positive on the P2g standard-tuning cases.
+    "tuning_suggestion": False,
+    "tuning_min_low_notes": 1,
+    "tuning_min_confidence": 0.3,
+    "tuning_min_duration_s": 0.1,
 }
+A4_MIN_CENTS = 5.0  # smaller offsets are within the estimator's error (median 6 cents, step 22)
 
 
 class BasicPitch:
@@ -107,6 +119,10 @@ class BasicPitch:
         return bp.infer(self.session(), audio)
 
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]:
+        cents = float(params.get("a4_cents") or 0.0)
+        stretch = 1.0
+        if abs(cents) >= A4_MIN_CENTS:
+            mono, stretch = tuning.retuned(mono, cents)
         posteriors = self.posteriors(mono)
         raw = bp.notes_polyphonic(
             posteriors,
@@ -116,8 +132,10 @@ class BasicPitch:
             min_freq=params["min_freq_hz"],
             max_freq=params["max_freq_hz"],
             melodia_trick=bool(params["melodia_trick"]),
+            infer_onsets=bool(params["infer_onsets"]),
+            energy_tol=int(params["energy_tol"]),
         )
-        times = bp.frame_times(posteriors.contour.shape[0])
+        times = bp.frame_times(posteriors.contour.shape[0]) / stretch
         frames = int(params["confidence_frames"])
         return [
             NoteEvent(
