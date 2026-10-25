@@ -6,6 +6,7 @@ const views: ViewsConfig = {
   notation_supported: ['guitar', 'bass'],
   rough_stem_low_conf: 0.35,
   low_confidence: 0.5,
+  min_confidence_mean: {},
   quality_gate: { guitar: 'pass', bass: 'fail' },
   defaults: {
     guitar: 'tab',
@@ -70,6 +71,22 @@ describe('recommended_view rule (05-analysis-schema.md)', () => {
     expect(view(low(0.5))).toEqual(['tab', []])
   })
 
+  it('5b. a mean confidence below the instrument floor → chords_only, low_confidence', () => {
+    const floored = { ...views, min_confidence_mean: { guitar: 0.8 } }
+    const mean = (noteConfidenceMean: number) =>
+      recommendView(guitar({ notes: { noteConfidenceMean, fractionLowConf: 0.1 } }), floored)
+    expect([mean(0.79).recommended_view, mean(0.79).reasons]).toEqual([
+      'chords_only',
+      ['low_confidence'],
+    ])
+    expect(mean(0.8).recommended_view).toBe('tab')
+    // Instruments without a floor are unaffected.
+    expect(view(guitar({ notes: { noteConfidenceMean: 0.1, fractionLowConf: 0.1 } }))).toEqual([
+      'tab',
+      [],
+    ])
+  })
+
   it('6. otherwise the instrument default, with stats carried through', () => {
     const summary = recommendView(guitar(), views)
     expect(summary).toEqual({
@@ -108,5 +125,6 @@ describe('recommended_view rule (05-analysis-schema.md)', () => {
     const config = loadViews()
     expect(config.notation_supported).toContain('guitar')
     expect(config.low_confidence).toBeGreaterThan(config.rough_stem_low_conf)
+    expect(config.min_confidence_mean).toEqual({ piano: 0.8 })
   })
 })

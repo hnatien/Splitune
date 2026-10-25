@@ -61,18 +61,38 @@ def source_stem(
     )
 
 
+def solo(separation: contracts.Separation | None, instrument: str) -> bool:
+    """The separation found the song to be this instrument alone (solo bypass): its notes come
+    from the mixture with the stem transcriber, and that is not a fallback."""
+    return (
+        separation is not None
+        and separation.target == instrument
+        and separation.solo_bypass is not None
+        and separation.solo_bypass.applied
+    )
+
+
 def bind(
     instrument: str,
 ) -> tuple[Callable[..., StageDescription], Callable[[StageJob], StageOutput]]:
     """describe/run for one instrument (the `notes.<instrument>` stage modules)."""
 
     def describe(params: dict[str, Any], inputs: dict[str, str] | None = None) -> StageDescription:
-        transcriber, effective = transcribers.for_instrument(instrument)
+        separation = read_separation(inputs)
+        stem = None if solo(separation, instrument) else source_stem(separation, instrument)
+        transcriber, effective = transcribers.for_instrument(
+            instrument, "stem" if stem is not None or solo(separation, instrument) else MIXTURE
+        )
         ref = transcriber.model_ref()
         table = calibration.load(transcriber.record, ref.version, instrument)
-        stem = source_stem(read_separation(inputs), instrument)
+        hands = transcribers.hands_model(instrument)
+        refs = [ref]
+        if hands == "pm2s":
+            from . import pm2s_hands
+
+            refs.append(pm2s_hands.model_ref())
         return StageDescription(
-            model_refs=[ref],
+            model_refs=refs,
             params={
                 "instrument": instrument,
                 "transcriber": transcriber.name,
@@ -81,6 +101,7 @@ def bind(
                 # The key follows the audio actually transcribed.
                 "source": stem.sha256 if stem is not None else MIXTURE,
                 "alignment_offset_samples": read_offset(inputs),
+                "hands": hands,
             },
         )
 
@@ -95,8 +116,9 @@ def load_source(job: StageJob, instrument: str) -> tuple[str, NDArray[np.float32
         raise StageError("decoded_audio_missing", retry=False)
     data, _ = sf.read(job.decoded_path, dtype="float32", always_2d=True)
     mixture = np.asarray(data, dtype=np.float32)
-    stem = source_stem(read_separation(job.inputs), instrument)
-    if stem is None:
+    separation = read_separation(job.inputs)
+    stem = source_stem(separation, instrument)
+    if stem is None or solo(separation, instrument):
         return MIXTURE, mixture
     raw = load_raw(Path(job.cache_dir), stem, len(mixture))
     return instrument, dsp.shift(raw, int(job.params["alignment_offset_samples"]))
@@ -107,12 +129,22 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
         raise StageError("decoded_audio_missing", retry=False)
     started = time.process_time()
     params = job.params
-    transcriber, _ = transcribers.for_instrument(instrument)
+    stem_id, audio = load_source(job, instrument)
+    bypass = solo(read_separation(job.inputs), instrument)
+    transcriber, _ = transcribers.for_instrument(
+        instrument, MIXTURE if stem_id == MIXTURE and not bypass else "stem"
+    )
     ref = transcriber.model_ref()
     table = calibration.load(transcriber.record, ref.version, instrument)
-    stem_id, audio = load_source(job, instrument)
     mono = audio.mean(axis=1).astype(np.float32)
-    events = sorted(transcriber.transcribe(mono, params), key=lambda e: (e.onset_s, e.pitch_midi))
+    # Transcribers with a `stereo` param take the channels and decide themselves (Transkun).
+    source = audio.astype(np.float32) if "stereo" in params else mono
+    sustain: list[tuple[float, float]] | None = None
+    if isinstance(transcriber, transcribers.PedalTranscriber):
+        found, sustain = transcriber.transcribe_with_pedal(source, params)
+    else:
+        found = transcriber.transcribe(source, params)
+    events = sorted(found, key=lambda e: (e.onset_s, e.pitch_midi))
     notes: list[dict[str, Any]] = []
     for i, e in enumerate(events):
         if e.offset_s <= e.onset_s:
@@ -132,7 +164,23 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
                 low_band_energy(mono, e.onset_s, e.offset_s, e.pitch_midi), 4
             )
         notes.append(note)
-    fallback = "notes_on_mixture" if stem_id == MIXTURE else None
+    refs = [ref]
+    if params.get("hands") == "pm2s" and notes:
+        from . import pm2s_hands
+
+        refs.append(pm2s_hands.model_ref())
+        for note, hand in zip(
+            notes,
+            pm2s_hands.hands(
+                [n["onset_s"] for n in notes],
+                [n["offset_s"] for n in notes],
+                [n["pitch_midi"] for n in notes],
+                [n["velocity"] for n in notes],
+            ),
+            strict=True,
+        ):
+            note["hand"] = hand
+    fallback = "notes_on_mixture" if stem_id == MIXTURE and not bypass else None
     document = contracts.Notes.model_validate(
         {
             "schema_version": contracts.SCHEMA_VERSION,
@@ -143,11 +191,20 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "audio_hash": job.audio_hash,
             "sample_rate": 44100,
             "duration_s": job.duration_s,
-            "models": [ref.model_dump(mode="json")],
+            "models": [r.model_dump(mode="json") for r in refs],
             "params": params,
             "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "instrument": instrument,
             "notes": notes,
+            **(
+                {
+                    "sustain": [
+                        {"on_s": round(a, 4), "off_s": round(b, 4)} for a, b in sustain if b > a
+                    ]
+                }
+                if sustain is not None
+                else {}
+            ),
         }
     )
     out = Path(job.workdir) / f"notes.{instrument}.json"
@@ -155,7 +212,7 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     return StageOutput(
         status="fallback" if fallback else "done",
         files={"notes": str(out)},
-        model_refs=[ref],
+        model_refs=refs,
         metrics={"cpu_s": time.process_time() - started, "audio_s": float(job.duration_s)},
         fallback_reason=fallback,
     )

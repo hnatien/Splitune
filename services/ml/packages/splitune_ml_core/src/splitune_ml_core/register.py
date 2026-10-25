@@ -30,6 +30,7 @@ WEIGHTS_DIRS = {
     "btc-large-voca": "btc",
     "consonance-ace": "consonance-ace",
     "transkun-v2": "transkun",
+    "pm2s-hand-part": "pm2s",
     "yourmt3-moe": "yourmt3",
     "panns-cnn14": "panns",
     "bs-roformer-sw": "audio-separator",

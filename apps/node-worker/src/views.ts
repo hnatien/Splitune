@@ -22,6 +22,8 @@ export const ViewsConfig = z.object({
   notation_supported: z.array(Instrument),
   rough_stem_low_conf: z.number().min(0).max(1),
   low_confidence: z.number().min(0).max(1),
+  // Rule 5b, per instrument: a song whose mean calibrated note confidence is below this.
+  min_confidence_mean: z.partialRecord(Instrument, z.number().min(0).max(1)).default({}),
   quality_gate: z.partialRecord(Instrument, z.enum(['pass', 'fail'])),
   defaults: z.record(Instrument, RecommendedView),
 })
@@ -40,7 +42,8 @@ export interface ViewInput {
 }
 
 // Rules in order: notes missing → notation not supported → Prototype 2 gate failed → rough stem
-// with many low-confidence notes → too many low-confidence notes → the instrument default.
+// with many low-confidence notes → too many low-confidence notes → a mean confidence below the
+// instrument's floor → the instrument default.
 export function recommendView(
   input: ViewInput,
   views: ViewsConfig,
@@ -66,5 +69,7 @@ export function recommendView(
     return chordsOnly('rough_stem_low_conf')
   }
   if (notes.fractionLowConf > views.low_confidence) return chordsOnly('low_confidence')
+  const floor = views.min_confidence_mean[instrument]
+  if (floor !== undefined && notes.noteConfidenceMean < floor) return chordsOnly('low_confidence')
   return summary(views.defaults[instrument])
 }

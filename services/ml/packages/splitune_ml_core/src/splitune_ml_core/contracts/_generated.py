@@ -222,6 +222,7 @@ class NewNote(BaseModel):
     bend_cents: list[BendCent] | None = None
     stem_id: Annotated[StrictStr, Field(min_length=1)]
     low_band_energy: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
+    hand: Literal["left", "right"] | None = None
 
 
 class Note(BaseModel):
@@ -235,6 +236,7 @@ class Note(BaseModel):
     bend_cents: list[BendCent] | None = None
     stem_id: Annotated[StrictStr, Field(min_length=1)]
     low_band_energy: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
+    hand: Literal["left", "right"] | None = None
 
 
 class NotePatch(BaseModel):
@@ -257,6 +259,11 @@ class NudgeBeatOp(BaseModel):
 
 
 type ObjectKey = Annotated[StrictStr, Field(max_length=1024, min_length=1)]
+
+
+class PedalInterval(BaseModel):
+    on_s: Annotated[StrictFloat, Field(ge=0.0)]
+    off_s: Annotated[StrictFloat, Field(ge=0.0)]
 
 
 class PresignedUrls(BaseModel):
@@ -301,6 +308,11 @@ class SectionSegment(BaseModel):
     t1: Annotated[StrictFloat, Field(ge=0.0)]
     label: SectionLabel
     boundary_confidence: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+
+
+class SoloBypass(BaseModel):
+    rhythm_db: StrictFloat
+    applied: StrictBool
 
 
 class SeparationAttempt(BaseModel):
@@ -533,6 +545,7 @@ class Notes(BaseModel):
     instrument: Instrument
     notes: list[Note]
     f0: F0Track | None = None
+    sustain: list[PedalInterval] | None = None
 
 
 class Presence(BaseModel):
@@ -657,6 +670,7 @@ class Separation(BaseModel):
     device: Literal["cuda", "mps", "cpu"]
     stems: Annotated[list[SeparatedStem], Field(min_length=1)]
     failed_attempts: list[SeparationAttempt]
+    solo_bypass: SoloBypass | None = None
 
 
 class StageCompletedEvent(BaseModel):
@@ -969,4 +983,4 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.5.0"
+SCHEMA_VERSION = "1.6.0"

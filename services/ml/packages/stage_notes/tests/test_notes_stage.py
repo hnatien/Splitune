@@ -36,7 +36,13 @@ def write_stereo(path: Path, mono: np.ndarray[Any, Any]) -> Path:
     return path
 
 
-def separation(tmp: Path, cache: Path, instrument: str, mono: np.ndarray[Any, Any]) -> Path:
+def separation(
+    tmp: Path,
+    cache: Path,
+    instrument: str,
+    mono: np.ndarray[Any, Any],
+    solo_bypass: dict[str, Any] | None = None,
+) -> Path:
     raw = write_stereo(cache / "separated" / ("a1" * 8) / f"{instrument}.flac", mono)
     doc: dict[str, Any] = {
         "schema_version": contracts.SCHEMA_VERSION,
@@ -66,6 +72,8 @@ def separation(tmp: Path, cache: Path, instrument: str, mono: np.ndarray[Any, An
         ],
         "failed_attempts": [],
     }
+    if solo_bypass is not None:
+        doc["solo_bypass"] = solo_bypass
     path = tmp / "inputs" / "separation"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc), encoding="utf-8")
@@ -139,9 +147,14 @@ def test_piano_notes_from_the_isolated_stem_with_transkun(tmp_path: Path) -> Non
     # Synthetic plucks, not a piano: most of the phrase is found (accuracy is P2's job, 08).
     assert len({n.pitch_midi for n in notes.notes} & {p for _, _, p in PHRASE}) >= 4
     assert all(21 <= n.pitch_midi <= 108 and n.stem_id == "piano" for n in notes.notes)
-    # No per-note score: every note carries the calibrated precision of the P2 table.
-    assert {n.confidence_raw for n in notes.notes} == {1.0}
-    assert all(n.confidence == pytest.approx(0.918, abs=0.01) for n in notes.notes)
+    # Per-note scores (onset marginal + velocity peak) through the P2p table, and PM2S hands.
+    assert len({n.confidence_raw for n in notes.notes}) > 1
+    assert all(0.0 <= (n.confidence_raw or 0.0) <= 1.0 for n in notes.notes)
+    assert all(0.0 <= n.confidence <= 1.0 for n in notes.notes)
+    assert {n.hand for n in notes.notes} <= {"left", "right"}
+    assert None not in {n.hand for n in notes.notes}
+    assert notes.sustain is not None
+    assert [m.model_id for m in notes.models] == ["transkun/2.0", "pm2s/hand_part"]
 
 
 def test_calibration_table_is_applied(tmp_path: Path) -> None:
@@ -168,8 +181,80 @@ def test_specs_follow_the_notes_config() -> None:
     for instrument in ("guitar", "bass", "piano", "vocals"):
         spec = STAGES[f"notes.{instrument}"]
         assert spec.module == f"stage_notes.{instrument}"
-        # Basic Pitch runs in the CPU slot, Transkun (piano) on MPS.
-        placement = ("torch", "mps") if instrument == "piano" else ("onnx-cpu", "cpu")
+        # Basic Pitch runs in the CPU slot, Transkun (piano) in the GPU slot.
+        placement = ("torch", "gpu") if instrument == "piano" else ("onnx-cpu", "cpu")
         assert (spec.island, spec.slot) == placement
         assert spec.outputs == {"notes": f"notes.{instrument}"}
         assert spec.optional_downloads == ("separation", "stems")
+
+
+def notes_config(tmp: Path, piano: dict[str, Any]) -> Path:
+    base = transcribers.load_config(transcribers.CONFIG_PATH).model_dump()
+    base["instruments"]["piano"] = piano
+    path = tmp / "notes.yaml"
+    path.write_text(json.dumps(base), encoding="utf-8")
+    return path
+
+
+def test_the_mixture_gets_its_own_transcriber_in_the_same_island(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from splitune_ml_core.stages import notes_placement
+
+    config = notes_config(
+        tmp_path, {"transcriber": "transkun", "mixture": {"transcriber": "yourmt3"}}
+    )
+    monkeypatch.setenv("ML_NOTES_CONFIG", str(config))
+    transcribers.load_config.cache_clear()
+    try:
+        assert transcribers.for_instrument("piano")[0].name == "transkun"
+        assert transcribers.for_instrument("piano", "mixture")[0].name == "yourmt3"
+        assert notes_placement("piano") == ("torch", "gpu")
+        config.write_text(
+            json.dumps(
+                {
+                    **json.loads(config.read_text()),
+                    "instruments": {
+                        "piano": {
+                            "transcriber": "transkun",
+                            "mixture": {"transcriber": "basic_pitch"},
+                        }
+                    },
+                }
+            )
+        )
+        with pytest.raises(ValueError, match="another island"):
+            notes_placement("piano")
+    finally:
+        transcribers.load_config.cache_clear()
+
+
+@pytest.mark.models
+def test_solo_bypass_transcribes_the_mixture_without_a_fallback(tmp_path: Path) -> None:
+    try:
+        register.verify(register.model("transkun-v2"), transcribers.models_dir() / "transkun")
+    except Exception:
+        pytest.skip("Transkun weights not installed (scripts/fetch_models.py transkun)")
+    audio = phrase(RATE)
+    decoded = write_stereo(tmp_path / "decoded.flac", audio)
+    silent = np.zeros_like(audio)  # a stem that lost everything: the bypass must ignore it
+    inputs = {
+        "separation": str(
+            separation(
+                tmp_path,
+                tmp_path / "cache",
+                "piano",
+                silent,
+                {"rhythm_db": -60.0, "applied": True},
+            )
+        )
+    }
+    description = piano.describe({}, inputs)
+    assert description.params["source"] == "mixture"
+    assert description.params["transcriber"] == "transkun"
+    out = piano.run(job(tmp_path, piano, inputs, decoded, len(audio)))
+    assert (out.status, out.fallback_reason) == ("done", None)
+    notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
+    assert notes.notes
+    assert all(n.stem_id == "mixture" for n in notes.notes)
+    assert notes.sustain is not None

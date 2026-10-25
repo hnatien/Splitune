@@ -87,10 +87,17 @@ class LocalRun:
         return dest
 
     def separation(
-        self, d: Decoded, stems: dict[str, Path], target: str, provider: str, dest: Path
+        self,
+        d: Decoded,
+        stems: dict[str, Path],
+        target: str,
+        provider: str,
+        dest: Path,
+        extra: dict[str, Any] | None = None,
     ) -> Path:
         """separation.json over separated stem files (instrument → wav), as `separate` writes it:
-        raw stems as 24-bit FLAC under cache/separated/<run>/, the target first."""
+        raw stems as 24-bit FLAC under cache/separated/<run>/, the target first. `extra` adds
+        top-level fields (e.g. `solo_bypass`)."""
         run = hashlib.sha256(f"{d.audio_hash}:{provider}".encode()).hexdigest()[:32]
         entries: list[dict[str, Any]] = []
         for instrument, path in stems.items():
@@ -134,6 +141,7 @@ class LocalRun:
                 "device": torch_device(),
                 "stems": entries,
                 "failed_attempts": [],
+                **(extra or {}),
             }
         )
         dest.parent.mkdir(parents=True, exist_ok=True)

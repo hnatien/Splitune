@@ -4,8 +4,8 @@ import {
   applyChordCorrections,
   applyNoteCorrections,
 } from '../corrections/apply.ts'
-import { type PianoNoteRef, toPianoAlphaTex } from '../export/alphatex-piano.ts'
-import { createBeatGrid, tickToTime } from '../grid/beatgrid.ts'
+import { type PedalSpan, type PianoNoteRef, toPianoAlphaTex } from '../export/alphatex-piano.ts'
+import { createBeatGrid, PPQ, tickToTime, timeToTick } from '../grid/beatgrid.ts'
 import { type QuantizeOptions, quantizeNotes } from '../quantize/quantize.ts'
 import type { Beats, Chords, CorrectionOp, Notes } from '../types.ts'
 import { type Hand, type HandSplitOptions, splitHands } from './hands.ts'
@@ -43,6 +43,7 @@ export interface PianoNote {
 
 export interface PianoScore {
   notes: PianoNote[] // by onset, then pitch
+  sustain: PedalSpan[] // sustain-pedal down spans on the 16th grid (notes.piano `sustain`)
   swingBars: number[]
   alphaTex: string // the grand staff (export/alphatex-piano.ts)
   alphaTexFirstBar: number
@@ -91,14 +92,18 @@ export function buildPianoScore(
     nextOnKey.set(pitch, onTick)
   }
 
-  const hands = splitHands(
-    source.map((n, i) => ({
-      id: n.id,
-      pitch: n.pitch_midi,
-      onTick: (quantized.notes[i] as (typeof quantized.notes)[number]).onTick,
-    })),
-    options.hands,
-  )
+  // Hands from the transcription (notes.piano `hand`, PM2S) when every note has one, else split
+  // here.
+  const hands = source.every((n) => n.hand !== undefined)
+    ? new Map(source.map((n) => [n.id, n.hand as Hand]))
+    : splitHands(
+        source.map((n, i) => ({
+          id: n.id,
+          pitch: n.pitch_midi,
+          onTick: (quantized.notes[i] as (typeof quantized.notes)[number]).onTick,
+        })),
+        options.hands,
+      )
   const out = order.map((i): PianoNote => {
     const note = source[i] as Notes['notes'][number]
     const q = quantized.notes[i] as (typeof quantized.notes)[number]
@@ -117,6 +122,13 @@ export function buildPianoScore(
     }
   })
 
+  // The pedal snaps to the 16th grid like the notes; spans shorter than a 16th are dropped.
+  const sixteenth = PPQ / 4
+  const snap = (t: number) => Math.round(timeToTick(grid, t) / sixteenth) * sixteenth
+  const sustain = (effNotes.value.sustain ?? [])
+    .map((p) => ({ onTick: snap(p.on_s), offTick: snap(p.off_s) }))
+    .filter((p) => p.offTick > p.onTick)
+
   const tex = toPianoAlphaTex({
     grid,
     meterDenominator: effBeats.value.meter.denominator,
@@ -129,6 +141,7 @@ export function buildPianoScore(
       offTick: n.offTick,
     })),
     swingBars: quantized.swingBars,
+    sustain,
     ...(effChords === undefined ? {} : { key: effChords.value.key }),
     ...(options.title === undefined ? {} : { title: options.title }),
   })
@@ -137,6 +150,7 @@ export function buildPianoScore(
   if (effChords !== undefined) effective.chords = effChords.value
   return {
     notes: out,
+    sustain,
     swingBars: quantized.swingBars,
     alphaTex: tex.tex,
     alphaTexFirstBar: tex.firstBar,

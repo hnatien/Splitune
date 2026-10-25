@@ -209,6 +209,13 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "hand": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
         }
       },
       "required": [
