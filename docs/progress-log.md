@@ -1412,3 +1412,19 @@ Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run 
   - `scripts/fetch_models.py pm2s`;
   - `pnpm workers restart`.
 - Not run: the dedicated small piano separator (MVSep 4.90 dB), MIDI2ScoreTransformer / Cluster-and-Separate hands, fine-tuning.
+
+## 2026-10-25 — Step 24: piano mean-confidence gate (owner's choice)
+**Owner, 2026-10-25:** "Yes, add the piano gate: mean calibrated confidence below 0.80 sends the song to Chart."
+
+**Built**
+- `views.yaml` `min_confidence_mean: {piano: 0.80}` and a `changes` entry.
+- `apps/node-worker/src/views.ts`: the config field (a per-instrument partial record, default empty) and rule 4b. When `note_confidence_mean` is below the instrument's floor, the view is `chords_only` with the existing reason `low_confidence`, so the app's banner and "Show notes anyway" apply unchanged.
+- Docs: spec 05 rule list, 08, 21, the P2p phase report, status.
+
+**Verification**
+- `npx tsc -p apps/node-worker`: clean. Biome clean.
+- `test/views.test.ts` + `test/finalize.test.ts`: 18/18. They were run with a Vitest config without the suite's Postgres global setup, since Postgres isn't running here.
+- New case 5b covers below/at the floor and instruments without one. The repo-config test checks the piano floor.
+
+**Effect on P2p:** 4 of 81 songs gated (two roomy/phone uprights, a doubled band part, one BabySlakh electric piano), mean onset F1 0.516; no song with onset F1 ≥ 0.9.
+

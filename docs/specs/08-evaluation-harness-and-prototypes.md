@@ -178,7 +178,8 @@ Executable plans for the seven prototypes defined in `research/ml/pipeline-overv
     - band 17.3 → 17.2 (real) and 16.4 → 20.1 (pop, +23 %: the solo check runs first);
     - legacy 32.5 → 31.7.
     - Separation seconds come from the same stored runs in both chains. The baseline's notes timings were taken while other jobs shared the GPU, so small differences are noise.
-- **Not done:** the owner's songs (the unreferenced tier). The per-song mean-confidence gate for keys and electric pianos is proposed (mean calibrated confidence < 0.80 → Chart: 4 songs gated, mean onset F1 0.516, none above 0.9) and waits for the owner.
+- **Per-song gate (owner, 2026-10-25):** `views.yaml` `min_confidence_mean: {piano: 0.80}`. A song whose mean calibrated note confidence is below 0.80 opens on the chord chart (reason `low_confidence`). On P2p: 4 of 81 songs gated, mean onset F1 0.516, none above 0.9.
+- **Not done:** the owner's songs (the unreferenced tier).
 
 ## Open questions
 - Who owns rater recruitment and compensation for P1/P7 (learners and teachers)?

@@ -105,7 +105,7 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
   - a hand from PM2S (0.927 vs 0.885 against score staves).
 - **The grand staff draws the sustain pedal** under the bass staff. Durations stay key releases (the model's offsets), so the roll still shows played length.
 - **Electric pianos** (Rhodes, Wurlitzer, CP80) transcribe well when rendered. P2's 0.68 came from Slakh's patches. The Notes view stays the piano default.
-- **Proposed, not built:** a per-song gate (mean confidence < 0.80 → Chart).
+- **Per-song gate (owner, 2026-10-25):** a song whose mean calibrated note confidence is below 0.80 opens on the Chart, with the existing low-confidence banner and "Show notes anyway".
 
 ## Open questions
 - Web MIDI availability on iOS Safari (affects V5 on iPad before native).
