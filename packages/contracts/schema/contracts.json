@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Splitune contracts",
-  "x-schema-version": "1.5.0",
+  "x-schema-version": "1.6.0",
   "$defs": {
     "ActivitySpan": {
       "type": "object",
@@ -1312,6 +1312,13 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "hand": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
         }
       },
       "required": [
@@ -1380,6 +1387,13 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "hand": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
         }
       },
       "required": [
@@ -1483,6 +1497,12 @@
         },
         "f0": {
           "$ref": "#/$defs/F0Track"
+        },
+        "sustain": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PedalInterval"
+          }
         }
       },
       "required": [
@@ -1544,6 +1564,23 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 1024
+    },
+    "PedalInterval": {
+      "type": "object",
+      "properties": {
+        "on_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "off_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "on_s",
+        "off_s"
+      ]
     },
     "Presence": {
       "type": "object",
@@ -2092,6 +2129,21 @@
           "items": {
             "$ref": "#/$defs/SeparationAttempt"
           }
+        },
+        "solo_bypass": {
+          "type": "object",
+          "properties": {
+            "rhythm_db": {
+              "type": "number"
+            },
+            "applied": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "rhythm_db",
+            "applied"
+          ]
         }
       },
       "required": [

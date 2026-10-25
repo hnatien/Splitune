@@ -12,6 +12,8 @@ export const Note = Confidence.extend({
   stem_id: z.string().min(1),
   // Bass: energy share of the stem at the f0 of pitch − 12 (octave correction, 07 §3).
   low_band_energy: z.number().min(0).max(1).optional(),
+  // Piano: the hand playing it (step 24, PM2S hand-part model); without it music-core splits hands.
+  hand: z.enum(['left', 'right']).optional(),
 }).register(contracts, { id: 'Note' })
 
 // Vocals only. Frame i is at i * hop_s on the decoded-PCM timeline.
@@ -23,11 +25,17 @@ export const F0Track = z
   })
   .register(contracts, { id: 'F0Track' })
 
+// Piano only: sustain-pedal down intervals, seconds on the decoded-PCM timeline (step 24).
+export const PedalInterval = z
+  .object({ on_s: z.number().nonnegative(), off_s: z.number().nonnegative() })
+  .register(contracts, { id: 'PedalInterval' })
+
 export const Notes = ArtefactHeader.extend({
   artefact: z.string().regex(/^notes\.(guitar|bass|piano|vocals|other)$/),
   instrument: Instrument,
   notes: z.array(Note),
   f0: F0Track.optional(),
+  sustain: z.array(PedalInterval).optional(),
 }).register(contracts, { id: 'Notes' })
 
 export const DrumHit = Confidence.extend({

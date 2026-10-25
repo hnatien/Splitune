@@ -96,6 +96,17 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 - **Client:** the falling-notes roll was built first (owner's choice over the grand staff, 2026-10-23); see `26`/`27` step-18 notes. It reads `audio.position()` every frame (one clock, 12 §3). The grand staff (alphaTex, two staves from the same hands and ticks) is not built.
 - **Not verified:** "within one frame at 60 fps on a mid-range tablet" (checked on the Mac in Chromium only).
 
+## Implementation notes (step 24, piano accuracy, 2026-10-25)
+- **The piano pipeline is now measured on pop material** (P2p, `specs/08`): real Disklavier pianos and rendered pop piano, solo and in Slakh2100 bands.
+- **Solo piano** skips BS-Roformer-SW: a 3 s htdemucs_6s check finds no drums, bass or vocals, and notes come from the mixture. This lifts harpsichord, clavinet and roomy or phone recordings (pop-solo 0.847 → 0.920) and cuts a solo analysis's separation time by about two thirds.
+- **Songs without a piano stem** are transcribed by YourMT3+.
+- **Notes now carry:**
+  - calibrated per-note confidence, so the staff's confidence outlines mean something (high band 0.95 precision, medium 0.63);
+  - a hand from PM2S (0.927 vs 0.885 against score staves).
+- **The grand staff draws the sustain pedal** under the bass staff. Durations stay key releases (the model's offsets), so the roll still shows played length.
+- **Electric pianos** (Rhodes, Wurlitzer, CP80) transcribe well when rendered. P2's 0.68 came from Slakh's patches. The Notes view stays the piano default.
+- **Per-song gate (owner, 2026-10-25):** a song whose mean calibrated note confidence is below 0.80 opens on the Chart, with the existing low-confidence banner and "Show notes anyway".
+
 ## Open questions
 - Web MIDI availability on iOS Safari (affects V5 on iPad before native).
 - Whether V8 should move into MVP as a mic-free stand-in for scoring (roadmap open question).

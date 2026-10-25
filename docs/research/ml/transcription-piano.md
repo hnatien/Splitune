@@ -1,7 +1,7 @@
 ---
 title: Piano transcription — models, benchmarks, domain gap, hands and simplification
 workstream: ml
-last_researched: 2026-10-20
+last_researched: 2026-10-24
 confidence: medium
 ---
 
@@ -108,6 +108,177 @@ confidence: medium
 | Basic Pitch | agnostic | stem | Fno 0.71 MAESTRO ([paper](https://arxiv.org/pdf/2203.09893)) | Apache-2.0 | in repo | mixed | likely | Production-usable but weak on piano |
 | PM2S | perf. MIDI → hands, beats, quantized score | MIDI | MV2H > commercial ([poster](https://ismir2022program.ismir.net/poster_335.html)) | MIT | in repo | ASAP/piano | likely | Research, usable |
 | Ramoneda et al. 2025 | MusicXML difficulty reduction | MusicXML | qualitative + quantitative ([arXiv](https://arxiv.org/abs/2511.16228v1)) | unverified | unverified | synthetic pairs | unknown | Research |
+
+## 2026-10 re-check (step 24, Phase 0)
+Re-checked on 2026-10-24 against primary sources (repos, model cards, Zenodo/HF, PyPI). Licences are recorded for provenance only (`specs/25-personal-mode.md`).
+
+### Corrections to the findings above
+- **The shipped checkpoint is the KeyOff model.** The Transkun README says the checkpoint "shipped with the code/pip package is Transkun V2 No Pedal Ext". It was fine-tuned from V2 Aug. Rubato names the same model "a KeyOff-finetuned variant (Tkun; named Transkun-V2-NoExt)", so the KeyOff fine-tune and "No Ext" are one checkpoint ([repo](https://github.com/Yujia-Yan/Transkun), [Rubato](https://arxiv.org/html/2605.24291)).
+  - `2.0.pt` is 56,408,978 B in both the repo and the PyPI 2.0.1 wheel. That wheel is still the latest release (2024-09-28; [PyPI](https://pypi.org/pypi/transkun/json)). This matches the `transkun-v2` register record.
+  - Consequence: production already predicts **key-release offsets**, and step 24's gap 6 premise (pedal-extended offsets) is wrong for the shipped model. Phase 1 confirms this by scoring offsets against both reference conventions.
+  - The model still predicts sustain (CC64) and una corda (CC67) as pitches −64 / −67 (`targetMIDIPitch`), which `stage_notes.transkun` drops.
+- **V2 and V2 Aug** are separate Google Drive checkpoints listed in the README model card. Onset F1 per checkpoint (README):
+  - MAPS: V2 0.885, Aug 0.922, NoExt 0.922.
+  - SMD: V2 0.979, Aug 0.988, NoExt 0.988.
+  - NoExt's lower MAPS onset+offset F1 (0.547) is due to MAPS's pedal-extended references.
+- **The PIG fingering dataset page** (`beam.kisarazu.ac.jp/~saito/research/PianoFingeringDataset/`) returns 404 today.
+
+### Transcribers with weights available today
+| model | weights (verified) | input | pedal | out-of-domain evidence | runs where |
+|---|---|---|---|---|---|
+| Transkun V2 NoExt (shipped) | PyPI `transkun==2.0.1`, `2.0.pt` 56 MB | 44.1 kHz, multichannel accepted (channel power averaged) | sustain + una corda | MAPS 0.922, SMD 0.988 onset F1 (README) | torch island. Measured 1.9 s per 30 s warm on the RTX 3060 (synthetic audio, 2026-10-24); about 6 s on the Mac (MPS, step 18) |
+| Transkun V2 / V2 Aug | Google Drive links in the README | same | same (Aug/V2: pedal-extended offsets) | V2 Aug MAPS 0.922 | torch island, drop-in (same code) |
+| Aria-AMT `piano-medium-double-1.0` | `piano-medium-double-1.0.safetensors`, 447 MB, in HF dataset repo `loubb/aria-midi`; "preliminary" | 16 kHz, 30 s chunks | pedal tokens | MAPS note F1 **90.58** vs Kong 83.10 ([Aria-MIDI paper](https://arxiv.org/html/2504.15071)) | Not on PyPI. Needs Python ≥ 3.11, `torch>=2.3`, `torchaudio<=2.5` (conflicts with the torch island's 2.11). Calls `.cuda()` directly; bf16 on Ampere. Windows unverified. Needs an eval-only venv first, and its own island if it wins |
+| Kong et al. | Zenodo `CRNN_note_F1=0.9677_pedal_F1=0.9186.pth`, 172 MB; `piano_transcription_inference` 0.0.6 | 16 kHz mono | CC64 | MAPS 82.4 ([Edwards et al.](https://arxiv.org/html/2402.01424)) | torch island (pure PyTorch) |
+| Edwards et al. robust Kong | Zenodo [10610212](https://zenodo.org/records/10610212) `high_resolution_MAESTRO_augmentations.pth`, 104 MB, CC-BY-4.0 | 16 kHz mono | probably none (size; unverified) | MAPS **88.4** with no MAPS training | torch island, through Kong's inference code (unverified) |
+| hFT-Transformer | GitHub release `checkpoint.zip`, 21 MB | 16 kHz, 256 mel | none | MAPS 85.07 / on+off 66.03 | pins `torch==1.10.1`; would need porting. Legacy baseline only |
+| MuScriptor (Kyutai, 2026-07) | HF small/medium/large, gated, CC-BY-NC-4.0, `pip install muscriptor` | 16 kHz mono, 5 s windows | not mentioned | no piano/MAESTRO numbers ([arXiv](https://arxiv.org/html/2607.08168v1)) | multi-instrument; only a mixture-fallback candidate |
+| YourMT3+ (in use for guitar/bass eval) | unchanged 2024 checkpoints | mixture | — | pop mixtures (MulTTiPop) all-instrument onset F1 25.29 ([arXiv](https://arxiv.org/html/2607.08756v1)) | torch island |
+
+These 2025–26 piano papers have no code or weights link:
+- the optimal-transport loss ([2605.17405](https://arxiv.org/abs/2605.17405));
+- Rubato (demo only);
+- two streaming / low-latency models ([2503.01362](https://arxiv.org/abs/2503.01362), [2509.07586](https://arxiv.org/abs/2509.07586));
+- Mobile-AMT.
+
+No transcriber trained on rendered pop piano was found. No published benchmark of piano AMT on separated pop stems exists either.
+
+### Piano / keys separation
+- **`BS-Roformer-SW` (in production)** leads the MVSep piano leaderboard: 7.80 dB SDR, rank 1 of 57 ([leaderboard](https://mvsep.com/quality_checker/leaderboard/piano/?sort=piano)). The checkpoint is still served by the audio-separator mirror (699 MB). The original HF account is gone.
+- **`htdemucs_6s`** scores 2.23 dB, rank 43. Its README says the piano source "is not working great".
+- **No other piano/keys model ships in audio-separator.** The latest is 0.47.1 (2026-10-19); we pin 0.44.x. The MSST pretrained list has no dedicated piano or keys checkpoint either.
+- **`tjpurdy/Piano-Separation-Model-small`** (HF, 17 MB, BS-RoFormer variant, CC-BY-NC-4.0) scores 4.90 dB. It is the only dedicated open piano model.
+- The leaderboard entries close to SW have no public weights: "BS 6stems piano" 7.79, `bs_keys_xlancer` 7.78, and Logic Pro 7.79 (commercial).
+- So Phase 4's separation search is narrow:
+  - SW vs `htdemucs_6s` vs the small piano model;
+  - two-stage chains (vocals/drums/bass removal, then SW on the remainder);
+  - SW + `htdemucs_6s` averaging.
+
+### Hands
+- **PM2S** takes performance MIDI and outputs a per-note hand. Weights auto-download from Zenodo [10520196](https://zenodo.org/records/10520196) (`RNNHandPartModel.pth`, 42 MB, CC-BY-4.0). The repo pins `torch==1.12.1` / `numpy==1.19.1`, but the model is a small RNN and should load on current torch (unverified).
+- **MIDI2ScoreTransformer** (Beyer & Dai) takes performance MIDI and outputs a full score with a per-note staff token. Staff error 6.62 vs PM2S 6.86. 390 MB, needs MuseScore and a music21 fork, and its repo has no licence.
+- **`CPJKU/piano_svsep`** ("Cluster and Separate"; MIT, 36 MB) needs a quantized score. It would run after `quantize/`.
+- **Hand-labelled references are scarce:**
+  - PIG is offline.
+  - ACPAS hand labels are flagged by its authors as unchecked.
+  - POP909's MELODY / BRIDGE / PIANO tracks are arrangement roles, not hands.
+  - **ASAP** staves (from the aligned MusicXML scores) are the usable reference. They mark "staff", which is what `splitHands` drives, not physical hands.
+
+### Datasets for a pop-piano test set
+- **Real acoustic piano outside MAESTRO's pianos and rooms:**
+  - MAPS ENSTDkCl / ENSTDkAm: Zenodo [18160555](https://zenodo.org/records/18160555), open, 2.6 + 2.7 GB.
+  - SMD v2: Zenodo [10847280](https://zenodo.org/doi/10.5281/zenodo.10847280), 3.2 GB.
+  - Vienna 4x22: Bösendorfer with performance MIDI ([CPJKU/vienna4x22](https://github.com/CPJKU/vienna4x22)).
+  - All three are classical.
+- **Pop arrangements with exact MIDI:** POP909 (MIT; MELODY / BRIDGE / PIANO tracks, tempo-labelled, no audio). It must be rendered.
+  - Acoustic pianos: Salamander Grand, Splendid Grand, Headroom, LivingRoom Upright.
+  - Electric pianos: jRhodes3 and Greg Sullivan e-pianos.
+  - Clavinet and harpsichord: GeneralUser GS.
+  - Render with FluidSynth 2.6.1 (Windows x64 build) or `sfizz_render`.
+- **Band accompaniment:** Slakh2100 redux test split. It comes only inside one 104 GB `slakh2100_flac_redux.tar.gz` (Zenodo [4599666](https://zenodo.org/records/4599666)); it can be streamed through `tar` keeping only `test/`. Alternatives:
+  - MUSDB18-HQ (already used by P1/P2; its "other" stem can hold piano, so piano-free windows are picked by listening);
+  - MoisesDB (240 songs with per-instrument guitar/keys/piano stems, behind a form on music.ai; SDR only, no MIDI).
+- **Not references:** Pop2Piano, Pop1K7, GiantMIDI, Aria-MIDI and ATEPP. Their MIDI was itself transcribed by Kong et al. or by Onsets and Frames, so scoring against them would only measure agreement with another model. MedleyDB has no piano notes and is behind a request form.
+
+### Step 24 test set and plan (proposed 2026-10-24, awaiting the owner)
+**Test set "P2p".** 30 s excerpts, split into fit and held-out by song or piece; no song or performance appears in both. No owner-played material. Tiers are reported separately and never averaged together without saying so.
+
+| tier | source | items | tags |
+|---|---|---|---|
+| real-solo | MAPS ENSTDkCl + ENSTDkAm, SMD v2 (Disklavier MIDI with pedal) | 12 | solo acoustic, heavy pedal |
+| real-band | the same pianos mixed with band accompaniment at two levels | 8 | acoustic in band, sparse / dense |
+| pop-solo | POP909 MELODY + PIANO as a "solo cover", rendered through 4 acoustic pianos, 2 electric pianos (Rhodes, Wurlitzer-like) and clavinet/harpsichord. Room IR, mic EQ, compression, MP3 128k and ±30 cent detune as augmentation. A synthetic sustain pedal on chord changes for the ballad items gives exact key-release **and** pedal-extended references | 12 | solo acoustic, electric, heavy-pedal ballad, phone/compressed, off-A440 |
+| pop-band | POP909 PIANO track over Slakh2100 **test** non-piano stems (drums, bass, guitars, synth pads/strings in the piano's register). Some items double the piano line with a guitar or synth patch | 16 | sparse / dense band, doubled, electric in band |
+| legacy | current P2 piano: MAESTRO test + MUSDB band (16), BabySlakh (17) | 33 | continuity only |
+| separation | piano-stem SDR / uSDR on real-band and pop-band (clean piano known) | 24 | — |
+| hands | ASAP: performance MIDI with score staves, as staff labels | ~10 pieces | MIDI only |
+| owner | 10–20 excerpts from the owner's library, chosen by the owner, unreferenced: model agreement and listening only | 10–20 | as tagged by the owner |
+
+**Downloads** go to `D:\datasets` (C: has 25 GB free); manifests go in `services/ml/eval/sets/`; no audio enters git.
+- MAPS: 5.3 GB.
+- SMD: 3.2 GB.
+- POP909, ASAP: small.
+- Sample libraries and soundfonts: about 1.5 GB.
+- FluidSynth.
+- Slakh2100 redux: a 104 GB transfer streamed through `tar`, keeping only the test split's needed tracks (about 10 GB). The cheaper fallback is MUSDB18-HQ accompaniment (no guitars-only stems, and piano can hide in "other").
+
+**Compute.** About 50 items × 4 conditions is small: Transkun takes about 2 s per 30 s on the RTX 3060. Separation per 30 s will be measured in Phase 1.
+
+**Agent time per phase (estimate):**
+| phase | days |
+|---|---|
+| 1 — harness + test-set build + baseline | 1–1.5 |
+| 2 — cheap wins | 0.5 |
+| 3 — confidence | 1 |
+| 4 — bypass + separation | 1 |
+| 5 — Aria-AMT, robust Kong, ensembles | 1–2 (Aria needs its own Python 3.11 venv) |
+| 6 — pedal contract, staff durations, e-piano gate, hands | 1.5 |
+
+Fine-tuning is excluded unless released models plateau. It would be a separate owner decision.
+
+### Step 24 Phase 1 baseline (measured 2026-10-24/25)
+Approved by the owner on 2026-10-24, with Slakh2100's test split streamed from the archive. The full tables are in `services/ml/eval/results/p2p/2026-10-24-baseline.md` and the definitions in `specs/08` "Implementation notes (step 24)".
+- **Offsets are key-release, as the model card says.**
+  - On real Disklavier pianos, onset+offset F1 is 0.623 against key-release references but only 0.377 against pedal-extended ones (real-solo, clean).
+  - The pip checkpoint (V2 NoExt) is right for the staff. Gap 6 reduces to keeping the pedal events and drawing pedal marks.
+- **Separation costs nothing on real acoustic solo piano** (0.923 clean vs 0.923 stem). It costs a lot on:
+  - harpsichord: 0.994 → 0.770;
+  - clavinet + phone chain: 0.884 → 0.464;
+  - a roomy upright: 0.730 → 0.559.
+
+  Over rendered solo items: 0.924 → 0.847. This is the case for the solo-piano bypass (Phase 4).
+- **Rendered electric pianos transcribe well** (Rhodes 0.98, Wurlitzer 0.98, CP80 0.95 clean). The ~0.68 for electric pianos in P2 comes from Slakh's patches, not from electric pianos in general. Harpsichord and clavinet ("keys") are the weak family.
+- **Bands:**
+  - stem onset F1: sparse 0.977, dense 0.867, doubled by guitar or synth 0.754, Slakh-native piano parts 0.854;
+  - mixture fallback (Transkun on the mix): 0.661 on pop-band.
+- **Phone-quality audio is the worst condition:** 0.777 clean, 0.509 after separation.
+- **Confidence is constant**, so the "high" band holds every note at 0.917 held-out precision.
+- **Hands:** `splitHands` puts 88.1 % of ASAP notes on the score's staff (median piece 0.899, worst 0.630).
+- **Time:** about 17 s per 30 s on the RTX 3060 (BS-Roformer-SW about 12 s, `notes.piano` about 5 s).
+- **Remaining ceiling:** rendered acoustic solo pianos are near 1.0, so that tier can't show gains. The owner's real songs remain the missing tier.
+
+### Step 24 phases 2–6 (measured 2026-10-25)
+Full tables: `services/ml/eval/results/p2p/2026-10-24-phases.md` and `2026-10-24-final.md`.
+- **Transcribers on separated stems** (mean onset F1 over 81 items):
+
+  | model | onset F1 |
+  |---|---|
+  | Transkun V2 NoExt (kept) | 0.869 |
+  | V2 Aug | 0.869 (worse key-release offsets: 0.485 vs 0.570) |
+  | robust Kong (Edwards et al.) | 0.837 |
+  | Aria-AMT | 0.822 |
+  | V2 | 0.812 |
+
+  On real Disklavier pianos Aria-AMT ties Transkun (0.928 vs 0.923), but it loses on rendered pop piano and is several times slower.
+  - **Practical notes on running the candidates:**
+    - Aria-AMT's driver is POSIX-only, so it was driven in-process with soundfile input.
+    - A file of exactly one 30 s chunk is cut at about 20 s unless padded.
+    - Kong's pip package loads checkpoints non-strictly and re-downloads anything under 160 MB, so the robust weights were loaded directly.
+- **Ensembles:** keeping only notes a second model agrees with costs more recall than it gains in precision (F1 0.881 → 0.824–0.870).
+- **Per-note confidence from Transkun itself works:**
+  - semi-CRF onset marginal: AUROC 0.839;
+  - velocity-distribution peak: 0.864;
+  - their mean: 0.885;
+  - agreement with YourMT3+: 0.878.
+
+  The interval marginal is weak (0.58).
+- **Separation:**
+  - BS-Roformer-SW still gives the best piano stem: 12.5 dB uSDR on band items, vs vocals-first 12.4, SW + htdemucs_6s average 8.9, htdemucs_6s 5.0.
+  - htdemucs_6s's drums + bass + vocals energy is the best solo-piano detector found: 24/24 solos, 0/57 bands at −15 dB.
+  - PANNs tags alone would wrongly bypass about 5 band songs.
+- **Mixture:** YourMT3+ beats Transkun on pop band mixtures (0.823 vs 0.703 POP909, 0.734 vs 0.620 Slakh) but not on classical piano in a band.
+- **Hands:** PM2S 0.927 vs `splitHands` 0.885 on unseen ASAP pieces (staves). MIDI2ScoreTransformer and Cluster-and-Separate were not run: PM2S already wins, and they need MuseScore or a quantized score.
+- **Remaining ceiling per tier** (shipped, chosen input):
+
+  | tier | onset F1 | where the errors are |
+  |---|---|---|
+  | real-solo | 0.928 | Disklavier recordings with rubato and pedal; offsets 0.63 |
+  | real-band | 0.960 | Slakh bands separate easily |
+  | pop-solo | 0.920 | phone audio 0.77 and a roomy upright 0.89 remain |
+  | pop-band | 0.876 | dense bands 0.868, piano doubled by guitar or synth 0.767 |
+  | legacy | 0.869 | BabySlakh electric-piano patches |
+
+  The owner's real songs are still the missing measurement.
 
 ## Implications for Splitune
 - **Default piano path:**

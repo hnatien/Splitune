@@ -1,0 +1,27 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: pm2s-hand-part
+kind: model
+name: "PM2S hand-part model (performance MIDI → left/right hand per note)"
+version: "zenodo-10520196"
+repo_url: https://github.com/cheriell/PM2S
+code_spdx: MIT
+weights:
+  licence: CC-BY-4.0
+  url: https://zenodo.org/records/10520196/files/RNNHandPartModel.pth?download=1
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "67abd8bee932067fbcbead0f55463b2447422a50c3e8edf9918afec7f7a426f6"
+  files:
+    - { name: RNNHandPartModel.pth, sha256: "35d0b768fc68f9ec23f77b512ce3cada9b4e9dd816e3ab1c2a1714fa05bc5805", bytes: 41983018 }
+training_data:
+  - { name: ASAP, licence: CC-BY-NC-SA-4.0, commercial_ok: false }
+  - { name: A-MAPS, licence: CC-BY-NC-SA-2.0-FR, commercial_ok: false }
+tier: amber
+tier_reason: "MIT code and CC-BY weights; non-commercial training data"
+used_in: [notes.piano]
+profiles: [personal]
+notes: >-
+  The model definition is vendored in services/ml/packages/stage_notes/src/stage_notes/pm2s_hands.py
+  (MIT, Lele Liu 2022). Step 24 P2p: 0.927 per-note agreement with ASAP score staves on the 21
+  pieces outside PM2S's training split, vs 0.885 for music-core splitHands.
+reviewer: owner
+reviewed: 2026-10-25

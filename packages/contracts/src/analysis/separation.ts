@@ -29,4 +29,9 @@ export const Separation = ArtefactHeader.extend({
   device: z.enum(['cuda', 'mps', 'cpu']),
   stems: z.array(SeparatedStem).min(1),
   failed_attempts: z.array(SeparationAttempt), // earlier models of the chain, in order
+  // Solo-instrument check (step 24, piano): energy of a fast model's drums, bass and vocals outputs
+  // relative to the mixture. `applied` = below the configured threshold: the song is the target
+  // instrument alone, that model's run is this separation (the chain was skipped) and notes are
+  // transcribed from the mixture.
+  solo_bypass: z.object({ rhythm_db: z.number(), applied: z.boolean() }).optional(),
 }).register(contracts, { id: 'Separation' })

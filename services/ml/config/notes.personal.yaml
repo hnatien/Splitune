@@ -16,8 +16,15 @@ instruments:
     params: {min_freq_hz: 30, max_freq_hz: 600, onset_threshold: 0.7, frame_threshold: 0.5}
   piano:
     # P2 (eval/results/p2/2026-10-23.md): Transkun V2 on separated stems 0.946 onset F1 (MAESTRO
-    # test excerpts + band) vs YourMT3+ 0.900 and Basic Pitch 0.645.
+    # test excerpts + band) vs YourMT3+ 0.900 and Basic Pitch 0.645. Step 24 P2p
+    # (eval/results/p2p): stereo input (+0.011 onset+offset F1), a silence gate at 45 dB (held-out
+    # precision 0.880 → 0.919), per-note confidence = mean of the semi-CRF onset marginal and the
+    # velocity peak (AUROC 0.885); YourMT3+ on the mixture when there is no stem (+0.043 onset F1
+    # on band excerpts); PM2S hands (0.927 vs 0.885 for splitHands on unseen ASAP pieces).
     transcriber: transkun
+    params: {stereo: true, gate_db: 45, confidence: onset_velocity}
+    mixture: {transcriber: yourmt3}
+    hands: pm2s
   vocals:
     transcriber: basic_pitch
     params: {min_freq_hz: 65, max_freq_hz: 1400}

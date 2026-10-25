@@ -87,6 +87,49 @@ describe('buildPianoScore', () => {
     expect(score.notes[2]?.band).toBe('low')
   })
 
+  it("keeps the transcription's hands when every note has one, else splits them", () => {
+    const base = makeNotes(
+      [
+        { id: 'low', onset_s: 0.5, pitch_midi: 48 },
+        { id: 'high', onset_s: 0.5, pitch_midi: 72 },
+      ],
+      'piano',
+    )
+    // A crossed-hands passage: the left hand plays above the right.
+    const crossed = {
+      ...base,
+      notes: base.notes.map((n, i) => ({
+        ...n,
+        hand: i === 0 ? ('right' as const) : ('left' as const),
+      })),
+    }
+    expect(buildPianoScore(crossed, beats).notes.map((n) => [n.id, n.hand])).toEqual([
+      ['low', 'right'],
+      ['high', 'left'],
+    ])
+    const partial = {
+      ...base,
+      notes: [{ ...base.notes[0], hand: 'right' as const }, base.notes[1]],
+    }
+    expect(buildPianoScore(partial as typeof base, beats).notes.map((n) => [n.id, n.hand])).toEqual(
+      [
+        ['low', 'left'],
+        ['high', 'right'],
+      ],
+    )
+  })
+
+  it('snaps the sustain pedal to the 16th grid and drops spans shorter than a 16th', () => {
+    const notes = {
+      ...makeNotes([{ id: 'a', onset_s: 0.5, offset_s: 2.5, pitch_midi: 48 }], 'piano'),
+      sustain: [
+        { on_s: 0.52, off_s: 1.49 },
+        { on_s: 1.6, off_s: 1.62 },
+      ],
+    }
+    expect(buildPianoScore(notes, beats).sustain).toEqual([{ onTick: 0, offTick: at(2) }])
+  })
+
   it('ends a note where the next note on the same key starts', () => {
     const notes = makeNotes(
       [

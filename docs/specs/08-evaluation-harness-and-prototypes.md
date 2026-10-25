@@ -123,6 +123,64 @@ Executable plans for the seven prototypes defined in `research/ml/pipeline-overv
 - **Result** (`eval/results/p2/2026-10-23.md`), onset F1 on the stem: Transkun **0.946** (MAESTRO + band; clean 0.974, mixture 0.828) and 0.732 (BabySlakh); YourMT3+ 0.900 / 0.750; Basic Pitch 0.645 / 0.631. BabySlakh by patch: acoustic-only tracks Transkun 0.835 (n = 6), with an electric piano/clavinet 0.676 (n = 11). Gate (≥ 0.80 in a band, stem ≥ mixture) **PASS** for Transkun and YourMT3+ on MAESTRO + band. Caveats: both were trained on MAESTRO's training split (test performances are unseen but the pianos and rooms are the same) and YourMT3+ on Slakh; P2 still needs an owned pop-piano set.
 - **Calibration:** `config/calibration/transkun-v2@2.0.1.piano.json`, one knot at the held-out precision (fit: even MAESTRO items + BabySlakh 1–10): ECE 0.131 → 0.049.
 
+## Implementation notes (step 24, 2026-10-25)
+- **P2p** (`eval/p2p.py`: `plan`, `build`, `separate`, `predict --chain`, `hands`, `report`): piano on the owner's kind of material, replacing P2 piano as the deciding set. Manifest `eval/sets/p2p.yaml` (a registered set, seed 24; audio is built locally under `~/datasets/p2p`). 48 excerpts of 30 s in four tiers that are reported apart:
+  - `real-solo` (12): MAPS ENSTDkCl/ENSTDkAm and SMD v2, Disklavier MIDI with pedal.
+  - `real-band` (8): other MAPS/SMD excerpts under a Slakh2100 test track's non-piano stems.
+  - `pop-solo` (12): POP909 MELODY + PIANO rendered through Salamander, Splendid, Headroom, an upright, Rhodes, Wurlitzer, CP80, a harpsichord and a GM clavinet. Some items add a synthetic room, a phone chain (200 Hz–6 kHz, compression, MP3 128k) or ±25–30 cent detune. Ballads get a bar-wise sustain pedal.
+  - `pop-band` (16): POP909 PIANO warped onto a Slakh2100 test track's beats and transposed to its key, 3 with the top line doubled by a guitar or synth. Plus 8 Slakh2100 test tracks' own piano parts in their own mixes (densest 30 s piano window).
+  - P2's piano items run as a `legacy` tier.
+- **References and metrics:** each item has key-release (`ref.keyoff.csv`) and pedal-extended (`ref.pedoff.csv`) references. Metrics per tier and per tag:
+  - onset F1/P/R;
+  - onset+offset F1 against both offset conventions;
+  - onset+offset+velocity F1 and pitch-class F1;
+  - piano-stem uSDR on band items;
+  - ECE and per-band precision on held-out notes;
+  - off-grid share: notes `buildPianoScore` flags > 60 ms from the beat grid, run through the music-core CLI on the item's own `beats` stage output;
+  - wall time per 30 s.
+
+  Conditions: `clean`, `stem`, `mixture` and `chosen` (the chain's own input choice). `hands` scores `splitHands` against ASAP's two score staves.
+- **Baseline** (`eval/results/p2p/2026-10-24-baseline.md`; BS-Roformer-SW → Transkun V2 NoExt mono, pedal dropped, constant confidence), onset F1 on the chosen input (stem):
+  - real-solo 0.923;
+  - real-band 0.960;
+  - pop-solo 0.847 (clean 0.924);
+  - pop-band 0.876 (clean 0.947, mixture 0.661);
+  - legacy 0.833, which matches P2 (0.836 item-weighted).
+
+  Calibration bands are empty: every note sits in "high" at 0.918, held-out precision 0.917. Hands: 0.881 of 644,613 ASAP notes on the right staff. Time: about 17 s per 30 s of audio on the RTX 3060 (separation about 12 s).
+- **Caveats:** rendered acoustic solo pianos are close to trivial (Salamander 1.0). The hard cells are separation on harpsichord/clavinet and phone audio, dense and doubled bands, and the mixture fallback. Real band items sit on synthetic Slakh bands, which separate easily (21 dB uSDR). The owner's songs are still the unreferenced tier.
+
+## Implementation notes (step 24 phases 2–6, 2026-10-25)
+- **Harness additions** (`eval/p2p.py`):
+  - `detail` runs the shipped `Transkun.transcribe_detailed` with all per-note scores and the pedal, with optional `--stereo`, `--separator` and `--weights` (an alternative checkpoint).
+  - `compare`, `sweep` (clean-up params chosen on fit, reported held-out) and `confidence` (AUROC, isotonic ECE, band precision) work on those runs.
+  - `tags` runs the shipped tag stage. `calibrate` fits the piano tables.
+  - `aria` runs Aria-AMT through `eval/aria_amt.py` in its own venv. `kong` runs the robust Kong model.
+  - `separate --separator` takes `htdemucs_6s`, `vocals_then_sw` and `ens_sw_6s`.
+  - `hands` compares `splitHands` with the shipped PM2S hands.
+  - Chains: `baseline`, `yourmt3`, `final` (the shipped config, with the shipped solo-check decision in `chosen`).
+- **Results:** `eval/results/p2p/2026-10-24-phases.md` (every candidate per phase) and `2026-10-24-final.md` (baseline vs shipped).
+
+  Shipped chain vs baseline, chosen input:
+
+  | tier | onset F1 | onset+offset F1, key | onset+offset F1, pedal |
+  |---|---|---|---|
+  | real-solo | 0.923 → 0.928 | 0.622 → 0.630 | 0.377 → 0.382 |
+  | real-band | 0.960 → 0.960 | 0.613 → 0.625 | 0.330 → 0.344 |
+  | pop-solo | 0.847 → **0.920** | 0.509 → 0.608 | 0.503 → 0.610 |
+  | pop-band | 0.876 → 0.877 | 0.623 → 0.638 | 0.617 → 0.631 |
+  | legacy | 0.833 → 0.869 | 0.539 → 0.552 | 0.539 → 0.552 |
+
+  - Calibration: held-out ECE 0.009, bands high 0.953 / medium 0.638 / low 0.552 precision.
+  - Hands: PM2S 0.927 vs `splitHands` 0.885 on unseen ASAP pieces.
+  - Time per 30 s on the RTX 3060, chosen input:
+    - solos 18.6 → 5.5 (real) and 17.9 → 6.3 (pop);
+    - band 17.3 → 17.2 (real) and 16.4 → 20.1 (pop, +23 %: the solo check runs first);
+    - legacy 32.5 → 31.7.
+    - Separation seconds come from the same stored runs in both chains. The baseline's notes timings were taken while other jobs shared the GPU, so small differences are noise.
+- **Per-song gate (owner, 2026-10-25):** `views.yaml` `min_confidence_mean: {piano: 0.80}`. A song whose mean calibrated note confidence is below 0.80 opens on the chord chart (reason `low_confidence`). On P2p: 4 of 81 songs gated, mean onset F1 0.516, none above 0.9.
+- **Not done:** the owner's songs (the unreferenced tier).
+
 ## Open questions
 - Who owns rater recruitment and compensation for P1/P7 (learners and teachers)?
 - Can we obtain written R&D permission to benchmark `htdemucs_6s`/community checkpoints internally? (Benchmarking only; never shipped — D8.)

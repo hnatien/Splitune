@@ -243,84 +243,96 @@
         "pitch": 39,
         "hand": "left",
         "on_tick": 0,
-        "off_tick": 7680
+        "off_tick": 7680,
+        "residual_flagged": false
       },
       {
         "note_id": "n000005",
         "pitch": 70,
         "hand": "right",
         "on_tick": 0,
-        "off_tick": 3840
+        "off_tick": 3840,
+        "residual_flagged": false
       },
       {
         "note_id": "n000000",
         "pitch": 79,
         "hand": "right",
         "on_tick": 0,
-        "off_tick": 960
+        "off_tick": 960,
+        "residual_flagged": false
       },
       {
         "note_id": "n000007",
         "pitch": 46,
         "hand": "left",
         "on_tick": 960,
-        "off_tick": 1920
+        "off_tick": 1920,
+        "residual_flagged": false
       },
       {
         "note_id": "n000001",
         "pitch": 80,
         "hand": "right",
         "on_tick": 960,
-        "off_tick": 1920
+        "off_tick": 1920,
+        "residual_flagged": false
       },
       {
         "note_id": "n000008",
         "pitch": 51,
         "hand": "left",
         "on_tick": 1920,
-        "off_tick": 2880
+        "off_tick": 2880,
+        "residual_flagged": false
       },
       {
         "note_id": "n000002",
         "pitch": 82,
         "hand": "right",
         "on_tick": 1920,
-        "off_tick": 2880
+        "off_tick": 2880,
+        "residual_flagged": false
       },
       {
         "note_id": "n000009",
         "pitch": 55,
         "hand": "left",
         "on_tick": 2880,
-        "off_tick": 3840
+        "off_tick": 3840,
+        "residual_flagged": false
       },
       {
         "note_id": "n000003",
         "pitch": 87,
         "hand": "right",
         "on_tick": 2880,
-        "off_tick": 5760
+        "off_tick": 5760,
+        "residual_flagged": false
       },
       {
         "note_id": "n000010",
         "pitch": 44,
         "hand": "left",
         "on_tick": 3840,
-        "off_tick": 5760
+        "off_tick": 5760,
+        "residual_flagged": false
       },
       {
         "note_id": "n000011",
         "pitch": 48,
         "hand": "left",
         "on_tick": 3840,
-        "off_tick": 5760
+        "off_tick": 5760,
+        "residual_flagged": false
       },
       {
         "note_id": "n000004",
         "pitch": 86,
         "hand": "right",
         "on_tick": 5760,
-        "off_tick": 7680
+        "off_tick": 7680,
+        "residual_flagged": false
       }
     ],
     "swing_bars": [],

@@ -54,6 +54,35 @@ function rendered(result: PianoAlphaTexResult, notes: readonly { id: string; pit
 }
 
 describe('toPianoAlphaTex', () => {
+  it('marks the sustain pedal under the bass staff where it goes down and comes up', () => {
+    const notes = [note('c', 60, 'right', 0, 4), note('bass', 48, 'left', 0, 8)]
+    // Down on beat 1, re-pedalled on beat 4 of bar 1 (up and down on one tick), held over the bar
+    // line, up on beat 3 of bar 2.
+    const sustain = [
+      { onTick: 1 * PPQ, offTick: 3 * PPQ },
+      { onTick: 3 * PPQ, offTick: 6 * PPQ },
+    ]
+    const result = toPianoAlphaTex({ ...base, notes, sustain })
+    const bass = result.tex.split('\\staff')[2] ?? ''
+    expect(bass).toContain('\\spd 0.25 \\spu 0.75 \\spd 0.75 C3.1 |\n\\spu 0.5 ')
+    const score = rendered(
+      result,
+      notes.map((n) => ({ id: n.noteId, pitch: n.pitch })),
+    )
+    const pedals = (bar: number) =>
+      score.tracks[0]?.staves[1]?.bars[bar]?.sustainPedals.map((m) => [
+        m.pedalType,
+        m.ratioPosition,
+      ])
+    expect(pedals(0)).toEqual([
+      [0, 0.25], // SustainPedalMarkerType.Down
+      [2, 0.75], // Up
+      [0, 0.75],
+    ])
+    expect(pedals(1)).toEqual([[2, 0.5]])
+    expect(score.tracks[0]?.staves[0]?.bars[0]?.sustainPedals).toEqual([])
+  })
+
   it('writes the right hand on the treble staff and the left on the bass staff', () => {
     const notes = [
       note('c', 60, 'right', 0, 1),
