@@ -14,7 +14,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
-import { createTheme, parseLogLine, renderFrame, visibleLogs } from './dev/render.mjs'
+import { createTheme, parseLogLine, redrawsBar, renderFrame, visibleLogs } from './dev/render.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const prodWorkers = process.argv.includes('--prod-workers')
@@ -112,6 +112,8 @@ const state = {
 }
 const children = new Map()
 const interactive = process.stdout.isTTY && process.stdin.isTTY
+// Piped output only: each service's latest progress bar, or undefined after any other line.
+const lastProgress = new Map()
 
 function log(serviceId, raw) {
   const parsed = parseLogLine(raw, { root })
@@ -131,9 +133,9 @@ function log(serviceId, raw) {
   const lines = [text, ...detail.map((line) => `  ${line}`)]
   if (interactive) {
     // A progress bar redraws in place while it is still the service's latest line; a finished bar
-    // stays, so the next one starts a line of its own (tqdm repeats its last frame on close).
+    // stays, so the next one starts a line of its own.
     const previous = progress && state.logs.findLast((entry) => entry.service === serviceId)
-    if (previous?.progress && (previous.progress.percent < 100 || previous.text === text)) {
+    if (redrawsBar(previous?.progress, progress)) {
       Object.assign(previous, { level, text, progress })
       return
     }
@@ -142,8 +144,12 @@ function log(serviceId, raw) {
     // Keep a scrolled view anchored on the same lines while new ones arrive.
     if (state.scroll > 0 && (!state.focus || state.focus === serviceId))
       state.scroll += lines.length
-  } else if (!progress || progress.percent === 100) {
+  } else {
     // Piped output can't redraw, so a bar prints once, when it finishes.
+    const previous = lastProgress.get(serviceId)
+    lastProgress.set(serviceId, progress)
+    const repeat = previous?.percent === 100 && redrawsBar(previous, progress)
+    if (progress && (progress.percent < 100 || repeat)) return
     for (const line of lines) process.stdout.write(`${serviceId.padEnd(12)}│ ${line}\n`)
   }
 }
