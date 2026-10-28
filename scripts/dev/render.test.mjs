@@ -5,6 +5,8 @@ import {
   createTheme,
   formatDuration,
   parseLogLine,
+  parseProgress,
+  redrawsBar,
   renderFrame,
   row,
   visibleLogs,
@@ -241,6 +243,30 @@ describe('parseLogLine', () => {
 
   it('keeps a line that only looks like JSON', () => {
     expect(parseLogLine('{not json').text).toBe('{not json')
+  })
+})
+
+describe('redrawsBar', () => {
+  const bar = (line) => parseProgress(line)
+  const running = bar(' 50%|#####     | 19/38 [00:03<00:03,  6.30it/s]')
+  const finished = bar('100%|##########| 38/38 [00:06<00:00,  6.45it/s]')
+
+  it('redraws an unfinished bar', () => {
+    expect(redrawsBar(running, finished)).toBe(true)
+  })
+
+  it('treats the frame tqdm repeats on close as a redraw, even with a new rate', () => {
+    expect(redrawsBar(finished, bar('100%|##########| 38/38 [00:06<00:00,  6.05it/s]'))).toBe(true)
+  })
+
+  it('starts a new line for the next bar once one has finished', () => {
+    expect(redrawsBar(finished, bar('  0%|          | 0/24 [00:00<?, ?it/s]'))).toBe(false)
+    expect(redrawsBar(finished, bar('100%|##########| 24/24 [00:29<00:00,  1.22s/it]'))).toBe(false)
+  })
+
+  it('needs a bar on both sides', () => {
+    expect(redrawsBar(undefined, finished)).toBe(false)
+    expect(redrawsBar(running, null)).toBe(false)
   })
 })
 
