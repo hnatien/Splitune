@@ -73,6 +73,10 @@ export interface BuildTabResult {
 // The notes stage's tuning suggestion (notes.tuning.suggested, 07 §6.1) is used when the caller
 // gives no tuning and its confidence reaches this (step 22, services/ml/eval/results/p2g/).
 export const TUNING_SUGGESTION_MIN_CONFIDENCE = 0.3
+// A note's bend shows in the tab from a quarter tone (alphaTex's bend unit) up to the contract's
+// two whole steps.
+const MIN_BEND_CENTS = 50
+const MAX_BEND_CENTS = 400
 
 // The tab's open strings: the caller's, else a confident suggestion for this instrument's string
 // count, else the instrument's standard tuning (undefined).
@@ -99,6 +103,7 @@ const BASS_LEVELS: readonly TabLevel[] = ['roots', 'full']
 interface PlacedNote extends LevelNote {
   pin?: FretPin
   stringProbs?: readonly number[]
+  bendCents?: number
   endTime: number
 }
 
@@ -187,6 +192,8 @@ export function buildTab(
     // Pins and the audio string cue describe the sounding pitch; a transposition invalidates them.
     if (pin !== undefined && semitones === 0) out.pin = pin
     if (note.string_probs !== undefined && semitones === 0) out.stringProbs = note.string_probs
+    const bend = Math.max(0, ...(note.bend_cents ?? []).map(([, cents]) => cents))
+    if (bend >= MIN_BEND_CENTS) out.bendCents = Math.min(Math.round(bend), MAX_BEND_CENTS)
     return out
   })
 
@@ -262,6 +269,7 @@ export function buildTab(
     }
     if (a.altFingerings.length > 0) event.alt_fingerings = a.altFingerings
     if (a.unplayable) event.unplayable = true
+    if (note.bendCents !== undefined) event.bend_cents = note.bendCents
     events.push(event)
     clippedOff.set(a.noteId, offTick)
   }
@@ -308,12 +316,18 @@ export function buildTab(
     capo: config.capo,
     meterDenominator: effBeats.value.meter.denominator,
     tempo: effBeats.value.bpm,
-    events: flat.map((a) => ({
-      noteId: a.noteId,
-      onTick: (noteById.get(a.noteId) as PlacedNote).onTick,
-      offTick: clippedOff.get(a.noteId) as number,
-      ...(a.string === undefined || a.fret === undefined ? {} : { string: a.string, fret: a.fret }),
-    })),
+    events: flat.map((a) => {
+      const note = noteById.get(a.noteId) as PlacedNote
+      return {
+        noteId: a.noteId,
+        onTick: note.onTick,
+        offTick: clippedOff.get(a.noteId) as number,
+        ...(a.string === undefined || a.fret === undefined
+          ? {}
+          : { string: a.string, fret: a.fret }),
+        ...(note.bendCents === undefined ? {} : { bendCents: note.bendCents }),
+      }
+    }),
     chords: chordMarks,
     swingBars: quantized.swingBars,
     trackName: instrument === 'bass' ? 'Bass' : 'Guitar',

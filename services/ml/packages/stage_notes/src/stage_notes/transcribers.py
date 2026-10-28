@@ -25,7 +25,7 @@ from splitune_ml_core.errors import StageError
 from splitune_ml_core.paths import ML_ROOT
 
 from . import basic_pitch as bp
-from . import tuning
+from . import bends, tuning
 
 RATE = 44100
 CONFIG_PATH = ML_ROOT / "config" / "notes.personal.yaml"
@@ -38,6 +38,7 @@ class NoteEvent:
     pitch_midi: int
     velocity: int
     confidence_raw: float
+    bend_cents: tuple[tuple[float, float], ...] = ()  # (s after the onset, cents above the pitch)
 
 
 class NoteTranscriber(Protocol):
@@ -84,6 +85,13 @@ BASIC_PITCH_DEFAULTS: dict[str, Any] = {
     "tuning_min_low_notes": 1,
     "tuning_min_confidence": 0.3,
     "tuning_min_duration_s": 0.1,
+    # Bends from the pitch contour (bends.py): the smallest bend kept and how long it must glide.
+    "bends": False,
+    "bend_min_cents": 75.0,
+    "bend_min_glide_frames": 3,
+    # Per-note string probabilities for the fret DP from the audio (strings.py, the stage adds
+    # them to guitar notes).
+    "string_cue": False,
 }
 A4_MIN_CENTS = 5.0  # smaller offsets are within the estimator's error (median 6 cents, step 22)
 
@@ -135,6 +143,17 @@ class BasicPitch:
             infer_onsets=bool(params["infer_onsets"]),
             energy_tol=int(params["energy_tol"]),
         )
+        bent = (
+            bends.merged(
+                posteriors,
+                raw,
+                onset_thresh=float(params["onset_threshold"]),
+                min_cents=float(params["bend_min_cents"]),
+                min_glide_frames=int(params["bend_min_glide_frames"]),
+            )
+            if params["bends"]
+            else [bends.Bent(n, ()) for n in raw]
+        )
         times = bp.frame_times(posteriors.contour.shape[0]) / stretch
         frames = int(params["confidence_frames"])
         return [
@@ -144,8 +163,12 @@ class BasicPitch:
                 pitch_midi=n.pitch_midi,
                 velocity=int(np.clip(round(127 * n.amplitude), 1, 127)),
                 confidence_raw=min(1.0, max(0.0, bp.onset_posterior(posteriors, n, frames))),
+                bend_cents=tuple(
+                    (round(float(times[n.start + k] - times[n.start]), 3), c) for k, c in b.curve
+                ),
             )
-            for n in raw
+            for b in bent
+            for n in (b.note,)
         ]
 
 

@@ -640,7 +640,13 @@ def cmd_build(args: argparse.Namespace) -> int:
 
 # --- separation, beats, notes ----------------------------------------------------------------
 
-SEPARATORS = ("bs_roformer_sw", "htdemucs_6s")
+SEPARATORS = ("bs_roformer_sw", "htdemucs_6s", "mel_roformer_guitar_becruily")
+# Combinations of model outputs (step 22 Phase 1): the mean of two guitar stems, and the guitar
+# model run on what BS-Roformer-SW leaves after removing vocals, drums and bass.
+COMBINED = {
+    "ens_sw_becruily": ("bs_roformer_sw", "mel_roformer_guitar_becruily"),
+    "chain_sw_becruily": ("bs_roformer_sw", "mel_roformer_guitar_becruily"),
+}
 
 
 def stem_path(item: Item, separator: str, kind: str) -> Path:
@@ -650,23 +656,40 @@ def stem_path(item: Item, separator: str, kind: str) -> Path:
 def cmd_separate(args: argparse.Namespace) -> int:
     from stage_separation import config, models
 
-    spec = config.load().models[args.model]
     timing_path = ROOT / "sep-timing.json"
     timing = (
         cast(dict[str, Any], json.loads(timing_path.read_text())) if timing_path.is_file() else {}
     )
+    first, second = COMBINED.get(args.model, (args.model, args.model))
     for item in load_items():
         for kind in BANDS:
             out = stem_path(item, args.model, kind).parent
             if (out / "guitar.wav").is_file():
                 continue
-            result = models.separate(args.model, spec, item.dir / f"mixture.{kind}.wav", out)
+            mixture = item.dir / f"mixture.{kind}.wav"
+            started = time.perf_counter()
+            if args.model == "ens_sw_becruily":
+                stems = [read(stem_path(item, m, kind)) for m in (first, second)]
+                frames = min(len(a) for a in stems)
+                write(
+                    out / "guitar.wav",
+                    ((stems[0][:frames] + stems[1][:frames]) / 2).astype(np.float32),
+                )
+            elif args.model == "chain_sw_becruily":
+                sw = stem_path(item, first, kind).parent
+                residual = sum(read(sw / f"{s}.wav") for s in ("guitar", "piano", "other"))
+                write(out / "residual.wav", cast(Audio, residual))
+                spec = config.load().models[second]
+                models.separate(second, spec, out / "residual.wav", out)
+            else:
+                spec = config.load().models[args.model]
+                models.separate(args.model, spec, mixture, out)
             timing.setdefault(args.model, {})[f"{item.id}.{kind}"] = {
-                "seconds": result.seconds,
-                "audio_s": len(read(item.dir / f"mixture.{kind}.wav")) / RATE,
+                "seconds": time.perf_counter() - started,
+                "audio_s": len(read(mixture)) / RATE,
             }
             write_json(timing_path, timing)
-            print(f"{args.model} {item.id} {kind}: {result.seconds:.1f}s", flush=True)
+            print(f"{args.model} {item.id} {kind}", flush=True)
     return 0
 
 
@@ -714,6 +737,18 @@ VARIANTS: dict[str, Variant] = {
         overrides={"a4_compensation": True, "tuning_suggestion": True},
         note="a4comp + open-string tuning suggestion (applied by buildTab)",
     ),
+    **{
+        f"sep_{name}": Variant(
+            separator=name,
+            overrides={"a4_compensation": True, "tuning_suggestion": True},
+            note=f"tuning with separator {name}",
+        )
+        for name in ("htdemucs_6s", "mel_roformer_guitar_becruily", *COMBINED)
+    },
+    "bends": Variant(
+        overrides={"a4_compensation": True, "tuning_suggestion": True, "bends": True},
+        note="tuning + bends from the pitch contour (fragments of a bent note merged)",
+    ),
     "decode": Variant(
         overrides={
             "a4_compensation": True,
@@ -729,6 +764,16 @@ VARIANTS: dict[str, Variant] = {
             notes_from="tuning",
             string_cue=w,
             note=f"tuning + audio string cue (classifier on clean audio), DP weight {w:g}",
+        )
+        for w in (0.25, 0.5, 1.0, 2.0)
+    },
+    **{
+        f"cuestem{w:g}": Variant(
+            overrides={"a4_compensation": True, "tuning_suggestion": True},
+            notes_from="tuning",
+            string_cue=w,
+            cue_model="clean+stem",
+            note=f"tuning + audio string cue (classifier on clean and stem audio), DP weight {w:g}",
         )
         for w in (0.25, 0.5, 1.0, 2.0)
     },
@@ -897,7 +942,7 @@ def with_string_cue(notes: Path, item: Item, condition: str, variant: Variant) -
     if not dest.is_file():
         document = json.loads(notes.read_text(encoding="utf-8"))
         mono = read(condition_audio(item, condition, variant.separator)).mean(axis=1)
-        model = OUT / f"model.{variant.cue_model}.pt"
+        model = OUT / f"model.{variant.cue_model}.npz"
         probs = string_probs(mono, document["notes"], model)
         for note, p in zip(document["notes"], probs, strict=True):
             note["string_probs"] = p
@@ -1502,7 +1547,7 @@ def main() -> int:
     p.add_argument("--source", nargs="+", choices=list(BUILDERS), default=list(BUILDERS))
     p.set_defaults(fn=cmd_build)
     p = sub.add_parser("separate")
-    p.add_argument("--model", choices=SEPARATORS, default=SEPARATORS[0])
+    p.add_argument("--model", choices=[*SEPARATORS, *COMBINED], default=SEPARATORS[0])
     p.set_defaults(fn=cmd_separate)
     sub.add_parser("beats").set_defaults(fn=cmd_beats)
     p = sub.add_parser("predict")

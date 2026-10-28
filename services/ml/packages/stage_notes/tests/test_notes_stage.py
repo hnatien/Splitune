@@ -14,7 +14,8 @@ import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import calibration, contracts, register
 from splitune_ml_core.stage_api import StageJob
 from splitune_ml_core.stages import STAGES
-from stage_notes import bass, guitar, piano, transcribers
+from stage_notes import bass, guitar, piano, stage, transcribers
+from stage_notes.strings import FEATURES, StringModel
 
 from .synth import PHRASE, phrase
 
@@ -160,6 +161,36 @@ def test_piano_notes_from_the_isolated_stem_with_transkun(tmp_path: Path) -> Non
     # No per-note score: every note carries the calibrated precision of the P2 table.
     assert {n.confidence_raw for n in notes.notes} == {1.0}
     assert all(n.confidence == pytest.approx(0.918, abs=0.01) for n in notes.notes)
+
+
+def test_guitar_notes_carry_the_string_cue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rng = np.random.default_rng(0)
+    model = StringModel(
+        (
+            (rng.normal(size=(8, FEATURES)).astype(np.float32), np.zeros(8, dtype=np.float32)),
+            (rng.normal(size=(6, 8)).astype(np.float32), np.zeros(6, dtype=np.float32)),
+        )
+    )
+    cue_ref = contracts.ModelRef(
+        model_id="splitune/string_cue",
+        version="test",
+        weights_sha256="cd" * 32,
+        provider="self_hosted",
+        register_tier="green",
+    )
+    monkeypatch.setattr(stage, "string_model", lambda: model)
+    monkeypatch.setattr(stage, "string_cue_ref", lambda: cue_ref)
+    stem = phrase(RATE)
+    decoded = write_stereo(tmp_path / "decoded.flac", stem)
+    inputs = {"separation": str(separation(tmp_path, tmp_path / "cache", "guitar", stem))}
+    run = job(tmp_path, guitar, inputs, decoded, len(stem))
+    run.params = {**run.params, "string_cue": True}
+    notes = contracts.Notes.model_validate_json(Path(guitar.run(run).files["notes"]).read_text())
+    assert [m.model_id for m in notes.models] == ["basic_pitch/icassp_2022", "splitune/string_cue"]
+    assert notes.notes
+    for n in notes.notes:
+        assert n.string_probs is not None
+        assert sum(n.string_probs) == pytest.approx(1.0, abs=1e-3)
 
 
 def test_calibration_table_is_applied(tmp_path: Path) -> None:

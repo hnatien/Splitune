@@ -189,32 +189,12 @@ def cmd_augment(_: argparse.Namespace) -> int:
     return 0
 
 
-CUE_FRET_RANGE = (-2, 22)  # a down-tuned or capo'd guitar can play a little outside standard
-
-
 def string_probs(
     mono: NDArray[np.float32], notes: list[dict[str, Any]], model_path: Path
 ) -> list[list[float]]:
-    """Per-note probability per string (string 1 first) from the trained classifier; strings that
-    cannot reach the pitch (standard tuning ± a little) get 0."""
-    import torch
-
-    model = classifier(HIDDEN)
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    x = np.array(
-        [strings.note_features(mono, n["onset_s"], n["pitch_midi"]) for n in notes],
-        dtype=np.float32,
-    )
-    lo, hi = CUE_FRET_RANGE
-    mask = np.array([[lo <= n["pitch_midi"] - o <= hi for o in STANDARD] for n in notes]).reshape(
-        -1, 6
-    )
-    if not len(x):
-        return []
-    with torch.no_grad():
-        logits = model(torch.tensor(x)).masked_fill(~torch.tensor(mask), -1e9)
-        probs = torch.softmax(logits, dim=1).numpy()
+    """Per-note probability per string (string 1 first), as the notes stage computes it."""
+    model = strings.StringModel.load(model_path)
+    probs = model.probs(mono, [(float(n["onset_s"]), int(n["pitch_midi"])) for n in notes])
     return [[round(float(v), 4) for v in row] for row in probs]
 
 
@@ -232,6 +212,18 @@ def classifier(hidden: int) -> Any:
         torch.nn.ReLU(),
         torch.nn.Linear(hidden, 6),
     )
+
+
+def save_model(model: Any, path: Path) -> None:
+    """The Linear layers' weights as strings.StringModel reads them (w0, b0, w1, b1, …)."""
+    import torch
+
+    linears = [m for m in model if isinstance(m, torch.nn.Linear)]
+    arrays: dict[str, NDArray[np.float32]] = {}
+    for i, layer in enumerate(linears):
+        arrays[f"w{i}"] = layer.weight.detach().cpu().numpy().astype(np.float32)
+        arrays[f"b{i}"] = layer.bias.detach().cpu().numpy().astype(np.float32)
+    np.savez(path, **arrays)  # pyright: ignore[reportArgumentType]
 
 
 def masks(pitch: NDArray[np.int64]) -> NDArray[np.bool_]:
@@ -301,7 +293,7 @@ def cmd_train(args: argparse.Namespace) -> int:
     text = "\n".join(report) + "\n"
     print(text)
     (OUT / f"report.{'+'.join(args.data)}.md").write_text(text, encoding="utf-8")
-    torch.save(model.state_dict(), OUT / f"model.{'+'.join(args.data)}.pt")
+    save_model(model, OUT / f"model.{'+'.join(args.data)}.npz")
     return 0
 
 

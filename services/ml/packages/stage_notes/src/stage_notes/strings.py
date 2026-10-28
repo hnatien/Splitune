@@ -6,10 +6,13 @@ vibrating length (a higher fret), is stiffer, so its upper partials sit further 
 (inharmonicity), and the spectral envelope changes with the string's gauge and winding. Features
 per note: for partials k = 1…PARTIALS over the note's first FRAMES STFT frames, the level relative
 to the fundamental (dB) and the frequency deviation from k·f0 (cents), plus the pitch. A small
-classifier (StringModel) turns them into a probability per string.
+classifier (StringModel, trained by eval/p2g_strings.py) turns them into a probability per string.
 """
 
 from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
@@ -66,3 +69,40 @@ def note_features(mono: NDArray[np.float32], onset_s: float, pitch: int) -> NDAr
     out[:PARTIALS] = np.clip(rel, -80, 20) / 40
     out[PARTIALS : 2 * PARTIALS] = devs / SEARCH_CENTS
     return out
+
+
+STANDARD = (64, 59, 55, 50, 45, 40)  # open strings, string 1 first
+FRET_RANGE = (-2, 22)  # a down-tuned or capo'd guitar plays a little outside standard's frets
+
+
+@dataclass(frozen=True)
+class StringModel:
+    """The trained classifier (eval/p2g_strings.py): FEATURES → hidden → hidden → 6 logits, ReLU
+    between, as plain arrays (`w0`, `b0`, … in an .npz)."""
+
+    layers: tuple[tuple[NDArray[np.float32], NDArray[np.float32]], ...]
+
+    @classmethod
+    def load(cls, path: Path) -> StringModel:
+        with np.load(path, allow_pickle=False) as data:
+            count = len(data.files) // 2
+            return cls(tuple((data[f"w{i}"], data[f"b{i}"]) for i in range(count)))
+
+    def probs(
+        self, mono: NDArray[np.float32], notes: list[tuple[float, int]]
+    ) -> NDArray[np.float32]:
+        """(len(notes), 6) probability per string (string 1 first) for (onset s, pitch) notes;
+        strings that cannot reach the pitch get 0."""
+        if not notes:
+            return np.zeros((0, 6), dtype=np.float32)
+        x = np.stack([note_features(mono, onset, pitch) for onset, pitch in notes])
+        for i, (w, b) in enumerate(self.layers):
+            x = x @ w.T + b
+            if i < len(self.layers) - 1:
+                x = np.maximum(x, 0.0)
+        lo, hi = FRET_RANGE
+        reach = np.array([[lo <= p - o <= hi for o in STANDARD] for _, p in notes])
+        logits = np.where(reach, x, -np.inf)
+        logits -= logits.max(axis=1, keepdims=True)
+        e = np.exp(logits)
+        return (e / e.sum(axis=1, keepdims=True)).astype(np.float32)

@@ -73,6 +73,22 @@ describe('toAlphaTex', () => {
     expect(realValues(tex, score)).toEqual([{ id: 'a', pitch: 69, string: 1 }])
   })
 
+  it('writes a bend as a bend up in quarter tones that alphaTab loads', () => {
+    const tex = toAlphaTex({
+      ...base,
+      events: [
+        { noteId: 'a', onTick: 0, offTick: 960, string: 3, fret: 7, bendCents: 190 },
+        { noteId: 'b', onTick: 960, offTick: 1920, string: 3, fret: 7, bendCents: 20 },
+      ],
+    })
+    expect(tex.tex).toContain('7.3{b (0 4)}')
+    const { score, diagnostics } = loadAlphaTex(tex.tex)
+    expect(diagnostics).toEqual([])
+    const beats = score.tracks[0]?.staves[0]?.bars[0]?.voices[0]?.beats ?? []
+    expect(beats[0]?.notes[0]?.bendPoints?.map((p) => p.value)).toEqual([0, 4])
+    expect(beats[1]?.notes[0]?.hasBend).toBe(false)
+  })
+
   it('ties notes across bar lines', () => {
     const tex = toAlphaTex({
       ...base,

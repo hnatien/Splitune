@@ -8,6 +8,7 @@ confidence through `config/calibration/<record>@<version>[.<instrument>].json`. 
 carry `low_band_energy` for music-core's octave correction (07 §3). With `a4_compensation` the
 source's offset from A440 is estimated (tuning.py), the transcriber compensates it and the artefact
 records it under `tuning`, with the likely open-string tuning when `tuning_suggestion` is on.
+With `string_cue` guitar notes carry `string_probs` from the string classifier (strings.py).
 """
 
 from __future__ import annotations
@@ -15,22 +16,24 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from numpy.typing import NDArray
-from splitune_ml_core import calibration, contracts
+from splitune_ml_core import calibration, contracts, register
 from splitune_ml_core.errors import StageError
 from splitune_ml_core.stage_api import StageDescription, StageJob, StageOutput
 from stage_separation import dsp
 from stage_separation.stem_post import load_raw
 
-from . import transcribers, tuning
+from . import strings, transcribers, tuning
 from .lowband import low_band_energy
 
 MIXTURE = "mixture"
+STRING_CUE_RECORD = "string-cue"
 
 
 def read_separation(inputs: dict[str, str] | None) -> contracts.Separation | None:
@@ -63,6 +66,21 @@ def source_stem(
     )
 
 
+def string_cue_ref() -> contracts.ModelRef:
+    return transcribers.ref_for(STRING_CUE_RECORD, "splitune/string_cue")
+
+
+@cache
+def string_model() -> strings.StringModel:
+    record = register.model(STRING_CUE_RECORD)
+    (path,) = register.verify(record, transcribers.models_dir() / "string-cue")
+    return strings.StringModel.load(path)
+
+
+def uses_string_cue(instrument: str, params: dict[str, Any]) -> bool:
+    return instrument == "guitar" and bool(params.get("string_cue"))
+
+
 def bind(
     instrument: str,
 ) -> tuple[Callable[..., StageDescription], Callable[[StageJob], StageOutput]]:
@@ -74,7 +92,10 @@ def bind(
         table = calibration.load(transcriber.record, ref.version, instrument)
         stem = source_stem(read_separation(inputs), instrument)
         return StageDescription(
-            model_refs=[ref],
+            model_refs=[
+                ref,
+                *([string_cue_ref()] if uses_string_cue(instrument, effective) else []),
+            ],
             params={
                 "instrument": instrument,
                 "transcriber": transcriber.name,
@@ -140,6 +161,12 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "tuning_midi": list(suggestion.tuning_midi),
             "confidence": suggestion.confidence,
         }
+    models = [ref]
+    probs: list[list[float]] | None = None
+    if uses_string_cue(instrument, params):
+        models.append(string_cue_ref())
+        cue = string_model().probs(mono, [(e.onset_s, e.pitch_midi) for e in events])
+        probs = [[round(float(v), 4) for v in row] for row in cue]
     notes: list[dict[str, Any]] = []
     for i, e in enumerate(events):
         if e.offset_s <= e.onset_s:
@@ -154,6 +181,10 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "confidence_raw": round(e.confidence_raw, 4),
             "stem_id": stem_id,
         }
+        if probs is not None:
+            note["string_probs"] = probs[i]
+        if e.bend_cents:
+            note["bend_cents"] = [list(point) for point in e.bend_cents]
         if instrument == "bass":
             note["low_band_energy"] = round(
                 low_band_energy(mono, e.onset_s, e.offset_s, e.pitch_midi), 4
@@ -170,7 +201,7 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "audio_hash": job.audio_hash,
             "sample_rate": 44100,
             "duration_s": job.duration_s,
-            "models": [ref.model_dump(mode="json")],
+            "models": [m.model_dump(mode="json") for m in models],
             "params": job.params,
             "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "instrument": instrument,
@@ -183,7 +214,7 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     return StageOutput(
         status="fallback" if fallback else "done",
         files={"notes": str(out)},
-        model_refs=[ref],
+        model_refs=models,
         metrics={"cpu_s": time.process_time() - started, "audio_s": float(job.duration_s)},
         fallback_reason=fallback,
     )
