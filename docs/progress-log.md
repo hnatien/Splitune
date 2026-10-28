@@ -1614,5 +1614,10 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
   - The first attempt failed in `decode` with `island_missing`, because the worktree has no per-island venvs. `ML_ISLAND_PYTHON` fixed it, and the re-run (`/v1/analyses/{id}/rerun`) was done.
 - **Not done yet:**
   - the owner's drum excerpts on the Mac worker;
-  - screenshots of the grid and staff per level (the browser pane was hidden, so the page got no animation frames);
   - `v1.drums` in production, which needs this branch merged and deployed first.
+- **Viewed in the local app** (2026-10-29, 800 px browser pane):
+  - Grid at As played, Main groove and Simplified: lanes line up with their names; guesses are hollow and dashed, kick and snare solid; it scrolls past the playhead after a seek.
+  - Main groove drops the toms and the crash. On this excerpt the hi-hat is already in eighths, so Simplified looks like As played.
+  - Staff: hands up, feet down, × heads for hi-hats, dashed marks on guesses, current bar shaded.
+- **Fix from viewing:** the staff wrote a hit until the voice's next hit (kicks on 1 and 3 came out as halves). A hit now ends at its beat with rests after, as drum parts are read. Only the three `build-drums` goldens changed; music-core 176 passed.
+- **Seen, not drum-specific:** at 800 px the practice top bar (title, transcription chip, view switch, settings) is wider than the window, so the page scrolls sideways.

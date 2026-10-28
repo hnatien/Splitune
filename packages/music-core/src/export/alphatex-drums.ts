@@ -8,8 +8,9 @@ import { type Bar, barsToRender, barZeroTick, quote, split } from './alphatex-ba
 //   output is its GM key (ARTICULATION), so playback and the kit lines follow notes.drums;
 // - two voices as on a drum staff: hands (cymbals, hi-hat, snare, toms) stems up, feet (kick,
 //   pedal hi-hat) stems down;
-// - a hit lasts until the voice's next onset in the bar, written as one value plus rests where
-//   one value can't express it (drum notes don't tie);
+// - a hit is written up to the voice's next onset or the end of its beat, whichever comes first,
+//   then rests, as drum parts are read (a kick on 1 and 3 is two quarters and two quarter rests,
+//   not two halves); one value plus rests where one value can't express it (drum notes don't tie);
 // - a flam as a before-beat grace note (`{gr}`) of the same articulation.
 // Bars, durations and pickups follow the tab writer (alphatex-bars.ts).
 
@@ -107,11 +108,9 @@ export function toDrumAlphaTex(input: DrumAlphaTexInput): DrumAlphaTexResult {
       }
       const flams = group.filter((h) => h.flam)
       if (flams.length > 0) tokens.push(`${names(flams)}.32 {gr}`)
-      const [first, ...others] = split(
-        tick - bar.startTick,
-        (onsets[k + 1] ?? bar.endTick) - tick,
-        isSwing,
-      )
+      const next = onsets[k + 1] ?? bar.endTick
+      const end = Math.min(next, (Math.floor(tick / PPQ) + 1) * PPQ)
+      const [first, ...others] = split(tick - bar.startTick, end - tick, isSwing)
       if (first === undefined) return
       group.forEach((h, note) => {
         hitMap.push({ hitId: h.hitId, bar: barNumber, voice, beat: tokens.length, note })
@@ -122,6 +121,7 @@ export function toDrumAlphaTex(input: DrumAlphaTexInput): DrumAlphaTexResult {
       for (const d of others) {
         tokens.push(`r.${d.token}${d.props.length > 0 ? ` {${d.props.join(' ')}}` : ''}`)
       }
+      rest(end, next)
     })
     return tokens.join(' ')
   }

@@ -2851,7 +2851,7 @@
       5,
       6
     ],
-    "alphatex": "\\track \"Drums\"\n\\instrument percussion\n\\clef neutral\n\\articulation defaults\n\\voice\n\\ts (4 4) \\tempo 120 \\ac SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 |\n(HiHatClosed CrashHighHit).8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 HiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 |\nHiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 HiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 |\nHiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 HiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 |\nSnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} SnareHit.32 {gr} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nSnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16\n\\voice\n |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.1 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.1\n",
+    "alphatex": "\\track \"Drums\"\n\\instrument percussion\n\\clef neutral\n\\articulation defaults\n\\voice\n\\ts (4 4) \\tempo 120 \\ac SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 |\n(HiHatClosed CrashHighHit).8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 HiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 |\nHiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 HiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 |\nHiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 HiHatClosed.8 HiHatClosed.8 (SnareHit HiHatClosed).8 HiHatClosed.8 |\nSnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} SnareHit.32 {gr} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nSnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16\n\\voice\n |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 r.2 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 r.2\n",
     "hit_map": [
       {
         "hitId": "d000000",
@@ -3543,7 +3543,7 @@
         "hitId": "d000006",
         "bar": 1,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3557,7 +3557,7 @@
         "hitId": "d000026",
         "bar": 2,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3571,7 +3571,7 @@
         "hitId": "d000046",
         "bar": 3,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3592,7 +3592,7 @@
         "hitId": "d000083",
         "bar": 5,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3606,7 +3606,7 @@
         "hitId": "d000095",
         "bar": 6,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3620,7 +3620,7 @@
         "hitId": "d000108",
         "bar": 7,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
