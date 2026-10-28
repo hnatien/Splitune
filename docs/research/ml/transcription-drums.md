@@ -1,7 +1,7 @@
 ---
 title: Automatic drum transcription (ADT) — models, datasets, classes, notation
 workstream: ml
-last_researched: 2026-10-20
+last_researched: 2026-10-28
 confidence: medium
 ---
 
@@ -121,6 +121,51 @@ Takeaways from the N2N results:
 | YourMT3+ | drums within multi-instr. | mix | ENST DTM 87.27 ([HTML](https://arxiv.org/html/2407.04822)) | GPL-3.0 | Apache-2.0 per HF (conflict) | includes NC data | risky | Research |
 | ADTLib | 3-class ADT + drum tab | drum audio | not reported | BSD-2-Clause ([repo](https://github.com/CarlSouthall/ADTLib)) | in package | unverified | possible | Old; simple |
 | omnizart drum | ADT | audio | not reported | MIT ([repo](https://github.com/Music-and-Culture-Technology-Lab/omnizart)) | not stated | unverified | review | Research toolkit, known bugs |
+
+## 2026-10 re-check (step 25, Phase 0)
+Checked on 2026-10-28 against GitHub, Hugging Face and Zenodo file listings. Personal mode (`specs/25`) makes licences a provenance record, so they're noted, not weighed. Paper numbers below are hypotheses for P2d to test, not results.
+
+### Transcribers
+
+| candidate | weights | classes / input | front end | velocity | island | verdict |
+|---|---|---|---|---|---|---|
+| **ADTOF-pytorch** ([repo](https://github.com/xavriley/ADTOF-pytorch), last commit 2025-11-11) | `adtof_frame_rnn_pytorch_weights.pth`, 3.6 MB, bundled: a conversion of `Frame_RNN_adtofAll_0`, the only checkpoint the TF repo ships (trained on all ADTOF sets combined; no separate RGW or YT model) | 5: BD 35, SD 38, TT 47, HH 42, CY+RD 49; trained on mixtures, also runs on stems | 44.1 kHz mono, 100 fps, 168-bin log filterbank | no | torch + librosa | **Baseline.** MDBDrums++ F 88.51 vs 88.74 for TF. Per-class thresholds `[0.22, 0.24, 0.32, 0.22, 0.30]` (BD, SD, TT, HH, CY), madmom-style peak picking (pre_avg 0.1, post_avg 0.01, pre_max 0.02, post_max 0.01, combine 0.02 s). Its CLI only accepts cuda/cpu, so MPS goes through the Python API |
+| ADTOF (TF original, [repo](https://github.com/MZehren/ADTOF)) | `Frame_RNN_adtofAll_0`, 5.4 MB | same | same | no | TF + madmom | Not used; the PyTorch port is within 0.2 F |
+| **ADT_STR** ([arXiv 2601.09520](https://arxiv.org/abs/2601.09520), [weights](https://huggingface.co/Pierfrancesco/adt-str)) | 3 × 289 MB safetensors (`setting-tau-0.4/0.6/0.8`), CC-BY-SA-4.0 | 26 GM-merged classes; trained on synthesized Lakh drums, evaluated on drum-only audio, so drum stem only | 24 kHz, 128 mels, 10 ms, autoregressive enc-dec | yes | torch + transformers + torchcodec | **Phase 3 candidate**: the only new model with weights; its kit detail and velocity are worth measuring, its real-music accuracy is unknown |
+| **YourMT3+** (already in the torch island) | existing `yourmt3-moe` checkpoint | drums as program 128 with full GM pitches → 5-class mapping possible; mixture at 16 kHz | — | no | torch (shipped) | **Reference row** on mixture and stem. Repo evaluates only kick/snare/hi-hat, so toms and cymbals are unknown. In-sample on ENST and Slakh |
+| STAR Drums CRNN | **none released** (dataset only: [Zenodo 15690078](https://doi.org/10.5281/zenodo.15690078), 181 GB, BSD-3) | — | — | — | — | Out |
+| N2N (Sony, ICASSP 2026) | **none released** (arXiv v2 2026-03) | — | — | — | — | Out |
+| Separate-and-Detect (ISMIR 2026) | 2 × 5.4 GB latent-diffusion checkpoints + MusicLDM VAE | 5-stem diffusion separation + madmom onsets | — | no | own conda env, Python 3.9/3.10 | Out: far too slow for the worker budget |
+| Inverse Drum Machine ([arXiv 2505.03337](https://arxiv.org/abs/2505.03337)) | 2.5 MB checkpoint in repo | trained on StemGMD drum loops | 44.1 kHz | yes | torch | Out: drum loops only, no real-music result |
+| OaF-Drums, hFT-Transformer, ADTLib, omnizart | unchanged since 2026-10-20 | | | | | Out (E-GMD-only models are 70–75 F on MDB; the toolkits are older or unbenchmarked) |
+
+### Kit separators (drum stem → kit pieces, for the 7-class expansion)
+
+| checkpoint | stems | size | where |
+|---|---|---|---|
+| `MDX23C-DrumSep-aufr33-jarredou.ckpt` | kick, snare, toms, hh, ride, crash (SDR 14.5 / 9.8 / 10.6 / 3.2 / 6.1 cymbals) | 438 MB | python-audio-separator ≥ 0.47 model list (we pin 0.44.5; the checkpoint and config download from its `model-configs` release either way) |
+| `drumsep_5stems_mdx23c_jarredou.ckpt` (2025) | kick, snare, toms, hh, cymbals (16.7 / 11.5 / 12.3 / 4.0 / 6.4) | 438 MB | [HF mirror](https://huggingface.co/xavriley/source_separation_mirror) |
+| `model_drumsep.th` (inagoy HDemucs) | kick, snare, cymbals, toms | 167 MB | MSST release v1.0.5 |
+
+The Riley & Dixon pipeline needs ride/crash and open/closed hi-hat separately, so only the 6-stem MDX23C gives crash vs ride; open/closed hi-hat comes from post-processing the hh stem (their code: [adtof_plus_drum_transcription](https://github.com/xavriley/adtof_plus_drum_transcription), needs essentia). jarredou's own GitHub releases now 404; MVSep's better Mel-Roformer/SCNet drumsep models are service-only.
+
+### Drum stem from a mix
+Drums SDR (multisong / MUSDB): htdemucs_ft 11.13 / 10.0; BS-Roformer (ZFTurbo) 11.29 / 11.61; **SCNet XL IHF** 11.58 / 11.81 (214 MB, MSST release v1.0.15). BS-Roformer-SW (shipped first in the chain) has no published drums score. Phase 3 compares the shipped chain with SCNet XL IHF by downstream hit F1.
+
+### Datasets for P2d
+
+| dataset | use | download | licence |
+|---|---|---|---|
+| MDB Drums | real: drum stem + mix, 21 sub-classes (kit-piece subset) | 1.4 GB, GitHub | CC-BY-NC-SA-4.0 |
+| ENST-Drums | real: 3 drummers, minus-one accompaniment, brushes/mallets/sticks | 4.2 GB audio, [Zenodo 7432188](https://zenodo.org/records/7432188) | CC-BY-NC-ND-4.0 |
+| IDMT-SMT-Drums v2 | real + drum machine loops, 3 classes, solo drums | 0.29 GB, [Zenodo 7544164](https://zenodo.org/records/7544164) | CC-BY-NC-ND-4.0 |
+| RBMA13 | electronic/produced music | annotations 160 KB ([TU Wien](https://www.ifs.tuwien.ac.at/~vogl/datasets/)); audio is the free RBMA Bandcamp album, which the owner downloads | annotations research use |
+| Groove MIDI (MIDI only) | human performances with exact references (swing, fills, brushes-style jazz, half-time), to render | 3.3 MB | CC-BY-4.0 |
+| MUSDB18-HQ | accompaniment (bass, other, vocals) for rendered drums; drums SDR | 22.7 GB, Zenodo 3338373 | research use |
+| Slakh2100 test split (optional) | synthetic band drums | stream of the 104 GB archive, 7.5 GB kept (as step 24 did) | CC-BY-4.0 |
+| E-GMD, STAR Drums, StemGMD, MoisesDB | not needed for a test set (96 / 181 / 187+ / ~83 GB) | — | — |
+
+In-sample warnings: ADTOF-All's training sets are to be confirmed from the ADTOF paper in Phase 1 (rhythm-game charts on commercial songs; MDB and ENST are its published test sets); YourMT3+ trained on ENST and Slakh; ADT_STR on synthesized Lakh (Slakh's MIDI source). Reports label those rows.
 
 ## Implications for Splitune
 - **Pipeline:**
