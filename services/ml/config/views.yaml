@@ -3,8 +3,10 @@
 # it was tuned on.
 version: 1
 
-# D11: instruments with note-exact notation in the current release (MVP: guitar, bass; V4 piano).
-notation_supported: [guitar, bass, piano]
+# D11: instruments with note-exact notation in the current release (MVP: guitar, bass; V4 piano;
+# step 25 drums). Drums are behind `v1.drums`: without it the API plans no notes.drums, so drums stay
+# chords_only (notes_unavailable) whatever this list says.
+notation_supported: [guitar, bass, piano, drums]
 
 # Rule 3: rough stem and more than this share of low-band notes → chords_only.
 rough_stem_low_conf: 0.35

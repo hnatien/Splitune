@@ -7,6 +7,7 @@ import {
   bassNotes,
   beats,
   chords,
+  drumNotes,
   guitarNotes,
   parseAlphaTex,
   stems,
@@ -94,6 +95,31 @@ describe('finalize', () => {
       reasons: ['notation_not_supported'],
     })
   })
+
+  it('summarises drum hits without a tab and counts missing drums as partial', () => {
+    const drums = drumNotes()
+    const result = finalize(
+      ANALYSIS_ID,
+      { beats: beats(), chords: chords(), stems: stems(), notes: {}, drums },
+      { instruments: ['drums'] },
+      views,
+    )
+    expect(result.tabs).toEqual([])
+    expect(result.status).toBe('done')
+    expect(result.summary.per_instrument[0]).toMatchObject({
+      instrument: 'drums',
+      note_confidence_mean: noteStats(drums).noteConfidenceMean,
+    })
+    expect(result.summary.per_instrument[0]?.reasons).not.toContain('notes_unavailable')
+    const missing = finalize(
+      ANALYSIS_ID,
+      { beats: beats(), chords: chords(), stems: stems(), notes: {} },
+      { instruments: ['drums'] },
+      views,
+    )
+    expect(missing.status).toBe('partial')
+    expect(missing.summary.per_instrument[0]?.reasons).toEqual(['notes_unavailable'])
+  })
 })
 
 describe('note and chord statistics', () => {
@@ -106,6 +132,13 @@ describe('note and chord statistics', () => {
     }
     expect(bandsOf(strict)).toEqual({ high: 0.95, medium: 0.9 })
     expect(noteStats(strict).fractionLowConf).toBeGreaterThan(noteStats(notes).fractionLowConf)
+  })
+
+  it('scores drum hits like notes', () => {
+    const drums = drumNotes()
+    const mean = drums.hits.reduce((sum, h) => sum + h.confidence, 0) / drums.hits.length
+    expect(noteStats(drums).noteConfidenceMean).toBeCloseTo(mean, 4)
+    expect(noteStats({ ...drums, hits: [] }).fractionLowConf).toBe(1)
   })
 
   it('treats an empty transcription as all-low', () => {

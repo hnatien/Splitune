@@ -1429,7 +1429,7 @@ Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run 
 **Effect on P2p:** 4 of 81 songs gated (two roomy/phone uprights, a doubled band part, one BabySlakh electric piano), mean onset F1 0.516; no song with onset F1 ≥ 0.9.
 
 
-## 2026-10-28 — Step 25: Drums — Phases 0–1 (test set, harness, baseline; in progress)
+## 2026-10-28 — Step 25: Drums (in progress)
 Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s25-drums`. Its own CUDA venv is `D:/venvs/s25-ml`; the shared `services/ml/.venv` is untouched.
 
 **Owner decisions**
@@ -1491,4 +1491,20 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
 - The SFZ kits' key maps were checked for sound per GM key, not for which piece each key plays.
 - `D:\models-s25` (a 3.6 MB scratch copy of the ADTOF weights) is left for the owner to delete; a safety check blocked its removal.
 
-**Next:** the owner's OK on the Phase 2–6 plan (stop point 2).
+- 2026-10-28: the owner approved the Phase 2–6 plan (stop point 2).
+
+**Phase 2: orchestration**
+- Flag `v1.drums` (contracts `FLAGS`, default off).
+- `planAnalysis` plans `notes.drums` for a drums analysis only while the flag is on. The flag is read by `POST /v1/analyses` and URL import.
+  - The stage gets `beats` as an input and a soft dependency.
+  - Soft edges to stages that have no job (reused decode and beats) are dropped. A reused beats artefact would otherwise make the plan throw.
+- Finalize reads `notes.drums` as `DrumNotes` and scores the hits like notes for the view rule. It writes no render: the web builds the drum score from hits + beats (music-core), as for the piano roll, so levels and corrections stay in the browser.
+- `views.yaml` lists drums in `notation_supported`. Without the flag no `notes.drums` exists, so drums stay `chords_only` / `notes_unavailable`. There is no quality gate yet (Phase 6).
+- Doc 06 has the step 25 notes.
+- Caches: none invalidated (new stage, new flag).
+- Tests:
+  - `apps/api` `vitest run src/pipeline.test.ts`: 4 passed.
+  - `apps/node-worker` finalize + views: 20 passed.
+  - contracts: 45 passed.
+  - `turbo typecheck` (TS packages): clean. Biome: clean.
+  - The full `apps/api` / `apps/node-worker` suites have 6 failures that can't run on this Windows PC: they spawn `uv` and the Node worker, use `SIGSTOP`, or need `pg_dump` on PATH. None touch the changed code.
