@@ -1576,3 +1576,22 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
 - Environment notes:
   - The worktree had no built `packages/audio-dsp/dist/dsp.wasm` (ignored build output). It was copied from the main checkout after checking it against the committed `dsp.wasm.sha256`.
   - `pnpm contracts:gen` without `UV_PROJECT_ENVIRONMENT` creates an empty `services/ml/.venv`. A third such shell was moved to `D:\venvs\s25-stray-empty-venv-3`.
+
+**Phase 6: gate proposal (stop point 4; nothing switched on yet)**
+- Proposed `quality_gate.drums: pass`. Rule: P2d item-mean onset F1 (±50 ms) on the chosen input ≥ 0.80, the same bar as piano.
+  - Shipped chain: 0.838 over all items (2-fold CV estimate 0.826, held-out split 0.810).
+  - Per tier: MDB 0.855, ENST 0.790, rendered bands 0.813, drum machines 0.896, solo 0.956. RBMA13 is not built.
+- Per-song mean calibrated confidence vs onset F1 (shipped, 42 items): rank correlation 0.70.
+  - A `min_confidence_mean.drums` floor of 0.75 would send 4 songs to chords only: three bad (F1 0.551–0.610) and one fine drum-machine song (0.789).
+  - It would miss one bad rendered song (0.537 at 0.859).
+  - The table was fitted on the fit split, but this check uses all items.
+  - The low-band share of hits is ≤ 0.03 on every song, so the existing `low_confidence` rules never fire for drums.
+- Analysis time: `notes.drums` is 0.1–0.3 s per 30 s on the RTX 3060, and the drum stem already exists in a drums analysis. That is under 1 % of a full analysis on this PC. The Mac isn't measured.
+- **Waiting for the owner:**
+  - the gate rule and threshold;
+  - whether to add the 0.75 confidence floor;
+  - turning `v1.drums` on;
+  - drum excerpts for the end-to-end run;
+  - whether to allow loading the DrumSep checkpoint;
+  - fine-tuning (not recommended now);
+  - a drum example song for onboarding.
