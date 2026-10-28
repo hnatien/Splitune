@@ -753,6 +753,8 @@ CHAINS: dict[str, dict[str, Any]] = {
     "baseline": {"separator": "bs_roformer_sw", "notes": {"transcriber": "adtof"}},
     # Reference row: YourMT3+ drums (GM keys it names itself).
     "yourmt3": {"separator": "bs_roformer_sw", "notes": {"transcriber": "yourmt3"}},
+    # Phase 3 (p2d_tune.py): the shipped config/notes.personal.yaml entry.
+    "shipped": {"separator": "bs_roformer_sw", "notes": None},
 }
 
 

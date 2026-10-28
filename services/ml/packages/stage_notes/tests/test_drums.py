@@ -46,11 +46,25 @@ def test_five_class_guesses_are_flagged_and_crashes_follow_downbeats_after_a_gap
     ]
     choices = drum_kit.default_choices(hits, downbeats, gap_s=1.0)
     assert [c.gm_note for c in choices] == [36, 49, 51, 38, 42, 47, 49, 51, 49]
-    assert [c.approximate for c in choices] == [False, True, True, False, True, True, True, True, True]
+    assert [c.approximate for c in choices] == [
+        False,
+        True,
+        True,
+        False,
+        True,
+        True,
+        True,
+        True,
+        True,
+    ]
 
 
 def test_without_beats_a_cymbal_after_a_gap_is_a_crash() -> None:
-    hits: list[tuple[float, drum_kit.Class5]] = [(0.3, "cymbals"), (0.6, "cymbals"), (3.1, "cymbals")]
+    hits: list[tuple[float, drum_kit.Class5]] = [
+        (0.3, "cymbals"),
+        (0.6, "cymbals"),
+        (3.1, "cymbals"),
+    ]
     choices = drum_kit.default_choices(hits, None, gap_s=1.0)
     assert [c.gm_note for c in choices] == [49, 51, 49]
 
@@ -71,6 +85,20 @@ def test_peak_picking_thresholds_and_merges_close_peaks() -> None:
     act[150] = 0.1  # below the threshold
     found = adtof.peaks(act, 0.3, adtof.ADTOF_DEFAULTS)
     assert found == [20, 100]
+
+
+def test_input_level_is_set_by_rms_and_silence_stays_silent() -> None:
+    tone = (0.01 * np.sin(np.linspace(0, 200 * np.pi, RATE))).astype(np.float32)
+    louder = adtof.at_rms(tone, -17.0)
+    assert 20 * np.log10(np.sqrt(np.mean(np.square(louder)))) == pytest.approx(-17.0, abs=0.01)
+    silence = np.zeros(RATE, dtype=np.float32)
+    assert not adtof.at_rms(silence, -17.0).any()
+
+
+def test_raw_confidence_is_the_peak_or_its_margin_over_the_threshold() -> None:
+    assert adtof.raw_confidence(0.6, 0.2, "height") == 0.6
+    assert adtof.raw_confidence(0.6, 0.2, "margin") == pytest.approx(0.5)
+    assert adtof.raw_confidence(0.2, 0.2, "margin") == 0.0
 
 
 def test_drums_stage_spec_runs_in_the_torch_island_and_reads_beats() -> None:
