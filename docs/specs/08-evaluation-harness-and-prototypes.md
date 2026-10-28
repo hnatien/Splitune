@@ -223,6 +223,9 @@ Executable plans for the seven prototypes defined in `research/ml/pipeline-overv
     - velocity, which ADTOF doesn't output;
     - fine-tuning, which needs the owner's OK.
 
+- **Gate (owner, 2026-10-29):** `quality_gate.drums: pass`. Rule: P2d item-mean onset F1 at ±50 ms on the chosen input ≥ 0.80, the same bar as piano. The shipped chain scores 0.838 (2-fold CV 0.826).
+  - `min_confidence_mean.drums: 0.75`: a song whose mean calibrated hit confidence is below it shows chords only. On P2d, 3 of the 4 songs below 0.75 had onset F1 0.55–0.61.
+
 ## Open questions
 - Who owns rater recruitment and compensation for P1/P7 (learners and teachers)?
 - Can we obtain written R&D permission to benchmark `htdemucs_6s`/community checkpoints internally? (Benchmarking only; never shipped — D8.)
