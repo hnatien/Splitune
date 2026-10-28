@@ -32,6 +32,7 @@ WEIGHTS_DIRS = {
     "transkun-v2": "transkun",
     "pm2s-hand-part": "pm2s",
     "yourmt3-moe": "yourmt3",
+    "adtof-frame-rnn": "adtof",
     "panns-cnn14": "panns",
     "bs-roformer-sw": "audio-separator",
     "bs-roformer-viperx-1297": "audio-separator",

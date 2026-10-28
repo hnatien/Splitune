@@ -1,8 +1,8 @@
 // JSON-in/JSON-out CLI for the Python eval harness and language-neutral golden tests:
-//   node src/cli.ts <fret|quantize|build-tab|build-piano|key> < input.json > output.json
+//   node src/cli.ts <fret|quantize|quantize-drums|build-tab|build-piano|key> < input.json > output.json
 // (or `pnpm --silent --filter @splitune/music-core cli <command>`). Invalid input exits with
 // code 2 and an ErrorEnvelope-shaped JSON object on stderr.
-import { Beats, Chords, CorrectionOp, Notes } from '@splitune/contracts'
+import { Beats, Chords, CorrectionOp, DrumNotes, Notes } from '@splitune/contracts'
 import { z } from 'zod'
 import { buildTab } from './build-tab.ts'
 import { applyBeatCorrections } from './corrections/apply.ts'
@@ -11,7 +11,7 @@ import { assignFrets, groupIntoSteps } from './fret/dp.ts'
 import { createBeatGrid } from './grid/beatgrid.ts'
 import { estimateKey } from './harmony/key.ts'
 import { buildPianoScore } from './piano/build-piano.ts'
-import { quantizeNotes } from './quantize/quantize.ts'
+import { quantizeDrumHits, quantizeNotes } from './quantize/quantize.ts'
 
 const Ops = z.array(CorrectionOp)
 
@@ -44,6 +44,12 @@ const FretInput = z.object({
 
 const QuantizeInput = z.object({
   notes: Notes,
+  beats: Beats,
+  corrections: z.object({ beats: Ops.optional() }).optional(),
+})
+
+const QuantizeDrumsInput = z.object({
+  drums: DrumNotes,
   beats: Beats,
   corrections: z.object({ beats: Ops.optional() }).optional(),
 })
@@ -162,6 +168,27 @@ export function runQuantize(raw: unknown): unknown {
   }
 }
 
+export function runQuantizeDrums(raw: unknown): unknown {
+  const input = QuantizeDrumsInput.parse(raw)
+  const beats = applyBeatCorrections(input.beats, input.corrections?.beats ?? []).value
+  const result = quantizeDrumHits(input.drums.hits, createBeatGrid(beats))
+  return {
+    hits: result.hits.map((q) => ({
+      hit_id: q.hitId,
+      merged_ids: q.mergedIds,
+      class5: q.class5,
+      gm_note: q.gmNote,
+      bar: q.bar,
+      beat: q.beat,
+      tick: q.tick,
+      quantize_residual_ms: Math.round(q.residualMs * 10) / 10,
+      residual_flagged: q.residualFlagged,
+      flam: q.flam,
+    })),
+    swing_bars: result.swingBars,
+  }
+}
+
 export function runBuildTab(raw: unknown): unknown {
   const input = BuildTabInput.parse(raw)
   const o = input.options ?? {}
@@ -242,6 +269,7 @@ export function runKey(raw: unknown): unknown {
 export const COMMANDS: Readonly<Record<string, (raw: unknown) => unknown>> = {
   fret: runFret,
   quantize: runQuantize,
+  'quantize-drums': runQuantizeDrums,
   'build-tab': runBuildTab,
   'build-piano': runBuildPiano,
   key: runKey,

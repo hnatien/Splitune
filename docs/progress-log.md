@@ -1428,3 +1428,67 @@ Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run 
 
 **Effect on P2p:** 4 of 81 songs gated (two roomy/phone uprights, a doubled band part, one BabySlakh electric piano), mean onset F1 0.516; no song with onset F1 ≥ 0.9.
 
+
+## 2026-10-28 — Step 25: Drums — Phases 0–1 (test set, harness, baseline; in progress)
+Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s25-drums`. Its own CUDA venv is `D:/venvs/s25-ml`; the shared `services/ml/.venv` is untouched.
+
+**Owner decisions**
+- 2026-10-28: approved the Phase 0 plan as proposed: the required downloads (~29 GB), no Slakh, a ~30 % analysis-time cap. The owner will fetch the RBMA13 Bandcamp album.
+- `D:\datasets` (the `~/datasets` junction target) had been removed before this step started. Every set was downloaded again; step 24's P2p data and `_tools` are gone, so P2p can't be re-run until it is rebuilt.
+
+**Phase 0** (`docs/research/ml/transcription-drums.md` §"2026-10 re-check")
+- ADTOF-pytorch stays the baseline. It ships one checkpoint (`Frame_RNN_adtofAll_0`, no separate RGW/YT models), and its front end has 84 bands, not 168.
+- ADT_STR (2026) is the only new transcriber with weights. STAR Drums and N2N have no released model.
+- The 6-stem MDX23C DrumSep is the only public kit separator that splits crash from ride.
+
+**Phase 1, built**
+- `eval/p2d.py` (plan / build / separate / predict --chain / report) and `eval/sets/p2d.yaml`: 48 items in six tiers. The definition and baseline are in specs/08 "Implementation notes (step 25)".
+- Downloads, under `~/datasets` with downloaders in `_tools/`:
+  - `pdl.py`: parallel ranges;
+  - `rzip.py`: extracts only matching zip members over HTTP, used for MUSDB18-HQ's test split, 11 GB of 22.7.
+- Renderers: sfizz 1.2.3 and FluidSynth 2.6.1 with GeneralUser GS. Kits come from sfzinstruments: DRSKit, Muldjord, Big Rusty, Unruly sticks and brushes, RetroDrums.
+- **`notes.drums` stage**, built ahead of Phase 2 so the harness runs the shipped code:
+  - `stage_notes/drums.py`;
+  - `drum_kit.py`: the one GM mapping and the 5-class defaults (hi-hat closed, toms on 47, cymbals crash on a downbeat after a 1 s gap, else ride; all flagged `approximate`);
+  - `adtof.py` + `adtof_net.py`: the Frame_RNN network and front end re-implemented from ADTOF-pytorch `85c192e`; the weights are fetched by `fetch_models.py adtof` and loaded with `weights_only=True`. The port reproduces the repo's reference MIDI hit for hit.
+  - YourMT3+ gained `transcribe_drums`.
+  - Registered in `stages.py` (torch island, GPU slot, optional `beats` input for the crash rule) and in `notes.personal.yaml`. It is **not scheduled**: `apps/api/src/pipeline.ts` is unchanged until `v1.drums` exists (Phase 2).
+  - Register record `adtof-frame-rnn`.
+  - No existing cache key changes (`yourmt3.py` was refactored without changing its params).
+- music-core CLI `quantize-drums` (the shipped `quantizeDrumHits`) with a golden file.
+
+**Baseline** (`services/ml/eval/results/p2d/2026-10-28-baseline.md`; BS-Roformer-SW stem → ADTOF, published thresholds), onset F1 ±50 ms on the chosen input:
+
+| tier | ADTOF | YourMT3+ |
+|---|---|---|
+| real-mdb | 0.848 | 0.769 |
+| real-enst | 0.709 | 0.882 (in-sample) |
+| solo-drums | 0.976 | 0.980 |
+| rendered-band | 0.777 | 0.745 |
+| drum-machine | 0.735 | 0.788 |
+| item mean, 42 items | 0.793 | 0.802 |
+
+- ±30 ms costs ADTOF about 0.02.
+- Weakest labels: brushes 0.52, swing 0.54, phone 0.50. Toms and cymbals are weak in every tier.
+- ADTOF misses ENST's soft kicks: 0 of 33 on one take. +12 dB of input gain recovers only part of it (+0.02 to +0.10 F1 on 3 items), so input level is a Phase 3 candidate, not the cause.
+- Exact bar patterns 0.11–0.25 (Jaccard 0.61–0.73).
+- Raw ADTOF peaks are under-confident: ECE 0.226.
+- Time: notes.drums 0.12 s per 30 s on the RTX 3060 (YourMT3+ 1.3 s). Separation is 5 s per 30 s, but in an analysis the drum stem is already there (a kept extra, or the target when the part is drums), so the baseline adds about 0.1 s per 30 s to a full analysis.
+
+**Verification**
+- `services/ml`:
+  - `ruff check`: clean.
+  - `pyright eval/p2d.py packages/stage_notes packages/splitune_ml_core scripts`: 0 errors.
+  - `pytest packages/stage_notes packages/splitune_ml_core eval/tests -m "not models"`: 146 passed, 21 errors. Every error is a Postgres connection timeout (Docker isn't running on this PC).
+  - `pytest packages/stage_notes/tests/test_drums.py`, including the `models` test: 7 passed.
+  - `pytest eval/tests/test_p2d.py`: 6 passed.
+- `packages/music-core`: `vitest run test/golden.test.ts` 17/17. Biome is clean on `cli.ts`.
+
+**Known gaps**
+- RBMA13 audio is missing (6 items skipped).
+- No owner songs yet.
+- The Mac (MPS) timings need the owner.
+- The SFZ kits' key maps were checked for sound per GM key, not for which piece each key plays.
+- `D:\models-s25` (a 3.6 MB scratch copy of the ADTOF weights) is left for the owner to delete; a safety check blocked its removal.
+
+**Next:** the owner's OK on the Phase 2–6 plan (stop point 2).

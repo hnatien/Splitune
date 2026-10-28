@@ -1,0 +1,26 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: adtof-frame-rnn
+kind: model
+name: "ADTOF Frame_RNN 5-class drum transcription (PyTorch port of Frame_RNN_adtofAll_0)"
+version: "adtofAll_0-pt-85c192e"
+repo_url: https://github.com/xavriley/ADTOF-pytorch
+code_spdx: CC-BY-NC-SA-4.0
+weights:
+  licence: "CC-BY-NC-SA-4.0 (converted from MZehren/ADTOF; the port has no licence file)"
+  url: https://github.com/xavriley/ADTOF-pytorch/raw/85c192e78f716ea0b111cc8a5ee4a8f6a3a4f8a9/data/adtof_frame_rnn_pytorch_weights.pth
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "72fcbde037b46d850fc30274daa84914eb35ea5a1e7c9134830ef31f64e39adf"
+  files:
+    - { name: adtof_frame_rnn_pytorch_weights.pth, sha256: "1bc986e596ec47ba0b44916f87cd4a39f0b2bec23596df3fb5d0e87749217320", bytes: 3617805 }
+training_data:
+  - { name: "ADTOF-RGW and ADTOF-YT (rhythm-game charts aligned to commercial recordings)", licence: "CC-BY-NC-SA-4.0 annotations; copyrighted audio", commercial_ok: false }
+tier: red
+tier_reason: "non-commercial weights and training data"
+used_in: [notes.drums]
+profiles: [personal]
+notes: >-
+  The network and front end are re-implemented in services/ml/packages/stage_notes (adtof.py,
+  adtof_net.py) after ADTOF-pytorch at commit 85c192e; only the weights file is fetched, by
+  services/ml/scripts/fetch_models.py, and loaded with torch.load(weights_only=True).
+reviewer: owner
+reviewed: 2026-10-28

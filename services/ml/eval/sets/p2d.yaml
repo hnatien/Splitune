@@ -1,0 +1,1017 @@
+# Built locally by `eval/p2d.py build`; only this list is committed. `p2d` holds the
+# recipe of each excerpt (source, window, kit, band, augmentation).
+id: p2d
+description: 'Step 25 P2d: drum transcription on real recordings, solo loops and rendered Groove MIDI
+  under MUSDB18-HQ bands (eval/p2d.py plan, seed 25)'
+licence: MDB Drums CC-BY-NC-SA-4.0, ENST-Drums CC-BY-NC-ND-4.0, IDMT-SMT-Drums CC-BY-NC-ND-4.0, RBMA13
+  annotations (research), Groove MIDI CC-BY-4.0, MUSDB18-HQ (research), sample libraries under their own
+  licences
+provenance: github.com/CarlSouthall/MDBDrums, Zenodo 7432188 (ENST), 7544164 (IDMT), 3338373 (MUSDB18-HQ
+  test), ifs.tuwien.ac.at/~vogl/datasets (RBMA13), magenta groove-v1.0.0-midionly; rendered and mixed
+  by eval/p2d.py build
+root: ~/datasets/p2d
+split: test
+tasks:
+- notes
+- sep
+items:
+- id: real-mdb-00
+  audio: real-mdb-00/mixture.wav
+  annotations:
+    onsets: real-mdb-00/ref.csv
+  tags:
+    tier: real-mdb
+    split: fit
+    labels: acoustic live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_80sRock
+    window:
+    - 1.0
+    - 30.0
+- id: real-mdb-01
+  audio: real-mdb-01/mixture.wav
+  annotations:
+    onsets: real-mdb-01/ref.csv
+  tags:
+    tier: real-mdb
+    split: test
+    labels: swing cymbal-wash live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_BebopJazz
+    window:
+    - 31.0
+    - 30.0
+- id: real-mdb-02
+  audio: real-mdb-02/mixture.wav
+  annotations:
+    onsets: real-mdb-02/ref.csv
+  tags:
+    tier: real-mdb
+    split: fit
+    labels: acoustic live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_Britpop
+    window:
+    - 4.0
+    - 30.0
+- id: real-mdb-03
+  audio: real-mdb-03/mixture.wav
+  annotations:
+    onsets: real-mdb-03/ref.csv
+  tags:
+    tier: real-mdb
+    split: test
+    labels: acoustic dense live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_FunkJazz
+    window:
+    - 2.0
+    - 30.0
+- id: real-mdb-04
+  audio: real-mdb-04/mixture.wav
+  annotations:
+    onsets: real-mdb-04/ref.csv
+  tags:
+    tier: real-mdb
+    split: fit
+    labels: acoustic dense cymbal-wash live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_Punk
+    window:
+    - 0.0
+    - 30.0
+- id: real-mdb-05
+  audio: real-mdb-05/mixture.wav
+  annotations:
+    onsets: real-mdb-05/ref.csv
+  tags:
+    tier: real-mdb
+    split: test
+    labels: acoustic half-time live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_Reggae
+    window:
+    - 0.0
+    - 30.0
+- id: real-mdb-06
+  audio: real-mdb-06/mixture.wav
+  annotations:
+    onsets: real-mdb-06/ref.csv
+  tags:
+    tier: real-mdb
+    split: fit
+    labels: dense cymbal-wash live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_SpeedMetal
+    window:
+    - 5.0
+    - 30.0
+- id: real-mdb-07
+  audio: real-mdb-07/mixture.wav
+  annotations:
+    onsets: real-mdb-07/ref.csv
+  tags:
+    tier: real-mdb
+    split: test
+    labels: swing brushes live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: mdb
+      name: MusicDelta_SwingJazz
+    window:
+    - 1.0
+    - 30.0
+- id: real-enst-00
+  audio: real-enst-00/mixture.wav
+  annotations:
+    onsets: real-enst-00/ref.csv
+  tags:
+    tier: real-enst
+    split: fit
+    labels: live-room acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_1
+      take: 111_minus-one_funky_rods
+    window:
+    - 5.0
+    - 30.0
+- id: real-enst-01
+  audio: real-enst-01/mixture.wav
+  annotations:
+    onsets: real-enst-01/ref.csv
+  tags:
+    tier: real-enst
+    split: test
+    labels: live-room acoustic swing
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_1
+      take: 113_minus-one_charleston_sticks
+    window:
+    - 43.0
+    - 30.0
+- id: real-enst-02
+  audio: real-enst-02/mixture.wav
+  annotations:
+    onsets: real-enst-02/ref.csv
+  tags:
+    tier: real-enst
+    split: fit
+    labels: live-room brushes
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_1
+      take: 114_minus-one_celtic-rock_brushes
+    window:
+    - 20.0
+    - 30.0
+- id: real-enst-03
+  audio: real-enst-03/mixture.wav
+  annotations:
+    onsets: real-enst-03/ref.csv
+  tags:
+    tier: real-enst
+    split: test
+    labels: live-room brushes swing
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_1
+      take: 121_MIDI-minus-one_bigband_brushes
+    window:
+    - 32.0
+    - 30.0
+- id: real-enst-04
+  audio: real-enst-04/mixture.wav
+  annotations:
+    onsets: real-enst-04/ref.csv
+  tags:
+    tier: real-enst
+    split: fit
+    labels: live-room acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_1
+      take: 127_MIDI-minus-one_disco-108_sticks
+    window:
+    - 7.0
+    - 30.0
+- id: real-enst-05
+  audio: real-enst-05/mixture.wav
+  annotations:
+    onsets: real-enst-05/ref.csv
+  tags:
+    tier: real-enst
+    split: test
+    labels: live-room acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_1
+      take: 129_MIDI-minus-one_funk-101_sticks
+    window:
+    - 3.0
+    - 30.0
+- id: real-enst-06
+  audio: real-enst-06/mixture.wav
+  annotations:
+    onsets: real-enst-06/ref.csv
+  tags:
+    tier: real-enst
+    split: fit
+    labels: live-room acoustic ballad
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_3
+      take: 134_minus-one_bossa_sticks
+    window:
+    - 41.0
+    - 30.0
+- id: real-enst-07
+  audio: real-enst-07/mixture.wav
+  annotations:
+    onsets: real-enst-07/ref.csv
+  tags:
+    tier: real-enst
+    split: test
+    labels: live-room acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: enst
+      drummer: drummer_3
+      take: 146_MIDI-minus-one_disco-108_sticks
+    window:
+    - 12.0
+    - 30.0
+- id: real-electronic-00
+  audio: real-electronic-00/mixture.wav
+  annotations:
+    onsets: real-electronic-00/ref.csv
+  tags:
+    tier: real-electronic
+    split: fit
+    labels: electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: rbma
+      track: RBMA-13-Track-01
+    window:
+    - 190.0
+    - 30.0
+- id: real-electronic-01
+  audio: real-electronic-01/mixture.wav
+  annotations:
+    onsets: real-electronic-01/ref.csv
+  tags:
+    tier: real-electronic
+    split: test
+    labels: electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: rbma
+      track: RBMA-13-Track-04
+    window:
+    - 98.0
+    - 30.0
+- id: real-electronic-02
+  audio: real-electronic-02/mixture.wav
+  annotations:
+    onsets: real-electronic-02/ref.csv
+  tags:
+    tier: real-electronic
+    split: fit
+    labels: electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: rbma
+      track: RBMA-13-Track-08
+    window:
+    - 84.0
+    - 30.0
+- id: real-electronic-03
+  audio: real-electronic-03/mixture.wav
+  annotations:
+    onsets: real-electronic-03/ref.csv
+  tags:
+    tier: real-electronic
+    split: test
+    labels: electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: rbma
+      track: RBMA-13-Track-09
+    window:
+    - 160.0
+    - 30.0
+- id: real-electronic-04
+  audio: real-electronic-04/mixture.wav
+  annotations:
+    onsets: real-electronic-04/ref.csv
+  tags:
+    tier: real-electronic
+    split: fit
+    labels: electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: rbma
+      track: RBMA-13-Track-14
+    window:
+    - 141.0
+    - 30.0
+- id: real-electronic-05
+  audio: real-electronic-05/mixture.wav
+  annotations:
+    onsets: real-electronic-05/ref.csv
+  tags:
+    tier: real-electronic
+    split: test
+    labels: electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: rbma
+      track: RBMA-13-Track-23
+    window:
+    - 39.0
+    - 30.0
+- id: solo-drums-00
+  audio: solo-drums-00/mixture.wav
+  annotations:
+    onsets: solo-drums-00/ref.csv
+  tags:
+    tier: solo-drums
+    split: fit
+    labels: solo acoustic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: idmt
+      mix: RealDrum01_02#MIX.wav
+    window:
+    - 0.0
+    - 30.0
+- id: solo-drums-01
+  audio: solo-drums-01/mixture.wav
+  annotations:
+    onsets: solo-drums-01/ref.csv
+  tags:
+    tier: solo-drums
+    split: test
+    labels: solo acoustic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: idmt
+      mix: RealDrum01_06#MIX.wav
+    window:
+    - 0.0
+    - 30.0
+- id: solo-drums-02
+  audio: solo-drums-02/mixture.wav
+  annotations:
+    onsets: solo-drums-02/ref.csv
+  tags:
+    tier: solo-drums
+    split: fit
+    labels: solo electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: idmt
+      mix: TechnoDrum01_00#MIX.wav
+    window:
+    - 0.0
+    - 30.0
+- id: solo-drums-03
+  audio: solo-drums-03/mixture.wav
+  annotations:
+    onsets: solo-drums-03/ref.csv
+  tags:
+    tier: solo-drums
+    split: test
+    labels: solo electronic
+    classes: '3'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: idmt
+      mix: TechnoDrum01_02#MIX.wav
+    window:
+    - 0.0
+    - 30.0
+- id: rendered-band-00
+  audio: rendered-band-00/mixture.wav
+  annotations:
+    onsets: rendered-band-00/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic half-time live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/eval_session/6_hiphop-groove6_87_beat_4-4.mid
+      style: hiphop/groove6
+      bpm: 87.0
+      kit: drs
+      augment: room
+      machine: false
+      band: BKS - Bulldozer
+      band_start: 20.0
+      level: loud
+    window:
+    - 6.0
+    - 30.0
+- id: rendered-band-01
+  audio: rendered-band-01/mixture.wav
+  annotations:
+    onsets: rendered-band-01/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer5/eval_session/2_funk-groove2_105_beat_4-4.mid
+      style: funk/groove2
+      bpm: 105.0
+      kit: muldjord
+      augment: dry
+      machine: false
+      band: Speak Softly - Broken Man
+      band_start: 69.0
+      level: even
+    window:
+    - 4.0
+    - 30.0
+- id: rendered-band-02
+  audio: rendered-band-02/mixture.wav
+  annotations:
+    onsets: rendered-band-02/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/eval_session/10_soul-groove10_102_beat_4-4.mid
+      style: soul/groove10
+      bpm: 102.0
+      kit: gm-jazz
+      augment: dry
+      machine: false
+      band: Al James - Schoolboy Facination
+      band_start: 81.0
+      level: quiet
+    window:
+    - 1.0
+    - 30.0
+- id: rendered-band-03
+  audio: rendered-band-03/mixture.wav
+  annotations:
+    onsets: rendered-band-03/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic brushes cymbal-wash phone swing
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/session1/4_jazz-funk_116_beat_4-4.mid
+      style: jazz/funk
+      bpm: 116.0
+      kit: unruly-brushes
+      augment: phone
+      machine: false
+      band: The Easton Ellises - Falcon 69
+      band_start: 50.0
+      level: loud
+    window:
+    - 12.0
+    - 30.0
+- id: rendered-band-04
+  audio: rendered-band-04/mixture.wav
+  annotations:
+    onsets: rendered-band-04/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic cymbal-wash
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/session1/28_latin-samba_116_beat_4-4.mid
+      style: latin/samba
+      bpm: 116.0
+      kit: gm-standard
+      augment: dry
+      machine: false
+      band: M.E.R.C. Music - Knockout
+      band_start: 48.0
+      level: even
+    window:
+    - 152.0
+    - 30.0
+- id: rendered-band-05
+  audio: rendered-band-05/mixture.wav
+  annotations:
+    onsets: rendered-band-05/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic cymbal-wash
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer9/session1/24_rock_90_beat_4-4.mid
+      style: rock
+      bpm: 90.0
+      kit: gm-room
+      augment: dry
+      machine: false
+      band: BKS - Bulldozer
+      band_start: 48.0
+      level: quiet
+    window:
+    - 36.0
+    - 30.0
+- id: rendered-band-06
+  audio: rendered-band-06/mixture.wav
+  annotations:
+    onsets: rendered-band-06/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/session2/35_punk_128_beat_4-4.mid
+      style: punk
+      bpm: 128.0
+      kit: gm-power
+      augment: room
+      machine: false
+      band: Arise - Run Run Run
+      band_start: 63.0
+      level: loud
+    window:
+    - 44.0
+    - 30.0
+- id: rendered-band-07
+  audio: rendered-band-07/mixture.wav
+  annotations:
+    onsets: rendered-band-07/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/session2/41_highlife_126_beat_4-4.mid
+      style: highlife
+      bpm: 126.0
+      kit: drs
+      augment: dry
+      machine: false
+      band: Raft Monk - Tiring
+      band_start: 41.0
+      level: even
+    window:
+    - 20.0
+    - 30.0
+- id: rendered-band-08
+  audio: rendered-band-08/mixture.wav
+  annotations:
+    onsets: rendered-band-08/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/session2/17_afrobeat_85_beat_4-4.mid
+      style: afrobeat
+      bpm: 85.0
+      kit: muldjord
+      augment: dry
+      machine: false
+      band: Timboz - Pony
+      band_start: 61.0
+      level: quiet
+    window:
+    - 99.0
+    - 30.0
+- id: rendered-band-09
+  audio: rendered-band-09/mixture.wav
+  annotations:
+    onsets: rendered-band-09/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic brushes dense half-time live-room swing
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer5/session2/4_reggae_141_beat_4-4.mid
+      style: reggae
+      bpm: 141.0
+      kit: unruly-brushes
+      augment: room
+      machine: false
+      band: Arise - Run Run Run
+      band_start: 87.0
+      level: loud
+    window:
+    - 156.0
+    - 30.0
+- id: rendered-band-10
+  audio: rendered-band-10/mixture.wav
+  annotations:
+    onsets: rendered-band-10/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/eval_session/2_funk-groove2_105_beat_4-4.mid
+      style: funk/groove2
+      bpm: 105.0
+      kit: unruly
+      augment: dry
+      machine: false
+      band: Nerve 9 - Pray For The Rain
+      band_start: 97.0
+      level: even
+    window:
+    - 2.0
+    - 30.0
+- id: rendered-band-11
+  audio: rendered-band-11/mixture.wav
+  annotations:
+    onsets: rendered-band-11/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic phone
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/eval_session/4_soul-groove4_80_beat_4-4.mid
+      style: soul/groove4
+      bpm: 80.0
+      kit: gm-jazz
+      augment: phone
+      machine: false
+      band: AM Contra - Heart Peripheral
+      band_start: 108.0
+      level: quiet
+    window:
+    - 8.0
+    - 30.0
+- id: rendered-band-12
+  audio: rendered-band-12/mixture.wav
+  annotations:
+    onsets: rendered-band-12/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer7/eval_session/2_funk-groove2_105_beat_4-4.mid
+      style: funk/groove2
+      bpm: 105.0
+      kit: gm-room
+      augment: room
+      machine: false
+      band: James Elder & Mark M Thompson - The English Actor
+      band_start: 75.0
+      level: loud
+    window:
+    - 0.0
+    - 30.0
+- id: rendered-band-13
+  audio: rendered-band-13/mixture.wav
+  annotations:
+    onsets: rendered-band-13/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/session2/16_funk_95_beat_4-4.mid
+      style: funk
+      bpm: 95.0
+      kit: gm-power
+      augment: dry
+      machine: false
+      band: Speak Softly - Broken Man
+      band_start: 71.0
+      level: even
+    window:
+    - 90.0
+    - 30.0
+- id: rendered-band-14
+  audio: rendered-band-14/mixture.wav
+  annotations:
+    onsets: rendered-band-14/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic dense
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/eval_session/3_soul-groove3_86_beat_4-4.mid
+      style: soul/groove3
+      bpm: 86.0
+      kit: gm-jazz
+      augment: dry
+      machine: false
+      band: Tom McKenzie - Directions
+      band_start: 112.0
+      level: quiet
+    window:
+    - 13.0
+    - 30.0
+- id: rendered-band-15
+  audio: rendered-band-15/mixture.wav
+  annotations:
+    onsets: rendered-band-15/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic live-room
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer8/session1/8_funk_96_beat_4-4.mid
+      style: funk
+      bpm: 96.0
+      kit: muldjord
+      augment: room
+      machine: false
+      band: The Long Wait - Dark Horses
+      band_start: 76.0
+      level: loud
+    window:
+    - 15.0
+    - 30.0
+- id: rendered-band-16
+  audio: rendered-band-16/mixture.wav
+  annotations:
+    onsets: rendered-band-16/ref.csv
+  tags:
+    tier: rendered-band
+    split: fit
+    labels: acoustic dense half-time
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/eval_session/6_hiphop-groove6_87_beat_4-4.mid
+      style: hiphop/groove6
+      bpm: 87.0
+      kit: rusty
+      augment: dry
+      machine: false
+      band: Sambasevam Shanmugam - Kaathaadi
+      band_start: 46.0
+      level: even
+    window:
+    - 3.0
+    - 30.0
+- id: rendered-band-17
+  audio: rendered-band-17/mixture.wav
+  annotations:
+    onsets: rendered-band-17/ref.csv
+  tags:
+    tier: rendered-band
+    split: test
+    labels: acoustic
+    classes: '5'
+    kit_pieces: 'yes'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/eval_session/4_soul-groove4_80_beat_4-4.mid
+      style: soul/groove4
+      bpm: 80.0
+      kit: gm-jazz
+      augment: dry
+      machine: false
+      band: Zeno - Signs
+      band_start: 113.0
+      level: quiet
+    window:
+    - 2.0
+    - 30.0
+- id: drum-machine-00
+  audio: drum-machine-00/mixture.wav
+  annotations:
+    onsets: drum-machine-00/ref.csv
+  tags:
+    tier: drum-machine
+    split: fit
+    labels: ballad dense electronic half-time live-room
+    classes: '5'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer7/session3/24_hiphop_67_beat_4-4.mid
+      style: hiphop
+      bpm: 67.0
+      kit: gm-808
+      augment: room
+      machine: true
+      band: Detsky Sad - Walkie Talkie
+      band_start: 63.0
+      level: loud
+    window:
+    - 51.0
+    - 30.0
+- id: drum-machine-01
+  audio: drum-machine-01/mixture.wav
+  annotations:
+    onsets: drum-machine-01/ref.csv
+  tags:
+    tier: drum-machine
+    split: test
+    labels: dense electronic
+    classes: '5'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer5/eval_session/3_soul-groove3_86_beat_4-4.mid
+      style: soul/groove3
+      bpm: 86.0
+      kit: gm-electronic
+      augment: dry
+      machine: true
+      band: PR - Oh No
+      band_start: 44.0
+      level: even
+    window:
+    - 14.0
+    - 30.0
+- id: drum-machine-02
+  audio: drum-machine-02/mixture.wav
+  annotations:
+    onsets: drum-machine-02/ref.csv
+  tags:
+    tier: drum-machine
+    split: fit
+    labels: electronic
+    classes: '5'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer1/eval_session/5_funk-groove5_84_beat_4-4.mid
+      style: funk/groove5
+      bpm: 84.0
+      kit: retro
+      augment: dry
+      machine: true
+      band: BKS - Too Much
+      band_start: 84.0
+      level: quiet
+    window:
+    - 14.0
+    - 30.0
+- id: drum-machine-03
+  audio: drum-machine-03/mixture.wav
+  annotations:
+    onsets: drum-machine-03/ref.csv
+  tags:
+    tier: drum-machine
+    split: test
+    labels: electronic live-room
+    classes: '5'
+    kit_pieces: 'no'
+  p2d:
+    source:
+      kind: groove
+      midi: drummer7/session2/112_jazz-fusion_96_beat_4-4.mid
+      style: jazz/fusion
+      bpm: 96.0
+      kit: gm-808
+      augment: room
+      machine: true
+      band: Girls Under Glass - We Feel Alright
+      band_start: 62.0
+      level: loud
+    window:
+    - 2.0
+    - 30.0
