@@ -196,6 +196,20 @@ export function parseProgress(text) {
   }
 }
 
+// Whether `next` redraws the bar `previous` rather than starting one of its own: an unfinished bar
+// always is, and a finished one is when tqdm repeats its last frame on close, which recomputes the
+// rate and elapsed time but not the count.
+export function redrawsBar(previous, next) {
+  if (!previous || !next) return false
+  if (previous.percent < 100) return true
+  return (
+    next.percent === 100 &&
+    next.label === previous.label &&
+    next.done === previous.done &&
+    next.total === previous.total
+  )
+}
+
 // A thin bar in half-cell steps: heavy where done, light where left, so it reads without colour.
 export function progressSegments(progress, theme) {
   const halves = Math.round((progress.percent / 100) * BAR_WIDTH * 2)
