@@ -29,7 +29,7 @@ What is built, as of **2026-10-24**. Details, verification and open items for ea
 | s22 | Guitar accuracy | Not started | Needs the owner's songs, tabs and time budget | — |
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
 | s24 | Piano accuracy | Partial | Phases 0–6 built and measured (P2p); owner's songs end to end and Notes/Staff screenshots pending the owner | Step 24 |
-| s25 | Drums end to end | Not started | Prompt written 2026-10-28; nothing transcribes or renders drums yet | — |
+| s25 | Drums end to end | In progress | Phases 0–1 done: research re-check, P2d test set (48 items) and harness, ADTOF baseline + YourMT3+ reference, `notes.drums` stage (not scheduled); waiting on the owner (stop point 2) | Step 25 (Phases 0–1) |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.

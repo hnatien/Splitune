@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from scipy.signal import resample_poly  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import contracts, register
 
-from .transcribers import NoteEvent, models_dir, ref_for
+from .transcribers import DrumEvent, NoteEvent, models_dir, ref_for
 
 RECORD = "yourmt3-moe"
 EXPERIMENT = "mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b80_ps2"
@@ -35,7 +35,7 @@ ARGS = [
     "-pr", "32",
 ]  # fmt: skip
 # GM program families per instrument (YourMT3 vocabulary: Piano 0-7, Guitar 24-31, Bass 32-39,
-# voice 100-101).
+# voice 100-101; drums are `is_drum` notes).
 PROGRAMS = {
     "piano": list(range(8)),
     "guitar": list(range(24, 32)),
@@ -78,6 +78,31 @@ class YourMT3:
             return self._model
 
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]:
+        wanted = set(PROGRAMS[str(params["instrument"])])
+        return [
+            NoteEvent(
+                onset_s=float(n.onset),
+                offset_s=float(max(n.offset, n.onset + 0.01)),
+                pitch_midi=int(n.pitch),
+                velocity=int(np.clip(n.velocity if n.velocity > 1 else 80, 1, 127)),
+                confidence_raw=1.0,
+            )
+            for n in self.notes(mono, params)
+            if not n.is_drum and int(n.program) in wanted and 21 <= int(n.pitch) <= 108
+        ]
+
+    def transcribe_drums(
+        self, mono: NDArray[np.float32], params: dict[str, Any]
+    ) -> list[DrumEvent]:
+        """Drum notes (GM percussion keys, which name the kit piece); drum velocity is binary in
+        YourMT3's vocabulary, so none is reported."""
+        return [
+            DrumEvent(onset_s=float(n.onset), gm_note=int(n.pitch), named=True, confidence_raw=1.0)
+            for n in self.notes(mono, params)
+            if n.is_drum
+        ]
+
+    def notes(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[Any]:
         import torch
 
         model = self._load()  # puts the space's code on sys.path
@@ -100,15 +125,4 @@ class YourMT3:
             )
             notes, _ = merge_zipped_note_events_and_ties_to_notes(zipped)
             channels.append(notes)
-        wanted = set(PROGRAMS[str(params["instrument"])])
-        return [
-            NoteEvent(
-                onset_s=float(n.onset),
-                offset_s=float(max(n.offset, n.onset + 0.01)),
-                pitch_midi=int(n.pitch),
-                velocity=int(np.clip(n.velocity if n.velocity > 1 else 80, 1, 127)),
-                confidence_raw=1.0,
-            )
-            for n in mix_notes(channels)
-            if not n.is_drum and int(n.program) in wanted and 21 <= int(n.pitch) <= 108
-        ]
+        return list(mix_notes(channels))

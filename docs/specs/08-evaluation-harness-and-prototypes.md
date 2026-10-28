@@ -181,6 +181,32 @@ Executable plans for the seven prototypes defined in `research/ml/pipeline-overv
 - **Per-song gate (owner, 2026-10-25):** `views.yaml` `min_confidence_mean: {piano: 0.80}`. A song whose mean calibrated note confidence is below 0.80 opens on the chord chart (reason `low_confidence`). On P2p: 4 of 81 songs gated, mean onset F1 0.516, none above 0.9.
 - **Not done:** the owner's songs (the unreferenced tier).
 
+## Implementation notes (step 25, 2026-10-28)
+- **P2d** (`eval/p2d.py`: `plan`, `build`, `separate`, `predict --chain`, `report`): drums on the owner's kind of material, the deciding set for `notes.drums`. Manifest `eval/sets/p2d.yaml` (a registered set, seed 25; audio built locally under `~/datasets/p2d`). 48 excerpts of 30 s in six tiers that are reported apart, each item alternately `fit` / `test` within its tier:
+  - `real-mdb` (8): MDB Drums full mix and drum-only track, 21 sub-classes mapped to GM.
+  - `real-enst` (8): ENST-Drums minus-one takes, wet drum mix + accompaniment at 2/3 + 1/3 (the DTM convention); sticks, rods and brushes.
+  - `real-electronic` (6): RBMA13, kick/snare/hi-hat references; audio is the free RBMA album, which the owner downloads into `~/datasets/rbma13/rbma_13/audio/` (items are skipped until then).
+  - `solo-drums` (4): IDMT-SMT-Drums v2 real and drum-machine loops, kick/snare/hi-hat.
+  - `rendered-band` (18): Groove MIDI test-split performances (Roland keys remapped to GM) rendered through sampled acoustic and brush kits (sfizz: DRSKit, Muldjord, Big Rusty, Unruly) and GS kits (FluidSynth, GeneralUser GS), with bus compression and some room or phone chains, mixed at −6 / 0 / +6 LU against MUSDB18-HQ test accompaniment (interference, not musical context). A kit's silent GM keys are dropped from render and reference.
+  - `drum-machine` (4): the same performances quantized to 16ths at flat velocity, through 808 / electronic kits, under accompaniment.
+  - Labels (reported per label): acoustic, ballad, dense, brushes, electronic, live-room, phone, swing (share of off-beat eighths at 0.58–0.72 of the beat), half-time, cymbal-wash, solo.
+- **Metrics** (per tier, per label, per condition `clean` / `stem` / `mixture` / `chosen`):
+  - onset F1/P/R summed over classes and class-mean F1 (mir_eval matching per class), at ±50 ms and ±30 ms; 3-class tiers score kick/snare/hi-hat only;
+  - per-class F1;
+  - kit pieces among class-matched hits (hi-hat open/closed, crash/ride, tom line) and the share of hits flagged `approximate`;
+  - bars: both sides through the shipped `quantizeDrumHits` (music-core CLI `quantize-drums`) on the item's own `beats` stage grid; exact bar-pattern match share, mean per-bar Jaccard, residual-flag share and swing-bar share;
+  - ECE and a reliability table per class on the `chosen` hits;
+  - drum stem uSDR (not meaningful on MDB, whose drum-only track is not at the mix's gain) and wall time per 30 s.
+- **Baseline** (`eval/results/p2d/2026-10-28-baseline.md`; BS-Roformer-SW drum stem → ADTOF Frame_RNN, published thresholds, research-default kit pieces), onset F1 ±50 ms on the chosen input:
+  - real-mdb 0.848 (mixture 0.782);
+  - real-enst 0.709 (clean 0.733): ADTOF misses ENST's soft kicks (0.630 kick F1);
+  - solo-drums 0.976;
+  - rendered-band 0.777 (clean 0.831, mixture 0.760);
+  - drum-machine 0.735 (mixture 0.736: separation doesn't help programmed drums).
+
+  Weakest labels: brushes 0.524, swing 0.538, phone 0.502. Toms 0.24–0.45 and cymbals 0.25–0.75 per tier. Exact bar patterns 0.11–0.25 outside solo loops (bar Jaccard 0.61–0.73). Raw peak heights are under-confident (ECE 0.226; precision 0.73 at 0.3–0.6, 0.96 at 0.7–0.9). notes.drums takes 0.12 s per 30 s on the RTX 3060.
+- **Reference row:** YourMT3+ drums (GM keys it names itself), chosen 0.802 item mean vs 0.793. It is better on ENST (0.882, in-sample), drum machines and kit pieces (hi-hat open/closed 0.92 on MDB vs 0.77), worse on MDB (0.769), rendered bands (0.745) and cymbals. 1.3 s per 30 s.
+
 ## Open questions
 - Who owns rater recruitment and compensation for P1/P7 (learners and teachers)?
 - Can we obtain written R&D permission to benchmark `htdemucs_6s`/community checkpoints internally? (Benchmarking only; never shipped — D8.)

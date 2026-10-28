@@ -131,6 +131,7 @@ TRANSCRIBER_ISLANDS: dict[str, tuple[Island, Slot]] = {
     "basic_pitch": ("onnx-cpu", "cpu"),
     "yourmt3": ("torch", "gpu"),
     "transkun": ("torch", "gpu"),
+    "adtof": ("torch", "gpu"),
 }
 
 
@@ -149,6 +150,7 @@ def notes_placement(instrument: str) -> tuple[Island, Slot]:
 
 def notes_spec(instrument: str) -> StageSpec:
     island, slot = notes_placement(instrument)
+    drums = instrument == "drums"
     return StageSpec(
         name=f"notes.{instrument}",
         module=f"stage_notes.{instrument}",
@@ -157,13 +159,14 @@ def notes_spec(instrument: str) -> StageSpec:
         timeout_s=240,  # 180 s budget (06 §2) + cold model load
         outputs={"notes": f"notes.{instrument}"},
         primary="notes",
-        optional_downloads=("separation", "stems"),
+        # Drums read the downbeats for the crash/ride default (stage_notes.drum_kit).
+        optional_downloads=("separation", "stems", "beats") if drums else ("separation", "stems"),
         needs_audio=True,
         failure_fallback="notes_unavailable",
     )
 
 
-for _instrument in ("guitar", "bass", "piano", "vocals"):
+for _instrument in ("guitar", "bass", "piano", "vocals", "drums"):
     STAGES[f"notes.{_instrument}"] = notes_spec(_instrument)
 
 DESCRIBE_TIMEOUT_S = 600.0  # first describe may download model weights
