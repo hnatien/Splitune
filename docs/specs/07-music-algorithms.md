@@ -164,7 +164,7 @@ Rules are deterministic and documented in the UI ("Simplified: extensions remove
 - **Drum staff alphaTex** (`export/alphatex-drums.ts`): one percussion track (`\instrument percussion`, `\clef neutral`, `\articulation defaults`).
   - Every GM kit key is written by the alphaTab 1.8 articulation whose MIDI output is that key (`ARTICULATION`), so playback and staff lines follow `notes.drums`. GM 40 sounds as 38, GM 59 as 51.
   - Hands are stems-up voice 0. Feet (kick, pedal hi-hat) are stems-down voice 1, written only when there are any.
-  - A hit lasts to the voice's next onset: one value, then rests.
+  - A hit is written up to the voice's next onset or the end of its beat, whichever is first, then rests (a kick on 1 and 3 is two quarters and two quarter rests).
   - Flams are before-beat grace notes (`{gr}`).
   - The importer round-trip of every key is in `test/drums.test.ts`.
   - MusicXML percussion waits for step 20's export.

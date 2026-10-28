@@ -2916,7 +2916,7 @@
       5,
       6
     ],
-    "alphatex": "\\track \"Drums\"\n\\instrument percussion\n\\clef neutral\n\\articulation defaults\n\\voice\n\\ts (4 4) \\tempo 120 \\ac SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.4 (SnareHit HiHatClosed).4 HiHatClosed.4 (SnareHit HiHatClosed).4 |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} SnareHit.32 {gr} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.4 (SnareHit HiHatClosed).4 HiHatClosed.4 (SnareHit HiHatClosed).4\n\\voice\n |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2\n",
+    "alphatex": "\\track \"Drums\"\n\\instrument percussion\n\\clef neutral\n\\articulation defaults\n\\voice\n\\ts (4 4) \\tempo 120 \\ac SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.4 (SnareHit HiHatClosed).4 HiHatClosed.4 (SnareHit HiHatClosed).4 |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} SnareHit.32 {gr} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.4 (SnareHit HiHatClosed).4 HiHatClosed.4 (SnareHit HiHatClosed).4\n\\voice\n |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4 |\nKickHit2.4 r.4 KickHit2.4 r.4\n",
     "hit_map": [
       {
         "hitId": "d000000",
@@ -3629,7 +3629,7 @@
         "hitId": "d000006",
         "bar": 1,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3643,7 +3643,7 @@
         "hitId": "d000026",
         "bar": 2,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3657,7 +3657,7 @@
         "hitId": "d000046",
         "bar": 3,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3671,7 +3671,7 @@
         "hitId": "groove:3:36@1920",
         "bar": 4,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3685,7 +3685,7 @@
         "hitId": "d000083",
         "bar": 5,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3699,7 +3699,7 @@
         "hitId": "d000095",
         "bar": 6,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3713,7 +3713,7 @@
         "hitId": "d000108",
         "bar": 7,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       },
       {
@@ -3727,7 +3727,7 @@
         "hitId": "groove:7:36@1920",
         "bar": 8,
         "voice": 1,
-        "beat": 1,
+        "beat": 2,
         "note": 0
       }
     ]
