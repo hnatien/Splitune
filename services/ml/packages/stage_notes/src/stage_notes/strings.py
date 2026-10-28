@@ -92,7 +92,7 @@ class StringModel:
         self, mono: NDArray[np.float32], notes: list[tuple[float, int]]
     ) -> NDArray[np.float32]:
         """(len(notes), 6) probability per string (string 1 first) for (onset s, pitch) notes;
-        strings that cannot reach the pitch get 0."""
+        strings that cannot reach the pitch get 0 (all of them, for a pitch no string reaches)."""
         if not notes:
             return np.zeros((0, 6), dtype=np.float32)
         x = np.stack([note_features(mono, onset, pitch) for onset, pitch in notes])
@@ -102,7 +102,6 @@ class StringModel:
                 x = np.maximum(x, 0.0)
         lo, hi = FRET_RANGE
         reach = np.array([[lo <= p - o <= hi for o in STANDARD] for _, p in notes])
-        logits = np.where(reach, x, -np.inf)
-        logits -= logits.max(axis=1, keepdims=True)
-        e = np.exp(logits)
-        return (e / e.sum(axis=1, keepdims=True)).astype(np.float32)
+        e = np.where(reach, np.exp(x - x.max(axis=1, keepdims=True)), 0.0)
+        total = e.sum(axis=1, keepdims=True)
+        return np.divide(e, total, out=np.zeros_like(e), where=total > 0).astype(np.float32)
