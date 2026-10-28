@@ -1595,3 +1595,24 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
   - whether to allow loading the DrumSep checkpoint;
   - fine-tuning (not recommended now);
   - a drum example song for onboarding.
+- 2026-10-29: the owner approved the gate at 0.80 with the 0.75 confidence floor, and `v1.drums` on after the end-to-end run.
+
+**Phase 6: gate and end to end**
+- `views.yaml`: `quality_gate.drums: pass`, `min_confidence_mean.drums: 0.75`, and a `changes` entry with the model versions. `apps/node-worker` views test updated.
+- `v1.drums` stays off in code. It is turned on with a `feature_flags` row.
+- **Local end to end** (this PC: Docker Postgres + SeaweedFS, `pnpm dev` web/API, `apps/node-worker`, ML worker from `D:\venvs\s25-ml` on the RTX 3060 with `ML_ISLAND_PYTHON` for every island):
+  - Setup: a local test account; `v1.drums` on in the local database only.
+  - Input: a 45 s excerpt of MUSDB18-HQ test "Louis Cressy Band – Good Time" (30–75 s), uploaded through the app's upload API as a drums Full analysis.
+  - The plan held `notes.drums` with the beats as input. Every stage was done.
+  - `notes.drums`: 206 hits (55 kick, 36 snare, 109 hi-hat, 2 toms, 4 cymbals; 115 `approximate`).
+    - It read the separated drum stem at −17 dBFS with margin confidence and the downbeats.
+    - Finalize read it as `DrumNotes`: mean confidence 0.935, `recommended_view: drum_grid`.
+  - Time, cold models included:
+    - analysis 51.2 s;
+    - `notes.drums` 0.6 s (1.2 % of the analysis);
+    - separate 16.1 s, decode 14.2 s, beats 12.3 s.
+  - The first attempt failed in `decode` with `island_missing`, because the worktree has no per-island venvs. `ML_ISLAND_PYTHON` fixed it, and the re-run (`/v1/analyses/{id}/rerun`) was done.
+- **Not done yet:**
+  - the owner's drum excerpts on the Mac worker;
+  - screenshots of the grid and staff per level (the browser pane was hidden, so the page got no animation frames);
+  - `v1.drums` in production, which needs this branch merged and deployed first.
