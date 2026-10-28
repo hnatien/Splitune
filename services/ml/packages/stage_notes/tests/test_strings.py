@@ -21,9 +21,10 @@ def test_string_model_gives_a_distribution_over_the_strings_that_reach_the_pitch
     )
     model = StringModel.load(path)
     mono = pluck(55, 1.0, RATE).astype(np.float32)
-    probs = model.probs(mono, [(0.1, 40), (0.1, 55), (0.1, 76)])
-    assert probs.shape == (3, 6)
-    assert probs.sum(axis=1) == pytest.approx(np.ones(3), abs=1e-5)
+    probs = model.probs(mono, [(0.1, 40), (0.1, 55), (0.1, 76), (0.1, 30)])
+    assert probs.shape == (4, 6)
+    assert probs[:3].sum(axis=1) == pytest.approx(np.ones(3), abs=1e-5)
+    assert probs[3].tolist() == [0.0] * 6  # below every string
     assert probs[0].tolist() == pytest.approx([0, 0, 0, 0, 0, 1])  # low E: only string 6
     assert probs[2, 5] == 0.0  # E5 is out of string 6's reach
     assert model.probs(mono, []).shape == (0, 6)
