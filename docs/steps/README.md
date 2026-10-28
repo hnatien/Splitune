@@ -35,12 +35,13 @@ The agent works on a branch `impl/NN-<name>` from the current `dev` (the integra
 | s16 | `s16-compat-a11y-hardening.md` — browser matrix, a11y, security pass (**MVP gate**) | 10–15, 15a | — |
 | s17 | `s17-deploy-railway-and-mac.md` — Railway app/Postgres + R2 wiring (app token, CORS) + Mac workers (**asks before spending**) | 10 (owner's choice, 2026-10-21; full smoke test again after 16) | 11–16 |
 | s18 | `s18-v1-practice-depth.md` — speed trainer, transpose/capo, fingerings, sections, record-and-compare, metronome | 16 | 19, 22 |
-| s19 | `s19-v1-piano-and-drums.md` — finish piano practice (wait mode, levels), ADTOF drums + drum grid | 16, piano work on `dev` | 18, 22 |
-| s20 | `s20-v1-mic-offline-export-native.md` — P5, tuner, mic scoring, offline, export, lyrics, sideload | 16 (18 recommended; 19 for drum/piano export) | 22 |
+| s19 | `s19-v1-piano-and-drums.md` — finish piano practice (wait mode, levels); drums moved to s25 | 16, piano work on `dev` | 18, 22 |
+| s20 | `s20-v1-mic-offline-export-native.md` — P5, tuner, mic scoring, offline, export, lyrics, sideload | 16 (18 recommended; 19 for piano export, 25 for drum export) | 22 |
 | s21 | `s21-guitar-notes-view.md` — guitar/bass Notes view: string highway onto a live fretboard; mockups first, owner picks (**stops for the owner's choice**) | 16, piano work on `dev` | 19, 20, 22 (not 18: both change the practice screen) |
 | s22 | `s22-guitar-accuracy.md` — real-song test set, then separation (incl. two-guitar parts), transcription (tuning offset, bends), clean-up, tuning detection, quantization and fret assignment measured and improved (**asks the owner for songs/tabs, time budget and default changes**) | 16 (09c helps for training) | 18–21 (22 detects the tuning; 18 owns the tuning picker) |
 | s23 | `s23-vocal-accuracy.md` — vocal test set, f0 curve (RMVPE/SwiftF0…), monophonic calibrated notes, curve in the Melody view (**stops for the owner's OK on plan and time budget**) | 16, 18c on `dev` | 18, 19, 22 (not 21: both change the practice screen) |
 | s24 | `s24-piano-accuracy.md` — pop-piano test set, then mixture fallback, stereo input, bleed gate, real per-note confidence, solo-piano bypass, separation, Aria-AMT and ensembles, pedal, electric-piano gate, PM2S hands (**stops for the owner's OK on plan and time budget**) | 16, piano work on `dev` | 18, 21, 22, 23 (19 only for wait mode/levels: both touch piano rendering) |
+| s25 | `s25-drums.md` — drums end to end: drum test set (P2d), ADTOF and other candidates measured, calibrated `notes.drums`, drum score + core-groove level, drum grid and drum tab, drums gate (**stops for the owner's OK on plan, time budget, any training and the gate**) | 16, 24 on `dev` (its method and harness) | 18, 22, 23 (19 only for piano: both touch the practice notation) |
 
 ```mermaid
 flowchart LR
@@ -64,6 +65,7 @@ flowchart LR
   S16 --> S22[22 guitar accuracy]
   S16 --> S23[23 vocal accuracy]
   S16 --> S24[24 piano accuracy]
+  S24 --> S25[25 drums]
   S09c -.-> S22
 ```
 
@@ -81,6 +83,6 @@ git worktree add ../splitune-s11 -b impl/11-audio-engine dev
 - The practice route's JS budget is nearly used up: new practice UI loads on demand and reports before/after bytes.
 - The owner doesn't play an instrument: no step may depend on owner-played recordings.
 
-Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy.
+Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy. s25 (2026-10-28) takes drums over from s19.
 
 Edit `00-shared-context.md` once to change a rule for every step.
