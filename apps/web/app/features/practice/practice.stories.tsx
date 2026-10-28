@@ -14,6 +14,10 @@ import {
   ALL,
   ALL_BASS,
   BASS_LINE,
+  DRUM_NOTES_SWING,
+  DRUM_STEMS,
+  DRUM_SUMMARY,
+  DRUM_SUMMARY_BELOW_GATE,
   GUITAR_SHIFTS,
   GUITAR_STRUMS,
   type Kind,
@@ -1284,5 +1288,201 @@ export const VocalMelodyReducedMotion: Story = {
   play: async ({ canvasElement }) => {
     const { roll } = await vocalMelody(canvasElement)
     await waitFor(() => expect(roll).toHaveAttribute('data-window', '62-74'))
+  },
+}
+
+const DRUMS: Patch = { instrument: 'drums', stems: DRUM_STEMS, summary: DRUM_SUMMARY }
+const DRUM_KINDS: Kind[] = ['beats', 'stems', 'chords', 'notes.drums', 'summary']
+const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+const TABLET = { viewport: { value: 'tablet', isRotated: false } }
+
+const drumGrid = async (canvasElement: HTMLElement) => {
+  const canvas = await playable(canvasElement)
+  // The grid's code loads on demand, through the chord sheet's chunk.
+  const region = await canvas.findByRole('region', { name: 'Grid' }, { timeout: 10_000 })
+  await waitFor(() => expect(region).toBeVisible())
+  return { canvas, grid: within(region), element: region }
+}
+
+/** Drums (step 25): the hits in lanes on the beat grid, named down the left as on a drum staff
+ * (cymbals at the top, kick at the bottom), with the key to the kit-piece letters; the status bar's
+ * Grid / Staff / Chords switch, Grid by default once the hits pass the quality gate; the level
+ * button names the level and has no capo. Hi-hats, toms and cymbals are kit-piece guesses: hollow
+ * and dashed. */
+export const Drums: Story = {
+  render: screen(DRUM_KINDS, DRUMS),
+  play: async ({ canvasElement }) => {
+    const { canvas, grid, element } = await drumGrid(canvasElement)
+    await expect(await grid.findByRole('img', { name: /^Drum grid/ })).toBeVisible()
+    const lanes = grid.getByRole('list', { name: 'Drum kit, top to bottom' })
+    await expect(
+      within(lanes)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['Cymbals', 'Hi-hat', 'Toms', 'Snare', 'Kick'])
+    await expect(grid.getByText(m['practice.drum_key']())).toBeVisible()
+    // The lane names sit beside the grid, which takes the rest of the width.
+    const drawn = element.querySelector('[data-slot=drum-grid]') as HTMLElement
+    await expect(drawn.getBoundingClientRect().left).toBeGreaterThan(
+      lanes.getBoundingClientRect().right - 1,
+    )
+
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await expect(
+      within(view)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Grid', 'Staff', 'Chords'])
+    await expect(within(view).getByRole('button', { name: 'Grid' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await expect(canvas.getByRole('button', { name: 'Level: As played' })).toBeVisible()
+  },
+}
+
+/** Drums while their hits are still being transcribed: the analysis status holds the paper and
+ * nothing plays yet; it all opens with the hits. */
+export const DrumsAwaitingNotes: Story = {
+  render: screen(
+    DRUM_KINDS.filter((kind) => kind !== 'summary' && kind !== 'notes.drums'),
+    { ...DRUMS, running: true },
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText(m['practice.placeholder_drums'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Play' })).toBeDisabled()
+  },
+}
+
+/** Below the quality gate (recommended_view chords_only): the chord sheet by default, with "Show
+ * notes anyway" in the banner. */
+export const DrumsBelowGate: Story = {
+  render: screen(DRUM_KINDS, { ...DRUMS, summary: DRUM_SUMMARY_BELOW_GATE }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByRole('button', { name: 'Show notes anyway' }, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(canvas.queryByRole('region', { name: 'Grid' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Show notes anyway' }))
+    await drumGrid(canvasElement)
+  },
+}
+
+/** The levels (V13): Main groove (kick, snare, hi-hat; fills become the groove), Simplified
+ * (hi-hat in eighths) and As played; the level button follows the choice. */
+export const DrumsLevels: Story = {
+  render: screen(DRUM_KINDS, DRUMS),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await drumGrid(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Level: As played' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const popup = await body.findByRole('dialog', { name: 'Level' }, { timeout: 10_000 })
+    const levels = within(popup).getByRole('group', { name: 'Level' })
+    await expect(
+      within(levels)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Main groove', 'Simplified', 'As played'])
+    await userEvent.click(within(levels).getByRole('button', { name: 'Main groove' }))
+    await expect(
+      await canvas.findByRole('button', { name: 'Level: Main groove' }, { timeout: 10_000 }),
+    ).toBeVisible()
+  },
+}
+
+/** A song that swings bars 5–6, opened at the main groove from the URL. */
+export const DrumsSwing: Story = {
+  render: screen(DRUM_KINDS, { ...DRUMS, notes: DRUM_NOTES_SWING }, { level: 'core_groove' }),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await drumGrid(canvasElement)
+    await expect(canvas.getByRole('button', { name: 'Level: Main groove' })).toBeVisible()
+  },
+}
+
+/** Drums' Staff: the hits on a drum staff (hands up, feet down, the flam as a grace note), bars as
+ * buttons; guesses and unsure hits marked as on the tab; Grid goes back. */
+export const DrumsStaff: Story = {
+  render: screen(DRUM_KINDS, DRUMS),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await drumGrid(canvasElement)
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await userEvent.click(within(view).getByRole('button', { name: 'Staff' }))
+    const region = await canvas.findByRole('region', { name: 'Staff' }, { timeout: 20_000 })
+    await waitFor(() => expect(region).toBeVisible())
+    await waitFor(() => expect(region.querySelectorAll('[data-slot=bar-target]')).toHaveLength(8), {
+      timeout: 20_000,
+    })
+    await expect(
+      region.querySelectorAll('[data-slot=note-mark][data-confidence=low]').length,
+    ).toBeGreaterThan(0)
+    await expect(
+      region.querySelectorAll('[data-slot=note-mark][data-confidence=medium]').length,
+    ).toBeGreaterThan(0)
+    await userEvent.click(within(view).getByRole('button', { name: 'Grid' }))
+    await drumGrid(canvasElement)
+  },
+}
+
+export const DrumsLoop: Story = {
+  render: screen(DRUM_KINDS, DRUMS, { loop: '3-4' }),
+  play: async ({ canvasElement }) => {
+    await drumGrid(canvasElement)
+  },
+}
+
+export const DrumsDark: Story = {
+  render: screen(DRUM_KINDS, DRUMS, { loop: '3-4' }),
+  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    await drumGrid(canvasElement)
+  },
+}
+
+export const DrumsStage: Story = {
+  render: screen(DRUM_KINDS, DRUMS, { loop: '3-4' }),
+  globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    await drumGrid(canvasElement)
+  },
+}
+
+export const DrumsIncreasedContrast: Story = {
+  render: screen(DRUM_KINDS, DRUMS, { loop: '3-4' }),
+  globals: { contrast: 'more' },
+  play: async ({ canvasElement }) => {
+    await drumGrid(canvasElement)
+  },
+}
+
+/** Reduced motion: the grid turns two bars at a time and only the playhead moves. */
+export const DrumsReducedMotion: Story = {
+  render: screen(DRUM_KINDS, DRUMS),
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    await drumGrid(canvasElement)
+  },
+}
+
+export const DrumsTablet: Story = {
+  render: screen(DRUM_KINDS, DRUMS),
+  globals: { ...TABLET },
+  play: async ({ canvasElement }) => {
+    await drumGrid(canvasElement)
+  },
+}
+
+/** Phone portrait opens on the glance view; the grid is a tap away on the view switch. */
+export const DrumsPhone: Story = {
+  render: screen(DRUM_KINDS, DRUMS),
+  globals: { ...PHONE },
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await userEvent.click(within(view).getByRole('button', { name: 'Grid' }))
+    await drumGrid(canvasElement)
   },
 }

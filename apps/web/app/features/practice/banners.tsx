@@ -71,33 +71,37 @@ export function PracticeBanners() {
 
   return (
     <>
-      {recommended.chordsOnly && !forceTab && (layers.tab || layers.roll || layers.melody) && (
-        <Banner
-          tone="info"
-          title={
-            layers.roll
-              ? m['practice.chords_only_piano']()
-              : layers.melody
-                ? m['practice.chords_only_vocals']()
-                : reason
-                  ? (VIEW_REASON[reason]?.() ?? m['practice.chords_only']())
-                  : m['practice.chords_only']()
-          }
-          actions={
-            <Button
-              variant="outline"
-              onClick={() => {
-                usePracticeUi.setState({ forceTab: true })
-                track('view_changed', { view: layers.roll || layers.melody ? 'notes' : 'tab' })
-              }}
-            >
-              {layers.roll || layers.melody
-                ? m['practice.show_notes_anyway']()
-                : m['practice.show_tab_anyway']()}
-            </Button>
-          }
-        />
-      )}
+      {recommended.chordsOnly &&
+        !forceTab &&
+        (layers.tab || layers.roll || layers.melody || layers.drums) && (
+          <Banner
+            tone="info"
+            title={
+              layers.roll
+                ? m['practice.chords_only_piano']()
+                : layers.melody
+                  ? m['practice.chords_only_vocals']()
+                  : reason
+                    ? (VIEW_REASON[reason]?.() ?? m['practice.chords_only']())
+                    : m['practice.chords_only']()
+            }
+            actions={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  usePracticeUi.setState({ forceTab: true })
+                  track('view_changed', {
+                    view: layers.roll || layers.melody || layers.drums ? 'notes' : 'tab',
+                  })
+                }}
+              >
+                {layers.roll || layers.melody || layers.drums
+                  ? m['practice.show_notes_anyway']()
+                  : m['practice.show_tab_anyway']()}
+              </Button>
+            }
+          />
+        )}
       {failures.map((failure) => (
         <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
       ))}

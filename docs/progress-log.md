@@ -1551,3 +1551,28 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
 - CLI `build-drums`. Goldens: `build-drums.as-transcribed|core-groove|simplified.json` on one song (pickup, swing bars 4–6, a flam, fills in bars 3 and 7). The Phase 1 `quantize-drums` golden moved into `update-golden.ts`, unchanged.
 - MusicXML percussion round-trip waits for step 20's export.
 - Verification (`packages/music-core`): `tsc -p .` clean, Biome clean, `vitest run` 176 passed (14 files, 9 new drum tests).
+
+**Phase 5: drum views** (doc 12 "Implementation notes (step 25)")
+- Grid / Staff / Chords for drums:
+  - the Grid is `@splitune/notation` `DrumGrid` (a canvas; lanes cymbals → kick, unsure and guessed hits hollow and dashed, "?" on low, flam grace block, piece letters with a key);
+  - the Staff is music-core's drum staff in `AlphaTabView`;
+  - both load lazily through the chord-sheet chunk.
+- Levels: Main groove / Simplified / As played in the level popover (no capo for drums). `core_groove` was added to the analytics `PracticeLevel` and the route's `?level=` (`contracts:gen`: no generated change).
+- Data:
+  - `notes.drums` is read as `DrumNotes`, and the screen holds until the hits are in the music.
+  - The Worker's `computeMusic` builds drums with `buildDrumScore`.
+  - There are no drum editor ops.
+- The mixer is unchanged: the drum stem plus its mix-minus already give "Minus one" without the drums.
+- Onboarding keeps Drums as "Coming soon", like piano: its song step needs a drum example song, which doesn't exist. Adding one with `pnpm examples:build` is the owner's call.
+- Song pickup and swing bars are covered by the music-core goldens. The web stories use the fixture's 8-bar grid with no pickup, with a swing variant on bars 5–6.
+- Copy: 11 new `practice.*` keys.
+- Route budget (`pnpm budget`, production build): 317.0 KB before, 317.1 KB after, of 320 KB.
+- Verification:
+  - `apps/web`: `tsc` clean, Biome clean, unit tests 145 passed (34 files; 1 new drums test).
+  - Stories (Chromium): `practice.stories.tsx` + `app/ui` 350/352 passed, including all 13 new drum stories.
+    - The 2 failures are "Screen May Lock*": after 20:00 the evening Stage hint adds a second "Close" button. They depend on the time of day and are unrelated.
+    - WebKit stories time out on this Windows PC for existing piano stories too, so WebKit wasn't counted.
+  - `packages/notation` 41 passed (4 new).
+- Environment notes:
+  - The worktree had no built `packages/audio-dsp/dist/dsp.wasm` (ignored build output). It was copied from the main checkout after checking it against the committed `dsp.wasm.sha256`.
+  - `pnpm contracts:gen` without `UV_PROJECT_ENVIRONMENT` creates an empty `services/ml/.venv`. A third such shell was moved to `D:\venvs\s25-stray-empty-venv-3`.

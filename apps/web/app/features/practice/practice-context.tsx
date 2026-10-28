@@ -83,6 +83,8 @@ export interface Layers {
   roll: boolean
   /** The vocal melody and its phrases (vocals' notation layer, step 18c). */
   melody: boolean
+  /** Drum hits: the drum grid and staff (drums' notation layer, step 25). */
+  drums: boolean
 }
 
 export interface PracticeValue {
@@ -267,14 +269,14 @@ export function PracticeProvider({
     [data.stems.data, instrument],
   )
 
-  // Piano opens all at once when its notes are in the music (the Worker's pass after they land):
-  // until then no layer shows and no audio loads, so nothing plays ahead of the notes.
+  // Piano and drums open all at once when their notes are in the music (the Worker's pass after
+  // they land): until then no layer shows and no audio loads, so nothing plays ahead of the notes.
   const holding =
     data.awaitingNotes ||
-    (instrument === 'piano' &&
-      data.notes.data !== undefined &&
-      music?.piano === undefined &&
-      !musicState.failed)
+    (data.notes.data !== undefined &&
+      !musicState.failed &&
+      ((instrument === 'piano' && music?.piano === undefined) ||
+        (instrument === 'drums' && music?.drums === undefined)))
 
   // Audio: the stems when both sides exist, else this page's own file, else the song's audio.
   const local = localFile(songId)
@@ -306,6 +308,7 @@ export function PracticeProvider({
     tab: data.entry.tab !== undefined && music?.tab !== undefined,
     roll: (music?.piano?.notes.length ?? 0) > 0 && !holding,
     melody: (music?.melody?.notes.length ?? 0) > 0 && !holding,
+    drums: (music?.drums?.hits.length ?? 0) > 0 && !holding,
   }
   // The load in flight (or done) and its key: a re-render never cancels it, a new source does.
   const loading = useRef<{ key: string; abort: AbortController } | null>(null)

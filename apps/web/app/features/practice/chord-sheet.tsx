@@ -21,11 +21,17 @@ const GuitarNotes = lazy(() =>
 const VocalMelody = lazy(() =>
   import('./vocal-melody').then((module) => ({ default: module.VocalMelody })),
 )
+const DrumNotes = lazy(() =>
+  import('./drum-notes').then((module) => ({ default: module.DrumNotes })),
+)
+const DrumStaff = lazy(() =>
+  import('./drum-staff').then((module) => ({ default: module.DrumStaff })),
+)
 
 // Chords-only sheet (27 §3.7.3 "+ chords", and the chords_only fallback): bars with their chords,
 // the current bar ruled, tap to loop. Piano reads the chord chart instead, or its notes (the
 // falling notes, or the staff when chosen); guitar and bass their Notes when chosen; vocals their
-// melody. They come through this chunk so the route's JS carries one lazy import for all of them
+// melody; drums their grid (or the drum staff when chosen). They come through this chunk so the route's JS carries one lazy import for all of them
 // (12 §10).
 export function ChordSheet({
   notes = false,
@@ -42,6 +48,13 @@ export function ChordSheet({
 }) {
   const { data } = usePractice()
   const staff = usePracticeUi((s) => s.view) === 'staff'
+  if (data.instrument === 'drums' && notes) {
+    return (
+      <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', props.className)} />}>
+        {staff ? <DrumStaff {...props} /> : <DrumNotes {...props} />}
+      </Suspense>
+    )
+  }
   if (data.instrument === 'vocals' && notes) {
     return (
       <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', props.className)} />}>
