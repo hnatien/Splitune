@@ -1536,3 +1536,18 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
   - `pyright eval/p2d_tune.py eval/p2d.py packages/stage_notes packages/splitune_ml_core scripts`: 0 errors.
   - `pytest packages/stage_notes/tests/test_drums.py eval/tests/test_p2d.py`: 15 passed, including the models test.
   - `pytest packages/stage_notes packages/splitune_ml_core eval/tests -m "not models"`: 169 passed. Postgres is up now, so the 21 earlier errors are gone.
+
+**Phase 4: music-core drum score, export, levels** (doc 07 "Implementation notes (step 25)")
+- `buildDrumScore` (`drums/build-drums.ts`): quantized hits with flams, hands/feet voices, level, alphaTex and hit map.
+  - Only beat corrections apply. The editor gets no drum editing in this step, so there are no drum `CorrectionOp`s.
+- Drum staff alphaTex (`export/alphatex-drums.ts`): alphaTab 1.8 standard articulations matched to GM by MIDI output, probed with the 1.8.4 importer.
+  - Every GM kit key round-trips except 40 (written as snare 38) and 59 (ride 2, written as ride 51).
+  - Flams are grace notes. Pickups and swing bars use the tab writer's bar and duration rules.
+- Levels (`level/drums.ts`):
+  - `as_transcribed`;
+  - `core_groove`: kick, snare and hi-hat/ride; a fill bar is the main pattern instead;
+  - `simplified`: hi-hat in eighths. Ghost-note dropping waits for velocity.
+  - A first fill rule (Jaccard against the main pattern) flagged busy 16th hi-hat bars as fills. The rule is now "holds less than half of the main pattern".
+- CLI `build-drums`. Goldens: `build-drums.as-transcribed|core-groove|simplified.json` on one song (pickup, swing bars 4–6, a flam, fills in bars 3 and 7). The Phase 1 `quantize-drums` golden moved into `update-golden.ts`, unchanged.
+- MusicXML percussion round-trip waits for step 20's export.
+- Verification (`packages/music-core`): `tsc -p .` clean, Biome clean, `vitest run` 176 passed (14 files, 9 new drum tests).

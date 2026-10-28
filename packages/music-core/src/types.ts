@@ -6,6 +6,7 @@ export type Beats = z.infer<typeof C.Beats>
 export type Note = z.infer<typeof C.Note>
 export type Notes = z.infer<typeof C.Notes>
 export type DrumHit = z.infer<typeof C.DrumHit>
+export type DrumNotes = z.infer<typeof C.DrumNotes>
 export type ChordSegment = z.infer<typeof C.ChordSegment>
 export type Chords = z.infer<typeof C.Chords>
 export type SectionSegment = z.infer<typeof C.SectionSegment>
