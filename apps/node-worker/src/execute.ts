@@ -3,6 +3,7 @@ import {
   assertCompatible,
   Beats,
   Chords,
+  DrumNotes,
   Instrument,
   Notes,
   StageRequest,
@@ -189,6 +190,11 @@ async function loadInputs(services: Services, request: Request, params: Params) 
   if (stems !== undefined) result.stems = stems
   for (const instrument of params.instruments) {
     const kind = `notes.${instrument}`
+    if (instrument === 'drums') {
+      const drums = await readArtefact(storage, inputs[kind], DrumNotes, kind)
+      if (drums !== undefined) result.drums = drums
+      continue
+    }
     const notes = await readArtefact(storage, inputs[kind], Notes, kind)
     if (notes !== undefined) result.notes[instrument] = notes
   }

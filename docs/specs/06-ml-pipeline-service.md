@@ -219,6 +219,15 @@ Code: `services/ml/packages/stage_notes` (`notes.guitar|bass|vocals`), `services
   - All of these are stage params, so every `notes.piano` cache key changes.
 - **Islands:** unchanged. YourMT3+, Transkun and PM2S all run in the torch island's GPU slot.
 
+## Implementation notes (step 25, 2026-10-28)
+- **`notes.drums`** (`stage_notes.drums`, torch island, GPU slot) uses **ADTOF Frame_RNN** (`stage_notes.adtof`, `adtof-frame-rnn`, weights via `scripts/fetch_models.py adtof`) and writes `DrumNotes`. The in-house CRNN of §0 and §2 is not built.
+  - **Source rules** are the same as the pitched stages: the raw separated drum stem; a solo bypass reads the mixture; with no stem it reads the mixture and reports `fallback` / `notes_on_mixture`.
+  - **Kit pieces:** classes map to GM numbers in one table (`stage_notes.drum_kit`). The 5-class guesses are flagged `approximate`: hi-hat → closed 42, toms → 47, cymbals → crash 49 on a downbeat after a ≥ 1 s cymbal gap, otherwise ride 51.
+  - **Inputs:** `beats` is an optional input (the downbeats for the crash/ride default) and a soft dependency, with `separation` and `stems`.
+  - **Speed:** about 0.1 s per 30 s on the RTX 3060.
+  - **Cache:** the params (`notes.personal.yaml` `instruments.drums`: thresholds, peak-picking windows, `crash_gap_s`), the calibration table and whether downbeats were read are in its key. It is a new stage, so no existing cache changes.
+- **Orchestration:** the API plans `notes.drums` for a drums analysis only while the `v1.drums` flag is on. Finalize reads `notes.drums` as `DrumNotes`, scores the hits' confidence like notes for the view rule, and writes no render. Like the piano roll, the web builds the drum score from the hits and the beats (music-core), so corrections and levels apply in the browser.
+
 ## Open questions
 - Final vendor (P1) and contract terms (QL5, QM8); AudioShake credit price is not public.
 - ~~Whether Beat This! on CPU meets ≤10 s for a 4-min song~~ — yes on the M4 Mac: final0 2.6 s, small0 1.8 s warm (step 06).

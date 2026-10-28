@@ -29,7 +29,7 @@ What is built, as of **2026-10-24**. Details, verification and open items for ea
 | s22 | Guitar accuracy | Not started | Needs the owner's songs, tabs and time budget | — |
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
 | s24 | Piano accuracy | Partial | Phases 0–6 built and measured (P2p); owner's songs end to end and Notes/Staff screenshots pending the owner | Step 24 |
-| s25 | Drums end to end | Not started | Prompt written 2026-10-28; nothing transcribes or renders drums yet | — |
+| s25 | Drums end to end | In progress | Phases 0–6 built: P2d (onset F1 0.838 vs 0.793 baseline), `notes.drums` behind `v1.drums`, drum score/levels/alphaTex, drum grid and staff views, gate pass (0.80) + confidence floor 0.75, local end to end done. Open: the owner's excerpts on the Mac, grid/staff screenshots, `v1.drums` on in production after deploy, DrumSep kit split (blocked) | Step 25 |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.

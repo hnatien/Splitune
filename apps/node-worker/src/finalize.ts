@@ -1,6 +1,7 @@
 import {
   type Beats,
   type Chords,
+  type DrumNotes,
   type Instrument,
   type Notes,
   SCHEMA_VERSION,
@@ -28,6 +29,9 @@ export interface FinalizeInputs {
   chords?: z.infer<typeof Chords>
   stems?: z.infer<typeof Stems>
   notes: Partial<Record<InstrumentName, z.infer<typeof Notes>>>
+  // notes.drums (step 25): hits, not notes. The web builds the drum score from it and the beats
+  // (music-core buildDrumScore), as it builds the piano roll, so finalize writes no render.
+  drums?: z.infer<typeof DrumNotes>
 }
 
 export interface FinalizeOptions {
@@ -54,17 +58,20 @@ const RecordedBands = z.object({
   }),
 })
 
-export function bandsOf(notes: z.infer<typeof Notes>): BandThresholds {
+type Transcription = z.infer<typeof Notes> | z.infer<typeof DrumNotes>
+
+export function bandsOf(notes: Transcription): BandThresholds {
   const parsed = RecordedBands.safeParse(notes.params)
   return parsed.success ? parsed.data.calibration.bands : DEFAULT_BANDS
 }
 
-// An empty transcription counts as all-low: there is nothing note-exact to show.
-export function noteStats(notes: z.infer<typeof Notes>): {
+// An empty transcription counts as all-low: there is nothing note-exact to show. Drum hits count
+// as notes.
+export function noteStats(notes: Transcription): {
   noteConfidenceMean: number
   fractionLowConf: number
 } {
-  const list = notes.notes
+  const list: readonly { confidence: number }[] = 'hits' in notes ? notes.hits : notes.notes
   if (list.length === 0) return { noteConfidenceMean: 0, fractionLowConf: 1 }
   const bands = bandsOf(notes)
   const mean = list.reduce((sum, n) => sum + n.confidence, 0) / list.length
@@ -104,8 +111,8 @@ export function finalize(
 ): FinalizeResult {
   const tabs: FinalizeResult['tabs'] = []
   const perInstrument = options.instruments.map((instrument) => {
-    const notes = inputs.notes[instrument]
-    if (notes !== undefined && TAB_INSTRUMENTS.includes(instrument)) {
+    const notes = instrument === 'drums' ? inputs.drums : inputs.notes[instrument]
+    if (notes !== undefined && !('hits' in notes) && TAB_INSTRUMENTS.includes(instrument)) {
       const lowBandEnergy = Object.fromEntries(
         notes.notes.flatMap((n) =>
           n.low_band_energy === undefined ? [] : [[n.id, n.low_band_energy]],
@@ -148,6 +155,8 @@ export function finalize(
     inputs.chords === undefined ||
     (options.profile !== 'lite' &&
       (inputs.stems === undefined ||
-        options.instruments.some((i) => inputs.notes[i] === undefined)))
+        options.instruments.some(
+          (i) => (i === 'drums' ? inputs.drums : inputs.notes[i]) === undefined,
+        )))
   return { tabs, summary, status: missing ? 'partial' : 'done' }
 }

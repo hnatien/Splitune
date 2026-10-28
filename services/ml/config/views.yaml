@@ -3,8 +3,10 @@
 # it was tuned on.
 version: 1
 
-# D11: instruments with note-exact notation in the current release (MVP: guitar, bass; V4 piano).
-notation_supported: [guitar, bass, piano]
+# D11: instruments with note-exact notation in the current release (MVP: guitar, bass; V4 piano;
+# step 25 drums). Drums are behind `v1.drums`: without it the API plans no notes.drums, so drums stay
+# chords_only (notes_unavailable) whatever this list says.
+notation_supported: [guitar, bass, piano, drums]
 
 # Rule 3: rough stem and more than this share of low-band notes → chords_only.
 rough_stem_low_conf: 0.35
@@ -14,18 +16,24 @@ low_confidence: 0.5
 # (reason low_confidence). Piano (step 24, owner 2026-10-25): on P2p songs below 0.80 had mean
 # onset F1 0.516 (4 of 81: phone and roomy uprights, a doubled band part, a BabySlakh electric
 # piano) and no song with onset F1 ≥ 0.9 fell below it.
+# Drums (step 25, owner 2026-10-29): on P2d songs below 0.75, 3 of 4 had onset F1 0.55-0.61
+# (brushes, swing, phone); one drum-machine song at 0.79 is caught too.
 min_confidence_mean:
   piano: 0.80
+  drums: 0.75
 
 # Prototype 2 gate per instrument (08): `fail` → chords_only with reason quality_gate_failed.
 # Instruments not listed have no gate. P2 (eval/results/p2), Basic Pitch on separated stems:
 # guitar 0.797 onset F1 (GuitarSet + band), bass 0.807 (BabySlakh, 19 tracks): both pass.
 # Piano, Transkun V2 on separated stems (gate 0.80): 0.946 on MAESTRO test excerpts + band, 0.835 on
 # BabySlakh tracks with acoustic piano only; tracks with electric piano or clavinet 0.676: pass.
+# Drums, ADTOF on separated stems at -17 dBFS RMS (gate 0.80, P2d item-mean onset F1 ±50 ms on the
+# chosen input; owner 2026-10-29): 0.838 on 42 items (2-fold CV 0.826, held-out 0.810): pass.
 quality_gate:
   guitar: pass
   bass: pass
   piano: pass
+  drums: pass
 
 # Rule 5: the instrument default (D13).
 defaults:
@@ -52,3 +60,6 @@ changes:
   - date: 2026-10-25
     change: "piano chain re-measured on P2p (step 24): solo check, YourMT3+ mixture fallback, stereo Transkun with a 45 dB gate, calibrated per-note confidence, PM2S hands; quality_gate piano stays pass (chosen-input onset F1 0.876-0.960 on band tiers, 0.920-0.928 solo); a per-song mean-confidence gate is proposed, not applied"
     models: [transkun-v2@2.0.1, yourmt3-moe@mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b80_ps2, pm2s-hand-part@zenodo-10520196, htdemucs-6s]
+  - date: 2026-10-29
+    change: "drums notation supported behind v1.drums (drum grid); quality_gate drums pass by P2d (0.838 item-mean onset F1, gate 0.80); min_confidence_mean drums 0.75 (owner's choice)"
+    models: [adtof-frame-rnn@adtofAll_0-pt-85c192e, bs-roformer-sw]

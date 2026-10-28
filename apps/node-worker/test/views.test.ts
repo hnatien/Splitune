@@ -125,6 +125,7 @@ describe('recommended_view rule (05-analysis-schema.md)', () => {
     const config = loadViews()
     expect(config.notation_supported).toContain('guitar')
     expect(config.low_confidence).toBeGreaterThan(config.rough_stem_low_conf)
-    expect(config.min_confidence_mean).toEqual({ piano: 0.8 })
+    expect(config.min_confidence_mean).toEqual({ piano: 0.8, drums: 0.75 })
+    expect(config.quality_gate.drums).toBe('pass')
   })
 })

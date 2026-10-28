@@ -100,6 +100,10 @@ Instrumentation for three audiences: engineers (errors, traces, SLOs), the busin
 - **Traces:** `@splitune/analytics/tracing` starts an OTLP/HTTP tracer only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (API: a span per request; node worker: a span per job and per lifecycle run, with `analysis_id`). The Python ML worker is not traced (its JSON logs already carry `analysis_id`). GlitchTip skipped.
 - **Flags:** `FLAGS` in contracts (defaults: `import.url`, `examples` on; `v1.*` off), `createFlags()` in the API (30 s cache, row wins over default); `/v1/me` returns every declared flag evaluated. Gates: link import (kill switch → `import.url_broken`), example list/URLs, loop `trainer` (`v1.speed_trainer`).
 - **Daily digest:** node worker, SMTP, `DIGEST_EMAIL_TO`: finished analyses by status, failed jobs by kind/code, failed lifecycle runs, runnable backlog per runner, workers offline > 2 min and analyses that waited for one, database/bucket/ML-cache/dump sizes with growth since yesterday, bucket vs the R2 10 GB-month free tier (≥ 80 % counts as a problem). "Offline periods" are approximated by heartbeat age and `analysis.waiting` events (no heartbeat history is kept).
+## Implementation notes (step 25, 2026-10-29)
+- **`v1.drums`** (default off) plans `notes.drums` for drums analyses and opens the drum grid and staff. It goes on with a `feature_flags` row once the branch is deployed and the owner's drum excerpts pass end to end.
+- **Success metric:** among drums analyses, the share whose recommended view is `drum_grid` (not `chords_only`), together with the drums correction and report rate (Trust). Watch it per `model_id@version` (ADTOF `adtofAll_0-pt-85c192e`), and pull the flag if the report rate for drums is above guitar's.
+
 ## Open questions
 - PostHog region (EU vs US) and consent requirements (QL6).
 - Whether self-assessment (clean pass) correlates with expert ratings (roadmap open question) — run a sampled study in beta.

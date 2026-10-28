@@ -9,6 +9,7 @@ export const FLAGS = {
   'v1.mic_scoring': { default: false, description: 'Microphone pass scoring' },
   'v1.midi_wait_mode': { default: false, description: 'MIDI wait mode for piano' },
   'v1.export': { default: false, description: 'Export of tab and clips' },
+  'v1.drums': { default: false, description: 'Drum transcription and the drum views' },
 } as const satisfies Record<string, { default: boolean; description: string }>
 
 export type FlagKey = keyof typeof FLAGS

@@ -1,0 +1,25 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: mdx23c-drumsep
+kind: model
+name: "MDX23C DrumSep 6-stem kit separator (community checkpoint by aufr33 and jarredou)"
+version: "MDX23C-DrumSep-aufr33-jarredou"
+repo_url: https://github.com/nomadkaraoke/python-audio-separator
+code_spdx: MIT
+weights:
+  licence: "not stated"
+  url: https://github.com/nomadkaraoke/python-audio-separator/releases/download/model-configs/MDX23C-DrumSep-aufr33-jarredou.ckpt
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "ac517c1ad7a8b2153ef26fc73386418b62fe07616fd7a5ee855f47f8c742fa6f"
+  files:
+    - { name: MDX23C-DrumSep-aufr33-jarredou.ckpt, sha256: "d2a4aa53eb584d21eead358a4e66d1882ad182911be018f052b5da73be9096d0", bytes: 437652699 }
+    - { name: config_drumsep_mdx23c.yaml, sha256: "17d1649a227f841165bdb4c11a42082898192a1ea3ceab7e7e0b9293d6589dd6", bytes: 2417 }
+training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+tier: red
+tier_reason: "community checkpoint, weights licence and training data undisclosed"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Splits a drum stem into kick, snare, toms, hh, ride and crash (self-reported SDR 14.5 / 9.8 /
+  10.6 / 3.2 / 6.1 cymbals). Step 25 Phase 3 kit-split candidate (eval/p2d_tune.py kitsep).
+reviewer: owner
+reviewed: 2026-10-28
