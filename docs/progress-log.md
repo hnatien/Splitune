@@ -1508,3 +1508,31 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
   - contracts: 45 passed.
   - `turbo typecheck` (TS packages): clean. Biome: clean.
   - The full `apps/api` / `apps/node-worker` suites have 6 failures that can't run on this Windows PC: they spawn `uv` and the Node worker, use `SIGSTOP`, or need `pg_dump` on PATH. None touch the changed code.
+
+**Phase 3: accuracy** (`eval/p2d_tune.py`; `eval/results/p2d/2026-10-28-phases.md` lists every candidate, `2026-10-28-phase3.md` is the before/after report)
+- **Shipped** (`notes.personal.yaml` drums params, `adtof.py` options `input_rms_db` and `confidence`):
+  - The drum stem is brought to −17 dBFS RMS before ADTOF. The gain was chosen by 2-fold CV with per-class thresholds.
+  - Thresholds `[0.08, 0.08, 0.42, 0.18, 0.32]`, tuned on all items afterwards.
+  - Confidence is the margin over the class threshold, with isotonic table `config/calibration/adtof-frame-rnn@adtofAll_0-pt-85c192e.drums.json` (fit split).
+- **Results:**
+  - Chosen input, all 42 items: 0.838 vs baseline 0.793 (CV estimate 0.826). Held-out: 0.810 vs 0.773.
+  - Per tier: ENST 0.790 vs 0.709 (the soft kicks), drum machines 0.896 vs 0.735, rendered bands 0.813 vs 0.777, MDB 0.855 vs 0.848, solo 0.956 vs 0.976 (a small loss).
+  - Mixture fallback: 0.798 vs 0.772.
+  - Calibration: held-out ECE 0.295 → 0.021, AUROC 0.789.
+- **Not shipped:**
+  - htdemucs_ft and htdemucs_6s drum stems;
+  - a shared threshold offset;
+  - YourMT3+ union, agreement and "rescue" ensembles. Rescue is +0.009 held-out, mostly in-sample ENST, and YourMT3+ costs ~8 s per 30 s and ~14 GB on the Mac.
+  - a per-class logistic confidence;
+  - a solo bypass, which gives identical hits on solo kits.
+- **Blocked:** `mdx23c-drumsep` (DrumSep 6-stem kit separator) is downloaded and registered, and `p2d_tune.py kitsep`/`kit` are written. This PC's safety rule refused to load the new checkpoint ("code from external"), so the kit split waits for the owner. ADT_STR is not run for the same reason (it needs its own model code).
+- **No velocity:** ADTOF has none, so `DrumHit.velocity` stays empty.
+- **Caches:** `notes.drums` params and calibration changed. No production cache existed (the stage is unscheduled).
+- **Bugs found and fixed in the analysis script:**
+  - It first indexed ADTOF's outputs in `drum_kit.CLASSES` order (toms ↔ hi-hat); every table above was computed after the fix.
+  - An empty `services/ml/.venv`, made by a `pnpm typecheck` run without the step venv, made pyright miss every import. It was moved to `D:\venvs\s25-stray-empty-venv*` (two empty 151 KB shells, safe to delete).
+- **Verification:**
+  - `ruff check eval packages`: clean.
+  - `pyright eval/p2d_tune.py eval/p2d.py packages/stage_notes packages/splitune_ml_core scripts`: 0 errors.
+  - `pytest packages/stage_notes/tests/test_drums.py eval/tests/test_p2d.py`: 15 passed, including the models test.
+  - `pytest packages/stage_notes packages/splitune_ml_core eval/tests -m "not models"`: 169 passed. Postgres is up now, so the 21 earlier errors are gone.

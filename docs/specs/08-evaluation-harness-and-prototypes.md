@@ -206,6 +206,22 @@ Executable plans for the seven prototypes defined in `research/ml/pipeline-overv
 
   Weakest labels: brushes 0.524, swing 0.538, phone 0.502. Toms 0.24–0.45 and cymbals 0.25–0.75 per tier. Exact bar patterns 0.11–0.25 outside solo loops (bar Jaccard 0.61–0.73). Raw peak heights are under-confident (ECE 0.226; precision 0.73 at 0.3–0.6, 0.96 at 0.7–0.9). notes.drums takes 0.12 s per 30 s on the RTX 3060.
 - **Reference row:** YourMT3+ drums (GM keys it names itself), chosen 0.802 item mean vs 0.793. It is better on ENST (0.882, in-sample), drum machines and kit pieces (hi-hat open/closed 0.92 on MDB vs 0.77), worse on MDB (0.769), rendered bands (0.745) and cymbals. 1.3 s per 30 s.
+- **Phase 3** (`eval/p2d_tune.py`; every candidate in `eval/results/p2d/2026-10-28-phases.md`, before/after in `2026-10-28-phase3.md`).
+  - **Shipped:** the drum stem at −17 dBFS RMS before ADTOF, per-class thresholds `[0.08, 0.08, 0.42, 0.18, 0.32]` (BD SD TT HH CY), confidence = margin over the threshold with an isotonic table.
+  - The gain was chosen by 2-fold cross-validation of gain plus per-class thresholds: 0.826 vs 0.793 with published thresholds and no gain. The thresholds were then tuned on all 42 items.
+  - Chosen input, all items: 0.838 vs 0.793. Held-out: 0.810 vs 0.773. Every tier improves except solo drums (0.956 vs 0.976).
+  - Calibration: held-out ECE 0.295 → 0.021, AUROC 0.789. Toms and cymbals stay over-confident under the shared table, but they are always `approximate`.
+  - **Losers:**
+    - htdemucs_ft / htdemucs_6s drum stems (better on rendered bands, worse on real recordings);
+    - a shared threshold offset (±0.01);
+    - YourMT3+ ensembles: `rescue` +0.009 held-out, mostly on in-sample ENST, at ~8 s per 30 s and ~14 GB on the Mac;
+    - a per-class logistic confidence;
+    - a solo bypass (identical hits on solo kits).
+  - **Not run:**
+    - the DrumSep kit split, whose checkpoint load was blocked on this PC pending the owner;
+    - ADT_STR, whose model code is blocked the same way;
+    - velocity, which ADTOF doesn't output;
+    - fine-tuning, which needs the owner's OK.
 
 ## Open questions
 - Who owns rater recruitment and compensation for P1/P7 (learners and teachers)?

@@ -5,7 +5,9 @@ Zehren et al.'s `Frame_RNN_adtofAll_0`): 44.1 kHz mono, 2048-sample frames at 10
 per octave log filterbank over 20 Hz-20 kHz, two conv blocks and three bidirectional GRUs with a
 sigmoid per class (BD, SD, TT, HH, CY+RD). Onsets come from madmom-style peak picking with a
 threshold per class. The weights file comes from `scripts/fetch_models.py adtof`; it is loaded
-with `weights_only=True`. Raw confidence is the activation peak height.
+with `weights_only=True`. Raw confidence is the activation peak height or its margin over the
+class threshold. The front end is level-dependent, so the input can be brought to a set RMS first
+(step 25 P2d: quiet recordings lose soft kicks otherwise).
 """
 
 # torch.from_numpy is partially typed.
@@ -43,7 +45,25 @@ ADTOF_DEFAULTS: dict[str, Any] = {
     "combine": 0.02,
     # A cymbal this long after the previous one, on a bar's first beat, is a crash (drum_kit).
     "crash_gap_s": 1.0,
+    # Input RMS in dBFS before the front end; None keeps the input's level.
+    "input_rms_db": None,
+    # confidence_raw: "height" (the activation peak) or "margin" (its margin over the class
+    # threshold, scaled to [0, 1]).
+    "confidence": "height",
 }
+
+
+def at_rms(mono: NDArray[np.float32], db: float) -> NDArray[np.float32]:
+    rms = float(np.sqrt(np.mean(np.square(mono, dtype=np.float64)))) if len(mono) else 0.0
+    if rms <= 1e-9:  # silence stays silence
+        return mono
+    return (mono * np.float32(10 ** (db / 20) / rms)).astype(np.float32)
+
+
+def raw_confidence(height: float, threshold: float, kind: str) -> float:
+    if kind == "margin":
+        return max(0.0, (height - threshold) / (1.0 - threshold))
+    return height
 
 
 @cache
@@ -161,16 +181,20 @@ class Adtof:
     def transcribe_drums(
         self, mono: NDArray[np.float32], params: dict[str, Any]
     ) -> list[DrumEvent]:
-        act = self.activations(mono)
+        level = params["input_rms_db"]
+        act = self.activations(mono if level is None else at_rms(mono, float(level)))
         events: list[DrumEvent] = []
         for c, (gm, threshold) in enumerate(zip(LABELS, params["thresholds"], strict=True)):
             for frame in peaks(act[:, c], float(threshold), params):
+                height = float(act[frame, c])
                 events.append(
                     DrumEvent(
                         onset_s=frame / FPS,
                         gm_note=gm,
                         named=False,
-                        confidence_raw=float(act[frame, c]),
+                        confidence_raw=raw_confidence(
+                            height, float(threshold), str(params["confidence"])
+                        ),
                     )
                 )
         return events

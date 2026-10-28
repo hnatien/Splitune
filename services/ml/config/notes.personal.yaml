@@ -29,6 +29,12 @@ instruments:
     transcriber: basic_pitch
     params: {min_freq_hz: 65, max_freq_hz: 1400}
   drums:
-    # Step 25 P2d baseline: ADTOF Frame_RNN (5 classes) with its published thresholds on the
-    # drum stem (eval/results/p2d). Not scheduled until `v1.drums` (apps/api/src/pipeline.ts).
+    # Step 25 P2d (eval/results/p2d): ADTOF Frame_RNN (5 classes) on the drum stem brought to
+    # -17 dBFS RMS, per-class thresholds (BD SD TT HH CY) tuned on the P2d items (2-fold
+    # cross-validated onset F1 0.826 vs 0.793 published), confidence = margin over the class
+    # threshold. Scheduled only while `v1.drums` is on (apps/api/src/pipeline.ts).
     transcriber: adtof
+    params:
+      input_rms_db: -17
+      thresholds: [0.08, 0.08, 0.42, 0.18, 0.32]
+      confidence: margin
