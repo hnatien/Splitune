@@ -10,18 +10,37 @@ const meta = { title: 'Screens/Marketing', parameters: { layout: 'fullscreen' } 
 export default meta
 type Story = StoryObj<typeof meta>
 
+const howItWorks = () => (
+  <AppStory path="/how-it-works">
+    <MarketingShell signedIn={false}>
+      <HowItWorks />
+    </MarketingShell>
+  </AppStory>
+)
+
 export const HowItWorksPage: Story = {
-  render: () => (
-    <AppStory path="/how-it-works">
-      <MarketingShell signedIn={false}>
-        <HowItWorks />
-      </MarketingShell>
-    </AppStory>
-  ),
+  render: howItWorks,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('heading', { level: 1 })).toBeVisible()
-    await expect(canvas.getAllByRole('listitem')).toHaveLength(4)
+    await expect(canvas.getAllByRole('heading', { level: 2 })).toHaveLength(5)
+    const steps = within(canvas.getByRole('navigation', { name: 'Steps' })).getAllByRole('link')
+    await expect(steps).toHaveLength(4)
+    await expect(steps[0]).toHaveAttribute('aria-current', 'step')
+  },
+}
+export const HowItWorksDark: Story = { render: howItWorks, globals: { appearance: 'dark' } }
+export const HowItWorksPhone: Story = {
+  render: howItWorks,
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+}
+/** Reduced motion: every picture shows its last frame; scrolling only switches steps. */
+export const HowItWorksReducedMotion: Story = {
+  render: howItWorks,
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect((await canvas.findAllByText('Ready to analyse')).length).toBeGreaterThan(0)
   },
 }
 

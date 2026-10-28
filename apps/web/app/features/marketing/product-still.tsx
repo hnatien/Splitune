@@ -28,7 +28,7 @@ const CHORDS = [
 ] as const
 
 /** A picture of the app: out of reach of the pointer, keyboard and assistive tech. */
-function Still({ className, children }: { className?: string; children: React.ReactNode }) {
+export function Still({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
     <div
       inert
@@ -274,25 +274,37 @@ const OUTLINE: Record<Level, string> = {
 
 /**
  * Fret numbers on paper with the loop band over bars 5–8, the playhead in bar 7 and the unsure
- * marks. `bars` crops the picture to a range of bars, which shows them larger.
+ * marks. `bars` crops the picture to a range of bars, which shows them larger. How it works draws
+ * the same tab being written and played: `reveal` shows the chords and notes up to that share of
+ * the picture's width, `loop` how far the band has been dragged from bar 5, and `playhead` the
+ * playhead's position in bars (null hides it).
  */
 export function TabStill({
   bars,
+  reveal = 1,
+  loop = 1,
+  playhead: playheadBar,
   className,
 }: {
   bars?: { from: number; to: number }
+  reveal?: number
+  loop?: number
+  playhead?: number | null
   className?: string
 }) {
   const index = (bar: number) => TAB_BARS.findIndex((b) => b.bar === bar)
   const left = bars ? barX(index(bars.from)) - 8 : 0
   const right = bars ? Math.min(TAB.width, barX(index(bars.to) + 1) + 2) : TAB.width
   const loopStart = barX(index(LOOP_BARS.from))
-  const loopEnd = barX(index(LOOP_BARS.to) + 1)
-  const playhead = noteX(3, 2.5)
-  const inLoop = (index: number) => {
-    const bar = TAB_BARS[index]?.bar ?? 0
-    return bar >= LOOP_BARS.from && bar <= LOOP_BARS.to
-  }
+  const loopEnd = loopStart + (barX(index(LOOP_BARS.to) + 1) - loopStart) * loop
+  const playhead =
+    playheadBar === undefined
+      ? noteX(3, 2.5)
+      : playheadBar === null
+        ? null
+        : barX(index(Math.floor(playheadBar))) + (playheadBar % 1) * TAB.bar
+  const revealX = left + (right - left) * reveal
+  const inLoop = (x: number) => loop > 0 && x >= loopStart && x <= loopEnd
   return (
     <div className={cn('overflow-hidden rounded-lg bg-paper text-ink', className)}>
       <svg
@@ -300,19 +312,28 @@ export function TabStill({
         viewBox={`${left} 0 ${right - left} ${TAB.height}`}
         className={cn('block w-full font-semibold tabular-nums', !bars && 'min-w-[40rem]')}
       >
-        <rect
-          x={loopStart}
-          y={TAB.top - 22}
-          width={loopEnd - loopStart}
-          height={TAB.height - TAB.top + 18}
-          className="fill-score-loop-fill"
-        />
-        {[loopStart, loopEnd].map((x) => (
-          <g key={x} className="fill-score-loop-edge stroke-score-loop-edge">
-            <line x1={x} x2={x} y1={TAB.top - 22} y2={TAB.height - 4} strokeWidth={2} />
-            <rect x={x - 5} y={TAB.top - 22} width={10} height={10} rx={2} />
-          </g>
-        ))}
+        {loop > 0 && (
+          <>
+            <rect
+              x={loopStart}
+              y={TAB.top - 22}
+              width={loopEnd - loopStart}
+              height={TAB.height - TAB.top + 18}
+              className="fill-score-loop-fill"
+            />
+            {(
+              [
+                ['start', loopStart],
+                ['end', loopEnd],
+              ] as const
+            ).map(([edge, x]) => (
+              <g key={edge} className="fill-score-loop-edge stroke-score-loop-edge">
+                <line x1={x} x2={x} y1={TAB.top - 22} y2={TAB.height - 4} strokeWidth={2} />
+                <rect x={x - 5} y={TAB.top - 22} width={10} height={10} rx={2} />
+              </g>
+            ))}
+          </>
+        )}
         <g className="stroke-staff" strokeWidth={1}>
           {[1, 2, 3, 4, 5, 6].map((s) => (
             <line key={s} x1={4} x2={TAB.width - 2} y1={stringY(s)} y2={stringY(s)} />
@@ -334,21 +355,24 @@ export function TabStill({
             <text x={barX(i) + 4} y={TAB.top - 8} className="fill-muted-foreground text-[10px]">
               {b.bar}
             </text>
-            <text
-              x={barX(i) + 18}
-              y={TAB.top - 8}
-              className={cn('text-[15px] font-bold', INK[b.chordLevel ?? 'high'])}
-            >
-              {b.chord}
-              {b.chordLevel === 'low' && (
-                <tspan dy={-6} className="text-[10px]">
-                  ?
-                </tspan>
-              )}
-            </text>
+            {barX(i) + 18 <= revealX && (
+              <text
+                x={barX(i) + 18}
+                y={TAB.top - 8}
+                className={cn('text-[15px] font-bold', INK[b.chordLevel ?? 'high'])}
+              >
+                {b.chord}
+                {b.chordLevel === 'low' && (
+                  <tspan dy={-6} className="text-[10px]">
+                    ?
+                  </tspan>
+                )}
+              </text>
+            )}
             {b.notes.map(([eighth, string, fret, level = 'high']) => {
               const x = noteX(i, eighth)
               const y = stringY(string)
+              if (x > revealX) return null
               return (
                 <g key={`${eighth}-${string}`}>
                   <rect
@@ -360,7 +384,7 @@ export function TabStill({
                     strokeWidth={1.5}
                     strokeDasharray={level === 'high' ? undefined : '2.5 2'}
                     className={cn(
-                      inLoop(i) ? 'fill-score-loop-fill' : 'fill-paper',
+                      inLoop(x) ? 'fill-score-loop-fill' : 'fill-paper',
                       OUTLINE[level],
                     )}
                   />
@@ -386,6 +410,7 @@ export function TabStill({
                 const x1 = noteX(i, pair)
                 const x2 = noteX(i, pair + 1)
                 const y = STAFF_BOTTOM + 20
+                if (x2 > revealX) return null
                 return (
                   <g key={pair}>
                     <line x1={x1} x2={x1} y1={STAFF_BOTTOM + 8} y2={y} strokeWidth={1.25} />
@@ -397,14 +422,16 @@ export function TabStill({
             </g>
           </g>
         ))}
-        <line
-          x1={playhead}
-          x2={playhead}
-          y1={TAB.top - 14}
-          y2={TAB.height - 4}
-          strokeWidth={2}
-          className="stroke-score-playhead"
-        />
+        {playhead !== null && (
+          <line
+            x1={playhead}
+            x2={playhead}
+            y1={TAB.top - 14}
+            y2={TAB.height - 4}
+            strokeWidth={2}
+            className="stroke-score-playhead"
+          />
+        )}
       </svg>
     </div>
   )
