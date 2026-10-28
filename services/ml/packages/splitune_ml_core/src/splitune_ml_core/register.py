@@ -33,6 +33,7 @@ WEIGHTS_DIRS = {
     "yourmt3-moe": "yourmt3",
     "panns-cnn14": "panns",
     "bs-roformer-sw": "audio-separator",
+    "mel-roformer-guitar-becruily": "audio-separator",
     "bs-roformer-viperx-1297": "audio-separator",
     "htdemucs-6s": "audio-separator",
     "htdemucs-ft": "audio-separator",
@@ -44,6 +45,7 @@ class WeightsFile(BaseModel):
     name: str = Field(min_length=1)
     sha256: str = Field(pattern=_SHA256)
     bytes: int = Field(ge=0)
+    url: str | None = None  # this file's own source, when the record's url is a listing
 
 
 class Weights(BaseModel):

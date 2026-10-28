@@ -50,6 +50,7 @@ TARGETS = {
     "htdemucs-6s": "htdemucs-6s",
     "htdemucs-ft": "htdemucs-ft",
     "mel-roformer-kim-vocals": "mel-roformer-kim-vocals",
+    "mel-roformer-guitar-becruily": "mel-roformer-guitar-becruily",
 }
 SEPARATION = {spec.record: spec.filename for spec in separation_config.load().models.values()}
 
@@ -146,6 +147,9 @@ def main() -> None:
             fetch_basic_pitch(directory, record)
         elif name == "transkun":
             fetch_transkun(directory, record)
+        elif all(entry.url for entry in record.weights.files):
+            for entry in record.weights.files:
+                download(str(entry.url), directory / entry.name, entry.sha256)
         elif record_id in SEPARATION:
             fetch_separation(directory, record)
         else:

@@ -1,0 +1,32 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: mel-roformer-guitar-becruily
+kind: model
+name: "Mel-Band RoFormer guitar (2-stem guitar / other, community checkpoint by becruily)"
+version: "e9624f5"
+repo_url: https://huggingface.co/becruily/mel-band-roformer-guitar
+code_spdx: MIT
+weights:
+  licence: "not stated (no model card)"
+  url: https://huggingface.co/becruily/mel-band-roformer-guitar/tree/e9624f565871f933ac48b7b2af3fbadf763bf438
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "7d51a27d10a833fd231a5a7f8e4106fc64701b9f4c6a7fab5a38dc523c864f4e"
+  files:
+    # Stored under audio-separator's naming ("roformer" in the YAML name marks the architecture).
+    - name: mel_band_roformer_guitar_becruily.ckpt
+      sha256: "83472bbf125774af5282d2e0b86df89eaf2dd45e8a4ec8d68e820ebf3e42a83c"
+      bytes: 45142183
+      url: https://huggingface.co/becruily/mel-band-roformer-guitar/resolve/e9624f565871f933ac48b7b2af3fbadf763bf438/becruily_guitar.ckpt
+    - name: mel_band_roformer_guitar_becruily.yaml
+      sha256: "b681c3f886251b04b666b3f06e87ce65d7ec610e40b5d75915c01782e5444b0e"
+      bytes: 1411
+      url: https://huggingface.co/becruily/mel-band-roformer-guitar/resolve/e9624f565871f933ac48b7b2af3fbadf763bf438/config_guitar_becruily.yaml
+training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+tier: red
+tier_reason: "community checkpoint, weights licence and training data undisclosed"
+used_in: [separate]
+profiles: [personal]
+notes: >-
+  Step 22 Phase 1 candidate (eval/results/p2g). Not in audio-separator's catalogue: the model map
+  names its YAML (`config`) and stage_separation loads it directly.
+reviewer: owner
+reviewed: 2026-10-25
