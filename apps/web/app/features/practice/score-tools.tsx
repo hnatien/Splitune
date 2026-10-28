@@ -11,7 +11,10 @@ import { usePractice } from './practice-context'
 // one is set); the level toggle and the capo field open in a popover. It sits on the paper, so it
 // takes the score's ink and staff colours. Stage keeps the chrome out.
 export function ScoreTools() {
-  const { options } = usePractice()
+  const { options, data } = usePractice()
+  // Drums have levels but no capo.
+  const capo = data.instrument !== 'drums'
+  const title = capo ? m['practice.level_and_capo']() : m['practice.level']()
   const summary = [
     levelLabel(options.level),
     options.capo > 0 ? m['practice.capo_fret']({ fret: String(options.capo) }) : '',
@@ -25,16 +28,16 @@ export function ScoreTools() {
           <Button
             variant="outline"
             className="ml-auto shrink-0 border-staff bg-paper text-ink hover:bg-bar-current in-data-[appearance=stage]:hidden"
-            aria-label={`${m['practice.level_and_capo']()}: ${summary}`}
+            aria-label={`${title}: ${summary}`}
           />
         }
       >
-        <CapoIcon aria-hidden />
+        {capo && <CapoIcon aria-hidden />}
         {summary}
         <ChevronDownIcon aria-hidden className="size-4" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-auto gap-4">
-        <PopoverTitle>{m['practice.level_and_capo']()}</PopoverTitle>
+        <PopoverTitle>{title}</PopoverTitle>
         <LevelToggle />
       </PopoverContent>
     </Popover>

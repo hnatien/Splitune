@@ -193,7 +193,11 @@ function History() {
   const { data, artefactFor } = usePractice()
   const groups: { kind: Edit['kind']; base: Chords | Notes | Beats | undefined }[] = [
     { kind: 'chords', base: data.chords.data },
-    { kind: 'notes', base: data.notes.data },
+    // Drum hits have no edits yet (step 25), so only pitched notes have a history.
+    {
+      kind: 'notes',
+      base: data.notes.data && 'notes' in data.notes.data ? data.notes.data : undefined,
+    },
     { kind: 'beats', base: data.beats.data },
   ]
   const rows = groups.flatMap(({ kind, base }) =>

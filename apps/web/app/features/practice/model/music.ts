@@ -4,6 +4,7 @@ import {
   type BandThresholds,
   type Beats,
   type BuildTabResult,
+  buildDrumScore,
   buildMelody,
   buildPianoScore,
   buildTab,
@@ -11,6 +12,9 @@ import {
   type Chords,
   type CorrectionOp,
   DEFAULT_BANDS,
+  type DrumLevel,
+  type DrumNotes,
+  type DrumScoreHit,
   keyNoteNames,
   keyScale,
   type Melody,
@@ -20,11 +24,13 @@ import {
   simplifyChords,
   type TabLevel,
 } from '@splitune/music-core'
+import type { NoteRef } from '@splitune/notation'
 import { z } from 'zod'
-import { defaultLevel, levelsFor } from './levels'
+import { defaultLevel, levelsFor, type PracticeLevel } from './levels'
 
 // The effective music of a song (12 §4, 07): artefacts ⊕ corrections, then music-core's tab (or,
-// for piano, the hand-split notes of the roll; for vocals, the melody and its phrases) and display chords for the chosen capo, level and
+// for piano, the hand-split notes of the roll; for vocals, the melody and its phrases; for drums,
+// the hits of the grid and the drum staff) and display chords for the chosen capo, level and
 // fingering. Pure, so it runs in the Worker
 // (music.worker.ts) and in tests; nothing here touches the DOM.
 
@@ -32,15 +38,15 @@ export type Fingering = 'easiest' | 'as_played'
 
 export interface MusicOptions {
   capo: number
-  level: TabLevel
+  level: PracticeLevel
   fingeringMode: Fingering
 }
 
 export interface MusicInput {
   beats: Beats
   chords?: Chords | undefined
-  /** Absent until the notes stage is done, or for chords-only songs. */
-  notes?: Notes | undefined
+  /** Absent until the notes stage is done, or for chords-only songs. Drums: notes.drums. */
+  notes?: Notes | DrumNotes | undefined
   ops: { beats: CorrectionOp[]; chords: CorrectionOp[]; notes: CorrectionOp[] }
   beatsRev: number
   options: MusicOptions
@@ -73,6 +79,15 @@ export interface MusicOutput {
   /** Piano notes on the beat grid with their hands (21 V4): the falling-notes roll and the grand
    * staff's alphaTex. */
   piano?: { notes: PianoNote[]; staff: MusicStaff } | undefined
+  /** Drums at the chosen level: hits on the beat grid (the drum grid) and the drum staff (step 25). */
+  drums?:
+    | {
+        level: DrumLevel
+        hits: DrumScoreHit[]
+        fillBars: number[]
+        staff: { alphaTex: string; firstBar: number; noteMap: NoteRef[] }
+      }
+    | undefined
   /** Vocals: the sung notes on their own timing, their phrases and the singer's range (step 18c). */
   melody?: (Pick<Melody, 'notes' | 'phrases' | 'range'> & { scale: number[] }) | undefined
   bands: BandThresholds
@@ -91,20 +106,26 @@ const RecordedBands = z.object({
   }),
 })
 
-function bandsOf(notes: Notes | undefined): BandThresholds {
+function bandsOf(notes: Notes | DrumNotes | undefined): BandThresholds {
   const parsed = RecordedBands.safeParse(notes?.params)
   return parsed.success ? parsed.data.calibration.bands : DEFAULT_BANDS
 }
 
+const DRUM_LEVELS: readonly PracticeLevel[] = levelsFor('drums')
+
 export function computeMusic(input: MusicInput): MusicOutput {
   const bands = bandsOf(input.notes)
-  const instrument = input.notes?.instrument
-  if (input.notes && (instrument === 'guitar' || instrument === 'bass')) {
-    const level = levelsFor(instrument).includes(input.options.level)
-      ? input.options.level
-      : defaultLevel(instrument)
+  if (input.notes && 'hits' in input.notes) return drumMusic(input, input.notes, bands)
+  const notes = input.notes
+  const instrument = notes?.instrument
+  if (notes && (instrument === 'guitar' || instrument === 'bass')) {
+    const level = (
+      levelsFor(instrument).includes(input.options.level)
+        ? input.options.level
+        : defaultLevel(instrument)
+    ) as TabLevel
     const built = buildTab(
-      input.notes,
+      notes,
       input.beats,
       {
         notes: input.ops.notes,
@@ -144,12 +165,12 @@ export function computeMusic(input: MusicInput): MusicOutput {
   const corrections = { notes: input.ops.notes, beats: input.ops.beats, chords: input.ops.chords }
   const extra = input.chords ? { chords: input.chords } : {}
   const melody =
-    input.notes && instrument === 'vocals'
-      ? buildMelody(input.notes, input.beats, corrections, { ...extra, bands })
+    notes && instrument === 'vocals'
+      ? buildMelody(notes, input.beats, corrections, { ...extra, bands })
       : undefined
   const piano =
-    input.notes && instrument === 'piano'
-      ? buildPianoScore(input.notes, input.beats, corrections, { ...extra, bands })
+    notes && instrument === 'piano'
+      ? buildPianoScore(notes, input.beats, corrections, { ...extra, bands })
       : undefined
   const effective = piano?.effective ?? melody?.effective
   const beats = effective?.beats ?? applyBeatCorrections(input.beats, input.ops.beats).value
@@ -188,6 +209,33 @@ export function computeMusic(input: MusicInput): MusicOutput {
           },
         }
       : {}),
+    bands,
+    noteNames: namesFor(chords),
+  }
+}
+
+// Drums: the hits at the chosen level and their staff. The level changes the hits only; the chords
+// stay as detected.
+function drumMusic(input: MusicInput, drums: DrumNotes, bands: BandThresholds): MusicOutput {
+  const level = (
+    DRUM_LEVELS.includes(input.options.level) ? input.options.level : defaultLevel('drums')
+  ) as DrumLevel
+  const score = buildDrumScore(drums, input.beats, { beats: input.ops.beats }, { bands, level })
+  const chords = input.chords && applyChordCorrections(input.chords, input.ops.chords).value
+  return {
+    beats: score.effective.beats,
+    chords,
+    displayChords: chords?.segments ?? [],
+    drums: {
+      level: score.level,
+      hits: score.hits,
+      fillBars: score.fillBars,
+      staff: {
+        alphaTex: score.alphaTex,
+        firstBar: score.alphaTexFirstBar,
+        noteMap: score.hitMap.map(({ hitId, ...at }) => ({ noteId: hitId, ...at })),
+      },
+    },
     bands,
     noteNames: namesFor(chords),
   }

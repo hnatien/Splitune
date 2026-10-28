@@ -27,11 +27,12 @@ export type Kind =
   | 'notes.bass'
   | 'tab.bass'
   | 'notes.vocals'
+  | 'notes.drums'
 /** Every artefact of the guitar song. */
 export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', 'summary']
 /** Every artefact of the song as a bass part. */
 export const ALL_BASS: Kind[] = ['beats', 'stems', 'chords', 'notes.bass', 'tab.bass', 'summary']
-const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass', 'notes.vocals']
+const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass', 'notes.vocals', 'notes.drums']
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(IDS.indexOf(kind) + 1).padStart(12, '0')}`
 
@@ -46,7 +47,7 @@ export type Patch = {
   /** A URL import with its downloaded video (13 §6a); an empty clip, so nothing is fetched. */
   video?: boolean
   /** The learner's part, when not the fixture's guitar. */
-  instrument?: 'piano' | 'bass' | 'vocals'
+  instrument?: 'piano' | 'bass' | 'vocals' | 'drums'
   /** The stems, when not the fixture's guitar ones. */
   stems?: unknown
   /** The part's notes, instead of the fixture's guitar riff (or piano part). */
@@ -280,6 +281,91 @@ export const VOCAL_SUMMARY = {
   ],
 }
 
+// A drum part on the same 8 bars, as notes.drums from a 5-class transcriber: kick on 1 and 3, snare
+// on 2 and 4, closed hi-hat eighths, a crash on bar 1, a fill (snare, then toms down the kit) in
+// bars 4 and 8, a snare flam in bar 6. Hi-hat, tom and cymbal pieces are guesses (`approximate`);
+// two snare hits are unsure (low) and a few hi-hats probable (medium). With `swing`, bars 5–6 swing
+// their eighths.
+const drumHits = (swing: boolean) => {
+  const rows: [gm: number, t: number, confidence?: number][] = []
+  for (let bar = 0; bar < 8; bar++) {
+    if (bar === 3 || bar === 7) {
+      rows.push([36, BAR(bar)])
+      for (let k = 0; k < 4; k++) rows.push([38, BAR(bar, k / 2)])
+      for (let k = 0; k < 4; k++) rows.push([k < 2 ? 50 : 43, BAR(bar, 2 + k / 2)])
+      continue
+    }
+    rows.push([36, BAR(bar)], [36, BAR(bar, 2)], [38, BAR(bar, 1)], [38, BAR(bar, 3)])
+    const offbeat = swing && (bar === 4 || bar === 5) ? 2 / 3 : 1 / 2
+    for (let beat = 0; beat < 4; beat++) {
+      rows.push(bar === 2 ? [42, BAR(bar, beat), 0.55] : [42, BAR(bar, beat)])
+      rows.push([42, Math.round((0.5 + bar * 2.4 + (beat + offbeat) * 0.6) * 1000) / 1000])
+    }
+  }
+  rows.push(
+    [49, BAR(0)],
+    [38, BAR(5, 1) - 0.015],
+    [38, BAR(6, 1.75), 0.25],
+    [38, BAR(6, 3.75), 0.25],
+  )
+  rows.sort((a, b) => a[1] - b[1] || a[0] - b[0])
+  const CLASS: Record<number, string> = {
+    36: 'kick',
+    38: 'snare',
+    42: 'hihat',
+    43: 'toms',
+    50: 'toms',
+    49: 'cymbals',
+  }
+  return rows.map(([gm, t, confidence = 0.93], i) => {
+    const class5 = CLASS[gm] as string
+    return {
+      id: `d${String(i).padStart(6, '0')}`,
+      onset_s: t,
+      class5,
+      gm_note: gm,
+      approximate: class5 !== 'kick' && class5 !== 'snare',
+      confidence,
+      confidence_raw: confidence,
+    }
+  })
+}
+const { notes: _guitarNotes, ...header } = notes
+const drumNotes = (swing: boolean) => ({
+  ...header,
+  artefact: 'notes.drums',
+  instrument: 'drums',
+  models: [
+    { ...notes.models[0], model_id: 'adtof/frame_rnn_adtof_all', version: 'adtofAll_0-pt-85c192e' },
+  ],
+  params: { calibration: { bands: { high: 0.7, medium: 0.4 } } },
+  hits: drumHits(swing),
+})
+export const DRUM_NOTES = drumNotes(false)
+export const DRUM_NOTES_SWING = drumNotes(true)
+/** The fixture's stems with the drums as the learner's part and its mix-minus. */
+export const DRUM_STEMS = {
+  ...stems,
+  stems: stems.stems
+    .filter((stem) => !(stem.kind === 'isolated' && stem.instrument === 'guitar'))
+    .map((stem) => (stem.kind === 'mix_minus' ? { ...stem, stem_id: 'mix_minus_drums' } : stem)),
+}
+const drumSummary = (view: 'drum_grid' | 'chords_only') => ({
+  ...summary,
+  per_instrument: [
+    {
+      instrument: 'drums',
+      note_confidence_mean: 0.88,
+      fraction_low_conf: 0.02,
+      recommended_view: view,
+      reasons: view === 'drum_grid' ? [] : ['quality_gate_failed'],
+    },
+  ],
+})
+/** A drum song whose hits passed the quality gate (the grid by default), or not. */
+export const DRUM_SUMMARY = drumSummary('drum_grid')
+export const DRUM_SUMMARY_BELOW_GATE = drumSummary('chords_only')
+
 const pianoSummary = (view: 'roll' | 'chords_only') => ({
   ...summary,
   per_instrument: [
@@ -303,6 +389,7 @@ export const DOCS: Partial<Record<Kind, unknown>> = {
   'notes.guitar': notes,
   summary,
   'notes.piano': PIANO_NOTES,
+  'notes.drums': DRUM_NOTES,
 }
 
 export const PIANO_CHORDS = {

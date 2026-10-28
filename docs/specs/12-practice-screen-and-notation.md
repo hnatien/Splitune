@@ -137,6 +137,27 @@ WCAG 2.2 AA (plus the design QA checklist in `28-ui-quality-and-design-review.md
 - The roll and the strip each read `audio.position()` once per frame; the strip's state changes only when the phrase, the next phrase or the beat count does. Inside a loop the roll draws the next pass past the loop's end (`rollStretches`, shared with the guitar lanes), and the past to the left of the now line as it was.
 - The melody and the phrase strip load through the chord-sheet and chord-strip chunks (12 §10).
 
+## Implementation notes (step 25, 2026-10-28)
+- **Drums' views:** Grid / Staff / Chords on the status bar's view switch.
+  - Grid is the default once the hits pass the quality gate. Below it the chord sheet opens with "Show notes anyway".
+  - Both views load lazily through the chord sheet's chunk.
+- **Grid** (`drum-notes.tsx` over `@splitune/notation` `DrumGrid`, a canvas drawn from the clock):
+  - Five lanes named down the left in the DOM: Cymbals, Hi-hat, Toms, Snare, Kick, top to bottom as on a drum staff.
+  - Time runs left to right past a playhead a quarter of the way in, two bars in view. With reduced motion it pages two bars at a time.
+  - Bar numbers, faint beat lines, the loop band. A click loops bars like a chart tap.
+  - Kit-piece guesses (`approximate`) and medium or low hits are hollow and dashed; low ones add "?".
+  - A flam has a small grace block. Lanes holding several pieces letter them (o, p, C, R, H, M, L, F), with a key under the grid.
+- **Staff** (`drum-staff.tsx`): music-core's drum staff alphaTex in the tab's `AlphaTabView`. The hit map becomes its note map, and a guess is marked medium.
+- **Levels:** Main groove / Simplified / As played in the level popover, which is titled "Level" and has no capo for drums. They are computed in the music Worker (`buildDrumScore`).
+  - The `level_changed` analytics enum and the route's `?level=` gained `core_groove`.
+- **Data:**
+  - `notes.drums` is read with the `DrumNotes` schema once the summary exists.
+  - The screen holds the analysis status until the hits are in the music, as for piano.
+  - Drum hits have no editor ops, so the corrections history lists none.
+- **Mixer:** unchanged. The drum stem and its mix-minus are the two channels, so "Minus one" is the band without the drums, and the count-in click is the player's.
+- **Onboarding** keeps Drums as "Coming soon", as it does for piano: its song step needs an example song for the instrument, and there is no drum example yet.
+- **Route budget** (`pnpm budget`, production build): 317.1 KB gzip after vs 317.0 KB before, of 320 KB. The grid and staff chunks load outside it.
+
 ## Open questions
 - Page-flip vs scroll default for tab at different tempos (QX13) — A/B in beta.
 - Legibility at 1–2 m on phones (QX3) — test notation scale presets.

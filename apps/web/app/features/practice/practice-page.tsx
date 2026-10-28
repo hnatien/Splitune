@@ -142,9 +142,8 @@ function Regions({ layout }: { layout: PracticeLayout }) {
         </Suspense>
       ) : (
         <>
-          {(layers.chords || layers.tab || layers.melody) && !(notes && shown === 'tab') && (
-            <ChordStrip compact={isPhone(layout)} />
-          )}
+          {(layers.chords || layers.tab || layers.melody || layers.drums) &&
+            !(notes && shown === 'tab') && <ChordStrip compact={isPhone(layout)} />}
           <NotationPane compact={notes} />
         </>
       )}

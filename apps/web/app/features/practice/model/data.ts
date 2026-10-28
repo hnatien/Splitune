@@ -1,4 +1,12 @@
-import { type ArtefactIndexEntry, Beats, Chords, Notes, Stems, Summary } from '@splitune/contracts'
+import {
+  type ArtefactIndexEntry,
+  Beats,
+  Chords,
+  DrumNotes,
+  Notes,
+  Stems,
+  Summary,
+} from '@splitune/contracts'
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { z } from 'zod'
 import { useAnalysisEvents } from '@/lib/analysis-events'
@@ -22,6 +30,9 @@ export function latestOf(entries: readonly Entry[], kind: string): Entry | undef
 }
 
 export class ArtefactUnreadable extends Error {}
+
+/** Instruments whose screen opens with their notes (no tab to wait for). */
+export const HOLDS_NOTES: readonly string[] = ['piano', 'drums']
 
 export function artefactDocQuery<S extends z.ZodType>(entry: Entry | undefined, schema: S) {
   return queryOptions({
@@ -81,17 +92,24 @@ export function usePracticeData(songId: string) {
   const beats = useQuery(artefactDocQuery(entry.beats, Beats))
   const stems = useQuery(artefactDocQuery(entry.stems, Stems))
   const chords = useQuery(artefactDocQuery(entry.chords, Chords))
-  // Notes are read once the tab exists: the tab layer appears with finalize (27 §3.7.3). Piano and
-  // vocals have no tab: their notes appear with the summary.
+  // Notes are read once the tab exists: the tab layer appears with finalize (27 §3.7.3). Piano,
+  // vocals and drums have no tab: their notes appear with the summary.
   const notesReady =
-    entry.tab ?? (instrument === 'piano' || instrument === 'vocals' ? entry.summary : undefined)
-  const notes = useQuery(artefactDocQuery(notesReady ? entry.notes : undefined, Notes))
+    entry.tab ??
+    (HOLDS_NOTES.includes(instrument) || instrument === 'vocals' ? entry.summary : undefined)
+  const notes = useQuery(
+    artefactDocQuery(
+      notesReady ? entry.notes : undefined,
+      instrument === 'drums' ? DrumNotes : Notes,
+    ),
+  )
   const summary = useQuery(artefactDocQuery(entry.summary, Summary))
-  // Piano practises from its notes: while its notes stage is still to come (or its document is on
-  // the way) the screen holds the analysis status rather than opening on the chord chart alone.
+  // Piano and drums practise from their notes: while the notes stage is still to come (or its
+  // document is on the way) the screen holds the analysis status rather than opening on the chords
+  // alone.
   const running = analysis.data?.status === 'queued' || analysis.data?.status === 'running'
   const awaitingNotes =
-    instrument === 'piano' &&
+    HOLDS_NOTES.includes(instrument) &&
     analysis.data?.stages[`notes.${instrument}`] !== undefined &&
     (running || (notesReady !== undefined && entry.notes !== undefined && notes.isPending))
   const ops = {
