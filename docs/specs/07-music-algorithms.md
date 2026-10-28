@@ -157,6 +157,24 @@ Rules are deterministic and documented in the UI ("Simplified: extensions remove
 ## Implementation notes (step 13, 2026-10-22)
 - **Quantizer fix:** a note snapped forward across a bar line kept the grid step of the bar it was played in; from a swing bar into a straight bar its minimum length became a triplet 1/8 (320 ticks), its end left the straight grid and `toAlphaTex` threw `cannot express 80 ticks at 240`. `snapTick` now takes the step of the bar the snapped tick lands in. Found on a real example song at the `simplified` level (test: quantize "takes the grid step of the bar a note snaps into").
 
+## Implementation notes (step 25, 2026-10-28)
+- **`buildDrumScore(drums, beats, corrections, options)`** (`drums/build-drums.ts`) is the drum counterpart of `buildPianoScore`. It runs effective beats → `quantizeDrumHits` (flams stay one hit with `flam` and `mergedIds`) → the level → the drum staff.
+  - Each hit carries its grid position, seconds, band, `approximate`, `foot` and `generated`.
+  - Only beat corrections apply: the editor has no drum editing in this step, so `CorrectionOp` has no drum ops.
+- **Drum staff alphaTex** (`export/alphatex-drums.ts`): one percussion track (`\instrument percussion`, `\clef neutral`, `\articulation defaults`).
+  - Every GM kit key is written by the alphaTab 1.8 articulation whose MIDI output is that key (`ARTICULATION`), so playback and staff lines follow `notes.drums`. GM 40 sounds as 38, GM 59 as 51.
+  - Hands are stems-up voice 0. Feet (kick, pedal hi-hat) are stems-down voice 1, written only when there are any.
+  - A hit lasts to the voice's next onset: one value, then rests.
+  - Flams are before-beat grace notes (`{gr}`).
+  - The importer round-trip of every key is in `test/drums.test.ts`.
+  - MusicXML percussion waits for step 20's export.
+- **Levels** (`level/drums.ts`, V13):
+  - `as_transcribed`.
+  - `core_groove`: kick, snare and the time line (hi-hat, or ride when the time is on the ride) without toms or crashes. A fill bar is replaced by the main pattern (`groove:` ids, `generated`, `approximate`, confidence = the share of bars holding that hit).
+  - `simplified`: hi-hat thinned to eighths (beat and "and"; beat and third triplet in a swing bar). Ghost notes would also be dropped, but there is no velocity yet.
+  - The main pattern per bar length is every (GM key, position) in at least half the non-pickup bars that have hits. A fill bar holds less than half of it. A fill of a beat or less keeps most of the pattern and stays as played.
+- **CLI:** `build-drums` (`{drums, beats, corrections?, options: {level, title}}`) with goldens per level on one song: a pickup, a swing section, a flam, and a fill every fourth bar.
+
 ## Open questions
 - Learned assigner later (Fretting-Transformer/MIDI-to-Tab-style) has no usable code or licence; revisit only if Prototype 3 fails (D3).
 - Easiest vs as-played default (QU7) is a user-research question; the default is `easiest` for MVP.

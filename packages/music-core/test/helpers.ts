@@ -1,5 +1,14 @@
 import { readFileSync } from 'node:fs'
-import type { Beat, Beats, Chords, CorrectionOp, Note, Notes } from '../src/types.ts'
+import type {
+  Beat,
+  Beats,
+  Chords,
+  CorrectionOp,
+  DrumHit,
+  DrumNotes,
+  Note,
+  Notes,
+} from '../src/types.ts'
 
 const FIXTURES = new URL('../../contracts/fixtures/', import.meta.url)
 
@@ -12,6 +21,7 @@ export const fixtures = {
   notes: () => fixture<Notes>('notes.guitar'),
   chords: () => fixture<Chords>('chords'),
   corrections: () => fixture<CorrectionOp[]>('corrections'),
+  drums: () => fixture<DrumNotes>('notes.drums'),
 }
 
 const HEADER = {
@@ -163,4 +173,66 @@ export function denseGuitarPart(seed = 7): { notes: Notes; beats: Beats; chords:
     }
   }
   return { notes: makeNotes(notes), beats, chords: makeChords(segments) }
+}
+
+const CLASS: Record<number, DrumHit['class5']> = {
+  36: 'kick',
+  38: 'snare',
+  42: 'hihat',
+  46: 'hihat',
+  43: 'toms',
+  47: 'toms',
+  50: 'toms',
+  49: 'cymbals',
+  51: 'cymbals',
+}
+
+// notes.drums from [gm, onset_s] rows; hi-hat, tom and cymbal hits are flagged approximate as a
+// 5-class transcriber would.
+export function makeDrums(rows: readonly (readonly [number, number])[]): DrumNotes {
+  return {
+    ...HEADER,
+    artefact: 'notes.drums',
+    instrument: 'drums',
+    duration_s: Math.max(1, ...rows.map(([, t]) => t + 1)),
+    hits: rows.map(([gm, t], i) => {
+      const class5 = CLASS[gm] ?? 'snare'
+      return {
+        id: `d${String(i).padStart(6, '0')}`,
+        onset_s: Math.round(t * 1e6) / 1e6,
+        class5,
+        gm_note: gm,
+        approximate: class5 !== 'kick' && class5 !== 'snare',
+        confidence: 0.9,
+      }
+    }),
+  }
+}
+
+// A drum song at 120 bpm (beats every 0.5 s, bar 0 at 1.0 s): a pickup of snare 16ths, a crash
+// on bar 0, a rock groove with 16th hi-hats in bars 0-2, swung eighths in bars 4-6 (a snare flam
+// in bar 5) and a fill (snare and toms) in every fourth bar (3 and 7).
+export function drumSong(): { drums: DrumNotes; beats: Beats } {
+  const rows: [number, number][] = []
+  const bar = (b: number) => 1 + b * 2
+  for (let k = 0; k < 4; k++) rows.push([38, 0.5 + k * 0.125])
+  rows.push([49, bar(0)])
+  for (let b = 0; b < 8; b++) {
+    const t = bar(b)
+    if (b === 3 || b === 7) {
+      rows.push([36, t])
+      for (let k = 0; k < 8; k++) rows.push([38, t + k * 0.125])
+      for (let k = 0; k < 4; k++) rows.push([47, t + 1 + k * 0.125])
+      for (let k = 0; k < 4; k++) rows.push([43, t + 1.5 + k * 0.125])
+      continue
+    }
+    rows.push([36, t], [36, t + 1], [38, t + 0.5], [38, t + 1.5])
+    const swung = b >= 4
+    for (let beat = 0; beat < 4; beat++) {
+      const offsets = swung ? [0, 2 / 3] : [0, 0.25, 0.5, 0.75]
+      for (const o of offsets) rows.push([42, t + beat * 0.5 + o * 0.5])
+    }
+    if (b === 5) rows.push([38, t + 0.5 - 0.015])
+  }
+  return { drums: makeDrums(rows), beats: makeBeats({ bpm: 120, bars: 8, pickup: 1, start: 0.5 }) }
 }

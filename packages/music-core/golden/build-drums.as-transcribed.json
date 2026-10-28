@@ -1,0 +1,4115 @@
+{
+  "command": "build-drums",
+  "input": {
+    "drums": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "notes.drums",
+      "instrument": "drums",
+      "duration_s": 17.875,
+      "hits": [
+        {
+          "id": "d000000",
+          "onset_s": 0.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000001",
+          "onset_s": 0.625,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000002",
+          "onset_s": 0.75,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000003",
+          "onset_s": 0.875,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000004",
+          "onset_s": 1,
+          "class5": "cymbals",
+          "gm_note": 49,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000005",
+          "onset_s": 1,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000006",
+          "onset_s": 2,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000007",
+          "onset_s": 1.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000008",
+          "onset_s": 2.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000009",
+          "onset_s": 1,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000010",
+          "onset_s": 1.125,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000011",
+          "onset_s": 1.25,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000012",
+          "onset_s": 1.375,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000013",
+          "onset_s": 1.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000014",
+          "onset_s": 1.625,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000015",
+          "onset_s": 1.75,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000016",
+          "onset_s": 1.875,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000017",
+          "onset_s": 2,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000018",
+          "onset_s": 2.125,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000019",
+          "onset_s": 2.25,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000020",
+          "onset_s": 2.375,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000021",
+          "onset_s": 2.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000022",
+          "onset_s": 2.625,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000023",
+          "onset_s": 2.75,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000024",
+          "onset_s": 2.875,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000025",
+          "onset_s": 3,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000026",
+          "onset_s": 4,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000027",
+          "onset_s": 3.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000028",
+          "onset_s": 4.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000029",
+          "onset_s": 3,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000030",
+          "onset_s": 3.125,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000031",
+          "onset_s": 3.25,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000032",
+          "onset_s": 3.375,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000033",
+          "onset_s": 3.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000034",
+          "onset_s": 3.625,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000035",
+          "onset_s": 3.75,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000036",
+          "onset_s": 3.875,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000037",
+          "onset_s": 4,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000038",
+          "onset_s": 4.125,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000039",
+          "onset_s": 4.25,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000040",
+          "onset_s": 4.375,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000041",
+          "onset_s": 4.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000042",
+          "onset_s": 4.625,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000043",
+          "onset_s": 4.75,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000044",
+          "onset_s": 4.875,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000045",
+          "onset_s": 5,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000046",
+          "onset_s": 6,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000047",
+          "onset_s": 5.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000048",
+          "onset_s": 6.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000049",
+          "onset_s": 5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000050",
+          "onset_s": 5.125,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000051",
+          "onset_s": 5.25,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000052",
+          "onset_s": 5.375,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000053",
+          "onset_s": 5.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000054",
+          "onset_s": 5.625,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000055",
+          "onset_s": 5.75,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000056",
+          "onset_s": 5.875,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000057",
+          "onset_s": 6,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000058",
+          "onset_s": 6.125,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000059",
+          "onset_s": 6.25,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000060",
+          "onset_s": 6.375,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000061",
+          "onset_s": 6.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000062",
+          "onset_s": 6.625,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000063",
+          "onset_s": 6.75,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000064",
+          "onset_s": 6.875,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000065",
+          "onset_s": 7,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000066",
+          "onset_s": 7,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000067",
+          "onset_s": 7.125,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000068",
+          "onset_s": 7.25,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000069",
+          "onset_s": 7.375,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000070",
+          "onset_s": 7.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000071",
+          "onset_s": 7.625,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000072",
+          "onset_s": 7.75,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000073",
+          "onset_s": 7.875,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000074",
+          "onset_s": 8,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000075",
+          "onset_s": 8.125,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000076",
+          "onset_s": 8.25,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000077",
+          "onset_s": 8.375,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000078",
+          "onset_s": 8.5,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000079",
+          "onset_s": 8.625,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000080",
+          "onset_s": 8.75,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000081",
+          "onset_s": 8.875,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000082",
+          "onset_s": 9,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000083",
+          "onset_s": 10,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000084",
+          "onset_s": 9.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000085",
+          "onset_s": 10.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000086",
+          "onset_s": 9,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000087",
+          "onset_s": 9.333333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000088",
+          "onset_s": 9.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000089",
+          "onset_s": 9.833333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000090",
+          "onset_s": 10,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000091",
+          "onset_s": 10.333333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000092",
+          "onset_s": 10.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000093",
+          "onset_s": 10.833333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000094",
+          "onset_s": 11,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000095",
+          "onset_s": 12,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000096",
+          "onset_s": 11.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000097",
+          "onset_s": 12.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000098",
+          "onset_s": 11,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000099",
+          "onset_s": 11.333333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000100",
+          "onset_s": 11.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000101",
+          "onset_s": 11.833333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000102",
+          "onset_s": 12,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000103",
+          "onset_s": 12.333333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000104",
+          "onset_s": 12.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000105",
+          "onset_s": 12.833333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000106",
+          "onset_s": 11.485,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000107",
+          "onset_s": 13,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000108",
+          "onset_s": 14,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000109",
+          "onset_s": 13.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000110",
+          "onset_s": 14.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000111",
+          "onset_s": 13,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000112",
+          "onset_s": 13.333333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000113",
+          "onset_s": 13.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000114",
+          "onset_s": 13.833333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000115",
+          "onset_s": 14,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000116",
+          "onset_s": 14.333333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000117",
+          "onset_s": 14.5,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000118",
+          "onset_s": 14.833333,
+          "class5": "hihat",
+          "gm_note": 42,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000119",
+          "onset_s": 15,
+          "class5": "kick",
+          "gm_note": 36,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000120",
+          "onset_s": 15,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000121",
+          "onset_s": 15.125,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000122",
+          "onset_s": 15.25,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000123",
+          "onset_s": 15.375,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000124",
+          "onset_s": 15.5,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000125",
+          "onset_s": 15.625,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000126",
+          "onset_s": 15.75,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000127",
+          "onset_s": 15.875,
+          "class5": "snare",
+          "gm_note": 38,
+          "approximate": false,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000128",
+          "onset_s": 16,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000129",
+          "onset_s": 16.125,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000130",
+          "onset_s": 16.25,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000131",
+          "onset_s": 16.375,
+          "class5": "toms",
+          "gm_note": 47,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000132",
+          "onset_s": 16.5,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000133",
+          "onset_s": 16.625,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000134",
+          "onset_s": 16.75,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        },
+        {
+          "id": "d000135",
+          "onset_s": 16.875,
+          "class5": "toms",
+          "gm_note": 43,
+          "approximate": true,
+          "confidence": 0.9
+        }
+      ]
+    },
+    "beats": {
+      "schema_version": "1.1.0",
+      "artefact_version": 1,
+      "analysis_id": "0192f6c4-8b00-7a00-8000-0000000000aa",
+      "user_id": "usr_test",
+      "audio_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_rate": 44100,
+      "models": [],
+      "params": {},
+      "created_at": "2026-10-20T12:00:00Z",
+      "artefact": "beats",
+      "duration_s": 18,
+      "beats": [
+        {
+          "id": "b0000",
+          "t": 0.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": -1,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0001",
+          "t": 1,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 0,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0002",
+          "t": 1.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0003",
+          "t": 2,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0004",
+          "t": 2.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 0,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0005",
+          "t": 3,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 1,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0006",
+          "t": 3.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0007",
+          "t": 4,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0008",
+          "t": 4.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 1,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0009",
+          "t": 5,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 2,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0010",
+          "t": 5.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 2,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0011",
+          "t": 6,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 2,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0012",
+          "t": 6.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 2,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0013",
+          "t": 7,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 3,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0014",
+          "t": 7.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 3,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0015",
+          "t": 8,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 3,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0016",
+          "t": 8.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 3,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0017",
+          "t": 9,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 4,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0018",
+          "t": 9.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 4,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0019",
+          "t": 10,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 4,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0020",
+          "t": 10.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 4,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0021",
+          "t": 11,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 5,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0022",
+          "t": 11.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 5,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0023",
+          "t": 12,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 5,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0024",
+          "t": 12.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 5,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0025",
+          "t": 13,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 6,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0026",
+          "t": 13.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 6,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0027",
+          "t": 14,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 6,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0028",
+          "t": 14.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 6,
+          "beat_in_bar": 4
+        },
+        {
+          "id": "b0029",
+          "t": 15,
+          "activation": 0.9,
+          "is_downbeat": true,
+          "bar_index": 7,
+          "beat_in_bar": 1
+        },
+        {
+          "id": "b0030",
+          "t": 15.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 7,
+          "beat_in_bar": 2
+        },
+        {
+          "id": "b0031",
+          "t": 16,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 7,
+          "beat_in_bar": 3
+        },
+        {
+          "id": "b0032",
+          "t": 16.5,
+          "activation": 0.9,
+          "is_downbeat": false,
+          "bar_index": 7,
+          "beat_in_bar": 4
+        }
+      ],
+      "bpm": 120,
+      "meter": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "tempo_octave_ambiguous": false,
+      "first_downbeat_t": 1
+    },
+    "options": {
+      "title": "Drum song"
+    }
+  },
+  "expected": {
+    "level": "as_transcribed",
+    "hits": [
+      {
+        "hit_id": "d000000",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 0,
+        "bar": -1,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000001",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 240,
+        "bar": -1,
+        "beat": 4,
+        "tick": 240,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000002",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 480,
+        "bar": -1,
+        "beat": 4,
+        "tick": 480,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000003",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 720,
+        "bar": -1,
+        "beat": 4,
+        "tick": 720,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000005",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 960,
+        "bar": 0,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000009",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 960,
+        "bar": 0,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000004",
+        "class5": "cymbals",
+        "gm_note": 49,
+        "on_tick": 960,
+        "bar": 0,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000010",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 1200,
+        "bar": 0,
+        "beat": 1,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000011",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 1440,
+        "bar": 0,
+        "beat": 1,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000012",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 1680,
+        "bar": 0,
+        "beat": 1,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000007",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 1920,
+        "bar": 0,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000013",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 1920,
+        "bar": 0,
+        "beat": 2,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000014",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 2160,
+        "bar": 0,
+        "beat": 2,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000015",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 2400,
+        "bar": 0,
+        "beat": 2,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000016",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 2640,
+        "bar": 0,
+        "beat": 2,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000006",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 2880,
+        "bar": 0,
+        "beat": 3,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000017",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 2880,
+        "bar": 0,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000018",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 3120,
+        "bar": 0,
+        "beat": 3,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000019",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 3360,
+        "bar": 0,
+        "beat": 3,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000020",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 3600,
+        "bar": 0,
+        "beat": 3,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000008",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 3840,
+        "bar": 0,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000021",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 3840,
+        "bar": 0,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000022",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 4080,
+        "bar": 0,
+        "beat": 4,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000023",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 4320,
+        "bar": 0,
+        "beat": 4,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000024",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 4560,
+        "bar": 0,
+        "beat": 4,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000025",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 4800,
+        "bar": 1,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000029",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 4800,
+        "bar": 1,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000030",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 5040,
+        "bar": 1,
+        "beat": 1,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000031",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 5280,
+        "bar": 1,
+        "beat": 1,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000032",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 5520,
+        "bar": 1,
+        "beat": 1,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000027",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 5760,
+        "bar": 1,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000033",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 5760,
+        "bar": 1,
+        "beat": 2,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000034",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 6000,
+        "bar": 1,
+        "beat": 2,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000035",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 6240,
+        "bar": 1,
+        "beat": 2,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000036",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 6480,
+        "bar": 1,
+        "beat": 2,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000026",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 6720,
+        "bar": 1,
+        "beat": 3,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000037",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 6720,
+        "bar": 1,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000038",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 6960,
+        "bar": 1,
+        "beat": 3,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000039",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 7200,
+        "bar": 1,
+        "beat": 3,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000040",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 7440,
+        "bar": 1,
+        "beat": 3,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000028",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 7680,
+        "bar": 1,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000041",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 7680,
+        "bar": 1,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000042",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 7920,
+        "bar": 1,
+        "beat": 4,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000043",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 8160,
+        "bar": 1,
+        "beat": 4,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000044",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 8400,
+        "bar": 1,
+        "beat": 4,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000045",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 8640,
+        "bar": 2,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000049",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 8640,
+        "bar": 2,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000050",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 8880,
+        "bar": 2,
+        "beat": 1,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000051",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 9120,
+        "bar": 2,
+        "beat": 1,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000052",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 9360,
+        "bar": 2,
+        "beat": 1,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000047",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 9600,
+        "bar": 2,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000053",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 9600,
+        "bar": 2,
+        "beat": 2,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000054",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 9840,
+        "bar": 2,
+        "beat": 2,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000055",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 10080,
+        "bar": 2,
+        "beat": 2,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000056",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 10320,
+        "bar": 2,
+        "beat": 2,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000046",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 10560,
+        "bar": 2,
+        "beat": 3,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000057",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 10560,
+        "bar": 2,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000058",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 10800,
+        "bar": 2,
+        "beat": 3,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000059",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 11040,
+        "bar": 2,
+        "beat": 3,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000060",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 11280,
+        "bar": 2,
+        "beat": 3,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000048",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 11520,
+        "bar": 2,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000061",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 11520,
+        "bar": 2,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000062",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 11760,
+        "bar": 2,
+        "beat": 4,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000063",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 12000,
+        "bar": 2,
+        "beat": 4,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000064",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 12240,
+        "bar": 2,
+        "beat": 4,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000065",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 12480,
+        "bar": 3,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000066",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 12480,
+        "bar": 3,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000067",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 12720,
+        "bar": 3,
+        "beat": 1,
+        "tick": 240,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000068",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 12960,
+        "bar": 3,
+        "beat": 1,
+        "tick": 480,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000069",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 13200,
+        "bar": 3,
+        "beat": 1,
+        "tick": 720,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000070",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 13440,
+        "bar": 3,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000071",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 13680,
+        "bar": 3,
+        "beat": 2,
+        "tick": 240,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000072",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 13920,
+        "bar": 3,
+        "beat": 2,
+        "tick": 480,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000073",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 14160,
+        "bar": 3,
+        "beat": 2,
+        "tick": 720,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000074",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 14400,
+        "bar": 3,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000075",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 14640,
+        "bar": 3,
+        "beat": 3,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000076",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 14880,
+        "bar": 3,
+        "beat": 3,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000077",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 15120,
+        "bar": 3,
+        "beat": 3,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000078",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 15360,
+        "bar": 3,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000079",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 15600,
+        "bar": 3,
+        "beat": 4,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000080",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 15840,
+        "bar": 3,
+        "beat": 4,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000081",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 16080,
+        "bar": 3,
+        "beat": 4,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000082",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 16320,
+        "bar": 4,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000086",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 16320,
+        "bar": 4,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000087",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 16960,
+        "bar": 4,
+        "beat": 1,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000084",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 17280,
+        "bar": 4,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000088",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 17280,
+        "bar": 4,
+        "beat": 2,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000089",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 17920,
+        "bar": 4,
+        "beat": 2,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000083",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 18240,
+        "bar": 4,
+        "beat": 3,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000090",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 18240,
+        "bar": 4,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000091",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 18880,
+        "bar": 4,
+        "beat": 3,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000085",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 19200,
+        "bar": 4,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000092",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 19200,
+        "bar": 4,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000093",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 19840,
+        "bar": 4,
+        "beat": 4,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000094",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 20160,
+        "bar": 5,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000098",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 20160,
+        "bar": 5,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000099",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 20800,
+        "bar": 5,
+        "beat": 1,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000106",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 21120,
+        "bar": 5,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": true,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000100",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 21120,
+        "bar": 5,
+        "beat": 2,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000101",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 21760,
+        "bar": 5,
+        "beat": 2,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000095",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 22080,
+        "bar": 5,
+        "beat": 3,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000102",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 22080,
+        "bar": 5,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000103",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 22720,
+        "bar": 5,
+        "beat": 3,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000097",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 23040,
+        "bar": 5,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000104",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 23040,
+        "bar": 5,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000105",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 23680,
+        "bar": 5,
+        "beat": 4,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000107",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 24000,
+        "bar": 6,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000111",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 24000,
+        "bar": 6,
+        "beat": 1,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000112",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 24640,
+        "bar": 6,
+        "beat": 1,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000109",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 24960,
+        "bar": 6,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000113",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 24960,
+        "bar": 6,
+        "beat": 2,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000114",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 25600,
+        "bar": 6,
+        "beat": 2,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000108",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 25920,
+        "bar": 6,
+        "beat": 3,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000115",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 25920,
+        "bar": 6,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000116",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 26560,
+        "bar": 6,
+        "beat": 3,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000110",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 26880,
+        "bar": 6,
+        "beat": 4,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000117",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 26880,
+        "bar": 6,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000118",
+        "class5": "hihat",
+        "gm_note": 42,
+        "on_tick": 27520,
+        "bar": 6,
+        "beat": 4,
+        "tick": 640,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000119",
+        "class5": "kick",
+        "gm_note": 36,
+        "on_tick": 27840,
+        "bar": 7,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": true,
+        "generated": false
+      },
+      {
+        "hit_id": "d000120",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 27840,
+        "bar": 7,
+        "beat": 1,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000121",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 28080,
+        "bar": 7,
+        "beat": 1,
+        "tick": 240,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000122",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 28320,
+        "bar": 7,
+        "beat": 1,
+        "tick": 480,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000123",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 28560,
+        "bar": 7,
+        "beat": 1,
+        "tick": 720,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000124",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 28800,
+        "bar": 7,
+        "beat": 2,
+        "tick": 0,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000125",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 29040,
+        "bar": 7,
+        "beat": 2,
+        "tick": 240,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000126",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 29280,
+        "bar": 7,
+        "beat": 2,
+        "tick": 480,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000127",
+        "class5": "snare",
+        "gm_note": 38,
+        "on_tick": 29520,
+        "bar": 7,
+        "beat": 2,
+        "tick": 720,
+        "approximate": false,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000128",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 29760,
+        "bar": 7,
+        "beat": 3,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000129",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 30000,
+        "bar": 7,
+        "beat": 3,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000130",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 30240,
+        "bar": 7,
+        "beat": 3,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000131",
+        "class5": "toms",
+        "gm_note": 47,
+        "on_tick": 30480,
+        "bar": 7,
+        "beat": 3,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000132",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 30720,
+        "bar": 7,
+        "beat": 4,
+        "tick": 0,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000133",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 30960,
+        "bar": 7,
+        "beat": 4,
+        "tick": 240,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000134",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 31200,
+        "bar": 7,
+        "beat": 4,
+        "tick": 480,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      },
+      {
+        "hit_id": "d000135",
+        "class5": "toms",
+        "gm_note": 43,
+        "on_tick": 31440,
+        "bar": 7,
+        "beat": 4,
+        "tick": 720,
+        "approximate": true,
+        "flam": false,
+        "foot": false,
+        "generated": false
+      }
+    ],
+    "fill_bars": [
+      3,
+      7
+    ],
+    "swing_bars": [
+      4,
+      5,
+      6
+    ],
+    "alphatex": "\\title \"Drum song\"\n\\track \"Drums\"\n\\instrument percussion\n\\clef neutral\n\\articulation defaults\n\\voice\n\\ts (4 4) \\tempo 120 \\ac SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 |\n(HiHatClosed CrashHighHit).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nHiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 (SnareHit HiHatClosed).16 HiHatClosed.16 HiHatClosed.16 HiHatClosed.16 |\nSnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} SnareHit.32 {gr} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nHiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} HiHatClosed.8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} (SnareHit HiHatClosed).8 {tu 3} r.8 {tu 3} HiHatClosed.8 {tu 3} |\nSnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 SnareHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 MidTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16 VeryLowTomHit.16\n\\voice\n |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.1 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.2 KickHit2.2 |\nKickHit2.1\n",
+    "hit_map": [
+      {
+        "hitId": "d000000",
+        "bar": 0,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000001",
+        "bar": 0,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000002",
+        "bar": 0,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000003",
+        "bar": 0,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000009",
+        "bar": 1,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000004",
+        "bar": 1,
+        "voice": 0,
+        "beat": 0,
+        "note": 1
+      },
+      {
+        "hitId": "d000010",
+        "bar": 1,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000011",
+        "bar": 1,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000012",
+        "bar": 1,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000007",
+        "bar": 1,
+        "voice": 0,
+        "beat": 4,
+        "note": 0
+      },
+      {
+        "hitId": "d000013",
+        "bar": 1,
+        "voice": 0,
+        "beat": 4,
+        "note": 1
+      },
+      {
+        "hitId": "d000014",
+        "bar": 1,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000015",
+        "bar": 1,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000016",
+        "bar": 1,
+        "voice": 0,
+        "beat": 7,
+        "note": 0
+      },
+      {
+        "hitId": "d000017",
+        "bar": 1,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000018",
+        "bar": 1,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000019",
+        "bar": 1,
+        "voice": 0,
+        "beat": 10,
+        "note": 0
+      },
+      {
+        "hitId": "d000020",
+        "bar": 1,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000008",
+        "bar": 1,
+        "voice": 0,
+        "beat": 12,
+        "note": 0
+      },
+      {
+        "hitId": "d000021",
+        "bar": 1,
+        "voice": 0,
+        "beat": 12,
+        "note": 1
+      },
+      {
+        "hitId": "d000022",
+        "bar": 1,
+        "voice": 0,
+        "beat": 13,
+        "note": 0
+      },
+      {
+        "hitId": "d000023",
+        "bar": 1,
+        "voice": 0,
+        "beat": 14,
+        "note": 0
+      },
+      {
+        "hitId": "d000024",
+        "bar": 1,
+        "voice": 0,
+        "beat": 15,
+        "note": 0
+      },
+      {
+        "hitId": "d000029",
+        "bar": 2,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000030",
+        "bar": 2,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000031",
+        "bar": 2,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000032",
+        "bar": 2,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000027",
+        "bar": 2,
+        "voice": 0,
+        "beat": 4,
+        "note": 0
+      },
+      {
+        "hitId": "d000033",
+        "bar": 2,
+        "voice": 0,
+        "beat": 4,
+        "note": 1
+      },
+      {
+        "hitId": "d000034",
+        "bar": 2,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000035",
+        "bar": 2,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000036",
+        "bar": 2,
+        "voice": 0,
+        "beat": 7,
+        "note": 0
+      },
+      {
+        "hitId": "d000037",
+        "bar": 2,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000038",
+        "bar": 2,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000039",
+        "bar": 2,
+        "voice": 0,
+        "beat": 10,
+        "note": 0
+      },
+      {
+        "hitId": "d000040",
+        "bar": 2,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000028",
+        "bar": 2,
+        "voice": 0,
+        "beat": 12,
+        "note": 0
+      },
+      {
+        "hitId": "d000041",
+        "bar": 2,
+        "voice": 0,
+        "beat": 12,
+        "note": 1
+      },
+      {
+        "hitId": "d000042",
+        "bar": 2,
+        "voice": 0,
+        "beat": 13,
+        "note": 0
+      },
+      {
+        "hitId": "d000043",
+        "bar": 2,
+        "voice": 0,
+        "beat": 14,
+        "note": 0
+      },
+      {
+        "hitId": "d000044",
+        "bar": 2,
+        "voice": 0,
+        "beat": 15,
+        "note": 0
+      },
+      {
+        "hitId": "d000049",
+        "bar": 3,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000050",
+        "bar": 3,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000051",
+        "bar": 3,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000052",
+        "bar": 3,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000047",
+        "bar": 3,
+        "voice": 0,
+        "beat": 4,
+        "note": 0
+      },
+      {
+        "hitId": "d000053",
+        "bar": 3,
+        "voice": 0,
+        "beat": 4,
+        "note": 1
+      },
+      {
+        "hitId": "d000054",
+        "bar": 3,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000055",
+        "bar": 3,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000056",
+        "bar": 3,
+        "voice": 0,
+        "beat": 7,
+        "note": 0
+      },
+      {
+        "hitId": "d000057",
+        "bar": 3,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000058",
+        "bar": 3,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000059",
+        "bar": 3,
+        "voice": 0,
+        "beat": 10,
+        "note": 0
+      },
+      {
+        "hitId": "d000060",
+        "bar": 3,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000048",
+        "bar": 3,
+        "voice": 0,
+        "beat": 12,
+        "note": 0
+      },
+      {
+        "hitId": "d000061",
+        "bar": 3,
+        "voice": 0,
+        "beat": 12,
+        "note": 1
+      },
+      {
+        "hitId": "d000062",
+        "bar": 3,
+        "voice": 0,
+        "beat": 13,
+        "note": 0
+      },
+      {
+        "hitId": "d000063",
+        "bar": 3,
+        "voice": 0,
+        "beat": 14,
+        "note": 0
+      },
+      {
+        "hitId": "d000064",
+        "bar": 3,
+        "voice": 0,
+        "beat": 15,
+        "note": 0
+      },
+      {
+        "hitId": "d000066",
+        "bar": 4,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000067",
+        "bar": 4,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000068",
+        "bar": 4,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000069",
+        "bar": 4,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000070",
+        "bar": 4,
+        "voice": 0,
+        "beat": 4,
+        "note": 0
+      },
+      {
+        "hitId": "d000071",
+        "bar": 4,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000072",
+        "bar": 4,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000073",
+        "bar": 4,
+        "voice": 0,
+        "beat": 7,
+        "note": 0
+      },
+      {
+        "hitId": "d000074",
+        "bar": 4,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000075",
+        "bar": 4,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000076",
+        "bar": 4,
+        "voice": 0,
+        "beat": 10,
+        "note": 0
+      },
+      {
+        "hitId": "d000077",
+        "bar": 4,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000078",
+        "bar": 4,
+        "voice": 0,
+        "beat": 12,
+        "note": 0
+      },
+      {
+        "hitId": "d000079",
+        "bar": 4,
+        "voice": 0,
+        "beat": 13,
+        "note": 0
+      },
+      {
+        "hitId": "d000080",
+        "bar": 4,
+        "voice": 0,
+        "beat": 14,
+        "note": 0
+      },
+      {
+        "hitId": "d000081",
+        "bar": 4,
+        "voice": 0,
+        "beat": 15,
+        "note": 0
+      },
+      {
+        "hitId": "d000086",
+        "bar": 5,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000087",
+        "bar": 5,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000084",
+        "bar": 5,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000088",
+        "bar": 5,
+        "voice": 0,
+        "beat": 3,
+        "note": 1
+      },
+      {
+        "hitId": "d000089",
+        "bar": 5,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000090",
+        "bar": 5,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000091",
+        "bar": 5,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000085",
+        "bar": 5,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000092",
+        "bar": 5,
+        "voice": 0,
+        "beat": 9,
+        "note": 1
+      },
+      {
+        "hitId": "d000093",
+        "bar": 5,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000098",
+        "bar": 6,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000099",
+        "bar": 6,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000106",
+        "bar": 6,
+        "voice": 0,
+        "beat": 4,
+        "note": 0
+      },
+      {
+        "hitId": "d000100",
+        "bar": 6,
+        "voice": 0,
+        "beat": 4,
+        "note": 1
+      },
+      {
+        "hitId": "d000101",
+        "bar": 6,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000102",
+        "bar": 6,
+        "voice": 0,
+        "beat": 7,
+        "note": 0
+      },
+      {
+        "hitId": "d000103",
+        "bar": 6,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000097",
+        "bar": 6,
+        "voice": 0,
+        "beat": 10,
+        "note": 0
+      },
+      {
+        "hitId": "d000104",
+        "bar": 6,
+        "voice": 0,
+        "beat": 10,
+        "note": 1
+      },
+      {
+        "hitId": "d000105",
+        "bar": 6,
+        "voice": 0,
+        "beat": 12,
+        "note": 0
+      },
+      {
+        "hitId": "d000111",
+        "bar": 7,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000112",
+        "bar": 7,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000109",
+        "bar": 7,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000113",
+        "bar": 7,
+        "voice": 0,
+        "beat": 3,
+        "note": 1
+      },
+      {
+        "hitId": "d000114",
+        "bar": 7,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000115",
+        "bar": 7,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000116",
+        "bar": 7,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000110",
+        "bar": 7,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000117",
+        "bar": 7,
+        "voice": 0,
+        "beat": 9,
+        "note": 1
+      },
+      {
+        "hitId": "d000118",
+        "bar": 7,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000120",
+        "bar": 8,
+        "voice": 0,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000121",
+        "bar": 8,
+        "voice": 0,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000122",
+        "bar": 8,
+        "voice": 0,
+        "beat": 2,
+        "note": 0
+      },
+      {
+        "hitId": "d000123",
+        "bar": 8,
+        "voice": 0,
+        "beat": 3,
+        "note": 0
+      },
+      {
+        "hitId": "d000124",
+        "bar": 8,
+        "voice": 0,
+        "beat": 4,
+        "note": 0
+      },
+      {
+        "hitId": "d000125",
+        "bar": 8,
+        "voice": 0,
+        "beat": 5,
+        "note": 0
+      },
+      {
+        "hitId": "d000126",
+        "bar": 8,
+        "voice": 0,
+        "beat": 6,
+        "note": 0
+      },
+      {
+        "hitId": "d000127",
+        "bar": 8,
+        "voice": 0,
+        "beat": 7,
+        "note": 0
+      },
+      {
+        "hitId": "d000128",
+        "bar": 8,
+        "voice": 0,
+        "beat": 8,
+        "note": 0
+      },
+      {
+        "hitId": "d000129",
+        "bar": 8,
+        "voice": 0,
+        "beat": 9,
+        "note": 0
+      },
+      {
+        "hitId": "d000130",
+        "bar": 8,
+        "voice": 0,
+        "beat": 10,
+        "note": 0
+      },
+      {
+        "hitId": "d000131",
+        "bar": 8,
+        "voice": 0,
+        "beat": 11,
+        "note": 0
+      },
+      {
+        "hitId": "d000132",
+        "bar": 8,
+        "voice": 0,
+        "beat": 12,
+        "note": 0
+      },
+      {
+        "hitId": "d000133",
+        "bar": 8,
+        "voice": 0,
+        "beat": 13,
+        "note": 0
+      },
+      {
+        "hitId": "d000134",
+        "bar": 8,
+        "voice": 0,
+        "beat": 14,
+        "note": 0
+      },
+      {
+        "hitId": "d000135",
+        "bar": 8,
+        "voice": 0,
+        "beat": 15,
+        "note": 0
+      },
+      {
+        "hitId": "d000005",
+        "bar": 1,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000006",
+        "bar": 1,
+        "voice": 1,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000025",
+        "bar": 2,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000026",
+        "bar": 2,
+        "voice": 1,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000045",
+        "bar": 3,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000046",
+        "bar": 3,
+        "voice": 1,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000065",
+        "bar": 4,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000082",
+        "bar": 5,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000083",
+        "bar": 5,
+        "voice": 1,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000094",
+        "bar": 6,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000095",
+        "bar": 6,
+        "voice": 1,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000107",
+        "bar": 7,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      },
+      {
+        "hitId": "d000108",
+        "bar": 7,
+        "voice": 1,
+        "beat": 1,
+        "note": 0
+      },
+      {
+        "hitId": "d000119",
+        "bar": 8,
+        "voice": 1,
+        "beat": 0,
+        "note": 0
+      }
+    ]
+  }
+}
