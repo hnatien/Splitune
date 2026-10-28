@@ -6,8 +6,8 @@ version: 1
 
 instruments:
   guitar:
-    # Thresholds from the P2 sweep on separated stems (eval/results/p2). A4 compensation and the
-    # open-string tuning suggestion: step 22, P2g (eval/results/p2g).
+    # Thresholds from the P2 sweep on separated stems (eval/results/p2). A4 compensation, the
+    # open-string tuning suggestion and bends: step 22, P2g (eval/results/p2g).
     transcriber: basic_pitch
     params:
       min_freq_hz: 70
@@ -16,6 +16,7 @@ instruments:
       min_note_ms: 58
       a4_compensation: true
       tuning_suggestion: true
+      bends: true
   bass:
     # ≈30 Hz floor (06 §4) and a ceiling well above a 4-string's 24th fret (G5 ≈ 784 Hz is rare).
     # Thresholds from the P2 sweep on separated stems (eval/results/p2).

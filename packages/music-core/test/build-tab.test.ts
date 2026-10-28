@@ -134,6 +134,34 @@ describe('buildTab', () => {
     expect(at(suggested(1, [43, 38, 33, 26])).tuning_midi).toEqual(TUNINGS.guitar_standard)
   })
 
+  it('marks the largest bend of a note from a quarter tone up', () => {
+    const notes = makeNotes([
+      {
+        id: 'bent',
+        onset_s: 0.5,
+        pitch_midi: 62,
+        bend_cents: [
+          [0, 0],
+          [0.08, 120],
+          [0.15, 196],
+        ],
+      },
+      {
+        id: 'wobble',
+        onset_s: 1,
+        pitch_midi: 62,
+        bend_cents: [
+          [0, 0],
+          [0.1, 30],
+        ],
+      },
+    ])
+    const result = buildTab(notes, makeBeats())
+    expect(result.tab.events.find((e) => e.note_id === 'bent')?.bend_cents).toBe(196)
+    expect(result.tab.events.find((e) => e.note_id === 'wobble')?.bend_cents).toBeUndefined()
+    expect(result.alphaTex).toContain('{b (0 4)}')
+  })
+
   it('records swing bars', () => {
     const times = [0, 1, 2, 3].flatMap((b) => [0.5 + b * 0.5, 0.5 + b * 0.5 + 0.34])
     const notes = makeNotes(times.map((t) => ({ onset_s: t, pitch_midi: 60 })))

@@ -18,6 +18,7 @@ export interface AlphaTexEvent {
   offTick: number
   string?: number
   fret?: number // absolute (from the nut)
+  bendCents?: number // the note's largest bend, written as a bend up and hold
 }
 
 export interface AlphaTexChord {
@@ -56,6 +57,11 @@ export interface AlphaTexResult {
 
 function noteName(midi: number): string {
   return `${pcName(midi, 'sharp')}${Math.floor(midi / 12) - 1}`
+}
+
+function bend(cents: number | undefined): string {
+  const quarters = Math.round((cents ?? 0) / 50)
+  return quarters > 0 ? `{b (0 ${quarters})}` : ''
 }
 
 export function toAlphaTex(input: AlphaTexInput): AlphaTexResult {
@@ -114,7 +120,7 @@ export function toAlphaTex(input: AlphaTexInput): AlphaTexResult {
         const content = notes
           .map((e) =>
             i === 0 && fresh.length > 0
-              ? `${(e.fret as number) - input.capo}.${e.string}`
+              ? `${(e.fret as number) - input.capo}.${e.string}${bend(e.bendCents)}`
               : `-.${e.string}`,
           )
           .join(' ')
