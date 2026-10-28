@@ -216,7 +216,8 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
 
 // Master volume (per device), a sunken capsule like speed: mute, a fader and its "80 %" readout.
 // A tap on the track or on mute works without dragging (WCAG 2.5.7); unmute returns to the level
-// before muting. Phones keep their hardware keys.
+// before muting. Phones keep their hardware keys. The fader gives up length before the capsule
+// wraps to a row of its own.
 function VolumeControl() {
   const volume = usePracticeDefaults((s) => s.volumePct)
   const update = usePracticeDefaults((s) => s.update)
@@ -226,7 +227,7 @@ function VolumeControl() {
   return (
     <fieldset
       aria-label={label}
-      className="m-0 flex items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
+      className="m-0 flex min-w-0 max-w-fit grow basis-48 items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
     >
       <TransportButton
         size="practice-2"
@@ -239,7 +240,7 @@ function VolumeControl() {
           update({ volumePct: muted ? 0 : restore.current })
         }}
       />
-      <div className="w-36 px-3">
+      <div className="w-36 min-w-0 px-3">
         <Slider
           value={volume}
           step={1}
