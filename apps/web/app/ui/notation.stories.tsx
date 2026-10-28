@@ -115,6 +115,16 @@ export const Loop: Story = {
   },
 }
 
+/** A bent note: the fixture's last note bends a half step (notes bend_cents → tab bend mark). */
+export const Bend: Story = {
+  render: () => <Score />,
+  play: async ({ canvasElement }) => {
+    await rendered(canvasElement)
+    await expect(built.tab.events.filter((e) => e.bend_cents !== undefined)).toHaveLength(1)
+    await expect(built.alphaTex).toContain('{b (0 2)}')
+  },
+}
+
 /** Bar A tapped, waiting for bar B (dashed shading). */
 export const Armed: Story = { render: () => <Score armedBar={4} /> }
 

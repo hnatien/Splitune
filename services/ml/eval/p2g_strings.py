@@ -132,6 +132,7 @@ def cmd_features(_: argparse.Namespace) -> int:
 
 
 AUGMENT_MAX_S = 60.0
+AUGMENT_MIN_S = 10.0  # single-note recordings are padded with silence to this
 
 
 def free_windows() -> list[str]:
@@ -169,6 +170,8 @@ def cmd_augment(_: argparse.Namespace) -> int:
         if not stem.is_file():
             guitar = p2g.read(audio)[: int(AUGMENT_MAX_S * p2g.RATE)]
             guitar = np.repeat(guitar.mean(axis=1)[:, None], 2, axis=1)
+            short = max(0, int(AUGMENT_MIN_S * p2g.RATE) - len(guitar))
+            guitar = np.pad(guitar, ((0, short), (0, 0)))  # the separator needs a whole chunk
             window = windows[k % len(windows)]
             band = cast(
                 NDArray[np.float32],
