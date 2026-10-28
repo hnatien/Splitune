@@ -9,7 +9,7 @@ Splitune is a web-first practice app for people learning an instrument. A learne
 |---|---|---|
 | [`status.md`](status.md) | One table: every step, its state, open owner checks | You want to know what exists |
 | [`specs/`](specs/README.md) | The build specs `00`–`28`: stack, architecture, contracts, ML pipeline, music algorithms, audio engine, UI, ops | You build or change something |
-| [`steps/`](steps/README.md) | One prompt per implementation step (`s01`–`s24`), each run by a fresh agent session | You start a step |
+| [`steps/`](steps/README.md) | One prompt per implementation step (`s01`–`s25`), each run by a fresh agent session | You start a step |
 | [`progress-log.md`](progress-log.md) | What each step actually built, decided, verified and left open, newest at the bottom | You need the history or a step's details |
 | [`research/`](research/README.md) | The evidence behind the specs (2026-10-20): ML models, users, UX, market, legal, decisions D1–D13 | You need to know *why* |
 

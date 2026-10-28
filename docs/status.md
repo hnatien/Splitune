@@ -23,12 +23,13 @@ What is built, as of **2026-10-24**. Details, verification and open items for ea
 | s16 | Compatibility, accessibility, hardening (MVP gate) | Partial | Real devices | Step 16 |
 | s17 | Deploy (Railway, R2, workers) | Partial | Signed-in device smoke test, real sleep/wake | Step 17 |
 | s18 | v1 practice depth: speed trainer, transpose/capo, fingerings, tuning presets, sections, record-and-compare, metronome | Not started | Groundwork only: `SpeedTrainer` contract, `speed_trainer` flag, `suggestCapo`, manual capo input, `alt_fingerings` | — |
-| s19 | v1 piano and drums | Partial | Piano: wait mode, levels (pipeline gaps moved to s24). Drums: all | Step 17d; Step 18 (piano notes); Step 18a |
+| s19 | v1 piano and drums | Partial | Piano: wait mode, levels (pipeline gaps moved to s24; drums moved to s25) | Step 17d; Step 18 (piano notes); Step 18a |
 | s20 | v1 mic, offline, export, native | Not started | — | — |
 | s21 | Guitar/bass Notes view | Done | E2E run; real devices; tuning option in the Worker | Step 18b (Phase 1 design, Phase 2 build) |
 | s22 | Guitar accuracy | Not started | Needs the owner's songs, tabs and time budget | — |
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
 | s24 | Piano accuracy | Partial | Phases 0–6 built and measured (P2p); owner's songs end to end and Notes/Staff screenshots pending the owner | Step 24 |
+| s25 | Drums end to end | Not started | Prompt written 2026-10-28; nothing transcribes or renders drums yet | — |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.

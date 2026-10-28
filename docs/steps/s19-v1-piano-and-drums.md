@@ -17,22 +17,19 @@ Prerequisites: MVP (steps 01–17) and the piano work on `dev` (PROGRESS steps 1
 - Piano views: chord chart with keyboard voicings (Chart), falling-notes roll onto a keyboard (Notes), grand staff from alphaTex with two voices per hand (Staff); piano chord levels `simplified` / `as_transcribed`; "Right only" dims the left hand in the roll.
 
 ## Goal
-Finish piano practice (wait mode, level adaptation; the pipeline gaps are step 24) and add drums end to end: learners practise drum parts on a drum grid or alphaTab drum tab from their songs.
+Finish piano practice (wait mode, level adaptation; the pipeline gaps are step 24). Drums are step 25.
 
 ## Deliverables
 1. **Piano pipeline gaps:** moved to step 24 (`s24-piano-accuracy.md`: solo-piano path, Aria-AMT, electric-piano gate, PM2S hands, with the rest of the piano accuracy work). Don't change the piano ML pipeline here.
 2. **Piano wait mode (V5, Plus):** Web MIDI on Chromium/Firefox desktop only (feature-detected, hidden where `requestMIDIAccess` is missing, e.g. Safari/iOS); pause the transport at each chord/note event until the expected pitch set is held; octave-insensitive beginner option; hands-separate practice mutes the other hand's notes; works with the roll, the staff and the chart.
 3. **Piano level adaptation (V13):** right-hand melody only; left-hand block chords from the chord labels; rhythm simplified to quarter/half notes. Rules live in `music-core/level/` with golden tests per level; the Chart/Notes/Staff views all follow the chosen level.
-4. **Drums pipeline:** ADTOF pretrained 5-class model (ADTOF-pytorch weights; licences ignored per personal mode) on the drum stem → GM mapping → quantize; hi-hat open/closed and cymbal choices flagged `approximate`; register record + `fetch_models.py`; evaluate on MDB Drums/ENST/E-GMD excerpts available locally (P2-style report under `services/ml/eval/results/`), with a `views.yaml` drums gate from the result.
-5. **Drum view:** grid with lane names + kit legend, `approximate` hits drawn with the medium-confidence encoding (dashed outline, doc 26 §5), alphaTab drum tab option, "core groove" simplification (V13: kick + snare + hi-hat on the main pattern; fills = bars whose pattern differs from the bar-pattern mode, removed), in `music-core/level/` with golden tests. Lazy-loaded like the piano views (route budget, see shared context).
+4. **Drums pipeline and 5. drum view:** moved to step 25 (`s25-drums.md`: test set, ADTOF and other candidates measured, calibrated `notes.drums`, drum grid, drum tab, core-groove level, gate). Don't build drums here.
 
 ## Acceptance criteria
-- Contract-valid `notes.drums` artefacts from real songs on the Mac; drum evaluation reports under `services/ml/eval/results/`.
-- GM drum mapping round-trips to alphaTab drum tab (test); MusicXML percussion round-trip is checked once step 20's export exists (note it in `docs/progress-log.md` if it doesn't yet).
 - Piano roll stays within one frame of the clock at 60 fps on a mid-range tablet if available (report device and numbers; still unmeasured after step 18).
 - Wait mode advances with zero false positives in a scripted 100-event MIDI test (virtual MIDI source in the browser test), and key-press-to-advance latency is under 30 ms (report the measurement).
-- Level rules have golden tests per level for piano and drums.
+- Level rules have golden tests per level for piano.
 - Flags default off, then on after verification; each feature names its success metric (doc 16); `docs/progress-log.md` updated.
 
 ## Verification to run and report
-`uv run pytest -k "piano or drums"`, evaluation report summaries, `pnpm --filter @splitune/music-core test`, web unit/stories/E2E runs, `pnpm --filter @splitune/web budget --enforce` before/after, device notes.
+`uv run pytest -k piano`, evaluation report summaries, `pnpm --filter @splitune/music-core test`, web unit/stories/E2E runs, `pnpm --filter @splitune/web budget --enforce` before/after, device notes.
