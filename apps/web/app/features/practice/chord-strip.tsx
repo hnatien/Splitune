@@ -125,7 +125,7 @@ export function ChordStrip({
           ))}
         </ol>
       ) : null}
-      {layers.tab && !compact && (
+      {(layers.tab || layers.drums) && !compact && (
         <Suspense fallback={null}>
           <ScoreTools />
         </Suspense>

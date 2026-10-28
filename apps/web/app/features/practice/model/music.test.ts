@@ -1,7 +1,8 @@
 import beats from '@splitune/contracts/fixtures/beats.json'
 import chords from '@splitune/contracts/fixtures/chords.json'
+import drums from '@splitune/contracts/fixtures/notes.drums.json'
 import notes from '@splitune/contracts/fixtures/notes.guitar.json'
-import type { Beats, Chords, Notes } from '@splitune/music-core'
+import type { Beats, Chords, DrumNotes, Notes } from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
 import { computeMusic, type MusicInput } from './music'
 
@@ -110,5 +111,23 @@ describe('effective music', () => {
     )
     expect(covered).toEqual(out.melody?.notes.map((_, i) => i))
     expect(out.displayChords.length).toBeGreaterThan(0)
+  })
+
+  it('builds drum hits and the drum staff at the level, falling back to every hit', () => {
+    const drumInput = (level: MusicInput['options']['level']) =>
+      input({
+        notes: drums as DrumNotes,
+        options: { capo: 0, level, fingeringMode: 'easiest' },
+      })
+    const out = computeMusic(drumInput('as_transcribed'))
+    expect(out.tab).toBeUndefined()
+    expect(out.drums?.hits.length).toBe((drums as DrumNotes).hits.length)
+    expect(out.drums?.staff.alphaTex).toContain('instrument percussion')
+    expect(new Set(out.drums?.staff.noteMap.map((r) => r.noteId))).toEqual(
+      new Set(out.drums?.hits.map((h) => h.id)),
+    )
+    expect(computeMusic(drumInput('core_groove')).drums?.level).toBe('core_groove')
+    // A guitar level a drum song doesn't have.
+    expect(computeMusic(drumInput('chords_only')).drums?.level).toBe('as_transcribed')
   })
 })

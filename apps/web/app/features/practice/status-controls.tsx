@@ -20,8 +20,8 @@ export function StatusControls({ layout }: { layout: PracticeLayout }) {
   const videoOpen = usePracticeUi((s) => s.videoOpen)
   return (
     <>
-      {(layers.chords || layers.tab || layers.roll || layers.melody) && <Legend />}
-      {layers.chords && (layers.tab || layers.roll || layers.melody) && (
+      {(layers.chords || layers.tab || layers.roll || layers.melody || layers.drums) && <Legend />}
+      {layers.chords && (layers.tab || layers.roll || layers.melody || layers.drums) && (
         <ViewSwitch layout={layout} />
       )}
       {video.data && (
@@ -69,15 +69,16 @@ function Legend() {
 
 // Tab / Notes / Chords (the tab, the lanes onto the neck, the chord sheet; the glance view on phone
 // portrait); piano's Chart / Notes / Staff (the chord chart, the falling notes, the grand staff);
-// vocals' Melody / Chords.
+// drums' Grid / Staff / Chords; vocals' Melody / Chords.
 // Choosing a notation over a chords-only recommendation is the banner's "Show tab anyway".
 function ViewSwitch({ layout }: { layout: PracticeLayout }) {
   const shown = useShownView(layout)
   const chosen = usePracticeUi((s) => s.view)
   const { layers } = usePractice()
   const piano = layers.roll
-  // The second notation chosen over the first: piano's Staff, guitar's Notes.
-  const other = piano ? chosen === 'staff' && 'staff' : chosen === 'notes' && 'notes'
+  // The second notation chosen over the first: piano's and drums' Staff, guitar's Notes.
+  const other =
+    piano || layers.drums ? chosen === 'staff' && 'staff' : chosen === 'notes' && 'notes'
   const item = (value: string, label: string) => (
     <ToggleGroupItem key={value} value={value} className="px-4 text-sm">
       {label}
@@ -92,7 +93,7 @@ function ViewSwitch({ layout }: { layout: PracticeLayout }) {
         if (view === 'tab' || view === 'staff' || view === 'notes') {
           usePracticeUi.setState({ view, forceTab: true })
           track('view_changed', {
-            view: view === 'tab' && (piano || layers.melody) ? 'notes' : view,
+            view: view === 'tab' && (piano || layers.melody || layers.drums) ? 'notes' : view,
           })
         } else if (view === 'chords') {
           usePracticeUi.setState({ view: 'chords' })
@@ -102,17 +103,23 @@ function ViewSwitch({ layout }: { layout: PracticeLayout }) {
     >
       {layers.melody
         ? [item('tab', m['practice.view_melody']()), item('chords', m['practice.view_chords']())]
-        : piano
+        : layers.drums
           ? [
-              item('chords', m['practice.view_chart']()),
-              item('tab', m['practice.view_notes']()),
+              item('tab', m['practice.view_grid']()),
               item('staff', m['practice.view_staff']()),
-            ]
-          : [
-              item('tab', m['practice.view_tab']()),
-              ...(layers.tab ? [item('notes', m['practice.view_notes']())] : []),
               item('chords', m['practice.view_chords']()),
-            ]}
+            ]
+          : piano
+            ? [
+                item('chords', m['practice.view_chart']()),
+                item('tab', m['practice.view_notes']()),
+                item('staff', m['practice.view_staff']()),
+              ]
+            : [
+                item('tab', m['practice.view_tab']()),
+                ...(layers.tab ? [item('notes', m['practice.view_notes']())] : []),
+                item('chords', m['practice.view_chords']()),
+              ]}
     </ToggleGroup>
   )
 }

@@ -19,7 +19,7 @@ const Search = z.object({
   speed: z.coerce.number().int().min(25).max(200).optional().catch(undefined),
   mix: z.enum(['your-part', 'minus-one', 'original']).optional().catch(undefined),
   level: z
-    .enum(['chords_only', 'simplified', 'as_transcribed', 'roots', 'full'])
+    .enum(['chords_only', 'simplified', 'as_transcribed', 'roots', 'full', 'core_groove'])
     .optional()
     .catch(undefined),
   // Onboarding's steps 4–5 over an example song (27 §3.3).

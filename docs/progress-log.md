@@ -1428,3 +1428,196 @@ Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run 
 
 **Effect on P2p:** 4 of 81 songs gated (two roomy/phone uprights, a doubled band part, one BabySlakh electric piano), mean onset F1 0.516; no song with onset F1 ≥ 0.9.
 
+
+## 2026-10-28 — Step 25: Drums (in progress)
+Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s25-drums`. Its own CUDA venv is `D:/venvs/s25-ml`; the shared `services/ml/.venv` is untouched.
+
+**Owner decisions**
+- 2026-10-28: approved the Phase 0 plan as proposed: the required downloads (~29 GB), no Slakh, a ~30 % analysis-time cap. The owner will fetch the RBMA13 Bandcamp album.
+- `D:\datasets` (the `~/datasets` junction target) had been removed before this step started. Every set was downloaded again; step 24's P2p data and `_tools` are gone, so P2p can't be re-run until it is rebuilt.
+
+**Phase 0** (`docs/research/ml/transcription-drums.md` §"2026-10 re-check")
+- ADTOF-pytorch stays the baseline. It ships one checkpoint (`Frame_RNN_adtofAll_0`, no separate RGW/YT models), and its front end has 84 bands, not 168.
+- ADT_STR (2026) is the only new transcriber with weights. STAR Drums and N2N have no released model.
+- The 6-stem MDX23C DrumSep is the only public kit separator that splits crash from ride.
+
+**Phase 1, built**
+- `eval/p2d.py` (plan / build / separate / predict --chain / report) and `eval/sets/p2d.yaml`: 48 items in six tiers. The definition and baseline are in specs/08 "Implementation notes (step 25)".
+- Downloads, under `~/datasets` with downloaders in `_tools/`:
+  - `pdl.py`: parallel ranges;
+  - `rzip.py`: extracts only matching zip members over HTTP, used for MUSDB18-HQ's test split, 11 GB of 22.7.
+- Renderers: sfizz 1.2.3 and FluidSynth 2.6.1 with GeneralUser GS. Kits come from sfzinstruments: DRSKit, Muldjord, Big Rusty, Unruly sticks and brushes, RetroDrums.
+- **`notes.drums` stage**, built ahead of Phase 2 so the harness runs the shipped code:
+  - `stage_notes/drums.py`;
+  - `drum_kit.py`: the one GM mapping and the 5-class defaults (hi-hat closed, toms on 47, cymbals crash on a downbeat after a 1 s gap, else ride; all flagged `approximate`);
+  - `adtof.py` + `adtof_net.py`: the Frame_RNN network and front end re-implemented from ADTOF-pytorch `85c192e`; the weights are fetched by `fetch_models.py adtof` and loaded with `weights_only=True`. The port reproduces the repo's reference MIDI hit for hit.
+  - YourMT3+ gained `transcribe_drums`.
+  - Registered in `stages.py` (torch island, GPU slot, optional `beats` input for the crash rule) and in `notes.personal.yaml`. It is **not scheduled**: `apps/api/src/pipeline.ts` is unchanged until `v1.drums` exists (Phase 2).
+  - Register record `adtof-frame-rnn`.
+  - No existing cache key changes (`yourmt3.py` was refactored without changing its params).
+- music-core CLI `quantize-drums` (the shipped `quantizeDrumHits`) with a golden file.
+
+**Baseline** (`services/ml/eval/results/p2d/2026-10-28-baseline.md`; BS-Roformer-SW stem → ADTOF, published thresholds), onset F1 ±50 ms on the chosen input:
+
+| tier | ADTOF | YourMT3+ |
+|---|---|---|
+| real-mdb | 0.848 | 0.769 |
+| real-enst | 0.709 | 0.882 (in-sample) |
+| solo-drums | 0.976 | 0.980 |
+| rendered-band | 0.777 | 0.745 |
+| drum-machine | 0.735 | 0.788 |
+| item mean, 42 items | 0.793 | 0.802 |
+
+- ±30 ms costs ADTOF about 0.02.
+- Weakest labels: brushes 0.52, swing 0.54, phone 0.50. Toms and cymbals are weak in every tier.
+- ADTOF misses ENST's soft kicks: 0 of 33 on one take. +12 dB of input gain recovers only part of it (+0.02 to +0.10 F1 on 3 items), so input level is a Phase 3 candidate, not the cause.
+- Exact bar patterns 0.11–0.25 (Jaccard 0.61–0.73).
+- Raw ADTOF peaks are under-confident: ECE 0.226.
+- Time: notes.drums 0.12 s per 30 s on the RTX 3060 (YourMT3+ 1.3 s). Separation is 5 s per 30 s, but in an analysis the drum stem is already there (a kept extra, or the target when the part is drums), so the baseline adds about 0.1 s per 30 s to a full analysis.
+
+**Verification**
+- `services/ml`:
+  - `ruff check`: clean.
+  - `pyright eval/p2d.py packages/stage_notes packages/splitune_ml_core scripts`: 0 errors.
+  - `pytest packages/stage_notes packages/splitune_ml_core eval/tests -m "not models"`: 146 passed, 21 errors. Every error is a Postgres connection timeout (Docker isn't running on this PC).
+  - `pytest packages/stage_notes/tests/test_drums.py`, including the `models` test: 7 passed.
+  - `pytest eval/tests/test_p2d.py`: 6 passed.
+- `packages/music-core`: `vitest run test/golden.test.ts` 17/17. Biome is clean on `cli.ts`.
+
+**Known gaps**
+- RBMA13 audio is missing (6 items skipped).
+- No owner songs yet.
+- The Mac (MPS) timings need the owner.
+- The SFZ kits' key maps were checked for sound per GM key, not for which piece each key plays.
+- `D:\models-s25` (a 3.6 MB scratch copy of the ADTOF weights) is left for the owner to delete; a safety check blocked its removal.
+
+- 2026-10-28: the owner approved the Phase 2–6 plan (stop point 2).
+
+**Phase 2: orchestration**
+- Flag `v1.drums` (contracts `FLAGS`, default off).
+- `planAnalysis` plans `notes.drums` for a drums analysis only while the flag is on. The flag is read by `POST /v1/analyses` and URL import.
+  - The stage gets `beats` as an input and a soft dependency.
+  - Soft edges to stages that have no job (reused decode and beats) are dropped. A reused beats artefact would otherwise make the plan throw.
+- Finalize reads `notes.drums` as `DrumNotes` and scores the hits like notes for the view rule. It writes no render: the web builds the drum score from hits + beats (music-core), as for the piano roll, so levels and corrections stay in the browser.
+- `views.yaml` lists drums in `notation_supported`. Without the flag no `notes.drums` exists, so drums stay `chords_only` / `notes_unavailable`. There is no quality gate yet (Phase 6).
+- Doc 06 has the step 25 notes.
+- Caches: none invalidated (new stage, new flag).
+- Tests:
+  - `apps/api` `vitest run src/pipeline.test.ts`: 4 passed.
+  - `apps/node-worker` finalize + views: 20 passed.
+  - contracts: 45 passed.
+  - `turbo typecheck` (TS packages): clean. Biome: clean.
+  - The full `apps/api` / `apps/node-worker` suites have 6 failures that can't run on this Windows PC: they spawn `uv` and the Node worker, use `SIGSTOP`, or need `pg_dump` on PATH. None touch the changed code.
+
+**Phase 3: accuracy** (`eval/p2d_tune.py`; `eval/results/p2d/2026-10-28-phases.md` lists every candidate, `2026-10-28-phase3.md` is the before/after report)
+- **Shipped** (`notes.personal.yaml` drums params, `adtof.py` options `input_rms_db` and `confidence`):
+  - The drum stem is brought to −17 dBFS RMS before ADTOF. The gain was chosen by 2-fold CV with per-class thresholds.
+  - Thresholds `[0.08, 0.08, 0.42, 0.18, 0.32]`, tuned on all items afterwards.
+  - Confidence is the margin over the class threshold, with isotonic table `config/calibration/adtof-frame-rnn@adtofAll_0-pt-85c192e.drums.json` (fit split).
+- **Results:**
+  - Chosen input, all 42 items: 0.838 vs baseline 0.793 (CV estimate 0.826). Held-out: 0.810 vs 0.773.
+  - Per tier: ENST 0.790 vs 0.709 (the soft kicks), drum machines 0.896 vs 0.735, rendered bands 0.813 vs 0.777, MDB 0.855 vs 0.848, solo 0.956 vs 0.976 (a small loss).
+  - Mixture fallback: 0.798 vs 0.772.
+  - Calibration: held-out ECE 0.295 → 0.021, AUROC 0.789.
+- **Not shipped:**
+  - htdemucs_ft and htdemucs_6s drum stems;
+  - a shared threshold offset;
+  - YourMT3+ union, agreement and "rescue" ensembles. Rescue is +0.009 held-out, mostly in-sample ENST, and YourMT3+ costs ~8 s per 30 s and ~14 GB on the Mac.
+  - a per-class logistic confidence;
+  - a solo bypass, which gives identical hits on solo kits.
+- **Blocked:** `mdx23c-drumsep` (DrumSep 6-stem kit separator) is downloaded and registered, and `p2d_tune.py kitsep`/`kit` are written. This PC's safety rule refused to load the new checkpoint ("code from external"), so the kit split waits for the owner. ADT_STR is not run for the same reason (it needs its own model code).
+- **No velocity:** ADTOF has none, so `DrumHit.velocity` stays empty.
+- **Caches:** `notes.drums` params and calibration changed. No production cache existed (the stage is unscheduled).
+- **Bugs found and fixed in the analysis script:**
+  - It first indexed ADTOF's outputs in `drum_kit.CLASSES` order (toms ↔ hi-hat); every table above was computed after the fix.
+  - An empty `services/ml/.venv`, made by a `pnpm typecheck` run without the step venv, made pyright miss every import. It was moved to `D:\venvs\s25-stray-empty-venv*` (two empty 151 KB shells, safe to delete).
+- **Verification:**
+  - `ruff check eval packages`: clean.
+  - `pyright eval/p2d_tune.py eval/p2d.py packages/stage_notes packages/splitune_ml_core scripts`: 0 errors.
+  - `pytest packages/stage_notes/tests/test_drums.py eval/tests/test_p2d.py`: 15 passed, including the models test.
+  - `pytest packages/stage_notes packages/splitune_ml_core eval/tests -m "not models"`: 169 passed. Postgres is up now, so the 21 earlier errors are gone.
+
+**Phase 4: music-core drum score, export, levels** (doc 07 "Implementation notes (step 25)")
+- `buildDrumScore` (`drums/build-drums.ts`): quantized hits with flams, hands/feet voices, level, alphaTex and hit map.
+  - Only beat corrections apply. The editor gets no drum editing in this step, so there are no drum `CorrectionOp`s.
+- Drum staff alphaTex (`export/alphatex-drums.ts`): alphaTab 1.8 standard articulations matched to GM by MIDI output, probed with the 1.8.4 importer.
+  - Every GM kit key round-trips except 40 (written as snare 38) and 59 (ride 2, written as ride 51).
+  - Flams are grace notes. Pickups and swing bars use the tab writer's bar and duration rules.
+- Levels (`level/drums.ts`):
+  - `as_transcribed`;
+  - `core_groove`: kick, snare and hi-hat/ride; a fill bar is the main pattern instead;
+  - `simplified`: hi-hat in eighths. Ghost-note dropping waits for velocity.
+  - A first fill rule (Jaccard against the main pattern) flagged busy 16th hi-hat bars as fills. The rule is now "holds less than half of the main pattern".
+- CLI `build-drums`. Goldens: `build-drums.as-transcribed|core-groove|simplified.json` on one song (pickup, swing bars 4–6, a flam, fills in bars 3 and 7). The Phase 1 `quantize-drums` golden moved into `update-golden.ts`, unchanged.
+- MusicXML percussion round-trip waits for step 20's export.
+- Verification (`packages/music-core`): `tsc -p .` clean, Biome clean, `vitest run` 176 passed (14 files, 9 new drum tests).
+
+**Phase 5: drum views** (doc 12 "Implementation notes (step 25)")
+- Grid / Staff / Chords for drums:
+  - the Grid is `@splitune/notation` `DrumGrid` (a canvas; lanes cymbals → kick, unsure and guessed hits hollow and dashed, "?" on low, flam grace block, piece letters with a key);
+  - the Staff is music-core's drum staff in `AlphaTabView`;
+  - both load lazily through the chord-sheet chunk.
+- Levels: Main groove / Simplified / As played in the level popover (no capo for drums). `core_groove` was added to the analytics `PracticeLevel` and the route's `?level=` (`contracts:gen`: no generated change).
+- Data:
+  - `notes.drums` is read as `DrumNotes`, and the screen holds until the hits are in the music.
+  - The Worker's `computeMusic` builds drums with `buildDrumScore`.
+  - There are no drum editor ops.
+- The mixer is unchanged: the drum stem plus its mix-minus already give "Minus one" without the drums.
+- Onboarding keeps Drums as "Coming soon", like piano: its song step needs a drum example song, which doesn't exist. Adding one with `pnpm examples:build` is the owner's call.
+- Song pickup and swing bars are covered by the music-core goldens. The web stories use the fixture's 8-bar grid with no pickup, with a swing variant on bars 5–6.
+- Copy: 11 new `practice.*` keys.
+- Route budget (`pnpm budget`, production build): 317.0 KB before, 317.1 KB after, of 320 KB.
+- Verification:
+  - `apps/web`: `tsc` clean, Biome clean, unit tests 145 passed (34 files; 1 new drums test).
+  - Stories (Chromium): `practice.stories.tsx` + `app/ui` 350/352 passed, including all 13 new drum stories.
+    - The 2 failures are "Screen May Lock*": after 20:00 the evening Stage hint adds a second "Close" button. They depend on the time of day and are unrelated.
+    - WebKit stories time out on this Windows PC for existing piano stories too, so WebKit wasn't counted.
+  - `packages/notation` 41 passed (4 new).
+- Environment notes:
+  - The worktree had no built `packages/audio-dsp/dist/dsp.wasm` (ignored build output). It was copied from the main checkout after checking it against the committed `dsp.wasm.sha256`.
+  - `pnpm contracts:gen` without `UV_PROJECT_ENVIRONMENT` creates an empty `services/ml/.venv`. A third such shell was moved to `D:\venvs\s25-stray-empty-venv-3`.
+
+**Phase 6: gate proposal (stop point 4; nothing switched on yet)**
+- Proposed `quality_gate.drums: pass`. Rule: P2d item-mean onset F1 (±50 ms) on the chosen input ≥ 0.80, the same bar as piano.
+  - Shipped chain: 0.838 over all items (2-fold CV estimate 0.826, held-out split 0.810).
+  - Per tier: MDB 0.855, ENST 0.790, rendered bands 0.813, drum machines 0.896, solo 0.956. RBMA13 is not built.
+- Per-song mean calibrated confidence vs onset F1 (shipped, 42 items): rank correlation 0.70.
+  - A `min_confidence_mean.drums` floor of 0.75 would send 4 songs to chords only: three bad (F1 0.551–0.610) and one fine drum-machine song (0.789).
+  - It would miss one bad rendered song (0.537 at 0.859).
+  - The table was fitted on the fit split, but this check uses all items.
+  - The low-band share of hits is ≤ 0.03 on every song, so the existing `low_confidence` rules never fire for drums.
+- Analysis time: `notes.drums` is 0.1–0.3 s per 30 s on the RTX 3060, and the drum stem already exists in a drums analysis. That is under 1 % of a full analysis on this PC. The Mac isn't measured.
+- **Waiting for the owner:**
+  - the gate rule and threshold;
+  - whether to add the 0.75 confidence floor;
+  - turning `v1.drums` on;
+  - drum excerpts for the end-to-end run;
+  - whether to allow loading the DrumSep checkpoint;
+  - fine-tuning (not recommended now);
+  - a drum example song for onboarding.
+- 2026-10-29: the owner approved the gate at 0.80 with the 0.75 confidence floor, and `v1.drums` on after the end-to-end run.
+
+**Phase 6: gate and end to end**
+- `views.yaml`: `quality_gate.drums: pass`, `min_confidence_mean.drums: 0.75`, and a `changes` entry with the model versions. `apps/node-worker` views test updated.
+- `v1.drums` stays off in code. It is turned on with a `feature_flags` row.
+- **Local end to end** (this PC: Docker Postgres + SeaweedFS, `pnpm dev` web/API, `apps/node-worker`, ML worker from `D:\venvs\s25-ml` on the RTX 3060 with `ML_ISLAND_PYTHON` for every island):
+  - Setup: a local test account; `v1.drums` on in the local database only.
+  - Input: a 45 s excerpt of MUSDB18-HQ test "Louis Cressy Band – Good Time" (30–75 s), uploaded through the app's upload API as a drums Full analysis.
+  - The plan held `notes.drums` with the beats as input. Every stage was done.
+  - `notes.drums`: 206 hits (55 kick, 36 snare, 109 hi-hat, 2 toms, 4 cymbals; 115 `approximate`).
+    - It read the separated drum stem at −17 dBFS with margin confidence and the downbeats.
+    - Finalize read it as `DrumNotes`: mean confidence 0.935, `recommended_view: drum_grid`.
+  - Time, cold models included:
+    - analysis 51.2 s;
+    - `notes.drums` 0.6 s (1.2 % of the analysis);
+    - separate 16.1 s, decode 14.2 s, beats 12.3 s.
+  - The first attempt failed in `decode` with `island_missing`, because the worktree has no per-island venvs. `ML_ISLAND_PYTHON` fixed it, and the re-run (`/v1/analyses/{id}/rerun`) was done.
+- **Not done yet:**
+  - the owner's drum excerpts on the Mac worker;
+  - `v1.drums` in production, which needs this branch merged and deployed first.
+- **Viewed in the local app** (2026-10-29, 800 px browser pane):
+  - Grid at As played, Main groove and Simplified: lanes line up with their names; guesses are hollow and dashed, kick and snare solid; it scrolls past the playhead after a seek.
+  - Main groove drops the toms and the crash. On this excerpt the hi-hat is already in eighths, so Simplified looks like As played.
+  - Staff: hands up, feet down, × heads for hi-hats, dashed marks on guesses, current bar shaded.
+- **Fix from viewing:** the staff wrote a hit until the voice's next hit (kicks on 1 and 3 came out as halves). A hit now ends at its beat with rests after, as drum parts are read. Only the three `build-drums` goldens changed; music-core 176 passed.
+- **Seen, not drum-specific:** at 800 px the practice top bar (title, transcription chip, view switch, settings) is wider than the window, so the page scrolls sideways.

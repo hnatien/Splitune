@@ -1,17 +1,18 @@
 // JSON-in/JSON-out CLI for the Python eval harness and language-neutral golden tests:
-//   node src/cli.ts <fret|quantize|build-tab|build-piano|key> < input.json > output.json
+//   node src/cli.ts <fret|quantize|quantize-drums|build-tab|build-piano|build-drums|key> < input.json > output.json
 // (or `pnpm --silent --filter @splitune/music-core cli <command>`). Invalid input exits with
 // code 2 and an ErrorEnvelope-shaped JSON object on stderr.
-import { Beats, Chords, CorrectionOp, Notes } from '@splitune/contracts'
+import { Beats, Chords, CorrectionOp, DrumNotes, Notes } from '@splitune/contracts'
 import { z } from 'zod'
 import { buildTab } from './build-tab.ts'
 import { applyBeatCorrections } from './corrections/apply.ts'
+import { buildDrumScore } from './drums/build-drums.ts'
 import { fretConfig } from './fret/config.ts'
 import { assignFrets, groupIntoSteps } from './fret/dp.ts'
 import { createBeatGrid } from './grid/beatgrid.ts'
 import { estimateKey } from './harmony/key.ts'
 import { buildPianoScore } from './piano/build-piano.ts'
-import { quantizeNotes } from './quantize/quantize.ts'
+import { quantizeDrumHits, quantizeNotes } from './quantize/quantize.ts'
 
 const Ops = z.array(CorrectionOp)
 
@@ -44,6 +45,12 @@ const FretInput = z.object({
 
 const QuantizeInput = z.object({
   notes: Notes,
+  beats: Beats,
+  corrections: z.object({ beats: Ops.optional() }).optional(),
+})
+
+const QuantizeDrumsInput = z.object({
+  drums: DrumNotes,
   beats: Beats,
   corrections: z.object({ beats: Ops.optional() }).optional(),
 })
@@ -85,6 +92,18 @@ const BuildPianoInput = z.object({
     .object({ notes: Ops.optional(), beats: Ops.optional(), chords: Ops.optional() })
     .optional(),
   options: z.object({ title: z.string().optional() }).optional(),
+})
+
+const BuildDrumsInput = z.object({
+  drums: DrumNotes,
+  beats: Beats,
+  corrections: z.object({ beats: Ops.optional() }).optional(),
+  options: z
+    .object({
+      level: z.enum(['as_transcribed', 'core_groove', 'simplified']).optional(),
+      title: z.string().optional(),
+    })
+    .optional(),
 })
 
 function defined<T extends object>(value: T): { [K in keyof T]: Exclude<T[K], undefined> } {
@@ -162,6 +181,27 @@ export function runQuantize(raw: unknown): unknown {
   }
 }
 
+export function runQuantizeDrums(raw: unknown): unknown {
+  const input = QuantizeDrumsInput.parse(raw)
+  const beats = applyBeatCorrections(input.beats, input.corrections?.beats ?? []).value
+  const result = quantizeDrumHits(input.drums.hits, createBeatGrid(beats))
+  return {
+    hits: result.hits.map((q) => ({
+      hit_id: q.hitId,
+      merged_ids: q.mergedIds,
+      class5: q.class5,
+      gm_note: q.gmNote,
+      bar: q.bar,
+      beat: q.beat,
+      tick: q.tick,
+      quantize_residual_ms: Math.round(q.residualMs * 10) / 10,
+      residual_flagged: q.residualFlagged,
+      flam: q.flam,
+    })),
+    swing_bars: result.swingBars,
+  }
+}
+
 export function runBuildTab(raw: unknown): unknown {
   const input = BuildTabInput.parse(raw)
   const o = input.options ?? {}
@@ -219,6 +259,37 @@ export function runBuildPiano(raw: unknown): unknown {
   }
 }
 
+// Drum hits at a level on the beat grid, and the drum staff (step 25).
+export function runBuildDrums(raw: unknown): unknown {
+  const input = BuildDrumsInput.parse(raw)
+  const result = buildDrumScore(
+    input.drums,
+    input.beats,
+    defined({ beats: input.corrections?.beats }),
+    defined({ level: input.options?.level, title: input.options?.title }),
+  )
+  return {
+    level: result.level,
+    hits: result.hits.map((h) => ({
+      hit_id: h.id,
+      class5: h.class5,
+      gm_note: h.gmNote,
+      on_tick: h.onTick,
+      bar: h.bar,
+      beat: h.beat,
+      tick: h.tick,
+      approximate: h.approximate,
+      flam: h.flam,
+      foot: h.foot,
+      generated: h.generated,
+    })),
+    fill_bars: result.fillBars,
+    swing_bars: result.swingBars,
+    alphatex: result.alphaTex,
+    hit_map: result.hitMap,
+  }
+}
+
 // Key from chord segments (and optionally notes): the music-core estimator for the chords stage.
 const KeyInput = z.object({
   segments: Chords.shape.segments,
@@ -242,8 +313,10 @@ export function runKey(raw: unknown): unknown {
 export const COMMANDS: Readonly<Record<string, (raw: unknown) => unknown>> = {
   fret: runFret,
   quantize: runQuantize,
+  'quantize-drums': runQuantizeDrums,
   'build-tab': runBuildTab,
   'build-piano': runBuildPiano,
+  'build-drums': runBuildDrums,
   key: runKey,
 }
 

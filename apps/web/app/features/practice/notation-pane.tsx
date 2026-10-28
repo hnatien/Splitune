@@ -45,7 +45,8 @@ export function useShownView(layout: PracticeLayout): 'tab' | 'chords' {
   const recommended = useRecommendedView()
   const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
   if (wanted === 'chords' && layers.chords) return 'chords'
-  return (layers.tab || layers.roll || layers.melody) && (!recommended.chordsOnly || forceTab)
+  return (layers.tab || layers.roll || layers.melody || layers.drums) &&
+    (!recommended.chordsOnly || forceTab)
     ? 'tab'
     : 'chords'
 }
@@ -86,7 +87,7 @@ export function NotationPane({
       />
     )
   }
-  const notesLayer = layers.roll || layers.tab || layers.melody
+  const notesLayer = layers.roll || layers.tab || layers.melody || layers.drums
   if (layers.chords || notesLayer) {
     return (
       <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', className)} />}>
@@ -116,7 +117,9 @@ export function NotationPane({
           ? m['practice.placeholder_piano']()
           : data.instrument === 'vocals'
             ? m['practice.placeholder_vocals']()
-            : m['practice.placeholder']()}
+            : data.instrument === 'drums'
+              ? m['practice.placeholder_drums']()
+              : m['practice.placeholder']()}
       </p>
       <AnalysisStatus data={data} songId={practice.songId} />
     </section>

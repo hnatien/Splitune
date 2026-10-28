@@ -7,7 +7,8 @@ import { levelsFor } from './model/levels'
 import { usePractice } from './practice-context'
 
 // LevelToggle (12 §2, 07 §6): the M11 levels of the learner's instrument (guitar: chords only,
-// simplified, as transcribed; bass: roots, full) and the capo. Either recomputes the tab in the
+// simplified, as transcribed; bass: roots, full; drums: core groove, simplified, as transcribed)
+// and the capo. Either recomputes the tab in the
 // Worker (≤ 300 ms with the render, 12 §10).
 
 const LEVEL_LABEL: Record<string, () => string> = {
@@ -15,6 +16,7 @@ const LEVEL_LABEL: Record<string, () => string> = {
   simplified: () => m['practice.level_simplified'](),
   as_transcribed: () => m['practice.level_full'](),
   roots: () => m['practice.level_roots'](),
+  core_groove: () => m['practice.level_groove'](),
   full: () => m['practice.level_full'](),
 }
 
@@ -23,7 +25,7 @@ export const levelLabel = (level: string) => LEVEL_LABEL[level]?.() ?? ''
 
 export function LevelToggle({ capo = true }: { capo?: boolean }) {
   const { options, setOptions, data, layers } = usePractice()
-  if (!layers.tab) return null
+  if (!layers.tab && !layers.drums) return null
   const instrument = data.instrument
   return (
     <div className="flex flex-wrap items-center gap-3">

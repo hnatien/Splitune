@@ -4,7 +4,7 @@
 //   pnpm --filter @splitune/music-core golden:update
 import { writeFileSync } from 'node:fs'
 import { COMMANDS } from '../src/cli.ts'
-import { fixtures, makeBeats, makeChords, makeNotes } from '../test/helpers.ts'
+import { drumSong, fixtures, makeBeats, makeChords, makeNotes } from '../test/helpers.ts'
 
 const ops = fixtures.corrections()
 
@@ -128,6 +128,22 @@ const CASES: Record<string, { command: string; input: unknown }> = {
         key: { tonic: 'A', mode: 'minor', confidence: 0.8 },
       },
     },
+  },
+  'quantize-drums.fixture': {
+    command: 'quantize-drums',
+    input: { drums: fixtures.drums(), beats: fixtures.beats() },
+  },
+  'build-drums.as-transcribed': {
+    command: 'build-drums',
+    input: { ...drumSong(), options: { title: 'Drum song' } },
+  },
+  'build-drums.core-groove': {
+    command: 'build-drums',
+    input: { ...drumSong(), options: { level: 'core_groove' } },
+  },
+  'build-drums.simplified': {
+    command: 'build-drums',
+    input: { ...drumSong(), options: { level: 'simplified' } },
   },
   'quantize.fixture-nudged': {
     command: 'quantize',

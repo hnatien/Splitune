@@ -49,6 +49,24 @@ class NoteTranscriber(Protocol):
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]: ...
 
 
+@dataclass(frozen=True)
+class DrumEvent:
+    onset_s: float
+    gm_note: int  # the transcriber's own kit piece, or its class's default line
+    named: bool  # the transcriber chose the kit piece (else drum_kit's defaults decide)
+    confidence_raw: float
+    velocity: int | None = None
+
+
+@runtime_checkable
+class DrumTranscriber(NoteTranscriber, Protocol):
+    """A transcriber of drum hits (notes.drums)."""
+
+    def transcribe_drums(
+        self, mono: NDArray[np.float32], params: dict[str, Any]
+    ) -> list[DrumEvent]: ...
+
+
 @runtime_checkable
 class PedalTranscriber(NoteTranscriber, Protocol):
     """A transcriber that also hears the sustain pedal (piano: Transkun)."""
@@ -184,6 +202,10 @@ def get(name: str) -> NoteTranscriber:
                 from .transkun import Transkun  # torch island only
 
                 _instances[name] = Transkun()
+            elif name == "adtof":
+                from .adtof import Adtof  # torch island only
+
+                _instances[name] = Adtof()
             else:
                 raise StageError("invalid_params", retry=False)
         return _instances[name]

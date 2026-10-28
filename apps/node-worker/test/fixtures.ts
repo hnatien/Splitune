@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import * as alphaTab from '@coderline/alphatab'
-import { Beats, Chords, Notes, Stems } from '@splitune/contracts'
+import { Beats, Chords, DrumNotes, Notes, Stems } from '@splitune/contracts'
 import type { z } from 'zod'
 
 const fixture = (name: string): unknown =>
@@ -16,6 +16,7 @@ export const beats = () => Beats.parse(fixture('beats'))
 export const chords = () => Chords.parse(fixture('chords'))
 export const stems = () => Stems.parse(fixture('stems'))
 export const guitarNotes = () => Notes.parse(fixture('notes.guitar'))
+export const drumNotes = () => DrumNotes.parse(fixture('notes.drums'))
 
 // The guitar fixture an octave down as a bass part, with low-band energies for octave correction.
 export function bassNotes(): z.infer<typeof Notes> {

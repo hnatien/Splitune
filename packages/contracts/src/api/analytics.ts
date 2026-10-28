@@ -38,6 +38,7 @@ export const PracticeLevel = z.enum([
   'as_transcribed',
   'roots',
   'full',
+  'core_groove',
 ])
 export const BrowserFamily = z.enum(['chromium', 'firefox', 'webkit', 'other'])
 export const DeviceClass = z.enum(['phone', 'tablet', 'desktop'])
