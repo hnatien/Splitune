@@ -89,6 +89,7 @@ GUITAR_BELOW_BAND_LU = 3.0
 MAX_EXCERPT_S = 40.0
 BANDS = ("easy", "hard")
 BAND_SEPARATOR = "htdemucs_6s"  # builds the hard band's keys; not a candidate under test
+BAND_WINDOWS = 24  # the first MUSDB windows by name; the rest accompany training (p2g_strings)
 HARD_BAND_MAX_GUITAR_SHARE = 0.8  # of the "other" stem's energy
 HARD_BAND_MIN_KEYS_LU = -30.0  # the keys (piano + other outputs), integrated loudness
 TWO_GUITAR_PAN = 0.6
@@ -155,7 +156,7 @@ def cmd_bands(_: argparse.Namespace) -> int:
 
     spec = config.load().models[BAND_SEPARATOR]
     rows: list[dict[str, Any]] = []
-    for window in musdb_windows():
+    for window in musdb_windows()[:BAND_WINDOWS]:
         out = ROOT / "bands" / window.name
         if not (out / "keys.wav").is_file():
             models.separate(BAND_SEPARATOR, spec, window / "other.wav", out)
@@ -716,12 +717,12 @@ class Variant:
     """One candidate production chain: separator + notes.guitar transcriber/params."""
 
     separator: str = "bs_roformer_sw"
-    transcriber: str | None = None  # None = notes.personal.yaml's
+    transcriber: str | None = None  # None = Basic Pitch as shipped before step 22
     overrides: dict[str, Any] = field(default_factory=dict[str, Any])  # on top of its params
     note: str = ""
     notes_from: str | None = None  # reuse another variant's notes (tab-only variants)
     string_cue: float = 0.0  # fret DP weight of the audio string cue (0 = off)
-    cue_model: str = "clean"  # p2g_strings.py model: trained on clean and/or stem features
+    cue_model: str = "clean"  # p2g_strings.py model (clean and/or stem features), or "own"
 
 
 VARIANTS: dict[str, Variant] = {
@@ -740,8 +741,11 @@ VARIANTS: dict[str, Variant] = {
     **{
         f"sep_{name}": Variant(
             separator=name,
-            overrides={"a4_compensation": True, "tuning_suggestion": True},
-            note=f"tuning with separator {name}",
+            transcriber="guitab",
+            overrides={"a4_compensation": True, "tuning_suggestion": True, "bends": True},
+            string_cue=2.0,
+            cue_model="own",
+            note=f"guitabbendscue2 (the shipped chain) with separator {name}",
         )
         for name in ("htdemucs_6s", "mel_roformer_guitar_becruily", *COMBINED)
     },
@@ -777,20 +781,72 @@ VARIANTS: dict[str, Variant] = {
         )
         for w in (0.25, 0.5, 1.0, 2.0)
     },
+    "guitab": Variant(
+        transcriber="guitab",
+        overrides={"a4_compensation": True, "tuning_suggestion": True},
+        note="Guitab E25 (tab model) + A4 compensation and tuning suggestion",
+    ),
+    **{
+        f"guitabcue{w:g}": Variant(
+            transcriber="guitab",
+            overrides={"a4_compensation": True, "tuning_suggestion": True},
+            notes_from="guitab",
+            string_cue=w,
+            cue_model="own",
+            note=f"guitab + its own string probabilities as the DP string cue, weight {w:g}",
+        )
+        for w in (0.25, 0.5, 1.0, 2.0, 4.0)
+    },
+    "yourmt3": Variant(
+        transcriber="yourmt3",
+        note="YourMT3+ (YPTF.MoE+Multi, guitar programs 24-31), the P2 setup",
+    ),
+    "yourmt3all": Variant(
+        transcriber="yourmt3",
+        overrides={"all_programs": True},
+        note="YourMT3+ keeping every pitched note whatever its program",
+    ),
+    "guitabbends": Variant(
+        transcriber="guitab",
+        overrides={"a4_compensation": True, "tuning_suggestion": True, "bends": True},
+        note="guitab + bends from Basic Pitch's contour on the same stem",
+    ),
+    **{
+        f"guitabbendscue{w:g}": Variant(
+            transcriber="guitab",
+            overrides={"a4_compensation": True, "tuning_suggestion": True, "bends": True},
+            notes_from="guitabbends",
+            string_cue=w,
+            cue_model="own",
+            note=f"guitabbends + its own string probabilities as the DP string cue, weight {w:g}",
+        )
+        for w in (1.0, 2.0)
+    },
+}
+# Basic Pitch's guitar thresholds from the P2 sweep (production until step 22 shipped Guitab).
+BASIC_PITCH_GUITAR: dict[str, Any] = {
+    "min_freq_hz": 70,
+    "onset_threshold": 0.6,
+    "frame_threshold": 0.5,
+    "min_note_ms": 58,
 }
 # Off-A440 (note accuracy only) and whole semitones down (half/full step down: also tabbed).
 DETUNE_CENTS = (20.0, -20.0, 35.0, -35.0, 50.0, -50.0, -100.0, -200.0)
 
 
 def notes_config(variant: Variant, path: Path) -> None:
+    """notes.personal.yaml with guitar set to the variant alone (its transcriber's defaults plus
+    its overrides), so a variant means the same thing whatever production ships."""
     base = cast(
         dict[str, Any], yaml.safe_load((ML_ROOT / "config" / "notes.personal.yaml").read_text())
     )
-    guitar = base["instruments"]["guitar"]
-    if variant.transcriber is not None and variant.transcriber != guitar["transcriber"]:
-        guitar["transcriber"] = variant.transcriber
-        guitar["params"] = {}
-    guitar["params"] = {**guitar.get("params", {}), **variant.overrides}
+    base["instruments"]["guitar"] = {
+        "transcriber": variant.transcriber or "basic_pitch",
+        "params": {
+            **(BASIC_PITCH_GUITAR if variant.transcriber is None else {}),
+            **variant.overrides,
+        },
+    }
     path.write_text(yaml.safe_dump(base), encoding="utf-8")
 
 
@@ -938,6 +994,8 @@ def with_string_cue(notes: Path, item: Item, condition: str, variant: Variant) -
     notes stage would add), cached next to them."""
     from p2g_strings import OUT, string_probs
 
+    if variant.cue_model == "own":
+        return notes  # the transcriber wrote string_probs itself
     dest = notes.with_name(f"{condition}.cue.{variant.cue_model}.notes-json")
     if not dest.is_file():
         document = json.loads(notes.read_text(encoding="utf-8"))
@@ -1207,6 +1265,7 @@ TRANSCRIBER_RECORDS = {
     "basic_pitch": "basic-pitch",
     "yourmt3": "yourmt3-moe",
     "transkun": "transkun-v2",
+    "guitab": "guitab-e25",
 }
 
 
@@ -1217,15 +1276,12 @@ def versions(variants: Iterable[str]) -> str:
         dict[str, Any],
         yaml.safe_load((ML_ROOT / "config" / "separation.personal.yaml").read_text()),
     )
-    notes = cast(
-        dict[str, Any], yaml.safe_load((ML_ROOT / "config" / "notes.personal.yaml").read_text())
-    )
     records: set[str] = set()
     for v in variants:
         variant = VARIANTS[v]
-        records.add(sep["models"][variant.separator]["record"])
-        transcriber = variant.transcriber or notes["instruments"]["guitar"]["transcriber"]
-        records.add(TRANSCRIBER_RECORDS[transcriber])
+        for separator in COMBINED.get(variant.separator, (variant.separator,)):
+            records.add(sep["models"][separator]["record"])
+        records.add(TRANSCRIBER_RECORDS[variant.transcriber or "basic_pitch"])
     return ", ".join(f"{r} {register.model(r).version}" for r in sorted(records))
 
 
@@ -1257,6 +1313,379 @@ def is_fit(item: Item) -> bool:
     )
 
 
+# Quantizer grids (gap 8): the shipped 1/16 (+ swung 1/8) grid against finer ones, on the reference
+# onsets themselves (where the player put the note), so the answer doesn't depend on transcription.
+GRIDS: dict[str, tuple[float, ...]] = {
+    "1/16": tuple(k / 4 for k in range(5)),
+    "1/16 + 1/32": tuple(k / 8 for k in range(9)),
+    "1/16 + 1/16 triplets": tuple(sorted({k / 4 for k in range(5)} | {k / 6 for k in range(7)})),
+}
+
+
+def beat_positions(onsets: list[float], beat_times: list[float]) -> list[tuple[float, float]]:
+    """(fraction within the beat, beat length s) for onsets between the first and last beat."""
+    out: list[tuple[float, float]] = []
+    for t in onsets:
+        i = int(np.searchsorted(beat_times, t, side="right")) - 1
+        if 0 <= i < len(beat_times) - 1:
+            length = beat_times[i + 1] - beat_times[i]
+            out.append(((t - beat_times[i]) / length, length))
+    return out
+
+
+def grid_residual_ms(frac: float, length: float, grid: tuple[float, ...]) -> float:
+    return 1000 * length * min(abs(frac - g) for g in grid)
+
+
+def cmd_grid(_: argparse.Namespace) -> int:
+    """Per style: share of reference onsets more than 60 ms (the residual flag) from each grid and
+    the median distance; `chance` = the same for uniformly random positions in the same beats,
+    which any denser grid also snaps closer."""
+    rng = np.random.default_rng(0)
+    rows: dict[str, dict[str, list[float]]] = {}
+    for item in load_items():
+        if item.tags["style"] == "vibrato":
+            continue
+        document = json.loads((item.dir / "beats.json").read_text(encoding="utf-8"))
+        beat_times = [float(b["t"]) for b in document["beats"]]
+        positions = beat_positions([n.onset_s for n in item.ref().notes], beat_times)
+        chance = [(float(rng.uniform()), length) for _, length in positions]
+        for style in (item.tags["style"], "all"):
+            row = rows.setdefault(style, {})
+            for name, grid in GRIDS.items():
+                row.setdefault(name, []).extend(grid_residual_ms(f, n, grid) for f, n in positions)
+                row.setdefault(f"chance {name}", []).extend(
+                    grid_residual_ms(f, n, grid) for f, n in chance
+                )
+    names = list(GRIDS)
+    out = [
+        f"# P2g quantizer grids ({datetime.now(UTC).date()})",
+        "",
+        f"git `{git_sha()}` · reference onsets (P2g references, vibrato excluded) against the "
+        "shipped beats stage's grid on the clean guitar. Each cell: share > 60 ms from the grid "
+        "(the residual flag) · median distance ms; chance = random positions in the same beats.",
+        "",
+        "| style | onsets | "
+        + " | ".join(names)
+        + " | "
+        + " | ".join(f"chance {n}" for n in names)
+        + " |",
+        "|---|---|" + "---|" * (2 * len(names)),
+    ]
+    for style in sorted(rows):
+        row = rows[style]
+        cells = [
+            f"{np.mean(np.array(row[k]) > 60):.3f} · {np.median(row[k]):.1f}"
+            for k in (*names, *(f"chance {n}" for n in names))
+        ]
+        out.append(f"| {style} | {len(row[names[0]])} | " + " | ".join(cells) + " |")
+    text = "\n".join(out) + "\n"
+    (RESULTS / f"{datetime.now(UTC).date()}-grid.md").write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
+# Clean-up passes (step 22 Phase 3a), each alone on a variant's stem.hard notes: leakage removal
+# against the notes of the same separation's bass and keys stems (Basic Pitch: the shipped bass
+# params / its defaults), fragment merging, onset snapping to the beat grid.
+LEAK_TOLERANCE_S = 0.05
+GRID_16 = tuple(k / 4 for k in range(5))
+
+
+def other_stem_notes(item: Item, stem: str) -> list[tuple[float, int]]:
+    """(onset s, pitch) of Basic Pitch on the hard-band separation's bass (or piano + other)
+    stems, cached next to the item."""
+    cache = item.dir / "leak" / f"{stem}.json"
+    if not cache.is_file():
+        from stage_notes import transcribers
+
+        sep = stem_path(item, "bs_roformer_sw", "hard").parent
+        parts = ["bass"] if stem == "bass" else ["piano", "other"]
+        mono = cast(Audio, sum(read(sep / f"{p}.wav") for p in parts)).mean(axis=1)
+        bp = transcribers.get("basic_pitch")
+        config = transcribers.load_config(ML_ROOT / "config" / "notes.personal.yaml")
+        params = {
+            **bp.defaults,
+            **(config.instruments["bass"].params if stem == "bass" else {}),
+        }
+        events = bp.transcribe(mono.astype(np.float32), params)
+        write_json(cache, [[round(e.onset_s, 4), e.pitch_midi] for e in events])
+    return [(float(t), int(p)) for t, p in json.loads(cache.read_text())]
+
+
+def leak_pass(
+    notes: list[dict[str, Any]], others: list[tuple[float, int]], max_conf: float, octaves: bool
+) -> list[dict[str, Any]]:
+    """Drops guitar notes below `max_conf` that another stem also has at the same onset and pitch
+    (or, with `octaves`, the same pitch class)."""
+
+    def leaked(n: dict[str, Any]) -> bool:
+        return any(
+            abs(t - n["onset_s"]) <= LEAK_TOLERANCE_S
+            and (p % 12 == n["pitch_midi"] % 12 if octaves else p == n["pitch_midi"])
+            for t, p in others
+        )
+
+    return [n for n in notes if n["confidence"] >= max_conf or not leaked(n)]
+
+
+def fragment_pass(
+    notes: list[dict[str, Any]], gap_s: float, max_conf: float
+) -> list[dict[str, Any]]:
+    """A note starting within `gap_s` of the end of the previous note of its pitch, with
+    confidence below `max_conf`, continues that note."""
+    out: list[dict[str, Any]] = []
+    last: dict[int, dict[str, Any]] = {}
+    for n in sorted(notes, key=lambda n: n["onset_s"]):
+        prev = last.get(n["pitch_midi"])
+        if (
+            prev is not None
+            and n["onset_s"] - prev["offset_s"] <= gap_s
+            and n["confidence"] < max_conf
+        ):
+            prev["offset_s"] = max(prev["offset_s"], n["offset_s"])
+            continue
+        copy = dict(n)
+        out.append(copy)
+        last[n["pitch_midi"]] = copy
+    return out
+
+
+def snap_pass(
+    notes: list[dict[str, Any]], beat_times: list[float], tolerance_s: float
+) -> list[dict[str, Any]]:
+    """Onsets within `tolerance_s` of a 1/16 grid point move onto it."""
+    out: list[dict[str, Any]] = []
+    for n in notes:
+        copy = dict(n)
+        for frac, length in beat_positions([n["onset_s"]], beat_times):
+            target = min(GRID_16, key=lambda g: abs(frac - g))
+            if abs(frac - target) * length <= tolerance_s:
+                copy["onset_s"] = max(0.0, n["onset_s"] + (target - frac) * length)
+        out.append(copy)
+    return out
+
+
+def cmd_cleanup(args: argparse.Namespace) -> int:
+    passes: dict[str, Callable[[Item, list[dict[str, Any]]], list[dict[str, Any]]]] = {
+        "none": lambda _, n: n,
+        **{
+            f"leak bass conf<{c:g}": (
+                lambda item, n, c=c: leak_pass(n, other_stem_notes(item, "bass"), c, False)
+            )
+            for c in (0.3, 0.5, 0.7)
+        },
+        **{
+            f"leak bass+keys conf<{c:g}": (
+                lambda item, n, c=c: leak_pass(
+                    n, other_stem_notes(item, "bass") + other_stem_notes(item, "keys"), c, False
+                )
+            )
+            for c in (0.3, 0.5)
+        },
+        "leak bass octaves conf<0.5": (
+            lambda item, n: leak_pass(n, other_stem_notes(item, "bass"), 0.5, True)
+        ),
+        **{
+            f"fragments gap {g * 1000:.0f} ms conf<{c:g}": (
+                lambda _, n, g=g, c=c: fragment_pass(n, g, c)
+            )
+            for g in (0.02, 0.05)
+            for c in (0.5, 0.8)
+        },
+        **{
+            f"snap {t * 1000:.0f} ms": (
+                lambda item, n, t=t: snap_pass(
+                    n,
+                    [
+                        float(b["t"])
+                        for b in json.loads((item.dir / "beats.json").read_text())["beats"]
+                    ],
+                    t,
+                )
+            )
+            for t in (0.02, 0.04)
+        },
+    }
+    rows: list[dict[str, Any]] = []
+    for item in load_items():
+        path = run_dir(args.variant) / item.id / "stem.hard.notes.json"
+        if not path.is_file() or item.tags["style"] == "vibrato":
+            continue
+        ref = note_events(list(item.ref().notes))
+        notes = cast(list[dict[str, Any]], json.loads(path.read_text(encoding="utf-8"))["notes"])
+        for name, fn in passes.items():
+            kept = fn(item, [dict(n) for n in notes])
+            est = [EstNote(n["onset_s"], n["offset_s"], int(n["pitch_midi"])) for n in kept]
+            metrics, _ = scoring.notes(ref, note_events(est))
+            rows.append(
+                {
+                    "pass": name,
+                    "tier": "GuitarSet" if item.source.startswith("guitarset") else "other",
+                    "style": item.tags["style"],
+                    "f1": metrics["onset_f1"],
+                    "p": metrics["onset_precision"],
+                    "r": metrics["onset_recall"],
+                }
+            )
+        print(f"cleanup {item.id}", flush=True)
+    out = [
+        f"# P2g clean-up passes ({datetime.now(UTC).date()})",
+        "",
+        f"git `{git_sha()}` · variant `{args.variant}`, stem.hard, vibrato excluded · mean onset "
+        "F1 / precision / recall per item; each pass alone",
+        "",
+        "| pass | GuitarSet F1 | P | R | other F1 | P | R | comping F1 | single-line F1 |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+
+    def m(sel: list[dict[str, Any]], key: str) -> str:
+        return f"{np.mean([r[key] for r in sel]):.3f}" if sel else "-"
+
+    for name in passes:
+        sel = [r for r in rows if r["pass"] == name]
+        gs = [r for r in sel if r["tier"] == "GuitarSet"]
+        other = [r for r in sel if r["tier"] == "other"]
+        out.append(
+            f"| {name} | {m(gs, 'f1')} | {m(gs, 'p')} | {m(gs, 'r')} | {m(other, 'f1')} | "
+            f"{m(other, 'p')} | {m(other, 'r')} | "
+            f"{m([r for r in sel if r['style'] == 'comping'], 'f1')} | "
+            f"{m([r for r in sel if r['style'] == 'single-line'], 'f1')} |"
+        )
+    text = "\n".join(out) + "\n"
+    (RESULTS / f"{datetime.now(UTC).date()}-cleanup-{args.variant}.md").write_text(
+        text, encoding="utf-8"
+    )
+    print(text)
+    return 0
+
+
+def cmd_twoguitars(args: argparse.Namespace) -> int:
+    """Two-guitar items (gap 6): Tab F1 with every note tabbed as one part (production) against
+    an oracle split (each estimated note tabbed with the part of the reference note it matches,
+    unmatched notes with the rhythm part): the most a rhythm/lead splitter could gain."""
+    from splitune_eval.guitar_refs import match
+
+    lines = [
+        f"# P2g two guitars ({datetime.now(UTC).date()})",
+        "",
+        f"git `{git_sha()}` · variant `{args.variant}` · pooled over the two-guitar items; "
+        "share = the lead part's share of the reference notes",
+        "",
+        "| condition | fingering | items | lead share | Tab F1 one part | Tab F1 oracle split |",
+        "|---|---|---|---|---|---|",
+    ]
+    items = [i for i in load_items() if i.tags["style"] == "two_guitars"]
+    for condition in ("clean", "stem.hard"):
+        for fingering in FINGERING:
+            together: list[TabCounts] = []
+            split: list[TabCounts] = []
+            lead = 0
+            total = 0
+            for item in items:
+                notes_path = run_dir(args.variant) / item.id / f"{condition}.notes.json"
+                if not notes_path.is_file():
+                    continue
+                ref = list(item.ref().notes)
+                lead += sum(1 for n in ref if n.part == "lead")
+                total += len(ref)
+                options = tab_options(item, condition, fingering, "standard")
+                document = json.loads(notes_path.read_text(encoding="utf-8"))
+                est = estimates(notes_path, None)
+                part_of = {j: ref[i].part for i, j in match(ref, est)}
+                together.append(
+                    tab_counts(ref, estimates(notes_path, build_tab(notes_path, item, options)))
+                )
+                events: dict[str, Any] = {}
+                with tempfile.TemporaryDirectory() as tmp:
+                    for part in ("rhythm", "lead"):
+                        subset = {
+                            **document,
+                            "notes": [
+                                n
+                                for j, n in enumerate(document["notes"])
+                                if part_of.get(j, "rhythm") == part
+                            ],
+                        }
+                        path = Path(tmp) / f"{part}.json"
+                        write_json(path, subset)
+                        for e in build_tab(path, item, options)["events"]:
+                            events[e["note_id"]] = e
+                split.append(
+                    tab_counts(ref, estimates(notes_path, {"events": list(events.values())}))
+                )
+            if not together:
+                continue
+
+            def f1(counts: list[TabCounts]) -> float:
+                a = np.sum(np.array([[c.ref, c.est, c.matched, c.tab_correct] for c in counts]), 0)
+                return TabCounts(int(a[0]), int(a[1]), int(a[2]), int(a[3])).f1
+
+            lines.append(
+                f"| {condition} | {fingering} | {len(together)} | {lead / max(total, 1):.2f} | "
+                f"{f1(together):.3f} | {f1(split):.3f} |"
+            )
+    text = "\n".join(lines) + "\n"
+    (RESULTS / f"{datetime.now(UTC).date()}-twoguitars-{args.variant}.md").write_text(
+        text, encoding="utf-8"
+    )
+    print(text)
+    return 0
+
+
+def cmd_calibrate(args: argparse.Namespace) -> int:
+    """Isotonic table for the variant's transcriber on guitar (as step 18 did for piano): fit on
+    the stem notes of the fit split (`is_fit`), reliability reported on the held-out items, written
+    to config/calibration/<record>@<version>.guitar.json."""
+    from splitune_eval.calibration import fit_isotonic, reliability
+    from splitune_eval.guitar_refs import match
+    from splitune_ml_core import calibration, contracts, register
+
+    variant = VARIANTS[args.variant]
+    data: dict[bool, tuple[list[float], list[int]]] = {True: ([], []), False: ([], [])}
+    for item in load_items():
+        for condition in ("stem.easy", "stem.hard"):
+            path = run_dir(args.variant) / item.id / f"{condition}.notes.json"
+            if not path.is_file():
+                continue
+            notes = json.loads(path.read_text(encoding="utf-8"))["notes"]
+            est = [EstNote(n["onset_s"], n["offset_s"], int(n["pitch_midi"])) for n in notes]
+            hit = {j for _, j in match(list(item.ref().notes), est)}
+            raw, ok = data[is_fit(item)]
+            raw.extend(float(n["confidence_raw"]) for n in notes)
+            ok.extend(int(j in hit) for j in range(len(notes)))
+    (fx, fy), (tx, ty) = data[True], data[False]
+    record = register.model(TRANSCRIBER_RECORDS[variant.transcriber or "basic_pitch"])
+    table = contracts.CalibrationTable(
+        model_id=record.id,
+        version=record.version,
+        method="isotonic",
+        knots=fit_isotonic(fx, fy),
+        bands=contracts.Bands(high=0.7, medium=0.4),
+        fitted_on="p2g-fit-split-stems",
+    )
+    path = ML_ROOT / "config" / "calibration" / f"{record.id}@{record.version}.guitar.json"
+    path.write_text(contracts.dump_json(table) + "\n", encoding="utf-8")
+    raw_rel = reliability(tx, ty)
+    cal_rel = reliability([calibration.calibrate(x, table) for x in tx], ty)
+    text = "\n".join(
+        [
+            f"# P2g calibration: {args.variant} / guitar ({datetime.now(UTC).date()})\n",
+            f"Fit on {len(fx)} stem notes of the fit split, tested on {len(ty)} held-out notes "
+            f"(precision {np.mean(ty):.3f}); table `{path.relative_to(ML_ROOT)}`, "
+            f"{len(table.knots)} knots.\n",
+            f"ECE raw **{raw_rel.ece:.3f}** → calibrated **{cal_rel.ece:.3f}** "
+            "(10 equal-width bins, held-out notes)\n",
+            cal_rel.table(raw_rel),
+        ]
+    )
+    (RESULTS / f"{datetime.now(UTC).date()}-calibration-{args.variant}.md").write_text(
+        text + "\n", encoding="utf-8"
+    )
+    print(text)
+    return 0
+
+
 def cmd_sweep(args: argparse.Namespace) -> int:
     """Basic Pitch decoding options on the hard-band stems (production separator, with the
     variant's A4 compensation): posteriors once per item, the shipped `notes_polyphonic` for every
@@ -1271,12 +1700,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     model = cast(transcribers.BasicPitch, transcribers.get("basic_pitch"))
     base = {
         **transcribers.BASIC_PITCH_DEFAULTS,
-        **cast(
-            dict[str, Any],
-            yaml.safe_load((ML_ROOT / "config" / "notes.personal.yaml").read_text())["instruments"][
-                "guitar"
-            ]["params"],
-        ),
+        **BASIC_PITCH_GUITAR,
         **variant.overrides,
     }
     combos = [
@@ -1333,7 +1757,9 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         ]
         lines.append(f"\n- {name} alone (held-out): " + ", ".join(alone))
     text = "\n".join(lines) + "\n"
-    (ROOT / f"sweep-{args.variant}.md").write_text(text, encoding="utf-8")
+    (RESULTS / f"{datetime.now(UTC).date()}-sweep-{args.variant}.md").write_text(
+        text, encoding="utf-8"
+    )
     print(text)
     return 0
 
@@ -1550,6 +1976,16 @@ def main() -> int:
     p.add_argument("--model", choices=[*SEPARATORS, *COMBINED], default=SEPARATORS[0])
     p.set_defaults(fn=cmd_separate)
     sub.add_parser("beats").set_defaults(fn=cmd_beats)
+    sub.add_parser("grid").set_defaults(fn=cmd_grid)
+    p = sub.add_parser("twoguitars")
+    p.add_argument("--variant", choices=list(VARIANTS), default="bends")
+    p.set_defaults(fn=cmd_twoguitars)
+    p = sub.add_parser("cleanup")
+    p.add_argument("--variant", choices=list(VARIANTS), default="bends")
+    p.set_defaults(fn=cmd_cleanup)
+    p = sub.add_parser("calibrate")
+    p.add_argument("--variant", choices=list(VARIANTS), required=True)
+    p.set_defaults(fn=cmd_calibrate)
     p = sub.add_parser("predict")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
     p.add_argument("--condition", nargs="+", choices=conditions() + detune_conditions())
