@@ -39,6 +39,7 @@ class NoteEvent:
     velocity: int
     confidence_raw: float
     bend_cents: tuple[tuple[float, float], ...] = ()  # (s after the onset, cents above the pitch)
+    string_probs: tuple[float, ...] | None = None  # P(string), string 1 first: tab models only
 
 
 class NoteTranscriber(Protocol):
@@ -201,6 +202,10 @@ def get(name: str) -> NoteTranscriber:
         if name not in _instances:
             if name == "basic_pitch":
                 _instances[name] = BasicPitch()
+            elif name == "guitab":
+                from .guitab import Guitab
+
+                _instances[name] = Guitab()
             elif name == "yourmt3":
                 from .yourmt3 import YourMT3  # torch island only
 

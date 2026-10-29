@@ -473,7 +473,7 @@ def test_local_chain_transcribes_and_recognizes_chords(
     # The tagger must hear bass, or separation drops the bass extra and notes.bass falls back.
     source = click_track(bpm=100, seconds=12, plucked_bass=True)
     models = models_subset(
-        tmp_path, ["htdemucs-6s", "panns-cnn14", "basic-pitch", "btc-large-voca"]
+        tmp_path, ["htdemucs-6s", "panns-cnn14", "basic-pitch", "guitab-e25", "btc-large-voca"]
     )
     settings = make_settings(
         ML_MODE="local", ML_ISLAND_PYTHON=sys.executable, ML_MODELS_DIR=str(models)

@@ -345,6 +345,13 @@ Contract additions made with `packages/music-core` (all optional, so `SCHEMA_VER
 - **Per-instrument object names** follow `packages/storage`: `notes.<instrument>.json`, `tab.<instrument>.json`, `render/<instrument>.alphatex` (doc tables above say `notes/{instrument}.json`).
 - Analysis end state: finalize sets `analyses.status` to `done`, or `partial` when chords, stems or a requested instrument's notes are missing, with an `analysis.done` event carrying the summary artefact id; a permanently failed finalize sets `failed`.
 
+## Implementation notes (step 22, 2026-10-29)
+`SCHEMA_VERSION` is now **1.6.0** (additions only):
+- **`Notes.tuning`** (`RecordingTuning`, guitar/bass, optional): `a4_cents` (the recording's offset from A440 in [−50, 50], which the notes were transcribed after compensating), `a4_strength` (how peaked the estimate is) and `suggested` (`name`: `TuningName` standard | half_step_down | full_step_down | drop_d | drop_c_sharp | drop_c | other, `tuning_midi` string 1 first, `confidence`). `buildTab` applies `suggested` at or above `TUNING_SUGGESTION_MIN_CONFIDENCE` unless the caller passes a tuning (07, step 22 notes).
+- **`Note.string_probs`** (guitar/bass, optional): a probability per string, string 1 (highest) first, 4–7 entries; strings that cannot play the pitch are 0. `notes.guitar` fills it from Guitab's fret posteriors; a bent note that only the Basic Pitch bend pass found carries all zeros (no preference). The fret DP's `stringCue` term reads it (07 §5).
+- **`Note.bend_cents`** (already in the schema) is now filled for guitar: `[s after the onset, cents above the pitch]` points of the bend curve.
+- **`TabEvent.bend_cents`** (optional, (0, 400]): the largest bend of the note, rounded; `buildTab` sets it from 50 cents and alphaTex renders it as a bend mark.
+
 ## Implications for other docs
 - `03-data-model-and-storage.md`: `analyses`, `artefacts`, `correction_ops` tables and the storage layout.
 - `06-ml-pipeline-service.md`: every stage writes its artefact atomically (temp key, then rename via copy) and updates `manifest`.

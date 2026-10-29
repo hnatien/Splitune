@@ -16,6 +16,9 @@ low_confidence: 0.5
 # guitar 0.797 onset F1 (GuitarSet + band), bass 0.807 (BabySlakh, 19 tracks): both pass.
 # Piano, Transkun V2 on separated stems (gate 0.80): 0.946 on MAESTRO test excerpts + band, 0.835 on
 # BabySlakh tracks with acoustic piano only; tracks with electric piano or clavinet 0.676: pass.
+# Guitar, step 22 (P2g, eval/results/p2g/2026-10-28-finetune.md), Guitab E25 on the hard-band
+# stems: GuitarSet 0.857 (held-out player 05: 0.873), IDMT-SMT-Guitar 0.856, Guitar-TECHS 0.566
+# (amped electric, the weakest source; Basic Pitch 0.553 there): pass.
 quality_gate:
   guitar: pass
   bass: pass
@@ -40,3 +43,6 @@ changes:
   - date: 2026-10-23
     change: "piano notation supported (falling-notes roll); quality_gate piano pass by Prototype 2"
     models: [transkun-v2@2.0.1]
+  - date: 2026-10-29
+    change: "quality_gate guitar pass re-checked by P2g (step 22) for Guitab; default view stays tab"
+    models: [guitab-e25@1.1.1-e25, basic-pitch@0.4.0]

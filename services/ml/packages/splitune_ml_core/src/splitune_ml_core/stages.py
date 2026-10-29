@@ -129,6 +129,7 @@ NOTES_CONFIG = ML_ROOT / "config" / "notes.personal.yaml"
 # The transcriber chosen per instrument decides where its notes stage runs.
 TRANSCRIBER_ISLANDS: dict[str, tuple[Island, Slot]] = {
     "basic_pitch": ("onnx-cpu", "cpu"),
+    "guitab": ("onnx-cpu", "cpu"),
     "yourmt3": ("torch", "gpu"),
     "transkun": ("torch", "gpu"),
 }

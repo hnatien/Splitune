@@ -1,0 +1,33 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: guitab-e25
+kind: model
+name: "Guitab E25 guitar tab transcriber (CQT CNN + transformer, ONNX export)"
+version: "1.1.1-e25"
+repo_url: https://github.com/DanieleMorotti/guitab
+code_spdx: MIT
+weights:
+  licence: CC-BY-NC-SA-4.0
+  url: https://huggingface.co/danmor/guitab/tree/4b006492127a66b81b9658924ffe41aedd07f17a
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "6d7b0b2e11ff71e0c4ddff3f3b4319c1df6084e24c942b534fd1e12632507c9f"
+  files:
+    - name: guitab_e25.onnx
+      sha256: "3ce79d9240f2b90558ece516cb13927da7ac95dc3e865531604f785b7828ec22"
+      bytes: 21085721
+      url: https://huggingface.co/danmor/guitab/resolve/4b006492127a66b81b9658924ffe41aedd07f17a/guitab_e25.onnx
+training_data:
+  - { name: GuitarSet (players 00-03; 04 validation, 05 test), licence: CC-BY-4.0, commercial_ok: true }
+  - { name: GAPS, licence: CC-BY-NC-SA-4.0, commercial_ok: false }
+  - { name: SynthTab (fingerstyle subset), licence: CC-BY-NC-4.0, commercial_ok: false }
+  - { name: private aligned fingerstyle recordings, licence: unknown, commercial_ok: false }
+tier: red
+tier_reason: "non-commercial weights (GAPS, SynthTab) and a private training set"
+used_in: [notes]
+profiles: [personal]
+notes: >-
+  Step 22 P2g candidate for notes.guitar (eval/results/p2g). The browser ONNX export (probabilities
+  out, fixed 432-frame window); stage_notes.guitab ports Guitab's CQT front end and note
+  extraction (MIT). GuitarSet players 00-03 are in its training data, so P2g items from those
+  players are in-sample for it; player 05 is its test player.
+reviewer: owner
+reviewed: 2026-10-29

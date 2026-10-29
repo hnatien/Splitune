@@ -8,7 +8,8 @@ confidence through `config/calibration/<record>@<version>[.<instrument>].json`. 
 carry `low_band_energy` for music-core's octave correction (07 §3). With `a4_compensation` the
 source's offset from A440 is estimated (tuning.py), the transcriber compensates it and the artefact
 records it under `tuning`, with the likely open-string tuning when `tuning_suggestion` is on.
-With `string_cue` guitar notes carry `string_probs` from the string classifier (strings.py).
+With `string_cue` guitar notes carry `string_probs`: a tab model's own (Guitab) or the string
+classifier's (strings.py). Guitab's `bends` run a Basic Pitch pass, recorded among the models.
 """
 
 from __future__ import annotations
@@ -34,6 +35,8 @@ from .lowband import low_band_energy
 
 MIXTURE = "mixture"
 STRING_CUE_RECORD = "string-cue"
+# Tab models: their notes carry string probabilities already.
+OWN_STRING_PROBS = {"guitab"}
 
 
 def read_separation(inputs: dict[str, str] | None) -> contracts.Separation | None:
@@ -81,6 +84,29 @@ def uses_string_cue(instrument: str, params: dict[str, Any]) -> bool:
     return instrument == "guitar" and bool(params.get("string_cue"))
 
 
+def uses_string_classifier(instrument: str, transcriber: str, params: dict[str, Any]) -> bool:
+    return uses_string_cue(instrument, params) and transcriber not in OWN_STRING_PROBS
+
+
+def uses_bend_pass(transcriber: str, params: dict[str, Any]) -> bool:
+    """Guitab's bends come from a Basic Pitch pass on the same stem (guitab.with_bends)."""
+    return transcriber == "guitab" and bool(params.get("bends"))
+
+
+def extra_refs(
+    instrument: str, transcriber: str, params: dict[str, Any]
+) -> list[contracts.ModelRef]:
+    """Models besides the transcriber that shape the notes: the string classifier, the bend pass."""
+    return [
+        *([string_cue_ref()] if uses_string_classifier(instrument, transcriber, params) else []),
+        *(
+            [transcribers.get("basic_pitch").model_ref()]
+            if uses_bend_pass(transcriber, params)
+            else []
+        ),
+    ]
+
+
 def bind(
     instrument: str,
 ) -> tuple[Callable[..., StageDescription], Callable[[StageJob], StageOutput]]:
@@ -92,10 +118,7 @@ def bind(
         table = calibration.load(transcriber.record, ref.version, instrument)
         stem = source_stem(read_separation(inputs), instrument)
         return StageDescription(
-            model_refs=[
-                ref,
-                *([string_cue_ref()] if uses_string_cue(instrument, effective) else []),
-            ],
+            model_refs=[ref, *extra_refs(instrument, transcriber.name, effective)],
             params={
                 "instrument": instrument,
                 "transcriber": transcriber.name,
@@ -161,12 +184,13 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "tuning_midi": list(suggestion.tuning_midi),
             "confidence": suggestion.confidence,
         }
-    models = [ref]
+    models = [ref, *extra_refs(instrument, transcriber.name, params)]
     probs: list[list[float]] | None = None
-    if uses_string_cue(instrument, params):
-        models.append(string_cue_ref())
+    if uses_string_classifier(instrument, transcriber.name, params):
         cue = string_model().probs(mono, [(e.onset_s, e.pitch_midi) for e in events])
         probs = [[round(float(v), 4) for v in row] for row in cue]
+    elif uses_string_cue(instrument, params):
+        probs = [list(e.string_probs or (0.0,) * 6) for e in events]
     notes: list[dict[str, Any]] = []
     for i, e in enumerate(events):
         if e.offset_s <= e.onset_s:
