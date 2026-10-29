@@ -42,7 +42,9 @@ PROGRAMS = {
     "bass": list(range(32, 40)),
     "vocals": [100, 101],
 }
-YOURMT3_DEFAULTS: dict[str, Any] = {"instrument": None, "batch": 8}
+# `all_programs` keeps every pitched note whatever program the model gave it (step 22 measured
+# whether the instrument filter drops a stem's notes labelled as another instrument).
+YOURMT3_DEFAULTS: dict[str, Any] = {"instrument": None, "batch": 8, "all_programs": False}
 
 
 class YourMT3:
@@ -110,5 +112,7 @@ class YourMT3:
                 confidence_raw=1.0,
             )
             for n in mix_notes(channels)
-            if not n.is_drum and int(n.program) in wanted and 21 <= int(n.pitch) <= 108
+            if not n.is_drum
+            and (params["all_programs"] or int(n.program) in wanted)
+            and 21 <= int(n.pitch) <= 108
         ]
