@@ -1,19 +1,17 @@
 # Note transcription per instrument (06 §0 notes.*; P2 chooses the transcriber, 08).
 # `transcriber` selects the NoteTranscriber; `params` override that transcriber's defaults.
-# The transcriber also decides the island: basic_pitch → onnx-cpu (CPU slot), yourmt3 and
-# transkun → torch (MPS).
+# The transcriber also decides the island: basic_pitch and guitab → onnx-cpu (CPU slot), yourmt3
+# and transkun → torch (MPS).
 version: 1
 
 instruments:
   guitar:
-    # Thresholds from the P2 sweep on separated stems (eval/results/p2). A4 compensation, the
-    # open-string tuning suggestion and bends: step 22, P2g (eval/results/p2g).
-    transcriber: basic_pitch
+    # Step 22, P2g (eval/results/p2g/2026-10-28-finetune.md): Guitab E25 beats Basic Pitch on the
+    # held-out sources (GuitarSet player 05, Guitar-TECHS, IDMT-SMT-Guitar) and, with its own
+    # per-string probabilities as the fret DP's string cue, roughly doubles Tab F1. Bends come
+    # from Basic Pitch's contour on the same stem (guitab.with_bends).
+    transcriber: guitab
     params:
-      min_freq_hz: 70
-      onset_threshold: 0.6
-      frame_threshold: 0.5
-      min_note_ms: 58
       a4_compensation: true
       tuning_suggestion: true
       bends: true

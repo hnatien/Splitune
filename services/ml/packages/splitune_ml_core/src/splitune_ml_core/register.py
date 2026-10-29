@@ -32,6 +32,7 @@ WEIGHTS_DIRS = {
     "transkun-v2": "transkun",
     "yourmt3-moe": "yourmt3",
     "panns-cnn14": "panns",
+    "guitab-e25": "guitab",
     "bs-roformer-sw": "audio-separator",
     "mel-roformer-guitar-becruily": "audio-separator",
     "bs-roformer-viperx-1297": "audio-separator",

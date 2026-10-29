@@ -15,6 +15,7 @@ from splitune_ml_core import calibration, contracts, register
 from splitune_ml_core.stage_api import StageJob
 from splitune_ml_core.stages import STAGES
 from stage_notes import bass, guitar, piano, stage, transcribers
+from stage_notes.guitab import BEND_PASS
 from stage_notes.strings import FEATURES, StringModel
 
 from .synth import PHRASE, phrase
@@ -27,8 +28,9 @@ AUDIO_HASH = "ab" * 32
 def _weights() -> None:
     try:
         register.verify(register.model("basic-pitch"), transcribers.models_dir() / "basic-pitch")
+        register.verify(register.model("guitab-e25"), transcribers.models_dir() / "guitab")
     except Exception:
-        pytest.skip("nmp.onnx not installed (scripts/fetch_models.py basic-pitch)")
+        pytest.skip("weights not installed (scripts/fetch_models.py basic-pitch guitab)")
 
 
 def write_stereo(path: Path, mono: np.ndarray[Any, Any]) -> Path:
@@ -99,14 +101,16 @@ def test_guitar_notes_from_the_isolated_stem(tmp_path: Path) -> None:
     assert out.status == "done"
     notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
     assert notes.artefact == "notes.guitar"
-    assert notes.models[0].model_id == "basic_pitch/icassp_2022"
+    # Guitab transcribes; Basic Pitch runs the bend pass.
+    assert [m.model_id for m in notes.models] == ["guitab/e25", "basic_pitch/icassp_2022"]
     pitches = {n.pitch_midi for n in notes.notes}
     assert {45, 52, 57, 60, 64} <= pitches
     assert all(n.stem_id == "guitar" for n in notes.notes)
     assert all(n.low_band_energy is None for n in notes.notes)
     assert [n.id for n in notes.notes] == sorted(n.id for n in notes.notes)
     assert all(0 <= n.confidence <= 1 and n.confidence_raw is not None for n in notes.notes)
-    # Identity calibration until P2 fits a table; the bands are recorded for finalize.
+    assert all(n.string_probs is not None and len(n.string_probs) == 6 for n in notes.notes)
+    # The bands are recorded for finalize.
     assert notes.params["calibration"]["bands"] == {"high": 0.7, "medium": 0.4}
     assert notes.params["source"] != "mixture"
     assert notes.tuning is not None
@@ -163,7 +167,23 @@ def test_piano_notes_from_the_isolated_stem_with_transkun(tmp_path: Path) -> Non
     assert all(n.confidence == pytest.approx(0.918, abs=0.01) for n in notes.notes)
 
 
-def test_guitar_notes_carry_the_string_cue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_basic_pitch_guitar_notes_carry_the_string_classifier_cue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = transcribers.NotesConfig(
+        version=1,
+        instruments={
+            "guitar": transcribers.InstrumentSpec(
+                transcriber="basic_pitch",
+                params=dict(BEND_PASS),  # the P2 guitar thresholds
+            )
+        },
+    )
+
+    def load_config(path: Path | None = None) -> transcribers.NotesConfig:
+        return config
+
+    monkeypatch.setattr(transcribers, "load_config", load_config)
     rng = np.random.default_rng(0)
     model = StringModel(
         (

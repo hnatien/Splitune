@@ -1,6 +1,8 @@
 // Fret-assignment configuration (07-music-algorithms.md §5). Guitar weights were tuned in
 // Prototype 3 (services/ml/eval/results/p3/); bass weights are the doc's initial values
-// plus the guitar's stretch penalty (untuned until a bass tab set exists).
+// plus the guitar's stretch penalty (untuned until a bass tab set exists). The guitar string cue
+// (Guitab's per-string probabilities) was chosen in step 22: Tab F1 on the held-out P2g sources
+// rises from weight 0.25 to 2 and is flat from 2 to 4 (services/ml/eval/results/p2g/).
 
 export type FingeringMode = 'easiest' | 'as_played'
 export type StringedInstrument = 'guitar' | 'bass'
@@ -62,7 +64,7 @@ export const DEFAULT_WEIGHTS: Record<StringedInstrument, Record<FingeringMode, F
       stretch: 1,
       handPrior: 0.2,
       ringing: 0.3,
-      stringCue: 0,
+      stringCue: 2,
     },
     // Tuned in P3 on GuitarSet players 00–02, checked on 03–05 (services/ml/eval/results/p3/).
     as_played: {
@@ -78,7 +80,7 @@ export const DEFAULT_WEIGHTS: Record<StringedInstrument, Record<FingeringMode, F
       stretch: 1,
       handPrior: 0.2,
       ringing: 0.3,
-      stringCue: 0,
+      stringCue: 2,
     },
   },
   bass: {

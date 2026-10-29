@@ -51,6 +51,7 @@ TARGETS = {
     "htdemucs-ft": "htdemucs-ft",
     "mel-roformer-kim-vocals": "mel-roformer-kim-vocals",
     "mel-roformer-guitar-becruily": "mel-roformer-guitar-becruily",
+    "guitab": "guitab-e25",
 }
 SEPARATION = {spec.record: spec.filename for spec in separation_config.load().models.values()}
 
