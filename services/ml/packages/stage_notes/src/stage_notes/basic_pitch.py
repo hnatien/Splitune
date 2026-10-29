@@ -138,6 +138,7 @@ def notes_polyphonic(
     max_freq: float | None,
     infer_onsets: bool = True,
     melodia_trick: bool = True,
+    energy_tol: int = ENERGY_TOL,
 ) -> list[RawNote]:
     frames = posteriors.note.copy()
     onsets = posteriors.onset.copy()
@@ -156,7 +157,7 @@ def notes_polyphonic(
         if start >= n_frames - 1:
             continue
         i, k = start + 1, 0
-        while i < n_frames - 1 and k < ENERGY_TOL:
+        while i < n_frames - 1 and k < energy_tol:
             k = k + 1 if remaining[i, f] < frame_thresh else 0
             i += 1
         i -= k
@@ -170,13 +171,13 @@ def notes_polyphonic(
             mid, f = (int(v) for v in np.unravel_index(int(np.argmax(remaining)), remaining.shape))
             remaining[mid, f] = 0
             i, k = mid + 1, 0
-            while i < n_frames - 1 and k < ENERGY_TOL:
+            while i < n_frames - 1 and k < energy_tol:
                 k = k + 1 if remaining[i, f] < frame_thresh else 0
                 _clear(remaining, i, i + 1, f)
                 i += 1
             end = i - 1 - k
             i, k = mid - 1, 0
-            while i > 0 and k < ENERGY_TOL:
+            while i > 0 and k < energy_tol:
                 k = k + 1 if remaining[i, f] < frame_thresh else 0
                 _clear(remaining, i, i + 1, f)
                 i -= 1

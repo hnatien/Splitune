@@ -1,6 +1,12 @@
 import { Tab } from '@splitune/contracts'
 import { describe, expect, it } from 'vitest'
-import { buildTab, MUSIC_CORE_VERSION } from '../src/index.ts'
+import {
+  buildTab,
+  MUSIC_CORE_VERSION,
+  TUNING_SUGGESTION_MIN_CONFIDENCE,
+  TUNINGS,
+} from '../src/index.ts'
+import type { Notes } from '../src/types.ts'
 import { denseGuitarPart, fixtures, makeBeats, makeChords, makeNotes } from './helpers.ts'
 
 describe('buildTab', () => {
@@ -102,6 +108,58 @@ describe('buildTab', () => {
     expect(result.tab.events.find((e) => e.note_id === 'low')).toMatchObject({ unplayable: true })
     expect(result.warnings).toContain('unplayable_notes')
     expect(result.residualFlagged).toEqual(['late'])
+  })
+
+  it('uses a confident tuning suggestion unless the caller gives a tuning', () => {
+    const dropD = [64, 59, 55, 50, 45, 38]
+    const suggested = (confidence: number, tuning = dropD) => ({
+      ...makeNotes([{ id: 'd2', onset_s: 0.5, pitch_midi: 38 }]),
+      tuning: {
+        a4_cents: 0,
+        a4_strength: 0.9,
+        suggested: { name: 'drop_d' as const, tuning_midi: tuning, confidence },
+      },
+    })
+    const at = (notes: Notes, tuningMidi?: number[]) =>
+      buildTab(notes, makeBeats(), {}, tuningMidi === undefined ? {} : { tuningMidi }).tab
+    const confident = at(suggested(TUNING_SUGGESTION_MIN_CONFIDENCE))
+    expect(confident.tuning_midi).toEqual(dropD)
+    expect(confident.events[0]).toMatchObject({ string: 6, fret: 0 })
+    expect(at(suggested(TUNING_SUGGESTION_MIN_CONFIDENCE - 0.01)).tuning_midi).toEqual(
+      TUNINGS.guitar_standard,
+    )
+    expect(at(suggested(1), [...TUNINGS.guitar_standard]).tuning_midi).toEqual(
+      TUNINGS.guitar_standard,
+    )
+    expect(at(suggested(1, [43, 38, 33, 26])).tuning_midi).toEqual(TUNINGS.guitar_standard)
+  })
+
+  it('marks the largest bend of a note from a quarter tone up', () => {
+    const notes = makeNotes([
+      {
+        id: 'bent',
+        onset_s: 0.5,
+        pitch_midi: 62,
+        bend_cents: [
+          [0, 0],
+          [0.08, 120],
+          [0.15, 196],
+        ],
+      },
+      {
+        id: 'wobble',
+        onset_s: 1,
+        pitch_midi: 62,
+        bend_cents: [
+          [0, 0],
+          [0.1, 30],
+        ],
+      },
+    ])
+    const result = buildTab(notes, makeBeats())
+    expect(result.tab.events.find((e) => e.note_id === 'bent')?.bend_cents).toBe(196)
+    expect(result.tab.events.find((e) => e.note_id === 'wobble')?.bend_cents).toBeUndefined()
+    expect(result.alphaTex).toContain('{b (0 4)}')
   })
 
   it('records swing bars', () => {

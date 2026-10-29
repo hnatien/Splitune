@@ -216,6 +216,16 @@
             "left",
             "right"
           ]
+        },
+        "string_probs": {
+          "minItems": 4,
+          "maxItems": 7,
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
         }
       },
       "required": [

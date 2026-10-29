@@ -92,6 +92,7 @@ export function makeNotes(
       pitch_midi: n.pitch_midi ?? 60,
       confidence: n.confidence ?? 0.9,
       stem_id: instrument,
+      ...(n.bend_cents === undefined ? {} : { bend_cents: n.bend_cents }),
     })),
   }
 }

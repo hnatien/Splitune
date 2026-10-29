@@ -25,6 +25,7 @@ from splitune_ml_core.errors import StageError
 from splitune_ml_core.paths import ML_ROOT
 
 from . import basic_pitch as bp
+from . import bends, tuning
 
 RATE = 44100
 CONFIG_PATH = ML_ROOT / "config" / "notes.personal.yaml"
@@ -37,6 +38,8 @@ class NoteEvent:
     pitch_midi: int
     velocity: int
     confidence_raw: float
+    bend_cents: tuple[tuple[float, float], ...] = ()  # (s after the onset, cents above the pitch)
+    string_probs: tuple[float, ...] | None = None  # P(string), string 1 first: tab models only
 
 
 class NoteTranscriber(Protocol):
@@ -91,7 +94,8 @@ def ref_for(record_id: str, model_id: str) -> contracts.ModelRef:
     )
 
 
-# basic-pitch's predict() defaults, plus the confidence window.
+# basic-pitch's predict() defaults, plus the confidence window and the recording's A4 offset
+# compensation (the stage estimates the offset and passes it as `a4_cents`, tuning.py).
 BASIC_PITCH_DEFAULTS: dict[str, Any] = {
     "onset_threshold": 0.5,
     "frame_threshold": 0.3,
@@ -99,8 +103,25 @@ BASIC_PITCH_DEFAULTS: dict[str, Any] = {
     "min_freq_hz": None,
     "max_freq_hz": None,
     "melodia_trick": True,
+    "infer_onsets": True,
+    "energy_tol": bp.ENERGY_TOL,
     "confidence_frames": 3,
+    "a4_compensation": False,
+    # Open-string tuning suggestion (needs a4_compensation; tuning.suggest_tuning). Thresholds:
+    # the most sensitive setting without a false positive on the P2g standard-tuning cases.
+    "tuning_suggestion": False,
+    "tuning_min_low_notes": 1,
+    "tuning_min_confidence": 0.3,
+    "tuning_min_duration_s": 0.1,
+    # Bends from the pitch contour (bends.py): the smallest bend kept and how long it must glide.
+    "bends": False,
+    "bend_min_cents": 75.0,
+    "bend_min_glide_frames": 3,
+    # Per-note string probabilities for the fret DP from the audio (strings.py, the stage adds
+    # them to guitar notes).
+    "string_cue": False,
 }
+A4_MIN_CENTS = 5.0  # smaller offsets are within the estimator's error (median 6 cents, step 22)
 
 
 class BasicPitch:
@@ -134,6 +155,10 @@ class BasicPitch:
         return bp.infer(self.session(), audio)
 
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]:
+        cents = float(params.get("a4_cents") or 0.0)
+        stretch = 1.0
+        if abs(cents) >= A4_MIN_CENTS:
+            mono, stretch = tuning.retuned(mono, cents)
         posteriors = self.posteriors(mono)
         raw = bp.notes_polyphonic(
             posteriors,
@@ -143,8 +168,21 @@ class BasicPitch:
             min_freq=params["min_freq_hz"],
             max_freq=params["max_freq_hz"],
             melodia_trick=bool(params["melodia_trick"]),
+            infer_onsets=bool(params["infer_onsets"]),
+            energy_tol=int(params["energy_tol"]),
         )
-        times = bp.frame_times(posteriors.contour.shape[0])
+        bent = (
+            bends.merged(
+                posteriors,
+                raw,
+                onset_thresh=float(params["onset_threshold"]),
+                min_cents=float(params["bend_min_cents"]),
+                min_glide_frames=int(params["bend_min_glide_frames"]),
+            )
+            if params["bends"]
+            else [bends.Bent(n, ()) for n in raw]
+        )
+        times = bp.frame_times(posteriors.contour.shape[0]) / stretch
         frames = int(params["confidence_frames"])
         return [
             NoteEvent(
@@ -153,8 +191,12 @@ class BasicPitch:
                 pitch_midi=n.pitch_midi,
                 velocity=int(np.clip(round(127 * n.amplitude), 1, 127)),
                 confidence_raw=min(1.0, max(0.0, bp.onset_posterior(posteriors, n, frames))),
+                bend_cents=tuple(
+                    (round(float(times[n.start + k] - times[n.start]), 3), c) for k, c in b.curve
+                ),
             )
-            for n in raw
+            for b in bent
+            for n in (b.note,)
         ]
 
 
@@ -194,6 +236,10 @@ def get(name: str) -> NoteTranscriber:
         if name not in _instances:
             if name == "basic_pitch":
                 _instances[name] = BasicPitch()
+            elif name == "guitab":
+                from .guitab import Guitab
+
+                _instances[name] = Guitab()
             elif name == "yourmt3":
                 from .yourmt3 import YourMT3  # torch island only
 

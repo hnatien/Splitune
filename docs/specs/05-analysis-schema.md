@@ -355,6 +355,13 @@ Schema `1.6.0` (additive; `pnpm contracts:gen` regenerated the JSON Schemas and 
 - **`Note.hand`**: `left | right` (optional). The hand per piano note from the PM2S hand-part model in `notes.piano`. When every note has one, `buildPianoScore` uses them instead of `splitHands`.
 - **Piano confidence is no longer constant.** `confidence_raw` is the mean of the semi-CRF onset marginal and the velocity-distribution peak, calibrated by `config/calibration/transkun-v2@2.0.1.piano.json`. Mixture-fallback notes (YourMT3+) are calibrated by `yourmt3-moe@….piano.json`.
 
+## Implementation notes (step 22, 2026-10-29)
+`SCHEMA_VERSION` is now **1.7.0** (additions only; step 24's 1.6.0 and step 22's additions were made in parallel and combined at the merge):
+- **`Notes.tuning`** (`RecordingTuning`, guitar/bass, optional): `a4_cents` (the recording's offset from A440 in [−50, 50], which the notes were transcribed after compensating), `a4_strength` (how peaked the estimate is) and `suggested` (`name`: `TuningName` standard | half_step_down | full_step_down | drop_d | drop_c_sharp | drop_c | other, `tuning_midi` string 1 first, `confidence`). `buildTab` applies `suggested` at or above `TUNING_SUGGESTION_MIN_CONFIDENCE` unless the caller passes a tuning (07, step 22 notes).
+- **`Note.string_probs`** (guitar/bass, optional): a probability per string, string 1 (highest) first, 4–7 entries; strings that cannot play the pitch are 0. `notes.guitar` fills it from Guitab's fret posteriors; a bent note that only the Basic Pitch bend pass found carries all zeros (no preference). The fret DP's `stringCue` term reads it (07 §5).
+- **`Note.bend_cents`** (already in the schema) is now filled for guitar: `[s after the onset, cents above the pitch]` points of the bend curve.
+- **`TabEvent.bend_cents`** (optional, (0, 400]): the largest bend of the note, rounded; `buildTab` sets it from 50 cents and alphaTex renders it as a bend mark.
+
 ## Implications for other docs
 - `03-data-model-and-storage.md`: `analyses`, `artefacts`, `correction_ops` tables and the storage layout.
 - `06-ml-pipeline-service.md`: every stage writes its artefact atomically (temp key, then rename via copy) and updates `manifest`.

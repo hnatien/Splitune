@@ -1621,3 +1621,46 @@ Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s2
   - Staff: hands up, feet down, × heads for hi-hats, dashed marks on guesses, current bar shaded.
 - **Fix from viewing:** the staff wrote a hit until the voice's next hit (kicks on 1 and 3 came out as halves). A hit now ends at its beat with rests after, as drum parts are read. Only the three `build-drums` goldens changed; music-core 176 passed.
 - **Seen, not drum-specific:** at 800 px the practice top bar (title, transcription chip, view switch, settings) is wider than the window, so the page scrolls sideways.
+
+## 2026-10-29 — Step 22: Guitar accuracy (done; merged into `dev`)
+Branch `impl/22-guitar-accuracy` (worktree `.claude/worktrees/s22-guitar`), from `dev` at `0eea044`; merged into `dev` on 2026-10-29 after steps 24 and 25 (conflicts resolved: contracts combined as 1.7.0, the notes stage keeps solo bypass, stereo, pedal and hands alongside tuning, string probabilities and the bend pass). **Owner decisions:** public data only, no song list (stop point 1); fine-tune an existing checkpoint; the phase plan with a +30 % time budget (stop point 2); after the datasets on `D:` were deleted mid-step, "Re-download and rebuild (Recommended)"; then "don't ask me any questions from now. pick whatever is recommended", so stop points 3 and 4 were decided by the recommended option and are reported here.
+
+**Built**
+- **P2g** (`services/ml/eval/p2g.py`, set `eval/sets/p2g-guitar.yaml`): 57 real-recording excerpts with note and string/fret references (GuitarSet players 03–05 plus derived off-A440, down-tuned, capo, drop D and two-guitar items; Guitar-TECHS electric music and vibrato controls; IDMT-SMT-Guitar bend licks) in an easy band (drums, bass, vocals) and a hard band (plus keys/synths), scored end to end through the shipped stages and `buildTab`. Commands and tiers in 08 (step 22 notes).
+- **Contracts 1.7.0:** `Notes.tuning`, `Note.string_probs`, `TabEvent.bend_cents` (05). The branch used 1.6.0, which step 24 had also taken on `dev`; the merge combines both sets of additions as 1.7.0 and regenerates the schemas and Pydantic models.
+- **notes.guitar = Guitab E25** (`stage_notes/guitab.py`, onnx-cpu island; register `guitab-e25`, red tier: CC-BY-NC-SA weights) with A4 compensation, the open-string tuning suggestion, bends from a Basic Pitch contour pass (`with_bends`; Basic Pitch is recorded among the notes' models) and per-note `string_probs`. Isotonic table `config/calibration/guitab-e25@1.1.1-e25.guitar.json`. `views.yaml` gate re-checked (pass) with a `changes` entry.
+- **Fret DP string cue** weight 2 for guitar in both modes (`music-core/src/fret/config.ts`); bends carried into `TabEvent.bend_cents` and alphaTex (story `Bend`, earlier in the step).
+- **Measured and not shipped:** Basic Pitch decoding sweep, the string classifier on Basic Pitch's notes (`stage_notes/strings.py`, kept for Basic Pitch transcribers), a Guitab fine-tune on separated stems (`eval/p2g_finetune.py`), clean-up passes, finer quantizer grids, a second guitar part, three separator candidates, YourMT3+.
+- Harness fixes on the way: Basic Pitch variants pinned to the pre-step-22 thresholds (`BASIC_PITCH_GUITAR`) so they don't follow production; snapped onsets clamped at 0; sweep reports written to `eval/results/p2g/`; combined separators in report headers.
+
+**Results** (hard-band stems, held-out sources; full tables in 08 and `services/ml/eval/results/p2g/`): onset F1 baseline → shipped 0.707 → 0.873 (GuitarSet player 05), 0.540 → 0.565 (Guitar-TECHS), 0.798 → 0.856 (IDMT); `as_played` Tab F1 0.216 → 0.528, 0.294 → 0.371, 0.184 → 0.442; `easiest` 0.152 → 0.530, 0.259 → 0.350, 0.284 → 0.412. Time per 30 s on the PC: notes.guitar 0.4 → 1.7 s (separation 4.6 s), well inside +30 %.
+
+**The eight known gaps**
+1. Evaluation flatters: P2g adds a hard band, out-of-sample tiers, guitar uSDR and end-to-end tab. Fixed.
+2. Transcriber ceiling: Guitab ships (above). Fine-tuning it lost out of domain (08). YourMT3+'s P2 gap is not its program filter: keeping every program lowers hard-band onset F1 on GuitarSet (0.655 → 0.614: more false notes) and barely moves Guitar-TECHS (0.372 → 0.391); its recall on separated stems is low (0.64 GuitarSet, 0.30 TECHS), far behind Guitab (`2026-10-29-yourmt3.md`, CPU run). Not pursued further.
+3. Decoding options: swept; +0.006 held-out at best, not worth it (Basic Pitch now only runs the bend pass).
+4. Tuning: A4 compensation (off-A440 0.508 → 0.926), tuning suggestion in the artefact and applied by `buildTab`; it rarely fires on down-tuned excerpts (07), so the learner's picker matters. Guitab's output starts at E2 (standard-tuning training), so drop C and 7-string notes below E2 are still lost; P2g's drop D items (low D, a tone below) also miss their lowest notes with it. **For step 18:** no tuning picker exists on `dev`; when it is built, default it to `notes.tuning.suggested` when present.
+5. Bends: 30/48 at precision 0.88, in the tab and alphaTex. Fixed.
+6. Several guitars: an oracle split gains ≤ 0.07 Tab F1; one part kept (measured, not worth it).
+7. Fingering: the audio string cue (fixed); default mode stays `easiest` (with the cue the modes are within 0.03); guitar default view stays `tab` (strum handling not built).
+8. Quantizer grid: finer grids only move onsets as much as chance does; unchanged (measured, not worth it).
+
+**Remaining ceiling:** acoustic and clean-electric comping and single lines are near the model's in-domain level (onset ≈ 0.87, Tab F1 ≈ 0.53 on an unseen player); amp-miked electric is the weak spot (onset 0.57, Tab F1 0.37); vibrato-heavy lines are near zero; down-tuned songs get the right notes but standard-tuning frets unless the learner picks the tuning.
+
+**Incidents:** the datasets on `D:` were deleted mid-step and re-downloaded (Zenodo throttles to ≈ 0.5 MB/s per connection). The RTX 3060 dropped off the bus after the fine-tune ("GPU is lost") and the PC crashed with `VIDEO_TDR_FAILURE` (0x116) during separator runs (System log: bugchecks 2026-10-27 23:50, 10-28 09:14, 10-29 09:58, plus an unclean shutdown at 06:24); the rest ran on CPU and `chain_sw_becruily` was not run. Crash-truncated run files were found and recomputed.
+
+**Verification**
+- `cd services/ml && uv run ruff check && uv run pyright`: clean, 0 errors. `uv run pytest` (Postgres up, CUDA hidden): 249 passed, 1 skipped, 5 failed, all environment-bound and failing on `dev` too or signal-based on Windows: `test_beats_model::test_cpu_fallback_uses_the_small_model` (this PC has CUDA), two `test_stem_post` mix-minus residual checks (−13.1 dB vs < −15, checked against `dev`'s code), `test_recovery` SIGTERM (fails on `dev`) and killed-worker (passed in the run before). `stage_notes`: 34 passed (new Guitab, bend overlay and string-cue tests); `eval/tests`: the P2g pass tests pass. The local worker chain test needed Guitab's weights in its model subset; it passes.
+- `pnpm contracts:check`: clean. `pnpm typecheck`: clean. `pnpm lint`: Biome clean (2 pre-existing infos); `check-ui-tokens` fails on `packages/notation/src/fretboard-diagram.tsx:64`, untouched and failing on `dev` (step 18c).
+- `pnpm test`: music-core 163/163, notation 37/37, web 136/136, contracts 45/45, storage, analytics, audio-engine, listening, config, ui-tokens pass; node-worker 35/36 and db 12/13 (lifecycle backup: `pg_dump` not installed on this PC); api 202/207 (process-spawn tests: `node`/`uv` not found by the spawned workers, `SIGSTOP` unsupported on Windows). None touch this step's code.
+- `pnpm secrets:scan`: no leaks. `scripts/fetch_models.py guitab`: verified.
+- P2g reports: `eval/p2g.py report|calibrate|sweep|cleanup|grid|twoguitars` as listed in 08; per-source tables computed from the report CSVs.
+- No web stories run: this session changed no rendering (the bend story landed earlier in the step).
+
+**Worker update after merging (owner):** `git pull`; `cd services/ml && uv run python scripts/fetch_models.py guitab` (21 MB, pinned Hugging Face revision); no `uv sync` needed (no new dependencies); restart the workers (`pnpm workers:prod`). Every `notes.guitar` (and so `tab.guitar`) recomputes once: the transcriber, its params and the calibration are in the cache key.
+
+**Not done / needs the owner**
+- The owner's own songs (public data only so far) and an end-to-end re-analysis of a real song viewed in the local app: not run, because separation on this PC's GPU crashed the machine; do it once the GPU is stable.
+- Transcriber ensembles (Phase 2.6) were not measured: Guitab leads Basic Pitch and YourMT3+ on every held-out source and only it gives string probabilities, so fusing notes would need its own string assignment; worth a try with a second tab model.
+- `chain_sw_becruily` separator; the Mac timing (all timings are from the Windows PC).
+- The GPU instability itself (driver 617.42; check temperatures and power under load).

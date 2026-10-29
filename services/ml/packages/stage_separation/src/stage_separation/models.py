@@ -10,16 +10,20 @@ pinned.
 
 from __future__ import annotations
 
+import functools
 import inspect
 import logging
 import os
 import threading
 import time
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
 import torch
+import yaml
 from audio_separator.separator import Separator  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import contracts, register
 from splitune_ml_core.device import empty_cache, peak_memory, torch_device
@@ -75,6 +79,29 @@ def _ffmpeg_on_path() -> None:
         os.environ["PATH"] = os.pathsep.join([directory, os.environ.get("PATH", "")])
 
 
+@contextmanager
+def _mask_estimator_width(config: Path) -> Generator[None]:
+    """audio-separator (0.44-0.47) builds Mel-Band RoFormer mask estimators with the default MLP
+    width and ignores the config's `mlp_expansion_factor`, so checkpoints trained with another
+    width don't load. While loading, its MelBandRoformer gets mask estimators of the right width."""
+    from audio_separator.separator.uvr_lib_v5.roformer import (  # pyright: ignore[reportMissingTypeStubs]
+        mel_band_roformer,
+    )
+
+    # FullLoader: these configs carry !!python/tuple (no arbitrary objects).
+    model = cast(
+        dict[str, Any], yaml.load(config.read_text(encoding="utf-8"), Loader=yaml.FullLoader)
+    )
+    factor = int(cast(dict[str, Any], model.get("model", {})).get("mlp_expansion_factor", 4))
+    original: Any = mel_band_roformer.MaskEstimator
+    if factor != 4:
+        mel_band_roformer.MaskEstimator = functools.partial(original, mlp_expansion_factor=factor)
+    try:
+        yield
+    finally:
+        mel_band_roformer.MaskEstimator = original
+
+
 def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
     """One model stays loaded per island (they are 50-900 MB); switching models frees the last."""
     global _warm
@@ -101,7 +128,19 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
     )
     # The library has no torch_device_cuda attribute (it builds its CUDA device inline).
     separator.torch_device = torch.device(device())
-    separator.load_model(model_filename=spec.filename)  # pyright: ignore[reportUnknownMemberType]
+    if spec.config is not None:
+        # Not in the library's catalogue: point its lookup at the files fetch_models.py placed.
+        directory = models_dir() / "audio-separator"
+        config = directory / spec.config
+
+        def local_files(filename: str) -> tuple[str, str, str, str, str]:
+            return filename, "MDXC", spec.provider, str(directory / filename), str(config)
+
+        separator.download_model_files = local_files
+        with _mask_estimator_width(config):
+            separator.load_model(model_filename=spec.filename)  # pyright: ignore[reportUnknownMemberType]
+    else:
+        separator.load_model(model_filename=spec.filename)  # pyright: ignore[reportUnknownMemberType]
     _warm = _Loaded(name, dict(spec.inference), separator)
     return separator
 
