@@ -1,0 +1,107 @@
+"""Per-note string cue for the fret DP (07 §5, step 22 Phase 4): which string a transcribed note was
+played on, from the audio.
+
+The same pitch on different strings differs in its partials: a thicker string, or a shorter
+vibrating length (a higher fret), is stiffer, so its upper partials sit further above k·f0
+(inharmonicity), and the spectral envelope changes with the string's gauge and winding. Features
+per note: for partials k = 1…PARTIALS over the note's first FRAMES STFT frames, the level relative
+to the fundamental (dB) and the frequency deviation from k·f0 (cents), plus the pitch. A small
+classifier (StringModel, trained by eval/p2g_strings.py) turns them into a probability per string.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+from numpy.typing import NDArray
+
+RATE = 44100
+FFT_SIZE = 4096
+HOP = 512
+FRAMES = 8  # ≈ 93 ms after the onset (the attack carries most of the string's character)
+SKIP_FRAMES = 1  # the pick transient itself is broadband
+PARTIALS = 16
+SEARCH_CENTS = 60.0  # a partial is the strongest bin within this of k·f0 (stretched partials)
+FEATURES = 2 * PARTIALS + 1
+
+
+def midi_hz(pitch: float) -> float:
+    return 440.0 * 2 ** ((pitch - 69) / 12)
+
+
+def note_features(mono: NDArray[np.float32], onset_s: float, pitch: int) -> NDArray[np.float32]:
+    """(FEATURES,) for one note; zeros where a partial is above Nyquist or the note is cut off."""
+    start = int(onset_s * RATE) + SKIP_FRAMES * HOP
+    frames: list[NDArray[np.float64]] = []
+    window = np.hanning(FFT_SIZE)
+    for k in range(FRAMES):
+        segment = mono[start + k * HOP : start + k * HOP + FFT_SIZE]
+        if len(segment) < FFT_SIZE:
+            break
+        frames.append(np.abs(np.fft.rfft(segment * window)))
+    out = np.zeros(FEATURES, dtype=np.float32)
+    out[-1] = (pitch - 60) / 24
+    if not frames:
+        return out
+    mag = np.mean(frames, axis=0)
+    f0 = midi_hz(pitch)
+    bin_hz = RATE / FFT_SIZE
+    levels = np.full(PARTIALS, np.nan)
+    devs = np.zeros(PARTIALS)
+    for k in range(1, PARTIALS + 1):
+        target = k * f0
+        lo = int(target * 2 ** (-SEARCH_CENTS / 1200) / bin_hz)
+        hi = int(target * 2 ** (SEARCH_CENTS / 1200) / bin_hz) + 1
+        if hi >= len(mag) - 1 or lo < 1:
+            continue
+        peak = lo + int(np.argmax(mag[lo : hi + 1]))
+        a, b, c = np.log(mag[peak - 1 : peak + 2] + 1e-12)
+        denom = a - 2 * b + c
+        delta = 0.5 * (a - c) / denom if abs(denom) > 1e-12 else 0.0
+        hz = (peak + float(np.clip(delta, -0.5, 0.5))) * bin_hz
+        levels[k - 1] = 20 * b / np.log(10)
+        devs[k - 1] = 1200 * np.log2(hz / target)
+    if np.isnan(levels[0]):
+        return out
+    rel = np.nan_to_num(levels - levels[0], nan=-80.0)
+    out[:PARTIALS] = np.clip(rel, -80, 20) / 40
+    out[PARTIALS : 2 * PARTIALS] = devs / SEARCH_CENTS
+    return out
+
+
+STANDARD = (64, 59, 55, 50, 45, 40)  # open strings, string 1 first
+FRET_RANGE = (-2, 22)  # a down-tuned or capo'd guitar plays a little outside standard's frets
+
+
+@dataclass(frozen=True)
+class StringModel:
+    """The trained classifier (eval/p2g_strings.py): FEATURES → hidden → hidden → 6 logits, ReLU
+    between, as plain arrays (`w0`, `b0`, … in an .npz)."""
+
+    layers: tuple[tuple[NDArray[np.float32], NDArray[np.float32]], ...]
+
+    @classmethod
+    def load(cls, path: Path) -> StringModel:
+        with np.load(path, allow_pickle=False) as data:
+            count = len(data.files) // 2
+            return cls(tuple((data[f"w{i}"], data[f"b{i}"]) for i in range(count)))
+
+    def probs(
+        self, mono: NDArray[np.float32], notes: list[tuple[float, int]]
+    ) -> NDArray[np.float32]:
+        """(len(notes), 6) probability per string (string 1 first) for (onset s, pitch) notes;
+        strings that cannot reach the pitch get 0 (all of them, for a pitch no string reaches)."""
+        if not notes:
+            return np.zeros((0, 6), dtype=np.float32)
+        x = np.stack([note_features(mono, onset, pitch) for onset, pitch in notes])
+        for i, (w, b) in enumerate(self.layers):
+            x = x @ w.T + b
+            if i < len(self.layers) - 1:
+                x = np.maximum(x, 0.0)
+        lo, hi = FRET_RANGE
+        reach = np.array([[lo <= p - o <= hi for o in STANDARD] for _, p in notes])
+        e = np.where(reach, np.exp(x - x.max(axis=1, keepdims=True)), 0.0)
+        total = e.sum(axis=1, keepdims=True)
+        return np.divide(e, total, out=np.zeros_like(e), where=total > 0).astype(np.float32)

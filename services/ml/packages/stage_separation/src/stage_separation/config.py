@@ -44,6 +44,8 @@ class ModelSpec(BaseModel):
     outputs: dict[str, Instrument | None]  # model stem name -> instrument; None = complement
     arch: Literal["mdxc", "demucs"]  # audio-separator architecture
     inference: dict[str, Any] = Field(default_factory=dict)
+    # Models outside audio-separator's catalogue: their YAML next to the weights (MDXC only).
+    config: str | None = None
 
     @model_validator(mode="after")
     def _inference_is_known(self) -> Self:

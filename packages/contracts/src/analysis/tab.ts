@@ -26,6 +26,7 @@ export const TabEvent = z
     // pitch was moved by octaves into the tuning's range ("8va"/"8vb" marker); without string/fret
     // the note has no position within the span limit ("!" marker). Never dropped silently.
     unplayable: z.boolean().optional(),
+    bend_cents: z.number().positive().max(400).optional(), // largest bend of the note (100 = ½ step)
     hand: z.enum(['L', 'R']).optional(), // piano (v1)
   })
   .register(contracts, { id: 'TabEvent' })

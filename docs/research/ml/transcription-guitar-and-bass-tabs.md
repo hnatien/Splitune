@@ -125,10 +125,20 @@ A pitch can be played at up to 5–6 positions. The tab must minimise hand movem
 | CREPE | mono f0 (bass line) | separated stem | see vocals doc | MIT ([repo](https://github.com/marl/crepe)) | not separately stated | MIR datasets (see vocals doc) | likely | Mature library; TF dependency |
 | SwiftF0 | mono f0 | separated stem | see vocals doc | MIT ([repo](https://github.com/lars76/swift-f0)) | not separately stated | unverified | likely | Production-shaped (ONNX), **but floor 46.9 Hz** |
 
+### 8. Measured in Splitune (step 22, P2g, 2026-10-29)
+On the P2g set (`specs/08-…` step 22 notes; `services/ml/eval/results/p2g/`), separated guitar from a band with keys:
+- **Guitab** ([repo](https://github.com/DanieleMorotti/guitab), MIT code, CC-BY-NC-SA weights; a CQT CNN + transformer predicting fret-or-silence and onset per string, trained on GuitarSet 00–03, GAPS, SynthTab and private data) beats Basic Pitch on every held-out source: onset F1 0.873 vs 0.822 (GuitarSet player 05), 0.566 vs 0.553 (Guitar-TECHS), 0.825 vs 0.798 (IDMT-SMT-Guitar), at 1.5 s per 30 s on CPU.
+- **Its string posteriors are the best fingering cue found:** as one DP cost term they lift `as_played` Tab F1 from 0.29 to 0.53 (GuitarSet player 05) and from 0.27 to 0.37 (Guitar-TECHS) over Basic Pitch with the plain DP. A small classifier on per-note spectra over Basic Pitch's notes helped less (0.35 → 0.51 on GuitarSet). This is the TART "AudioFret" idea without a learned assigner: the DP keeps playability, modes and alternatives.
+- **Fine-tuning Guitab on separated stems overfits** to the training sources' timbres: small gains on GuitarSet, large losses on Guitar-TECHS and IDMT. More varied electric data (EGDB, DI re-amping) would be needed.
+- **Tuning:** the A4 offset estimate (median error 6 cents) fixes off-A440 recordings (0.508 → 0.926 onset F1); open-string tuning from the notes alone is rarely decidable on 20–40 s excerpts (most never sound the low string), so the learner's tuning choice stays.
+- **Bends:** Basic Pitch's 3-bins-per-semitone contour finds 30 of 48 labelled bends at precision 0.88–0.91 once fragments on a glide are merged.
+- **YourMT3+'s gap is not its instrument filter:** keeping notes it labels as other instruments lowers GuitarSet onset F1 on hard-band stems (0.655 → 0.614) and barely helps Guitar-TECHS (0.372 → 0.391). Its recall on separated stems is simply low (0.64 / 0.30); the paper's 91.65 is on clean GuitarSet, which its training covered.
+- **Ceiling by style:** comping and single lines on acoustic/clean guitar reach onset F1 ≈ 0.85 and Tab F1 ≈ 0.53–0.85 depending on how in-sample the player is; amp-miked electric (Guitar-TECHS) stays at onset F1 ≈ 0.57 and Tab F1 ≈ 0.37; vibrato-heavy lines are near zero (the reference marks one note, models emit many or none).
+
 ## Implications for Splitune
 - **Pipeline:**
   1. Separated guitar/bass stem (`source-separation.md`; guitar stems from 6-stem models are weaker than bass, so check `source-separation-model-comparison.md`).
-  2. Note transcription: Basic Pitch for MVP; a fine-tuned Kong-style CRNN later.
+  2. Note transcription: Basic Pitch for MVP; Guitab (a joint tab model) for guitar since step 22, whose string posteriors also feed the fret DP (§8).
   3. Beat-grid quantization (`chords-beats-key-structure.md`).
   4. **In-house fret assigner:** cost-based DP for v1 with a beginner bias (open position, ≤4-fret span); a learned model later.
   5. Render with alphaTab, which reads/writes Guitar Pro and alphaTex and renders tab natively (`research/ux/music-display-ui.md`).

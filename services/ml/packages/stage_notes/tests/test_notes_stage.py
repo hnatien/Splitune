@@ -14,7 +14,9 @@ import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import calibration, contracts, register
 from splitune_ml_core.stage_api import StageJob
 from splitune_ml_core.stages import STAGES
-from stage_notes import bass, guitar, piano, transcribers
+from stage_notes import bass, guitar, piano, stage, transcribers
+from stage_notes.guitab import BEND_PASS
+from stage_notes.strings import FEATURES, StringModel
 
 from .synth import PHRASE, phrase
 
@@ -26,8 +28,9 @@ AUDIO_HASH = "ab" * 32
 def _weights() -> None:
     try:
         register.verify(register.model("basic-pitch"), transcribers.models_dir() / "basic-pitch")
+        register.verify(register.model("guitab-e25"), transcribers.models_dir() / "guitab")
     except Exception:
-        pytest.skip("nmp.onnx not installed (scripts/fetch_models.py basic-pitch)")
+        pytest.skip("weights not installed (scripts/fetch_models.py basic-pitch guitab)")
 
 
 def write_stereo(path: Path, mono: np.ndarray[Any, Any]) -> Path:
@@ -106,16 +109,36 @@ def test_guitar_notes_from_the_isolated_stem(tmp_path: Path) -> None:
     assert out.status == "done"
     notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
     assert notes.artefact == "notes.guitar"
-    assert notes.models[0].model_id == "basic_pitch/icassp_2022"
+    # Guitab transcribes; Basic Pitch runs the bend pass.
+    assert [m.model_id for m in notes.models] == ["guitab/e25", "basic_pitch/icassp_2022"]
     pitches = {n.pitch_midi for n in notes.notes}
     assert {45, 52, 57, 60, 64} <= pitches
     assert all(n.stem_id == "guitar" for n in notes.notes)
     assert all(n.low_band_energy is None for n in notes.notes)
     assert [n.id for n in notes.notes] == sorted(n.id for n in notes.notes)
     assert all(0 <= n.confidence <= 1 and n.confidence_raw is not None for n in notes.notes)
-    # Identity calibration until P2 fits a table; the bands are recorded for finalize.
+    assert all(n.string_probs is not None and len(n.string_probs) == 6 for n in notes.notes)
+    # The bands are recorded for finalize.
     assert notes.params["calibration"]["bands"] == {"high": 0.7, "medium": 0.4}
     assert notes.params["source"] != "mixture"
+    assert notes.tuning is not None
+    assert abs(notes.tuning.a4_cents) < 5
+    assert notes.tuning.suggested is not None
+    assert notes.tuning.suggested.name == "standard"
+
+
+def test_guitar_notes_compensate_a_recording_off_a440(tmp_path: Path) -> None:
+    stem = phrase(RATE, cents=30.0)
+    decoded = write_stereo(tmp_path / "decoded.flac", stem)
+    inputs = {"separation": str(separation(tmp_path, tmp_path / "cache", "guitar", stem))}
+    out = guitar.run(job(tmp_path, guitar, inputs, decoded, len(stem)))
+    notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
+    assert notes.tuning is not None
+    assert notes.tuning.a4_cents == pytest.approx(30, abs=5)
+    assert {45, 52, 57, 60, 64} <= {n.pitch_midi for n in notes.notes}
+    onsets = sorted(n.onset_s for n in notes.notes if n.pitch_midi == 60)
+    assert onsets
+    assert onsets[0] == pytest.approx(2.0, abs=0.05)  # times mapped back
 
 
 def test_mixture_fallback_and_bass_low_band_energy(tmp_path: Path) -> None:
@@ -155,6 +178,52 @@ def test_piano_notes_from_the_isolated_stem_with_transkun(tmp_path: Path) -> Non
     assert None not in {n.hand for n in notes.notes}
     assert notes.sustain is not None
     assert [m.model_id for m in notes.models] == ["transkun/2.0", "pm2s/hand_part"]
+
+
+def test_basic_pitch_guitar_notes_carry_the_string_classifier_cue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = transcribers.NotesConfig(
+        version=1,
+        instruments={
+            "guitar": transcribers.InstrumentSpec(
+                transcriber="basic_pitch",
+                params=dict(BEND_PASS),  # the P2 guitar thresholds
+            )
+        },
+    )
+
+    def load_config(path: Path | None = None) -> transcribers.NotesConfig:
+        return config
+
+    monkeypatch.setattr(transcribers, "load_config", load_config)
+    rng = np.random.default_rng(0)
+    model = StringModel(
+        (
+            (rng.normal(size=(8, FEATURES)).astype(np.float32), np.zeros(8, dtype=np.float32)),
+            (rng.normal(size=(6, 8)).astype(np.float32), np.zeros(6, dtype=np.float32)),
+        )
+    )
+    cue_ref = contracts.ModelRef(
+        model_id="splitune/string_cue",
+        version="test",
+        weights_sha256="cd" * 32,
+        provider="self_hosted",
+        register_tier="green",
+    )
+    monkeypatch.setattr(stage, "string_model", lambda: model)
+    monkeypatch.setattr(stage, "string_cue_ref", lambda: cue_ref)
+    stem = phrase(RATE)
+    decoded = write_stereo(tmp_path / "decoded.flac", stem)
+    inputs = {"separation": str(separation(tmp_path, tmp_path / "cache", "guitar", stem))}
+    run = job(tmp_path, guitar, inputs, decoded, len(stem))
+    run.params = {**run.params, "string_cue": True}
+    notes = contracts.Notes.model_validate_json(Path(guitar.run(run).files["notes"]).read_text())
+    assert [m.model_id for m in notes.models] == ["basic_pitch/icassp_2022", "splitune/string_cue"]
+    assert notes.notes
+    for n in notes.notes:
+        assert n.string_probs is not None
+        assert sum(n.string_probs) == pytest.approx(1.0, abs=1e-3)
 
 
 def test_calibration_table_is_applied(tmp_path: Path) -> None:

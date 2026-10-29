@@ -29,6 +29,9 @@ min_confidence_mean:
 # BabySlakh tracks with acoustic piano only; tracks with electric piano or clavinet 0.676: pass.
 # Drums, ADTOF on separated stems at -17 dBFS RMS (gate 0.80, P2d item-mean onset F1 ±50 ms on the
 # chosen input; owner 2026-10-29): 0.838 on 42 items (2-fold CV 0.826, held-out 0.810): pass.
+# Guitar, step 22 (P2g, eval/results/p2g/2026-10-28-finetune.md), Guitab E25 on the hard-band
+# stems: GuitarSet 0.857 (held-out player 05: 0.873), IDMT-SMT-Guitar 0.856, Guitar-TECHS 0.566
+# (amped electric, the weakest source; Basic Pitch 0.553 there): pass.
 quality_gate:
   guitar: pass
   bass: pass
@@ -63,3 +66,6 @@ changes:
   - date: 2026-10-29
     change: "drums notation supported behind v1.drums (drum grid); quality_gate drums pass by P2d (0.838 item-mean onset F1, gate 0.80); min_confidence_mean drums 0.75 (owner's choice)"
     models: [adtof-frame-rnn@adtofAll_0-pt-85c192e, bs-roformer-sw]
+  - date: 2026-10-29
+    change: "quality_gate guitar pass re-checked by P2g (step 22) for Guitab; default view stays tab"
+    models: [guitab-e25@1.1.1-e25, basic-pitch@0.4.0]

@@ -72,6 +72,9 @@
           "items": {
             "$ref": "#/$defs/PedalInterval"
           }
+        },
+        "tuning": {
+          "$ref": "#/$defs/RecordingTuning"
         }
       },
       "required": [
@@ -212,6 +215,16 @@
             "left",
             "right"
           ]
+        },
+        "string_probs": {
+          "minItems": 4,
+          "maxItems": 7,
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
         }
       },
       "required": [
@@ -267,6 +280,65 @@
       "required": [
         "on_s",
         "off_s"
+      ]
+    },
+    "RecordingTuning": {
+      "type": "object",
+      "properties": {
+        "a4_cents": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 50
+        },
+        "a4_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "suggested": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/TuningName"
+            },
+            "tuning_midi": {
+              "minItems": 4,
+              "maxItems": 7,
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 127
+              }
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "name",
+            "tuning_midi",
+            "confidence"
+          ]
+        }
+      },
+      "required": [
+        "a4_cents",
+        "a4_strength"
+      ]
+    },
+    "TuningName": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "half_step_down",
+        "full_step_down",
+        "drop_d",
+        "drop_c_sharp",
+        "drop_c",
+        "other"
       ]
     }
   },

@@ -1,6 +1,6 @@
 # Status
 
-What is built, as of **2026-10-24**. Details, verification and open items for each row are in `docs/progress-log.md` (search for the heading in the last column). Update the row when a step finishes.
+What is built, as of **2026-10-29**. Details, verification and open items for each row are in `docs/progress-log.md` (search for the heading in the last column). Update the row when a step finishes.
 
 **Summary:** the MVP (s01–s17) is built and deployed; a few owner checks are still open. v1 has started: piano notes, the guitar/bass Notes view and the vocal Melody view are done; practice depth (s18), drums, mic scoring and the accuracy steps are not.
 
@@ -26,7 +26,7 @@ What is built, as of **2026-10-24**. Details, verification and open items for ea
 | s19 | v1 piano and drums | Partial | Piano: wait mode, levels (pipeline gaps moved to s24; drums moved to s25) | Step 17d; Step 18 (piano notes); Step 18a |
 | s20 | v1 mic, offline, export, native | Not started | — | — |
 | s21 | Guitar/bass Notes view | Done | E2E run; real devices; tuning option in the Worker | Step 18b (Phase 1 design, Phase 2 build) |
-| s22 | Guitar accuracy | Not started | Needs the owner's songs, tabs and time budget | — |
+| s22 | Guitar accuracy | Done | Owner's own songs (public data only so far); end-to-end check in the app; `chain_sw_becruily` separator (GPU crashed) | Step 22 |
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
 | s24 | Piano accuracy | Partial | Phases 0–6 built and measured (P2p); owner's songs end to end and Notes/Staff screenshots pending the owner | Step 24 |
 | s25 | Drums end to end | In progress | Phases 0–6 built: P2d (onset F1 0.838 vs 0.793 baseline), `notes.drums` behind `v1.drums`, drum score/levels/alphaTex, drum grid and staff views, gate pass (0.80) + confidence floor 0.75, local end to end done. Open: the owner's excerpts on the Mac, grid/staff screenshots, `v1.drums` on in production after deploy, DrumSep kit split (blocked) | Step 25 |

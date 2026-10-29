@@ -213,6 +213,9 @@ class Meter(BaseModel):
 type BendCent = Annotated[tuple[StrictFloat, StrictFloat], Field(max_length=2, min_length=2)]
 
 
+type StringProb = Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+
+
 class NewNote(BaseModel):
     id: Annotated[StrictStr, Field(min_length=1)]
     onset_s: Annotated[StrictFloat, Field(ge=0.0)]
@@ -223,6 +226,7 @@ class NewNote(BaseModel):
     stem_id: Annotated[StrictStr, Field(min_length=1)]
     low_band_energy: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
     hand: Literal["left", "right"] | None = None
+    string_probs: Annotated[list[StringProb] | None, Field(max_length=7, min_length=4)] = None
 
 
 class Note(BaseModel):
@@ -237,6 +241,7 @@ class Note(BaseModel):
     stem_id: Annotated[StrictStr, Field(min_length=1)]
     low_band_energy: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
     hand: Literal["left", "right"] | None = None
+    string_probs: Annotated[list[StringProb] | None, Field(max_length=7, min_length=4)] = None
 
 
 class NotePatch(BaseModel):
@@ -286,6 +291,9 @@ class ProgressEvent(BaseModel):
 
 
 type RecommendedView = Literal["tab", "notation", "roll", "drum_grid", "f0", "chords_only"]
+
+
+type TuningMidiItem = Annotated[StrictInt, Field(ge=0, le=127)]
 
 
 class ReportWrongOp(BaseModel):
@@ -429,9 +437,6 @@ class StemFile(BaseModel):
     bitrate_kbps: Annotated[StrictFloat, Field(gt=0.0)]
 
 
-type TuningMidiItem = Annotated[StrictInt, Field(ge=0, le=127)]
-
-
 type SwingBar = Annotated[StrictInt, Field(ge=-1, le=9007199254740991)]
 
 
@@ -446,6 +451,7 @@ class TabEvent(BaseModel):
     fret: Annotated[StrictInt | None, Field(ge=0, le=24)] = None
     alt_fingerings: Annotated[list[AltFingering] | None, Field(max_length=3)] = None
     unplayable: StrictBool | None = None
+    bend_cents: Annotated[StrictFloat | None, Field(gt=0.0, le=400.0)] = None
     hand: Literal["L", "R"] | None = None
 
 
@@ -455,6 +461,11 @@ type TabLevel = Literal["chords_only", "simplified", "as_transcribed", "roots", 
 class TempoOctaveOp(BaseModel):
     op: Literal["tempo_octave"]
     factor: Literal["double", "half"]
+
+
+type TuningName = Literal[
+    "standard", "half_step_down", "full_step_down", "drop_d", "drop_c_sharp", "drop_c", "other"
+]
 
 
 type ViewReason = Literal[
@@ -520,34 +531,6 @@ class ModelRef(BaseModel):
     register_tier: Literal["green", "amber", "red"]
 
 
-class Notes(BaseModel):
-    schema_version: SchemaVersion
-    artefact: Annotated[StrictStr, Field(pattern="^notes\\.(guitar|bass|piano|vocals|other)$")]
-    artefact_version: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
-    analysis_id: Annotated[
-        StrictStr,
-        Field(
-            pattern="^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-        ),
-    ]
-    user_id: Annotated[StrictStr, Field(min_length=1)]
-    audio_hash: Sha256Hex
-    sample_rate: Literal[44100]
-    duration_s: Annotated[StrictFloat, Field(gt=0.0)]
-    models: list[ModelRef]
-    params: dict[StrictStr, Any]
-    created_at: Annotated[
-        StrictStr,
-        Field(
-            pattern="^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-        ),
-    ]
-    instrument: Instrument
-    notes: list[Note]
-    f0: F0Track | None = None
-    sustain: list[PedalInterval] | None = None
-
-
 class Presence(BaseModel):
     schema_version: SchemaVersion
     artefact: Literal["presence"]
@@ -604,6 +587,18 @@ class Probe(BaseModel):
     decoded_frames: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
     loudness_lufs: StrictFloat | None = None
     peak_dbfs: StrictFloat | None = None
+
+
+class Suggested(BaseModel):
+    name: TuningName
+    tuning_midi: Annotated[list[TuningMidiItem], Field(max_length=7, min_length=4)]
+    confidence: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+
+
+class RecordingTuning(BaseModel):
+    a4_cents: Annotated[StrictFloat, Field(ge=-50.0, le=50.0)]
+    a4_strength: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
+    suggested: Suggested | None = None
 
 
 class Sections(BaseModel):
@@ -983,4 +978,33 @@ class Manifest(BaseModel):
     progress: Annotated[StrictFloat, Field(ge=0.0, le=1.0)]
 
 
-SCHEMA_VERSION = "1.6.0"
+class Notes(BaseModel):
+    schema_version: SchemaVersion
+    artefact: Annotated[StrictStr, Field(pattern="^notes\\.(guitar|bass|piano|vocals|other)$")]
+    artefact_version: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
+    analysis_id: Annotated[
+        StrictStr,
+        Field(
+            pattern="^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        ),
+    ]
+    user_id: Annotated[StrictStr, Field(min_length=1)]
+    audio_hash: Sha256Hex
+    sample_rate: Literal[44100]
+    duration_s: Annotated[StrictFloat, Field(gt=0.0)]
+    models: list[ModelRef]
+    params: dict[StrictStr, Any]
+    created_at: Annotated[
+        StrictStr,
+        Field(
+            pattern="^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        ),
+    ]
+    instrument: Instrument
+    notes: list[Note]
+    f0: F0Track | None = None
+    sustain: list[PedalInterval] | None = None
+    tuning: RecordingTuning | None = None
+
+
+SCHEMA_VERSION = "1.7.0"

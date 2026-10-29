@@ -40,6 +40,15 @@ models:
     provider: "bs_roformer:viperx-1297"
     arch: mdxc
     outputs: {vocals: vocals, instrumental: null}
+  # Guitar-only 2-stem model (step 22 Phase 1 candidate, eval/results/p2g); outside
+  # audio-separator's catalogue, loaded from `config`.
+  mel_roformer_guitar_becruily:
+    record: mel-roformer-guitar-becruily
+    filename: mel_band_roformer_guitar_becruily.ckpt
+    config: mel_band_roformer_guitar_becruily.yaml
+    provider: "mel_roformer:guitar-becruily"
+    arch: mdxc
+    outputs: {guitar: guitar, other: null}
   mel_roformer_kim_vocals:
     record: mel-roformer-kim-vocals
     filename: vocals_mel_band_roformer.ckpt

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Splitune contracts",
-  "x-schema-version": "1.6.0",
+  "x-schema-version": "1.7.0",
   "$defs": {
     "ActivitySpan": {
       "type": "object",
@@ -1319,6 +1319,16 @@
             "left",
             "right"
           ]
+        },
+        "string_probs": {
+          "minItems": 4,
+          "maxItems": 7,
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
         }
       },
       "required": [
@@ -1394,6 +1404,16 @@
             "left",
             "right"
           ]
+        },
+        "string_probs": {
+          "minItems": 4,
+          "maxItems": 7,
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
         }
       },
       "required": [
@@ -1503,6 +1523,9 @@
           "items": {
             "$ref": "#/$defs/PedalInterval"
           }
+        },
+        "tuning": {
+          "$ref": "#/$defs/RecordingTuning"
         }
       },
       "required": [
@@ -1854,6 +1877,53 @@
         "drum_grid",
         "f0",
         "chords_only"
+      ]
+    },
+    "RecordingTuning": {
+      "type": "object",
+      "properties": {
+        "a4_cents": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 50
+        },
+        "a4_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "suggested": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/TuningName"
+            },
+            "tuning_midi": {
+              "minItems": 4,
+              "maxItems": 7,
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 127
+              }
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "name",
+            "tuning_midi",
+            "confidence"
+          ]
+        }
+      },
+      "required": [
+        "a4_cents",
+        "a4_strength"
       ]
     },
     "ReportWrongOp": {
@@ -2946,6 +3016,11 @@
         "unplayable": {
           "type": "boolean"
         },
+        "bend_cents": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 400
+        },
         "hand": {
           "type": "string",
           "enum": [
@@ -3080,6 +3155,18 @@
       "required": [
         "op",
         "factor"
+      ]
+    },
+    "TuningName": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "half_step_down",
+        "full_step_down",
+        "drop_d",
+        "drop_c_sharp",
+        "drop_c",
+        "other"
       ]
     },
     "ViewReason": {

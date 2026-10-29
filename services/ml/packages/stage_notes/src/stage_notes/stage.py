@@ -5,7 +5,11 @@ extra, aligned by `stems.json`'s offset), so transcription never sees the AAC en
 separation (stems_unavailable) or without a stem for this instrument the decoded mixture is used
 and the stage reports `fallback` / `notes_on_mixture`. Confidence = the transcriber's raw
 confidence through `config/calibration/<record>@<version>[.<instrument>].json`. Bass notes also
-carry `low_band_energy` for music-core's octave correction (07 §3).
+carry `low_band_energy` for music-core's octave correction (07 §3). With `a4_compensation` the
+source's offset from A440 is estimated (tuning.py), the transcriber compensates it and the artefact
+records it under `tuning`, with the likely open-string tuning when `tuning_suggestion` is on.
+With `string_cue` guitar notes carry `string_probs`: a tab model's own (Guitab) or the string
+classifier's (strings.py). Guitab's `bends` run a Basic Pitch pass, recorded among the models.
 """
 
 from __future__ import annotations
@@ -13,22 +17,26 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from numpy.typing import NDArray
-from splitune_ml_core import calibration, contracts
+from splitune_ml_core import calibration, contracts, register
 from splitune_ml_core.errors import StageError
 from splitune_ml_core.stage_api import StageDescription, StageJob, StageOutput
 from stage_separation import dsp
 from stage_separation.stem_post import load_raw
 
-from . import transcribers
+from . import strings, transcribers, tuning
 from .lowband import low_band_energy
 
 MIXTURE = "mixture"
+STRING_CUE_RECORD = "string-cue"
+# Tab models: their notes carry string probabilities already.
+OWN_STRING_PROBS = {"guitab"}
 
 
 def read_separation(inputs: dict[str, str] | None) -> contracts.Separation | None:
@@ -72,6 +80,44 @@ def solo(separation: contracts.Separation | None, instrument: str) -> bool:
     )
 
 
+def string_cue_ref() -> contracts.ModelRef:
+    return transcribers.ref_for(STRING_CUE_RECORD, "splitune/string_cue")
+
+
+@cache
+def string_model() -> strings.StringModel:
+    record = register.model(STRING_CUE_RECORD)
+    (path,) = register.verify(record, transcribers.models_dir() / "string-cue")
+    return strings.StringModel.load(path)
+
+
+def uses_string_cue(instrument: str, params: dict[str, Any]) -> bool:
+    return instrument == "guitar" and bool(params.get("string_cue"))
+
+
+def uses_string_classifier(instrument: str, transcriber: str, params: dict[str, Any]) -> bool:
+    return uses_string_cue(instrument, params) and transcriber not in OWN_STRING_PROBS
+
+
+def uses_bend_pass(transcriber: str, params: dict[str, Any]) -> bool:
+    """Guitab's bends come from a Basic Pitch pass on the same stem (guitab.with_bends)."""
+    return transcriber == "guitab" and bool(params.get("bends"))
+
+
+def extra_refs(
+    instrument: str, transcriber: str, params: dict[str, Any]
+) -> list[contracts.ModelRef]:
+    """Models besides the transcriber that shape the notes: the string classifier, the bend pass."""
+    return [
+        *([string_cue_ref()] if uses_string_classifier(instrument, transcriber, params) else []),
+        *(
+            [transcribers.get("basic_pitch").model_ref()]
+            if uses_bend_pass(transcriber, params)
+            else []
+        ),
+    ]
+
+
 def bind(
     instrument: str,
 ) -> tuple[Callable[..., StageDescription], Callable[[StageJob], StageOutput]]:
@@ -86,7 +132,7 @@ def bind(
         ref = transcriber.model_ref()
         table = calibration.load(transcriber.record, ref.version, instrument)
         hands = transcribers.hands_model(instrument)
-        refs = [ref]
+        refs = [ref, *extra_refs(instrument, transcriber.name, effective)]
         if hands == "pm2s":
             from . import pm2s_hands
 
@@ -137,6 +183,11 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     ref = transcriber.model_ref()
     table = calibration.load(transcriber.record, ref.version, instrument)
     mono = audio.mean(axis=1).astype(np.float32)
+    recording: dict[str, Any] | None = None
+    if params.get("a4_compensation"):
+        offset = tuning.a4_offset(mono)
+        params = {**params, "a4_cents": offset.cents}
+        recording = {"a4_cents": offset.cents, "a4_strength": offset.strength}
     # Transcribers with a `stereo` param take the channels and decide themselves (Transkun).
     source = audio.astype(np.float32) if "stereo" in params else mono
     sustain: list[tuple[float, float]] | None = None
@@ -145,6 +196,32 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     else:
         found = transcriber.transcribe(source, params)
     events = sorted(found, key=lambda e: (e.onset_s, e.pitch_midi))
+    if recording is not None and params.get("tuning_suggestion") and instrument in tuning.TUNINGS:
+        suggestion = tuning.suggest_tuning(
+            [
+                tuning.NoteLike(
+                    e.pitch_midi,
+                    e.offset_s - e.onset_s,
+                    calibration.calibrate(e.confidence_raw, table),
+                )
+                for e in events
+            ],
+            instrument,
+            min_low_notes=int(params["tuning_min_low_notes"]),
+            min_confidence=float(params["tuning_min_confidence"]),
+            min_duration_s=float(params["tuning_min_duration_s"]),
+        )
+        recording["suggested"] = {
+            "name": suggestion.name,
+            "tuning_midi": list(suggestion.tuning_midi),
+            "confidence": suggestion.confidence,
+        }
+    probs: list[list[float]] | None = None
+    if uses_string_classifier(instrument, transcriber.name, params):
+        cue = string_model().probs(mono, [(e.onset_s, e.pitch_midi) for e in events])
+        probs = [[round(float(v), 4) for v in row] for row in cue]
+    elif uses_string_cue(instrument, params):
+        probs = [list(e.string_probs or (0.0,) * 6) for e in events]
     notes: list[dict[str, Any]] = []
     for i, e in enumerate(events):
         if e.offset_s <= e.onset_s:
@@ -159,12 +236,16 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "confidence_raw": round(e.confidence_raw, 4),
             "stem_id": stem_id,
         }
+        if probs is not None:
+            note["string_probs"] = probs[i]
+        if e.bend_cents:
+            note["bend_cents"] = [list(point) for point in e.bend_cents]
         if instrument == "bass":
             note["low_band_energy"] = round(
                 low_band_energy(mono, e.onset_s, e.offset_s, e.pitch_midi), 4
             )
         notes.append(note)
-    refs = [ref]
+    refs = [ref, *extra_refs(instrument, transcriber.name, params)]
     if params.get("hands") == "pm2s" and notes:
         from . import pm2s_hands
 
@@ -192,7 +273,7 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
             "sample_rate": 44100,
             "duration_s": job.duration_s,
             "models": [r.model_dump(mode="json") for r in refs],
-            "params": params,
+            "params": job.params,
             "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "instrument": instrument,
             "notes": notes,
@@ -205,6 +286,7 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
                 if sustain is not None
                 else {}
             ),
+            **({} if recording is None else {"tuning": recording}),
         }
     )
     out = Path(job.workdir) / f"notes.{instrument}.json"
