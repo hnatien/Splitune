@@ -217,6 +217,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
               if (level) setMix(withGuide(channels, mix, level))
             }}
             className="hidden border border-staff bg-paper @4xl:flex"
+            capsuleClassName="border-ink bg-bar-current"
           >
             {(['on', 'quiet', 'off'] as const).map((level) => (
               <ToggleGroupItem

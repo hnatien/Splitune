@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { CheckIcon, MetronomeIcon } from 'lucide-react'
+import { CheckIcon, LayoutGridIcon, ListIcon, MetronomeIcon } from 'lucide-react'
 import { useState } from 'react'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs.tsx'
 import { Toggle } from './toggle.tsx'
 import { ToggleGroup, ToggleGroupItem } from './toggle-group.tsx'
@@ -69,12 +69,104 @@ export const Group: Story = {
   },
 }
 
+// The library's grid/list switch: the capsule slides to the pressed item.
+function CapsuleGroup() {
+  const [view, setView] = useState(['grid'])
+  return (
+    <ToggleGroup
+      aria-label="Layout"
+      value={view}
+      onValueChange={(next) => next.length > 0 && setView(next)}
+    >
+      <ToggleGroupItem value="grid" aria-label="Grid">
+        <LayoutGridIcon aria-hidden />
+      </ToggleGroupItem>
+      <ToggleGroupItem value="list" aria-label="List">
+        <ListIcon aria-hidden />
+      </ToggleGroupItem>
+    </ToggleGroup>
+  )
+}
+
+const capsuleOver = (canvasElement: HTMLElement, item: HTMLElement) => {
+  const capsule = canvasElement.querySelector<HTMLElement>('[data-slot="toggle-group-capsule"]')
+  return capsule?.style.translate === `${item.offsetLeft}px ${item.offsetTop}px`
+}
+
+export const Capsule: Story = {
+  render: () => <CapsuleGroup />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const grid = canvas.getByRole('button', { name: 'Grid' })
+    const list = canvas.getByRole('button', { name: 'List' })
+    await waitFor(() => expect(capsuleOver(canvasElement, grid)).toBe(true))
+    await expect(canvas.getByRole('group')).toHaveAttribute('data-capsule')
+    await userEvent.click(list)
+    await expect(list).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(capsuleOver(canvasElement, list)).toBe(true))
+    list.focus()
+    await userEvent.keyboard('{ArrowLeft}{Enter}')
+    await expect(grid).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(capsuleOver(canvasElement, grid)).toBe(true))
+  },
+}
+
+// A vertical list of rounded-xl items (the mixer drawer's presets): the capsule takes the pressed
+// item's corner radius and moves down the list.
+function VerticalGroup() {
+  const [mix, setMix] = useState(['part-loud'])
+  return (
+    <ToggleGroup
+      aria-label="Mix"
+      orientation="vertical"
+      value={mix}
+      onValueChange={(next) => next.length > 0 && setMix(next)}
+      className="w-64"
+    >
+      {['part-loud', 'minus-one', 'original'].map((value) => (
+        <ToggleGroupItem key={value} value={value} className="justify-start rounded-xl">
+          {mix[0] === value && <CheckIcon aria-hidden />}
+          {value}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  )
+}
+
+export const CapsuleVertical: Story = {
+  render: () => <VerticalGroup />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const original = canvas.getByRole('button', { name: 'original' })
+    await userEvent.click(original)
+    await waitFor(() => expect(capsuleOver(canvasElement, original)).toBe(true))
+    const capsule = canvasElement.querySelector<HTMLElement>('[data-slot="toggle-group-capsule"]')
+    await expect(capsule?.style.borderRadius).toBe(getComputedStyle(original).borderRadius)
+    await expect(capsule?.style.width).toBe(`${original.offsetWidth}px`)
+  },
+}
+
+export const CapsuleNoneChosen: Story = {
+  render: () => (
+    <ToggleGroup aria-label="Speed" value={[]}>
+      <ToggleGroupItem value="50">50 %</ToggleGroupItem>
+      <ToggleGroupItem value="75">75 %</ToggleGroupItem>
+    </ToggleGroup>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-slot="toggle-group-capsule"]')).toBeNull()
+    await expect(within(canvasElement).getByRole('group')).not.toHaveAttribute('data-capsule')
+  },
+}
+
 const Gallery = () => (
   <div className="flex flex-wrap gap-3">
     <MetronomeToggle />
     <MetronomeToggle defaultPressed />
     <MetronomeToggle disabled />
     <ViewGroup />
+    <CapsuleGroup />
+    <VerticalGroup />
   </div>
 )
 export const Dark: Story = { render: Gallery, globals: { appearance: 'dark' } }
@@ -98,6 +190,8 @@ const Segmented = () => (
   <div className="flex flex-col items-start gap-8">
     <SourceTabs />
     <ViewGroup />
+    <CapsuleGroup />
+    <VerticalGroup />
   </div>
 )
 

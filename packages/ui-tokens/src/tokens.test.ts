@@ -212,6 +212,9 @@ describe('motion (§10)', () => {
       expect(css).toMatch(new RegExp(`@keyframes ${name} \\{`))
     }
     expect(css).toContain('--ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1)')
+    // The springs start at rest and settle exactly on the end value.
+    for (const name of ['smooth', 'snappy'])
+      expect(css).toMatch(new RegExp(`--ease-${name}: linear\\(\\s*0,[\\d.,\\s]+,\\s*1\\s*\\);`))
   })
 })
 
