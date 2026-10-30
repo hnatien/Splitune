@@ -1,14 +1,21 @@
 import type { LibrarySong } from '@splitune/contracts'
+import type { StemKind } from '@splitune/ui-tokens'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
 import {
+  AudioWaveformIcon,
   CircleCheckIcon,
   CircleDashedIcon,
   CircleXIcon,
+  DrumIcon,
   EllipsisVerticalIcon,
+  GuitarIcon,
   ListMusicIcon,
   LoaderIcon,
   LockIcon,
+  type LucideIcon,
+  MicIcon,
+  PianoIcon,
   TimerOffIcon,
   TriangleAlertIcon,
   UploadIcon,
@@ -18,7 +25,7 @@ import type { z } from 'zod'
 import { client, errorCode, errorData, orpc } from '@/lib/api'
 import { barNumber, formatPercent, formatRelativeDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { instrumentLabel } from '@/lib/instruments'
+import { type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import { apiErrorMessage, stageFailureMessage } from '@/lib/reasons'
 import { reloadMe } from '@/lib/reload-me'
 import { meQuery } from '@/lib/session'
@@ -31,7 +38,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
-import { SongCard, SongRow, type SongSummary } from '@/ui/song-card'
+import { BassIcon } from '@/ui/icons/bass'
+import { Progress, ProgressLabel } from '@/ui/progress'
+import { InstrumentTile, SongCard, SongRow, type SongSummary } from '@/ui/song-card'
 import { toast } from '@/ui/toast'
 import { UpgradeSheet } from '../billing/upgrade-sheet'
 import { analysisAvailability } from '../import/analysis-choice'
@@ -41,6 +50,18 @@ import { DeleteSongDialog, RenameSongDialog } from './song-dialogs'
 import { type CardStatus, cardStatus, isInProgress } from './song-status'
 
 type Song = z.infer<typeof LibrarySong>
+
+// The stem colour and icon the mixer uses for the same part (26 §4.4).
+const INSTRUMENT_TILE: Record<InstrumentName, { stem: StemKind; Icon: LucideIcon }> = {
+  guitar: { stem: 'guitar', Icon: GuitarIcon },
+  bass: { stem: 'bass', Icon: BassIcon },
+  piano: { stem: 'keys', Icon: PianoIcon },
+  drums: { stem: 'drums', Icon: DrumIcon },
+  vocals: { stem: 'vocals', Icon: MicIcon },
+  other: { stem: 'other', Icon: AudioWaveformIcon },
+}
+
+const spinning = 'animate-spin motion-reduce:animate-none'
 
 function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['status'] {
   switch (status.kind) {
@@ -60,7 +81,7 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
       return {
         label: m['library.status.downloading'](),
         variant: 'info',
-        icon: <LoaderIcon aria-hidden />,
+        icon: <LoaderIcon aria-hidden className={spinning} />,
       }
     case 'queued':
       return {
@@ -75,7 +96,7 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
           total: String(status.total),
         }),
         variant: 'info',
-        icon: <LoaderIcon aria-hidden />,
+        icon: <LoaderIcon aria-hidden className={spinning} />,
       }
     case 'failed':
       return {
@@ -141,8 +162,8 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
   })
   const stats = useQuery({ ...statsQuery, enabled: live })
   const analysis = detail.data
-  if (!analysis) return null
   if (status.kind === 'failed') {
+    if (!analysis) return null
     const failed = Object.entries(analysis.stages).find(([, s]) => s.status === 'failed')
     return (
       <p className="text-sm text-muted-foreground">
@@ -152,14 +173,30 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
       </p>
     )
   }
-  const stage = currentStage(analysis)
-  if (!stage) return null
-  const eta = etaText(remainingSeconds(analysis, stats.data?.stages ?? []))
-  return (
-    <p className="text-sm text-muted-foreground tabular-nums">
-      {eta ? m['library.stage_eta']({ stage: stageLabel(stage), eta }) : stageLabel(stage)}
-    </p>
-  )
+  const stage = analysis && currentStage(analysis)
+  const eta = analysis && etaText(remainingSeconds(analysis, stats.data?.stages ?? []))
+  const line = stage
+    ? eta
+      ? m['library.stage_eta']({ stage: stageLabel(stage), eta })
+      : stageLabel(stage)
+    : undefined
+  // The bar comes from the list's stage counts, so it shows before the stage name has loaded.
+  if (status.kind === 'analysing') {
+    return (
+      <Progress
+        value={Math.round((status.done / Math.max(1, status.total)) * 100)}
+        aria-label={line ? undefined : badge(status, undefined).label}
+      >
+        {line && (
+          <ProgressLabel className="font-normal text-muted-foreground tabular-nums">
+            {line}
+          </ProgressLabel>
+        )}
+      </Progress>
+    )
+  }
+  if (!line) return null
+  return <p className="text-sm text-muted-foreground tabular-nums">{line}</p>
 }
 
 export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list' }) {
@@ -269,8 +306,14 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
       </div>
     ) : isInProgress(status) ? (
       <AnalysisLine song={song} status={status} />
+    ) : status.kind === 'uploading' && upload ? (
+      <Progress
+        value={uploadPercent(upload)}
+        aria-label={badge(status, uploadPercent(upload)).label}
+      />
     ) : undefined
 
+  const tile = INSTRUMENT_TILE[song.instrument]
   const Entry = layout === 'grid' ? SongCard : SongRow
   return (
     <>
@@ -278,6 +321,13 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
         song={summary(song, status, upload ? uploadPercent(upload) : undefined)}
         actions={actions}
         progress={followUp}
+        leading={
+          <InstrumentTile
+            stem={tile.stem}
+            icon={<tile.Icon />}
+            size={layout === 'grid' ? 'md' : 'sm'}
+          />
+        }
         renderLink={({ children, className, title }) => (
           <Link
             to="/songs/$songId/practice"
