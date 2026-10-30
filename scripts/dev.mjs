@@ -8,8 +8,15 @@
 // the foreground, e.g. a Windows PC without launchd (25-personal-mode.md §6). Only the two workers,
 // both reading .env.worker; .env is never loaded, because inherited variables win over an env file
 // in both workers and would point them at the local stack.
+//
+// Split development across two machines: `pnpm dev:web` (--web-only) on the machine you code on runs
+// the stack and web without workers, and `pnpm dev:remote-workers <user@host>` (--remote-workers)
+// on the other opens an SSH tunnel to that machine's stack and runs the dev workers through it, on
+// .env as in dev:all. The tunnel keeps the same port numbers, so .env needs no change (S3 signs the
+// host and port) and the stack stays bound to 127.0.0.1.
 import { execFile, execFileSync, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { connect } from 'node:net'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
@@ -18,6 +25,12 @@ import { createTheme, parseLogLine, redrawsBar, renderFrame, visibleLogs } from 
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const prodWorkers = process.argv.includes('--prod-workers')
+const webOnly = process.argv.includes('--web-only')
+const remoteFlag = process.argv.indexOf('--remote-workers')
+const remoteHost = remoteFlag === -1 ? undefined : process.argv[remoteFlag + 1]
+if (remoteFlag !== -1 && !remoteHost) {
+  throw new Error('usage: pnpm dev:remote-workers <user@host of the machine running pnpm dev:web>')
+}
 const WORKER_ENV_FILE = join(root, '.env.worker')
 if (prodWorkers) {
   if (!existsSync(WORKER_ENV_FILE)) {
@@ -28,6 +41,9 @@ if (prodWorkers) {
 }
 const MAX_LOG_LINES = 5000
 const FRAME_MS = 100
+// Postgres, S3 and Mailpit, forwarded to the same ports on the remote host's 127.0.0.1.
+const TUNNEL_PORTS = [5432, 8333, 1025]
+const TUNNEL_TIMEOUT_MS = 30_000
 
 const PROD_WORKERS = [
   {
@@ -79,6 +95,43 @@ const SERVICES = [
   },
 ]
 
+// BatchMode: fail at once instead of waiting for a password or host-key prompt nobody can answer.
+// ExitOnForwardFailure: a port already taken here ends ssh rather than leaving a half tunnel.
+const TUNNEL = {
+  id: 'tunnel',
+  label: 'tunnel',
+  kind: 'tunnel',
+  command: [
+    'ssh',
+    '-N',
+    '-o',
+    'BatchMode=yes',
+    '-o',
+    'ExitOnForwardFailure=yes',
+    '-o',
+    'ServerAliveInterval=15',
+    '-o',
+    'ServerAliveCountMax=3',
+    ...TUNNEL_PORTS.flatMap((port) => ['-L', `${port}:127.0.0.1:${port}`]),
+    remoteHost,
+  ],
+  readyDetail: `${remoteHost} · postgres :5432 · s3 :8333 · mailpit :1025`,
+}
+
+function selectedServices() {
+  if (prodWorkers) return PROD_WORKERS
+  if (remoteHost) return [TUNNEL, ...SERVICES.filter((s) => s.id.endsWith('-worker'))]
+  if (webOnly) return SERVICES.filter((s) => s.id === 'stack' || s.id === 'web')
+  return SERVICES
+}
+
+function modeName() {
+  if (prodWorkers) return 'PRODUCTION workers'
+  if (remoteHost) return `local dev · workers for ${remoteHost}`
+  if (webOnly) return 'local dev · web only'
+  return 'local dev'
+}
+
 function gitBranch() {
   try {
     return execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
@@ -91,7 +144,7 @@ function gitBranch() {
 }
 
 const state = {
-  services: (prodWorkers ? PROD_WORKERS : SERVICES).map((def) => ({
+  services: selectedServices().map((def) => ({
     ...def,
     status: 'pending',
     detail: undefined,
@@ -106,7 +159,7 @@ const state = {
   now: Date.now(),
   quitting: false,
   logHeight: 0,
-  mode: prodWorkers ? 'PRODUCTION workers' : 'local dev',
+  mode: modeName(),
   branch: gitBranch(),
   cwd: root.startsWith(homedir()) ? `~${root.slice(homedir().length)}` : root,
 }
@@ -127,9 +180,8 @@ function log(serviceId, raw) {
       service.detail = match[1]
     }
   }
-  // Web keeps its URL as the detail; the workers show what they did last.
-  if (service.kind !== 'task' && service.id !== 'web' && service.status === 'ready')
-    service.detail = text
+  // Web and the tunnel keep their own detail; the workers show what they did last.
+  if (!service.kind && service.id !== 'web' && service.status === 'ready') service.detail = text
   const lines = [text, ...detail.map((line) => `  ${line}`)]
   if (interactive) {
     // A progress bar redraws in place while it is still the service's latest line; a finished bar
@@ -159,6 +211,7 @@ async function start(service) {
   service.detail = undefined
   service.exitCode = undefined
   service.startedAt = Date.now()
+  if (service.kind === 'tunnel') return openTunnel(service)
   if (!service.commands) return run(service, service.command)
   // A task's commands run in order and stop at the first failure.
   for (const command of service.commands) {
@@ -167,6 +220,51 @@ async function start(service) {
   service.status = 'ready'
   service.detail = service.readyDetail
   return true
+}
+
+function accepts(port) {
+  return new Promise((resolve) => {
+    const socket = connect({ host: '127.0.0.1', port, timeout: 1000 })
+    const done = (open) => {
+      socket.destroy()
+      resolve(open)
+    }
+    socket.once('connect', () => done(true))
+    socket.once('error', () => done(false))
+    socket.once('timeout', () => done(false))
+  })
+}
+
+const allAccept = async () => (await Promise.all(TUNNEL_PORTS.map(accepts))).every(Boolean)
+
+// ssh only listens on the forwarded ports once it has signed in, so the tunnel is up when all of them
+// accept; ports taken before it starts would make that check pass against something else.
+async function openTunnel(service) {
+  const taken = []
+  for (const port of TUNNEL_PORTS) if (await accepts(port)) taken.push(port)
+  if (taken.length > 0) {
+    log(service.id, `port ${taken.join(', ')} already in use here: stop the local stack first`)
+    log(service.id, '(docker compose -f infra/docker-compose.yml stop)')
+    service.status = 'failed'
+    return false
+  }
+  const exited = run(service, service.command)
+  const deadline = Date.now() + TUNNEL_TIMEOUT_MS
+  while (children.has(service.id) && Date.now() < deadline) {
+    if (await allAccept()) {
+      service.status = 'ready'
+      service.detail = service.readyDetail
+      return true
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  if (children.has(service.id)) {
+    log(service.id, `no tunnel after ${TUNNEL_TIMEOUT_MS / 1000} s; is the remote stack up?`)
+    signal(service, 'SIGTERM')
+    await exited
+    service.status = 'failed'
+  }
+  return false
 }
 
 function run(service, [command, ...args]) {
@@ -233,15 +331,15 @@ function stop(service) {
   return exited
 }
 
-// Runs the stack (if any), then starts whichever services aren't already up (all of them the first
-// time).
+// Runs the stack or opens the tunnel (if any), then starts whichever services aren't already up
+// (all of them the first time).
 async function startAll() {
-  const stack = state.services.find((s) => s.kind === 'task')
+  const stack = state.services.find((s) => s.kind === 'task' || s.kind === 'tunnel')
   const apps = state.services.filter((s) => s !== stack)
   for (const service of apps) if (!children.has(service.id)) service.detail = undefined
-  if (stack && !(await start(stack))) {
+  if (stack && !children.has(stack.id) && !(await start(stack))) {
     for (const service of apps)
-      if (!children.has(service.id)) service.detail = 'stack did not start; see its log'
+      if (!children.has(service.id)) service.detail = `${stack.label} did not start; see its log`
     return
   }
   if (state.quitting) return

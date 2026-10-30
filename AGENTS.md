@@ -15,6 +15,7 @@ Web-first practice app for instrument learners: bring a song (upload, recording 
 pnpm run setup   # pnpm install, uv sync, .env from .env.example, git hooks (plain `pnpm setup` is pnpm's built-in)
 pnpm dev         # docker compose up (Postgres 18, SeaweedFS S3, Mailpit) + turbo dev
 pnpm dev:all     # local stack + migrations, then web, node-worker and ml-worker in one dashboard
+pnpm dev:web     # the same without workers; pair with `pnpm dev:remote-workers <user@host>` on another machine (SSH tunnel to this stack)
 pnpm lint        # Biome + check-db-access + check-ui-tokens + ruff
 pnpm typecheck   # tsc (TS 7) + pyright
 pnpm test        # Vitest + pytest
