@@ -12,6 +12,8 @@
     "dev:all": "node scripts/dev.mjs",
     "dev:web": "node scripts/dev.mjs --web-only",
     "dev:remote-workers": "node scripts/dev.mjs --remote-workers",
+    "dev:stack-workers": "node scripts/dev.mjs --stack-workers",
+    "dev:remote-stack": "node scripts/dev.mjs --remote-stack",
     "build": "turbo run build",
     "lint": "biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs && turbo run lint",
     "format": "biome check --write .",

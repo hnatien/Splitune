@@ -20,6 +20,7 @@ pnpm run setup   # pnpm install, uv sync, .env from .env.example, git hooks (pla
 pnpm dev         # docker compose up (Postgres 18, SeaweedFS S3, Mailpit) + turbo dev
 pnpm dev:all     # local stack + migrations, then web, node-worker and ml-worker in one dashboard
 pnpm dev:web     # the same without workers; pair with `pnpm dev:remote-workers <user@host>` on another machine (SSH tunnel to this stack)
+pnpm dev:stack-workers  # stack + workers without web; pair with `pnpm dev:remote-stack <user@host>` (web through an SSH tunnel) on the machine you code on
 pnpm lint        # Biome + check-db-access + check-ui-tokens + ruff
 pnpm typecheck   # tsc (TS 7) + pyright
 pnpm test        # Vitest + pytest

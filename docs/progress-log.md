@@ -1670,3 +1670,9 @@ Branch `impl/dev-remote-workers` from `dev`. Code on the Mac, run the dev ML/nod
 - `scripts/dev.mjs --web-only` (`pnpm dev:web`): the `dev:all` dashboard with only the stack (compose + migrations) and web.
 - `scripts/dev.mjs --remote-workers <user@host>` (`pnpm dev:remote-workers`): an `ssh -N` tunnel (BatchMode, ExitOnForwardFailure, keepalives) forwarding 5432/8333/1025 to the host's `127.0.0.1`, then node-worker (`run dev`) and ml-worker on `.env`. The tunnel counts as up once all three ports accept; ports already taken locally fail it with a hint to stop the local stack. Same port numbers on both ends, so `.env` and compose's `127.0.0.1` binding are unchanged (S3 signatures cover host and port).
 - Docs: 25 §6 (two-machine development), `CLAUDE.md`/`AGENTS.md` commands.
+
+## 2026-10-30 — Dev stack on the workers' machine (`pnpm dev:stack-workers` + `pnpm dev:remote-stack`)
+Branch `impl/dev-remote-stack` from `dev`. The reverse of the entry above: Postgres, S3, Mailpit and the dev workers on the Windows PC, only web on the Mac, so the Mac needs no Docker and its sleep doesn't stop the workers.
+- `scripts/dev.mjs --stack-workers` (`pnpm dev:stack-workers`): stack (compose + migrations) and both workers, no web.
+- `scripts/dev.mjs --remote-stack <user@host>` (`pnpm dev:remote-stack`): the same SSH tunnel as `--remote-workers`, then web.
+- Docs: 25 §6, `CLAUDE.md`/`AGENTS.md` commands.
