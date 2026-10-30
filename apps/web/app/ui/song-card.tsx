@@ -80,9 +80,9 @@ function InstrumentTile({
   )
 }
 
-function Status({ song }: { song: SongSummary }) {
+function Status({ song, className }: { song: SongSummary; className?: string }) {
   return (
-    <span className="flex flex-wrap items-center gap-2">
+    <span className={cn('flex flex-wrap items-center gap-2', className)}>
       <Badge variant={song.status.variant}>
         {song.status.icon}
         {song.status.label}
@@ -157,7 +157,10 @@ function SongCard({
   )
 }
 
-// On md and up a row lays its parts out in columns; on a phone they stack under the title.
+// A row lays its parts out in fixed-width columns once the row itself is wide enough (a container
+// query, so a narrow list never squeezes the title away), and badges and stats then line up from
+// row to row whatever the instrument name and whether the song has stats. Narrower rows stack
+// them under the title.
 function SongRow({
   song,
   actions,
@@ -170,14 +173,14 @@ function SongRow({
     <article
       data-slot="song-row"
       className={cn(
-        'relative flex min-h-target items-start gap-3 px-4 py-3 transition-colors duration-(--duration-fast) hover:bg-surface-sunken/60 has-[a:active]:bg-surface-sunken md:items-center',
+        'relative flex min-h-target items-start gap-3 px-4 py-3 transition-colors duration-(--duration-fast) hover:bg-surface-sunken/60 has-[a:active]:bg-surface-sunken @3xl/song-row:*:self-center @container/song-row',
         className,
       )}
     >
       {leading}
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:gap-6">
-          <div className="min-w-0 md:flex-1">
+        <div className="flex min-w-0 flex-col gap-2 @3xl/song-row:flex-row @3xl/song-row:items-center @3xl/song-row:gap-6">
+          <div className="min-w-0 @3xl/song-row:flex-1">
             <h3 className="text-base font-semibold">
               {renderLink({
                 href: song.href,
@@ -189,8 +192,10 @@ function SongRow({
             </h3>
             {song.artist && <p className="truncate text-sm text-muted-foreground">{song.artist}</p>}
           </div>
-          <Status song={song} />
-          <Stats song={song} className="md:w-72 md:justify-end" />
+          <Status song={song} className="@3xl/song-row:w-60 @3xl/song-row:shrink-0" />
+          <div className="empty:hidden @3xl/song-row:w-48 @3xl/song-row:shrink-0 @3xl/song-row:empty:block">
+            <Stats song={song} className="@3xl/song-row:justify-end" />
+          </div>
         </div>
         {progress && <div className="relative">{progress}</div>}
       </div>
