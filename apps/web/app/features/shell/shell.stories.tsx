@@ -169,8 +169,11 @@ export const MarketingDesktop: Story = {
 }
 export const MarketingDesktopSignedIn: Story = { render: marketing(true) }
 
-// Below sm the header links collapse into the Menu button.
+// Below sm everything but the wordmark collapses into the Menu button, so the pinned bar is one row.
 const playMarketingMenu: Story['play'] = async ({ canvasElement }) => {
+  const banner = await within(canvasElement).findByRole('banner')
+  await expect(banner.getBoundingClientRect().height).toBeLessThan(80)
+  await expect(getComputedStyle(banner).position).toBe('sticky')
   await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Menu' }))
   const menu = within(await within(document.body).findByRole('menu'))
   await expect(menu.getByRole('menuitem', { name: 'How it works' })).toHaveAttribute(
@@ -178,6 +181,14 @@ const playMarketingMenu: Story['play'] = async ({ canvasElement }) => {
     '/how-it-works',
   )
   await expect(menu.getByRole('menuitem', { name: 'Pricing' })).toHaveAttribute('href', '/pricing')
+  await expect(menu.getByRole('menuitem', { name: 'Sign in' })).toHaveAttribute(
+    'href',
+    '/auth/sign-in',
+  )
+  await expect(menu.getByRole('menuitem', { name: 'Try an example song' })).toHaveAttribute(
+    'href',
+    '/start',
+  )
 }
 export const MarketingPhoneMenuOpen: Story = {
   render: marketing(false),

@@ -12,7 +12,7 @@ export function BareShell({ children }: { children: React.ReactNode }) {
     <div data-density="browse" className="flex min-h-dvh flex-col bg-surface-sunken">
       <SkipLink />
       <SystemBanners />
-      <header className="flex min-h-16 items-center justify-center px-4">
+      <header className="sticky top-0 z-(--z-sticky) flex min-h-16 items-center justify-center bg-surface-sunken px-4">
         <Link
           to="/"
           aria-label={m['nav.home']()}
