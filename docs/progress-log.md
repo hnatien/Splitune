@@ -1664,3 +1664,9 @@ Branch `impl/22-guitar-accuracy` (worktree `.claude/worktrees/s22-guitar`), from
 - Transcriber ensembles (Phase 2.6) were not measured: Guitab leads Basic Pitch and YourMT3+ on every held-out source and only it gives string probabilities, so fusing notes would need its own string assignment; worth a try with a second tab model.
 - `chain_sw_becruily` separator; the Mac timing (all timings are from the Windows PC).
 - The GPU instability itself (driver 617.42; check temperatures and power under load).
+
+## 2026-10-30 — Dev workers on another machine (`pnpm dev:web` + `pnpm dev:remote-workers`)
+Branch `impl/dev-remote-workers` from `dev`. Code on the Mac, run the dev ML/node workers on the Windows PC's GPU against the Mac's local stack.
+- `scripts/dev.mjs --web-only` (`pnpm dev:web`): the `dev:all` dashboard with only the stack (compose + migrations) and web.
+- `scripts/dev.mjs --remote-workers <user@host>` (`pnpm dev:remote-workers`): an `ssh -N` tunnel (BatchMode, ExitOnForwardFailure, keepalives) forwarding 5432/8333/1025 to the host's `127.0.0.1`, then node-worker (`run dev`) and ml-worker on `.env`. The tunnel counts as up once all three ports accept; ports already taken locally fail it with a hint to stop the local stack. Same port numbers on both ends, so `.env` and compose's `127.0.0.1` binding are unchanged (S3 signatures cover host and port).
+- Docs: 25 §6 (two-machine development), `CLAUDE.md`/`AGENTS.md` commands.
