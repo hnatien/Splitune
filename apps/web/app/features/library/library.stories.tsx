@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { QueryClient } from '@tanstack/react-query'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { orpc } from '@/lib/api'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { AppShell } from '../shell/app-shell'
@@ -14,6 +14,9 @@ import { libraryQuery, statsQuery, workerStatusQuery } from './queries'
 const meta = { title: 'Screens/Library', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
+
+// Entries and empty states rise in (26 §10); wait for the entrance rather than sampling mid-way.
+const settled = (element: HTMLElement) => waitFor(() => expect(element).toBeVisible())
 
 function seed(songs = LIBRARY, worker = WORKER_ONLINE, filters = {}) {
   return (client: QueryClient) => {
@@ -54,11 +57,21 @@ export const Populated: Story = {
       'Stems expired',
       'Failed',
     ]) {
-      await expect(await canvas.findByText(label)).toBeVisible()
+      await settled(await canvas.findByText(label))
     }
-    await expect(await canvas.findByText('Best 85 % on bars 17–20')).toBeVisible()
-    await expect(await canvas.findByText(/Isolating your part · About \d+ min left/)).toBeVisible()
-    await expect(await canvas.findByText("This didn't use an analysis.")).toBeVisible()
+    await settled(await canvas.findByText('Best 85 % on bars 17–20'))
+    await settled(await canvas.findByText(/Isolating your part · About \d+ min left/))
+    // The analysing card's bar follows the list's stage count (3 of 8).
+    await expect(canvas.getByRole('progressbar', { name: /Isolating your part/ })).toHaveAttribute(
+      'aria-valuenow',
+      '38',
+    )
+    // Every entry carries its instrument tile, and entries rise in one after another.
+    const entries = canvasElement.querySelectorAll<HTMLElement>('li[data-vt-song]')
+    await expect(entries).toHaveLength(8)
+    await expect(entries[3]?.style.getPropertyValue('--i')).toBe('3')
+    await expect(canvasElement.querySelectorAll('[data-slot=instrument-tile]')).toHaveLength(8)
+    await settled(await canvas.findByText("This didn't use an analysis."))
   },
 }
 
@@ -94,8 +107,8 @@ export const Empty: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText(/Your library is empty/)).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Import a song' })).toBeVisible()
+    await settled(await canvas.findByText(/Your library is empty/))
+    await settled(canvas.getByRole('link', { name: 'Import a song' }))
   },
 }
 
@@ -106,9 +119,7 @@ export const NoResults: Story = {
     </AppStory>
   ),
   play: async ({ canvasElement }) => {
-    await expect(
-      await within(canvasElement).findByRole('button', { name: 'Clear filters' }),
-    ).toBeVisible()
+    await settled(await within(canvasElement).findByRole('button', { name: 'Clear filters' }))
   },
 }
 

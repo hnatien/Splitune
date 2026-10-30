@@ -64,3 +64,16 @@ html {
   }
 }
 /* biome-ignore-end lint/complexity/noImportantStyles: view-transition reduced motion */
+
+/* Library re-sorts, filters and grid/list switches (27 §3.5) run as a "library-reorder" view
+   transition. Only during one does each entry get its own name, so cards glide to their new place
+   while other navigations keep the plain cross-fade. Engines without transition types never
+   match the first rule and just cross-fade. */
+html:active-view-transition-type(library-reorder) [data-vt-song] {
+  view-transition-name: var(--vt-song);
+  view-transition-class: song-entry;
+}
+::view-transition-group(.song-entry) {
+  animation-duration: var(--duration-slower);
+  animation-timing-function: var(--ease-standard);
+}

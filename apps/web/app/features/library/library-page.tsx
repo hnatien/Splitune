@@ -1,13 +1,14 @@
 import { LibrarySort, LibraryStatusFilter } from '@splitune/contracts'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { LayoutGridIcon, ListIcon, MusicIcon, SearchIcon, SearchXIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { LayoutGridIcon, ListIcon, MusicIcon, SearchIcon, SearchXIcon, XIcon } from 'lucide-react'
+import { type CSSProperties, useEffect, useState } from 'react'
 import type { z } from 'zod'
 import { m } from '@/lib/i18n'
 import { INSTRUMENTS, type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import type { MeData } from '@/lib/session'
 import { useMediaQuery } from '@/lib/use-media-query'
+import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/ui/button'
 import { EmptyState } from '@/ui/empty-state'
 import { Input } from '@/ui/input'
@@ -28,6 +29,11 @@ type StatusFilter = z.infer<typeof LibraryStatusFilter>
 export type LibrarySearch = LibraryFilters & { view?: 'grid' | 'list' | undefined }
 
 const ALL = 'all'
+
+// Filter, sort and view changes run as a "library-reorder" view transition: styles.css names each
+// entry only during one, so cards glide to their new place (26 §10). Search keystrokes swap
+// instantly; a transition would freeze the field's rendering while typing.
+const REORDER = { types: ['library-reorder'] }
 
 function sortLabel(sort: Sort): string {
   if (sort === 'added') return m['library.sort_added']()
@@ -63,19 +69,34 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
         ? 10_000
         : false,
   })
-  const items = songs.data?.pages.flatMap((page) => page.items) ?? []
+  // Each page's index restarts at 0, so a loaded page staggers in like the first one did.
+  const entries =
+    songs.data?.pages.flatMap((page) => page.items.map((song, index) => ({ song, index }))) ?? []
+  const items = entries.map((entry) => entry.song)
   const anyWaiting = items.some((song) => isInProgress(cardStatus(song, false)))
   const worker = useQuery({ ...workerStatusQuery, enabled: anyWaiting })
   const [query, setQuery] = useState(search.q ?? '')
   useEffect(() => setQuery(search.q ?? ''), [search.q])
 
-  const setSearch = (patch: Partial<LibrarySearch>) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true })
+  const setSearch = (
+    patch: Partial<LibrarySearch>,
+    viewTransition: typeof REORDER | false = REORDER,
+  ) =>
+    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true, viewTransition })
+
+  const clearFilters = () => {
+    setQuery('')
+    void navigate({
+      search: { view: search.view, sort: search.sort },
+      replace: true,
+      viewTransition: REORDER,
+    })
+  }
 
   useEffect(() => {
     const trimmed = query.trim()
     if (trimmed === (search.q ?? '')) return
-    const timer = setTimeout(() => setSearch({ q: trimmed || undefined }), 300)
+    const timer = setTimeout(() => setSearch({ q: trimmed || undefined }, false), 300)
     return () => clearTimeout(timer)
   })
 
@@ -89,8 +110,8 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl">{m['library.title']()}</h1>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="text-3xl">{m['library.title']()}</h1>
           {songs.isSuccess && (count > 0 || filtered) && (
             <p className="text-sm text-muted-foreground tabular-nums">{countText}</p>
           )}
@@ -104,8 +125,11 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
 
       {(count > 0 || filtered) && (
         // biome-ignore lint/a11y/useSemanticElements: <search> is newer than the Safari 16.4 floor (24 §2)
-        <div role="search" className="flex flex-wrap items-end gap-3">
-          <div className="flex min-w-56 flex-1 flex-col gap-1.5">
+        <div
+          role="search"
+          className="grid grid-cols-2 items-end gap-3 rounded-2xl bg-surface-sunken p-3 sm:flex sm:flex-wrap contrast-more:border contrast-more:border-border"
+        >
+          <div className="col-span-2 flex min-w-56 flex-1 flex-col gap-1.5">
             <Label htmlFor="library-search">{m['library.search_label']()}</Label>
             <div className="relative">
               <SearchIcon
@@ -132,7 +156,7 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
             onChange={(value) =>
               setSearch({ instrument: value === ALL ? undefined : (value as InstrumentName) })
             }
-            className="w-40"
+            className="w-full sm:w-40"
           />
           <OptionSelect
             label={m['library.filter_status']()}
@@ -144,17 +168,26 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
             onChange={(value) =>
               setSearch({ status: value === ALL ? undefined : (value as StatusFilter) })
             }
-            className="w-40"
+            className="w-full sm:w-40"
           />
-          <OptionSelect
-            label={m['library.sort_label']()}
-            value={search.sort ?? 'last_practised'}
-            options={LibrarySort.options.map((value) => ({ value, label: sortLabel(value) }))}
-            onChange={(value) =>
-              setSearch({ sort: value === 'last_practised' ? undefined : value })
-            }
-            className="w-44"
-          />
+          {/* Two filters share a phone row; sort takes the next one. */}
+          <div className="col-span-2 sm:contents">
+            <OptionSelect
+              label={m['library.sort_label']()}
+              value={search.sort ?? 'last_practised'}
+              options={LibrarySort.options.map((value) => ({ value, label: sortLabel(value) }))}
+              onChange={(value) =>
+                setSearch({ sort: value === 'last_practised' ? undefined : value })
+              }
+              className="w-full sm:w-44"
+            />
+          </div>
+          {filtered && count > 0 && (
+            <Button variant="ghost" className="animate-pop-in" onClick={clearFilters}>
+              <XIcon aria-hidden />
+              {m['library.clear_filters']()}
+            </Button>
+          )}
           <ToggleGroup
             aria-label={m['library.view_label']()}
             className="hidden md:flex"
@@ -190,22 +223,18 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
       ) : count === 0 && !songs.isError ? (
         filtered ? (
           <EmptyState
+            className="animate-rise-in"
             icon={<SearchXIcon aria-hidden />}
             description={m['library.no_results']()}
             action={
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setQuery('')
-                  void navigate({ search: { view: search.view, sort: search.sort }, replace: true })
-                }}
-              >
+              <Button variant="primary" onClick={clearFilters}>
                 {m['library.clear_filters']()}
               </Button>
             }
           />
         ) : (
           <EmptyState
+            className="animate-rise-in"
             icon={<MusicIcon aria-hidden />}
             description={m['library.empty']()}
             action={
@@ -226,12 +255,21 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
           <ul
             className={
               view === 'grid'
-                ? 'grid list-none gap-4 p-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                : 'list-none rounded-xl border border-border bg-card p-0'
+                ? 'stagger-children grid list-none gap-4 p-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                : 'stagger-children list-none divide-y divide-border rounded-2xl bg-surface-raised p-0 shadow-1 contrast-more:border contrast-more:border-border'
             }
           >
-            {items.map((song) => (
-              <li key={song.id}>
+            {entries.map(({ song, index }) => (
+              <li
+                key={song.id}
+                data-vt-song
+                className={cn(
+                  'animate-rise-in',
+                  // Rows clip their hover wash to the list's rounded corners.
+                  view === 'list' && 'overflow-hidden first:rounded-t-2xl last:rounded-b-2xl',
+                )}
+                style={{ '--i': index, '--vt-song': `song-${song.id}` } as CSSProperties}
+              >
                 <SongEntry song={song} layout={view} />
               </li>
             ))}
