@@ -75,5 +75,38 @@ html:active-view-transition-type(library-reorder) [data-vt-song] {
 }
 ::view-transition-group(.song-entry) {
   animation-duration: var(--duration-slower);
-  animation-timing-function: var(--ease-standard);
+  animation-timing-function: var(--ease-smooth);
+}
+/* A card and its row are one entry changing shape (matched geometry): the frame springs between
+   the two boxes while both images keep their own size, pinned top-left (where tile and title sit
+   in both layouts) and clipped to the frame, so nothing is stretched to the other's aspect ratio.
+   The old image leaves quickly and the new one arrives just behind it. */
+::view-transition-old(.song-entry) {
+  height: 100%;
+  overflow: clip;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-exit);
+}
+::view-transition-new(.song-entry) {
+  height: 100%;
+  overflow: clip;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: var(--duration-slow);
+  animation-delay: var(--duration-fast);
+  animation-timing-function: var(--ease-enter);
+}
+
+/* The grid/list control animates its own capsule (ToggleGroup `capsule`), so during the reorder it
+   is shown live only: a cross-fade from the snapshot would leave a ghost capsule behind. */
+html:active-view-transition-type(library-reorder) [data-vt-view-toggle] {
+  view-transition-name: library-view-toggle;
+}
+::view-transition-old(library-view-toggle) {
+  display: none;
+}
+::view-transition-new(library-view-toggle) {
+  animation: none;
 }

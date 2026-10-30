@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { QueryClient } from '@tanstack/react-query'
-import { expect, waitFor, within } from 'storybook/test'
+import { useRouterState } from '@tanstack/react-router'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { orpc } from '@/lib/api'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { AppShell } from '../shell/app-shell'
 import { analysis, LIBRARY, ME, STATS, WORKER_OFFLINE, WORKER_ONLINE } from '../story-fixtures'
-import { LibraryPage } from './library-page'
+import { LibraryPage, type LibrarySearch } from './library-page'
 import { LibrarySkeleton } from './library-skeleton'
 import { libraryQuery, statsQuery, workerStatusQuery } from './queries'
 
@@ -72,6 +73,40 @@ export const Populated: Story = {
     await expect(entries[3]?.style.getPropertyValue('--i')).toBe('3')
     await expect(canvasElement.querySelectorAll('[data-slot=instrument-tile]')).toHaveLength(8)
     await settled(await canvas.findByText("This didn't use an analysis."))
+  },
+}
+
+// The view comes from the router here, so the grid/list switch navigates like the app: a
+// library-reorder view transition morphs each card into its row while the capsule slides.
+function RoutedScreen() {
+  const search = useRouterState({ select: (state) => state.location.search as LibrarySearch })
+  return <Screen search={search} />
+}
+
+export const ViewSwitch: Story = {
+  render: () => (
+    <AppStory path="/library" seed={seed()}>
+      <RoutedScreen />
+    </AppStory>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const view = canvas.getByRole('group', { name: 'View' })
+    const list = within(view).getByRole('button', { name: 'List' })
+    const capsule = () => view.querySelector<HTMLElement>('[data-slot="toggle-group-capsule"]')
+    await waitFor(() => expect(capsule()).not.toBeNull())
+    await userEvent.click(list)
+    await waitFor(() =>
+      expect(canvasElement.querySelectorAll('[data-slot=song-row]')).toHaveLength(8),
+    )
+    await expect(list).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() =>
+      expect(capsule()?.style.translate).toBe(`${list.offsetLeft}px ${list.offsetTop}px`),
+    )
+    await userEvent.click(within(view).getByRole('button', { name: 'Grid' }))
+    await waitFor(() =>
+      expect(canvasElement.querySelectorAll('[data-slot=song-card]')).toHaveLength(8),
+    )
   },
 }
 

@@ -322,6 +322,10 @@ Character height for comfortable reading is commonly given as 16′ minimum and 
 | `--ease-enter` | `cubic-bezier(0, 0, 0, 1)` | Elements appearing |
 | `--ease-exit` | `cubic-bezier(0.3, 0, 1, 1)` | Elements leaving |
 | `--ease-spring` | `cubic-bezier(0.34, 1.3, 0.64, 1)` | Small confirmations only: press release, a chip becoming current, a pass check |
+| `--ease-smooth` | `linear()` spring, SwiftUI `.smooth` (duration 0.35 s, bounce 0) sampled over 400 ms | Layout morphs: library cards ↔ rows; always with `--duration-slower` |
+| `--ease-snappy` | `linear()` spring, SwiftUI `.snappy` (duration 0.3 s, bounce 0.15) sampled over 400 ms | A selection moving between segments (the segmented-control capsule); always with `--duration-slower` |
+
+The two springs are curves of the whole 400 ms window, so they only pair with `--duration-slower`. `linear()` needs Safari 17.2 / Chrome 113 / Firefox 112; older Tier 2 engines treat them as invalid and fall back to `ease`.
 
 `--duration-slower` and `--stagger` are `0ms` under both reduced-motion conditions, like the other durations, so staggered items never wait while invisible.
 
@@ -339,7 +343,7 @@ Character height for comfortable reading is commonly given as 16′ minimum and 
 
 **Stagger:** `stagger-children` gives each direct child `animation-delay: calc(min(var(--i, 0), 8) * var(--stagger))`; components set `style={{ '--i': index }}` and an entrance animation. The cap means the ninth item and later enter together with the eighth.
 
-**View transitions:** the root cross-fades over `--duration-slower` with `--ease-standard` (`::view-transition-old(root)` and `::view-transition-new(root)`, each in its own rule). Under both reduced-motion conditions `::view-transition-group(*)`, `-old(*)` and `-new(*)` get `animation: none !important`, so navigation swaps instantly.
+**View transitions:** the root cross-fades over `--duration-slower` with `--ease-standard` (`::view-transition-old(root)` and `::view-transition-new(root)`, each in its own rule). Library reorders (27 §3.5) name each entry: its frame moves on `--ease-smooth` while the old and new images keep their natural size, pinned top-left and clipped to the frame, the old fading out over `--duration-base` and the new fading in over `--duration-slow` after `--duration-fast`, so a card morphs into its row without stretching. The grid/list control is named too and shown live only, so its sliding capsule leaves no ghost. Under both reduced-motion conditions `::view-transition-group(*)`, `-old(*)` and `-new(*)` get `animation: none !important`, so navigation swaps instantly.
 - **Functional motion only:** the playhead, cursor, page-flip and current-chip enlarge carry information; everything else is a state transition or a short acknowledgement (rise, pop, check). No parallax, no looping decoration, no celebratory animation (confetti, streaks).
 - **Reduced motion** (`prefers-reduced-motion: reduce` or Settings): transitions become 0 ms or opacity fades; notation uses page-flip by bar group; auto-scroll lists jump; the visual metronome becomes a static beat counter.
 - **Flash safety:** any flashing element is ≤ 20 mm, changes luminance < 10%, and is hard-capped at 3 flashes/s regardless of tempo or subdivision (beat flashes would exceed 3/s above 180 BPM, eighths above 90 BPM). Never full-screen, never red.
@@ -357,7 +361,7 @@ Character height for comfortable reading is commonly given as 16′ minimum and 
 | Component | Variants / notes |
 |---|---|
 | Button | `primary` (filled indigo), `secondary` (muted), `outline`, `ghost`, `destructive`, `link`; sizes `sm` (32, desktop only), `md` (44), `practice` (64), `practice-2` (48); `loading` state keeps width and shows a spinner after 300 ms |
-| Toggle, ToggleGroup | Pressed state = `--accent` fill + indigo text + check/filled icon (not colour alone); used for view (Tab/Chords), mix presets, count-in |
+| Toggle, ToggleGroup | Pressed state = `--accent` fill + indigo text + check/filled icon (not colour alone); used for view (Tab/Chords), mix presets, count-in. In a ToggleGroup the raised, indigo-edged surface is one capsule that slides and resizes to the pressed item on `--ease-snappy` (§10) and takes its corner radius; pressed items stay bold. With no single pressed item, items show their own pressed style. `capsuleClassName` recolours it (the phrase strip's paper/ink guide toggle) |
 | Slider | Base UI Slider; horizontal and vertical (faders); range variant for loop A/B; always paired with a NumberField or steppers; `largeStep` 10 |
 | NumberField | Steppers ≥44 px; tabular figures; units outside the input ("70 %") |
 | Dialog, AlertDialog | Max one at a time; AlertDialog only for irreversible, non-undoable actions (delete account, delete song) |

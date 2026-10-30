@@ -31,7 +31,7 @@ export type LibrarySearch = LibraryFilters & { view?: 'grid' | 'list' | undefine
 const ALL = 'all'
 
 // Filter, sort and view changes run as a "library-reorder" view transition: styles.css names each
-// entry only during one, so cards glide to their new place (26 §10). Search keystrokes swap
+// entry only during one, so cards glide to their new place and morph between card and row (26 §10). Search keystrokes swap
 // instantly; a transition would freeze the field's rendering while typing.
 const REORDER = { types: ['library-reorder'] }
 
@@ -189,6 +189,7 @@ export function LibraryPage({ me, search }: { me: MeData; search: LibrarySearch 
             </Button>
           )}
           <ToggleGroup
+            data-vt-view-toggle
             aria-label={m['library.view_label']()}
             className="hidden md:flex"
             value={[chosenView]}
