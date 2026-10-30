@@ -15,8 +15,9 @@ import { SystemBanners } from '../system/system-banners'
 import { SkipLink } from './skip-link'
 
 // Marketing shell (27 §1): 64 px bar with How it works · Pricing · Sign in · Try an example song,
-// legal links in the footer; no app chrome. Phones reach How it works and Pricing through the Menu
-// button. Signed-in visitors get "Library" instead of Sign in.
+// legal links in the footer; no app chrome. The bar stays pinned at the top; on phones everything
+// but the wordmark sits behind the Menu button, so it stays one row. Signed-in visitors get
+// "Library" instead of Sign in.
 export function MarketingShell({
   signedIn,
   children,
@@ -28,7 +29,7 @@ export function MarketingShell({
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
       <SystemBanners />
-      <header className="border-b border-border bg-background [view-transition-name:app-header]">
+      <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background [view-transition-name:app-header]">
         <div className="mx-auto flex min-h-16 max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-6 lg:px-8">
           <Link
             to="/"
@@ -53,6 +54,20 @@ export function MarketingShell({
                 <DropdownMenuItem render={<Link to="/pricing" />}>
                   {m['nav.pricing']()}
                 </DropdownMenuItem>
+                {signedIn ? (
+                  <DropdownMenuItem render={<Link to="/library" />}>
+                    {m['nav.library']()}
+                  </DropdownMenuItem>
+                ) : (
+                  <>
+                    <DropdownMenuItem render={<Link to="/auth/sign-in" />}>
+                      {m['nav.sign_in']()}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link to="/start" />}>
+                      {m['home.cta_example']()}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
             <Link
@@ -68,15 +83,24 @@ export function MarketingShell({
               {m['nav.pricing']()}
             </Link>
             {signedIn ? (
-              <Link to="/library" className={buttonVariants({ variant: 'outline' })}>
+              <Link
+                to="/library"
+                className={cn(buttonVariants({ variant: 'outline' }), 'max-sm:hidden')}
+              >
                 {m['nav.library']()}
               </Link>
             ) : (
               <>
-                <Link to="/auth/sign-in" className={buttonVariants({ variant: 'ghost' })}>
+                <Link
+                  to="/auth/sign-in"
+                  className={cn(buttonVariants({ variant: 'ghost' }), 'max-sm:hidden')}
+                >
                   {m['nav.sign_in']()}
                 </Link>
-                <Link to="/start" className={buttonVariants({ variant: 'primary' })}>
+                <Link
+                  to="/start"
+                  className={cn(buttonVariants({ variant: 'primary' }), 'max-sm:hidden')}
+                >
                   {m['home.cta_example']()}
                 </Link>
               </>

@@ -43,10 +43,12 @@ flowchart LR
 
 | Shell | Top area | Navigation | Notes |
 |---|---|---|---|
-| Marketing | 64 px bar: wordmark · How it works · Pricing · Sign in · **Try it free** (primary) | Footer with legal links | SSR; no app chrome |
+| Marketing | 64 px bar: wordmark · How it works · Pricing · Sign in · **Try it free** (primary) | Phone: wordmark + **Menu** (How it works, Pricing, Sign in or Library, Try an example song); footer with legal links | SSR; no app chrome |
 | App | 56 px bar: wordmark (→ Library) · Library · **Import** (primary) · allowance meter (≥ `md`) · account menu | Phone: same bar, Library/Import as icons + labels, account menu holds the rest | One shell for library, import, settings |
 | Focus | Practice/onboarding status bar only; "Back to library" (or "Exit") at top-left | None | Hides nav; Wake Lock on practice |
 | Bare | Wordmark only | — | Centred single column, max 480 px |
+
+Every shell's top bar is sticky: it stays at the top of the viewport while the page scrolls.
 
 Account menu: Settings · Plan & billing · Keyboard & pedal · Appearance (inline radio: System/Light/Dark/Stage) · Sign out.
 
@@ -72,7 +74,7 @@ Each spec lists **purpose · layout · content · primary action · states**. Si
 - **States:** static; LCP element is the headline (budget ≤2.5 s, `10` §9).
 
 ### 3.2 How it works, Pricing, Legal
-- **How it works:** the four pipeline steps in plain language, with an honest note on accuracy ("Auto-transcription gets most of a song right and marks the bits it's unsure about"). Each step comes with a picture of the app playing that step on the Home stills' 8-bar Am–F–C–G riff (import → stems pulling apart from the mix with guitar as your part → beats, bar lines, chords, then tab written in, the unsure G marked → loop dragged over bars 5–8, played, slowed to 70 %, played again and marked clean). The scroll position is the pictures' only clock (26 §10: nothing plays on its own or loops): on wide screens one picture is pinned beside the text, cross-fades to the step whose top passes the middle of the viewport and finishes as that step's bottom reaches the viewport's; on narrow screens each step carries its own picture, playing as it rises from 90 % to 40 % of the viewport, under a pinned bar of the four steps. The bar (`nav` "Steps", `aria-current="step"`, a fill per step) jumps to a step with its picture finished and focuses its heading. Pictures are inert and `aria-hidden`; reduced motion shows every picture's last frame.
+- **How it works:** the four pipeline steps in plain language, with an honest note on accuracy ("Auto-transcription gets most of a song right and marks the bits it's unsure about"). An overview under the intro (`nav` "Steps") links to each step. Each step pairs its text with a still picture of the app at that step on the Home stills' 8-bar Am–F–C–G riff (uploaded and read → the four stems with guitar picked as your part → beats, bar lines, chords with the unsure G marked, and the tab → bars 5–8 looped at 70 %, third pass, marked clean), alternating sides on wide screens and below the text on narrow ones. Nothing is driven by scroll and nothing moves (26 §10). Pictures are inert and `aria-hidden`. The accuracy note closes the page in a card with **Try an example song**.
 - **Pricing:** two columns Free / Plus, feature matrix from `23` §3 grouped as Practice (all ✓ for both, shown first), Analyses, Depth; monthly/yearly toggle with neither pre-selected visually emphasised beyond the toggle; "Cancel anytime in one tap". Personal mode banner: "Demo mode — purchases are simulated." No countdowns, no "most popular" badge.
 - **Legal:** 72 ch reading column, table of contents, last-updated date.
 
