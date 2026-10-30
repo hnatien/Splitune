@@ -4,6 +4,7 @@ version = "0.0.0"
 description = "Note transcription (Basic Pitch ONNX; YourMT3+ candidate; Transkun V2 piano)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "librosa==0.11.0",  # Guitab features (guitab.py) in the onnx-cpu island
     "numpy==2.5.4",
     "onnxruntime==1.31.0",
     "pyyaml==6.0.3",
