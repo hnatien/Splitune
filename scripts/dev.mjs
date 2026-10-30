@@ -9,11 +9,13 @@
 // both reading .env.worker; .env is never loaded, because inherited variables win over an env file
 // in both workers and would point them at the local stack.
 //
-// Split development across two machines: `pnpm dev:web` (--web-only) on the machine you code on runs
-// the stack and web without workers, and `pnpm dev:remote-workers <user@host>` (--remote-workers)
-// on the other opens an SSH tunnel to that machine's stack and runs the dev workers through it, on
-// .env as in dev:all. The tunnel keeps the same port numbers, so .env needs no change (S3 signs the
-// host and port) and the stack stays bound to 127.0.0.1.
+// Split development across two machines, the stack on either one: `pnpm dev:web` (--web-only) runs
+// the stack and web, and `pnpm dev:remote-workers <user@host>` on the other machine opens an SSH
+// tunnel to that stack and runs the dev workers through it; or `pnpm dev:stack-workers`
+// (--stack-workers) runs the stack and workers, and `pnpm dev:remote-stack <user@host>` on the
+// machine you code on runs web through a tunnel to it. All on .env as in dev:all: the tunnel keeps
+// the same port numbers, so .env needs no change (S3 signs the host and port) and the stack stays
+// bound to 127.0.0.1.
 import { execFile, execFileSync, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { connect } from 'node:net'
@@ -26,10 +28,15 @@ import { createTheme, parseLogLine, redrawsBar, renderFrame, visibleLogs } from 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const prodWorkers = process.argv.includes('--prod-workers')
 const webOnly = process.argv.includes('--web-only')
-const remoteFlag = process.argv.indexOf('--remote-workers')
-const remoteHost = remoteFlag === -1 ? undefined : process.argv[remoteFlag + 1]
-if (remoteFlag !== -1 && !remoteHost) {
-  throw new Error('usage: pnpm dev:remote-workers <user@host of the machine running pnpm dev:web>')
+const stackWorkers = process.argv.includes('--stack-workers')
+const remoteMode = ['--remote-workers', '--remote-stack'].find((flag) =>
+  process.argv.includes(flag),
+)
+const remoteHost = remoteMode && process.argv[process.argv.indexOf(remoteMode) + 1]
+if (remoteMode && !remoteHost) {
+  throw new Error(
+    `usage: pnpm dev:${remoteMode.slice(2)} <user@host of the machine running the stack>`,
+  )
 }
 const WORKER_ENV_FILE = join(root, '.env.worker')
 if (prodWorkers) {
@@ -119,16 +126,21 @@ const TUNNEL = {
 }
 
 function selectedServices() {
+  const [stack, web, ...workers] = SERVICES
   if (prodWorkers) return PROD_WORKERS
-  if (remoteHost) return [TUNNEL, ...SERVICES.filter((s) => s.id.endsWith('-worker'))]
-  if (webOnly) return SERVICES.filter((s) => s.id === 'stack' || s.id === 'web')
+  if (remoteMode === '--remote-workers') return [TUNNEL, ...workers]
+  if (remoteMode === '--remote-stack') return [TUNNEL, web]
+  if (webOnly) return [stack, web]
+  if (stackWorkers) return [stack, ...workers]
   return SERVICES
 }
 
 function modeName() {
   if (prodWorkers) return 'PRODUCTION workers'
-  if (remoteHost) return `local dev · workers for ${remoteHost}`
+  if (remoteMode === '--remote-workers') return `local dev · workers for ${remoteHost}`
+  if (remoteMode === '--remote-stack') return `local dev · web on ${remoteHost}'s stack`
   if (webOnly) return 'local dev · web only'
+  if (stackWorkers) return 'local dev · stack and workers'
   return 'local dev'
 }
 
