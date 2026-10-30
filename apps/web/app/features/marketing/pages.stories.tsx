@@ -26,22 +26,16 @@ export const HowItWorksPage: Story = {
     await expect(canvas.getAllByRole('heading', { level: 2 })).toHaveLength(5)
     const steps = within(canvas.getByRole('navigation', { name: 'Steps' })).getAllByRole('link')
     await expect(steps).toHaveLength(4)
-    await expect(steps[0]).toHaveAttribute('aria-current', 'step')
+    await expect(steps[1]).toHaveAttribute('href', '#how-step-2')
+    await expect(canvasElement.querySelector('#how-step-2 h2')).toHaveTextContent(
+      'We isolate your part',
+    )
   },
 }
 export const HowItWorksDark: Story = { render: howItWorks, globals: { appearance: 'dark' } }
 export const HowItWorksPhone: Story = {
   render: howItWorks,
   globals: { viewport: { value: 'mobile2', isRotated: false } },
-}
-/** Reduced motion: every picture shows its last frame; scrolling only switches steps. */
-export const HowItWorksReducedMotion: Story = {
-  render: howItWorks,
-  globals: { motion: 'reduce' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await expect((await canvas.findAllByText('Ready to analyse')).length).toBeGreaterThan(0)
-  },
 }
 
 const legal = (page: 'terms' | 'privacy') => () => (

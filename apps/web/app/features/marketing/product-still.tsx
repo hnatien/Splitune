@@ -275,20 +275,17 @@ const OUTLINE: Record<Level, string> = {
 /**
  * Fret numbers on paper with the loop band over bars 5–8, the playhead in bar 7 and the unsure
  * marks. `bars` crops the picture to a range of bars, which shows them larger. How it works draws
- * the same tab being written and played: `reveal` shows the chords and notes up to that share of
- * the picture's width, `loop` how far the band has been dragged from bar 5, and `playhead` the
- * playhead's position in bars (null hides it).
+ * the same tab before it is looped: `loop` hides the band and `playhead` places the playhead in bars
+ * (null hides it).
  */
 export function TabStill({
   bars,
-  reveal = 1,
-  loop = 1,
+  loop = true,
   playhead: playheadBar,
   className,
 }: {
   bars?: { from: number; to: number }
-  reveal?: number
-  loop?: number
+  loop?: boolean
   playhead?: number | null
   className?: string
 }) {
@@ -296,15 +293,14 @@ export function TabStill({
   const left = bars ? barX(index(bars.from)) - 8 : 0
   const right = bars ? Math.min(TAB.width, barX(index(bars.to) + 1) + 2) : TAB.width
   const loopStart = barX(index(LOOP_BARS.from))
-  const loopEnd = loopStart + (barX(index(LOOP_BARS.to) + 1) - loopStart) * loop
+  const loopEnd = barX(index(LOOP_BARS.to) + 1)
   const playhead =
     playheadBar === undefined
       ? noteX(3, 2.5)
       : playheadBar === null
         ? null
         : barX(index(Math.floor(playheadBar))) + (playheadBar % 1) * TAB.bar
-  const revealX = left + (right - left) * reveal
-  const inLoop = (x: number) => loop > 0 && x >= loopStart && x <= loopEnd
+  const inLoop = (x: number) => loop && x >= loopStart && x <= loopEnd
   return (
     <div className={cn('overflow-hidden rounded-lg bg-paper text-ink', className)}>
       <svg
@@ -312,7 +308,7 @@ export function TabStill({
         viewBox={`${left} 0 ${right - left} ${TAB.height}`}
         className={cn('block w-full font-semibold tabular-nums', !bars && 'min-w-[40rem]')}
       >
-        {loop > 0 && (
+        {loop && (
           <>
             <rect
               x={loopStart}
@@ -355,24 +351,21 @@ export function TabStill({
             <text x={barX(i) + 4} y={TAB.top - 8} className="fill-muted-foreground text-[10px]">
               {b.bar}
             </text>
-            {barX(i) + 18 <= revealX && (
-              <text
-                x={barX(i) + 18}
-                y={TAB.top - 8}
-                className={cn('text-[15px] font-bold', INK[b.chordLevel ?? 'high'])}
-              >
-                {b.chord}
-                {b.chordLevel === 'low' && (
-                  <tspan dy={-6} className="text-[10px]">
-                    ?
-                  </tspan>
-                )}
-              </text>
-            )}
+            <text
+              x={barX(i) + 18}
+              y={TAB.top - 8}
+              className={cn('text-[15px] font-bold', INK[b.chordLevel ?? 'high'])}
+            >
+              {b.chord}
+              {b.chordLevel === 'low' && (
+                <tspan dy={-6} className="text-[10px]">
+                  ?
+                </tspan>
+              )}
+            </text>
             {b.notes.map(([eighth, string, fret, level = 'high']) => {
               const x = noteX(i, eighth)
               const y = stringY(string)
-              if (x > revealX) return null
               return (
                 <g key={`${eighth}-${string}`}>
                   <rect
@@ -410,7 +403,6 @@ export function TabStill({
                 const x1 = noteX(i, pair)
                 const x2 = noteX(i, pair + 1)
                 const y = STAFF_BOTTOM + 20
-                if (x2 > revealX) return null
                 return (
                   <g key={pair}>
                     <line x1={x1} x2={x1} y1={STAFF_BOTTOM + 8} y2={y} strokeWidth={1.25} />
