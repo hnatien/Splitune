@@ -6,7 +6,7 @@ import { m } from '@/lib/i18n'
 import { safeNext } from '@/lib/next-path'
 import { getAuthOptions } from '@/server/auth-options'
 
-export const Route = createFileRoute('/_bare/auth/sign-in')({
+export const Route = createFileRoute('/_auth/auth/sign-in')({
   validateSearch: z.object({ next: z.string().optional() }),
   beforeLoad: ({ context, search }) => {
     if (context.me) throw redirect({ href: safeNext(search.next) })

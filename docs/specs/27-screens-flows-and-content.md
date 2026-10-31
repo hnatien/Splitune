@@ -32,8 +32,11 @@ flowchart LR
     LIB --> ED[/songs/$id/edit desktop]
     SET[/settings/*]
   end
+  subgraph Auth[Auth shell]
+    AU[/auth/*]
+  end
   subgraph Bare[Bare shell]
-    AU[/auth/*] --- MC[/billing/mock-checkout] --- MP[/billing/mock-portal] --- SYS[unsupported · offline · 404 · error]
+    MC[/billing/mock-checkout] --- MP[/billing/mock-portal] --- SYS[unsupported · offline · 404 · error]
   end
   H -->|Try an example| ST
   H -->|Sign in| AU
@@ -47,6 +50,7 @@ flowchart LR
 | App | 56 px bar: wordmark (→ Library) · Library · **Import** (primary) · allowance meter (≥ `md`) · account menu | Phone: same bar, Library/Import as icons + labels, account menu holds the rest | One shell for library, import, settings |
 | Focus | Practice/onboarding status bar only; "Back to library" (or "Exit") at top-left | None | Hides nav; Wake Lock on practice |
 | Bare | Wordmark only | — | Centred single column, max 480 px |
+| Auth | Wordmark only | — | Form column (max 384 px) beside a practice-screen showcase from `lg`: headline, three points and real-kit stills (chords, looped tab, timeline, loop and speed); phones get the form alone |
 
 Every shell's top bar is sticky: it stays at the top of the viewport while the page scrolls.
 
@@ -90,8 +94,8 @@ Each spec lists **purpose · layout · content · primary action · states**. Si
 
 Progress dots (1–5) at top with "Step 2 of 5" text; Back always available.
 
-### 3.4 Auth `/auth/*` (bare shell)
-- **Sign in:** "Sign in or create an account" · email field · **Email me a link** · Google (if configured) · small print linking Terms/Privacy. One form for both sign-in and sign-up.
+### 3.4 Auth `/auth/*` (auth shell)
+- **Sign in:** "Sign in or create an account" · a lead saying the link replaces a password and sets up new accounts · email field · **Email me a link** · Google (if configured, under an "or" divider) · small print "By continuing, you agree to our Terms and Privacy policy." One form for both sign-in and sign-up.
 - **Check your email:** "We sent a link to {email}. It works for {minutes} minutes." (`MAGIC_LINK_TTL_S` in `apps/api/src/auth.ts`, currently 5 minutes) · "Open Mailpit" link in dev only · Resend (after 30 s) · Use a different email.
 - **Landing:** spinner ≤1 s then redirect; errors: expired ("This link has expired. We can send a new one."), used, invalid.
 
