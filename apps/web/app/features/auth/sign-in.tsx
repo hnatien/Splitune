@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { MailIcon } from 'lucide-react'
+import { ArrowRightIcon, MailCheckIcon } from 'lucide-react'
 import type * as React from 'react'
 import { useEffect, useId, useState } from 'react'
 import { z } from 'zod'
@@ -59,7 +59,10 @@ export function EmailForm({
 
   return (
     <>
-      <h1 className="text-2xl">{m['auth.sign_in_title']()}</h1>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl text-balance">{m['auth.sign_in_title']()}</h1>
+        <p className="text-base text-muted-foreground">{m['auth.sign_in_lead']()}</p>
+      </div>
       <form noValidate onSubmit={submit} className="flex flex-col gap-4">
         <Field data-invalid={invalid || undefined}>
           <FieldLabel htmlFor="email">{m['auth.email_label']()}</FieldLabel>
@@ -68,6 +71,7 @@ export function EmailForm({
             type="email"
             autoComplete="email"
             inputMode="email"
+            placeholder={m['auth.email_placeholder']()}
             value={email}
             aria-invalid={invalid || undefined}
             aria-describedby={invalid ? errorId : undefined}
@@ -79,23 +83,28 @@ export function EmailForm({
           {invalid && <FieldError id={errorId}>{m['auth.email_invalid']()}</FieldError>}
         </Field>
         {failure && <InlineError title={failure} />}
-        <Button type="submit" variant="primary" loading={sending}>
-          <MailIcon aria-hidden />
+        <Button type="submit" variant="primary" size="practice-2" loading={sending}>
           {m['auth.email_me_link']()}
+          <ArrowRightIcon aria-hidden />
         </Button>
       </form>
       {google && (
-        <>
-          <p className="text-center text-sm text-muted-foreground">{m['auth.or']()}</p>
+        <div className="flex flex-col gap-4">
+          <p className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span aria-hidden className="h-px flex-1 bg-border" />
+            {m['auth.or']()}
+            <span aria-hidden className="h-px flex-1 bg-border" />
+          </p>
           <Button
             variant="outline"
+            size="practice-2"
             onClick={() => authClient.signIn.social({ provider: 'google', callbackURL: next })}
           >
             {m['auth.google']()}
           </Button>
-        </>
+        </div>
       )}
-      <p className="text-sm text-muted-foreground">
+      <p className="border-t border-border pt-6 text-sm text-muted-foreground">
         {m['auth.small_print']()}{' '}
         <Link
           to="/legal/$page"
@@ -103,15 +112,16 @@ export function EmailForm({
           className="text-primary underline underline-offset-4"
         >
           {m['legal.terms_title']()}
-        </Link>
-        {' · '}
+        </Link>{' '}
+        {m['auth.and']()}{' '}
         <Link
           to="/legal/$page"
           params={{ page: 'privacy' }}
           className="text-primary underline underline-offset-4"
         >
           {m['legal.privacy_title']()}
-        </Link>
+        </Link>{' '}
+        {m['auth.small_print_end']()}
       </p>
     </>
   )
@@ -148,10 +158,15 @@ export function CheckEmail({
 
   return (
     <>
-      <h1 className="text-2xl">{m['auth.check_title']()}</h1>
-      <p className="text-base">
-        {m['auth.link_sent']({ email, minutes: String(MAGIC_LINK_MINUTES) })}
-      </p>
+      <div className="flex flex-col gap-4">
+        <span className="inline-flex size-14 animate-pop-in items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+          <MailCheckIcon aria-hidden className="size-7" />
+        </span>
+        <h1 className="text-3xl text-balance">{m['auth.check_title']()}</h1>
+        <p className="text-base text-muted-foreground">
+          {m['auth.link_sent']({ email, minutes: String(MAGIC_LINK_MINUTES) })}
+        </p>
+      </div>
       {mailpitUrl && (
         <a
           href={mailpitUrl}

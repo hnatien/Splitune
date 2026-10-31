@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { AppStory } from '../../../.storybook/app.tsx'
-import { BareShell } from '../shell/bare-shell'
+import { AuthShell } from './auth-shell'
 import { LinkLanding } from './link-landing'
 import { CheckEmail, EmailForm } from './sign-in'
 
-// Auth screens (27 §3.4): sign in or create an account, field error, Google when configured,
-// "Check your email" with the resend countdown and the dev-only Mailpit link, and the magic-link
-// landing's expired and invalid states.
+// Auth screens (27 §3.4) in the auth shell: sign in or create an account, field error, Google when
+// configured, "Check your email" with the resend countdown and the dev-only Mailpit link, the
+// magic-link landing's expired and invalid states, and the phone layout without the showcase.
 const meta = { title: 'Screens/Auth', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -15,12 +15,16 @@ type Story = StoryObj<typeof meta>
 const noop = () => undefined
 const bare = (children: React.ReactNode) => (
   <AppStory path="/auth/sign-in">
-    <BareShell>{children}</BareShell>
+    <AuthShell>{children}</AuthShell>
   </AppStory>
 )
 
 export const SignIn: Story = {
   render: () => bare(<EmailForm next="/library" google={false} onSent={noop} />),
+}
+export const SignInPhone: Story = {
+  render: () => bare(<EmailForm next="/library" google={false} onSent={noop} />),
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
 }
 export const SignInWithGoogle: Story = {
   render: () => bare(<EmailForm next="/library" google onSent={noop} />),
@@ -68,9 +72,9 @@ export const CheckYourEmailStage: Story = {
 
 const landing = (error?: string) => () => (
   <AppStory path="/auth/verify">
-    <BareShell>
+    <AuthShell>
       <LinkLanding error={error} />
-    </BareShell>
+    </AuthShell>
   </AppStory>
 )
 
