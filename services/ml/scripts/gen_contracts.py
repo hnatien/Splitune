@@ -79,7 +79,8 @@ def generate(schema: Path, output: Path) -> None:
     code = run("ruff", "check", "--fix", "--quiet", as_path, "-", stdin=code)
     code = run("ruff", "format", "--quiet", as_path, "-", stdin=code)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(code)
+    # LF on every OS: `pnpm contracts:check` compares bytes and .gitattributes checks out LF.
+    output.write_text(code, newline="\n")
 
 
 def main() -> None:
