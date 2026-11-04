@@ -52,7 +52,7 @@ import {
   recordAttempt,
   startSession,
 } from './model/practice-sync'
-import { type PracticeSearch, planResume } from './model/resume'
+import { type PracticeSearch, planResume, savedView } from './model/resume'
 import type { Layers } from './model/screen'
 import { createTransport, type Hud } from './model/transport'
 import { type MusicState, useMusic } from './model/use-music'
@@ -464,7 +464,8 @@ export function PracticeProvider({
     if (level) setOptionsState((current) => ({ ...current, level }))
     if (plan.speed !== undefined) actor.send({ type: 'SET_SPEED', pct: plan.speed })
     setSavedMix('preset' in plan.mix ? presetMix(channels, plan.mix.preset) : plan.mix.saved)
-    if (plan.forceTab) usePracticeUi.setState({ forceTab: true })
+    if (plan.view === 'tab') usePracticeUi.setState({ forceTab: true })
+    else if (plan.view === 'chords') usePracticeUi.setState({ view: 'chords' })
     if (plan.loop && 'range' in plan.loop) {
       setLoop(plan.loop.range)
     } else if (plan.loop) {
@@ -490,11 +491,11 @@ export function PracticeProvider({
 
   // Resume state out: debounced whole-state PATCH, and a keepalive send when the page goes.
   const [writer] = useState(() => createResumeWriter(songId))
-  const forceTab = usePracticeUi((s) => s.forceTab)
+  const resumeView = usePracticeUi((s) => savedView(s.view, s.forceTab))
   const resumeState: ResumeState = {
     speed_pct: player.speedPct,
     ...(channels.length > 0 ? { mix } : {}),
-    ...(forceTab ? { view: 'tab' as const } : {}),
+    ...(resumeView ? { view: resumeView } : {}),
     selected_loop_id: clipId,
   }
   const resumeKey = JSON.stringify(resumeState)

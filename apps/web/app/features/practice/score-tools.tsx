@@ -8,12 +8,11 @@ import { LevelToggle, levelLabel } from './level-toggle'
 import { usePractice } from './practice-context'
 
 // Level and capo at the chord strip's end (12 §2): one button names the level (and the capo when
-// one is set); the level toggle and the capo field open in a popover. It sits on the paper, so it
-// takes the score's ink and staff colours. Stage keeps the chrome out.
-export function ScoreTools() {
-  const { options, data } = usePractice()
-  // Drums have levels but no capo.
-  const capo = data.instrument !== 'drums'
+// one is set); the level toggle and, for guitar, the capo field open in a popover. Bass and drums
+// have levels but no capo. It sits on the paper, so it takes the score's ink and staff colours.
+// Stage keeps the chrome out.
+export function ScoreTools({ capo }: { capo: boolean }) {
+  const { options } = usePractice()
   const title = capo ? m['practice.level_and_capo']() : m['practice.level']()
   const summary = [
     levelLabel(options.level),
@@ -38,7 +37,7 @@ export function ScoreTools() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-auto gap-4">
         <PopoverTitle>{title}</PopoverTitle>
-        <LevelToggle />
+        <LevelToggle capo={capo} />
       </PopoverContent>
     </Popover>
   )

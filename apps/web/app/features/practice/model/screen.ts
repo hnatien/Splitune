@@ -1,6 +1,6 @@
 import { type Instrument, instrumentProfile } from '@splitune/contracts'
 import type { z } from 'zod'
-import type { PracticeLayout } from '../layout'
+import { isPhone, type PracticeLayout } from '../layout'
 
 // What the practice screen shows (12 §2–3, 27 §3.7): from the layers that exist, the learner's
 // choices and the summary's recommendation to the paper's renderer, the view switch, the
@@ -63,13 +63,22 @@ export interface Screen {
   paper: Paper
   /** Phone landscape with guitar's Notes chosen: the Notes carry the chord the strip would. */
   compactNotes: boolean
+  /** The strip over the paper, only when it has something in it: the chords, the phrases or the
+   * options at its end (which phones leave out). */
   strip: boolean
-  /** The level (and capo) control at the strip's end. */
-  scoreTools: boolean
+  /** The level control at the strip's end, with the capo for guitar. */
+  scoreTools: { capo: boolean } | null
+  /** Piano options at the strip's end: all of them with the chords, only the hands without. */
+  pianoOptions: 'all' | 'hands' | null
   legend: boolean
   viewSwitch: { items: SwitchItem[]; selected: ChosenView } | null
-  /** The chords-only banner; `notes` when the notation is notes rather than a tab. */
-  banner: { title: 'piano' | 'vocals' | 'reason'; notes: boolean } | null
+  /** The chords-only banner: `held` while the recommendation holds the notation back ("Show …
+   * anyway"; `notes` when the notation is notes rather than a tab), `unsure` when there are no
+   * chords to fall back on and the notation shows under a plain notice. */
+  banner:
+    | { kind: 'held'; title: 'piano' | 'vocals' | 'reason'; notes: boolean }
+    | { kind: 'unsure' }
+    | null
   /** view_changed's name for the instrument's first notation. */
   notationEvent: 'tab' | 'notes'
 }
@@ -79,45 +88,69 @@ export const hasNotation = (layers: Layers) =>
   layers.tab || layers.roll || layers.melody || layers.drums
 
 export function resolveScreen(input: ScreenInput): Screen {
-  const { layers, view, forceTab, chordsOnly, layout } = input
+  const { instrument, layers, view, forceTab, chordsOnly, layout } = input
   const notation = hasNotation(layers)
   const shown = shownView(input)
   const glance = layout === 'phone-portrait' && shown === 'chords'
   const compactNotes = layout === 'phone-landscape' && view === 'notes'
   // Notes rather than a tab: piano's roll, vocals' melody, drums' grid.
   const notes = layers.roll || layers.melody || layers.drums
+  // Levels exist for the tab and the drum hits; the capo only fits guitar's chord shapes.
+  const scoreTools = layers.tab || layers.drums ? { capo: instrument === 'guitar' } : null
+  const pianoOptions =
+    instrumentProfile(instrument).score !== 'piano'
+      ? null
+      : layers.chords
+        ? 'all'
+        : layers.roll
+          ? 'hands'
+          : null
+  // The phrases follow the melody while it is shown.
+  const phrases = layers.melody && shown === 'tab'
+  const tools = !isPhone(layout) && (scoreTools !== null || pianoOptions !== null)
   return {
     shown,
     glance,
     paper: paperFor(input),
     compactNotes,
-    // Piano's roll brings nothing to the strip: its keyboards follow the chords.
-    strip:
-      !glance &&
-      (layers.chords || layers.tab || layers.melody || layers.drums) &&
-      !(compactNotes && shown === 'tab'),
-    // Levels exist for the tab and the drum hits.
-    scoreTools: layers.tab || layers.drums,
+    strip: !glance && !(compactNotes && shown === 'tab') && (layers.chords || phrases || tools),
+    scoreTools,
+    pianoOptions,
     legend: layers.chords || notation,
     viewSwitch: layers.chords && notation ? viewSwitch(layers, view, shown) : null,
     banner:
-      chordsOnly && !forceTab && notation
-        ? { title: layers.roll ? 'piano' : layers.melody ? 'vocals' : 'reason', notes }
-        : null,
+      !chordsOnly || !notation
+        ? null
+        : !layers.chords
+          ? { kind: 'unsure' }
+          : forceTab
+            ? null
+            : {
+                kind: 'held',
+                title: layers.roll ? 'piano' : layers.melody ? 'vocals' : 'reason',
+                notes,
+              },
     notationEvent: notes ? 'notes' : 'tab',
   }
 }
 
-function shownView({ layers, view, forceTab, chordsOnly, layout }: ScreenInput) {
+// A chords-only recommendation holds the notation back only while there are chords to show
+// instead and the learner hasn't asked for the notation anyway.
+const held = ({ layers, forceTab, chordsOnly }: ScreenInput) =>
+  chordsOnly && layers.chords && !forceTab
+
+function shownView(input: ScreenInput) {
+  const { layers, view, layout } = input
   const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
   if (wanted === 'chords' && layers.chords) return 'chords'
-  return hasNotation(layers) && (!chordsOnly || forceTab) ? 'tab' : 'chords'
+  return hasNotation(layers) && !held(input) ? 'tab' : 'chords'
 }
 
 // The paper's renderer does not depend on the layout: the glance view replaces it on phone
 // portrait.
-function paperFor({ instrument, layers, view, forceTab, chordsOnly }: ScreenInput): Paper {
-  const notation = view !== 'chords' && (!chordsOnly || forceTab)
+function paperFor(input: ScreenInput): Paper {
+  const { instrument, layers, view } = input
+  const notation = view !== 'chords' && !held(input)
   if (layers.tab && notation && view !== 'notes') return 'tab'
   if (!layers.chords && !hasNotation(layers)) return 'placeholder'
   // The notes instead of the chords: chosen, or the only layer there is.
