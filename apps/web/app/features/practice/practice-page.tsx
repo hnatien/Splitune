@@ -11,7 +11,7 @@ import { FocusShell } from '../shell/focus-shell'
 import { ChordStrip } from './chord-strip'
 import { useInputMapper } from './input-mapper'
 import { isPhone, type PracticeLayout, usePracticeLayout } from './layout'
-import { NotationPane, useShownView } from './notation-pane'
+import { NotationPane, useScreen } from './notation-pane'
 import {
   type FetchAudio,
   PracticeProvider,
@@ -128,23 +128,19 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
 // strip), or the glance view on phone portrait; a URL import's video floats over its corner when opened from the status bar. On phone
 // landscape guitar's Notes take the strip's room and show its chord themselves.
 function Regions({ layout }: { layout: PracticeLayout }) {
-  const { layers } = usePractice()
-  const shown = useShownView(layout)
-  const view = usePracticeUi((s) => s.view)
-  const notes = layout === 'phone-landscape' && view === 'notes'
+  const screen = useScreen(layout)
   const videoOpen = usePracticeUi((s) => s.videoOpen)
   const video = useVideoUrl()
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {layout === 'phone-portrait' && shown === 'chords' ? (
+      {screen.glance ? (
         <Suspense fallback={null}>
           <GlanceView />
         </Suspense>
       ) : (
         <>
-          {(layers.chords || layers.tab || layers.melody || layers.drums) &&
-            !(notes && shown === 'tab') && <ChordStrip compact={isPhone(layout)} />}
-          <NotationPane compact={notes} />
+          {screen.strip && <ChordStrip compact={isPhone(layout)} />}
+          <NotationPane compact={screen.compactNotes} />
         </>
       )}
       {video.data && videoOpen && (

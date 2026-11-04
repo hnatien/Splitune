@@ -162,3 +162,21 @@ export function chordsInBar(chords: readonly ChordModel[], grid: PracticeGrid, b
   const end = grid.barEnd(bar)
   return chords.filter((c) => c.t1 > start + 1e-3 && c.t0 < end - 1e-3)
 }
+
+/** Confidence marks of a staff's notes (26 §5): piano's notes or drums' hits, a kit-piece guess
+ * marked like a medium-confidence note. */
+export function staffMarks(
+  notes: readonly {
+    id: string
+    band: ConfidenceLevel
+    residualFlagged: boolean
+    approximate?: boolean
+  }[],
+): Map<string, NoteMark> {
+  return new Map(
+    notes.map((n) => {
+      const level = n.approximate && n.band === 'high' ? 'medium' : n.band
+      return [n.id, n.residualFlagged ? { level, timingFlagged: true } : { level }]
+    }),
+  )
+}

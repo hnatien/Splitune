@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ChordShape } from './chord-shape'
+import type { Paper } from './model/screen'
 import { chordsInBar } from './model/view-model'
 import { PianoChart } from './piano-chart'
 import { usePractice } from './practice-context'
@@ -12,8 +13,8 @@ import { usePracticeUi } from './practice-store'
 const PianoNotes = lazy(() =>
   import('./piano-notes').then((module) => ({ default: module.PianoNotes })),
 )
-const PianoStaff = lazy(() =>
-  import('./piano-staff').then((module) => ({ default: module.PianoStaff })),
+const StaffView = lazy(() =>
+  import('./staff-view').then((module) => ({ default: module.StaffView })),
 )
 const GuitarNotes = lazy(() =>
   import('./guitar-notes').then((module) => ({ default: module.GuitarNotes })),
@@ -24,9 +25,6 @@ const VocalMelody = lazy(() =>
 const DrumNotes = lazy(() =>
   import('./drum-notes').then((module) => ({ default: module.DrumNotes })),
 )
-const DrumStaff = lazy(() =>
-  import('./drum-staff').then((module) => ({ default: module.DrumStaff })),
-)
 
 // Chords-only sheet (27 §3.7.3 "+ chords", and the chords_only fallback): bars with their chords,
 // the current bar ruled, tap to loop. Piano reads the chord chart instead, or its notes (the
@@ -34,47 +32,34 @@ const DrumStaff = lazy(() =>
 // melody; drums their grid (or the drum staff when chosen). They come through this chunk so the route's JS carries one lazy import for all of them
 // (12 §10).
 export function ChordSheet({
-  notes = false,
+  paper,
   compact = false,
   ...props
 }: {
   className?: string | undefined
   onBarActivate: (bar: number) => void
-  /** The notes instead of the chords: piano's (instead of its chart), guitar's and bass's Notes,
-   * vocals' melody. */
-  notes?: boolean
+  /** Everything but the tab and the placeholder (model/screen.ts). */
+  paper: Exclude<Paper, 'tab' | 'placeholder'>
   /** Phone landscape. */
   compact?: boolean
 }) {
-  const { data } = usePractice()
-  const staff = usePracticeUi((s) => s.view) === 'staff'
-  if (data.instrument === 'drums' && notes) {
-    return (
-      <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', props.className)} />}>
-        {staff ? <DrumStaff {...props} /> : <DrumNotes {...props} />}
-      </Suspense>
-    )
-  }
-  if (data.instrument === 'vocals' && notes) {
-    return (
-      <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', props.className)} />}>
-        <VocalMelody {...props} />
-      </Suspense>
-    )
-  }
-  if (data.instrument !== 'piano') {
-    return notes ? (
-      <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', props.className)} />}>
-        <GuitarNotes {...props} compact={compact} />
-      </Suspense>
-    ) : (
-      <BarSheet {...props} />
-    )
-  }
-  if (!notes) return <PianoChart {...props} />
+  if (paper === 'bar-sheet') return <BarSheet {...props} />
+  if (paper === 'piano-chart') return <PianoChart {...props} />
   return (
     <Suspense fallback={<div className={cn('min-h-0 flex-1 bg-paper', props.className)} />}>
-      {staff ? <PianoStaff {...props} /> : <PianoNotes {...props} />}
+      {paper === 'guitar-notes' ? (
+        <GuitarNotes {...props} compact={compact} />
+      ) : paper === 'piano-notes' ? (
+        <PianoNotes {...props} />
+      ) : paper === 'piano-staff' ? (
+        <StaffView kind="piano" {...props} />
+      ) : paper === 'drum-grid' ? (
+        <DrumNotes {...props} />
+      ) : paper === 'drum-staff' ? (
+        <StaffView kind="drums" {...props} />
+      ) : (
+        <VocalMelody {...props} />
+      )}
     </Suspense>
   )
 }

@@ -1,4 +1,5 @@
-import type { CalibrationTable, ConfidenceBand } from '../types.ts'
+import { z } from 'zod'
+import type { CalibrationTable, ConfidenceBand, DrumNotes, Notes } from '../types.ts'
 
 export interface BandThresholds {
   high: number
@@ -7,6 +8,18 @@ export interface BandThresholds {
 
 // Used when no calibration table is available (proposal until P2 fits real tables).
 export const DEFAULT_BANDS: BandThresholds = { high: 0.7, medium: 0.4 }
+
+// The notes stage records the calibration bands it used in params.calibration.bands (08).
+const RecordedBands = z.object({
+  calibration: z.object({
+    bands: z.object({ high: z.number().min(0).max(1), medium: z.number().min(0).max(1) }),
+  }),
+})
+
+export function recordedBands(transcription: Notes | DrumNotes | undefined): BandThresholds {
+  const parsed = RecordedBands.safeParse(transcription?.params)
+  return parsed.success ? parsed.data.calibration.bands : DEFAULT_BANDS
+}
 
 function clamp01(x: number): number {
   return Math.min(1, Math.max(0, x))

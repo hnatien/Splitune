@@ -1,6 +1,6 @@
 import { Summary, Tab } from '@splitune/contracts'
 import { describe, expect, it } from 'vitest'
-import { bandsOf, chordsConfidenceMean, finalize, noteStats } from '../src/finalize.ts'
+import { chordsConfidenceMean, finalize, noteStats } from '../src/finalize.ts'
 import { loadViews } from '../src/views.ts'
 import {
   ANALYSIS_ID,
@@ -100,7 +100,7 @@ describe('finalize', () => {
     const drums = drumNotes()
     const result = finalize(
       ANALYSIS_ID,
-      { beats: beats(), chords: chords(), stems: stems(), notes: {}, drums },
+      { beats: beats(), chords: chords(), stems: stems(), notes: { drums } },
       { instruments: ['drums'] },
       views,
     )
@@ -125,12 +125,10 @@ describe('finalize', () => {
 describe('note and chord statistics', () => {
   it('uses the calibration bands recorded by the notes stage', () => {
     const notes = guitarNotes()
-    expect(bandsOf(notes)).toEqual({ high: 0.7, medium: 0.4 })
     const strict = {
       ...notes,
       params: { ...notes.params, calibration: { bands: { high: 0.95, medium: 0.9 } } },
     }
-    expect(bandsOf(strict)).toEqual({ high: 0.95, medium: 0.9 })
     expect(noteStats(strict).fractionLowConf).toBeGreaterThan(noteStats(notes).fractionLowConf)
   })
 

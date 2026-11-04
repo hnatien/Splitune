@@ -5,7 +5,7 @@ import type { Beats, Chords, Notes } from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
 import { practiceGrid } from './grid'
 import { computeMusic } from './music'
-import { buildViewModel, chordsAround, chordsInBar, noteName } from './view-model'
+import { buildViewModel, chordsAround, chordsInBar, noteName, staffMarks } from './view-model'
 
 const music = computeMusic({
   beats: beats as Beats,
@@ -85,5 +85,26 @@ describe('view model', () => {
       options: { capo: 0, level: 'simplified', fingeringMode: 'easiest' },
     })
     expect(simple.displayChords.map((c) => c.label)).toEqual(['A:min'])
+  })
+})
+
+describe('staff marks', () => {
+  it('marks each note with its band and flags its timing', () => {
+    const marks = staffMarks([
+      { id: 'a', band: 'high', residualFlagged: false },
+      { id: 'b', band: 'low', residualFlagged: true },
+    ])
+    expect(Object.fromEntries(marks)).toEqual({
+      a: { level: 'high' },
+      b: { level: 'low', timingFlagged: true },
+    })
+  })
+
+  it('marks a kit-piece guess like a medium-confidence hit', () => {
+    const marks = staffMarks([
+      { id: 'h1', band: 'high', residualFlagged: false, approximate: true },
+      { id: 'h2', band: 'low', residualFlagged: false, approximate: true },
+    ])
+    expect([marks.get('h1'), marks.get('h2')]).toEqual([{ level: 'medium' }, { level: 'low' }])
   })
 })

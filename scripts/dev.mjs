@@ -48,8 +48,9 @@ if (prodWorkers) {
 }
 const MAX_LOG_LINES = 5000
 const FRAME_MS = 100
-// Postgres, S3 and Mailpit, forwarded to the same ports on the remote host's 127.0.0.1.
-const TUNNEL_PORTS = [5432, 8333, 1025]
+// Postgres, S3 and Mailpit SMTP, forwarded to the same ports on the remote host's 127.0.0.1; with
+// the stack remote, also the Mailpit UI, which only listens there.
+const TUNNEL_PORTS = remoteMode === '--remote-stack' ? [5432, 8333, 1025, 8025] : [5432, 8333, 1025]
 const TUNNEL_TIMEOUT_MS = 30_000
 
 const PROD_WORKERS = [
@@ -122,7 +123,7 @@ const TUNNEL = {
     ...TUNNEL_PORTS.flatMap((port) => ['-L', `${port}:127.0.0.1:${port}`]),
     remoteHost,
   ],
-  readyDetail: `${remoteHost} · postgres :5432 · s3 :8333 · mailpit :1025`,
+  readyDetail: `${remoteHost} · postgres :5432 · s3 :8333 · mailpit :${remoteMode === '--remote-stack' ? 8025 : 1025}`,
 }
 
 function selectedServices() {

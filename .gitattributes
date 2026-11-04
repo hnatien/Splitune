@@ -1,0 +1,4 @@
+# Generated contracts: `pnpm contracts:check` byte-compares them with fresh LF output, so a CRLF
+# checkout (Windows core.autocrlf) must not rewrite them.
+packages/contracts/schema/** text eol=lf
+services/ml/packages/splitune_ml_core/src/splitune_ml_core/contracts/_generated.py text eol=lf

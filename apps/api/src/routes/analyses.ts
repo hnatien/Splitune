@@ -123,7 +123,7 @@ async function start(deps: ApiDeps, userId: string, options: StartOptions) {
       details: { reason: 'source_not_ready' },
     })
   }
-  const drums = await deps.flags.flag('v1.drums')
+  const flags = await deps.flags.all()
   const admission = await admitAnalysis(deps, userId, options.type, {
     charged: options.charged ?? true,
   })
@@ -154,7 +154,7 @@ async function start(deps: ApiDeps, userId: string, options: StartOptions) {
               : { rawKey: ready.rawKey },
           reuse,
           priority: admission.priority,
-          drums,
+          flags,
         }),
       admission.charge,
     ),

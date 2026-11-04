@@ -220,7 +220,7 @@ export const songs = {
         throw apiError('url_unsupported', { details: { reason: 'import_disabled' } })
       }
       if (!importable(input.url)) throw apiError('url_unsupported')
-      const drums = await deps.flags.flag('v1.drums')
+      const flags = await deps.flags.all()
       const admission = await admitAnalysis(deps, userId, input.type)
       const importId = randomUUID()
       const created = await reserving(admission, () =>
@@ -247,7 +247,7 @@ export const songs = {
               type: input.type,
               source: { download: { importId, video: input.download_video ?? true } },
               priority: admission.priority,
-              drums,
+              flags,
             }),
           admission.charge,
         ),

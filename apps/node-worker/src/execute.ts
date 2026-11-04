@@ -5,6 +5,7 @@ import {
   Chords,
   DrumNotes,
   Instrument,
+  instrumentProfile,
   Notes,
   StageRequest,
   Stems,
@@ -66,7 +67,6 @@ export class StageError extends Error {
 }
 
 const MAX_JSON_BYTES = 64 * 1024 * 1024
-const TAB_INSTRUMENTS = new Set(['guitar', 'bass'])
 
 const FinalizeParams = z.object({
   instruments: z.array(Instrument).min(1),
@@ -117,7 +117,7 @@ function checkRequest(request: Request, params: Params, analysis: queue.Analysis
   const expectedOutputs = new Set([
     'summary',
     ...params.instruments
-      .filter((i) => TAB_INSTRUMENTS.has(i))
+      .filter((i) => instrumentProfile(i).tab)
       .flatMap((i) => [`tab.${i}`, `render.${i}`]),
   ])
   const outputs = Object.keys(request.outputs)
@@ -190,12 +190,8 @@ async function loadInputs(services: Services, request: Request, params: Params) 
   if (stems !== undefined) result.stems = stems
   for (const instrument of params.instruments) {
     const kind = `notes.${instrument}`
-    if (instrument === 'drums') {
-      const drums = await readArtefact(storage, inputs[kind], DrumNotes, kind)
-      if (drums !== undefined) result.drums = drums
-      continue
-    }
-    const notes = await readArtefact(storage, inputs[kind], Notes, kind)
+    const schema = instrumentProfile(instrument).notes?.schema === 'hits' ? DrumNotes : Notes
+    const notes = await readArtefact(storage, inputs[kind], schema, kind)
     if (notes !== undefined) result.notes[instrument] = notes
   }
   return result

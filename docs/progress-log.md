@@ -1676,3 +1676,23 @@ Branch `impl/dev-remote-stack` from `dev`. The reverse of the entry above: Postg
 - `scripts/dev.mjs --stack-workers` (`pnpm dev:stack-workers`): stack (compose + migrations) and both workers, no web.
 - `scripts/dev.mjs --remote-stack <user@host>` (`pnpm dev:remote-stack`): the same SSH tunnel as `--remote-workers`, then web.
 - Docs: 25 §6, `CLAUDE.md`/`AGENTS.md` commands.
+
+## 2026-11-04 — Practice-screen fixes after the screen resolver
+Branch `claude/hungry-tu-0169b2` on `impl/arch-deepening` (`ea02d1c`). A review of `apps/web/app/features/practice/` found five behaviours no spec or story covered. Each was confirmed in Storybook; the owner chose the fixes (doc 12, "Implementation notes (practice-screen fixes)").
+- **Bass:** "Level and capo" with a capo icon over a popover with no capo field → "Level", no capo, like drums (`Screen.scoreTools.capo`, guitar only).
+- **Empty strip:** a 72 px empty strip on phones over a tab or drum hits without chords, and on every layout for vocals below the gate without chords → the strip renders only with content (`Screen.strip`).
+- **Piano without chords:** no strip, so Show hands was unreachable → a strip with Piano options holding only Show hands (`Screen.pianoOptions`).
+- **Piano levels:** PianoOptions listed its own `[as_transcribed, simplified]` → it reads piano's profile, simplest first (Simple (triads) / As played); doc 27 updated.
+- **Saved view:** Chords never cleared `forceTab`, so `view: 'tab'` was saved while Chords showed, and the saved view was never read back (only `?view=tab` worked) → Chords clears it, `savedView` saves `chords_only` / `tab`, `planResume` restores both and `?view=chords`.
+- **Chords-only without chords:** the banner said "showing chords" over the notes → the notation shows under `practice.notes_unsure`, no button.
+
+**Verification**
+- `pnpm --filter @splitune/web typecheck`: clean. `pnpm exec biome check apps/web/app/features/practice`: clean (2 pre-existing infos).
+- `pnpm --filter @splitune/web test`: 36 files, 214 tests pass (`screen.test.ts`, `resume.test.ts` updated). `pnpm --filter @splitune/web test:stories`: 68 files, 990 tests pass (Chromium and WebKit; the first run in a fresh worktree fails while Vite optimizes its dependencies, the rerun is clean).
+- `pnpm lint`: fails only on pre-existing issues (Biome on the HTML mockups in `docs/specs/assets/`, `check-ui-tokens` on `packages/notation/src/fretboard-diagram.tsx:64`); the changed files are clean.
+- New stories: ChordsTakesBackShowTab, ResumeOnChords, ResumeShowTabAnyway, TabWithoutChordsPhone (layout queries stubbed: the story runner has no touch emulation), BassLevel, PianoNotesWithoutChords, VocalMelodyWithoutChords; PianoOptions asserts the level order.
+
+**Not done**
+- Without chords there is no view switch, so piano's and drums' Staff and guitar/bass Notes can't be reached (found in passing, not changed).
+- Phones still never show Piano options (owner: phones stay as they are).
+

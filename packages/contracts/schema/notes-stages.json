@@ -1,0 +1,39 @@
+{
+  "guitar": {
+    "reads": [
+      "separation",
+      "stems"
+    ],
+    "schema": "notes"
+  },
+  "bass": {
+    "reads": [
+      "separation",
+      "stems"
+    ],
+    "schema": "notes"
+  },
+  "piano": {
+    "reads": [
+      "separation",
+      "stems"
+    ],
+    "schema": "notes"
+  },
+  "drums": {
+    "reads": [
+      "separation",
+      "stems",
+      "beats"
+    ],
+    "schema": "hits",
+    "flag": "v1.drums"
+  },
+  "vocals": {
+    "reads": [
+      "separation",
+      "stems"
+    ],
+    "schema": "notes"
+  }
+}
