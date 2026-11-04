@@ -10,6 +10,7 @@
       "**",
       "!**/.venv",
       "!**/.turbo",
+      "!docs/specs/assets",
       "!packages/contracts/schema",
       "!packages/music-core/golden",
       "!services/ml/config/calibration"

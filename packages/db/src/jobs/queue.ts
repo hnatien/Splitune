@@ -4,6 +4,7 @@ import { type JobRunner, jobs } from '../schema/index.ts'
 
 // Postgres job queue (25-personal-mode.md). The SQL here is the protocol the Python consumer
 // implements too (step 06); packages/db/README.md documents it statement by statement.
+// Executable spec for both adapters: packages/db/test/conformance/queue.json.
 
 export type Job = typeof jobs.$inferSelect
 

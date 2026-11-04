@@ -54,6 +54,8 @@ export type Patch = {
   notes?: unknown
   /** The learner plays left-handed (Settings → Profile). */
   leftHanded?: boolean
+  /** The view saved on the last visit (resume, 13 §5). */
+  savedView?: 'tab' | 'chords_only'
 }
 
 // A piano song on the same 8 bars (4/4, bar n from 0.5 + 2.4 n s): E♭ major as the chord model
@@ -442,6 +444,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
       ...detail(1, withArtefacts),
       ...(patch.video ? { source_kind: 'url' as const } : {}),
       ...(patch.instrument ? { instrument: patch.instrument } : {}),
+      ...(patch.savedView ? { player_state: { view: patch.savedView } } : {}),
       duration_s: 20.5,
       artefacts: entries,
     }

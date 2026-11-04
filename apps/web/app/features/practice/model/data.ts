@@ -3,6 +3,7 @@ import {
   Beats,
   Chords,
   DrumNotes,
+  instrumentProfile,
   Notes,
   Stems,
   Summary,
@@ -30,9 +31,6 @@ export function latestOf(entries: readonly Entry[], kind: string): Entry | undef
 }
 
 export class ArtefactUnreadable extends Error {}
-
-/** Instruments whose screen opens with their notes (no tab to wait for). */
-export const HOLDS_NOTES: readonly string[] = ['piano', 'drums']
 
 export function artefactDocQuery<S extends z.ZodType>(entry: Entry | undefined, schema: S) {
   return queryOptions({
@@ -77,6 +75,7 @@ export function usePracticeData(songId: string) {
   const live = useAnalysisEvents(analysisId, songId)
   const entries = analysis.data?.artefacts ?? song.data?.artefacts ?? []
   const instrument = song.data?.instrument ?? 'guitar'
+  const profile = instrumentProfile(instrument)
   const stemsEntry = latestOf(entries, 'stems')
   // Stems the sweeper removed after 180 days unused (15 §3): the song's own audio plays instead,
   // and the banner offers "Re-create stems".
@@ -95,12 +94,11 @@ export function usePracticeData(songId: string) {
   // Notes are read once the tab exists: the tab layer appears with finalize (27 §3.7.3). Piano,
   // vocals and drums have no tab: their notes appear with the summary.
   const notesReady =
-    entry.tab ??
-    (HOLDS_NOTES.includes(instrument) || instrument === 'vocals' ? entry.summary : undefined)
+    entry.tab ?? (profile.notes !== null && !profile.tab ? entry.summary : undefined)
   const notes = useQuery(
     artefactDocQuery(
       notesReady ? entry.notes : undefined,
-      instrument === 'drums' ? DrumNotes : Notes,
+      profile.notes?.schema === 'hits' ? DrumNotes : Notes,
     ),
   )
   const summary = useQuery(artefactDocQuery(entry.summary, Summary))
@@ -109,7 +107,7 @@ export function usePracticeData(songId: string) {
   // alone.
   const running = analysis.data?.status === 'queued' || analysis.data?.status === 'running'
   const awaitingNotes =
-    HOLDS_NOTES.includes(instrument) &&
+    profile.holdsForNotes &&
     analysis.data?.stages[`notes.${instrument}`] !== undefined &&
     (running || (notesReady !== undefined && entry.notes !== undefined && notes.isPending))
   const ops = {

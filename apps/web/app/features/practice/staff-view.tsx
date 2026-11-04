@@ -1,4 +1,3 @@
-import type { NoteMark } from '@splitune/notation'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
@@ -7,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { chordText } from '@/ui/chord-chip'
 import { barText } from './bar-text'
 import { barAt } from './model/grid'
-import { chordsInBar } from './model/view-model'
+import { chordsInBar, staffMarks } from './model/view-model'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 import { useScoreTheme } from './score-theme'
@@ -16,16 +15,19 @@ const AlphaTabView = lazy(() =>
   import('@splitune/notation/view').then((view) => ({ default: view.AlphaTabView })),
 )
 
-// Piano's Staff view (21 V4, ux/music-display-ui "upgrade path to staff notation"): the
-// transcribed notes on a grand staff, right hand on the treble staff and left on the bass, in the
-// song's key, drawn by the tab's alphaTab view so the cursor, current bar, loop shading, bar taps
-// and confidence marks behave the same. Loads on its own when shown, with alphaTab, outside the
-// route's JS budget (12 §10).
+// The Staff view, drawn by the tab's alphaTab view so the cursor, current bar, loop shading, bar
+// taps and confidence marks behave the same. Piano (21 V4, ux/music-display-ui "upgrade path to
+// staff notation"): the transcribed notes on a grand staff, right hand on the treble staff and left
+// on the bass, in the song's key. Drums (step 25): the hits of the chosen level on a drum staff
+// (hands stems up, feet stems down, flams as grace notes). Loads on its own when shown, with
+// alphaTab, outside the route's JS budget (12 §10).
 
-export function PianoStaff({
+export function StaffView({
+  kind,
   className,
   onBarActivate,
 }: {
+  kind: 'piano' | 'drums'
   className?: string | undefined
   onBarActivate: (bar: number) => void
 }) {
@@ -38,25 +40,21 @@ export function PianoStaff({
   const selection = usePracticeUi((s) => s.selection)
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const theme = useScoreTheme(host)
-  const piano = music?.piano
+  const piano = kind === 'piano' ? music?.piano : undefined
+  const score = kind === 'piano' ? piano : music?.drums
 
   const marks = useMemo(
-    () =>
-      new Map<string, NoteMark>(
-        (piano?.notes ?? []).map((n) => [
-          n.id,
-          n.residualFlagged ? { level: n.band, timingFlagged: true } : { level: n.band },
-        ]),
-      ),
-    [piano],
+    () => staffMarks(piano?.notes ?? music?.drums?.hits ?? []),
+    [piano, music?.drums],
   )
   const labels = useMemo(() => {
-    if (!grid || !view || !piano) return new Map<number, string>()
-    // Named in the song's key (E♭4, not D#4), as on the roll's keyboard and the chart.
+    if (!grid || !view) return new Map<number, string>()
+    // Named in the song's key (E♭4, not D#4), as on the roll's keyboard and the chart. Drum hits
+    // have no pitch to name.
     const spelled = (p: number) =>
       `${chordText(music?.noteNames[p % 12] ?? '')}${Math.floor(p / 12) - 1}`
     const notesByBar = new Map<number, string[]>()
-    for (const note of piano.notes) {
+    for (const note of piano?.notes ?? []) {
       const bar = barAt(grid, note.t0)
       notesByBar.set(bar, [...(notesByBar.get(bar) ?? []), spelled(note.pitch)])
     }
@@ -72,7 +70,7 @@ export function PianoStaff({
     )
   }, [grid, view, piano, music?.noteNames])
 
-  if (!piano || !grid || !theme) {
+  if (!score || !grid || !theme) {
     return (
       <div ref={setHost} className={cn('min-h-0 flex-1 bg-paper', className)} aria-busy="true" />
     )
@@ -80,14 +78,14 @@ export function PianoStaff({
   return (
     <div
       ref={setHost}
-      data-slot="piano-staff"
+      data-slot={kind === 'piano' ? 'piano-staff' : 'drum-staff'}
       className={cn('flex min-h-0 flex-1 flex-col', className)}
     >
       <Suspense fallback={<div className="min-h-0 flex-1 bg-paper" aria-busy="true" />}>
         <AlphaTabView
           className="min-h-0 flex-1 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter"
-          tex={piano.staff.alphaTex}
-          noteMap={piano.staff.noteMap}
+          tex={score.staff.alphaTex}
+          noteMap={score.staff.noteMap}
           marks={marks}
           times={grid.times}
           theme={theme}

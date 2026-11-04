@@ -3,20 +3,15 @@ import {
   type Chords,
   type DrumNotes,
   type Instrument,
+  instrumentProfile,
   type Notes,
   SCHEMA_VERSION,
   type Stems,
   type Summary,
   type Tab,
 } from '@splitune/contracts'
-import {
-  type BandThresholds,
-  buildTab,
-  confidenceBand,
-  DEFAULT_BANDS,
-  type FingeringMode,
-} from '@splitune/music-core'
-import { z } from 'zod'
+import { buildTab, confidenceBand, type FingeringMode, recordedBands } from '@splitune/music-core'
+import type { z } from 'zod'
 import { recommendView, type ViewsConfig } from './views.ts'
 
 // finalize (06 §2): notes + beats + chords → tab.* and render.* (music-core buildTab) and the
@@ -24,14 +19,16 @@ import { recommendView, type ViewsConfig } from './views.ts'
 
 type InstrumentName = z.infer<typeof Instrument>
 
+type Transcription = z.infer<typeof Notes> | z.infer<typeof DrumNotes>
+
 export interface FinalizeInputs {
   beats: z.infer<typeof Beats>
   chords?: z.infer<typeof Chords>
   stems?: z.infer<typeof Stems>
-  notes: Partial<Record<InstrumentName, z.infer<typeof Notes>>>
-  // notes.drums (step 25): hits, not notes. The web builds the drum score from it and the beats
-  // (music-core buildDrumScore), as it builds the piano roll, so finalize writes no render.
-  drums?: z.infer<typeof DrumNotes>
+  // DrumNotes for drums (step 25): hits, not notes. The web builds the drum score from them and
+  // the beats (music-core buildDrumScore), as it builds the piano roll, so finalize writes no
+  // render.
+  notes: Partial<Record<InstrumentName, Transcription>>
 }
 
 export interface FinalizeOptions {
@@ -48,23 +45,6 @@ export interface FinalizeResult {
   status: 'done' | 'partial'
 }
 
-// buildTab handles the fretted instruments only.
-const TAB_INSTRUMENTS: readonly InstrumentName[] = ['guitar', 'bass']
-
-// The notes stage records the calibration bands it used in params.calibration.bands.
-const RecordedBands = z.object({
-  calibration: z.object({
-    bands: z.object({ high: z.number().min(0).max(1), medium: z.number().min(0).max(1) }),
-  }),
-})
-
-type Transcription = z.infer<typeof Notes> | z.infer<typeof DrumNotes>
-
-export function bandsOf(notes: Transcription): BandThresholds {
-  const parsed = RecordedBands.safeParse(notes.params)
-  return parsed.success ? parsed.data.calibration.bands : DEFAULT_BANDS
-}
-
 // An empty transcription counts as all-low: there is nothing note-exact to show. Drum hits count
 // as notes.
 export function noteStats(notes: Transcription): {
@@ -73,7 +53,7 @@ export function noteStats(notes: Transcription): {
 } {
   const list: readonly { confidence: number }[] = 'hits' in notes ? notes.hits : notes.notes
   if (list.length === 0) return { noteConfidenceMean: 0, fractionLowConf: 1 }
-  const bands = bandsOf(notes)
+  const bands = recordedBands(notes)
   const mean = list.reduce((sum, n) => sum + n.confidence, 0) / list.length
   const low = list.filter((n) => confidenceBand(n.confidence, bands) === 'low').length
   return { noteConfidenceMean: round(mean), fractionLowConf: round(low / list.length) }
@@ -111,8 +91,8 @@ export function finalize(
 ): FinalizeResult {
   const tabs: FinalizeResult['tabs'] = []
   const perInstrument = options.instruments.map((instrument) => {
-    const notes = instrument === 'drums' ? inputs.drums : inputs.notes[instrument]
-    if (notes !== undefined && !('hits' in notes) && TAB_INSTRUMENTS.includes(instrument)) {
+    const notes = inputs.notes[instrument]
+    if (notes !== undefined && !('hits' in notes) && instrumentProfile(instrument).tab) {
       const lowBandEnergy = Object.fromEntries(
         notes.notes.flatMap((n) =>
           n.low_band_energy === undefined ? [] : [[n.id, n.low_band_energy]],
@@ -125,7 +105,7 @@ export function finalize(
         {
           ...(inputs.chords === undefined ? {} : { chords: inputs.chords }),
           fingeringMode: options.fingeringMode ?? 'easiest',
-          bands: bandsOf(notes),
+          bands: recordedBands(notes),
           ...(instrument === 'bass' ? { lowBandEnergy } : {}),
         },
       )
@@ -155,8 +135,6 @@ export function finalize(
     inputs.chords === undefined ||
     (options.profile !== 'lite' &&
       (inputs.stems === undefined ||
-        options.instruments.some(
-          (i) => (i === 'drums' ? inputs.drums : inputs.notes[i]) === undefined,
-        )))
+        options.instruments.some((i) => inputs.notes[i] === undefined)))
   return { tabs, summary, status: missing ? 'partial' : 'done' }
 }

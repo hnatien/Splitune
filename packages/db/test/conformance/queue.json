@@ -1,0 +1,507 @@
+{
+  "$comment": "Executable spec of the job queue protocol (packages/db/README.md, 'Job queue protocol'), run by packages/db/test/queue-conformance.test.ts and services/ml/packages/splitune_ml_core/tests/test_queue_conformance.py. Jobs are named by label ('as'); clock steps and expect_rows are plain SQL as the table owner.",
+  "constants": {
+    "backoff_base_s": 15,
+    "backoff_max_s": 900,
+    "stale_after_s": 120
+  },
+  "scenarios": [
+    {
+      "id": "claim_orders_by_priority_then_age",
+      "description": "Lower priority number first, then oldest; only the claiming runner's jobs; claim marks the job running, locked and attempted.",
+      "steps": [
+        { "op": "enqueue", "as": "late", "kind": "beats", "runner": "python", "priority": 100 },
+        { "op": "enqueue", "as": "urgent", "kind": "beats", "runner": "python", "priority": 10 },
+        { "op": "enqueue", "as": "later", "kind": "beats", "runner": "python", "priority": 100 },
+        { "op": "enqueue", "as": "finalize", "kind": "finalize", "runner": "node" },
+        {
+          "op": "expect_rows",
+          "rows": { "late": { "status": "queued", "attempts": 0, "locked_by": null } }
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "urgent" },
+        {
+          "op": "expect_rows",
+          "rows": { "urgent": { "status": "running", "attempts": 1, "locked_by": "w" } }
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "late" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "later" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": "finalize" }
+      ]
+    },
+    {
+      "id": "claim_filters_by_kinds",
+      "description": "A kinds filter restricts the claim; an empty filter claims nothing.",
+      "steps": [
+        { "op": "enqueue", "as": "decode", "kind": "decode", "runner": "python" },
+        { "op": "enqueue", "as": "chords", "kind": "chords", "runner": "python", "priority": 200 },
+        { "op": "claim", "runner": "python", "worker": "w", "kinds": [], "expect": null },
+        { "op": "claim", "runner": "python", "worker": "w", "kinds": ["beats"], "expect": null },
+        {
+          "op": "claim",
+          "runner": "python",
+          "worker": "w",
+          "kinds": ["chords", "beats"],
+          "expect": "chords"
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "decode" }
+      ]
+    },
+    {
+      "id": "claim_waits_for_run_after",
+      "description": "A job is not claimed before its run_after.",
+      "steps": [
+        { "op": "enqueue", "as": "deferred", "kind": "beats", "runner": "python" },
+        { "op": "enqueue", "as": "due", "kind": "beats", "runner": "python" },
+        { "op": "age", "job": "deferred", "column": "run_after", "seconds_ago": -60 },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "due" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null },
+        { "op": "make_due", "job": "deferred" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "deferred" }
+      ]
+    },
+    {
+      "id": "hard_dependencies_block_until_done",
+      "description": "A job runs only once every depends_on job is done, across runners.",
+      "steps": [
+        { "op": "enqueue", "as": "decode", "kind": "decode", "runner": "python" },
+        {
+          "op": "enqueue",
+          "as": "beats",
+          "kind": "beats",
+          "runner": "python",
+          "depends_on": ["decode"]
+        },
+        {
+          "op": "enqueue",
+          "as": "chords",
+          "kind": "chords",
+          "runner": "python",
+          "depends_on": ["decode"]
+        },
+        {
+          "op": "enqueue",
+          "as": "finalize",
+          "kind": "finalize",
+          "runner": "node",
+          "depends_on": ["beats", "chords"]
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "decode" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null },
+        { "op": "complete", "job": "decode", "worker": "w", "expect": true },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "beats" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "chords" },
+        { "op": "complete", "job": "beats", "worker": "w", "expect": true },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": null },
+        { "op": "complete", "job": "chords", "worker": "w", "expect": true },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": "finalize" }
+      ]
+    },
+    {
+      "id": "soft_dependency_failure_unblocks_without_cancelling",
+      "description": "A soft dependency must have finished, not succeeded: its permanent failure cancels nothing and unblocks the dependant.",
+      "steps": [
+        { "op": "enqueue", "as": "decode", "kind": "decode", "runner": "python" },
+        {
+          "op": "enqueue",
+          "as": "separate",
+          "kind": "separate",
+          "runner": "python",
+          "depends_on": ["decode"]
+        },
+        {
+          "op": "enqueue",
+          "as": "notes",
+          "kind": "notes.guitar",
+          "runner": "python",
+          "depends_on": ["decode"],
+          "soft_depends_on": ["separate"]
+        },
+        {
+          "op": "enqueue",
+          "as": "finalize",
+          "kind": "finalize",
+          "runner": "node",
+          "soft_depends_on": ["decode", "separate", "notes"]
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "decode" },
+        { "op": "complete", "job": "decode", "worker": "w", "expect": true },
+        {
+          "op": "claim",
+          "runner": "python",
+          "worker": "w",
+          "kinds": ["notes.guitar"],
+          "expect": null
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "separate" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null },
+        {
+          "op": "fail",
+          "job": "separate",
+          "worker": "w",
+          "code": "stems_unavailable",
+          "retry": false,
+          "expect": "failed"
+        },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "separate": { "status": "failed", "error_code": "stems_unavailable" },
+            "notes": { "status": "queued", "error_code": null },
+            "finalize": { "status": "queued", "error_code": null }
+          }
+        },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": null },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "notes" },
+        { "op": "complete", "job": "notes", "worker": "w", "expect": true },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": "finalize" }
+      ]
+    },
+    {
+      "id": "cancelled_soft_dependency_counts_as_finished",
+      "description": "A soft dependency cancelled by a failure upstream unblocks its dependant.",
+      "steps": [
+        { "op": "enqueue", "as": "decode", "kind": "decode", "runner": "python" },
+        {
+          "op": "enqueue",
+          "as": "beats",
+          "kind": "beats",
+          "runner": "python",
+          "depends_on": ["decode"]
+        },
+        {
+          "op": "enqueue",
+          "as": "finalize",
+          "kind": "finalize",
+          "runner": "node",
+          "soft_depends_on": ["decode", "beats"]
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "decode" },
+        {
+          "op": "fail",
+          "job": "decode",
+          "worker": "w",
+          "code": "unsupported_media",
+          "retry": false,
+          "expect": "failed"
+        },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "beats": { "status": "cancelled", "error_code": "dependency_failed" },
+            "finalize": { "status": "queued", "error_code": null }
+          }
+        },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": "finalize" }
+      ]
+    },
+    {
+      "id": "heartbeat_complete_and_fail_need_the_lock",
+      "description": "Only the worker holding the lock can heartbeat, complete or fail a running job; a done job keeps locked_by.",
+      "steps": [
+        { "op": "enqueue", "as": "job", "kind": "beats", "runner": "python" },
+        { "op": "claim", "runner": "python", "worker": "mac-1", "expect": "job" },
+        { "op": "heartbeat", "job": "job", "worker": "mac-2", "expect": false },
+        { "op": "complete", "job": "job", "worker": "mac-2", "expect": false },
+        { "op": "fail", "job": "job", "worker": "mac-2", "code": "model_oom", "expect": null },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "job": { "status": "running", "attempts": 1, "error_code": null, "locked_by": "mac-1" }
+          }
+        },
+        { "op": "heartbeat", "job": "job", "worker": "mac-1", "expect": true },
+        { "op": "complete", "job": "job", "worker": "mac-1", "expect": true },
+        { "op": "complete", "job": "job", "worker": "mac-1", "expect": false },
+        { "op": "heartbeat", "job": "job", "worker": "mac-1", "expect": false },
+        { "op": "fail", "job": "job", "worker": "mac-1", "code": "model_oom", "expect": null },
+        { "op": "expect_rows", "rows": { "job": { "status": "done", "locked_by": "mac-1" } } }
+      ]
+    },
+    {
+      "id": "fail_retries_with_capped_exponential_backoff",
+      "description": "Backoff after attempt n is min(15 s * 2^(n-1), 900 s) of database time; the last attempt fails and keeps run_after.",
+      "steps": [
+        { "op": "enqueue", "as": "job", "kind": "separate", "runner": "python", "max_attempts": 8 },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "job": {
+              "status": "queued",
+              "attempts": 1,
+              "error_code": "model_oom",
+              "locked_by": null,
+              "run_after_in_s": [13, 15]
+            }
+          }
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        {
+          "op": "expect_rows",
+          "rows": { "job": { "status": "running", "attempts": 2, "error_code": null } }
+        },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        { "op": "expect_rows", "rows": { "job": { "attempts": 2, "run_after_in_s": [28, 30] } } },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        { "op": "expect_rows", "rows": { "job": { "attempts": 3, "run_after_in_s": [58, 60] } } },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        {
+          "op": "expect_rows",
+          "rows": { "job": { "attempts": 4, "run_after_in_s": [118, 120] } }
+        },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        {
+          "op": "expect_rows",
+          "rows": { "job": { "attempts": 5, "run_after_in_s": [238, 240] } }
+        },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        {
+          "op": "expect_rows",
+          "rows": { "job": { "attempts": 6, "run_after_in_s": [478, 480] } }
+        },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "queued" },
+        {
+          "op": "expect_rows",
+          "rows": { "job": { "attempts": 7, "run_after_in_s": [898, 900] } }
+        },
+        { "op": "make_due", "job": "job" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "fail", "job": "job", "worker": "w", "code": "model_oom", "expect": "failed" },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "job": {
+              "status": "failed",
+              "attempts": 8,
+              "error_code": "model_oom",
+              "locked_by": null,
+              "run_after_in_s": [-5, 0]
+            }
+          }
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null }
+      ]
+    },
+    {
+      "id": "exhausted_retries_fail_and_cancel_hard_dependants",
+      "description": "With the default max_attempts (3) the third failure is permanent and cancels every queued job that transitively depends_on it; soft dependants and unrelated jobs stay queued.",
+      "steps": [
+        { "op": "enqueue", "as": "separate", "kind": "separate", "runner": "python" },
+        {
+          "op": "enqueue",
+          "as": "notes",
+          "kind": "notes.guitar",
+          "runner": "python",
+          "depends_on": ["separate"]
+        },
+        {
+          "op": "enqueue",
+          "as": "finalize",
+          "kind": "finalize",
+          "runner": "node",
+          "depends_on": ["notes"]
+        },
+        {
+          "op": "enqueue",
+          "as": "report",
+          "kind": "finalize",
+          "runner": "node",
+          "soft_depends_on": ["separate"]
+        },
+        { "op": "enqueue", "as": "unrelated", "kind": "beats", "runner": "python" },
+        {
+          "op": "claim",
+          "runner": "python",
+          "worker": "w",
+          "kinds": ["separate"],
+          "expect": "separate"
+        },
+        { "op": "fail", "job": "separate", "worker": "w", "code": "model_oom", "expect": "queued" },
+        { "op": "make_due", "job": "separate" },
+        {
+          "op": "claim",
+          "runner": "python",
+          "worker": "w",
+          "kinds": ["separate"],
+          "expect": "separate"
+        },
+        { "op": "fail", "job": "separate", "worker": "w", "code": "model_oom", "expect": "queued" },
+        { "op": "expect_rows", "rows": { "notes": { "status": "queued" } } },
+        { "op": "make_due", "job": "separate" },
+        {
+          "op": "claim",
+          "runner": "python",
+          "worker": "w",
+          "kinds": ["separate"],
+          "expect": "separate"
+        },
+        { "op": "fail", "job": "separate", "worker": "w", "code": "model_oom", "expect": "failed" },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "separate": {
+              "status": "failed",
+              "attempts": 3,
+              "error_code": "model_oom",
+              "locked_by": null
+            },
+            "notes": { "status": "cancelled", "error_code": "dependency_failed" },
+            "finalize": { "status": "cancelled", "error_code": "dependency_failed" },
+            "report": { "status": "queued", "error_code": null },
+            "unrelated": { "status": "queued", "error_code": null }
+          }
+        },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": "report" }
+      ]
+    },
+    {
+      "id": "fail_without_retry_is_permanent",
+      "description": "retry = false fails at once on the first attempt, cancels hard dependants and releases the lock.",
+      "steps": [
+        { "op": "enqueue", "as": "decode", "kind": "decode", "runner": "python" },
+        {
+          "op": "enqueue",
+          "as": "beats",
+          "kind": "beats",
+          "runner": "python",
+          "depends_on": ["decode"]
+        },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "decode" },
+        {
+          "op": "fail",
+          "job": "decode",
+          "worker": "w",
+          "code": "invalid_audio",
+          "retry": false,
+          "expect": "failed"
+        },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "decode": {
+              "status": "failed",
+              "attempts": 1,
+              "error_code": "invalid_audio",
+              "locked_by": null
+            },
+            "beats": { "status": "cancelled", "error_code": "dependency_failed" }
+          }
+        },
+        { "op": "fail", "job": "decode", "worker": "w", "code": "invalid_audio", "expect": null },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": null }
+      ]
+    },
+    {
+      "id": "requeue_stale_requeues_or_fails_abandoned_jobs",
+      "description": "Running jobs without a heartbeat for stale_after_s are re-queued (lock_expired, due now) while attempts remain, else failed with their hard dependants cancelled; the crashed worker has lost its lock.",
+      "steps": [
+        { "op": "enqueue", "as": "alive", "kind": "decode", "runner": "python" },
+        { "op": "enqueue", "as": "stale", "kind": "decode", "runner": "python" },
+        {
+          "op": "enqueue",
+          "as": "exhausted",
+          "kind": "decode",
+          "runner": "python",
+          "max_attempts": 1
+        },
+        {
+          "op": "enqueue",
+          "as": "child",
+          "kind": "beats",
+          "runner": "python",
+          "depends_on": ["exhausted"]
+        },
+        { "op": "claim", "runner": "python", "worker": "alive", "expect": "alive" },
+        { "op": "claim", "runner": "python", "worker": "crashed", "expect": "stale" },
+        { "op": "claim", "runner": "python", "worker": "crashed", "expect": "exhausted" },
+        { "op": "age", "job": "alive", "column": "heartbeat_at", "seconds_ago": 30 },
+        { "op": "age", "job": "stale", "column": "heartbeat_at", "seconds_ago": 300 },
+        { "op": "age", "job": "exhausted", "column": "heartbeat_at", "seconds_ago": 300 },
+        { "op": "requeue_stale", "expect": { "requeued": ["stale"], "failed": ["exhausted"] } },
+        {
+          "op": "expect_rows",
+          "rows": {
+            "alive": { "status": "running", "error_code": null, "locked_by": "alive" },
+            "stale": {
+              "status": "queued",
+              "attempts": 1,
+              "error_code": "lock_expired",
+              "locked_by": null,
+              "run_after_in_s": [-2, 0]
+            },
+            "exhausted": {
+              "status": "failed",
+              "attempts": 1,
+              "error_code": "lock_expired",
+              "locked_by": null
+            },
+            "child": { "status": "cancelled", "error_code": "dependency_failed" }
+          }
+        },
+        { "op": "heartbeat", "job": "stale", "worker": "crashed", "expect": false },
+        { "op": "complete", "job": "stale", "worker": "crashed", "expect": false },
+        { "op": "requeue_stale", "expect": { "requeued": [], "failed": [] } },
+        { "op": "claim", "runner": "python", "worker": "alive", "expect": "stale" },
+        {
+          "op": "expect_rows",
+          "rows": { "stale": { "status": "running", "attempts": 2, "error_code": null } }
+        }
+      ]
+    },
+    {
+      "id": "requeue_stale_honours_a_custom_window",
+      "description": "stale_after_s overrides the default window.",
+      "steps": [
+        { "op": "enqueue", "as": "job", "kind": "beats", "runner": "python" },
+        { "op": "claim", "runner": "python", "worker": "w", "expect": "job" },
+        { "op": "age", "job": "job", "column": "heartbeat_at", "seconds_ago": 30 },
+        { "op": "requeue_stale", "expect": { "requeued": [], "failed": [] } },
+        {
+          "op": "requeue_stale",
+          "stale_after_s": 10,
+          "expect": { "requeued": ["job"], "failed": [] }
+        },
+        {
+          "op": "expect_rows",
+          "rows": { "job": { "status": "queued", "error_code": "lock_expired" } }
+        }
+      ]
+    },
+    {
+      "id": "enqueue_rejects_unknown_dependencies",
+      "description": "Every id in depends_on and soft_depends_on must exist.",
+      "steps": [
+        { "op": "enqueue", "as": "decode", "kind": "decode", "runner": "python" },
+        {
+          "op": "enqueue_error",
+          "kind": "finalize",
+          "runner": "node",
+          "depends_on": ["decode"],
+          "unknown_in": "depends_on"
+        },
+        {
+          "op": "enqueue_error",
+          "kind": "finalize",
+          "runner": "node",
+          "soft_depends_on": ["decode"],
+          "unknown_in": "soft_depends_on"
+        },
+        { "op": "claim", "runner": "node", "worker": "n", "expect": null }
+      ]
+    }
+  ]
+}

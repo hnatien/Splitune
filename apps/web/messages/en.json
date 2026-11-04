@@ -589,6 +589,7 @@
   "practice.not_yet": "Not yet",
   "practice.notation": "Tab",
   "practice.notes_now": "{bar}: {chord}; {notes}",
+  "practice.notes_unsure": "We're not confident in the notes for this song.",
   "practice.now_bar": "Now · bar {bar}",
   "practice.nudge_earlier": "{edge} earlier",
   "practice.nudge_end": "Loop end",

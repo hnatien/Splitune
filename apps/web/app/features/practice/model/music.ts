@@ -1,3 +1,4 @@
+import { instrumentProfile, type PracticeLevel } from '@splitune/contracts'
 import {
   applyBeatCorrections,
   applyChordCorrections,
@@ -11,7 +12,6 @@ import {
   type ChordSegment,
   type Chords,
   type CorrectionOp,
-  DEFAULT_BANDS,
   type DrumLevel,
   type DrumNotes,
   type DrumScoreHit,
@@ -21,12 +21,12 @@ import {
   type Notes,
   type PianoNote,
   type PianoScore,
+  recordedBands,
   simplifyChords,
   type TabLevel,
 } from '@splitune/music-core'
 import type { NoteRef } from '@splitune/notation'
-import { z } from 'zod'
-import { defaultLevel, levelsFor, type PracticeLevel } from './levels'
+import type { z } from 'zod'
 
 // The effective music of a song (12 §4, 07): artefacts ⊕ corrections, then music-core's tab (or,
 // for piano, the hand-split notes of the roll; for vocals, the melody and its phrases; for drums,
@@ -38,7 +38,7 @@ export type Fingering = 'easiest' | 'as_played'
 
 export interface MusicOptions {
   capo: number
-  level: PracticeLevel
+  level: z.infer<typeof PracticeLevel>
   fingeringMode: Fingering
 }
 
@@ -99,30 +99,15 @@ export interface MusicOutput {
 const namesFor = (chords: Chords | undefined) =>
   keyNoteNames(chords?.key ?? { tonic: 'C', mode: 'major' })
 
-// The notes stage records the calibration bands it used (as finalize reads them, 08).
-const RecordedBands = z.object({
-  calibration: z.object({
-    bands: z.object({ high: z.number().min(0).max(1), medium: z.number().min(0).max(1) }),
-  }),
-})
-
-function bandsOf(notes: Notes | DrumNotes | undefined): BandThresholds {
-  const parsed = RecordedBands.safeParse(notes?.params)
-  return parsed.success ? parsed.data.calibration.bands : DEFAULT_BANDS
-}
-
-const DRUM_LEVELS: readonly PracticeLevel[] = levelsFor('drums')
-
 export function computeMusic(input: MusicInput): MusicOutput {
-  const bands = bandsOf(input.notes)
+  const bands = recordedBands(input.notes)
   if (input.notes && 'hits' in input.notes) return drumMusic(input, input.notes, bands)
   const notes = input.notes
   const instrument = notes?.instrument
   if (notes && (instrument === 'guitar' || instrument === 'bass')) {
+    const { levels, defaultLevel } = instrumentProfile(instrument)
     const level = (
-      levelsFor(instrument).includes(input.options.level)
-        ? input.options.level
-        : defaultLevel(instrument)
+      levels.includes(input.options.level) ? input.options.level : defaultLevel
     ) as TabLevel
     const built = buildTab(
       notes,
@@ -217,8 +202,9 @@ export function computeMusic(input: MusicInput): MusicOutput {
 // Drums: the hits at the chosen level and their staff. The level changes the hits only; the chords
 // stay as detected.
 function drumMusic(input: MusicInput, drums: DrumNotes, bands: BandThresholds): MusicOutput {
+  const { levels, defaultLevel } = instrumentProfile('drums')
   const level = (
-    DRUM_LEVELS.includes(input.options.level) ? input.options.level : defaultLevel('drums')
+    levels.includes(input.options.level) ? input.options.level : defaultLevel
   ) as DrumLevel
   const score = buildDrumScore(drums, input.beats, { beats: input.ops.beats }, { bands, level })
   const chords = input.chords && applyChordCorrections(input.chords, input.ops.chords).value

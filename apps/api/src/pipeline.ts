@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto'
-import type { AnalysisType, Instrument, JobEvent } from '@splitune/contracts'
+import {
+  type AnalysisType,
+  type FlagKey,
+  instrumentProfile,
+  type JobEvent,
+} from '@splitune/contracts'
 import type { Analysis, AnalysisPlan, PlannedJob, ReusableStages } from '@splitune/db'
 import { artefactKey, rawUploadKey, rawVideoKey, renderKey } from '@splitune/storage'
 import type { z } from 'zod'
@@ -12,22 +17,9 @@ import type { z } from 'zod'
 //   full: [url_import →] decode → {beats, tag} → separate → stem_post → {chords, notes.<i>} → finalize
 //   lite: [url_import →] decode → beats → chords (mixture) → finalize
 
-type InstrumentName = z.infer<typeof Instrument>
 type Event = z.infer<typeof JobEvent>
 
 export const CONFIG_PROFILE = 'personal'
-
-// Instruments with a notes stage in services/ml (`stages.py`); the others get a chords-only
-// summary. Drums only while `v1.drums` is on (step 25).
-const NOTES_INSTRUMENTS: ReadonlySet<InstrumentName> = new Set([
-  'guitar',
-  'bass',
-  'piano',
-  'vocals',
-  'drums',
-])
-// finalize writes tab + alphaTex for fretted instruments (music-core buildTab).
-const TAB_INSTRUMENTS: ReadonlySet<InstrumentName> = new Set(['guitar', 'bass'])
 
 export interface DownloadRequest {
   importId: string
@@ -43,8 +35,9 @@ export interface PlanOptions {
   // decode and beats of an earlier analysis of the song, reused instead of run again.
   reuse?: ReusableStages | undefined
   priority: number
-  // `v1.drums`: plan notes.drums for a drums analysis.
-  drums?: boolean
+  // Flag values: an instrument whose notes stage names a flag (drums: `v1.drums`) gets it only
+  // while that flag is on.
+  flags?: Partial<Record<FlagKey, boolean>>
 }
 
 const at = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
@@ -61,10 +54,16 @@ export function planAnalysis({
   source,
   reuse,
   priority,
-  drums = false,
+  flags = {},
 }: PlanOptions): AnalysisPlan {
   const { id: analysisId, version } = analysis
   const instrument = analysis.requestedInstrument
+  // The instrument's notes stage in services/ml; without one it gets a chords-only summary.
+  const profile = instrumentProfile(instrument)
+  const notesStage =
+    profile.notes !== null && (profile.notes.flag === undefined || flags[profile.notes.flag])
+      ? profile.notes
+      : undefined
   const key = (file: string) => artefactKey(userId, analysisId, version, file)
   const jobs: PlannedJob[] = []
   const add = (
@@ -156,13 +155,13 @@ export function planAnalysis({
       { hard: ['decode', 'beats'], soft: ['stem_post'] },
     )
     finalizeInputs.set('stems', stems)
-    if (NOTES_INSTRUMENTS.has(instrument) && (instrument !== 'drums' || drums)) {
+    if (notesStage !== undefined) {
       const notes = key(`notes.${instrument}.json`)
-      // Drums also read the downbeats for the crash/ride default (stage_notes.drum_kit).
-      const withBeats = instrument === 'drums'
+      const reads = { separation, stems, beats }
+      const withBeats = notesStage.reads.includes('beats')
       add(
         `notes.${instrument}`,
-        { ...audio, separation, stems, ...(withBeats ? { beats } : {}) },
+        { ...audio, ...Object.fromEntries(notesStage.reads.map((r) => [r, reads[r]])) },
         { notes },
         { hard: ['decode'], soft: withBeats ? ['stem_post', 'beats'] : ['stem_post'] },
       )
@@ -177,7 +176,7 @@ export function planAnalysis({
     Object.fromEntries(finalizeInputs),
     {
       summary: key('summary.json'),
-      ...(TAB_INSTRUMENTS.has(instrument)
+      ...(profile.tab
         ? {
             [`tab.${instrument}`]: key(`tab.${instrument}.json`),
             [`render.${instrument}`]: renderKey(userId, analysisId, version, instrument),

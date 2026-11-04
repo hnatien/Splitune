@@ -57,11 +57,14 @@ const RING: Keyframe[] = [
 
 // A small ring that grows and fades once when mounted (240 ms), the landing acknowledgement: well
 // under 20 mm and a small luminance change (26 §10). Web Animations start on mount, where SMIL
-// would start at the document's time zero.
+// would start at the document's time zero; they can't take var(), so --ease-enter is read here.
 function Ring({ r, color }: { r: number; color: string }) {
   const ring = useRef<SVGCircleElement>(null)
   useEffect(() => {
-    ring.current?.animate(RING, { duration: 240, easing: 'ease-out', fill: 'forwards' })
+    const circle = ring.current
+    if (!circle) return
+    const easing = getComputedStyle(circle).getPropertyValue('--ease-enter').trim()
+    circle.animate(RING, { duration: 240, easing, fill: 'forwards' })
   }, [])
   return (
     <circle

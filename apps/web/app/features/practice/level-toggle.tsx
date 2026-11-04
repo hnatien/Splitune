@@ -1,15 +1,14 @@
+import { instrumentProfile } from '@splitune/contracts'
 import { m } from '@/lib/i18n'
 import { track } from '@/lib/track'
 import { CapoIcon } from '@/ui/icons'
 import { NumberField } from '@/ui/number-field'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
-import { levelsFor } from './model/levels'
 import { usePractice } from './practice-context'
 
 // LevelToggle (12 §2, 07 §6): the M11 levels of the learner's instrument (guitar: chords only,
 // simplified, as transcribed; bass: roots, full; drums: core groove, simplified, as transcribed)
-// and the capo. Either recomputes the tab in the
-// Worker (≤ 300 ms with the render, 12 §10).
+// and guitar's capo. Either recomputes the tab in the Worker (≤ 300 ms with the render, 12 §10).
 
 const LEVEL_LABEL: Record<string, () => string> = {
   chords_only: () => m['practice.level_chords'](),
@@ -23,7 +22,7 @@ const LEVEL_LABEL: Record<string, () => string> = {
 /** The level's name as the toggle shows it ("As played"). */
 export const levelLabel = (level: string) => LEVEL_LABEL[level]?.() ?? ''
 
-export function LevelToggle({ capo = true }: { capo?: boolean }) {
+export function LevelToggle({ capo }: { capo: boolean }) {
   const { options, setOptions, data, layers } = usePractice()
   if (!layers.tab && !layers.drums) return null
   const instrument = data.instrument
@@ -40,13 +39,13 @@ export function LevelToggle({ capo = true }: { capo?: boolean }) {
           track('level_changed', { level: level as typeof options.level })
         }}
       >
-        {levelsFor(instrument).map((level) => (
+        {instrumentProfile(instrument).levels.map((level) => (
           <ToggleGroupItem key={level} value={level}>
             {levelLabel(level)}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      {capo && instrument === 'guitar' && (
+      {capo && (
         <div className="flex items-center gap-2">
           <CapoIcon aria-hidden className="size-6" />
           <NumberField

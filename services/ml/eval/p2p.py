@@ -1541,13 +1541,14 @@ def kong_model() -> Any:
     """Kong et al.'s note model with Edwards et al.'s augmentation-trained weights (Zenodo
     10610212, CC-BY-4.0; note only, no pedal head), in piano_transcription_inference's own
     transcriber. Built directly: its constructor re-downloads checkpoints under 160 MB and loads
-    weights non-strictly."""
+    weights non-strictly. The package has no licence, so it isn't a workspace dependency: install
+    it by hand to run `kong`."""
     import torch
-    from piano_transcription_inference import (  # pyright: ignore[reportMissingTypeStubs]
+    from piano_transcription_inference import (  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
         PianoTranscription,
         config,
     )
-    from piano_transcription_inference.models import (  # pyright: ignore[reportMissingTypeStubs]
+    from piano_transcription_inference.models import (  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
         Regress_onset_offset_frame_velocity_CRNN,
     )
 
