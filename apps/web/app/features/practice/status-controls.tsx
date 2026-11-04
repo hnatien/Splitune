@@ -6,7 +6,8 @@ import { ConfidenceLegendPopover } from '@/ui/confidence-legend'
 import { Toggle } from '@/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import type { PracticeLayout } from './layout'
-import { useShownView } from './notation-pane'
+import type { Screen, ViewLabel } from './model/screen'
+import { useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 import { useVideoUrl } from './video-url'
@@ -15,14 +16,18 @@ import { useVideoUrl } from './video-url'
 // (its legend and "Show uncertainty" in a popover, 26 §5), the Tab / Chords view, and the video
 // toggle when the import has one.
 export function StatusControls({ layout }: { layout: PracticeLayout }) {
-  const { layers } = usePractice()
+  const screen = useScreen(layout)
   const video = useVideoUrl()
   const videoOpen = usePracticeUi((s) => s.videoOpen)
   return (
     <>
-      {(layers.chords || layers.tab || layers.roll || layers.melody || layers.drums) && <Legend />}
-      {layers.chords && (layers.tab || layers.roll || layers.melody || layers.drums) && (
-        <ViewSwitch layout={layout} />
+      {screen.legend && <Legend />}
+      {screen.viewSwitch && (
+        <ViewSwitch
+          viewSwitch={screen.viewSwitch}
+          notationEvent={screen.notationEvent}
+          layout={layout}
+        />
       )}
       {video.data && (
         <Toggle
@@ -71,55 +76,45 @@ function Legend() {
 // portrait); piano's Chart / Notes / Staff (the chord chart, the falling notes, the grand staff);
 // drums' Grid / Staff / Chords; vocals' Melody / Chords.
 // Choosing a notation over a chords-only recommendation is the banner's "Show tab anyway".
-function ViewSwitch({ layout }: { layout: PracticeLayout }) {
-  const shown = useShownView(layout)
-  const chosen = usePracticeUi((s) => s.view)
-  const { layers } = usePractice()
-  const piano = layers.roll
-  // The second notation chosen over the first: piano's and drums' Staff, guitar's Notes.
-  const other =
-    piano || layers.drums ? chosen === 'staff' && 'staff' : chosen === 'notes' && 'notes'
-  const item = (value: string, label: string) => (
-    <ToggleGroupItem key={value} value={value} className="px-4 text-sm">
-      {label}
-    </ToggleGroupItem>
-  )
+function ViewSwitch({
+  viewSwitch,
+  notationEvent,
+  layout,
+}: {
+  viewSwitch: NonNullable<Screen['viewSwitch']>
+  notationEvent: Screen['notationEvent']
+  layout: PracticeLayout
+}) {
   return (
     <ToggleGroup
       aria-label={m['practice.view']()}
-      value={[shown === 'tab' && other ? other : shown]}
+      value={[viewSwitch.selected]}
       onValueChange={(next) => {
         const view = next[0]
         if (view === 'tab' || view === 'staff' || view === 'notes') {
           usePracticeUi.setState({ view, forceTab: true })
-          track('view_changed', {
-            view: view === 'tab' && (piano || layers.melody || layers.drums) ? 'notes' : view,
-          })
+          track('view_changed', { view: view === 'tab' ? notationEvent : view })
         } else if (view === 'chords') {
           usePracticeUi.setState({ view: 'chords' })
           track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
         }
       }}
     >
-      {layers.melody
-        ? [item('tab', m['practice.view_melody']()), item('chords', m['practice.view_chords']())]
-        : layers.drums
-          ? [
-              item('tab', m['practice.view_grid']()),
-              item('staff', m['practice.view_staff']()),
-              item('chords', m['practice.view_chords']()),
-            ]
-          : piano
-            ? [
-                item('chords', m['practice.view_chart']()),
-                item('tab', m['practice.view_notes']()),
-                item('staff', m['practice.view_staff']()),
-              ]
-            : [
-                item('tab', m['practice.view_tab']()),
-                ...(layers.tab ? [item('notes', m['practice.view_notes']())] : []),
-                item('chords', m['practice.view_chords']()),
-              ]}
+      {viewSwitch.items.map(({ value, label }) => (
+        <ToggleGroupItem key={value} value={value} className="px-4 text-sm">
+          {VIEW_LABEL[label]()}
+        </ToggleGroupItem>
+      ))}
     </ToggleGroup>
   )
+}
+
+const VIEW_LABEL: Record<ViewLabel, () => string> = {
+  tab: () => m['practice.view_tab'](),
+  notes: () => m['practice.view_notes'](),
+  staff: () => m['practice.view_staff'](),
+  chords: () => m['practice.view_chords'](),
+  chart: () => m['practice.view_chart'](),
+  grid: () => m['practice.view_grid'](),
+  melody: () => m['practice.view_melody'](),
 }

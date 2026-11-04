@@ -1,4 +1,4 @@
-import type { LoopClip } from '@splitune/contracts'
+import { instrumentProfile, type LoopClip } from '@splitune/contracts'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActorRef, useSelector } from '@xstate/react'
 import type * as React from 'react'
@@ -12,6 +12,7 @@ import { m } from '@/lib/i18n'
 import { track, trackCorrection } from '@/lib/track'
 import { toast } from '@/ui/toast'
 import { localFile } from '../import/local-files'
+import { audioSourceKey } from './model/audio-source'
 import {
   applyCorrection,
   configureCorrections,
@@ -30,8 +31,7 @@ import {
 } from './model/data'
 import type { Edit } from './model/edits'
 import { type PracticeGrid, practiceGrid } from './model/grid'
-import { defaultLevel, levelsFor } from './model/levels'
-import { barRange, clipBeats, type LoopRange, restSeconds, tapBar } from './model/loops'
+import { clipBeats, type LoopRange, restSeconds, tapBar } from './model/loops'
 import {
   type Mix,
   type MixChannel,
@@ -41,7 +41,6 @@ import {
   resolveMix,
 } from './model/mixer'
 import type { MusicInput, MusicOptions, MusicOutput } from './model/music'
-import { cuePhrase, loopedPhrase, phraseAtTime, phraseEntry, phraseLoop } from './model/phrases'
 import { type PlayerContext, type PlayerState, playerMachine } from './model/player-machine'
 import { createResumeWriter, type ResumeState } from './model/player-state'
 import { type AudioInput, type Lane, PracticeAudio } from './model/practice-audio'
@@ -53,8 +52,11 @@ import {
   recordAttempt,
   startSession,
 } from './model/practice-sync'
+import { type PracticeSearch, planResume } from './model/resume'
+import type { Layers } from './model/screen'
+import { createTransport, type Hud } from './model/transport'
 import { type MusicState, useMusic } from './model/use-music'
-import { buildViewModel, spelledNote, type ViewModel } from './model/view-model'
+import { buildViewModel, type ViewModel } from './model/view-model'
 import { INITIAL_UI, showHud, usePracticeUi } from './practice-store'
 
 // PracticeProvider (12 §2): the player machine, the audio adapter, the effective music from the
@@ -63,29 +65,9 @@ import { INITIAL_UI, showHud, usePracticeUi } from './practice-store'
 
 type Clip = z.infer<typeof LoopClip>
 
-export interface PracticeSearch {
-  view?: 'tab' | 'chords' | undefined
-  loop?: string | undefined
-  speed?: number | undefined
-  mix?: 'your-part' | 'minus-one' | 'original' | undefined
-  /** The level toggle's start (07 §6); ignored if the song's instrument has no such level. */
-  level?: MusicOptions['level'] | undefined
-}
+export type { PracticeSearch } from './model/resume'
 
 export type AudioStatus = 'none' | 'loading' | 'ready' | 'failed'
-
-export interface Layers {
-  beats: boolean
-  stems: boolean
-  chords: boolean
-  tab: boolean
-  /** Piano's falling notes (its notation layer: piano has no tab). */
-  roll: boolean
-  /** The vocal melody and its phrases (vocals' notation layer, step 18c). */
-  melody: boolean
-  /** Drum hits: the drum grid and staff (drums' notation layer, step 25). */
-  drums: boolean
-}
 
 export interface PracticeValue {
   songId: string
@@ -143,17 +125,23 @@ export function usePractice(): PracticeValue {
 
 const BUSY: PlayerState[] = ['countIn', 'playing', 'loopRest', 'assess', 'audition']
 
-function parseLoopParam(param: string | undefined, grid: PracticeGrid): LoopRange | null {
-  const match = param?.match(/^(\d+)-(\d+)$/)
-  if (!match) return null
-  // URL bars are 1-based (27 §5.3).
-  return barRange(grid, Number(match[1]) - 1, Number(match[2]) - 1)
-}
-
-const PRESET_PARAM: Record<NonNullable<PracticeSearch['mix']>, MixPreset> = {
-  'your-part': 'part-loud',
-  'minus-one': 'minus-one',
-  original: 'original',
+function hudText(hud: Hud): string {
+  switch (hud.kind) {
+    case 'bar':
+      return m['practice.hud_bar']({ bar: String(hud.bar) })
+    case 'restart':
+      return m['practice.hud_restart']()
+    case 'phrase':
+      return m['practice.hud_phrase']({ n: String(hud.phrase) })
+    case 'no-phrases':
+      return m['practice.hud_no_phrases']()
+    case 'loop':
+      return m['practice.hud_loop']({ bars: `${hud.range.startBar + 1}–${hud.range.endBar + 1}` })
+    case 'loop-off':
+      return m['practice.hud_loop_off']()
+    case 'note':
+      return hud.name
+  }
 }
 
 /** Where audio bytes come from: a stem's file, this page's own file or the song's audio. */
@@ -202,7 +190,7 @@ export function PracticeProvider({
   const instrument = data.instrument
   const [options, setOptionsState] = useState<MusicOptions>(() => ({
     capo: 0,
-    level: defaultLevel(instrument),
+    level: instrumentProfile(instrument).defaultLevel,
     fingeringMode: 'easiest',
   }))
 
@@ -275,29 +263,19 @@ export function PracticeProvider({
     data.awaitingNotes ||
     (data.notes.data !== undefined &&
       !musicState.failed &&
-      ((instrument === 'piano' && music?.piano === undefined) ||
-        (instrument === 'drums' && music?.drums === undefined)))
+      instrumentProfile(instrument).holdsForNotes &&
+      music?.piano === undefined &&
+      music?.drums === undefined)
 
-  // Audio: the stems when both sides exist, else this page's own file, else the song's audio.
   const local = localFile(songId)
-  // A file's audio exists once its analysis does; a link's once url_import has downloaded it. An
-  // example song has no audio of its own, only its stems.
-  const download = data.analysis.data?.stages['url_import']?.status
-  const sourceKind = data.song.data?.source_kind
-  const hasSource =
-    sourceKind === 'url'
-      ? download === 'done' || download === 'fallback'
-      : sourceKind !== 'example' &&
-        Boolean(data.song.data?.latest_analysis || data.upload?.analysisId)
-  const targetKey = holding
-    ? ''
-    : channels.length > 0 && data.entry.stems
-      ? `stems:${data.entry.stems.id}`
-      : local
-        ? 'local'
-        : hasSource
-          ? 'source'
-          : ''
+  const targetKey = audioSourceKey({
+    holding,
+    stemsId: channels.length > 0 ? data.entry.stems?.id : undefined,
+    local: local !== undefined,
+    sourceKind: data.song.data?.source_kind,
+    download: data.analysis.data?.stages['url_import']?.status,
+    analysed: Boolean(data.song.data?.latest_analysis || data.upload?.analysisId),
+  })
   const [audioStatus, setAudioStatus] = useState<AudioStatus>('none')
   const [lanes, setLanes] = useState<Lane[]>([])
   const layers: Layers = {
@@ -473,47 +451,41 @@ export function PracticeProvider({
     // A saved clip or a ?loop= needs the bars, so wait for the beat grid when the song has one.
     if ((song.player_state.selected_loop_id || search.loop) && !grid && data.entry.beats) return
     resumed.current = true
-    const saved = song.player_state
-    // The level toggle starts at the requested level, or the instrument's default once known.
-    const levels = levelsFor(song.instrument)
-    const level =
-      search.level && levels.includes(search.level)
-        ? search.level
-        : levels.includes(options.level)
-          ? undefined
-          : defaultLevel(song.instrument)
+    const plan = planResume({
+      search,
+      saved: song.player_state,
+      instrument: song.instrument,
+      level: options.level,
+      channels: channels.length > 0,
+      grid,
+      clips,
+    })
+    const { level } = plan
     if (level) setOptionsState((current) => ({ ...current, level }))
-    const speed = search.speed ?? saved.speed_pct
-    if (speed !== undefined) actor.send({ type: 'SET_SPEED', pct: speed })
-    setSavedMix(
-      search.mix && channels.length > 0
-        ? presetMix(channels, PRESET_PARAM[search.mix])
-        : (saved.mix as Mix | undefined),
-    )
-    const viewChoice = search.view ?? (saved.view === 'chords_only' ? 'chords' : undefined)
-    if (viewChoice === 'tab') usePracticeUi.setState({ forceTab: true })
-    const fromUrl = grid ? parseLoopParam(search.loop, grid) : null
-    const savedClip = clips.find((c) => c.id === saved.selected_loop_id)
-    if (fromUrl) {
-      setLoop(fromUrl)
-    } else if (savedClip) {
-      setClipId(savedClip.id)
+    if (plan.speed !== undefined) actor.send({ type: 'SET_SPEED', pct: plan.speed })
+    setSavedMix('preset' in plan.mix ? presetMix(channels, plan.mix.preset) : plan.mix.saved)
+    if (plan.forceTab) usePracticeUi.setState({ forceTab: true })
+    if (plan.loop && 'range' in plan.loop) {
+      setLoop(plan.loop.range)
+    } else if (plan.loop) {
+      const { clip: saved } = plan.loop
+      setClipId(saved.id)
       actor.send({
         type: 'SET_LOOP',
         loop: {
-          startBar: savedClip.start_bar,
-          endBar: savedClip.end_bar,
-          start: savedClip.start_s,
-          end: savedClip.end_s,
+          startBar: saved.start_bar,
+          endBar: saved.end_bar,
+          start: saved.start_s,
+          end: saved.end_s,
         },
       })
       actor.send({
         type: 'SET_COUNT_IN',
-        on: savedClip.count_in_bars > 0,
-        bars: Math.max(1, savedClip.count_in_bars),
+        on: saved.count_in_bars > 0,
+        bars: Math.max(1, saved.count_in_bars),
       })
     }
-    if (saved.position_s !== undefined) actor.send({ type: 'SEEK', seconds: saved.position_s })
+    if (plan.seek !== undefined) actor.send({ type: 'SEEK', seconds: plan.seek })
   })
 
   // Resume state out: debounced whole-state PATCH, and a keepalive send when the page goes.
@@ -621,28 +593,16 @@ export function PracticeProvider({
     actor.send({ type: 'TOGGLE' })
   }
 
-  const restart = () => {
-    const loop = player.loop
-    if (loop && player.loopOn) {
-      actor.send({ type: 'RESTART' })
-      showHud(m['practice.hud_restart']())
-    } else if (grid) {
-      stepBar(-1)
-    } else {
-      actor.send({ type: 'SEEK', seconds: 0 })
-    }
-  }
-
-  const stepBar = (direction: 1 | -1) => {
-    if (!grid) return
-    const now = audio.position()
-    const { bar } = grid.positionAt(now)
-    // Back: to this bar's start, or the previous bar's when already near the start.
-    const nearStart = now - grid.barStart(bar) < 0.5
-    const target = direction === 1 ? bar + 1 : nearStart ? Math.max(grid.firstBar, bar - 1) : bar
-    actor.send({ type: 'SEEK', seconds: grid.barStart(Math.min(grid.lastBar, target)) })
-    showHud(m['practice.hud_bar']({ bar: String(Math.min(grid.lastBar, target) + 1) }))
-  }
+  const transport = createTransport(
+    { grid, player, music },
+    {
+      send: actor.send,
+      position: () => audio.position(),
+      cue: (pitch) => audio.cue(pitch),
+      hud: (hud) => showHud(hudText(hud)),
+      setLoop,
+    },
+  )
 
   const markPass = (outcome: 'clean' | 'not_yet') => {
     recordAttempt({ loopClipId: clip?.id, tempoPct: player.speedPct, outcome })
@@ -691,56 +651,6 @@ export function PracticeProvider({
     actor.send({ type: 'AUDITION', start: grid.barStart(bar), end: grid.barEnd(bar) })
   }
 
-  const phrases = music?.melody?.phrases ?? []
-  const stepPhrase = (direction: 1 | -1) => {
-    if (!grid || phrases.length === 0) {
-      showHud(m['practice.hud_no_phrases']())
-      return
-    }
-    const now = audio.position()
-    const current = phraseAtTime(grid, phrases, now)
-    // Back: to this phrase's start, or the previous one's when already near it.
-    const nearStart = current >= 0 && now - phraseEntry(grid, phrases, current) < 0.5
-    const target = Math.max(
-      0,
-      Math.min(
-        phrases.length - 1,
-        direction === 1 ? current + 1 : nearStart ? current - 1 : current,
-      ),
-    )
-    const phrase = phrases[target]
-    if (!phrase) return
-    if (loopedPhrase(phrases, player.loop) >= 0) setLoop(phraseLoop(grid, phrase))
-    actor.send({ type: 'SEEK', seconds: phraseEntry(grid, phrases, target) })
-    showHud(m['practice.hud_phrase']({ n: String(target + 1) }))
-  }
-
-  const loopPhrase = (index: number) => {
-    const phrase = phrases[index]
-    if (!grid || !phrase) return
-    if (player.loopOn && loopedPhrase(phrases, player.loop) === index) {
-      setLoop(null)
-      showHud(m['practice.hud_loop_off']())
-      return
-    }
-    const range = phraseLoop(grid, phrase)
-    setLoop(range, 'tap')
-    actor.send({ type: 'SEEK', seconds: phraseEntry(grid, phrases, index) })
-    showHud(m['practice.hud_loop']({ bars: `${range.startBar + 1}–${range.endBar + 1}` }))
-  }
-
-  const cueNote = () => {
-    const melody = music?.melody
-    const phrase = melody?.phrases[cuePhrase(phrases, audio.position(), player.loop)]
-    const note = phrase && melody?.notes[phrase.first]
-    if (!note || !music) {
-      showHud(m['practice.hud_no_phrases']())
-      return
-    }
-    audio.cue(note.pitch)
-    showHud(spelledNote(note.pitch, music.noteNames))
-  }
-
   const value: PracticeValue = {
     songId,
     guest,
@@ -772,17 +682,13 @@ export function PracticeProvider({
       usePracticeUi.setState({ selection: next })
       if (next.kind === 'active') {
         setLoop(next.range, 'tap')
-        showHud(
-          m['practice.hud_loop']({
-            bars: `${next.range.startBar + 1}–${next.range.endBar + 1}`,
-          }),
-        )
+        showHud(hudText({ kind: 'loop', range: next.range }))
       }
     },
     setLoop,
     togglePlay,
-    restart,
-    stepBar,
+    restart: transport.restart,
+    stepBar: transport.stepBar,
     setSpeed,
     markPass,
     edit,
@@ -793,9 +699,9 @@ export function PracticeProvider({
       if (redoCorrection()) showHud(m['editor.redone']())
     },
     hearBar,
-    stepPhrase,
-    loopPhrase,
-    cueNote,
+    stepPhrase: transport.stepPhrase,
+    loopPhrase: transport.loopPhrase,
+    cueNote: transport.cueNote,
     artefactFor,
   }
   return <Context.Provider value={value}>{children}</Context.Provider>

@@ -5,7 +5,7 @@ import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ChordChip, type ChordTiming } from '@/ui/chord-chip'
 import { type ChordModel, chordsAround } from './model/view-model'
-import { useShownView } from './notation-pane'
+import { useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
@@ -43,7 +43,7 @@ export function ChordStrip({
 }) {
   const { view, audio, layers, data, options } = usePractice()
   // Phones in portrait show the glance view instead, so the desktop default stands for the rest.
-  const shown = useShownView('desktop')
+  const { shown, scoreTools } = useScreen('desktop')
   const melody = layers.melody && shown === 'tab'
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
   const chords = view?.chords ?? []
@@ -125,7 +125,7 @@ export function ChordStrip({
           ))}
         </ol>
       ) : null}
-      {(layers.tab || layers.drums) && !compact && (
+      {scoreTools && !compact && (
         <Suspense fallback={null}>
           <ScoreTools />
         </Suspense>

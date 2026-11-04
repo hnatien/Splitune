@@ -1,9 +1,9 @@
+import { instrumentProfile } from '@splitune/contracts'
 import { m } from '@/lib/i18n'
 import { track } from '@/lib/track'
 import { CapoIcon } from '@/ui/icons'
 import { NumberField } from '@/ui/number-field'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
-import { levelsFor } from './model/levels'
 import { usePractice } from './practice-context'
 
 // LevelToggle (12 §2, 07 §6): the M11 levels of the learner's instrument (guitar: chords only,
@@ -40,7 +40,7 @@ export function LevelToggle({ capo = true }: { capo?: boolean }) {
           track('level_changed', { level: level as typeof options.level })
         }}
       >
-        {levelsFor(instrument).map((level) => (
+        {instrumentProfile(instrument).levels.map((level) => (
           <ToggleGroupItem key={level} value={level}>
             {levelLabel(level)}
           </ToggleGroupItem>

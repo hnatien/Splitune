@@ -7,7 +7,7 @@ import { track } from '@/lib/track'
 import { Button } from '@/ui/button'
 import { Banner } from '@/ui/status-message'
 import { analysisFailures } from './analysis-status'
-import { useRecommendedView } from './notation-pane'
+import { useRecommendedView, useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
@@ -45,8 +45,9 @@ const VIEW_REASON: Record<string, () => string> = {
 }
 
 export function PracticeBanners() {
-  const { data, layers, state } = usePractice()
-  const forceTab = usePracticeUi((s) => s.forceTab)
+  const { data, state } = usePractice()
+  // The banner's rules don't depend on the layout.
+  const { banner, notationEvent } = useScreen('desktop')
   const screenMayLock = usePracticeUi((s) => s.screenMayLock)
   const recommended = useRecommendedView()
   const appearance = useDisplay((s) => s.appearance)
@@ -71,37 +72,31 @@ export function PracticeBanners() {
 
   return (
     <>
-      {recommended.chordsOnly &&
-        !forceTab &&
-        (layers.tab || layers.roll || layers.melody || layers.drums) && (
-          <Banner
-            tone="info"
-            title={
-              layers.roll
-                ? m['practice.chords_only_piano']()
-                : layers.melody
-                  ? m['practice.chords_only_vocals']()
-                  : reason
-                    ? (VIEW_REASON[reason]?.() ?? m['practice.chords_only']())
-                    : m['practice.chords_only']()
-            }
-            actions={
-              <Button
-                variant="outline"
-                onClick={() => {
-                  usePracticeUi.setState({ forceTab: true })
-                  track('view_changed', {
-                    view: layers.roll || layers.melody || layers.drums ? 'notes' : 'tab',
-                  })
-                }}
-              >
-                {layers.roll || layers.melody || layers.drums
-                  ? m['practice.show_notes_anyway']()
-                  : m['practice.show_tab_anyway']()}
-              </Button>
-            }
-          />
-        )}
+      {banner && (
+        <Banner
+          tone="info"
+          title={
+            banner.title === 'piano'
+              ? m['practice.chords_only_piano']()
+              : banner.title === 'vocals'
+                ? m['practice.chords_only_vocals']()
+                : reason
+                  ? (VIEW_REASON[reason]?.() ?? m['practice.chords_only']())
+                  : m['practice.chords_only']()
+          }
+          actions={
+            <Button
+              variant="outline"
+              onClick={() => {
+                usePracticeUi.setState({ forceTab: true })
+                track('view_changed', { view: notationEvent })
+              }}
+            >
+              {banner.notes ? m['practice.show_notes_anyway']() : m['practice.show_tab_anyway']()}
+            </Button>
+          }
+        />
+      )}
       {failures.map((failure) => (
         <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
       ))}

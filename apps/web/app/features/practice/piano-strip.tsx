@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import type { ChordTiming } from '@/ui/chord-chip'
 import { ChordSymbol } from '@/ui/chord-chip'
 import { type ChordModel, chordsAround, noteName } from './model/view-model'
-import { useShownView } from './notation-pane'
+import { useScreen } from './notation-pane'
 import { PianoOptions } from './piano-options'
 import { usePianoVoicings } from './piano-voicing'
 import { usePractice } from './practice-context'
@@ -64,7 +64,7 @@ export function PianoStrip({
   const { view, audio, grid } = usePractice()
   const voicings = usePianoVoicings()
   // Phones have no piano strip, so the desktop default stands for every layout here.
-  const keyboards = useShownView('desktop') === 'chords'
+  const keyboards = useScreen('desktop').shown === 'chords'
   const chords = view?.chords ?? []
   const [now, setNow] = useState<Now>(START)
 
