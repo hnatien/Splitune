@@ -55,8 +55,14 @@ describe('the paper', () => {
     ).toBe('piano-chart')
   })
 
-  it('shows the notes under the banner when there are no chords to fall back on', () => {
-    expect(screen({ layers: { tab: true }, chordsOnly: true }).paper).toBe('guitar-notes')
+  it('shows the notation when there are no chords to fall back on', () => {
+    expect(screen({ layers: { tab: true }, chordsOnly: true }).paper).toBe('tab')
+    expect(screen({ instrument: 'vocals', layers: { melody: true }, chordsOnly: true }).paper).toBe(
+      'melody',
+    )
+    expect(screen({ instrument: 'piano', layers: { roll: true }, chordsOnly: true }).paper).toBe(
+      'piano-notes',
+    )
   })
 
   it('does not depend on the layout', () => {
@@ -88,6 +94,7 @@ describe('what is shown and where', () => {
   it('shows the chords only when they exist, else the notation', () => {
     expect(screen({ layers: { tab: true }, view: 'chords' }).shown).toBe('tab')
     expect(screen({ layers: { chords: true, tab: true }, chordsOnly: true }).shown).toBe('chords')
+    expect(screen({ layers: { tab: true }, chordsOnly: true }).shown).toBe('tab')
   })
 
   it('gives guitar Notes on phone landscape the strip room', () => {
@@ -100,18 +107,53 @@ describe('what is shown and where', () => {
     })
   })
 
-  it('leaves piano out of the strip until it has chords', () => {
-    expect(screen({ instrument: 'piano', layers: { roll: true } }).strip).toBe(false)
-    expect(screen({ instrument: 'piano', layers: { roll: true, chords: true } }).strip).toBe(true)
-    expect(screen({ instrument: 'vocals', layers: { melody: true } }).strip).toBe(true)
+  it.each([
+    // [instrument, layers, chordsOnly, strip on desktop, strip on phone landscape]
+    ['guitar', { chords: true, tab: true }, false, true, true],
+    ['guitar', { chords: true }, false, true, true],
+    // Only the level at its end: phones leave it out, so no strip.
+    ['guitar', { tab: true }, false, true, false],
+    ['bass', { tab: true }, false, true, false],
+    ['drums', { drums: true }, false, true, false],
+    // Piano without chords: only its options (the hands), which phones leave out.
+    ['piano', { roll: true }, false, true, false],
+    ['piano', { roll: true, chords: true }, false, true, true],
+    // Vocals' phrases follow the melody, on phones too, even under a chords-only recommendation
+    // with no chords to fall back on.
+    ['vocals', { melody: true }, false, true, true],
+    ['vocals', { melody: true }, true, true, true],
+    ['other', {}, false, false, false],
+  ] as const)(
+    'gives %s with %j (chords only: %s) a strip: %s, on phones: %s',
+    (instrument, layers, chordsOnly, desktop, phone) => {
+      expect(screen({ instrument, layers, chordsOnly }).strip).toBe(desktop)
+      expect(screen({ instrument, layers, chordsOnly, layout: 'phone-landscape' }).strip).toBe(
+        phone,
+      )
+    },
+  )
+
+  it('offers levels for the tab and the drums only, and the capo for guitar only', () => {
+    expect(screen({ layers: { tab: true } }).scoreTools).toEqual({ capo: true })
+    expect(screen({ instrument: 'bass', layers: { tab: true } }).scoreTools).toEqual({
+      capo: false,
+    })
+    expect(screen({ instrument: 'drums', layers: { drums: true } }).scoreTools).toEqual({
+      capo: false,
+    })
+    expect(
+      screen({ instrument: 'piano', layers: { roll: true, chords: true } }).scoreTools,
+    ).toBeNull()
   })
 
-  it('offers levels for the tab and the drums only', () => {
-    expect(screen({ layers: { tab: true } }).scoreTools).toBe(true)
-    expect(screen({ instrument: 'drums', layers: { drums: true } }).scoreTools).toBe(true)
-    expect(screen({ instrument: 'piano', layers: { roll: true, chords: true } }).scoreTools).toBe(
-      false,
+  it('offers piano all its options with the chords, only the hands without', () => {
+    expect(screen({ instrument: 'piano', layers: { chords: true } }).pianoOptions).toBe('all')
+    expect(screen({ instrument: 'piano', layers: { roll: true, chords: true } }).pianoOptions).toBe(
+      'all',
     )
+    expect(screen({ instrument: 'piano', layers: { roll: true } }).pianoOptions).toBe('hands')
+    expect(screen({ instrument: 'piano' }).pianoOptions).toBeNull()
+    expect(screen({ layers: { chords: true, tab: true } }).pianoOptions).toBeNull()
   })
 
   it('shows the legend once anything transcribed is on screen', () => {
@@ -155,17 +197,37 @@ describe('the view switch', () => {
 describe('the chords-only banner', () => {
   it('shows while the notation is held back by the recommendation', () => {
     const layers = { chords: true, tab: true }
-    expect(screen({ layers, chordsOnly: true }).banner).toEqual({ title: 'reason', notes: false })
+    expect(screen({ layers, chordsOnly: true }).banner).toEqual({
+      kind: 'held',
+      title: 'reason',
+      notes: false,
+    })
     expect(screen({ layers, chordsOnly: true, forceTab: true }).banner).toBeNull()
     expect(screen({ layers: { chords: true }, chordsOnly: true }).banner).toBeNull()
   })
 
   it.each([
-    ['piano', { roll: true }, { title: 'piano', notes: true }],
-    ['vocals', { melody: true }, { title: 'vocals', notes: true }],
-    ['drums', { drums: true }, { title: 'reason', notes: true }],
+    ['piano', { roll: true }, { kind: 'held', title: 'piano', notes: true }],
+    ['vocals', { melody: true }, { kind: 'held', title: 'vocals', notes: true }],
+    ['drums', { drums: true }, { kind: 'held', title: 'reason', notes: true }],
   ] as const)('speaks of %s notes', (instrument, layers, banner) => {
-    expect(screen({ instrument, layers, chordsOnly: true }).banner).toEqual(banner)
+    expect(
+      screen({ instrument, layers: { ...layers, chords: true }, chordsOnly: true }).banner,
+    ).toEqual(banner)
+  })
+
+  it('only notes the doubt when there are no chords to fall back on', () => {
+    for (const [instrument, layers] of [
+      ['guitar', { tab: true }],
+      ['vocals', { melody: true }],
+      ['piano', { roll: true }],
+      ['drums', { drums: true }],
+    ] as const) {
+      expect(screen({ instrument, layers, chordsOnly: true }).banner).toEqual({ kind: 'unsure' })
+      expect(screen({ instrument, layers, chordsOnly: true, forceTab: true }).banner).toEqual({
+        kind: 'unsure',
+      })
+    }
   })
 
   it('names the notation for analytics', () => {

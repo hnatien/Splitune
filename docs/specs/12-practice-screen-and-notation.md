@@ -60,7 +60,7 @@ PracticeRoute
 - Note editor: string/fret (or pitch), duration, delete/add; "hear original" plays the bar from the mixture or stem at current speed.
 - Every edit = `CorrectionOp` with `client_op_id`, applied optimistically, persisted via `POST /artefacts/{id}/corrections`; undo/redo stack per session.
 - "Report wrong" = `report_wrong` op; doesn't change the display, feeds the correction-rate metric.
-- **Global fallback:** if `recommended_view = chords_only`, open in chords + audio with a banner: "We're not confident in the note-level tab for this song — showing chords. [Show tab anyway]".
+- **Global fallback:** if `recommended_view = chords_only`, open in chords + audio with a banner: "We're not confident in the note-level tab for this song — showing chords. [Show tab anyway]". With no chords to fall back on, the notation opens anyway under "We're not confident in the notes for this song." (no button). Choosing Chords in the view switch takes "Show tab anyway" back.
 
 ## 5. Loops and practice loop (M6, M7)
 - **Create:** tap bar A, tap bar B → loop spans both bars (pickup-aware snapping, `07-music-algorithms.md` §1); tapping one bar extends to the enclosing phrase when sections/phrases are known; numeric "bars 17–20" fields; long-press-drag as secondary.
@@ -157,6 +157,13 @@ WCAG 2.2 AA (plus the design QA checklist in `28-ui-quality-and-design-review.md
 - **Mixer:** unchanged. The drum stem and its mix-minus are the two channels, so "Minus one" is the band without the drums, and the count-in click is the player's.
 - **Onboarding** keeps Drums as "Coming soon", as it does for piano: its song step needs an example song for the instrument, and there is no drum example yet.
 - **Route budget** (`pnpm budget`, production build): 317.1 KB gzip after vs 317.0 KB before, of 320 KB. The grid and staff chunks load outside it.
+
+## Implementation notes (practice-screen fixes, 2026-11-04)
+All in `model/screen.ts` (`resolveScreen`, table-tested in `screen.test.ts`) and `model/resume.ts`; owner-approved after a Storybook check of each.
+- **Level popover:** the capo field is guitar's only (it fits guitar's chord shapes); bass, like drums, gets "Level" with no capo icon.
+- **Chord strip:** renders only when it has something in it: the chords, the phrases over vocals' melody, or the options at its end (level, Piano options), which phones leave out. A phone with a tab or drum hits and no chords has no strip. Piano's falling notes without chords get a strip with Piano options holding only Show hands (phones: none, as with chords).
+- **Chords-only without chords:** the recommendation holds the notation back only while there are chords to show instead; otherwise the notation shows (vocals with the phrase strip) under `practice.notes_unsure`.
+- **Saved view (13 §5):** `player_state.view` is `chords_only` once the learner chooses Chords and `tab` once they choose a notation or "Show tab anyway"; nothing until they choose. Resume (and `?view=tab|chords`) restores it: `tab` as "Show tab anyway", `chords` as the Chords view. Notes and Staff stay session-only and open as the first notation next time.
 
 ## Open questions
 - Page-flip vs scroll default for tab at different tempos (QX13) — A/B in beta.

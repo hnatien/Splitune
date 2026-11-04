@@ -43,8 +43,9 @@ export interface ResumePlan {
   level?: Level
   speed?: number
   mix: { preset: MixPreset } | { saved: Mix | undefined }
-  /** "Show tab anyway" was asked for (?view=tab) or saved. */
-  forceTab: boolean
+  /** The view to open on: the notation over a chords-only recommendation ("Show tab anyway"), or
+   * the chords; asked for (?view=) or saved. None leaves it to the layout and the summary. */
+  view?: 'tab' | 'chords'
   /** A ?loop= range (a new clip) or the saved clip. */
   loop: { range: LoopRange } | { clip: Clip } | null
   seek?: number
@@ -74,7 +75,9 @@ export function planResume({
         ? undefined
         : defaultLevel
   const speed = search.speed ?? saved.speed_pct
-  const view = search.view ?? (saved.view === 'chords_only' ? 'chords' : undefined)
+  const view =
+    search.view ??
+    (saved.view === 'chords_only' ? 'chords' : saved.view === 'tab' ? 'tab' : undefined)
   const fromUrl = grid ? parseLoopParam(search.loop, grid) : null
   const clip = clips.find((c) => c.id === saved.selected_loop_id)
   return {
@@ -85,10 +88,20 @@ export function planResume({
       search.mix && channels
         ? { preset: PRESET_PARAM[search.mix] }
         : { saved: saved.mix as Mix | undefined },
-    forceTab: view === 'tab',
+    ...(view ? { view } : {}),
     loop: fromUrl ? { range: fromUrl } : clip ? { clip } : null,
     ...(saved.position_s === undefined ? {} : { seek: saved.position_s }),
   }
+}
+
+/** The view to save: the chords when the learner chose them, the notation once they asked for it
+ * (Notes and Staff open as the first notation next time), nothing while they haven't chosen. */
+export function savedView(
+  view: 'tab' | 'notes' | 'staff' | 'chords' | null,
+  forceTab: boolean,
+): 'tab' | 'chords_only' | undefined {
+  if (view === 'chords') return 'chords_only'
+  return forceTab ? 'tab' : undefined
 }
 
 function parseLoopParam(param: string | undefined, grid: PracticeGrid): LoopRange | null {

@@ -402,6 +402,93 @@ export const ChordsOnlyFallback: Story = {
   },
 }
 
+/** Choosing Chords after "Show tab anyway" takes it back: the banner returns, and the chords are
+ * what the song saves for next time. */
+export const ChordsTakesBackShowTab: Story = {
+  render: screen(ALL, { summary: CHORDS_ONLY }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show tab anyway' }))
+    await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await userEvent.click(within(view).getByRole('button', { name: 'Chords' }))
+    await canvas.findByRole('region', { name: 'Chord sheet' }, { timeout: 10_000 })
+    const show = await canvas.findByRole('button', { name: 'Show tab anyway' })
+    // Banners fade in (26 §10).
+    await waitFor(() => expect(show).toBeVisible())
+  },
+}
+
+/** Resume (13 §5): the song opens on the Chords the learner chose last time. */
+export const ResumeOnChords: Story = {
+  render: screen(ALL, { savedView: 'chords_only' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const sheet = await canvas.findByRole('region', { name: 'Chord sheet' }, { timeout: 10_000 })
+    await waitFor(() => expect(sheet).toBeVisible())
+    const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
+    await expect(within(view).getByRole('button', { name: 'Chords' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  },
+}
+
+/** Resume: "Show tab anyway" was saved, so a chords-only song opens on its tab, no banner. */
+export const ResumeShowTabAnyway: Story = {
+  render: screen(ALL, { summary: CHORDS_ONLY, savedView: 'tab' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await waitFor(() => expect(tab).toBeVisible())
+    await expect(canvas.queryByRole('button', { name: 'Show tab anyway' })).toBeNull()
+  },
+}
+
+// Phone landscape as the layout's feature queries report it (26 §7): the story runner has no touch
+// emulation, so the three queries are answered as a phone held sideways would.
+const phoneLandscape = () => {
+  const matchMedia = window.matchMedia
+  const phone: Record<string, boolean> = {
+    '(pointer: coarse)': true,
+    '(max-width: 640px)': false,
+    '(max-height: 640px)': true,
+    '(orientation: landscape)': true,
+  }
+  window.matchMedia = (query) => {
+    const matches = phone[query]
+    if (matches === undefined) return matchMedia.call(window, query)
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }
+  }
+  return () => {
+    window.matchMedia = matchMedia
+  }
+}
+
+/** A tab without chords on a phone: phones leave the level out, so no strip is left over the tab
+ * (on larger screens the strip holds the level). */
+export const TabWithoutChordsPhone: Story = {
+  beforeEach: phoneLandscape,
+  render: screen(['beats', 'stems', 'notes.guitar', 'tab.guitar', 'summary']),
+  globals: { viewport: { value: 'mobile2', isRotated: true } },
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await waitFor(() => expect(tab).toBeVisible())
+    await expect(canvasElement.querySelector('[data-slot=chord-strip]')).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Level/ })).toBeNull()
+  },
+}
+
 /** Tap a chord chip: the editor with the top-k alternatives as frequencies (27 §3.7.4). */
 export const Editor: Story = {
   render: screen(ALL),
@@ -549,6 +636,13 @@ export const PianoOptions: Story = {
     )
     const body = within(canvasElement.ownerDocument.body)
     const popup = await body.findByRole('dialog', { name: 'Piano options' }, { timeout: 10_000 })
+    // Piano's levels in its profile's order, simplest first like every instrument's.
+    const level = within(popup).getByRole('group', { name: m['practice.chords_level']() })
+    await expect(
+      within(level)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Simple (triads)', 'As played'])
     await userEvent.click(within(popup).getByRole('button', { name: 'Root position' }))
     await userEvent.click(within(popup).getByRole('button', { name: 'Right only' }))
     await expect(
@@ -636,6 +730,34 @@ export const PianoNotesBelowGate: Story = {
     ).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Show notes anyway' }))
     await pianoNotes(canvasElement)
+  },
+}
+
+/** Piano notes without chords: no chords to show, so the strip holds only Piano options, and only
+ * the hands they show (the voicing and the chords' level need chords). */
+export const PianoNotesWithoutChords: Story = {
+  // Hands are a device default, which the Piano options story changes.
+  beforeEach: () => usePracticeDefaults.getState().update({ pianoHands: 'both' }),
+  render: screen(['beats', 'stems', 'notes.piano', 'summary'], PIANO_NOTES),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await pianoNotes(canvasElement)
+    await userEvent.click(
+      await canvas.findByRole(
+        'button',
+        { name: 'Piano options: Show hands: Both' },
+        { timeout: 10_000 },
+      ),
+    )
+    const body = within(canvasElement.ownerDocument.body)
+    const popup = await body.findByRole('dialog', { name: 'Piano options' }, { timeout: 10_000 })
+    await expect(within(popup).queryByRole('button', { name: 'Root position' })).toBeNull()
+    await expect(within(popup).queryByRole('button', { name: 'Simple (triads)' })).toBeNull()
+    await userEvent.click(within(popup).getByRole('button', { name: 'Right only' }))
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('button', { name: 'Piano options: Show hands: Right only' }),
+      ).toBeVisible(),
+    )
   },
 }
 
@@ -813,6 +935,25 @@ export const LegendChip: Story = {
 export const LevelAndCapo: Story = {
   render: screen(ALL),
   play: opens(/^Level and capo: As played/, m['practice.level_and_capo']()),
+}
+
+/** Bass: the level popover is titled "Level" and has no capo, like the drums'. */
+export const BassLevel: Story = {
+  render: screen(ALL_BASS, { instrument: 'bass', notes: BASS_LINE }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Level: As played' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const popup = await body.findByRole(
+      'dialog',
+      { name: m['practice.level']() },
+      { timeout: 10_000 },
+    )
+    await waitFor(() =>
+      expect(within(popup).getByRole('button', { name: 'Root notes' })).toBeVisible(),
+    )
+    await expect(within(popup).queryByLabelText(m['practice.capo']())).toBeNull()
+  },
 }
 
 /** The loop's options from the transport's badge: from/to bars, clear, saved clips (12 §5). */
@@ -1260,6 +1401,30 @@ export const VocalMelodyBelowGate: Story = {
     await expect(canvas.queryByRole('region', { name: 'Melody' })).toBeNull()
     await userEvent.click(canvas.getByRole('button', { name: 'Show notes anyway' }))
     await vocalMelody(canvasElement)
+  },
+}
+
+/** Below the gate with no chords to fall back on: the melody and its phrases show anyway, under a
+ * plain notice with no "Show notes anyway". */
+export const VocalMelodyWithoutChords: Story = {
+  render: screen(['beats', 'stems', 'notes.vocals', 'summary'], {
+    ...VOCALS,
+    summary: {
+      ...VOCAL_SUMMARY,
+      per_instrument: VOCAL_SUMMARY.per_instrument.map((entry) => ({
+        ...entry,
+        recommended_view: 'chords_only',
+        reasons: ['quality_gate_failed'],
+      })),
+    },
+  }),
+  play: async ({ canvasElement }) => {
+    const { canvas, strip } = await vocalMelody(canvasElement)
+    await expect(strip).toBeVisible()
+    await expect(
+      await canvas.findByText(m['practice.notes_unsure'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Show notes anyway' })).toBeNull()
   },
 }
 

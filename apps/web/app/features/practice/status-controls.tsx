@@ -75,7 +75,8 @@ function Legend() {
 // Tab / Notes / Chords (the tab, the lanes onto the neck, the chord sheet; the glance view on phone
 // portrait); piano's Chart / Notes / Staff (the chord chart, the falling notes, the grand staff);
 // drums' Grid / Staff / Chords; vocals' Melody / Chords.
-// Choosing a notation over a chords-only recommendation is the banner's "Show tab anyway".
+// Choosing a notation over a chords-only recommendation is the banner's "Show tab anyway";
+// choosing the chords takes it back, so the banner returns and the chords are what's saved.
 function ViewSwitch({
   viewSwitch,
   notationEvent,
@@ -95,7 +96,7 @@ function ViewSwitch({
           usePracticeUi.setState({ view, forceTab: true })
           track('view_changed', { view: view === 'tab' ? notationEvent : view })
         } else if (view === 'chords') {
-          usePracticeUi.setState({ view: 'chords' })
+          usePracticeUi.setState({ view: 'chords', forceTab: false })
           track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
         }
       }}

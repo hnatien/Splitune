@@ -3,7 +3,7 @@ import type { Beats } from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
 import { practiceGrid } from './grid'
 import { barRange } from './loops'
-import { planResume, type ResumeInput } from './resume'
+import { planResume, type ResumeInput, savedView } from './resume'
 
 const grid = practiceGrid(beats as Beats)
 
@@ -38,7 +38,7 @@ const plan = (input: Partial<ResumeInput>) =>
 
 describe('planResume', () => {
   it('starts fresh with nothing saved or asked for', () => {
-    expect(plan({})).toEqual({ mix: { saved: undefined }, forceTab: false, loop: null })
+    expect(plan({})).toEqual({ mix: { saved: undefined }, loop: null })
   })
 
   it('starts the level toggle at a requested level the instrument has', () => {
@@ -67,10 +67,14 @@ describe('planResume', () => {
     })
   })
 
-  it('forces the notation for ?view=tab only', () => {
-    expect(plan({ search: { view: 'tab' } }).forceTab).toBe(true)
-    expect(plan({ search: { view: 'chords' } }).forceTab).toBe(false)
-    expect(plan({ saved: { view: 'chords_only' } }).forceTab).toBe(false)
+  it('opens on the view asked for in the URL over the saved one', () => {
+    expect(plan({ search: { view: 'tab' } }).view).toBe('tab')
+    expect(plan({ search: { view: 'chords' } }).view).toBe('chords')
+    expect(plan({ saved: { view: 'chords_only' } }).view).toBe('chords')
+    expect(plan({ saved: { view: 'tab' } }).view).toBe('tab')
+    expect(plan({ search: { view: 'chords' }, saved: { view: 'tab' } }).view).toBe('chords')
+    // The summary's other views are never saved by the screen: the layout decides.
+    expect(plan({ saved: { view: 'roll' } }).view).toBeUndefined()
   })
 
   it('loops the URL bars (1-based) over the saved clip, which needs the grid', () => {
@@ -85,5 +89,25 @@ describe('planResume', () => {
 
   it('seeks to the saved position', () => {
     expect(plan({ saved: { position_s: 12.5 } }).seek).toBe(12.5)
+  })
+})
+
+describe('savedView', () => {
+  it('saves the chords when chosen, the notation once asked for, else nothing', () => {
+    expect(savedView(null, false)).toBeUndefined()
+    expect(savedView('chords', false)).toBe('chords_only')
+    expect(savedView('tab', true)).toBe('tab')
+    // Notes and Staff stay with the session; the notation opens next time.
+    expect(savedView('notes', true)).toBe('tab')
+    expect(savedView(null, true)).toBe('tab')
+  })
+
+  it('round-trips through planResume', () => {
+    for (const [view, forceTab, opened] of [
+      ['chords', false, 'chords'],
+      ['staff', true, 'tab'],
+    ] as const) {
+      expect(plan({ saved: { view: savedView(view, forceTab) } }).view).toBe(opened)
+    }
   })
 })

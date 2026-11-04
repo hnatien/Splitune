@@ -22,6 +22,9 @@ const PianoStrip = lazy(() =>
 const PhraseStrip = lazy(() =>
   import('./phrase-strip').then((module) => ({ default: module.PhraseStrip })),
 )
+const PianoOptions = lazy(() =>
+  import('./piano-options').then((module) => ({ default: module.PianoOptions })),
+)
 
 // ChordStrip (12 §2, §4): the top of the paper — "now → next". The current chord follows the clock
 // at the larger reading size with its guitar shape beside it; the next chords run after it as
@@ -29,7 +32,9 @@ const PhraseStrip = lazy(() =>
 // sheet. Level and capo sit at the strip's end. The names that don't fit fade out at the end, so
 // a cut name doesn't read as a shorter chord; the list's padding keeps focus rings unclipped.
 // Piano gets its own strip with the voicing on a keyboard (piano-strip.tsx), except on phones;
-// over vocals' melody the strip follows the phrases instead (phrase-strip.tsx).
+// over its falling notes without chords, only its options (the hands). Over vocals' melody the
+// strip follows the phrases instead (phrase-strip.tsx). The page renders the strip only when it
+// has something in it (model/screen.ts).
 
 const AFTER = 6
 
@@ -37,13 +42,13 @@ export function ChordStrip({
   compact = false,
   className,
 }: {
-  /** Phone landscape: no diagram, no level/capo. */
+  /** Phones: no diagram, no level/capo, no piano options. */
   compact?: boolean
   className?: string
 }) {
   const { view, audio, layers, data, options } = usePractice()
   // Phones in portrait show the glance view instead, so the desktop default stands for the rest.
-  const { shown, scoreTools } = useScreen('desktop')
+  const { shown, scoreTools, pianoOptions } = useScreen('desktop')
   const melody = layers.melody && shown === 'tab'
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
   const chords = view?.chords ?? []
@@ -127,7 +132,12 @@ export function ChordStrip({
       ) : null}
       {scoreTools && !compact && (
         <Suspense fallback={null}>
-          <ScoreTools />
+          <ScoreTools capo={scoreTools.capo} />
+        </Suspense>
+      )}
+      {pianoOptions === 'hands' && !compact && (
+        <Suspense fallback={null}>
+          <PianoOptions handsOnly className="ml-auto" />
         </Suspense>
       )}
     </div>

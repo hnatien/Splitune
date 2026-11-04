@@ -72,7 +72,8 @@ export function PracticeBanners() {
 
   return (
     <>
-      {banner && (
+      {banner?.kind === 'unsure' && <Banner tone="info" title={m['practice.notes_unsure']()} />}
+      {banner?.kind === 'held' && (
         <Banner
           tone="info"
           title={
