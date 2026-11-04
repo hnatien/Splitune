@@ -31,9 +31,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             tabIndex={-1}
             className="flex flex-1 flex-col justify-center px-4 py-10 sm:px-8 lg:py-16"
           >
-            <div className="mx-auto flex w-full max-w-sm flex-col gap-8">
-              {children}
-            </div>
+            <div className="mx-auto flex w-full max-w-sm flex-col gap-8">{children}</div>
           </main>
         </div>
         <Showcase />
