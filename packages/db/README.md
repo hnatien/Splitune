@@ -43,7 +43,7 @@ Raw Drizzle queries are only allowed in `src/repo/`, `src/jobs/`, `src/client.ts
 
 ## Job queue protocol
 
-`src/jobs/queue.ts` is the TypeScript side; the Python consumer (`services/ml/packages/splitune_ml_core/src/splitune_ml_core/queue.py`) issues the same statements. All times are database time (`now()`), never the worker's clock.
+Two adapters implement it: `src/jobs/queue.ts` (TypeScript) and `services/ml/packages/splitune_ml_core/src/splitune_ml_core/queue.py` (Python). Their executable spec is the shared corpus `test/conformance/queue.json` (constants and scenarios over symbolic job labels), run against each by `test/queue-conformance.test.ts` and `services/ml/packages/splitune_ml_core/tests/test_queue_conformance.py`: a protocol change starts there, and both suites must pass. All times are database time (`now()`), never the worker's clock.
 
 **Columns that matter:** `runner` (`python` | `node`), `status` (`queued` → `running` → `done` | `failed` | `cancelled`), `priority` (lower first), `attempts` (incremented on claim), `max_attempts`, `run_after`, `locked_by` (worker id), `heartbeat_at`, `depends_on bigint[]` (must be `done`), `soft_depends_on bigint[]` (must have finished — `done`, `failed` or `cancelled` — but need not have succeeded: a dependant with a fallback for a missing input; a failure there cancels nothing), `error_code` (machine code, e.g. `model_oom`).
 
@@ -110,7 +110,7 @@ UPDATE jobs SET status = 'cancelled', error_code = 'dependency_failed'
 WHERE id IN (SELECT id FROM dependents);
 ```
 
-**Requeue stale** (one transaction; run periodically by the node worker; stale = no heartbeat for 120 s):
+**Requeue stale** (one transaction; both workers sweep periodically in their housekeeping loop; stale = no heartbeat for 120 s):
 ```sql
 WITH stale AS (
   SELECT id FROM jobs

@@ -1,7 +1,8 @@
 """Python side of the Postgres job queue.
 
 Issues exactly the statements of `packages/db/src/jobs/queue.ts`, as documented in
-`packages/db/README.md` ("Job queue protocol"). All times are database time.
+`packages/db/README.md` ("Job queue protocol"); `packages/db/test/conformance/queue.json` is the
+executable spec both adapters run (tests/test_queue_conformance.py). All times are database time.
 """
 
 from __future__ import annotations
