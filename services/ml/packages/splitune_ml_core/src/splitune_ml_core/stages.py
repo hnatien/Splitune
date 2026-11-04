@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Any, Literal, cast
 
 import yaml
 
-from .paths import ML_ROOT
+from .paths import CONTRACT_SCHEMA_DIR, ML_ROOT
 
 Island = Literal["torch", "onnx-cpu", "legacy"]
 Slot = Literal["gpu", "cpu"]
@@ -149,9 +150,8 @@ def notes_placement(instrument: str) -> tuple[Island, Slot]:
     return placement
 
 
-def notes_spec(instrument: str) -> StageSpec:
+def notes_spec(instrument: str, reads: tuple[str, ...]) -> StageSpec:
     island, slot = notes_placement(instrument)
-    drums = instrument == "drums"
     return StageSpec(
         name=f"notes.{instrument}",
         module=f"stage_notes.{instrument}",
@@ -160,15 +160,24 @@ def notes_spec(instrument: str) -> StageSpec:
         timeout_s=240,  # 180 s budget (06 §2) + cold model load
         outputs={"notes": f"notes.{instrument}"},
         primary="notes",
-        # Drums read the downbeats for the crash/ride default (stage_notes.drum_kit).
-        optional_downloads=("separation", "stems", "beats") if drums else ("separation", "stems"),
+        optional_downloads=reads,
         needs_audio=True,
         failure_fallback="notes_unavailable",
     )
 
 
-for _instrument in ("guitar", "bass", "piano", "vocals", "drums"):
-    STAGES[f"notes.{_instrument}"] = notes_spec(_instrument)
+# The notes stages and what each reads, generated from the instrument profiles in
+# packages/contracts (src/instruments.ts), which the API plans from.
+NOTES_STAGES = CONTRACT_SCHEMA_DIR / "notes-stages.json"
+
+
+def notes_stages() -> dict[str, tuple[str, ...]]:
+    manifest = cast(dict[str, Any], json.loads(NOTES_STAGES.read_text(encoding="utf-8")))
+    return {instrument: tuple(spec["reads"]) for instrument, spec in manifest.items()}
+
+
+for _instrument, _reads in notes_stages().items():
+    STAGES[f"notes.{_instrument}"] = notes_spec(_instrument, _reads)
 
 DESCRIBE_TIMEOUT_S = 600.0  # first describe may download model weights
 

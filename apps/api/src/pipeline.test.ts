@@ -34,7 +34,7 @@ const plan = (instrument: Analysis['requestedInstrument'], drums = false) =>
     type: 'full',
     source: { rawKey: 'u/usr_test/raw/up1/song.mp3' },
     priority: 0,
-    drums,
+    flags: { 'v1.drums': drums },
   }).jobs
 
 describe('planAnalysis', () => {
@@ -89,7 +89,7 @@ describe('planAnalysis', () => {
       source: { rawKey: 'u/usr_test/raw/up1/song.mp3' },
       reuse: { analysisId: 'x', probe, beats },
       priority: 0,
-      drums: true,
+      flags: { 'v1.drums': true },
     }).jobs
     const notes = jobs.find((j) => j.name === 'notes.drums')
     expect(io(notes).inputs).toMatchObject({ beats: beats.objectKey })

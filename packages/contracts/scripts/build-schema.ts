@@ -1,6 +1,7 @@
 // Emits JSON Schema for every registered contract (run with `pnpm --filter contracts build`):
 // - schema/contracts.json: all named types under $defs; services/ml generates Pydantic models from it
 // - schema/<Type>.json: one self-contained schema per top-level document
+// - schema/notes-stages.json: the notes stages services/ml registers (src/instruments.ts)
 // Pass `--out <dir>` to write somewhere else (used by `pnpm contracts:check`).
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -17,6 +18,7 @@ import {
   JobEvent,
   Manifest,
   Notes,
+  notesStages,
   Presence,
   Probe,
   SCHEMA_VERSION,
@@ -95,3 +97,5 @@ for (const [id, schema] of Object.entries(DOCUMENTS)) {
   const { $id: _id, ...document } = z.toJSONSchema(schema, { ...options, metadata: contracts })
   write(join(outDir, `${id}.json`), { ...document, title: id })
 }
+
+write(join(outDir, 'notes-stages.json'), notesStages())

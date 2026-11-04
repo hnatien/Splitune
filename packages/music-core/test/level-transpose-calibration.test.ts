@@ -6,7 +6,9 @@ import {
   confidenceBand,
   correctBassOctaves,
   createBeatGrid,
+  DEFAULT_BANDS,
   PPQ,
+  recordedBands,
   resolveShapes,
   simplifyChords,
   simplifyGuitar,
@@ -14,7 +16,7 @@ import {
   transposeSegments,
 } from '../src/index.ts'
 import type { CalibrationTable } from '../src/types.ts'
-import { makeBeats, makeChords, makeNotes } from './helpers.ts'
+import { makeBeats, makeChords, makeDrums, makeNotes } from './helpers.ts'
 
 describe('correctBassOctaves', () => {
   const chords = makeChords([{ t0: 0, t1: 8, label: 'A:min' }])
@@ -156,5 +158,16 @@ describe('calibration lookup', () => {
     expect(confidenceBand(0.4)).toBe('medium')
     expect(confidenceBand(0.39)).toBe('low')
     expect(calibrateWithBand(0.5, table)).toEqual({ confidence: 0.4, band: 'medium' })
+  })
+
+  it('reads the bands a notes stage recorded, falling back to the defaults', () => {
+    const bands = { high: 0.8, medium: 0.5 }
+    const notes = makeNotes([])
+    expect(recordedBands({ ...notes, params: { calibration: { bands } } })).toEqual(bands)
+    expect(recordedBands({ ...makeDrums([]), params: { calibration: { bands } } })).toEqual(bands)
+    expect(recordedBands({ ...notes, params: { calibration: { bands: { high: 2 } } } })).toEqual(
+      DEFAULT_BANDS,
+    )
+    expect(recordedBands(undefined)).toEqual(DEFAULT_BANDS)
   })
 })

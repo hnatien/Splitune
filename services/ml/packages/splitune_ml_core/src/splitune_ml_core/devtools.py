@@ -19,7 +19,7 @@ OUTPUT_FILES = {
     "separate": {"separation": "separation.json"},
     "stem_post": {"stems": "stems.json", "presence": "presence.json"},
     "chords": {"chords": "chords.json"},
-    **{f"notes.{i}": {"notes": f"notes.{i}.json"} for i in ("guitar", "bass", "vocals")},
+    **{name: {"notes": f"{name}.json"} for name in STAGES if name.startswith("notes.")},
 }
 # Inputs that are upstream artefacts of the same analysis version.
 INPUT_FILES = {

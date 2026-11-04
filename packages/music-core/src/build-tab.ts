@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '@splitune/contracts'
+import { instrumentProfile, SCHEMA_VERSION } from '@splitune/contracts'
 import { correctBassOctaves } from './bass/octave.ts'
 import { type BandThresholds, confidenceBand, DEFAULT_BANDS } from './calibration/lookup.ts'
 import {
@@ -97,9 +97,6 @@ export function tabTuning(
   return suggested.tuning_midi
 }
 
-const GUITAR_LEVELS: readonly TabLevel[] = ['chords_only', 'simplified', 'as_transcribed']
-const BASS_LEVELS: readonly TabLevel[] = ['roots', 'full']
-
 interface PlacedNote extends LevelNote {
   pin?: FretPin
   stringProbs?: readonly number[]
@@ -121,8 +118,9 @@ export function buildTab(
   if (instrument !== 'guitar' && instrument !== 'bass') {
     throw new RangeError(`buildTab supports guitar and bass, not ${instrument}`)
   }
-  const level = options.level ?? (instrument === 'bass' ? 'full' : 'as_transcribed')
-  if (!(instrument === 'bass' ? BASS_LEVELS : GUITAR_LEVELS).includes(level)) {
+  const { levels, defaultLevel } = instrumentProfile(instrument)
+  const level = options.level ?? (defaultLevel as TabLevel)
+  if (!levels.includes(level)) {
     throw new RangeError(`level ${level} is not valid for ${instrument}`)
   }
   const fingeringMode = options.fingeringMode ?? 'easiest'
