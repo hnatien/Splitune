@@ -45,6 +45,7 @@ TARGETS = {
     "btc": "btc-large-voca",
     "yourmt3": "yourmt3-moe",
     "transkun": "transkun-v2",
+    "transkun-pop": "transkun-v2-pop",
     "adtof": "adtof-frame-rnn",
     "pm2s": "pm2s-hand-part",
     "bs-roformer-sw": "bs-roformer-sw",

@@ -9,7 +9,7 @@ or the clean piano when the solo check skips separation. Sources, none a P2p tes
 - POP909 songs that no P2p item uses (MELODY + PIANO, or PIANO alone under a band), rendered by
   p2p's renderers (every sampled piano, electric piano, harpsichord and the GM clavinet) with p2p's
   room / phone / detune augmentations and bar pedalling on slow songs;
-- bands from the MUSDB18-HQ songs no legacy item uses (drums + bass + vocals, a random window: its
+- bands from the MUSDB18-HQ test-song windows no legacy item uses (drums + bass + vocals: its
   `other` stem often holds keys that would bleed into the stem unlabelled and teach the model to
   drop notes), the piano mixed at p2p's featured or buried level, sometimes doubled by a guitar or
   synth;
@@ -31,7 +31,6 @@ from __future__ import annotations
 import argparse
 import json
 import random
-import re
 import shutil
 import sys
 import time
@@ -44,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import p2p
 
 TRAIN = p2p.DATA / "p2p-train"
-MUSDB = p2p.DATA / "musdb18hq" / "test"
+MUSDB = p2p.DATA / "musdb18hq-p1"  # eval/p1_musdb.py windows: one window per test song
 LEGACY_PIANO = p2p.LEGACY / "piano.json"
 OUT = p2p.DATA / "_models" / "transkun-ft"
 SEED = 26
@@ -64,15 +63,9 @@ def excluded_songs() -> set[str]:
 
 
 def musdb_songs() -> list[Path]:
-    """MUSDB18-HQ test songs (full tracks, "Artist - Title") that no legacy band window uses."""
+    """MUSDB18-HQ test-song windows (eval/p1_musdb.py) that no legacy band uses."""
     used = {i["band"] for i in json.loads(LEGACY_PIANO.read_text(encoding="utf-8"))}
-    return sorted(
-        p
-        for p in MUSDB.iterdir()
-        if " - " in p.name
-        and (p / "drums.wav").is_file()
-        and re.sub("[^a-z0-9]+", "-", p.name.lower()).strip("-") not in used
-    )
+    return sorted(p for p in MUSDB.iterdir() if (p / "drums.wav").is_file() and p.name not in used)
 
 
 def musdb_band(song: Path, rng: np.random.Generator) -> p2p.Audio:

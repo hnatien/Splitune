@@ -133,6 +133,7 @@ TRANSCRIBER_ISLANDS: dict[str, tuple[Island, Slot]] = {
     "guitab": ("onnx-cpu", "cpu"),
     "yourmt3": ("torch", "gpu"),
     "transkun": ("torch", "gpu"),
+    "transkun_pop": ("torch", "gpu"),
     "adtof": ("torch", "gpu"),
 }
 
@@ -143,10 +144,11 @@ def notes_placement(instrument: str) -> tuple[Island, Slot]:
     config = cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
     spec = cast(dict[str, Any], config["instruments"][instrument])
     placement = TRANSCRIBER_ISLANDS[str(spec["transcriber"])]
-    # The stage runs in one island, so a mixture transcriber must live in the same one.
-    mixture = cast(dict[str, Any] | None, spec.get("mixture"))
-    if mixture and TRANSCRIBER_ISLANDS[str(mixture["transcriber"])] != placement:
-        raise ValueError(f"notes.{instrument}: mixture transcriber runs in another island")
+    # The stage runs in one island, so a mixture or solo transcriber must live in the same one.
+    for source in ("mixture", "solo"):
+        other = cast(dict[str, Any] | None, spec.get(source))
+        if other and TRANSCRIBER_ISLANDS[str(other["transcriber"])] != placement:
+            raise ValueError(f"notes.{instrument}: {source} transcriber runs in another island")
     return placement
 
 

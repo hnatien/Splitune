@@ -27,8 +27,13 @@ instruments:
     # precision 0.880 → 0.919), per-note confidence = mean of the semi-CRF onset marginal and the
     # velocity peak (AUROC 0.885); YourMT3+ on the mixture when there is no stem (+0.043 onset F1
     # on band excerpts); PM2S hands (0.927 vs 0.885 for splitHands on unseen ASAP pieces).
+    # Step 26 (eval/results/p2p/2026-11-05-final.md): when the solo check skips separation, the
+    # pop fine-tune of the same model (eval/p2p_finetune.py ft2) transcribes the mix; held-out
+    # onset F1 real-solo 0.942 → 0.956, pop-solo 0.858 → 0.935 (phone 0.769 → 0.916). It loses
+    # on separated band stems (legacy 0.813 → 0.789), so stems keep the shipped checkpoint.
     transcriber: transkun
     params: {stereo: true, gate_db: 45, confidence: onset_velocity}
+    solo: {transcriber: transkun_pop, params: {stereo: true, gate_db: 45, confidence: onset_velocity}}
     mixture: {transcriber: yourmt3}
     hands: pm2s
   vocals:

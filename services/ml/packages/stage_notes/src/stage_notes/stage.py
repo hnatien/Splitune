@@ -34,6 +34,7 @@ from . import strings, transcribers, tuning
 from .lowband import low_band_energy
 
 MIXTURE = "mixture"
+SOLO = "solo"
 STRING_CUE_RECORD = "string-cue"
 # Tab models: their notes carry string probabilities already.
 OWN_STRING_PROBS = {"guitab"}
@@ -78,6 +79,12 @@ def solo(separation: contracts.Separation | None, instrument: str) -> bool:
         and separation.solo_bypass is not None
         and separation.solo_bypass.applied
     )
+
+
+def source_kind(has_stem: bool, bypass: bool) -> str:
+    """Which config entry transcribes: `solo` when the solo check skipped separation, the stem
+    one, or `mixture` when there is no stem."""
+    return SOLO if bypass else "stem" if has_stem else MIXTURE
 
 
 def string_cue_ref() -> contracts.ModelRef:
@@ -127,7 +134,7 @@ def bind(
         separation = read_separation(inputs)
         stem = None if solo(separation, instrument) else source_stem(separation, instrument)
         transcriber, effective = transcribers.for_instrument(
-            instrument, "stem" if stem is not None or solo(separation, instrument) else MIXTURE
+            instrument, source_kind(stem is not None, solo(separation, instrument))
         )
         ref = transcriber.model_ref()
         table = calibration.load(transcriber.record, ref.version, instrument)
@@ -178,7 +185,7 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     stem_id, audio = load_source(job, instrument)
     bypass = solo(read_separation(job.inputs), instrument)
     transcriber, _ = transcribers.for_instrument(
-        instrument, MIXTURE if stem_id == MIXTURE and not bypass else "stem"
+        instrument, source_kind(stem_id != MIXTURE, bypass)
     )
     ref = transcriber.model_ref()
     table = calibration.load(transcriber.record, ref.version, instrument)

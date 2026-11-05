@@ -22,10 +22,10 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import soundfile as sf
+import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 import torch
-import torchaudio
-from scipy.signal import resample_poly
+import torchaudio  # pyright: ignore[reportMissingTypeStubs]
+from scipy.signal import resample_poly  # pyright: ignore[reportMissingTypeStubs]
 
 
 def feature(amt: Any, path: str) -> Any:

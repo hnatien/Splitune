@@ -22,7 +22,7 @@ import sys
 import time
 from pathlib import Path
 
-import pretty_midi
+import pretty_midi  # pyright: ignore[reportMissingTypeStubs]
 from muscriptor.transcription_model import TranscriptionModel
 
 PIANO_PROGRAMS = range(8)

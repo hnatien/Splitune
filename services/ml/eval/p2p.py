@@ -854,10 +854,17 @@ def cmd_build(args: argparse.Namespace) -> int:
 CHAINS: dict[str, dict[str, Any]] = {
     "baseline": {"separator": "bs_roformer_sw", "notes": {}},
     "yourmt3": {"separator": "bs_roformer_sw", "notes": {"transcriber": "yourmt3"}},
-    # Step 24's shipped chain: config/notes.personal.yaml and separation.personal.yaml as they are.
+    # The shipped chain: config/notes.personal.yaml and separation.personal.yaml as they are.
     "final": {
         "separator": "bs_roformer_sw",
         "notes": None,
+        "solo_check": {"model": "htdemucs_6s", "threshold_db": -15.0},
+    },
+    # Step 24's shipped chain: the same without step 26's solo-path transcriber.
+    "s24": {
+        "separator": "bs_roformer_sw",
+        "notes": None,
+        "drop": ["solo"],
         "solo_check": {"model": "htdemucs_6s", "threshold_db": -15.0},
     },
 }
@@ -940,6 +947,8 @@ def notes_config(chain: dict[str, Any], path: Path) -> None:
     )
     if chain["notes"] is not None:
         base["instruments"]["piano"] = {"transcriber": "transkun", **chain["notes"]}
+    for key in chain.get("drop", []):
+        base["instruments"]["piano"].pop(key, None)
     path.write_text(yaml.safe_dump(base), encoding="utf-8")
 
 
@@ -1844,7 +1853,11 @@ def cmd_confidence(args: argparse.Namespace) -> int:
 
 
 CALIBRATION_DIR = ML_ROOT / "config" / "calibration"
-TRANSCRIBER_RECORDS = {"transkun": "transkun-v2", "yourmt3": "yourmt3-moe"}
+TRANSCRIBER_RECORDS = {
+    "transkun": "transkun-v2",
+    "transkun_pop": "transkun-v2-pop",
+    "yourmt3": "yourmt3-moe",
+}
 
 
 def raw_labels(
