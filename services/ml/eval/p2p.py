@@ -1495,28 +1495,25 @@ ARIA_PYTHON = Path("D:/venvs/aria/Scripts/python.exe")
 ARIA_CHECKPOINT = DATA / "_models" / "aria" / "piano-medium-double-1.0.safetensors"
 
 
-def cmd_aria(args: argparse.Namespace) -> int:
-    """Aria-AMT (eval/aria_amt.py in its own venv) on every input, then its MIDI as a detail run
-    (`DETAIL/aria/...`): notes with velocity, scores 1.0 (it reports none), sustain from CC64."""
+def run_external(name: str, command: list[str], args: argparse.Namespace) -> None:
+    """An eval-only model script (`command` + JOBS.json, a list of [audio, MIDI]) on every input,
+    then its MIDI as a detail run (`DETAIL/<name>/...`): notes with velocity, scores 1.0 (these
+    models report none), sustain from CC64."""
     jobs: list[tuple[str, str]] = []
     targets: list[tuple[Path, Path]] = []
     for item in load_items(args.tier):
         for condition in args.condition:
             source = input_audio(item, condition)
-            dest = DETAIL / "aria" / condition / f"{item['id']}.json"
-            midi = ROOT / "aria-midi" / condition / f"{item['id']}.mid"
+            dest = DETAIL / name / condition / f"{item['id']}.json"
+            midi = ROOT / f"{name}-midi" / condition / f"{item['id']}.mid"
             if dest.is_file() or not source.is_file():
                 continue
             jobs.append((str(source), str(midi)))
             targets.append((midi, dest))
-    job_file = ROOT / "aria-jobs.json"
+    job_file = ROOT / f"{name}-jobs.json"
     write_json(job_file, jobs)
     env = {**os.environ, "TQDM_DISABLE": "1"}
-    subprocess.run(
-        [str(ARIA_PYTHON), "-I", str(EVAL / "aria_amt.py"), str(ARIA_CHECKPOINT), str(job_file)],
-        check=True,
-        env=env,
-    )
+    subprocess.run([*command, str(job_file)], check=True, env=env)
     for midi, dest in targets:
         timing = json.loads(midi.with_suffix(".json").read_text(encoding="utf-8"))
         notes: list[list[float]] = []
@@ -1531,6 +1528,35 @@ def cmd_aria(args: argparse.Namespace) -> int:
             dest,
             {"notes": notes, "pedal": pedal, "seconds": timing["seconds"], "audio_s": WINDOW_S},
         )
+
+
+def cmd_aria(args: argparse.Namespace) -> int:
+    """Aria-AMT (eval/aria_amt.py in its own venv) → detail run `aria`."""
+    command = [str(ARIA_PYTHON), "-I", str(EVAL / "aria_amt.py"), str(ARIA_CHECKPOINT)]
+    run_external("aria", command, args)
+    return 0
+
+
+HFT_REPO = DATA / "_models" / "hft"
+MUSCRIPTOR_PYTHON = Path("D:/venvs/muscriptor/Scripts/python.exe")
+MUSCRIPTOR_WEIGHTS = DATA / "_models" / "muscriptor"
+
+
+def cmd_hft(args: argparse.Namespace) -> int:
+    """hFT-Transformer (eval/hft_amt.py, this venv) → detail run `hft`."""
+    run_external("hft", [sys.executable, str(EVAL / "hft_amt.py"), str(HFT_REPO)], args)
+    return 0
+
+
+def cmd_muscriptor(args: argparse.Namespace) -> int:
+    """MuScriptor (eval/muscriptor_amt.py in its own venv) → detail run `muscriptor-<size>`."""
+    command = [
+        str(MUSCRIPTOR_PYTHON),
+        "-I",
+        str(EVAL / "muscriptor_amt.py"),
+        str(MUSCRIPTOR_WEIGHTS / args.size),
+    ]
+    run_external(f"muscriptor-{args.size}", command, args)
     return 0
 
 
@@ -2100,6 +2126,15 @@ def main() -> int:
     p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
     p.add_argument("--condition", nargs="+", choices=INPUTS, default=["stem", "clean"])
     p.set_defaults(fn=cmd_aria)
+    p = sub.add_parser("hft")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--condition", nargs="+", choices=INPUTS, default=["stem", "clean"])
+    p.set_defaults(fn=cmd_hft)
+    p = sub.add_parser("muscriptor")
+    p.add_argument("--size", choices=["small", "medium", "large"], default="large")
+    p.add_argument("--tier", nargs="+", choices=TIERS, default=list(TIERS))
+    p.add_argument("--condition", nargs="+", choices=INPUTS, default=["mixture", "stem"])
+    p.set_defaults(fn=cmd_muscriptor)
     p = sub.add_parser("calibrate")
     p.add_argument("--chain", choices=list(CHAINS), required=True)
     p.add_argument("--transcriber", choices=list(TRANSCRIBER_RECORDS), default="transkun")
