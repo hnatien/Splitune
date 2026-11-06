@@ -19,7 +19,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
@@ -177,6 +177,27 @@ def load_source(job: StageJob, instrument: str) -> tuple[str, NDArray[np.float32
     return instrument, dsp.shift(raw, int(job.params["alignment_offset_samples"]))
 
 
+DOWN_TUNINGS = ("half_step_down", "full_step_down")
+
+
+def down_tuning(
+    transcriber: transcribers.NoteTranscriber,
+    mono: NDArray[np.float32],
+    params: dict[str, Any],
+    instrument: str,
+) -> tuning.TuningSuggestion | None:
+    """The whole-semitone down-tuning a transcriber that can measure it (Guitab: tuning_shift)
+    finds, or None (standard or unknown): step 27, so a half/full-step-down song gets its frets."""
+    measure = getattr(transcriber, "tuning_shift", None)
+    if measure is None:
+        return None
+    shift, confidence = cast(tuple[int, float], measure(mono, params))
+    if not 1 <= shift <= len(DOWN_TUNINGS):
+        return None
+    name = DOWN_TUNINGS[shift - 1]
+    return tuning.TuningSuggestion(name, tuning.TUNINGS[instrument][name], confidence)
+
+
 def transcribe(job: StageJob, instrument: str) -> StageOutput:
     if job.audio_hash is None or job.duration_s is None:
         raise StageError("decoded_audio_missing", retry=False)
@@ -195,6 +216,11 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
         offset = tuning.a4_offset(mono)
         params = {**params, "a4_cents": offset.cents}
         recording = {"a4_cents": offset.cents, "a4_strength": offset.strength}
+    shifted: tuning.TuningSuggestion | None = None
+    if params.get("downtune") and recording is not None and instrument in tuning.TUNINGS:
+        shifted = down_tuning(transcriber, mono, params, instrument)
+        if shifted is not None:
+            params = {**params, "tuning_shift": DOWN_TUNINGS.index(shifted.name) + 1}
     # Transcribers with a `stereo` param take the channels and decide themselves (Transkun).
     source = audio.astype(np.float32) if "stereo" in params else mono
     sustain: list[tuple[float, float]] | None = None
@@ -203,7 +229,13 @@ def transcribe(job: StageJob, instrument: str) -> StageOutput:
     else:
         found = transcriber.transcribe(source, params)
     events = sorted(found, key=lambda e: (e.onset_s, e.pitch_midi))
-    if recording is not None and params.get("tuning_suggestion") and instrument in tuning.TUNINGS:
+    if shifted is not None and recording is not None:
+        recording["suggested"] = {
+            "name": shifted.name,
+            "tuning_midi": list(shifted.tuning_midi),
+            "confidence": shifted.confidence,
+        }
+    elif recording is not None and params.get("tuning_suggestion") and instrument in tuning.TUNINGS:
         suggestion = tuning.suggest_tuning(
             [
                 tuning.NoteLike(

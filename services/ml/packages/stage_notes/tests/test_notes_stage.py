@@ -379,3 +379,23 @@ def test_solo_bypass_transcribes_the_mixture_without_a_fallback(tmp_path: Path) 
     assert notes.notes
     assert all(n.stem_id == "mixture" for n in notes.notes)
     assert notes.sustain is not None
+
+
+def test_down_tuning_names_the_shift_a_transcriber_measures() -> None:
+    class Measured:
+        def __init__(self, shift: int) -> None:
+            self.shift = shift
+
+        def tuning_shift(self, mono: Any, params: Any) -> tuple[int, float]:
+            return self.shift, 0.4
+
+    mono = np.zeros(100, dtype=np.float32)
+    half = stage.down_tuning(Measured(1), mono, {}, "guitar")  # pyright: ignore[reportArgumentType]
+    assert half is not None
+    assert half.name == "half_step_down"
+    assert half.confidence == 0.4
+    full = stage.down_tuning(Measured(2), mono, {}, "guitar")  # pyright: ignore[reportArgumentType]
+    assert full is not None
+    assert full.tuning_midi == stage.tuning.TUNINGS["guitar"]["full_step_down"]
+    assert stage.down_tuning(Measured(0), mono, {}, "guitar") is None  # pyright: ignore[reportArgumentType]
+    assert stage.down_tuning(transcribers.get("basic_pitch"), mono, {}, "guitar") is None

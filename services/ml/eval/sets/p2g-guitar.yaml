@@ -276,6 +276,266 @@ items:
     tuning: standard
     guitars: '1'
     source: guitarset
+- id: gs-05_BN1-129-Eb_comp
+  audio: items/gs-05_BN1-129-Eb_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_BN1-129-Eb_comp/ref.json
+    tab: items/gs-05_BN1-129-Eb_comp/ref.json
+    sep: items/gs-05_BN1-129-Eb_comp/guitar.wav
+  tags:
+    style: comping
+    genre: BN
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_BN1-129-Eb_solo
+  audio: items/gs-05_BN1-129-Eb_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_BN1-129-Eb_solo/ref.json
+    tab: items/gs-05_BN1-129-Eb_solo/ref.json
+    sep: items/gs-05_BN1-129-Eb_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: BN
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Funk1-114-Ab_comp
+  audio: items/gs-05_Funk1-114-Ab_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Funk1-114-Ab_comp/ref.json
+    tab: items/gs-05_Funk1-114-Ab_comp/ref.json
+    sep: items/gs-05_Funk1-114-Ab_comp/guitar.wav
+  tags:
+    style: comping
+    genre: Funk
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Funk1-114-Ab_solo
+  audio: items/gs-05_Funk1-114-Ab_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Funk1-114-Ab_solo/ref.json
+    tab: items/gs-05_Funk1-114-Ab_solo/ref.json
+    sep: items/gs-05_Funk1-114-Ab_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: Funk
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Jazz1-130-D_comp
+  audio: items/gs-05_Jazz1-130-D_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Jazz1-130-D_comp/ref.json
+    tab: items/gs-05_Jazz1-130-D_comp/ref.json
+    sep: items/gs-05_Jazz1-130-D_comp/guitar.wav
+  tags:
+    style: comping
+    genre: Jazz
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Jazz1-130-D_solo
+  audio: items/gs-05_Jazz1-130-D_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Jazz1-130-D_solo/ref.json
+    tab: items/gs-05_Jazz1-130-D_solo/ref.json
+    sep: items/gs-05_Jazz1-130-D_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: Jazz
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Rock1-130-A_comp
+  audio: items/gs-05_Rock1-130-A_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Rock1-130-A_comp/ref.json
+    tab: items/gs-05_Rock1-130-A_comp/ref.json
+    sep: items/gs-05_Rock1-130-A_comp/guitar.wav
+  tags:
+    style: comping
+    genre: Rock
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Rock1-130-A_solo
+  audio: items/gs-05_Rock1-130-A_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Rock1-130-A_solo/ref.json
+    tab: items/gs-05_Rock1-130-A_solo/ref.json
+    sep: items/gs-05_Rock1-130-A_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: Rock
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_SS1-100-C#_comp
+  audio: items/gs-05_SS1-100-C#_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_SS1-100-C#_comp/ref.json
+    tab: items/gs-05_SS1-100-C#_comp/ref.json
+    sep: items/gs-05_SS1-100-C#_comp/guitar.wav
+  tags:
+    style: comping
+    genre: SS
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_SS1-100-C#_solo
+  audio: items/gs-05_SS1-100-C#_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_SS1-100-C#_solo/ref.json
+    tab: items/gs-05_SS1-100-C#_solo/ref.json
+    sep: items/gs-05_SS1-100-C#_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: SS
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_BN1-147-Gb_comp
+  audio: items/gs-05_BN1-147-Gb_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_BN1-147-Gb_comp/ref.json
+    tab: items/gs-05_BN1-147-Gb_comp/ref.json
+    sep: items/gs-05_BN1-147-Gb_comp/guitar.wav
+  tags:
+    style: comping
+    genre: BN
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_BN1-147-Gb_solo
+  audio: items/gs-05_BN1-147-Gb_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_BN1-147-Gb_solo/ref.json
+    tab: items/gs-05_BN1-147-Gb_solo/ref.json
+    sep: items/gs-05_BN1-147-Gb_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: BN
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Funk1-97-C_comp
+  audio: items/gs-05_Funk1-97-C_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Funk1-97-C_comp/ref.json
+    tab: items/gs-05_Funk1-97-C_comp/ref.json
+    sep: items/gs-05_Funk1-97-C_comp/guitar.wav
+  tags:
+    style: comping
+    genre: Funk
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Funk1-97-C_solo
+  audio: items/gs-05_Funk1-97-C_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Funk1-97-C_solo/ref.json
+    tab: items/gs-05_Funk1-97-C_solo/ref.json
+    sep: items/gs-05_Funk1-97-C_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: Funk
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Jazz1-200-B_comp
+  audio: items/gs-05_Jazz1-200-B_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Jazz1-200-B_comp/ref.json
+    tab: items/gs-05_Jazz1-200-B_comp/ref.json
+    sep: items/gs-05_Jazz1-200-B_comp/guitar.wav
+  tags:
+    style: comping
+    genre: Jazz
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Jazz1-200-B_solo
+  audio: items/gs-05_Jazz1-200-B_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Jazz1-200-B_solo/ref.json
+    tab: items/gs-05_Jazz1-200-B_solo/ref.json
+    sep: items/gs-05_Jazz1-200-B_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: Jazz
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Rock1-90-C#_comp
+  audio: items/gs-05_Rock1-90-C#_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Rock1-90-C#_comp/ref.json
+    tab: items/gs-05_Rock1-90-C#_comp/ref.json
+    sep: items/gs-05_Rock1-90-C#_comp/guitar.wav
+  tags:
+    style: comping
+    genre: Rock
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_Rock1-90-C#_solo
+  audio: items/gs-05_Rock1-90-C#_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_Rock1-90-C#_solo/ref.json
+    tab: items/gs-05_Rock1-90-C#_solo/ref.json
+    sep: items/gs-05_Rock1-90-C#_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: Rock
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_SS1-68-E_comp
+  audio: items/gs-05_SS1-68-E_comp/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_SS1-68-E_comp/ref.json
+    tab: items/gs-05_SS1-68-E_comp/ref.json
+    sep: items/gs-05_SS1-68-E_comp/guitar.wav
+  tags:
+    style: comping
+    genre: SS
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
+- id: gs-05_SS1-68-E_solo
+  audio: items/gs-05_SS1-68-E_solo/mixture.hard.wav
+  annotations:
+    notes: items/gs-05_SS1-68-E_solo/ref.json
+    tab: items/gs-05_SS1-68-E_solo/ref.json
+    sep: items/gs-05_SS1-68-E_solo/guitar.wav
+  tags:
+    style: single-line
+    genre: SS
+    timbre: acoustic
+    tuning: standard
+    guitars: '1'
+    source: guitarset
 - id: gs-05_BN3-119-G_comp-+20c
   audio: items/gs-05_BN3-119-G_comp-+20c/mixture.hard.wav
   annotations:
@@ -510,6 +770,19 @@ items:
     tuning: standard
     guitars: '1'
     source: guitar-techs
+- id: techs-music01-2
+  audio: items/techs-music01-2/mixture.hard.wav
+  annotations:
+    notes: items/techs-music01-2/ref.json
+    tab: items/techs-music01-2/ref.json
+    sep: items/techs-music01-2/guitar.wav
+  tags:
+    style: comping
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
 - id: techs-music02
   audio: items/techs-music02/mixture.hard.wav
   annotations:
@@ -555,6 +828,19 @@ items:
     notes: items/techs-music05/ref.json
     tab: items/techs-music05/ref.json
     sep: items/techs-music05/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-music05-2
+  audio: items/techs-music05-2/mixture.hard.wav
+  annotations:
+    notes: items/techs-music05-2/ref.json
+    tab: items/techs-music05-2/ref.json
+    sep: items/techs-music05-2/guitar.wav
   tags:
     style: single-line
     genre: mixed
@@ -666,6 +952,175 @@ items:
     tuning: standard
     guitars: '1'
     source: guitar-techs
+- id: techs-P1-vibrato-2
+  audio: items/techs-P1-vibrato-2/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-vibrato-2/ref.json
+    tab: items/techs-P1-vibrato-2/ref.json
+    sep: items/techs-P1-vibrato-2/guitar.wav
+  tags:
+    style: vibrato
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-vibrato-3
+  audio: items/techs-P1-vibrato-3/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-vibrato-3/ref.json
+    tab: items/techs-P1-vibrato-3/ref.json
+    sep: items/techs-P1-vibrato-3/guitar.wav
+  tags:
+    style: vibrato
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-palmmute
+  audio: items/techs-P1-palmmute/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-palmmute/ref.json
+    tab: items/techs-P1-palmmute/ref.json
+    sep: items/techs-P1-palmmute/guitar.wav
+  tags:
+    style: palmmute
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-palmmute-2
+  audio: items/techs-P1-palmmute-2/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-palmmute-2/ref.json
+    tab: items/techs-P1-palmmute-2/ref.json
+    sep: items/techs-P1-palmmute-2/guitar.wav
+  tags:
+    style: palmmute
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-palmmute-3
+  audio: items/techs-P1-palmmute-3/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-palmmute-3/ref.json
+    tab: items/techs-P1-palmmute-3/ref.json
+    sep: items/techs-P1-palmmute-3/guitar.wav
+  tags:
+    style: palmmute
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-chords-drop3_7
+  audio: items/techs-P1-chords-drop3_7/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-chords-drop3_7/ref.json
+    tab: items/techs-P1-chords-drop3_7/ref.json
+    sep: items/techs-P1-chords-drop3_7/guitar.wav
+  tags:
+    style: comping
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-chords-set1_m7
+  audio: items/techs-P1-chords-set1_m7/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-chords-set1_m7/ref.json
+    tab: items/techs-P1-chords-set1_m7/ref.json
+    sep: items/techs-P1-chords-set1_m7/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-chords-set2_maj7
+  audio: items/techs-P1-chords-set2_maj7/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-chords-set2_maj7/ref.json
+    tab: items/techs-P1-chords-set2_maj7/ref.json
+    sep: items/techs-P1-chords-set2_maj7/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-chords-set3_maj
+  audio: items/techs-P1-chords-set3_maj/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-chords-set3_maj/ref.json
+    tab: items/techs-P1-chords-set3_maj/ref.json
+    sep: items/techs-P1-chords-set3_maj/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-scales-a
+  audio: items/techs-P1-scales-a/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-scales-a/ref.json
+    tab: items/techs-P1-scales-a/ref.json
+    sep: items/techs-P1-scales-a/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-scales-c
+  audio: items/techs-P1-scales-c/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-scales-c/ref.json
+    tab: items/techs-P1-scales-c/ref.json
+    sep: items/techs-P1-scales-c/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-scales-e
+  audio: items/techs-P1-scales-e/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-scales-e/ref.json
+    tab: items/techs-P1-scales-e/ref.json
+    sep: items/techs-P1-scales-e/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P1-scales-g
+  audio: items/techs-P1-scales-g/mixture.hard.wav
+  annotations:
+    notes: items/techs-P1-scales-g/ref.json
+    tab: items/techs-P1-scales-g/ref.json
+    sep: items/techs-P1-scales-g/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
 - id: techs-P2-vibrato
   audio: items/techs-P2-vibrato/mixture.hard.wav
   annotations:
@@ -674,6 +1129,175 @@ items:
     sep: items/techs-P2-vibrato/guitar.wav
   tags:
     style: vibrato
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-vibrato-2
+  audio: items/techs-P2-vibrato-2/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-vibrato-2/ref.json
+    tab: items/techs-P2-vibrato-2/ref.json
+    sep: items/techs-P2-vibrato-2/guitar.wav
+  tags:
+    style: vibrato
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-vibrato-3
+  audio: items/techs-P2-vibrato-3/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-vibrato-3/ref.json
+    tab: items/techs-P2-vibrato-3/ref.json
+    sep: items/techs-P2-vibrato-3/guitar.wav
+  tags:
+    style: vibrato
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-palmmute
+  audio: items/techs-P2-palmmute/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-palmmute/ref.json
+    tab: items/techs-P2-palmmute/ref.json
+    sep: items/techs-P2-palmmute/guitar.wav
+  tags:
+    style: palmmute
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-palmmute-2
+  audio: items/techs-P2-palmmute-2/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-palmmute-2/ref.json
+    tab: items/techs-P2-palmmute-2/ref.json
+    sep: items/techs-P2-palmmute-2/guitar.wav
+  tags:
+    style: palmmute
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-palmmute-3
+  audio: items/techs-P2-palmmute-3/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-palmmute-3/ref.json
+    tab: items/techs-P2-palmmute-3/ref.json
+    sep: items/techs-P2-palmmute-3/guitar.wav
+  tags:
+    style: palmmute
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-chords-drop3_7
+  audio: items/techs-P2-chords-drop3_7/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-chords-drop3_7/ref.json
+    tab: items/techs-P2-chords-drop3_7/ref.json
+    sep: items/techs-P2-chords-drop3_7/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-chords-set1_m7
+  audio: items/techs-P2-chords-set1_m7/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-chords-set1_m7/ref.json
+    tab: items/techs-P2-chords-set1_m7/ref.json
+    sep: items/techs-P2-chords-set1_m7/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-chords-set2_maj7
+  audio: items/techs-P2-chords-set2_maj7/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-chords-set2_maj7/ref.json
+    tab: items/techs-P2-chords-set2_maj7/ref.json
+    sep: items/techs-P2-chords-set2_maj7/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-chords-set3_maj
+  audio: items/techs-P2-chords-set3_maj/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-chords-set3_maj/ref.json
+    tab: items/techs-P2-chords-set3_maj/ref.json
+    sep: items/techs-P2-chords-set3_maj/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-scales-a
+  audio: items/techs-P2-scales-a/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-scales-a/ref.json
+    tab: items/techs-P2-scales-a/ref.json
+    sep: items/techs-P2-scales-a/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-scales-c
+  audio: items/techs-P2-scales-c/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-scales-c/ref.json
+    tab: items/techs-P2-scales-c/ref.json
+    sep: items/techs-P2-scales-c/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-scales-e
+  audio: items/techs-P2-scales-e/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-scales-e/ref.json
+    tab: items/techs-P2-scales-e/ref.json
+    sep: items/techs-P2-scales-e/guitar.wav
+  tags:
+    style: single-line
+    genre: mixed
+    timbre: electric_amp
+    tuning: standard
+    guitars: '1'
+    source: guitar-techs
+- id: techs-P2-scales-g
+  audio: items/techs-P2-scales-g/mixture.hard.wav
+  annotations:
+    notes: items/techs-P2-scales-g/ref.json
+    tab: items/techs-P2-scales-g/ref.json
+    sep: items/techs-P2-scales-g/guitar.wav
+  tags:
+    style: single-line
     genre: mixed
     timbre: electric_amp
     tuning: standard
@@ -698,6 +1322,97 @@ items:
     notes: items/idmt-AR-plain/ref.json
     tab: items/idmt-AR-plain/ref.json
     sep: items/idmt-AR-plain/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-bends-k
+  audio: items/idmt-AR-bends-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-bends-k/ref.json
+    tab: items/idmt-AR-bends-k/ref.json
+    sep: items/idmt-AR-bends-k/guitar.wav
+  tags:
+    style: solo_bends
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-bends-m
+  audio: items/idmt-AR-bends-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-bends-m/ref.json
+    tab: items/idmt-AR-bends-m/ref.json
+    sep: items/idmt-AR-bends-m/guitar.wav
+  tags:
+    style: solo_bends
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-plain-k
+  audio: items/idmt-AR-plain-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-plain-k/ref.json
+    tab: items/idmt-AR-plain-k/ref.json
+    sep: items/idmt-AR-plain-k/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-plain-m
+  audio: items/idmt-AR-plain-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-plain-m/ref.json
+    tab: items/idmt-AR-plain-m/ref.json
+    sep: items/idmt-AR-plain-m/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-position-f
+  audio: items/idmt-AR-position-f/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-position-f/ref.json
+    tab: items/idmt-AR-position-f/ref.json
+    sep: items/idmt-AR-position-f/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-position-k
+  audio: items/idmt-AR-position-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-position-k/ref.json
+    tab: items/idmt-AR-position-k/ref.json
+    sep: items/idmt-AR-position-k/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-AR-position-m
+  audio: items/idmt-AR-position-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-AR-position-m/ref.json
+    tab: items/idmt-AR-position-m/ref.json
+    sep: items/idmt-AR-position-m/guitar.wav
   tags:
     style: single-line
     genre: licks
@@ -731,6 +1446,97 @@ items:
     tuning: standard
     guitars: '1'
     source: idmt-smt-guitar
+- id: idmt-FS-bends-k
+  audio: items/idmt-FS-bends-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-bends-k/ref.json
+    tab: items/idmt-FS-bends-k/ref.json
+    sep: items/idmt-FS-bends-k/guitar.wav
+  tags:
+    style: solo_bends
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-FS-bends-m
+  audio: items/idmt-FS-bends-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-bends-m/ref.json
+    tab: items/idmt-FS-bends-m/ref.json
+    sep: items/idmt-FS-bends-m/guitar.wav
+  tags:
+    style: solo_bends
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-FS-plain-k
+  audio: items/idmt-FS-plain-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-plain-k/ref.json
+    tab: items/idmt-FS-plain-k/ref.json
+    sep: items/idmt-FS-plain-k/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-FS-plain-m
+  audio: items/idmt-FS-plain-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-plain-m/ref.json
+    tab: items/idmt-FS-plain-m/ref.json
+    sep: items/idmt-FS-plain-m/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-FS-position-f
+  audio: items/idmt-FS-position-f/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-position-f/ref.json
+    tab: items/idmt-FS-position-f/ref.json
+    sep: items/idmt-FS-position-f/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-FS-position-k
+  audio: items/idmt-FS-position-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-position-k/ref.json
+    tab: items/idmt-FS-position-k/ref.json
+    sep: items/idmt-FS-position-k/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-FS-position-m
+  audio: items/idmt-FS-position-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-FS-position-m/ref.json
+    tab: items/idmt-FS-position-m/ref.json
+    sep: items/idmt-FS-position-m/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
 - id: idmt-LP-bends
   audio: items/idmt-LP-bends/mixture.hard.wav
   annotations:
@@ -752,6 +1558,123 @@ items:
     sep: items/idmt-LP-plain/guitar.wav
   tags:
     style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-bends-k
+  audio: items/idmt-LP-bends-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-bends-k/ref.json
+    tab: items/idmt-LP-bends-k/ref.json
+    sep: items/idmt-LP-bends-k/guitar.wav
+  tags:
+    style: solo_bends
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-bends-m
+  audio: items/idmt-LP-bends-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-bends-m/ref.json
+    tab: items/idmt-LP-bends-m/ref.json
+    sep: items/idmt-LP-bends-m/guitar.wav
+  tags:
+    style: solo_bends
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-plain-k
+  audio: items/idmt-LP-plain-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-plain-k/ref.json
+    tab: items/idmt-LP-plain-k/ref.json
+    sep: items/idmt-LP-plain-k/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-plain-m
+  audio: items/idmt-LP-plain-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-plain-m/ref.json
+    tab: items/idmt-LP-plain-m/ref.json
+    sep: items/idmt-LP-plain-m/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-position-f
+  audio: items/idmt-LP-position-f/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-position-f/ref.json
+    tab: items/idmt-LP-position-f/ref.json
+    sep: items/idmt-LP-position-f/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-position-k
+  audio: items/idmt-LP-position-k/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-position-k/ref.json
+    tab: items/idmt-LP-position-k/ref.json
+    sep: items/idmt-LP-position-k/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-LP-position-m
+  audio: items/idmt-LP-position-m/mixture.hard.wav
+  annotations:
+    notes: items/idmt-LP-position-m/ref.json
+    tab: items/idmt-LP-position-m/ref.json
+    sep: items/idmt-LP-position-m/guitar.wav
+  tags:
+    style: single-line
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-pieces-a
+  audio: items/idmt-pieces-a/mixture.hard.wav
+  annotations:
+    notes: items/idmt-pieces-a/ref.json
+    tab: items/idmt-pieces-a/ref.json
+    sep: items/idmt-pieces-a/guitar.wav
+  tags:
+    style: pieces
+    genre: licks
+    timbre: electric_clean
+    tuning: standard
+    guitars: '1'
+    source: idmt-smt-guitar
+- id: idmt-pieces-b
+  audio: items/idmt-pieces-b/mixture.hard.wav
+  annotations:
+    notes: items/idmt-pieces-b/ref.json
+    tab: items/idmt-pieces-b/ref.json
+    sep: items/idmt-pieces-b/guitar.wav
+  tags:
+    style: pieces
     genre: licks
     timbre: electric_clean
     tuning: standard

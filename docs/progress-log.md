@@ -1721,3 +1721,24 @@ Branch `impl/26-piano-accuracy` from `dev` (`f7844d5`), worktree `.claude/worktr
 - `pnpm lint` passes (Biome infos only, pre-existing web files); `pnpm typecheck` passes; `pnpm test`: all packages pass except `@splitune/api` (`pipeline.test.ts` ×2, `privacy.test.ts` ×3) and `@splitune/node-worker` (`lifecycle.test.ts` pg_dump, no `pg_dump` on this PC), which fail identically on `dev` here.
 
 **Owner after merging:** `scripts/fetch_models.py transkun-pop` on the worker (the weights live at `D:\models-s26\transkun-pop`, a `file://` source in the register; copy them to the worker machine or host them before running it elsewhere), then restart the workers. Not done: owner's songs end to end.
+
+## 2026-11-06 — Step 27: Guitar accuracy follow-up (intervals, note ends, bends, down-tuning)
+Branch `impl/27-guitar-accuracy` from `dev` (`cb9c882`), worktree `.claude/worktrees/s27-guitar`, the shared `services/ml/.venv` used without syncing (`PYTHONPATH` onto the worktree packages). Owner's goal: raise guitar tab accuracy on P2g; keep a change only if its held-out gain clears the 95 % interval, no tier's onset F1 down > 0.005, standard songs stay `standard`, bend precision ≥ 0.85, ECE ≤ 0.03, time ≤ +50 % per 30 s.
+
+**Test set:** P2g 57 → 128 items; held-out tiers GuitarSet player 05 (33), Guitar-TECHS (24), IDMT-SMT-Guitar (20); paired item-bootstrap intervals in `report`. GOAT (request-only) and EGDB (Drive rate limit) not obtainable. Baseline: the shipped chain re-run (`2026-11-06-baseline.md`).
+
+**Vibrato items at onset F1 0:** separation, not the reference or the matching. BS-Roformer-SW puts sustained low-string notes (F2–D3) in the bass stem; Guitab finds them on the clean guitar and on the bass stem. Low palm-muted riffs fail the same way; no separator tried keeps them.
+
+**Shipped** (`services/ml/config/notes.personal.yaml`, `services/ml/eval/results/p2g/2026-11-06-step27.md`): note ends extended while the string stays active (`extend_threshold: 0.2`), bends from a 2-frame glide, half/full-step-down detection from open strings a semitone or two up (`downtune`, `stage.down_tuning`, `Guitab.tuning_shift`, ≤ 60 s of audio per song). Held-out onset+offset F1 0.618 → 0.673, 0.166 → 0.330, 0.241 → 0.490 (all outside the intervals); onset F1 and Tab F1 within ±0.003 on every tier; bends 30 → 34 of 52 at precision 0.87; down-tuning applied right on 27/121 and 21/121 detuned stems (Tab F1 with the suggestion 0 → 0.097 / 0.079), never on the 121 standard ones; calibration refit (ECE 0.028 → 0.017). Time per 30 s (quiet run): notes.guitar 1.8 → 4.2–4.8 s, separation + notes 7.0 → 9.4–10.0 s (+34–43 %).
+
+**Not met:** Tab F1 did not improve. Dropped: Guitab E19 and E25+E19, a semitone-up TTA pass, a note-end threshold (cuts onsets), cue weights above 2 (saturated), a Guitab fine-tune for electric/separated audio (`p2g_finetune.py` redone with a leak-free split; never beat E25), the string classifier fused with Guitab (IDMT +0.041 `as_played`, Guitar-TECHS −0.030), `chain_sw_becruily` / `ens_sw_becruily` / becruily separators (lose on every tier). No weights: Fretting-Transformer, MIDI-to-Tab, TART, FretNet, Noise2Fret.
+
+**Incidents:** the PC crashed twice (`VIDEO_TDR_FAILURE`) during GPU separation; work moved to CPU and truncated outputs were recomputed. With the RTX 3060 capped at 76 % power (129 W) a 36-minute soak and the fine-tunes ran without driver errors.
+
+**Cache keys:** `notes.guitar` changes for every guitar analysis (params and calibration table).
+
+**Verification**
+- `services/ml`: `uv run --no-sync ruff check` and `ruff format --check` clean; `pyright` 0 errors (worktree packages on the import path); `pytest` 302 passed, 1 skipped, 2 failed (`test_stem_post` ×2, failing on `dev` too), `test_recovery.py` excluded (on `dev` here one test fails and the next hangs); `pytest -m models packages/stage_notes` 3 passed.
+- `pnpm lint` and `pnpm typecheck` pass except the ML tasks, which failed only for want of a worktree venv (run directly above). `pnpm test` (JS packages): all pass except `@splitune/api` `pipeline.test.ts` ×2 and `@splitune/node-worker` `lifecycle.test.ts` (`pg_dump`), failing identically on `dev` here; `@splitune/music-core` 180 passed (no golden change).
+
+**Owner after merging:** restart the workers (new `notes.guitar` params and calibration). Not done: the owner's songs end to end.
