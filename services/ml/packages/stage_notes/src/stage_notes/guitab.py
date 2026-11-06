@@ -16,7 +16,9 @@ as for Basic Pitch, and a detuned song's notes keep their string (the fret is th
 
 from __future__ import annotations
 
+import hashlib
 import threading
+from collections.abc import Callable
 from dataclasses import replace
 from typing import Any, cast
 
@@ -28,7 +30,15 @@ from splitune_ml_core import contracts, register
 
 from . import basic_pitch as bp
 from . import tuning
-from .transcribers import A4_MIN_CENTS, BASIC_PITCH_DEFAULTS, NoteEvent, get, models_dir, ref_for
+from .transcribers import (
+    A4_MIN_CENTS,
+    BASIC_PITCH_DEFAULTS,
+    RATE,
+    NoteEvent,
+    get,
+    models_dir,
+    ref_for,
+)
 
 SR = 22050
 HOP = 256
@@ -61,6 +71,19 @@ GUITAB_DEFAULTS: dict[str, Any] = {
     "bends": False,
     "bend_min_cents": 75.0,
     "bend_min_glide_frames": 3,
+    "extend_threshold": None,  # notes ring on while their string's activity stays above this
+    # Down-tuning (tuning_shift; the notes stage asks for it with `downtune` and passes the result
+    # back as `tuning_shift`): open-string evidence first, sustained notes below E2 second.
+    "downtune": False,
+    "tuning_shift": 0,  # semitones the recording sits below standard tuning (set by the stage)
+    "downtune_max": 2,  # semitones
+    "downtune_max_s": 60.0,  # audio the check reads at most (excerpt): its cost stays bounded
+    "downtune_open_min": 0.08,  # open-string share of note time at the chosen shift, at least
+    "downtune_open_margin": 0.05,  # above the unshifted share by this much
+    "downtune_open_ratio": 10.0,  # and this many times the unshifted share
+    "downtune_min_notes": 3,  # sustained low Basic Pitch notes needed
+    "downtune_min_confidence": 0.5,
+    "downtune_min_duration_s": 0.15,
 }
 # Basic Pitch for the bend pass: the guitar thresholds from the P2 sweep (notes.personal.yaml).
 BEND_PASS: dict[str, Any] = {
@@ -133,6 +156,54 @@ class RawNote:
         return OPEN_PITCH[self.col] + self.fret
 
 
+def low_shift(bent: list[NoteEvent], p: dict[str, Any]) -> int:
+    """Semitones a down-tuned recording sits below standard: at least `downtune_min_notes`
+    sustained, confident Basic Pitch notes below E2 (which standard tuning cannot play), the
+    shift reaching the robust lowest of them (10th percentile), at most `downtune_max`."""
+    low = sorted(
+        e.pitch_midi
+        for e in bent
+        if e.pitch_midi < OPEN_PITCH[0]
+        and e.offset_s - e.onset_s >= float(p["downtune_min_duration_s"])
+        and e.confidence_raw >= float(p["downtune_min_confidence"])
+    )
+    if len(low) < int(p["downtune_min_notes"]):
+        return 0
+    return min(int(p["downtune_max"]), OPEN_PITCH[0] - low[len(low) // 10])
+
+
+def excerpt(mono: NDArray[np.float32], seconds: float) -> NDArray[np.float32]:
+    """`mono`, or for a longer recording `seconds` of it: three equal pieces from its start,
+    middle and end, joined."""
+    size = int(seconds * RATE / 3)
+    if len(mono) <= 3 * size:
+        return mono
+    starts = [i * (len(mono) - size) // 2 for i in range(3)]
+    return np.concatenate([mono[a : a + size] for a in starts])
+
+
+def open_share(notes: list[RawNote]) -> float:
+    """Share of note time on open strings."""
+    total = sum(n.end - n.start for n in notes)
+    return sum(n.end - n.start for n in notes if n.fret == 0) / total if total else 0.0
+
+
+def open_shift(shares: list[float], p: dict[str, Any]) -> tuple[int, float]:
+    """(semitones, confidence) from the open-string share of Guitab's notes on the input raised by
+    0, 1, … semitones: a guitar tuned k semitones down rings its open strings only once raised by k
+    (P2g fit split: 5 % of note time at the true shift, under 1 % elsewhere). Fires only on clear
+    evidence (a wrong tuning moves every fret), else (0, 0)."""
+    k = max(range(1, len(shares)), key=lambda i: shares[i])
+    unshifted, best = shares[0], shares[k]
+    if (
+        best >= float(p["downtune_open_min"])
+        and best - unshifted >= float(p["downtune_open_margin"])
+        and best >= float(p["downtune_open_ratio"]) * unshifted
+    ):
+        return k, round(best / (sum(shares) or 1.0), 3)
+    return 0, 0.0
+
+
 def extract(
     tab: NDArray[np.float32], onset: NDArray[np.float32], p: dict[str, Any]
 ) -> list[RawNote]:
@@ -194,6 +265,19 @@ def extract(
     if p["reattack"]:
         notes = merge_reattacks(notes, onset, float(p["reattack"]))
     return notes
+
+
+def extend_offsets(notes: list[RawNote], tab: NDArray[np.float32], threshold: float) -> None:
+    """Each note's end moved on while its string's activity stays above `threshold`, up to the next
+    note on that string: the frame threshold that ends a note for segmentation cuts a ringing
+    note short (step 27: onset+offset F1), and starts stay as they were."""
+    total = len(tab)
+    for col in range(6):
+        on_string = sorted((n for n in notes if n.col == col), key=lambda n: n.start)
+        for i, n in enumerate(on_string):
+            limit = on_string[i + 1].start if i + 1 < len(on_string) else total
+            while n.end < limit and 1.0 - float(tab[n.end, col, 0]) > threshold:
+                n.end += 1
 
 
 def drop_duplicates(notes: list[RawNote], window: int) -> list[RawNote]:
@@ -287,6 +371,9 @@ class Guitab:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._session: ort.InferenceSession | None = None
+        # Passes of the recording being transcribed: the down-tuning check (tuning_shift) and
+        # transcribe share the unshifted E25 pass and the bend pass; transcribe drops them.
+        self._memo: dict[tuple[Any, ...], Any] = {}
 
     def model_ref(self) -> contracts.ModelRef:
         return ref_for(self.record, "guitab/e25")
@@ -304,36 +391,97 @@ class Guitab:
                 )
             return self._session
 
+    def remembered[T](
+        self, mono: NDArray[np.float32], key: tuple[Any, ...], compute: Callable[[], T]
+    ) -> T:
+        """compute() for `mono`, kept until transcribe is done or another recording comes."""
+        digest = hashlib.blake2b(mono.tobytes(), digest_size=16).digest()
+        with self._lock:
+            if (digest, *key) in self._memo:
+                return cast(T, self._memo[(digest, *key)])
+        value = compute()
+        with self._lock:
+            if any(k[0] != digest for k in self._memo):
+                self._memo.clear()
+            self._memo[(digest, *key)] = value
+        return value
+
+    def posteriors(
+        self, mono: NDArray[np.float32], retune: float
+    ) -> tuple[NDArray[np.float32], NDArray[np.float32], float]:
+        """(tab, onset, stretch) of E25 on `mono` retuned by `retune` cents (tape speed; offsets
+        under A4_MIN_CENTS are left alone)."""
+
+        def compute() -> tuple[NDArray[np.float32], NDArray[np.float32], float]:
+            audio, stretch = mono, 1.0
+            if abs(retune) >= A4_MIN_CENTS:
+                audio, stretch = tuning.retuned(mono, retune)
+            tab, onset = predict(self.session(), features(audio))
+            return tab, onset, stretch
+
+        return self.remembered(mono, ("pass", round(retune, 3)), compute)
+
+    @staticmethod
+    def raw_notes(
+        tab: NDArray[np.float32], onset: NDArray[np.float32], params: dict[str, Any]
+    ) -> list[RawNote]:
+        notes = extract(tab, onset, params)
+        if params.get("extend_threshold") is not None:
+            extend_offsets(notes, tab, float(params["extend_threshold"]))
+        return notes
+
+    def bend_pass(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]:
+        """Basic Pitch's notes with their bend curves (Guitab has no pitch contour)."""
+        bend = {
+            "a4_cents": float(params.get("a4_cents") or 0.0),
+            "bends": True,
+            "bend_min_cents": params["bend_min_cents"],
+            "bend_min_glide_frames": params["bend_min_glide_frames"],
+        }
+        return self.remembered(
+            mono,
+            ("bends", *bend.values()),
+            lambda: get("basic_pitch").transcribe(
+                mono, {**BASIC_PITCH_DEFAULTS, **BEND_PASS, **bend}
+            ),
+        )
+
+    def tuning_shift(self, mono: NDArray[np.float32], params: dict[str, Any]) -> tuple[int, float]:
+        """(semitones below standard, confidence) of the recording: the open-string cue
+        (open_shift) or, failing that, sustained notes below E2 (low_shift, confidence 0.5)."""
+        cents = float(params.get("a4_cents") or 0.0)
+        heard = excerpt(mono, float(params["downtune_max_s"]))
+        shares: list[float] = []
+        for k in range(int(params["downtune_max"]) + 1):
+            tab, onset, _ = self.posteriors(heard, cents - 100.0 * k)
+            shares.append(open_share(extract(tab, onset, params)))
+        shift, confidence = open_shift(shares, params)
+        if shift == 0:
+            low = low_shift(self.bend_pass(mono, params), params)
+            if low:
+                return low, 0.5
+        return shift, confidence
+
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]:
         cents = float(params.get("a4_cents") or 0.0)
-        stretch = 1.0
-        audio = mono
-        if abs(cents) >= A4_MIN_CENTS:
-            audio, stretch = tuning.retuned(mono, cents)
-        tab, onset = predict(self.session(), features(audio))
+        # A recording tuned `shift` semitones down is raised by as much, so its open strings
+        # land on Guitab's standard ones; the notes come back down by as much (strings unchanged).
+        shift = int(params.get("tuning_shift") or 0)
+        tab, onset, stretch = self.posteriors(mono, cents - 100.0 * shift)
         frames = int(params["fret_frames"])
         notes = [
             NoteEvent(
                 onset_s=n.start / FPS / stretch,
                 offset_s=n.end / FPS / stretch,
-                pitch_midi=n.pitch,
+                pitch_midi=n.pitch - shift,
                 velocity=int(np.clip(round(127 * n.score), 1, 127)),
                 confidence_raw=min(1.0, max(0.0, n.score)),
                 string_probs=string_probs(tab, n, frames) if params["string_cue"] else None,
             )
-            for n in extract(tab, onset, params)
+            for n in self.raw_notes(tab, onset, params)
         ]
-        if not params["bends"]:
-            return notes
-        bent = get("basic_pitch").transcribe(
-            mono,
-            {
-                **BASIC_PITCH_DEFAULTS,
-                **BEND_PASS,
-                "a4_cents": cents,
-                "bends": True,
-                "bend_min_cents": params["bend_min_cents"],
-                "bend_min_glide_frames": params["bend_min_glide_frames"],
-            },
-        )
-        return with_bends(notes, [e for e in bent if e.bend_cents])
+        if params["bends"]:
+            notes = with_bends(notes, [e for e in self.bend_pass(mono, params) if e.bend_cents])
+        with self._lock:
+            self._memo.clear()
+        return notes

@@ -93,3 +93,80 @@ def test_with_bends_gives_the_curve_to_the_picked_note_and_drops_its_glide() -> 
     ]
     missed = guitab.with_bends([], [event(3.0, 3.4, 60, curve)])
     assert [n.pitch_midi for n in missed] == [60]
+
+
+def test_extend_offsets_lets_a_fading_note_ring_on_up_to_the_next_note() -> None:
+    tab, onset = posteriors([(2, 5, 10, 40), (2, 7, 50, 60)])
+    tab[25:40, 2, 0] = 0.5  # the first note fades: activity 0.5 from frame 25
+    tab[25:40, 2, 6] = 0.5
+    tab[40:50, 2, 0] = 0.6  # and rings on faintly until the next note
+    tab[40:50, 2, 6] = 0.4
+    notes = extract(tab, onset, GUITAB_DEFAULTS)
+    assert [(n.start, n.end) for n in notes] == [(10, 25), (50, 60)]
+    guitab.extend_offsets(notes, tab, 0.3)
+    assert [(n.start, n.end) for n in notes] == [(10, 50), (50, 60)]
+
+
+def test_low_shift_needs_sustained_confident_notes_below_e2() -> None:
+    def note(pitch: int, seconds: float = 0.5, confidence: float = 0.8) -> NoteEvent:
+        return NoteEvent(1.0, 1.0 + seconds, pitch, 80, confidence)
+
+    params = dict(GUITAB_DEFAULTS)
+    assert guitab.low_shift([note(39)] * 2 + [note(50)] * 5, params) == 0  # too few low notes
+    assert guitab.low_shift([note(39)] * 4, params) == 1  # half step down
+    assert guitab.low_shift([note(38)] * 3 + [note(39)] * 3, params) == 2  # full step down
+    assert guitab.low_shift([note(35)] * 4, params) == 2  # capped at downtune_max
+    assert guitab.low_shift([note(38, seconds=0.05)] * 4, params) == 0  # too short
+    assert guitab.low_shift([note(38, confidence=0.2)] * 4, params) == 0  # not confident
+
+
+def test_open_shift_needs_clear_open_string_evidence_at_one_shift() -> None:
+    params = dict(GUITAB_DEFAULTS)
+    assert guitab.open_shift([0.004, 0.12, 0.01], params)[0] == 1  # half step down
+    assert guitab.open_shift([0.0, 0.01, 0.09], params)[0] == 2  # full step down
+    assert guitab.open_shift([0.06, 0.12, 0.0], params) == (0, 0.0)  # open strings ring unshifted
+    assert guitab.open_shift([0.0, 0.05, 0.0], params) == (0, 0.0)  # too little evidence
+
+
+def test_excerpt_keeps_a_short_recording_and_bounds_a_long_one() -> None:
+    short = np.zeros(guitab.RATE * 30, dtype=np.float32)
+    assert guitab.excerpt(short, 60.0) is short
+    long = np.arange(guitab.RATE * 300, dtype=np.float32)
+    cut = guitab.excerpt(long, 60.0)
+    assert len(cut) == guitab.RATE * 60
+    piece = guitab.RATE * 20
+    assert cut[0] == 0
+    assert cut[piece] == (len(long) - piece) // 2
+    assert cut[-1] == long[-1]
+
+
+def test_the_down_tuning_check_and_the_transcription_share_their_passes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def fake_predict(_: object, feat: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        calls.append(len(feat))
+        return posteriors([(0, 3, 10, 30)])
+
+    monkeypatch.setattr(guitab, "predict", fake_predict)
+
+    def no_features(audio: np.ndarray) -> np.ndarray:
+        return np.zeros((FRAMES, guitab.N_BINS), dtype=np.float32)
+
+    def no_bends(mono: np.ndarray, params: dict[str, object]) -> list[NoteEvent]:
+        return []
+
+    monkeypatch.setattr(guitab, "features", no_features)
+    model = guitab.Guitab()
+    monkeypatch.setattr(model, "session", lambda: None)
+    params = {**GUITAB_DEFAULTS, "downtune": True, "bends": False}
+    monkeypatch.setattr(model, "bend_pass", no_bends)
+    mono = np.zeros(guitab.RATE * 10, dtype=np.float32)
+    assert model.tuning_shift(mono, params) == (0, 0.0)
+    assert len(calls) == 3  # standard, a semitone up, two semitones up
+    notes = model.transcribe(mono, params)
+    assert len(calls) == 3
+    assert [n.pitch_midi for n in notes] == [OPEN_PITCH[0] + 3]
+    model.transcribe(mono, params)
+    assert len(calls) == 4  # transcribe drops the passes when it is done
