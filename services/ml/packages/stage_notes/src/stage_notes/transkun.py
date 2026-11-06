@@ -39,6 +39,7 @@ from splitune_ml_core import contracts, register
 from .transcribers import NoteEvent, models_dir, ref_for
 
 RECORD = "transkun-v2"
+POP_RECORD = "transkun-v2-pop"
 SUSTAIN = -64
 # Segment and hop of the model config (16 s windows, 8 s hop); overridable per instrument.
 TRANSKUN_DEFAULTS: dict[str, Any] = {
@@ -187,6 +188,7 @@ def clean_up(
 class Transkun:
     name = "transkun"
     record = RECORD
+    model_id = "transkun/2.0"
     defaults = TRANSKUN_DEFAULTS
 
     def __init__(self) -> None:
@@ -194,7 +196,7 @@ class Transkun:
         self._model: Any = None
 
     def model_ref(self) -> contracts.ModelRef:
-        return ref_for(self.record, "transkun/2.0")
+        return ref_for(self.record, self.model_id)
 
     def _load(self) -> Any:
         with self._lock:
@@ -203,7 +205,8 @@ class Transkun:
                 from transkun import ModelTransformer
 
                 weights, conf_path = register.verify(
-                    register.model(self.record), models_dir() / "transkun"
+                    register.model(self.record),
+                    models_dir() / register.WEIGHTS_DIRS[self.record],
                 )
                 conf = ModelTransformer.Config()
                 conf.__dict__.update(json.loads(conf_path.read_text())["Model"]["config"])
@@ -289,3 +292,14 @@ class Transkun:
 
     def transcribe(self, mono: NDArray[np.float32], params: dict[str, Any]) -> list[NoteEvent]:
         return self.transcribe_with_pedal(mono, params)[0]
+
+
+class TranskunPop(Transkun):
+    """The same model fine-tuned on pop piano (step 26, eval/p2p_finetune.py run `ft2`: POP909
+    rendered through sampled and electric pianos, MAESTRO train excerpts, P2p's fit split). It
+    wins on solo piano and loses on separated band stems, so notes.personal.yaml uses it only
+    when the solo check skipped separation (eval/results/p2p)."""
+
+    name = "transkun_pop"
+    record = POP_RECORD
+    model_id = "transkun/2.0-pop-ft2"

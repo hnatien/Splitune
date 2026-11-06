@@ -46,3 +46,4 @@ Work done without a step prompt. Its progress-log headings use their own numbers
 | Step 18b | Guitar and bass Notes view | s21 |
 | Step 18c | Vocal Melody view (merged into `dev`) | Prerequisite of s23 |
 | Fix: … entries | Stage-start deadlock, production sign-in (SMTP) | — |
+| Step 26 | Piano accuracy follow-up: candidate screen, Transkun pop fine-tune on the solo-piano path | s24 follow-up |

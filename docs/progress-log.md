@@ -1696,3 +1696,28 @@ Branch `claude/hungry-tu-0169b2` on `impl/arch-deepening` (`ea02d1c`). A review 
 - Without chords there is no view switch, so piano's and drums' Staff and guitar/bass Notes can't be reached (found in passing, not changed).
 - Phones still never show Piano options (owner: phones stay as they are).
 
+## 2026-11-05 — Step 26: Piano accuracy (candidate screen, pop fine-tune on the solo path)
+Branch `impl/26-piano-accuracy` from `dev` (`f7844d5`), worktree `.claude/worktrees/s26-piano`, CUDA venv `D:/venvs/s24-ml` (repointed; the shared `services/ml/.venv` untouched). Owner's goal: raise piano accuracy on P2p; keep a candidate only if it beats the shipped chain on held-out items with no tier down > 0.005 onset F1, ECE ≤ today's, time ≤ +50 %.
+
+**Incidents:** `D:\datasets` had been deleted before the step (and again on 2026-11-05 while the PC was off); everything was re-downloaded (MAPS/SMD by HTTP-range extraction, Slakh2100's 24 test tracks streamed from the 104 GB Hugging Face archive) and P2p rebuilt twice. The rebuilt set reproduces step 24's numbers exactly. D: filled up once (own downloads; freed).
+
+**Baseline** (`services/ml/eval/results/p2p/2026-11-04-baseline.md`): step 24's chain reproduces `2026-10-24-final.md`. Weak cells: mixture fallback (0.62–0.78), offsets/velocity, phone/doubled/Slakh-native, hands.
+
+**Candidates** (`eval/results/p2p/2026-11-05-step26.md`, held-out items):
+- No released weights: OT distribution matching (2605.17405), Rubato (2605.24291), noise injection (2410.14122). Edwards et al. (2402.01424) is step 24's robust Kong (not repeated).
+- MuScriptor medium (2607.08168): band mixtures 0.05–0.22 vs YourMT3+ 0.63–0.91, 63 s / 30 s; mislabels solo pianos. Dropped.
+- hFT-Transformer: pop-solo 0.827 vs 0.920 clean. Dropped.
+- Cluster and Separate (svsep): ASAP staves 0.916 vs PM2S 0.927 on unseen pieces; needs quantized input. Dropped.
+- Transkun TTA: hop/segment changes break its stitching; shift-and-vote +0.001/+0.005 at 3× time. Not worth it.
+- Transkun fine-tune `ft1`: lost recall (MUSDB `other` keys bled into the stem unlabelled). Stopped.
+- **Transkun fine-tune `ft2`** (`eval/p2p_finetune.py`: POP909 renders through every p2p renderer, half under MUSDB drums+bass+vocals and separated, 48 MAESTRO train excerpts, P2p fit split; 2500 steps, 1.6 h): wins on solo input, loses on band stems (legacy −0.024).
+
+**Shipped:** `notes.piano` gets a `solo` entry (`InstrumentSpec.solo`, `stage.source_kind`): when the solo check skips separation, `transkun_pop` (register `transkun-v2-pop`, own calibration table) transcribes; stems keep `transkun-v2`. Held-out onset F1 real-solo 0.942 → 0.956, pop-solo 0.858 → 0.935 (phone 0.769 → 0.916, room 0.886 → 0.938, heavy-pedal 0.824 → 0.912), onset+offset (pedal) real-solo 0.414 → 0.489, pop-solo 0.492 → 0.703; band tiers unchanged; ECE 0.009 → 0.007; solo time +6–7 %. Not improved: mixture fallback, hands, electric piano in a band; real-solo on+off+vel 0.513 → 0.484. End-to-end report `2026-11-05-final.md` (`report --chain s24 final`).
+
+**Cache keys:** `notes.piano` on solo-bypassed analyses changes (transcriber, model ref, calibration); band and mixture paths keep their keys.
+
+**Verification**
+- `services/ml`: `uv run --no-sync ruff check` clean, `ruff format --check` clean, `pyright` 0 errors; `pytest` 296 passed, 5 failed (`test_stem_post` ×2, `test_beats_model::test_cpu_fallback_uses_the_small_model`, `test_recovery` ×2), the same 5 fail on `dev` in the production venv; `pytest -m models packages/stage_notes` 3 passed.
+- `pnpm lint` passes (Biome infos only, pre-existing web files); `pnpm typecheck` passes; `pnpm test`: all packages pass except `@splitune/api` (`pipeline.test.ts` ×2, `privacy.test.ts` ×3) and `@splitune/node-worker` (`lifecycle.test.ts` pg_dump, no `pg_dump` on this PC), which fail identically on `dev` here.
+
+**Owner after merging:** `scripts/fetch_models.py transkun-pop` on the worker (the weights live at `D:\models-s26\transkun-pop`, a `file://` source in the register; copy them to the worker machine or host them before running it elsewhere), then restart the workers. Not done: owner's songs end to end.

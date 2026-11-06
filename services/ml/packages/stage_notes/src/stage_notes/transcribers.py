@@ -209,6 +209,9 @@ class SourceSpec(BaseModel):
 class InstrumentSpec(SourceSpec):
     # The transcriber for the mixture, when there is no stem for the instrument (default: the same).
     mixture: SourceSpec | None = None
+    # The transcriber when the separate stage's solo check skipped separation (the instrument
+    # alone in the mix; default: the stem one).
+    solo: SourceSpec | None = None
     # A hand per note (piano): "pm2s" runs the PM2S hand-part model after transcription.
     hands: Literal["pm2s"] | None = None
 
@@ -248,6 +251,10 @@ def get(name: str) -> NoteTranscriber:
                 from .transkun import Transkun  # torch island only
 
                 _instances[name] = Transkun()
+            elif name == "transkun_pop":
+                from .transkun import TranskunPop  # torch island only
+
+                _instances[name] = TranskunPop()
             elif name == "adtof":
                 from .adtof import Adtof  # torch island only
 
@@ -264,11 +271,12 @@ def hands_model(instrument: str) -> str | None:
 
 def for_instrument(instrument: str, source: str = "stem") -> tuple[NoteTranscriber, dict[str, Any]]:
     """The transcriber and its effective params for the instrument's stem or, with
-    `source="mixture"`, for the mixture (its `mixture` entry when the config has one)."""
+    `source="mixture"` / `"solo"`, for the mixture without a stem / with the separation skipped
+    (the config's `mixture` / `solo` entry when it has one)."""
     spec = load_config().instruments.get(instrument)
     if spec is None:
         raise StageError("invalid_params", retry=False)
-    chosen: SourceSpec = spec.mixture if source == "mixture" and spec.mixture else spec
+    chosen: SourceSpec = {"mixture": spec.mixture, "solo": spec.solo}.get(source) or spec
     transcriber = get(chosen.transcriber)
     unknown = set(chosen.params) - set(transcriber.defaults)
     if unknown:

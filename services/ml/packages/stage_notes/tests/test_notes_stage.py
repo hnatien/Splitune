@@ -298,12 +298,62 @@ def test_the_mixture_gets_its_own_transcriber_in_the_same_island(
         transcribers.load_config.cache_clear()
 
 
+def test_the_solo_path_gets_its_own_transcriber_in_the_same_island(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from splitune_ml_core.stages import notes_placement
+
+    config = notes_config(
+        tmp_path,
+        {
+            "transcriber": "transkun",
+            "params": {"gate_db": 45},
+            "solo": {"transcriber": "transkun_pop", "params": {"gate_db": 30}},
+        },
+    )
+    monkeypatch.setenv("ML_NOTES_CONFIG", str(config))
+    transcribers.load_config.cache_clear()
+    try:
+        stem, stem_params = transcribers.for_instrument("piano", stage.source_kind(True, False))
+        solo, solo_params = transcribers.for_instrument("piano", stage.source_kind(True, True))
+        assert (stem.name, stem_params["gate_db"]) == ("transkun", 45)
+        assert (solo.name, solo_params["gate_db"]) == ("transkun_pop", 30)
+        assert solo.model_ref().model_id != stem.model_ref().model_id
+        # No mixture entry: the mixture keeps the stem transcriber.
+        assert transcribers.for_instrument("piano", "mixture")[0].name == "transkun"
+        assert notes_placement("piano") == ("torch", "gpu")
+        config.write_text(
+            json.dumps(
+                {
+                    **json.loads(config.read_text()),
+                    "instruments": {
+                        "piano": {"transcriber": "transkun", "solo": {"transcriber": "guitab"}}
+                    },
+                }
+            )
+        )
+        with pytest.raises(ValueError, match="solo transcriber runs in another island"):
+            notes_placement("piano")
+    finally:
+        transcribers.load_config.cache_clear()
+
+
+def test_the_source_kind_follows_the_solo_check() -> None:
+    assert stage.source_kind(has_stem=True, bypass=False) == "stem"
+    assert stage.source_kind(has_stem=False, bypass=False) == "mixture"
+    assert stage.source_kind(has_stem=True, bypass=True) == "solo"
+    assert stage.source_kind(has_stem=False, bypass=True) == "solo"
+
+
 @pytest.mark.models
 def test_solo_bypass_transcribes_the_mixture_without_a_fallback(tmp_path: Path) -> None:
     try:
-        register.verify(register.model("transkun-v2"), transcribers.models_dir() / "transkun")
+        for record in ("transkun-v2", "transkun-v2-pop"):
+            register.verify(
+                register.model(record), transcribers.models_dir() / register.WEIGHTS_DIRS[record]
+            )
     except Exception:
-        pytest.skip("Transkun weights not installed (scripts/fetch_models.py transkun)")
+        pytest.skip("Transkun weights missing (scripts/fetch_models.py transkun transkun-pop)")
     audio = phrase(RATE)
     decoded = write_stereo(tmp_path / "decoded.flac", audio)
     silent = np.zeros_like(audio)  # a stem that lost everything: the bypass must ignore it
@@ -320,10 +370,12 @@ def test_solo_bypass_transcribes_the_mixture_without_a_fallback(tmp_path: Path) 
     }
     description = piano.describe({}, inputs)
     assert description.params["source"] == "mixture"
-    assert description.params["transcriber"] == "transkun"
+    # notes.personal.yaml: the pop fine-tune transcribes when separation was skipped.
+    assert description.params["transcriber"] == "transkun_pop"
     out = piano.run(job(tmp_path, piano, inputs, decoded, len(audio)))
     assert (out.status, out.fallback_reason) == ("done", None)
     notes = contracts.Notes.model_validate_json(Path(out.files["notes"]).read_text())
+    assert notes.models[0].model_id == "transkun/2.0-pop-ft2"
     assert notes.notes
     assert all(n.stem_id == "mixture" for n in notes.notes)
     assert notes.sustain is not None
