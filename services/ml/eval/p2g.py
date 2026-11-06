@@ -53,7 +53,7 @@ import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 import yaml
 from numpy.typing import NDArray
 from scipy.signal import resample_poly  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
-from splitune_eval import formats, scoring
+from splitune_eval import bootstrap, formats, scoring
 from splitune_eval.guitar_refs import (
     STANDARD,
     EstNote,
@@ -73,6 +73,7 @@ from splitune_eval.guitar_refs import (
 from splitune_eval.local import LocalRun, write_json
 from splitune_eval.report import git_sha
 from splitune_eval.tab_metrics import load_jams
+from splitune_ml_core.errors import StageError
 
 DATASETS = Path(os.environ.get("SPLITUNE_DATASETS_DIR", "~/datasets")).expanduser()
 ROOT = DATASETS / "p2g"
@@ -336,13 +337,16 @@ def gs_tags(genre: str, mode: str, **extra: str) -> dict[str, str]:
 
 
 def build_guitarset() -> Iterable[tuple[Item, Audio, GuitarRef]]:
-    for take, player in enumerate(("03", "04")):
+    # Players 03-04 on progression 2 (fit); player 05 on both progression-1 lead sheets (step 27:
+    # the held-out GuitarSet tier, disjoint from the derived items, which use progressions 2-3).
+    plain = [(player, 2, take) for take, player in enumerate(("03", "04"))]
+    plain += [("05", 1, take) for take in (0, 1)]
+    for player, progression, take in plain:
         for style in GS_STYLES:
             for mode in ("comp", "solo"):
-                name = gs_name(player, style, 2, mode, take)
-                item = Item(
-                    f"gs-{name}", "guitarset", gs_tags(style, mode), ["basic_pitch", "yourmt3"]
-                )
+                name = gs_name(player, style, progression, mode, take)
+                in_sample = ["basic_pitch", "yourmt3", *(["guitab"] if player <= "03" else [])]
+                item = Item(f"gs-{name}", "guitarset", gs_tags(style, mode), in_sample)
                 yield item, gs_audio(name), gs_ref(name)
     for player, style, progression, mode, cents, tuning in GS_REPITCHED:
         name = gs_name(player, style, progression, mode)
@@ -503,19 +507,61 @@ def chordal(ref: GuitarRef) -> bool:
     return shared > CHORDAL_SHARE * max(len(onsets), 1)
 
 
+TECHS_MIN_WINDOW_S = 15.0  # a later window of a music piece needs at least this much left
+TECHS_TECHNIQUE_WINDOWS = 3  # windows spread over each long technique recording
+# Technique recordings used (Bendings: stepped-note MIDI, see techs_ref; Harmonics and
+# PinchHarmonics: the pickup writes the fretted pitch, not the sounding harmonic).
+TECHS_TECHNIQUES = ("Vibrato", "PalmMute")
+
+
+# Chord-voicing and scale drills: one window from the first note of each picked recording.
+TECHS_DRILLS = {
+    "chords": ("Drop3_7", "Set1_m7", "Set2_Maj7", "Set3_maj"),
+    "scales": ("A", "C", "E", "G"),
+}
+
+
+def techs_windows(midi: Path, duration_s: float, count: int | None) -> list[float]:
+    """Window starts (s): from the first note, then every MAX_EXCERPT_S while at least
+    TECHS_MIN_WINDOW_S remain (count None), or `count` windows spread evenly over the recording,
+    each moved back to TECHS_LEAD_IN_S before the next note onset."""
+    onsets = sorted(n.onset_s for n in techs_ref(midi, 0.0, float("inf"), vibrato=False).notes)
+    if not onsets:
+        return []
+    if count is None:
+        starts: list[float] = []
+        t = max(0.0, onsets[0] - TECHS_LEAD_IN_S)
+        while t == 0.0 or duration_s - t >= TECHS_MIN_WINDOW_S:
+            starts.append(t)
+            later = [o for o in onsets if o >= t + MAX_EXCERPT_S]
+            if not later:
+                break
+            t = later[0] - TECHS_LEAD_IN_S
+        return starts
+    span = max(onsets[-1] - MAX_EXCERPT_S, onsets[0])
+    starts = []
+    for k in range(count):
+        target = onsets[0] + (span - onsets[0]) * k / max(count - 1, 1)
+        first = next(o for o in onsets if o >= target)
+        starts.append(max(0.0, first - TECHS_LEAD_IN_S))
+    return sorted(set(starts))
+
+
 def build_techs() -> Iterable[tuple[Item, Audio, GuitarRef]]:
-    """Guitar-TECHS (CC-BY-4.0, Zenodo 14963133): the amp-miked electric (`micamp`), one window
-    from the first note of each music excerpt, and the Vibrato recordings of both players (the
-    bend detector's negatives)."""
+    """Guitar-TECHS (CC-BY-4.0, Zenodo 14963133): the amp-miked electric (`micamp`), consecutive
+    40 s windows of each music excerpt (P3, a third player), windows spread over the Vibrato
+    (the bend detector's negatives) and PalmMute recordings of both players, and one window of
+    a few chord-voicing and scale drills per player (TECHS_DRILLS). Item ids of the first
+    windows are kept from step 22; later windows add `-<k>`."""
     root = DATASETS / "guitar-techs"
-    sources: list[tuple[str, Path, Path, str]] = []
+    sources: list[tuple[str, Path, Path, str, int | None]] = []
     for midi in sorted((root / "P3_music" / "midi").glob("midi_*.mid")):
         number = midi.stem.removeprefix("midi_")
         audio = root / "P3_music" / "audio" / "micamp" / f"micamp_{number}.wav"
         if audio.is_file():
-            sources.append((f"techs-music{number}", midi, audio, ""))
+            sources.append((f"techs-music{number}", midi, audio, "", None))
     for player in ("P1", "P2"):
-        for technique in ("Vibrato",):
+        for technique in TECHS_TECHNIQUES:
             base = root / f"{player}_techniques"
             sources.append(
                 (
@@ -523,29 +569,53 @@ def build_techs() -> Iterable[tuple[Item, Audio, GuitarRef]]:
                     base / "midi" / f"midi_{technique}.mid",
                     base / "audio" / "micamp" / f"micamp_{technique}.wav",
                     technique,
+                    TECHS_TECHNIQUE_WINDOWS,
                 )
             )
-    for item_id, midi, audio_path, technique in sources:
-        t0 = max(0.0, first_onset(midi) - TECHS_LEAD_IN_S)
-        ref = techs_ref(midi, t0, t0 + MAX_EXCERPT_S, vibrato=technique == "Vibrato")
-        audio = read(audio_path)[int(t0 * RATE) : int((t0 + MAX_EXCERPT_S) * RATE)]
-        mono = audio.mean(axis=1)
-        style = "vibrato" if technique else ("comping" if chordal(ref) else "single-line")
-        tags = {
-            "style": style,
-            "genre": "mixed",
-            "timbre": "electric_amp",
-            "tuning": "standard",
-            "guitars": "1",
-        }
-        yield Item(item_id, "guitar-techs", tags), np.repeat(mono[:, None], 2, axis=1), ref
+        for kind, picks in TECHS_DRILLS.items():
+            base = root / f"{player}_{kind}"
+            for pick in picks:
+                sources.append(
+                    (
+                        f"techs-{player}-{kind}-{pick.lower()}",
+                        base / "midi" / f"midi_{pick}.mid",
+                        base / "audio" / "micamp" / f"micamp_{pick}.wav",
+                        "",
+                        1,
+                    )
+                )
+    for item_base, midi, audio_path, technique, count in sources:
+        recording = read(audio_path)
+        for k, t0 in enumerate(techs_windows(midi, len(recording) / RATE, count)):
+            item_id = item_base if k == 0 else f"{item_base}-{k + 1}"
+            yield techs_item(item_id, midi, recording, t0, technique)
 
 
-IDMT = DATASETS / "idmt-smt-guitar" / "IDMT-SMT-GUITAR_V2" / "dataset2"
+def techs_item(
+    item_id: str, midi: Path, recording: Audio, t0: float, technique: str
+) -> tuple[Item, Audio, GuitarRef]:
+    ref = techs_ref(midi, t0, t0 + MAX_EXCERPT_S, vibrato=technique == "Vibrato")
+    mono = recording[int(t0 * RATE) : int((t0 + MAX_EXCERPT_S) * RATE)].mean(axis=1)
+    style = technique.lower() if technique else ("comping" if chordal(ref) else "single-line")
+    tags = {
+        "style": style,
+        "genre": "mixed",
+        "timbre": "electric_amp",
+        "tuning": "standard",
+        "guitars": "1",
+    }
+    return Item(item_id, "guitar-techs", tags), np.repeat(mono[:, None], 2, axis=1), ref
+
+
+IDMT_ROOT = DATASETS / "idmt-smt-guitar" / "IDMT-SMT-GUITAR_V2"
+IDMT = IDMT_ROOT / "dataset2"
 IDMT_GAP_S = 0.5
-# excerpt → (audio, annotation) licks joined in this order: the bends set carries 16 bends per
-# guitar; the plain set is the no-bend control (normal picking only). Lick 11's annotation names
-# `<guitar>_Lick11_FNVSBHD.wav`, which ships as `<guitar>_Lick11_FN.wav` (same length).
+# excerpt → (audio, annotation) licks joined in this order, per guitar. Plucking: F finger, K pick,
+# M muted; `bends*` carry the bend licks (16 bends per guitar in the F set), `plain*` normal
+# picking only (no-bend controls), `position*` the same licks played in another position (Lage),
+# so the strings differ from the plain takes for the same pitches. Lick 11's annotation names
+# `<guitar>_Lick11_FNVSBHD.wav`, which ships as `<guitar>_Lick11_FN.wav` (same length). Step 22 used
+# `bends` and `plain`; step 27 added the rest.
 IDMT_EXCERPTS = {
     "bends": (
         ("Lick11_FN", "Lick11_FNVSBHD"),
@@ -554,6 +624,24 @@ IDMT_EXCERPTS = {
         ("Lick6_FHBV", "Lick6_FHBV"),
     ),
     "plain": (("Lick1_FN", "Lick1_FN"), ("Lick2_FN", "Lick2_FN"), ("Lick7_FN", "Lick7_FN")),
+    "bends-k": tuple((n, n) for n in ("Lick3_KSBDN", "Lick4_KBSH", "Lick5_KBVDN", "Lick6_KHBV")),
+    "bends-m": tuple((n, n) for n in ("Lick3_MSBDN", "Lick4_MBSH", "Lick5_MBVDN", "Lick6_MHBV")),
+    "plain-k": tuple((n, n) for n in ("Lick8_KN", "Lick9_KN", "Lick10_KN")),
+    "plain-m": tuple((n, n) for n in ("Lick1_MN", "Lick2_MN", "Lick12_MN")),
+    "position-f": tuple(
+        (n, n) for n in ("Lick1_FN_Lage", "Lick4_FN_Lage2", "Lick7_FN_Lage", "Lick9_FN_Lage")
+    ),
+    "position-k": tuple(
+        (n, n) for n in ("Lick2_KN_Lage", "Lick5_KN_Lage2", "Lick7_KN_Lage", "Lick9_KN_Lage")
+    ),
+    "position-m": tuple(
+        (n, n) for n in ("Lick3_MN_Lage", "Lick6_MN_Lage2", "Lick7_MN_Lage", "Lick9_MN_Lage")
+    ),
+}
+# Dataset 3: short polyphonic and monophonic pieces on another electric guitar (Ibanez), joined.
+IDMT_PIECES = {
+    "pieces-a": ("nocturneNr2", "pathetique_mono", "pathetique_poly"),
+    "pieces-b": ("promenade_mono", "quintfall"),
 }
 
 
@@ -587,35 +675,52 @@ def idmt_events(path: Path, offset_s: float) -> list[RefNote]:
     return notes
 
 
+def idmt_joined(parts: Iterable[tuple[Path, Path]]) -> tuple[Audio, GuitarRef]:
+    """(audio, annotation) recordings joined with IDMT_GAP_S of silence between them."""
+    audio: list[NDArray[np.float32]] = []
+    notes: list[RefNote] = []
+    t = 0.0
+    for wav, xml in parts:
+        mono = read(wav).mean(axis=1)
+        notes += idmt_events(xml, t)
+        audio += [mono, np.zeros(int(IDMT_GAP_S * RATE), dtype=np.float32)]
+        t += len(mono) / RATE + IDMT_GAP_S
+    mono = np.concatenate(audio)
+    ref = GuitarRef(
+        notes=tuple(sorted(notes, key=lambda n: (n.onset_s, -n.pitch_midi))), has_bends=True
+    )
+    return np.repeat(mono[:, None], 2, axis=1), ref
+
+
+def idmt_tags(style: str) -> dict[str, str]:
+    return {
+        "style": style,
+        "genre": "licks",
+        "timbre": "electric_clean",
+        "tuning": "standard",
+        "guitars": "1",
+    }
+
+
 def build_idmt() -> Iterable[tuple[Item, Audio, GuitarRef]]:
-    """IDMT-SMT-Guitar V2 dataset 2 (Zenodo 7544110): electric licks on three guitars, joined
-    with short gaps into one bends excerpt and one plain excerpt per guitar."""
+    """IDMT-SMT-Guitar V2 (Zenodo 7544110): dataset 2's electric licks on three guitars, joined
+    with short gaps into the excerpts of IDMT_EXCERPTS per guitar, and dataset 3's pieces."""
     for guitar in ("AR", "FS", "LP"):
         for name, licks in IDMT_EXCERPTS.items():
-            parts: list[NDArray[np.float32]] = []
-            notes: list[RefNote] = []
-            t = 0.0
-            for audio_name, annotation in licks:
-                mono = read(IDMT / "audio" / f"{guitar}_{audio_name}.wav").mean(axis=1)
-                notes += idmt_events(IDMT / "annotation" / f"{guitar}_{annotation}.xml", t)
-                parts += [mono, np.zeros(int(IDMT_GAP_S * RATE), dtype=np.float32)]
-                t += len(mono) / RATE + IDMT_GAP_S
-            mono = np.concatenate(parts)
-            ref = GuitarRef(
-                notes=tuple(sorted(notes, key=lambda n: (n.onset_s, -n.pitch_midi))), has_bends=True
+            audio, ref = idmt_joined(
+                (IDMT / "audio" / f"{guitar}_{a}.wav", IDMT / "annotation" / f"{guitar}_{x}.xml")
+                for a, x in licks
             )
-            tags = {
-                "style": "solo_bends" if name == "bends" else "single-line",
-                "genre": "licks",
-                "timbre": "electric_clean",
-                "tuning": "standard",
-                "guitars": "1",
-            }
-            yield (
-                Item(f"idmt-{guitar}-{name}", "idmt-smt-guitar", tags),
-                np.repeat(mono[:, None], 2, axis=1),
-                ref,
-            )
+            style = "solo_bends" if name.startswith("bends") else "single-line"
+            yield Item(f"idmt-{guitar}-{name}", "idmt-smt-guitar", idmt_tags(style)), audio, ref
+    pieces = IDMT_ROOT / "dataset3"
+    for name, files in IDMT_PIECES.items():
+        audio, ref = idmt_joined(
+            (pieces / "audio" / f"{f}.wav", pieces / "annotation" / f"{f}.xml") for f in files
+        )
+        ref = GuitarRef(notes=ref.notes, has_bends=False)
+        item = Item(f"idmt-{name}", "idmt-smt-guitar", idmt_tags("pieces"))
+        yield item, audio, ref
 
 
 # builder → (items, the `source` values its items carry)
@@ -694,6 +799,50 @@ def cmd_separate(args: argparse.Namespace) -> int:
     return 0
 
 
+METRONOME_BPM = 60.0  # Guitar-TECHS technique drills: one note per 4 s bar, no trackable beat
+
+
+def metronome(audio_hash: str, audio: Path) -> dict[str, Any]:
+    """A beats artefact with a steady 4/4 grid at METRONOME_BPM, for items whose sparse drills
+    the beat tracker rejects (`beats_not_found`): the tab still needs a grid to quantize on."""
+    from splitune_ml_core import contracts
+
+    duration = float(sf.info(str(audio)).duration)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    period = 60.0 / METRONOME_BPM
+    beats = [
+        {
+            "id": f"b{k:04d}",
+            "t": round(k * period, 4),
+            "activation": 0.0,
+            "is_downbeat": k % 4 == 0,
+            "bar_index": k // 4,
+            "beat_in_bar": k % 4 + 1,
+        }
+        for k in range(int(duration / period) + 1)
+    ]
+    document = contracts.Beats.model_validate(
+        {
+            "schema_version": contracts.SCHEMA_VERSION,
+            "artefact": "beats",
+            "artefact_version": 1,
+            "analysis_id": "00000000-0000-0000-0000-000000000000",
+            "user_id": "eval",
+            "audio_hash": audio_hash,
+            "sample_rate": RATE,
+            "duration_s": round(duration, 4),
+            "models": [],
+            "params": {"metronome_bpm": METRONOME_BPM},
+            "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "beats": beats,
+            "bpm": METRONOME_BPM,
+            "meter": {"numerator": 4, "denominator": 4},
+            "tempo_octave_ambiguous": False,
+            "first_downbeat_t": 0.0,
+        }
+    )
+    return cast(dict[str, Any], json.loads(contracts.dump_json(document)))
+
+
 def cmd_beats(_: argparse.Namespace) -> int:
     """Shipped beats and chords stages on the clean guitar: the band's harmony doesn't match the
     guitar, so these stand in for a band playing the guitar's changes. `buildTab` gets both, as
@@ -706,7 +855,12 @@ def cmd_beats(_: argparse.Namespace) -> int:
                 continue
             decoded = local.decode(item.dir / "guitar.wav")
             if not beats.is_file():
-                local.keep(local.run("beats", {}, decoded), "beats", beats)
+                try:
+                    local.keep(local.run("beats", {}, decoded), "beats", beats)
+                except StageError as error:
+                    if error.code != "beats_not_found":
+                        raise
+                    write_json(beats, metronome(decoded.audio_hash, item.dir / "guitar.wav"))
             local.keep(local.run("chords", {"beats": str(beats)}, decoded), "chords", chords)
             print(f"beats + chords {item.id}", flush=True)
     return 0
@@ -823,6 +977,56 @@ VARIANTS: dict[str, Variant] = {
         for w in (1.0, 2.0)
     },
 }
+# Step 27: the shipped chain as one variant, and candidates that each change one thing on top.
+SHIPPED: dict[str, Any] = {"a4_compensation": True, "tuning_suggestion": True, "bends": True}
+
+
+def shipped(note: str, *, separator: str = "bs_roformer_sw", **params: Any) -> Variant:
+    return Variant(
+        separator=separator,
+        transcriber="guitab",
+        overrides={**SHIPPED, **params},
+        string_cue=2.0,
+        cue_model="own",
+        note=note,
+    )
+
+
+VARIANTS.update(
+    {
+        "shipped": shipped(
+            "the shipped chain on 2026-11-06: BS-Roformer-SW → Guitab E25 + A4 compensation "
+            "+ bends (Basic Pitch contour) → buildTab with Guitab's string probabilities as the "
+            "cue (weight 2)"
+        ),
+        **{
+            f"ext{t:g}": shipped(
+                f"shipped, note ends extended while the string's activity stays above {t:g}",
+                extend_threshold=t,
+            )
+            for t in (0.1, 0.2, 0.3, 0.45)
+        },
+        "downtune": shipped(
+            "shipped + down-tuning compensation (open strings a semitone or two up, low notes)",
+            downtune=True,
+        ),
+        **{
+            f"bend{c:g}g{g}": shipped(
+                f"shipped, bends from {c:g} cents with a {g}-frame glide",
+                bend_min_cents=c,
+                bend_min_glide_frames=g,
+            )
+            for c, g in ((50.0, 3), (60.0, 3), (75.0, 2), (60.0, 2))
+        },
+        # The winners combined (each chosen on the fit split above).
+        "s27": shipped(
+            "shipped + offsets extended at 0.2 + bends from 75 cents / 2 frames + down-tuning",
+            extend_threshold=0.2,
+            bend_min_glide_frames=2,
+            downtune=True,
+        ),
+    }
+)
 # Basic Pitch's guitar thresholds from the P2 sweep (production until step 22 shipped Guitab).
 BASIC_PITCH_GUITAR: dict[str, Any] = {
     "min_freq_hz": 70,
@@ -893,6 +1097,8 @@ def cmd_predict(args: argparse.Namespace) -> int:
         os.environ["ML_NOTES_CONFIG"] = str(config)
         local = LocalRun(Path(tmp) / "work")
         for item in load_items():
+            if args.only and not re.search(args.only, item.id):
+                continue
             for condition in args.condition or conditions():
                 dest = run_dir(args.variant) / item.id / f"{condition}.notes.json"
                 if dest.is_file():
@@ -1203,6 +1409,90 @@ def tiers(rows: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
     ]
 
 
+HELD_OUT_TIERS = (
+    ("GuitarSet player 05", ("guitarset", "guitarset-hex")),
+    ("Guitar-TECHS", ("guitar-techs",)),
+    ("IDMT-SMT-Guitar", ("idmt-smt-guitar",)),
+)
+# Tab F1 as production builds it: buildTab with no tuning option applies the notes' suggestion.
+CI_TAB_KEYS = ("easiest.suggested", "as_played.suggested")
+
+
+def held_out_tiers(rows: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
+    """Held-out rows per source (never the fit split: GuitarSet players 03-04 and the two-guitar
+    items, a third of Guitar-TECHS and IDMT); the acceptance figures of step 27."""
+    out: list[tuple[str, list[dict[str, Any]]]] = []
+    for name, sources in HELD_OUT_TIERS:
+        sel = [r for r in rows if r["source"] in sources and not is_fit_id(r["item"])]
+        if sel:
+            out.append((name, sel))
+    return out
+
+
+def ci_columns(sel: list[dict[str, Any]]) -> dict[str, list[list[float]]]:
+    """Per-item data for each interval column, rows sorted by item id (pairing order)."""
+    sel = sorted(sel, key=lambda r: r["item"])
+    columns: dict[str, list[list[float]]] = {
+        "onset F1": [[float(r["onset_f1"])] for r in sel],
+        "onset+offset F1": [[float(r["onset_offset_f1"])] for r in sel],
+    }
+    for key in CI_TAB_KEYS:
+        counts = [c for r in sel if (c := r.get(f"tab_counts.{key}")) is not None]
+        if len(counts) == len(sel):
+            columns[f"Tab F1 {key.split('.')[0]}"] = [[float(x) for x in c] for c in counts]
+            columns[f"TDR {key.split('.')[0]}"] = columns[f"Tab F1 {key.split('.')[0]}"]
+    return columns
+
+
+def ci_figure(column: str) -> bootstrap.Figure:
+    if column.startswith("Tab F1"):
+        return bootstrap.pooled_f1
+    if column.startswith("TDR"):
+        return bootstrap.pooled_tdr
+    return bootstrap.mean_of()
+
+
+def ci_section(rows: list[dict[str, Any]], variants: list[str], focus: str, base: str) -> list[str]:
+    """Held-out tiers with 95 % item-bootstrap intervals, and each variant's paired gain over
+    `base` (marked ✓ when the interval excludes zero)."""
+    out = [
+        f"## Held-out tiers with 95 % intervals ({focus}; item bootstrap, {bootstrap.RESAMPLES} "
+        "resamples)",
+        "",
+        "Tab F1 / TDR use the tab production builds (the notes' tuning suggestion applied). "
+        f"Δ = paired difference to `{base}` on the same items; ✓ = interval excludes 0.",
+        "",
+    ]
+    for tier, sel_tier in held_out_tiers(select(rows, condition=focus)):
+        by_variant = {v: select(sel_tier, variant=v) for v in variants}
+        columns = list(ci_columns(by_variant[base]))
+        out += [f"### {tier}", "", "| variant | items | " + " | ".join(columns) + " |"]
+        out.append("|---|---|" + "---|" * len(columns))
+        base_data = ci_columns(by_variant[base])
+        for v in variants:
+            sel = by_variant[v]
+            if not sel:
+                continue
+            data = ci_columns(sel)
+            cells = [
+                bootstrap.interval(data[c], ci_figure(c)).text() if c in data else "-"
+                for c in columns
+            ]
+            out.append(f"| {v} | {len(sel)} | " + " | ".join(cells) + " |")
+            if v == base or {r["item"] for r in sel} != {r["item"] for r in by_variant[base]}:
+                continue
+            deltas: list[str] = []
+            for c in columns:
+                if c not in data:
+                    deltas.append("-")
+                    continue
+                d = bootstrap.paired_difference(data[c], base_data[c], ci_figure(c))
+                deltas.append(d.text(signed=True) + (" ✓" if d.excludes_zero() else ""))
+            out.append(f"| Δ {v} | {len(sel)} | " + " | ".join(deltas) + " |")
+        out.append("")
+    return out
+
+
 def timing_rows(variant: str) -> dict[str, float]:
     """Median seconds per 30 s of audio: separation (the variant's model) and notes.guitar.
     Timing keys are `<item id>.<condition>` (item ids have no dots)."""
@@ -1307,10 +1597,18 @@ SWEEP_GRID: dict[str, tuple[Any, ...]] = {
 
 
 def is_fit(item: Item) -> bool:
-    """Sweep/calibration fit split: about a third of each source; the rest is held out."""
-    return item.id.startswith(("gs-03_", "gs2-", "idmt-AR-")) or (
-        item.id.startswith("techs-music") and int(item.id[-2:]) % 3 == 0
-    )
+    return is_fit_id(item.id)
+
+
+def is_fit_id(item_id: str) -> bool:
+    """Sweep/calibration/tuning fit split; everything else is held out (step 27 split): GuitarSet
+    players 03 (in-sample for Guitab) and 04 (Guitab's decoding was tuned on it) and the two-guitar
+    items, Guitar-TECHS player 1 and every third music piece, IDMT's AR guitar. Held out: GuitarSet
+    player 05, Guitar-TECHS player 2 and the other pieces, IDMT's FS and LP guitars."""
+    if item_id.startswith(("gs-03_", "gs-04_", "gs2-", "idmt-AR-", "techs-P1-")):
+        return True
+    piece = re.match(r"techs-music(\d+)", item_id)
+    return piece is not None and int(piece.group(1)) % 3 == 0
 
 
 # Quantizer grids (gap 8): the shipped 1/16 (+ swung 1/8) grid against finer ones, on the reference
@@ -1554,6 +1852,74 @@ def cmd_cleanup(args: argparse.Namespace) -> int:
         )
     text = "\n".join(out) + "\n"
     (RESULTS / f"{datetime.now(UTC).date()}-cleanup-{args.variant}.md").write_text(
+        text, encoding="utf-8"
+    )
+    print(text)
+    return 0
+
+
+def cmd_fretsweep(args: argparse.Namespace) -> int:
+    """Fret DP weights on one variant's notes (step 27): the shipped buildTab with each combination
+    of `--grid` (JSON: weight → values, on top of the mode's defaults and the variant's cue) per
+    fingering mode, Tab F1 pooled on the fit split (where the choice is made) and per held-out
+    tier, at `--condition`."""
+    import itertools
+    from concurrent.futures import ThreadPoolExecutor
+
+    variant = VARIANTS[args.variant]
+    grid = cast(dict[str, list[Any]], json.loads(args.grid))
+    combos = [dict(zip(grid, v, strict=True)) for v in itertools.product(*grid.values())]
+    jobs: list[tuple[Item, Path, str, dict[str, Any]]] = []
+    for item in load_items():
+        notes = run_dir(args.variant) / item.id / f"{args.condition}.notes.json"
+        if notes.is_file() and item.ref().has_tab:
+            for fingering in FINGERING:
+                for combo in combos:
+                    jobs.append((item, notes, fingering, combo))
+
+    def score(job: tuple[Item, Path, str, dict[str, Any]]) -> TabCounts:
+        item, notes, fingering, combo = job
+        weights = {"stringCue": variant.string_cue, **combo}
+        tab = build_tab(notes, item, {"fingering_mode": fingering, "weights": weights})
+        return tab_counts(list(item.ref().notes), estimates(notes, tab))
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        counts = list(pool.map(score, jobs))
+    groups: dict[tuple[str, str, str], list[TabCounts]] = {}
+    for (item, _, fingering, combo), c in zip(jobs, counts, strict=True):
+        tier = (
+            "fit"
+            if is_fit(item)
+            else next((n for n, s in HELD_OUT_TIERS if item.source in s), "other")
+        )
+        groups.setdefault((json.dumps(combo), fingering, tier), []).append(c)
+
+    def f1(key: tuple[str, str, str]) -> float:
+        cs = groups.get(key, [])
+        ref = sum(c.ref for c in cs)
+        est = sum(c.est for c in cs)
+        return 2 * sum(c.tab_correct for c in cs) / (ref + est) if ref + est else float("nan")
+
+    tier_names = ["fit", *(n for n, _ in HELD_OUT_TIERS)]
+    lines = [
+        f"## Fret DP sweep on `{args.variant}` notes, {args.condition} (Tab F1, pooled; "
+        "tuning suggestion applied)",
+        "",
+        f"Grid: `{args.grid}`. Ranked by fit Tab F1, mean of both modes.",
+        "",
+        "| weights | mode | " + " | ".join(tier_names) + " |",
+        "|---|---|" + "---|" * len(tier_names),
+    ]
+    ranked = sorted(
+        combos,
+        key=lambda c: -np.nanmean([f1((json.dumps(c), m, "fit")) for m in FINGERING]),
+    )
+    for combo in ranked:
+        for fingering in FINGERING:
+            cells = [fmt(f1((json.dumps(combo), fingering, t))) for t in tier_names]
+            lines.append(f"| `{json.dumps(combo)}` | {fingering} | " + " | ".join(cells) + " |")
+    text = "\n".join(lines) + "\n"
+    (RESULTS / f"{datetime.now(UTC).date()}-fretsweep-{args.name}.md").write_text(
         text, encoding="utf-8"
     )
     print(text)
@@ -1824,6 +2190,7 @@ def cmd_report(args: argparse.Namespace) -> int:
                     )
         out.append("")
     focus = args.focus
+    out += ci_section(rows, args.variant, focus, args.baseline or args.variant[0])
     out += [
         f"## By style ({focus}; the sources column says which tier)",
         "",
@@ -1977,6 +2344,12 @@ def main() -> int:
     p.set_defaults(fn=cmd_separate)
     sub.add_parser("beats").set_defaults(fn=cmd_beats)
     sub.add_parser("grid").set_defaults(fn=cmd_grid)
+    p = sub.add_parser("fretsweep")
+    p.add_argument("--variant", choices=list(VARIANTS), default="shipped")
+    p.add_argument("--condition", choices=conditions(), default="stem.hard")
+    p.add_argument("--grid", required=True, help='JSON, e.g. {"stringCue": [2, 4]}')
+    p.add_argument("--name", required=True, help="report file suffix")
+    p.set_defaults(fn=cmd_fretsweep)
     p = sub.add_parser("twoguitars")
     p.add_argument("--variant", choices=list(VARIANTS), default="bends")
     p.set_defaults(fn=cmd_twoguitars)
@@ -1989,6 +2362,7 @@ def main() -> int:
     p = sub.add_parser("predict")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
     p.add_argument("--condition", nargs="+", choices=conditions() + detune_conditions())
+    p.add_argument("--only", help="regex on item ids (e.g. bend-labelled items)")
     p.set_defaults(fn=cmd_predict)
     p = sub.add_parser("tab")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
@@ -2001,6 +2375,7 @@ def main() -> int:
     p.add_argument("--variant", nargs="+", choices=list(VARIANTS), default=["baseline"])
     p.add_argument("--focus", choices=conditions(), default="stem.hard")
     p.add_argument("--name", help="report file suffix (default: the date only)")
+    p.add_argument("--baseline", help="variant the intervals' paired gains are against (first)")
     p.set_defaults(fn=cmd_report)
     args = parser.parse_args()
     return int(args.fn(args))
