@@ -186,6 +186,13 @@ Measured on P2g (08, step 22 notes; reports in `services/ml/eval/results/p2g/`).
 - **Quantizer grids, measured and unchanged:** against the reference onsets, adding 1/32 or 1/16 triplets cuts the residual-flag share from 0.077 to 0.02, but random positions drop the same way (0.156 → 0.021 / 0.028), so a denser grid only snaps everything closer; it carries no information. 1/16 + swung 1/8 stays (`2026-10-28-grid.md`).
 - **Two guitars in one stem:** on the four two-guitar items an oracle rhythm/lead split changes Tab F1 by +0.07 (`as_played`) and −0.04 (`easiest`) (`2026-10-28-twoguitars-guitabbends.md`); the oracle split bounds what any splitter (stereo position, register, a separation model) could gain, and that bound is too small to justify a second part in the contracts, so one part stays.
 
+## Implementation notes (step 27, 2026-11-06)
+Measured on P2g with 95 % item-bootstrap intervals (08, step 27 notes; `services/ml/eval/results/p2g/2026-11-06-step27.md`).
+- **Note ends:** Guitab's notes now ring on while their string's activity stays above 0.2, up to the next note on that string (`extend_threshold`). Held-out onset+offset F1 +0.056 GuitarSet, +0.164 Guitar-TECHS, +0.249 IDMT; starts, frets and Tab F1 unchanged.
+- **Down-tuned songs:** the notes stage asks Guitab for the tuning shift (`downtune`): open strings that ring only when the stem is raised by one or two semitones mean half or full step down. The notes are then transcribed at that shift and mapped back, and the suggestion names the tuning, which `buildTab` applies. Applied correctly on 27 and 21 of 121 hard-band stems played a semitone and a whole tone low (Tab F1 with the suggestion 0 → 0.097 / 0.079). It changed none of the 121 standard-tuned stems. Most down-tuned stems still go undetected, so the tuning picker (step 18) stays the real fix.
+- **Bends:** a 2-frame glide is enough (was 3). Held-out hits 30 → 34 of 52, precision 0.94 → 0.87.
+- **String cue, unchanged:** Tab F1 did not improve. Guitab's top string is right on 53 % (IDMT) and 63 % (Guitar-TECHS) of matched fit-split notes, and its top two on 85 % / 92 %. A cue weight above 2 is flat. Step 22's string classifier fused with Guitab's probabilities gains on IDMT (`as_played` +0.041) but loses on held-out Guitar-TECHS (−0.030), so it stays unshipped. A Guitab fine-tune on electric and separated audio never beat E25 on out-of-sample fit tiers.
+
 ## Open questions
 - Learned assigner later (Fretting-Transformer/MIDI-to-Tab-style) has no usable code or licence; revisit only if Prototype 3 fails (D3).
 - Easiest vs as-played default (QU7) is a user-research question; the default is `easiest` for MVP.

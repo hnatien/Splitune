@@ -10,11 +10,18 @@ instruments:
     # held-out sources (GuitarSet player 05, Guitar-TECHS, IDMT-SMT-Guitar) and, with its own
     # per-string probabilities as the fret DP's string cue, roughly doubles Tab F1. Bends come
     # from Basic Pitch's contour on the same stem (guitab.with_bends).
+    # Step 27 (eval/results/p2g/2026-11-06-final.md): note ends ring on while the string stays
+    # active (held-out onset+offset F1 +0.06/+0.16/+0.25, onsets and frets unchanged), bends from
+    # a 2-frame glide (30 → 34 of 52 held-out bends, precision 0.94 → 0.87) and half/full-step-down
+    # detection from open strings (0 false positives on standard items).
     transcriber: guitab
     params:
       a4_compensation: true
       tuning_suggestion: true
       bends: true
+      extend_threshold: 0.2
+      bend_min_glide_frames: 2
+      downtune: true
   bass:
     # ≈30 Hz floor (06 §4) and a ceiling well above a 4-string's 24th fret (G5 ≈ 784 Hz is rare).
     # Thresholds from the P2 sweep on separated stems (eval/results/p2).
