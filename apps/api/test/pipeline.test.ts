@@ -1,7 +1,8 @@
-import { type ChildProcess, spawn } from 'node:child_process'
+import { type ChildProcess, execFile, spawn } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   Beats,
   Chords,
@@ -33,7 +34,7 @@ import {
 // artefact URLs that download valid JSON and audio, with the real Mac workers in ML_MODE=mock
 // (services/ml worker via uv, apps/node-worker via node) against this test database.
 
-const REPO = new URL('../../../', import.meta.url).pathname
+const REPO = fileURLToPath(new URL('../../../', import.meta.url))
 const api = createTestApi()
 let alice: Caller
 let aliceCookie: string
@@ -53,7 +54,7 @@ const roleUrl = (role: 'ml_worker' | 'node_worker', password: string | undefined
 // Output is kept for the failure message only (it carries no secrets: workers log codes).
 function startWorkers(): void {
   const { DB_ML_WORKER_PASSWORD, DB_NODE_WORKER_PASSWORD } = process.env
-  const ml = spawn('uv', ['run', '--frozen', 'splitune-ml-worker'], {
+  const ml = spawn('uv', ['run', '--no-sync', 'splitune-ml-worker'], {
     cwd: join(REPO, 'services/ml'),
     env: {
       ...process.env,
@@ -83,6 +84,7 @@ function startWorkers(): void {
   }
 }
 
+// On Windows kill ends uv alone and orphans the ML worker under it, so taskkill ends the tree.
 async function stopWorkers(): Promise<void> {
   await Promise.all(
     workers.splice(0).map(
@@ -90,7 +92,11 @@ async function stopWorkers(): Promise<void> {
         new Promise<void>((resolve) => {
           if (child.exitCode !== null) return resolve()
           child.once('exit', () => resolve())
-          child.kill('SIGTERM')
+          if (process.platform === 'win32') {
+            execFile('taskkill', ['/pid', String(child.pid), '/t', '/f'], () => {})
+          } else {
+            child.kill('SIGTERM')
+          }
         }),
     ),
   )

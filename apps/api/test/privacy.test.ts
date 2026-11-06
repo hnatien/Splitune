@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { userHasher } from '@splitune/analytics/server'
 import { DataExport } from '@splitune/contracts'
 import { rawUploadKey, userPrefix } from '@splitune/storage'
@@ -19,7 +20,7 @@ import {
 // doing the work: "Download my data" and "Delete my account" (re-auth required). Plus the
 // analytics privacy rules (16 §6) and the typed flags (16 §5) at the API boundary.
 
-const REPO = new URL('../../../', import.meta.url).pathname
+const REPO = fileURLToPath(new URL('../../../', import.meta.url))
 const api = createTestApi()
 const sql = (text: string, params: unknown[] = []) => api.db.$client.query(text, params)
 const hash = userHasher(api.config.analyticsSalt)
@@ -65,7 +66,7 @@ const roleUrl = (role: string, password: string | undefined) => {
   return url.toString()
 }
 
-beforeAll(() => {
+function startWorker(): void {
   const { DB_NODE_WORKER_PASSWORD, DB_MAINTENANCE_PASSWORD } = process.env
   worker = spawn(process.execPath, ['src/main.ts'], {
     cwd: join(REPO, 'apps/node-worker'),
@@ -81,14 +82,20 @@ beforeAll(() => {
     },
     stdio: ['ignore', 'ignore', 'ignore'],
   })
-})
+}
 
-afterAll(async () => {
-  await new Promise<void>((resolve) => {
+function stopWorker(): Promise<void> {
+  return new Promise<void>((resolve) => {
     if (!worker || worker.exitCode !== null) return resolve()
     worker.once('exit', () => resolve())
     worker.kill('SIGTERM')
   })
+}
+
+beforeAll(startWorker)
+
+afterAll(async () => {
+  await stopWorker()
   await api.close()
 })
 
@@ -134,7 +141,8 @@ describe('download my data', () => {
 
   it('keeps one request pending at a time', async () => {
     const user = await newUser()
-    await worker?.kill('SIGSTOP')
+    // A stopped worker rather than SIGSTOP, which Windows has no equivalent of.
+    await stopWorker()
     try {
       const first = await json<{ requested_at: string }>(
         await user.call.request('POST', '/v1/me/export'),
@@ -144,7 +152,7 @@ describe('download my data', () => {
       )
       expect(second.requested_at).toBe(first.requested_at)
     } finally {
-      worker?.kill('SIGCONT')
+      startWorker()
     }
   })
 })
