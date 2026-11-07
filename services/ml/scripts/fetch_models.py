@@ -13,10 +13,10 @@ the tagger's ONNX file is exported locally (`scripts/export_tagger.py`).
 
     uv run python scripts/fetch_models.py --eval [NAME ...]
 
-`--eval` fetches the evaluation-only separation candidates instead (step 29, eval/separation.eval.yaml),
-which setup never downloads and workers never expect: files with a URL are downloaded, configs we
-derived come from eval/model-configs/, and the Mega-53 keys slice is cut from the upstream
-checkpoint (kept under <models>/mega53/).
+`--eval` fetches the evaluation-only separation candidates instead (step 29,
+eval/separation.eval.yaml), which setup never downloads and workers never expect: files with a
+URL are downloaded, configs we derived come from eval/model-configs/, and the Mega-53 keys slice
+is cut from the upstream checkpoint (kept under <models>/mega53/).
 """
 
 from __future__ import annotations
@@ -147,7 +147,11 @@ def slice_mega53(dest: Path) -> None:
     cut = {k: v for k, v in state.items() if not k.startswith("mask_estimators.")}
     for new, old in enumerate(MEGA53_HEADS):
         prefix = f"mask_estimators.{old}."
-        cut |= {f"mask_estimators.{new}.{k[len(prefix) :]}": v for k, v in state.items() if k.startswith(prefix)}
+        cut |= {
+            f"mask_estimators.{new}.{k[len(prefix) :]}": v
+            for k, v in state.items()
+            if k.startswith(prefix)
+        }
     torch.save(cut, dest)
     print(f"sliced   {dest}")
 
