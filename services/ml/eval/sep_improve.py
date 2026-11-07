@@ -20,6 +20,7 @@ import argparse
 import csv
 import io
 import json
+import os
 import shlex
 import statistics
 import subprocess
@@ -27,14 +28,14 @@ import sys
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from splitune_eval import scoring, sepmap
 from splitune_eval.registry import load_set
 
 SET_IDS = {"v2": "musdb18hq-p1-v2", "moisesdb": "moisesdb-p1", "slakh": "slakh-keys-p1"}
-FULLSONG = Path("~/datasets/musdb18hq-full")
+FULLSONG = Path(os.environ.get("FULLSONG_ROOT", "~/datasets/musdb18hq-full"))
 Rows = dict[str, dict[str, Any]]
 
 
@@ -83,11 +84,20 @@ class Report:
         self.table: list[dict[str, Any]] = []
 
     def compare(
-        self, set_name: str, variant: str, model: str, base: str, instrument: str, keep: bool = True
+        self,
+        set_name: str,
+        variant: str,
+        model: str,
+        base: str,
+        instrument: str,
+        keep: bool = True,
+        only: list[str] | None = None,
     ) -> dict[str, Any]:
-        """One comparison row (kept for the CSV unless `keep` is off); its per-clip paired deltas
-        in `deltas` (uSDR), `bleed_deltas` and `full_deltas`."""
+        """One comparison row (kept for the CSV unless `keep` is off) over the set's clips (or
+        `only` those); its per-clip paired deltas in `deltas` (uSDR), `bleed_deltas` and
+        `full_deltas`."""
         root, clips = resolve(set_name)
+        clips = [c for c in clips if only is None or c in only]
         cand_rows, base_rows = records(root, variant, model), records(root, variant, base)
         cand = scored(cand_rows, clips, instrument, "usdr")
         ref = scored(base_rows, clips, instrument, "usdr")
@@ -140,12 +150,14 @@ class Report:
             )
         self.lines.append("")
 
-    def write(self, out: Path, models: list[str], jobs: list[str]) -> None:
+    def write(self, out: Path, models: list[str], jobs: list[str], notes: list[str]) -> None:
         head = [
             f"# {self.title} ({datetime.now(UTC).date().isoformat()})",
             "",
             *environment(models),
             "",
+            *(f"- {n}" for n in notes),
+            *([""] if notes else []),
             "Commands (`uv run --no-sync` from services/ml; each run resumes per clip):",
             "",
             "```bash",
@@ -179,7 +191,7 @@ def environment(models: list[str]) -> list[str]:
     versions = ", ".join(f"{p} {metadata.version(p)}" for p in ("audio-separator", "torch"))
     lines = [
         f"git `{sha.stdout.strip()}{'+dirty' if dirty.stdout.strip() else ''}` · {versions} · "
-        f"GPU {gpu.stdout.strip() or 'n/a'} (the 129 W cap of step 28 was not applied)",
+        f"GPU {gpu.stdout.strip() or 'n/a'} (power limit when this report was written)",
         "",
         "Model files (compliance/register):",
         "",
@@ -218,12 +230,17 @@ def phase_vocals(report: Report) -> list[str]:
     report.lines += ["## Every head vs Kim (vocals uSDR, dB)", ""]
     report.rows_table(rows)
     _, v2 = resolve("v2")
-    kim_s = [
-        r["seconds"]
-        for s in ("v2", "moisesdb")
-        for r in records(resolve(s)[0], "aac128", f"{KIM}@s29").values()
-        if s == "moisesdb" or r["clip"] in v2
-    ]
+
+    def seconds_of(model: str) -> list[float]:
+        """s per clip at `aac128` over the v2 clips and every moisesdb window."""
+        return [
+            r["seconds"]
+            for s in ("v2", "moisesdb")
+            for r in records(resolve(s)[0], "aac128", model).values()
+            if s == "moisesdb" or r["clip"] in v2
+        ]
+
+    kim_s = seconds_of(f"{KIM}@s29")
     report.lines += [
         "## Criterion (research experiment 1)",
         "",
@@ -246,13 +263,7 @@ def phase_vocals(report: Report) -> list[str]:
         }
         deltas = [cells[s]["delta_usdr"] for s in cells]
         bleed = [cells[s]["bleedless"] - cells[s]["baseline_bleedless"] for s in cells]
-        seconds = [
-            r["seconds"]
-            for s in ("v2", "moisesdb")
-            for r in records(resolve(s)[0], "aac128", m).values()
-            if s == "moisesdb" or r["clip"] in v2
-        ]
-        time = med(seconds) / med(kim_s)
+        time = med(seconds_of(m)) / med(kim_s)
         quality = min(deltas) >= 0.3 and min(bleed) >= -2
         passed = quality and time <= 2.5
         falsified = min(deltas) < 0.1
@@ -266,6 +277,54 @@ def phase_vocals(report: Report) -> list[str]:
             f"| {time:.2f} | {label} |"
         )
     report.lines.append("")
+    slow = [m for m in VOCALS if outcome[m]["quality"] and not outcome[m]["passed"]]
+    abut = [m for m in slow if seconds_of(f"{m}@abut")]
+    if abut:
+        kim_abut = seconds_of(f"{KIM}@s29-abut") or kim_s
+        report.lines += [
+            "## Time fallback: abutting windows (a step of one chunk instead of half a chunk)",
+            "",
+            "The plan's fallback for a candidate that passes on quality but not on time: the same "
+            "model with abutting windows (`<model>@abut`), judged by the same criterion. Time is "
+            f"against Kim re-timed with these runs (`{KIM}@s29-abut`, {med(kim_abut):.1f} s).",
+            "",
+            "| candidate | Δ v2 | Δ moisesdb | bleedless vs Kim (v2 / moisesdb) | "
+            "Δ vs half-chunk step (v2 / moisesdb) | time x Kim | verdict |",
+            "|---|---:|---:|---|---|---:|---|",
+        ]
+        for m in abut:
+            name = f"{m}@abut"
+            cells = {
+                s: report.compare(s, "aac128", name, KIM, "vocals") for s in ("v2", "moisesdb")
+            }
+            deltas = [cells[s]["delta_usdr"] for s in cells]
+            bleed = [cells[s]["bleedless"] - cells[s]["baseline_bleedless"] for s in cells]
+            own = [
+                report.compare(s, "aac128", name, m, "vocals", keep=False)["delta_usdr"]
+                for s in cells
+            ]
+            time = med(seconds_of(name)) / med(kim_abut)
+            quality = min(deltas) >= 0.3 and min(bleed) >= -2
+            passed = quality and time <= 2.5
+            label = verdict(passed, min(deltas) < 0.1)
+            if quality and not passed:
+                label = "**PASS on quality, FAIL on time**"
+            outcome[name] = {"deltas": deltas, "time": time, "quality": quality, "passed": passed}
+            report.lines.append(
+                f"| {name} | {signed(deltas[0])} | {signed(deltas[1])} | "
+                f"{bleed[0]:+.2f} / {bleed[1]:+.2f} | {signed(own[0])} / {signed(own[1])} | "
+                f"{time:.2f} | {label} |"
+            )
+        report.lines.append("")
+    winners = sorted(
+        (m for m, o in outcome.items() if o["passed"]), key=lambda m: -min(outcome[m]["deltas"])
+    )
+    report.lines += [
+        f"Winner: `{winners[0]}` (to the listening session; the head order waits for the ratings)."
+        if winners
+        else "No candidate passes: the vocals head stays Kim.",
+        "",
+    ]
     singles = [m for m in ("bs_roformer_leap_v1", "bs_roformer_leap_xe")]
     best = max(singles, key=lambda m: min(outcome[m]["deltas"]))
     ens = [
@@ -542,10 +601,13 @@ def phase_autocast(report: Report, regression: Path | None) -> list[str]:
     breach = None
     if regression is not None and regression.is_file():
         text = regression.read_text(encoding="utf-8")
-        breach = "FAIL" in text.split("\n", 6)[-1][:400] or "**FAIL**" in text
+        status = next(
+            (line for line in text.splitlines() if line.startswith(("**PASS**", "**FAIL**"))), ""
+        )
+        breach = not status.startswith("**PASS**")
         report.lines += [
             f"Regression suite with autocast on every map RoFormer (`{regression.name}`): "
-            f"{'breach' if breach else 'no breach'}.",
+            f"{status or 'no verdict line'}",
             "",
         ]
     passed = breach is False and ratios and max(ratios) <= 0.8
@@ -564,22 +626,48 @@ def phase_autocast(report: Report, regression: Path | None) -> list[str]:
 # --- Phase 5: keys fallback ----------------------------------------------------------------------
 
 SILENT = ["664cc931-piano", "737356b2-piano", "765d5131-piano"]
+SINGLES = ["mega53_keys5", "xlance_syn_mss", "xlance_syn_chain", "xlance_key_mss"]
+FLOOR_DB = -40.0  # the router's silence threshold: SW piano energy vs the mixture
+TAG_MIN = 0.03  # the tagger condition: tags.json piano present_prob (chosen from the table below)
 
 
-def phase_keys(report: Report, tags: dict[str, dict[str, Any]], recipes: list[str]) -> list[str]:
-    root, clips = resolve("moisesdb")
+def forced(recipe: str) -> str:
+    """The `forced_*` twin of a `route_*` recipe: the fallback on every window."""
+    return "forced_" + recipe.removeprefix("route_")
+
+
+def recipe_cell(rows: Rows, clip: str) -> str:
+    row = rows.get(clip)
+    value = scored({clip: row}, [clip], "piano", "usdr").get(clip) if row else None
+    routed = row and row.get("virtual", {}).get("routed")
+    return "-" if value is None else f"{value:.2f}{' (routed)' if routed else ''}"
+
+
+def phase_keys(
+    report: Report,
+    tags: dict[str, dict[str, Any]],
+    slakh_tags: dict[str, dict[str, Any]],
+    recipes: list[str],
+) -> list[str]:
+    root, every = resolve("moisesdb")
+    clips = [c for c in every if c.endswith("-piano")]
     sw = records(root, "clean", "bs_roformer_sw")
     sw_piano = scored(sw, clips, "piano", "usdr")
-    singles = ["mega53_keys5", "xlance_syn_mss", "xlance_syn_chain", "xlance_key_mss"]
     rows = [
-        report.compare("moisesdb", "clean", m, "bs_roformer_sw", "piano") for m in singles + recipes
+        report.compare("moisesdb", "clean", m, "bs_roformer_sw", "piano", only=clips)
+        for m in SINGLES + recipes
     ]
     report.lines += [
-        "## Candidates and routed models vs SW on the moisesdb piano windows "
+        f"## Candidates and routed models vs SW on the {len(clips)} moisesdb piano windows "
         "(piano + other_keys reference, uSDR)",
+        "",
+        "Routed models (`route_*`) take SW's piano unless its energy is below "
+        f"{FLOOR_DB:.0f} dB vs the mixture, else the sum of the listed fallback outputs; "
+        "`forced_*` take the fallback on every window.",
         "",
     ]
     report.rows_table(rows)
+    recipe_rows = {r: records(root, "clean", r) for r in recipes}
     report.lines += [
         "## Per window",
         "",
@@ -588,34 +676,98 @@ def phase_keys(report: Report, tags: dict[str, dict[str, Any]], recipes: list[st
         + " |",
         "|---|---:|---:|---|" + "---:|" * len(recipes),
     ]
-    recipe_rows = {r: records(root, "clean", r) for r in recipes}
     for clip in sorted(sw_piano, key=lambda c: sw_piano[c]):
         t = tags.get(clip, {})
-        cells: list[str] = []
-        for r in recipes:
-            row = recipe_rows[r].get(clip)
-            value = scored({clip: row}, [clip], "piano", "usdr").get(clip) if row else None
-            routed = row and row.get("virtual", {}).get("routed")
-            cells.append("-" if value is None else f"{value:.2f}{' (routed)' if routed else ''}")
         report.lines.append(
             f"| {clip} | {sw[clip]['energy_db']['piano']:.1f} | {sw_piano[clip]:.2f} | "
-            f"{t.get('present_prob', '-')} / {t.get('subtype', '-')} | " + " | ".join(cells) + " |"
+            f"{t.get('present_prob', '-')} / {t.get('subtype', '-')} | "
+            + " | ".join(recipe_cell(recipe_rows[r], clip) for r in recipes)
+            + " |"
         )
     report.lines.append("")
+
+    quiet = sorted(
+        (c for c in every if c in sw and sw[c]["energy_db"]["piano"] < FLOOR_DB),
+        key=lambda c: -tags.get(c, {}).get("present_prob", 0),
+    )
+    no_keys = [c for c in quiet if sw[c]["metrics"].get("piano", {}).get("silent")]
+    report.lines += [
+        "## The tagger condition",
+        "",
+        f"Every moisesdb window (all {len(every)}) where SW's piano is below {FLOOR_DB:.0f} dB: "
+        "the energy rule alone fires there, on keys SW missed and on windows with no keys at "
+        "all. The tagger's piano `present_prob` (`tags.json`; the piano / synth_keys / organ "
+        "subtype scores behind it are not in the contract) separates the two.",
+        "",
+        "| window | SW piano energy (dB) | keys reference | present_prob | subtype | "
+        f"piano / synth_keys / organ | fires (energy and present_prob ≥ {TAG_MIN}) |",
+        "|---|---:|---|---:|---|---|---|",
+    ]
+    for c in quiet:
+        t = tags.get(c, {})
+        s = t.get("scores", {})
+        ref = "none" if c in no_keys else f"{sw[c]['metrics']['piano']['ref_db']:.1f} dB"
+        report.lines.append(
+            f"| {c} | {sw[c]['energy_db']['piano']:.1f} | {ref} | {t.get('present_prob', '-')} | "
+            f"{t.get('subtype', '-')} | {s.get('piano', '-')} / {s.get('synth_keys', '-')} / "
+            f"{s.get('organ', '-')} | {'yes' if t.get('present_prob', 0) >= TAG_MIN else 'no'} |"
+        )
+    keyed = [tags[c]["present_prob"] for c in SILENT if c in tags]
+    empty = [tags[c]["present_prob"] for c in no_keys if c in tags]
+    report.lines += [
+        "",
+        f"The energy rule alone fires on {len(quiet)} windows, {len(no_keys)} of them without "
+        f"keys. With present_prob ≥ {TAG_MIN}: {sum(p >= TAG_MIN for p in keyed)} of the "
+        f"{len(SILENT)} silent windows, {sum(p >= TAG_MIN for p in empty)} of the windows "
+        f"without keys. Margins: the lowest silent window scores "
+        f"{min(keyed, default=float('nan')):.4f}, the highest window without keys "
+        f"{max(empty, default=float('nan')):.4f}.",
+        "",
+    ]
+
+    slakh_root, slakh = resolve("slakh")
+    slakh_sw = records(slakh_root, "clean", "bs_roformer_sw")
+    slakh_sw_piano = scored(slakh_sw, slakh, "piano", "usdr")
+    slakh_forced = {r: records(slakh_root, "clean", forced(r)) for r in recipes}
+    report.lines += [
+        "## Out of sample: Slakh2100 synth- and organ-heavy windows",
+        "",
+        "X-LANCE trained on MoisesDB and Mega-53's data is undisclosed. The fallback must reach "
+        "≥ +2 dB median uSDR here too (`forced_*`: the fallback alone, whether or not SW is "
+        "silent).",
+        "",
+        "| window | SW piano energy (dB) | SW uSDR | present_prob / subtype | "
+        + " | ".join(forced(r) for r in recipes)
+        + " |",
+        "|---|---:|---:|---|" + "---:|" * len(recipes),
+    ]
+    for clip in slakh:
+        if clip not in slakh_sw:
+            continue
+        t = slakh_tags.get(clip, {})
+        report.lines.append(
+            f"| {clip} | {slakh_sw[clip]['energy_db']['piano']:.1f} | "
+            f"{fmt(slakh_sw_piano.get(clip, float('nan')))} | "
+            f"{t.get('present_prob', '-')} / {t.get('subtype', '-')} | "
+            + " | ".join(recipe_cell(slakh_forced[r], clip) for r in recipes)
+            + " |"
+        )
+    report.lines.append("")
+
     report.lines += [
         "## Criterion (research experiment 4)",
         "",
         "Pass: the 3 silent windows reach median ≥ +3 dB uSDR; the router never triggers on a "
-        "window where SW scores ≥ 3 dB; the median over all 25 doesn't fall and the mean rises "
-        "(the plan's reading: those windows sit below the median, so it can't rise); and the "
-        "fallback reaches ≥ +2 dB median uSDR out of sample (Slakh). Falsified: silent windows "
-        "stay < 1 dB.",
+        f"window where SW scores ≥ 3 dB; the median over the {len(clips)} piano windows doesn't "
+        "fall and the mean rises (the plan's reading: the silent windows sit below the median, "
+        "so it can't rise); and the fallback reaches ≥ +2 dB median uSDR out of sample (Slakh). "
+        "Falsified: silent windows stay < 1 dB.",
         "",
         "| routed model | silent windows (median) | triggers where SW ≥ 3 dB | "
-        "median 25 (SW → routed) | mean 25 (SW → routed) | verdict |",
-        "|---|---:|---:|---|---|---|",
+        f"median {len(clips)} (SW → routed) | mean {len(clips)} (SW → routed) | "
+        "Slakh fallback median (n) | verdict |",
+        "|---|---:|---:|---|---|---|---|",
     ]
-    outcome: dict[str, bool] = {}
     for r in recipes:
         rows_r = recipe_rows[r]
         routed = scored(rows_r, clips, "piano", "usdr")
@@ -627,18 +779,17 @@ def phase_keys(report: Report, tags: dict[str, dict[str, Any]], recipes: list[st
         )
         shared = [c for c in sw_piano if c in routed]
         m0, m1 = med([sw_piano[c] for c in shared]), med([routed[c] for c in shared])
-        a0, a1 = (
-            statistics.mean(sw_piano[c] for c in shared),
-            statistics.mean(routed[c] for c in shared),
-        )
-        passed = silent >= 3 and bad == 0 and m1 >= m0 and a1 > a0
-        outcome[r] = passed
+        a0 = statistics.mean(sw_piano[c] for c in shared) if shared else float("nan")
+        a1 = statistics.mean(routed[c] for c in shared) if shared else float("nan")
+        oos = scored(slakh_forced[r], slakh, "piano", "usdr")
+        oos_median = med(list(oos.values()))
+        passed = silent >= 3 and bad == 0 and m1 >= m0 and a1 > a0 and oos_median >= 2
         report.lines.append(
             f"| {r} | {silent:.2f} | {bad} | {m0:.2f} → {m1:.2f} | {a0:.2f} → {a1:.2f} | "
-            f"{verdict(passed, silent < 1)} (MoisesDB part) |"
+            f"{fmt(oos_median)} ({len(oos)}) | {verdict(passed, silent < 1)} |"
         )
     report.lines.append("")
-    return ["bs_roformer_sw", *singles]
+    return ["bs_roformer_sw", "mega53_keys5", "xlance_syn_mss", "xlance_syn_mss1", "xlance_key_mss"]
 
 
 # --- Phase 6: shift averaging --------------------------------------------------------------------
@@ -707,6 +858,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument("--regression", help="autocast: the regression report of the autocast map")
     p.add_argument("--tags", help="keys: eval/keys_tags.py output for moisesdb-p1")
+    p.add_argument("--slakh-tags", help="keys: eval/keys_tags.py output for slakh-keys-p1")
+    p.add_argument("--note", action="append", default=[], help="extra line for the header")
     p.add_argument("--recipe", action="append", default=[], help="keys: routed virtual models")
     args = p.parse_args(argv)
     titles = {
@@ -727,10 +880,13 @@ def main(argv: list[str] | None = None) -> int:
     elif args.phase == "autocast":
         models = phase_autocast(report, Path(args.regression) if args.regression else None)
     elif args.phase == "keys":
-        tags: dict[str, dict[str, Any]] = (
-            json.loads(Path(args.tags).read_text(encoding="utf-8")) if args.tags else {}
+        tags, slakh_tags = (
+            cast(dict[str, dict[str, Any]], json.loads(Path(p).read_text(encoding="utf-8")))
+            if p
+            else {}
+            for p in (args.tags, args.slakh_tags)
         )
-        models = phase_keys(report, tags, args.recipe)
+        models = phase_keys(report, tags, slakh_tags, args.recipe)
     else:
         models = phase_shifts(report)
     jobs = [
@@ -741,7 +897,7 @@ def main(argv: list[str] | None = None) -> int:
         and not line.startswith("#")
         and (not args.grep or any(g in line for g in args.grep))
     ]
-    report.write(Path(args.out), models, jobs)
+    report.write(Path(args.out), models, jobs, args.note)
     return 0
 
 

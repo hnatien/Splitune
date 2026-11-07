@@ -34,6 +34,10 @@ models:
     arch: mdxc
     inference: {chunk: 960000, overlap: 10.88435375}
     outputs: {vocals: vocals, instrument: null}
+  # The time fallback: abutting windows (a step of one chunk; audio-separator clamps a longer one).
+  bs_roformer_leap_xe@abut: {base: bs_roformer_leap_xe, inference: {overlap: 20}}
+  bs_roformer_leap_v1@abut: {base: bs_roformer_leap_v1, inference: {overlap: 20}}
+  bs_roformer_ft1_anvuew@abut: {base: bs_roformer_ft1_anvuew, inference: {overlap: 21.77}}
 
   # Phase 3: pre-separation gain on the shipped heads.
   bs_roformer_sw@gain-14: {base: bs_roformer_sw, inference: {gain: {target_lufs: -14}}}
