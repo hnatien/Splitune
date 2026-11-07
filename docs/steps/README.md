@@ -42,6 +42,7 @@ The agent works on a branch `impl/NN-<name>` from the current `dev` (the integra
 | s23 | `s23-vocal-accuracy.md` — vocal test set, f0 curve (RMVPE/SwiftF0…), monophonic calibrated notes, curve in the Melody view (**stops for the owner's OK on plan and time budget**) | 16, 18c on `dev` | 18, 19, 22 (not 21: both change the practice screen) |
 | s24 | `s24-piano-accuracy.md` — pop-piano test set, then mixture fallback, stereo input, bleed gate, real per-note confidence, solo-piano bypass, separation, Aria-AMT and ensembles, pedal, electric-piano gate, PM2S hands (**stops for the owner's OK on plan and time budget**) | 16, piano work on `dev` | 18, 21, 22, 23 (19 only for wait mode/levels: both touch piano rendering) |
 | s25 | `s25-drums.md` — drums end to end: drum test set (P2d), ADTOF and other candidates measured, calibrated `notes.drums`, drum score + core-groove level, drum grid and drum tab, drums gate (**stops for the owner's OK on plan, time budget, any training and the gate**) | 16, 24 on `dev` (its method and harness) | 18, 22, 23 (19 only for piano: both touch the practice notation) |
+| s28 | `s28-separation-evaluation.md` — separation measured on real-upload conditions: silent-reference scoring, MSST metrics, unbiased P1 selection, robustness matrix (loud masters, codecs, mono, 48 kHz), loud-master fix, full songs/seams/determinism, regression suite, MoisesDB reader and listening export (**stops for the owner's OK on the plan and on any map, contract or cache-key change**) | 22, 24, 25, 27 on `dev` (P2g/P2p/P2d harnesses) | — |
 
 ```mermaid
 flowchart LR
@@ -66,6 +67,7 @@ flowchart LR
   S16 --> S23[23 vocal accuracy]
   S16 --> S24[24 piano accuracy]
   S24 --> S25[25 drums]
+  S22 & S24 & S25 --> S28[28 separation evaluation]
   S09c -.-> S22
 ```
 
@@ -83,6 +85,6 @@ git worktree add ../splitune-s11 -b impl/11-audio-engine dev
 - The practice route's JS budget is nearly used up: new practice UI loads on demand and reports before/after bytes.
 - The owner doesn't play an instrument: no step may depend on owner-played recordings.
 
-Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy. s25 (2026-10-28) takes drums over from s19.
+Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy. s25 (2026-10-28) takes drums over from s19. s28 (2026-11-06) re-evaluates separation on real-upload conditions.
 
 Edit `00-shared-context.md` once to change a rule for every step.

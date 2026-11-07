@@ -1742,3 +1742,48 @@ Branch `impl/27-guitar-accuracy` from `dev` (`cb9c882`), worktree `.claude/workt
 - `pnpm lint` and `pnpm typecheck` pass except the ML tasks, which failed only for want of a worktree venv (run directly above). `pnpm test` (JS packages): all pass except `@splitune/api` `pipeline.test.ts` ×2 and `@splitune/node-worker` `lifecycle.test.ts` (`pg_dump`), failing identically on `dev` here; `@splitune/music-core` 180 passed (no golden change).
 
 **Owner after merging:** restart the workers (new `notes.guitar` params and calibration). Not done: the owner's songs end to end.
+
+## 2026-11-07 — Step 28: Separation evaluation on real-song conditions (done; owner actions pending)
+Branch `impl/28-separation-eval` from `dev` (`8dbfbae`). Phase 0 plan approved by the owner (2026-11-06). Overnight the owner said "pick whatever is recommended", so Stop point 2 (map, contract and cache-key changes) was decided by the recommended option and is reported here. All runs on the Windows PC (RTX 3060, CUDA, 129 W cap set by the owner).
+
+**Downloads** (under `D:\datasets`, never committed): musdb-XL gain ratios (`musdb_XL_ratio.zip`, Zenodo 7041331, 4.9 GB, md5 verified; cut to the 50 P1 windows by `p1_musdb.py xl`), 5 whole MUSDB18-HQ test songs with stems (2.0 GB, `p1_musdb.py full --stems`), MSST `utils/metrics.py` @84b1eac (fixture values only).
+
+**Built**
+- Scoring (`splitune_eval.scoring`, `msst`): silent-reference rule (-40 dB vs mixture or -60 dBFS RMS → excluded, scored as leakage), MSST SI-SDR / bleedless / fullness ported (identical on a shared fixture), self-contained frame-wise cSDR (mir_eval BSS Eval v3 dropped), SI-SAR, distributions (n, median, mean, p10, worst 3).
+- `p1.py select` → set `musdb18hq-p1-v2` (references for vocals/drums/bass, the loudest candidate for guitar/piano; v1 kept); `p1.py export` with `limit-XL`/`opus128` items, `--extra-dir` and a refusal to overwrite a session; `report` Spearman ρ per stem and metric.
+- `splitune_eval.variants` (limiter with musdb-XL-style stem gain, codecs with alignment, mono, 48 kHz through the shipped decode, official musdb-XL), `eval/sep_matrix.py` (score-and-discard, resumable, `--keep`, `--library`), `p2g.py robust`/`robust-report`, `eval/loud_master.py`, `eval/p1_fullsong.py` + `splitune_eval.seams`, `eval/p1_moisesdb.py` + set `moisesdb-p1` (empty until the owner downloads MoisesDB).
+- Regression suite: `eval/regression.yaml`, `eval/regression.baseline.json`, `splitune-eval regress [--update-baseline] [--smoke]`, root `pnpm eval:regression` (`scripts/eval-regression.mjs`), `CLAUDE.md`/`AGENTS.md` command line; smoke test in pytest.
+- **Loud-master fix (shipped):** no audio-separator normalisation; raw stems above full scale cached as float32 WAV (`separate.store`); contracts **1.8.0** (`SeparatedStem.file` may end in `.wav`); goldens restamped.
+- **Map change (shipped):** BS-Roformer-SW drops `overlap: 9.3` for the library default.
+- Register: `musdb18_test_in_training` + source per separation model (only htdemucs_ft: probably not; the rest unknown).
+
+**Results** (08 step 28 notes; reports in `services/ml/eval/results/{p1,sep-robust,regression}/2026-11-07*`)
+- Step 07b reproduces on CUDA; the scoring fix moves bass medians +0.25-0.64 dB and changes no ranking; v2 picks the same guitar/piano windows; inference settings unchanged on clips (all within 0.13 dB of the defaults).
+- Robustness (v2, median uSDR Δ vs clean): codecs and 48 kHz ≤ 1 dB; `limit-XL` SW drums -3.6 / vocals -3.2 dB before the fix. Downstream guitar (P2g held-out, 77 items × 8 conditions): no tier drops > 0.05 F1 (worst Guitar-TECHS `limit-XL` -0.045 onset).
+- Loud masters: audio-separator rescaled 1-3 stems per loud window, breaking mixture − stem (Σ outputs only 13-23 dB below the mixture); fixed = ideal within 0.4 dB (Σ -30 to -37 dB, stem and mix-minus +1.1 to +7.2 dB). On all 50 windows SW's `limit-XL` drums 8.59 → 11.40 dB, vocals 9.42 → 11.22 dB (library rescales 121 → 0).
+- Full songs: SW's abutting windows left a bass seam (3.8 vs 1.0 dB); the default is +0.05-0.16 dB for +14 % SW time. RoFormers are bit-deterministic; Demucs is not (repeat SDR 21-29 dB).
+- Regression: baseline stored (170 values); a rerun passes with every value reproduced; the degraded config (htdemucs_6s heading every chain) fails with 31 breaches (e.g. bass head uSDR 10.36 → 6.94 dB, P2g onset F1 0.718 → 0.638).
+
+**Cache keys:** every `separate` artefact recomputes once (`stem_store` param; SW's `inference` changes). `stem_post` and later stages key on the raw stems' sha256: they recompute where the bytes change (SW-headed analyses through the overlap change; Demucs-headed ones always differ run to run).
+
+**Deviations and decisions**
+- `limit-L`/`limit-XL` use a soft clipper before the limiter: a -1 dBTP limiter alone can't reach -6 LUFS on these windows and distorts the stems more than musdb-XL; with the clipper the distortion matches musdb-XL's (08). musdb-XL itself goes over 0 dBFS (median true peak +3.8 dBTP), so its mixtures are clipped like a file.
+- Not fixed (reported): the decode cache clips lossy loud masters' decoded overs (peaks 1.05-1.53, 10-750 samples per million). Follow-up.
+- Vocals head (Kim) trails viperx and SW by 0.3-0.7 dB on uSDR everywhere; not changed (listening decides).
+- P2p `pop-band` and P2d not run (time; P2d's data was deleted before step 25's rebuild).
+- The baseline was stored from the uncommitted branch tree (`8dbfbae+dirty`); rerun `--update-baseline` after the next separation change.
+
+**Incidents:** the RTX 3060's 129 W cap reset to 170 W once overnight (runs paused until the owner re-applied it); an unexpected shutdown at 2026-11-07 07:32 during a GPU separation with the cap in place (Kernel-Power 41 at the 09:56 restart); a clean restart at 10:34 that killed one regression run. Every run resumed per clip.
+
+**Verification**
+- `cd services/ml && uv run --no-sync ruff check` / `ruff format --check`: clean. `pyright`: 0 errors in this step's code; 5 pre-existing errors in `packages/stage_notes/tests/test_guitab.py` (file untouched; `RATE` not exported from `stage_notes.guitab`).
+- `pytest` (CPU, `test_recovery.py` excluded as in step 27): 324 passed, 1 skipped, 3 failed: `test_beats_model::test_cpu_fallback_uses_the_small_model` and `test_stem_post` ×2 (mix-minus residual -13.1 dB), the same failures as on `dev` on this PC. `pytest packages/stage_separation` on CUDA: all new tests pass incl. the `models`-marked hot-master test (real BS-Roformer-SW).
+- `pnpm lint`: clean after formatting the baseline JSON. `pnpm typecheck`: TS clean; ML as above. JS tests: every package passes except `@splitune/node-worker` (`pg_dump` not installed, as before) and `@splitune/db` `lifecycle.test.ts` "claims a run once per due time" (5 claims instead of 1; `packages/db` untouched by this branch; not re-run against `dev`). `vitest run --dir scripts`: 52 passed. `pnpm contracts:gen` regenerated; `pnpm --filter @splitune/music-core golden:update` (stamp only).
+- `pnpm eval:regression --smoke`: PASS. Full suite: `--update-baseline`, then PASS (0 of 177 outside tolerance), then the degraded config: FAIL, exit 1 (31 breaches).
+
+**Owner actions**
+1. Rate the new listening session **`p1-2026-11-07`** (20 clips, 256 items, 72 pairs; `D:\datasets\musdb18hq-p1\listening\p1-2026-11-07`): serve it with `apps/listening` on a free port (`LISTENING_SESSION_DIR=<that dir> LISTENING_PORT=<free port> pnpm --filter @splitune/listening dev`; check the port first, 4100/4101 may be taken), then `uv run --no-sync python eval/p1.py report --session p1-2026-11-07`.
+2. Sign up for and download MoisesDB, then `uv run --no-sync python eval/p1_moisesdb.py windows` and rerun the matrix with `--root ~/datasets/moisesdb-p1`.
+3. Drop 10-15 commercially mastered snippets into `<extra-dir>/<target>/` and export a session with `--extra-dir`.
+4. Decide: the vocals head (Kim vs viperx/SW) after the ratings; a float decode cache (follow-up); keep or revert the SW overlap change (+14 % SW time).
+5. After merging: restart the workers (every `separate` recomputes once).

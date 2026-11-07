@@ -13,7 +13,13 @@ weights:
   files:
     - { name: model_bs_roformer_ep_317_sdr_12.9755.ckpt, sha256: "5b84f37e8d444c8cb30c79d77f613a41c05868ff9c9ac6c7049c00aefae115aa", bytes: 639331213 }
     - { name: model_bs_roformer_ep_317_sdr_12.9755.yaml, sha256: "2bfdd16c656bd9519aba757cc4f8834b7ede675eb1e00ec4772d74ae1c41af7f", bytes: 2273 }
-training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+training_data:
+  - name: undisclosed
+    licence: unknown
+    commercial_ok: false
+    # Step 28: only an uncited third-party claim ("MUSDB18HQ + 500 songs", split not stated).
+    musdb18_test_in_training: unknown
+    source: https://mvsep.com/algorithms/34
 tier: red
 tier_reason: "community checkpoint, weights licence and training data undisclosed"
 used_in: [separate]

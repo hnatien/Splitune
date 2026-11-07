@@ -13,7 +13,14 @@ weights:
   files:
     - { name: BS-Roformer-SW.ckpt, sha256: "24e7d35ee9c64415673d3fd33e06a67cac2c103c5df6267ba1576459c775916e", bytes: 699412152 }
     - { name: BS-Roformer-SW.yaml, sha256: "b558996f1e25eb48798bd6502505a5de94c4f966d6edfb1a0420f06cc40b501a", bytes: 4653 }
-training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+training_data:
+  - name: undisclosed
+    licence: unknown
+    commercial_ok: false
+    # Step 28 (2026-11-06): no model card, MVSep page or thread states it; provenance itself is
+    # disputed (ZFTurbo/Music-Source-Separation-Training issue #248, unanswered).
+    musdb18_test_in_training: unknown
+    source: https://github.com/ZFTurbo/Music-Source-Separation-Training/issues/248
 tier: red
 tier_reason: "community checkpoint, weights licence and training data undisclosed"
 used_in: [separate]

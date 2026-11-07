@@ -48,3 +48,4 @@ Work done without a step prompt. Its progress-log headings use their own numbers
 | Fix: … entries | Stage-start deadlock, production sign-in (SMTP) | — |
 | Step 26 | Piano accuracy follow-up: candidate screen, Transkun pop fine-tune on the solo-piano path | s24 follow-up |
 | Step 27 | Guitar accuracy follow-up: P2g with intervals, note ends, bends, half/full-step-down detection; string-cue candidates and `chain_sw_becruily` measured, not shipped | s22 follow-up |
+| Step 28 | Separation evaluation: corrected scoring (silent references, MSST metrics), unbiased P1 v2, robustness matrix and P2g downstream, loud-master fix (contracts 1.8.0), SW back to the default overlap, full songs/seams/determinism, `pnpm eval:regression`; listening ratings and MoisesDB pending the owner | Step 28: Separation evaluation |

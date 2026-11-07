@@ -13,7 +13,13 @@ weights:
   files:
     - { name: htdemucs_6s.yaml, sha256: "207405151270af8fd81c2373c25d27950916682ac91dca7884a11ce13dad6f58", bytes: 21 }
     - { name: 5c90dfd2-34c22ccb.th, sha256: "34c22ccb381c6f9fdbf324f04e1e2fe21aaaf293f5ded163a162697ff9a02ddd", bytes: 54996327 }
-training_data: [{ name: MUSDB18-HQ + internal Meta data (800 songs), licence: unknown, commercial_ok: false }]
+training_data:
+  - name: MUSDB18-HQ + internal Meta data (800 songs); guitar and piano sources not documented
+    licence: unknown
+    commercial_ok: false
+    # Step 28: no grid or config for the 6-source model is published.
+    musdb18_test_in_training: unknown
+    source: https://github.com/facebookresearch/demucs
 tier: amber
 tier_reason: "training data partly non-commercial / undisclosed"
 used_in: [separate]
