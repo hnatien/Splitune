@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import logging
 import os
 import shutil
@@ -137,8 +138,9 @@ def fetch_separation(directory: Path, record: register.ModelRecord) -> None:
 
 def slice_mega53(dest: Path) -> None:
     """The Mega-53 backbone with five of its 53 mask estimators, renumbered 0-4 (the per-head
-    files on the noblebarkrr mirror are the same backbone with one head each). torch.save writes
-    a random serialization id, so a re-cut file needs its sha256 updated in the register."""
+    files on the noblebarkrr mirror are the same backbone with one head each). Saved through a
+    buffer: torch.save names the archive inside the file after the path it writes to, a buffer's
+    is always "archive", so every cut has the same bytes and the register's sha256."""
     import torch
 
     source = models_dir() / "mega53" / MEGA53_CKPT
@@ -152,7 +154,11 @@ def slice_mega53(dest: Path) -> None:
             for k, v in state.items()
             if k.startswith(prefix)
         }
-    torch.save(cut, dest)
+    buffer = io.BytesIO()
+    torch.save(cut, buffer)
+    temp = dest.with_name(f".{dest.name}.part")
+    temp.write_bytes(buffer.getvalue())
+    temp.replace(dest)
     print(f"sliced   {dest}")
 
 

@@ -9,11 +9,11 @@ weights:
   licence: "not stated"
   url: https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/tag/v1.0.21
   # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
-  sha256: "dacfc5550a90f8e91be558c24a8c71819e451f536e033e1ac12f418698c5fb07"
+  sha256: "971cb1e7f236216af2cde7507fab683f41baab43758b3ec4cdffbd62ca3b9d28"
   files:
     - name: bs_roformer_mega53_keys5.ckpt
-      sha256: "e6db84e8cfed43bd31dd8c87a28b1f5f3912b166d4ac46dc892f4b67f3e58669"
-      bytes: 176862445
+      sha256: "8adee9f3b93723a991cbf779c3c4ea8ebd2b492335d3991e84764356120a59c4"
+      bytes: 176833020
     - name: bs_roformer_mega53_keys5.yaml
       sha256: "76858bd694f4ac44108db8b01cbc18a123225fd83eae456ea688c86d490e64f1"
       bytes: 2632
@@ -41,8 +41,9 @@ notes: >-
   Step 29 keys-fallback candidate (research section 5: organ 10.37, keys 9.30, synth 2.05, digital
   piano 7.96 SDR on MVSep's unnamed validation set, tier 2). The upstream 53-stem fp16 checkpoint
   (source_files; MVSep recommends at least 16 GB of VRAM) is cut by scripts/fetch_models.py --eval
-  to its backbone and mask estimators 31, 25, 38, 33, 12, renumbered 0-4. torch.save writes a random
-  serialization id, so a re-cut file has another sha256. Each head equals the noblebarkrr mirror's
+  to its backbone and mask estimators 31, 25, 38, 33, 12, renumbered 0-4, saved through a buffer so
+  every cut has the same bytes (the step 29 runs used an earlier cut, e6db84e8..., whose archive was
+  named after its file: the same tensors, other bytes). Each head equals the noblebarkrr mirror's
   single-head file tensor for tensor (eval/weights_check.py). mlp_expansion_factor 2; MSST chunk
   882,000 with num_overlap 2.
 reviewer: owner
