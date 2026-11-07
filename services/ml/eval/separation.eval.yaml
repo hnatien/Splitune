@@ -44,6 +44,11 @@ models:
   mel_roformer_kim_vocals@gain-6db: {base: mel_roformer_kim_vocals, inference: {gain: {db: -6}}}
 
   # Phase 4: SW's chunk (13.35 s = 588,800; 20 s -> 882,176) and autocast on every map RoFormer.
+  # `@s29` entries are the shipped settings under a new name: a same-session time baseline.
+  bs_roformer_sw@s29: {base: bs_roformer_sw}
+  bs_roformer_viperx_1297@s29: {base: bs_roformer_viperx_1297}
+  mel_roformer_kim_vocals@s29: {base: mel_roformer_kim_vocals}
+  mel_roformer_guitar_becruily@s29: {base: mel_roformer_guitar_becruily}
   bs_roformer_sw@chunk13: {base: bs_roformer_sw, inference: {chunk: 588800, overlap: 11.5}}
   bs_roformer_sw@chunk20: {base: bs_roformer_sw, inference: {chunk: 882176, overlap: 17.23}}
   bs_roformer_sw@autocast: {base: bs_roformer_sw, inference: {autocast: true}}
