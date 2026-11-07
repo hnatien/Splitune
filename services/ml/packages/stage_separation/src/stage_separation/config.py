@@ -18,18 +18,53 @@ DEFAULT_PATH = ML_ROOT / "config" / "separation.personal.yaml"
 Instrument = Literal["guitar", "bass", "piano", "drums", "vocals", "other"]
 
 
-class MdxcInference(BaseModel):
+class Gain(BaseModel):
+    """Pre-separation gain (step 29): the mixture is scaled in float before the model and every
+    output by the inverse, so only the level the model sees changes. Either a fixed `db`, or a
+    `target_lufs` for the mixture's integrated loudness (BS.1770), applied only when the mixture is
+    at least `min_input_lufs` loud (when set)."""
+
+    model_config = ConfigDict(extra="forbid")
+    db: float | None = None
+    target_lufs: float | None = None
+    min_input_lufs: float | None = None
+
+    @model_validator(mode="after")
+    def _one_kind(self) -> Self:
+        if (self.db is None) == (self.target_lufs is None):
+            raise ValueError("gain: set exactly one of db and target_lufs")
+        if self.min_input_lufs is not None and self.target_lufs is None:
+            raise ValueError("gain: min_input_lufs needs target_lufs")
+        return self
+
+
+class WrapperInference(BaseModel):
+    """Settings `models` applies around audio-separator (any architecture); unset = not applied."""
+
+    model_config = ConfigDict(extra="forbid")
+    gain: Gain | None = None
+    autocast: bool | None = None  # torch autocast around the model (fp16 on CUDA)
+    # The model's own rate when it isn't 44.1 kHz: its input is resampled to it and its outputs
+    # back to 44.1 kHz.
+    sample_rate: Literal[48000] | None = None
+
+
+class MdxcInference(WrapperInference):
     """audio-separator `mdxc_params`; unset keys keep the library default."""
 
-    model_config = ConfigDict(extra="forbid")
     # RoFormers: the window step in seconds, capped at the model's chunk length (default 8).
     overlap: float | None = Field(default=None, gt=0)
+    # The window length in samples, a multiple of the model's STFT hop (default: the model YAML's
+    # inference.dim_t, chunk = hop * (dim_t - 1)).
+    chunk: int | None = Field(default=None, gt=0)
+    # Deterministic circular time shifts averaged (MSST --bigshifts): pass k rolls the mixture by
+    # k * (length // shifts) samples, its outputs are rolled back, and the passes are averaged.
+    shifts: int | None = Field(default=None, ge=1)
 
 
-class DemucsInference(BaseModel):
+class DemucsInference(WrapperInference):
     """audio-separator `demucs_params`; unset keys keep the library default."""
 
-    model_config = ConfigDict(extra="forbid")
     shifts: int | None = Field(default=None, ge=0)  # random-shift passes averaged (default 2)
     overlap: float | None = Field(default=None, ge=0, lt=1)  # fraction of a segment (0.25)
 
