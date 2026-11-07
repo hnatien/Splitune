@@ -21,6 +21,22 @@ p1:
   variants: [clean, limit-XL, opus128]
   metrics: [usdr, si_sdr, bleedless, fullness]
 
+# MoisesDB windows (set moisesdb-p1, eval/p1_moisesdb.py; band context, near BS-Roformer-SW's median
+# guitar/piano uSDR on the clean matrix): the same as p1 for the guitar and piano outputs, scored
+# against real guitar and piano references. Skipped with its baseline values when the windows are
+# absent (MoisesDB needs a sign-up).
+moisesdb:
+  root: ~/datasets/moisesdb-p1
+  clips:
+    - f4b735de-guitar                     # rock: vocals, drums, bass
+    - b8d6f3eb-guitar                     # rock: drums, bass
+    - 6b48c9de-guitar                     # rock: htdemucs_6s within 1 dB of the head
+    - c228818e-piano                      # singer-songwriter: guitar
+    - 312bec8d-piano                      # singer-songwriter: vocals, guitar
+    - b207da3d-piano                      # electronic: vocals, drums, bass
+  variants: [clean, limit-XL, opus128]
+  metrics: [usdr, si_sdr, bleedless, fullness]
+
 # Held-out P2g hard-band items (2 per held-out source) through decode → separate → notes.guitar as
 # shipped (production configs): mean onset F1.
 p2g:
