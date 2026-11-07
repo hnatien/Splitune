@@ -144,15 +144,15 @@ def score_outputs(
     audio: dict[str, np.ndarray],
     instruments: dict[str, str | None],
 ) -> dict[str, Any]:
-    """Every metric for each output mapped to a referenced instrument, plus each output's energy
-    vs the mixture and its peak."""
+    """Every metric for each referenced instrument (the sum of the outputs mapped to it), plus
+    each output's energy vs the mixture and its peak."""
     out: dict[str, Any] = {"energy_db": {}, "peak": {}, "metrics": {}}
     estimates: dict[str, np.ndarray] = {}
     for name, instrument in instruments.items():
         out["energy_db"][name] = round(scoring.leakage_db(audio[name], mixture), 2)
         out["peak"][name] = round(float(np.abs(audio[name]).max()), 4)
         if instrument is not None:
-            estimates[instrument] = audio[name]
+            estimates[instrument] = estimates.get(instrument, 0) + audio[name]
     for instrument in (i for i in REFERENCED if i in refs):
         if instrument not in estimates:
             continue

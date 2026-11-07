@@ -178,3 +178,16 @@ def test_a_limited_master_through_a_codec_keeps_the_limited_references() -> None
     assert both.info["decoded_peak"] == pytest.approx(float(np.abs(both.mixture).max()), abs=1e-4)
     error = both.mixture - loud.mixture
     assert 10 * np.log10(np.sum(loud.mixture**2) / np.sum(error**2)) > 10  # the codec, aligned
+
+
+def test_outputs_mapped_to_one_instrument_are_scored_as_their_sum() -> None:
+    import sep_matrix  # pyright: ignore[reportMissingImports]
+
+    frames = 2 * RATE
+    keys, synth, drums = noise(6, frames, 0.2), noise(7, frames, 0.2), noise(8, frames, 0.2)
+    refs = {"piano": keys + synth, "drums": drums}
+    audio = {"keys": keys, "synth": synth, "rest": drums}
+    mapping = {"keys": "piano", "synth": "piano", "rest": None}
+    scored = sep_matrix.score_outputs(keys + synth + drums, refs, audio, mapping)
+    assert scored["metrics"]["piano"]["usdr"] > 60  # the sum is the reference itself
+    assert set(scored["energy_db"]) == {"keys", "synth", "rest"}
