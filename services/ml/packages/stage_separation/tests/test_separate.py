@@ -19,7 +19,7 @@ from numpy.typing import NDArray
 from pydantic import ValidationError
 from splitune_ml_core import contracts, register
 from splitune_ml_core.errors import StageError
-from splitune_ml_core.keys import cache_key
+from splitune_ml_core.keys import cache_key, canonical_json
 from splitune_ml_core.stage_api import StageJob
 from stage_separation import config, dsp, models, separate
 from stage_separation.config import ModelSpec
@@ -139,13 +139,19 @@ def test_inference_settings_reject_unknown_and_foreign_keys() -> None:
             with_inference(name, bad)
 
 
-def test_the_shipped_map_runs_without_wrapper_settings() -> None:
-    """Step 29's keys are absent from the shipped map, so its plan, cache keys and library
-    parameters are what they were."""
+def test_the_shipped_map_uses_wrapper_settings_only_where_step_29_measured_them() -> None:
+    """Step 29 ships the chunk of piano's fallback model; the other models' plans, cache keys and
+    library parameters are what they were, and wrapper settings never reach the library."""
     cfg = config.load()
+    wrapped = {
+        name: keys
+        for name, spec in cfg.models.items()
+        if (keys := set(spec.inference) & models.WRAPPER_KEYS[spec.arch])
+    }
+    assert wrapped == {"mega53_keys": {"chunk"}}
     for name, spec in cfg.models.items():
-        assert not set(spec.inference) & models.WRAPPER_KEYS[spec.arch], name
-        assert models.library_params(spec) == {**models.LIBRARY_PARAMS[spec.arch], **spec.inference}
+        library = {k: v for k, v in spec.inference.items() if k not in wrapped.get(name, set())}
+        assert models.library_params(spec) == {**models.LIBRARY_PARAMS[spec.arch], **library}
     assert cfg.models["bs_roformer_sw"].inference == {}
     assert cfg.models["mel_roformer_kim_vocals"].inference == {"overlap": 11}
     plan = separate.plan(cfg, {"instrument": "vocals"}, None)
@@ -628,6 +634,125 @@ def test_the_solo_check_runs_first_and_skips_the_chain_for_a_solo_piano(
     assert out.metrics["gpu_s" if doc.device != "cpu" else "cpu_s"] == 0.5 * len(calls)
 
 
+def test_the_fallback_model_must_have_the_instrument() -> None:
+    raw = yaml.safe_load(config.DEFAULT_PATH.read_text(encoding="utf-8"))
+    raw["instruments"]["piano"]["fallback_when_silent"]["model"] = "bs_roformer_viperx_1297"
+    with pytest.raises(ValidationError, match="fallback model"):
+        config.SeparationConfig.model_validate(raw)
+
+
+def test_only_the_instrument_with_a_fallback_plans_one_and_the_tagger_decides() -> None:
+    cfg = config.load()
+    for instrument in ("guitar", "bass", "drums", "vocals"):  # their cache keys are unchanged
+        assert "fallback_when_silent" not in separate.plan(cfg, {"instrument": instrument}, None)
+    rule = cfg.instruments["piano"].fallback_when_silent
+    assert rule is not None
+    for probs, fallback, tagged in [
+        ({"piano": 0.65}, None, True),
+        ({"piano": rule.min_present_prob}, None, True),
+        ({"piano": 0.01}, None, False),
+        ({"guitar": 0.9}, None, False),
+        ({"piano": 0.65}, "tagger_failed", False),  # never without usable tags
+    ]:
+        planned = separate.plan(cfg, {"instrument": "piano"}, tags(probs, fallback))
+        assert planned["fallback_when_silent"]["tagged"] is tagged
+        assert planned["fallback_when_silent"]["inference"] == cfg.models[rule.model].inference
+    assert (
+        separate.plan(cfg, {"instrument": "piano"}, None)["fallback_when_silent"]["tagged"] is False
+    )
+
+
+def with_tags(job: StageJob, tmp_path: Path, document: contracts.Tags) -> StageJob:
+    path = tmp_path / "tags.json"
+    path.write_text(contracts.dump_json(document), encoding="utf-8")
+    job.inputs["tags"] = str(path)
+    return job
+
+
+@pytest.mark.parametrize(
+    ("silent", "prob", "applied"),
+    [
+        (("piano",), 0.65, True),  # SW hears no piano, the tagger hears keys
+        (("piano",), 0.01, False),  # no keys: SW's silence stays
+        ((), 0.65, False),  # SW has the piano
+    ],
+)
+def test_a_silent_target_the_tagger_hears_is_replaced_by_the_fallback_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    silent: tuple[str, ...],
+    prob: float,
+    applied: bool,
+) -> None:
+    fake = FakeModels({}, silent)
+    monkeypatch.setattr(models, "separate", fake.separate)
+    cfg = config.load()
+    rule = cfg.instruments["piano"].fallback_when_silent
+    assert rule is not None
+    document = tags({"piano": prob})
+    params = separate.plan(cfg, {"instrument": "piano"}, document)
+    job = with_tags(make_job(tmp_path, params), tmp_path, document)
+    out = separate.run(job)
+    chain = ["htdemucs_6s", "bs_roformer_sw"]  # the solo check, then the chain's head
+    assert fake.calls == [*chain, rule.model] if applied else chain
+    doc = contracts.Separation.model_validate(json.loads(Path(out.files["separation"]).read_text()))
+    check = doc.fallback_when_silent
+    assert check is not None
+    assert check.applied is applied
+    assert check.present_prob == prob
+    assert (check.target_db < rule.threshold_db) is bool(silent)
+    target = next(s for s in doc.stems if s.role == "target")
+    audio, _ = sf.read(str(Path(job.cache_dir) / "separated" / target.file), always_2d=True)
+    mix, _ = sf.read(job.decoded_path or "", always_2d=True)
+    fallback = cfg.models[rule.model]
+    if applied:
+        assert check.provider == fallback.provider
+        assert [m.model_id for m in doc.models] == [
+            models.model_ref(cfg.models["bs_roformer_sw"]).model_id,
+            models.model_ref(fallback).model_id,
+        ]
+        # FakeModels writes each output as mixture / len(outputs); keys + synth are summed.
+        mapped = sum(1 for i in fallback.outputs.values() if i == "piano")
+        assert mapped == 2
+        np.testing.assert_allclose(audio, mix * mapped / len(fallback.outputs), atol=1e-6)
+    else:
+        assert check.provider is None
+        assert len(doc.models) == 1
+    assert doc.provider == cfg.models["bs_roformer_sw"].provider  # the extras are still SW's
+
+
+def test_a_failing_fallback_keeps_the_chain_stem(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake = FakeModels({"mega53_keys": "weights_missing"}, ("piano",))
+    monkeypatch.setattr(models, "separate", fake.separate)
+    document = tags({"piano": 0.65})
+    params = separate.plan(config.load(), {"instrument": "piano"}, document)
+    out = separate.run(with_tags(make_job(tmp_path, params), tmp_path, document))
+    doc = contracts.Separation.model_validate(json.loads(Path(out.files["separation"]).read_text()))
+    assert fake.calls[-1] == "mega53_keys"
+    assert doc.fallback_when_silent is not None
+    assert doc.fallback_when_silent.applied is False
+    assert out.status == "done"
+
+
+def test_the_fallback_gets_its_own_cache_directory(tmp_path: Path) -> None:
+    cfg = config.load()
+    job = make_job(tmp_path, {})
+    sw, keys = cfg.models["bs_roformer_sw"], cfg.models["mega53_keys"]
+    sw_ref, keys_ref = models.model_ref(sw), models.model_ref(keys)
+    kept: dict[str, separate.Role] = {"piano": "target", "drums": "extra"}
+    plain = separate.run_id(job, "bs_roformer_sw", sw, sw_ref, kept)
+    result = models.Result(files={}, seconds=0.0, peak_mb=0.0)
+    replaced = separate.run_id(
+        job, "bs_roformer_sw", sw, sw_ref, kept, ("mega53_keys", keys, keys_ref, result)
+    )
+    assert plain != replaced
+    # Without a fallback the directory is what it was before step 29 (stored stems stay valid).
+    key = [AUDIO_HASH, "bs_roformer_sw", sw_ref.weights_sha256, sw.inference, sorted(kept.items())]
+    assert plain == hashlib.sha256(canonical_json(key).encode()).hexdigest()[:32]
+
+
 def test_a_stem_within_full_scale_is_cached_as_flac_and_a_louder_one_as_float_wav(
     tmp_path: Path,
 ) -> None:
@@ -740,6 +865,42 @@ def test_a_hot_master_separates_without_rescaling_or_clipping(tmp_path: Path) ->
     residual = 10 * np.log10(np.sum((fed - total) ** 2) / np.sum(fed**2))
     assert residual < -25  # -31.5 dB measured; -16.5 dB with the library's rescaling
     models.release()
+
+
+@pytest.mark.models
+def test_a_synth_keys_window_sw_misses_gets_the_fallback(tmp_path: Path) -> None:
+    """MoisesDB window 765d5131-piano (eval/p1_moisesdb.py): synth keys that BS-Roformer-SW
+    outputs as silence; the tagger scores piano 0.0615 there. Step 29 measured the fallback's
+    keys + synth at 4.46 dB uSDR against the piano + other_keys reference."""
+    base = os.environ.get("SPLITUNE_DATASETS_DIR", str(Path("~/datasets").expanduser()))
+    window = Path(base) / "moisesdb-p1" / "765d5131-piano"
+    if not (window / "mixture.wav").is_file():
+        pytest.skip(f"MoisesDB window absent ({window}; eval/p1_moisesdb.py)")
+    try:
+        for record in ("htdemucs-6s", "bs-roformer-sw", "bs-roformer-mega53-keys5"):
+            register.verify(register.model(record), models.models_dir() / "audio-separator")
+    except StageError:
+        pytest.skip("separation weights not installed (scripts/fetch_models.py)")
+    mixture, _ = sf.read(str(window / "mixture.wav"), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    document = tags({"piano": 0.0615})
+    params = separate.plan(config.load(), {"instrument": "piano"}, document)
+    job = with_tags(make_job(tmp_path, params, 30.0), tmp_path, document)
+    sf.write(str(job.decoded_path), mixture, RATE, format="FLAC", subtype="PCM_24")  # pyright: ignore[reportUnknownMemberType]
+    models.release()
+    out = separate.run(job)
+    models.release()
+    doc = contracts.Separation.model_validate(json.loads(Path(out.files["separation"]).read_text()))
+    check = doc.fallback_when_silent
+    assert check is not None
+    assert check.applied
+    assert check.target_db < -40
+    assert check.provider == "bs_roformer:mega53-keys"
+    target = next(s for s in doc.stems if s.role == "target")
+    stem, _ = sf.read(str(Path(job.cache_dir) / "separated" / target.file), always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    reference, _ = sf.read(str(window / "piano.wav"), always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    n = min(len(stem), len(reference))
+    usdr = 10 * np.log10(np.sum(reference[:n] ** 2) / np.sum((reference[:n] - stem[:n]) ** 2))
+    assert usdr > 3  # 4.46 dB in the step 29 matrix (the stage's 24-bit decode feeds it here)
 
 
 def band_mix(path: Path, seconds: float) -> Path:

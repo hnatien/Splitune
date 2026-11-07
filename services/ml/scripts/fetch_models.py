@@ -8,15 +8,16 @@ match the record's sha256. `yourmt3` also installs the HF space's inference code
 out of this repository) as `<models>/yourmt3/src` and links the checkpoint into the space's
 `logs/` layout. `transkun` extracts the weights and model config
 from the package's PyPI wheel. The separation models are downloaded by audio-separator itself,
-by the filename the separation map gives them. madmom's models arrive with its git install, and
-the tagger's ONNX file is exported locally (`scripts/export_tagger.py`).
+by the filename the separation map gives them, except `mega53-keys` (piano's fallback, step 29):
+its config comes from eval/model-configs/ and its checkpoint is cut from the upstream 53-stem
+one (1.4 GB, kept under <models>/mega53/). madmom's models arrive with its git install, and the
+tagger's ONNX file is exported locally (`scripts/export_tagger.py`).
 
     uv run python scripts/fetch_models.py --eval [NAME ...]
 
 `--eval` fetches the evaluation-only separation candidates instead (step 29,
 eval/separation.eval.yaml), which setup never downloads and workers never expect: files with a
-URL are downloaded, configs we derived come from eval/model-configs/, and the Mega-53 keys slice
-is cut from the upstream checkpoint (kept under <models>/mega53/).
+URL are downloaded and configs we derived come from eval/model-configs/.
 """
 
 from __future__ import annotations
@@ -64,6 +65,7 @@ TARGETS = {
     "mel-roformer-kim-vocals": "mel-roformer-kim-vocals",
     "mel-roformer-guitar-becruily": "mel-roformer-guitar-becruily",
     "guitab": "guitab-e25",
+    "mega53-keys": "bs-roformer-mega53-keys5",
 }
 SEPARATION = {spec.record: spec.filename for spec in separation_config.load().models.values()}
 
@@ -77,10 +79,10 @@ EVAL_TARGETS = {
     "xlance-syn-mss1": "xlance-syn-mss1",
     "xlance-key-mss": "xlance-key-mss",
     "xlance-gtr-mss": "xlance-gtr-mss",
-    "mega53-keys5": "bs-roformer-mega53-keys5",
     "drumsep5": "mdx23c-drumsep5",
 }
 EVAL_CONFIGS = ML_ROOT / "eval" / "model-configs"
+MEGA53_RECORD = "bs-roformer-mega53-keys5"
 MEGA53_URL = "https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.21"
 MEGA53_CKPT = "mvsep_mega_model_bs_roformer_53_stems_v1.ckpt"
 MEGA53_SHA256 = "c62820893bbf86d4e734f966bd142d9157cfc8bb8e79e9d8f9ea553f3ff3519f"
@@ -162,18 +164,26 @@ def slice_mega53(dest: Path) -> None:
     print(f"sliced   {dest}")
 
 
+def fetch_derived(directory: Path, record: register.ModelRecord) -> None:
+    """A separation model outside audio-separator's catalogue: files with a URL are downloaded,
+    configs we derived are copied from eval/model-configs/, and the Mega-53 slice is cut."""
+    for entry in record.weights.files:
+        dest = directory / entry.name
+        if entry.url:
+            download(entry.url, dest, entry.sha256)
+        elif (EVAL_CONFIGS / entry.name).is_file():
+            shutil.copyfile(EVAL_CONFIGS / entry.name, dest)
+        elif record.id == MEGA53_RECORD and not (
+            dest.is_file() and register.file_sha256(dest) == entry.sha256
+        ):
+            slice_mega53(dest)
+
+
 def fetch_eval(names: list[str]) -> None:
     directory = models_dir() / "audio-separator"
     for name in names:
         record = register.model(EVAL_TARGETS[name])
-        for entry in record.weights.files:
-            dest = directory / entry.name
-            if entry.url:
-                download(entry.url, dest, entry.sha256)
-            elif (EVAL_CONFIGS / entry.name).is_file():
-                shutil.copyfile(EVAL_CONFIGS / entry.name, dest)
-            elif name == "mega53-keys5" and not dest.is_file():
-                slice_mega53(dest)
+        fetch_derived(directory, record)
         register.verify(record, directory)
         print(f"verified {record.id}")
 
@@ -228,6 +238,8 @@ def main() -> None:
             fetch_basic_pitch(directory, record)
         elif name == "transkun":
             fetch_transkun(directory, record)
+        elif record_id == MEGA53_RECORD:
+            fetch_derived(directory, record)
         elif all(entry.url for entry in record.weights.files):
             for entry in record.weights.files:
                 download(str(entry.url), directory / entry.name, entry.sha256)

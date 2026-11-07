@@ -98,11 +98,22 @@ class SoloCheck(BaseModel):
     threshold_db: float
 
 
+class FallbackWhenSilent(BaseModel):
+    # Step 29 (keys): when the chain's target stem stays below `threshold_db` of the mixture while
+    # the tagger hears the instrument (`present_prob` >= `min_present_prob`; never without usable
+    # tags), `model` runs and the sum of its outputs mapped to the instrument replaces the stem,
+    # marked rough. SW outputs no piano for synth- and organ-heavy keys.
+    model: str
+    threshold_db: float
+    min_present_prob: float = Field(ge=0, le=1)
+
+
 class InstrumentSpec(BaseModel):
     chain: list[str] = Field(min_length=1)
     mix_minus: Literal["subtract", "complement"]
     quality: Literal["good", "rough"]
     solo_check: SoloCheck | None = None
+    fallback_when_silent: FallbackWhenSilent | None = None
 
 
 class SeparationConfig(BaseModel):
@@ -129,6 +140,12 @@ class SeparationConfig(BaseModel):
                 or name not in self.models[check.model].outputs.values()
             ):
                 raise ValueError(f"{name}: solo check model {check.model} has no {name} output")
+            fallback = spec.fallback_when_silent
+            if fallback is not None and (
+                fallback.model not in self.models
+                or name not in self.models[fallback.model].outputs.values()
+            ):
+                raise ValueError(f"{name}: fallback model {fallback.model} has no {name} output")
         return self
 
 

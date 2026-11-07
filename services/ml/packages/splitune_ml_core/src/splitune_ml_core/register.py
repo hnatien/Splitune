@@ -42,6 +42,7 @@ WEIGHTS_DIRS = {
     "htdemucs-6s": "audio-separator",
     "htdemucs-ft": "audio-separator",
     "mel-roformer-kim-vocals": "audio-separator",
+    "bs-roformer-mega53-keys5": "audio-separator",
 }
 
 

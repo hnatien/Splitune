@@ -154,18 +154,27 @@ def run(job: StageJob) -> StageOutput:
     mix_loudness = dsp.loudness_lufs(mixture)
     mix_gain_db = round(dsp.TARGET_LUFS - mix_loudness, 2) if mix_loudness is not None else 0.0
     instrument_quality = {name: spec.quality for name, spec in cfg.instruments.items()}
+    # A target stem the fallback model replaced (step 29) is rough and credited to that model.
+    fallback = separation.fallback_when_silent
+    target_provider = separation.provider
+    target_quality = instrument_quality.get(separation.target, "good")
+    if fallback is not None and fallback.applied and fallback.provider is not None:
+        target_provider, target_quality = fallback.provider, "rough"
 
-    outputs: list[tuple[str, str, str | None, Audio, str]] = []  # id, kind, instrument, audio, base
+    # id, kind, instrument, audio, base quality, provider
+    outputs: list[tuple[str, str, str | None, Audio, str, str]] = []
     for s in separation.stems:
         if s.role == "complement" or s.instrument is None:
             continue
+        target = s.role == "target"
         outputs.append(
             (
                 s.instrument,
                 "isolated",
                 s.instrument,
                 aligned[s.name],
-                instrument_quality.get(s.instrument, "good"),
+                target_quality if target else instrument_quality.get(s.instrument, "good"),
+                target_provider if target else separation.provider,
             )
         )
     outputs.append(
@@ -174,14 +183,15 @@ def run(job: StageJob) -> StageOutput:
             "mix_minus",
             None,
             mix_minus.astype(np.float32),
-            instrument_quality.get(separation.target, "good"),
+            target_quality,
+            target_provider,
         )
     )
 
     stems: list[dict[str, Any]] = []
     presence: list[dict[str, Any]] = []
     blobs: dict[str, str] = {}
-    for stem_id, kind, instrument, audio, base_quality in outputs:
+    for stem_id, kind, instrument, audio, base_quality, provider in outputs:
         ratio = dsp.energy(audio) / mix_energy if mix_energy > 0 else 0.0
         act = dsp.activity(
             audio,
@@ -229,7 +239,7 @@ def run(job: StageJob) -> StageOutput:
         stem: dict[str, Any] = {
             "stem_id": stem_id,
             "kind": kind,
-            "provider": separation.provider,
+            "provider": provider,
             "files": files,
             "loudness_lufs": round(loudness if loudness is not None else dsp.SILENCE_LUFS, 2),
             "gain_to_unity_db": round(gain, 2),
