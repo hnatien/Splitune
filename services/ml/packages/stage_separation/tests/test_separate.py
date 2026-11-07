@@ -406,3 +406,117 @@ def test_the_solo_check_runs_first_and_skips_the_chain_for_a_solo_piano(
     assert doc.solo_bypass is not None
     assert doc.solo_bypass.applied is applied
     assert out.metrics["gpu_s" if doc.device != "cpu" else "cpu_s"] == 0.5 * len(calls)
+
+
+def test_a_stem_within_full_scale_is_cached_as_flac_and_a_louder_one_as_float_wav(
+    tmp_path: Path,
+) -> None:
+    """Step 28: on a loud master a stem peaks above full scale while the mixture doesn't; the
+    cache must keep it exactly, or `mixture - stem` breaks."""
+    t = np.arange(RATE) / RATE
+    quiet = np.repeat((0.5 * np.sin(2 * np.pi * 110 * t))[:, None], 2, axis=1).astype(np.float32)
+    loud = quiet * np.float32(3.2)
+    path, _ = separate.store(quiet, tmp_path / "run" / "bass")
+    assert path.name == "bass.flac"
+    path, sha = separate.store(loud, tmp_path / "run" / "drums")
+    assert path.name == "drums.wav"
+    back, _ = sf.read(str(path), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    assert np.array_equal(back, loud)  # nothing clipped or rescaled
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == sha
+    contracts.SeparatedStem.model_validate(
+        {
+            "name": "drums",
+            "role": "target",
+            "file": f"{'ab' * 8}/drums.wav",
+            "sha256": sha,
+            "frames": RATE,
+        }
+    )
+
+
+def test_the_stem_store_is_part_of_the_cache_key() -> None:
+    params = separate.plan(config.load(), {"instrument": "guitar"}, None)
+    assert params["stem_store"] == separate.STEM_STORE
+
+
+def test_the_library_peak_normalisation_is_off(
+    tmp_path: Path, fake_separator: list[dict[str, Any]]
+) -> None:
+    import math
+
+    spec = config.load().models["bs_roformer_sw"]
+    separator = models._separator("bs_roformer_sw", spec, tmp_path)  # pyright: ignore[reportPrivateUsage]
+    assert fake_separator[0]["normalization_threshold"] == 1.0  # the most its constructor takes
+    assert separator.normalization_threshold == math.inf
+
+
+class LoudModels:
+    """audio-separator stand-in whose drums output peaks at +10 dBFS and whose bass cancels it."""
+
+    def separate(self, name: str, spec: ModelSpec, audio: Path, output_dir: Path) -> models.Result:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        data, _ = sf.read(str(audio), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+        files: dict[str, Path] = {}
+        for stem in spec.outputs:
+            level = {"drums": 10.0, "bass": -9.0}.get(stem, 0.0)
+            path = output_dir / f"{stem}.wav"
+            sf.write(str(path), data * level, RATE, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+            files[stem] = path
+        return models.Result(files=files, seconds=0.1, peak_mb=0.0)
+
+
+def test_a_loud_stem_reaches_the_cache_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(models, "separate", LoudModels().separate)
+    params = separate.plan(config.load(), {"instrument": "drums"}, None)
+    job = make_job(tmp_path, params)
+    out = separate.run(job)
+    doc = contracts.Separation.model_validate(json.loads(Path(out.files["separation"]).read_text()))
+    stems = {s.name: s for s in doc.stems}
+    drums = Path(job.cache_dir) / "separated" / stems["drums"].file
+    assert drums.suffix == ".wav"
+    mixture, _ = sf.read(str(job.decoded_path), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    stored, _ = sf.read(str(drums), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    assert float(np.abs(stored).max()) > 1.0
+    assert np.allclose(stored, 10.0 * mixture, atol=1e-5)  # mixture - stem stays exact
+
+
+def loud_fixture() -> Path:
+    base = os.environ.get("SPLITUNE_DATASETS_DIR", str(Path("~/datasets").expanduser()))
+    return Path(base) / "musdb18hq-p1" / "loud-master" / "fixtures" / "xl-punkdisco-oral-hygiene"
+
+
+@pytest.mark.models
+def test_a_hot_master_separates_without_rescaling_or_clipping(tmp_path: Path) -> None:
+    """A limit-XL MUSDB window (eval/loud_master.py fixture): mixture at -1 dBTP, drums and bass
+    stems above full scale. Before step 28 BS-Roformer-SW's drums came back rescaled to 1.0 and
+    mixture - Σ outputs was only 16 dB below the mixture."""
+    fixture = loud_fixture()
+    if not (fixture / "mixture.wav").is_file():
+        pytest.skip(f"loud fixture not built ({fixture}; eval/loud_master.py run)")
+    try:
+        register.verify(register.model("bs-roformer-sw"), models.models_dir() / "audio-separator")
+    except StageError:
+        pytest.skip("BS-Roformer-SW weights not installed")
+    mixture, _ = sf.read(str(fixture / "mixture.wav"), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    job = make_job(tmp_path, separate.plan(config.load(), {"instrument": "drums"}, None), 30.0)
+    sf.write(str(job.decoded_path), mixture, RATE, format="FLAC", subtype="PCM_24")  # pyright: ignore[reportUnknownMemberType]
+    models.release()
+    out = separate.run(job)
+    doc = contracts.Separation.model_validate(json.loads(Path(out.files["separation"]).read_text()))
+    raw_dir = Path(job.workdir) / "separated" / "bs_roformer_sw"
+    outputs = {
+        p.stem: sf.read(str(p), dtype="float32", always_2d=True)[0] for p in raw_dir.glob("*.wav")
+    }  # pyright: ignore[reportUnknownMemberType]
+    for stem in doc.stems:
+        stored, _ = sf.read(
+            str(Path(job.cache_dir) / "separated" / stem.file), dtype="float32", always_2d=True
+        )  # pyright: ignore[reportUnknownMemberType]
+        assert np.allclose(stored, outputs[stem.name][: len(stored)], atol=2**-22)
+    assert float(np.abs(outputs["drums"]).max()) > 1.0  # not rescaled to full scale
+    fed, _ = sf.read(str(job.decoded_path), dtype="float32", always_2d=True)  # pyright: ignore[reportUnknownMemberType]
+    total = np.sum([a[: len(fed)] for a in outputs.values()], axis=0)
+    residual = 10 * np.log10(np.sum((fed - total) ** 2) / np.sum(fed**2))
+    assert residual < -25  # -31.5 dB measured; -16.5 dB with the library's rescaling
+    models.release()

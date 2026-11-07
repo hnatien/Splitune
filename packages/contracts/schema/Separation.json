@@ -203,7 +203,7 @@
         },
         "file": {
           "type": "string",
-          "pattern": "^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.flac$"
+          "pattern": "^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.(flac|wav)$"
         },
         "sha256": {
           "$ref": "#/$defs/Sha256Hex"

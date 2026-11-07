@@ -270,3 +270,26 @@ def test_cache_key_follows_the_raw_stems(tmp_path: Path) -> None:
     separation["stems"][0]["sha256"] = "0" * 64
     Path(job.inputs["separation"]).write_text(json.dumps(separation))
     assert stem_post.describe({}, job.inputs).params["separation"] != first
+
+
+def test_a_raw_stem_above_full_scale_is_read_back_unclipped(tmp_path: Path) -> None:
+    """Step 28: separate caches a stem that peaks above full scale as float WAV; stem_post's
+    mix-minus must see it exactly."""
+    from stage_separation import separate
+
+    t = np.arange(RATE) / RATE
+    stem = np.repeat((1.6 * np.sin(2 * np.pi * 55 * t))[:, None], 2, axis=1).astype(np.float32)
+    run = "ab" * 8
+    path, sha = separate.store(stem, tmp_path / "separated" / run / "drums")
+    entry = contracts.SeparatedStem.model_validate(
+        {
+            "name": "drums",
+            "instrument": "drums",
+            "role": "target",
+            "file": f"{run}/{path.name}",
+            "sha256": sha,
+            "frames": RATE,
+        }
+    )
+    raw = stem_post.load_raw(tmp_path, entry, RATE)
+    assert np.array_equal(raw, stem)

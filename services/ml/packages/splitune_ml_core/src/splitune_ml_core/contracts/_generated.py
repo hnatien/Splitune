@@ -631,7 +631,8 @@ class SeparatedStem(BaseModel):
     instrument: Instrument | None = None
     role: Literal["target", "complement", "extra"]
     file: Annotated[
-        StrictStr, Field(pattern="^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.flac$")
+        StrictStr,
+        Field(pattern="^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.(flac|wav)$"),
     ]
     sha256: Sha256Hex
     frames: Annotated[StrictInt, Field(gt=0, le=9007199254740991)]
@@ -1007,4 +1008,4 @@ class Notes(BaseModel):
     tuning: RecordingTuning | None = None
 
 
-SCHEMA_VERSION = "1.7.0"
+SCHEMA_VERSION = "1.8.0"
