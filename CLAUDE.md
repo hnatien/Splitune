@@ -17,7 +17,7 @@ Web-first practice app for instrument learners: bring a song (upload, recording 
 ## Commands
 ```bash
 pnpm run setup   # pnpm install, uv sync, .env from .env.example, git hooks (plain `pnpm setup` is pnpm's built-in)
-pnpm dev         # docker compose up (Postgres 18, SeaweedFS S3, Mailpit) + turbo dev
+pnpm dev         # docker compose up (Postgres 18, SeaweedFS S3) + turbo dev
 pnpm dev:all     # local stack + migrations, then web, node-worker and ml-worker in one dashboard
 pnpm dev:web     # the same without workers; pair with `pnpm dev:remote-workers <user@host>` on another machine (SSH tunnel to this stack)
 pnpm dev:stack-workers  # stack + workers without web; pair with `pnpm dev:remote-stack <user@host>` (web through an SSH tunnel) on the machine you code on
@@ -33,9 +33,9 @@ pnpm eval:regression  # separation regression suite (services/ml/eval/regression
 - Web: `pnpm --filter @splitune/web test` (unit), `test:stories` (Storybook stories with axe in Chromium/WebKit), `e2e` (Playwright). Its typecheck/test first run `generate` (Paraglide messages + `routeTree.gen.ts`).
 - music-core golden files (`packages/music-core/golden/`): `pnpm --filter @splitune/music-core golden:update` when an output change is intended.
 - Python: `cd services/ml && uv run --no-sync ruff check && uv run --no-sync pyright && uv run --no-sync pytest` (one test: `uv run --no-sync pytest packages/stage_notes -k <name>`). Always `--no-sync`: the workers run from `services/ml/.venv`. Tests marked `models` load real model weights.
-- Integration tests in `packages/db`, `packages/storage` and `apps/api` need the compose Postgres, SeaweedFS and Mailpit running.
+- Integration tests in `packages/db`, `packages/storage` and `apps/api` need the compose Postgres and SeaweedFS running (no mail server: sign-in is username + password; tests record email in memory).
 
-Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `splitune-media`), Mailpit UI `http://localhost:8025`.
+Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `splitune-media`).
 
 ## Architecture (personal mode, 01 + 25 §5)
 - **App:** `apps/web` (TanStack Start SSR + PWA) mounts `apps/api` (Hono + oRPC + Better Auth) in-process (`apps/web/app/server/api.ts`); `apps/api/src/server.ts` is only a standalone dev server. Web code: `app/routes` (file routes), `app/features/<area>`, `app/ui` (design-system components).

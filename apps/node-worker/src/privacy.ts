@@ -77,6 +77,7 @@ export async function buildBundle(
     account: {
       id: user.id,
       email: user.email,
+      username: user.displayUsername ?? user.username,
       display_name: user.displayName,
       primary_instrument: user.primaryInstrument,
       level: user.level,

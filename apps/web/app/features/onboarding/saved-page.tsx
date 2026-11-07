@@ -9,8 +9,8 @@ import { InlineError } from '@/ui/status-message'
 import { FocusShell } from '../shell/focus-shell'
 import { claimGuestProgress } from './claim'
 
-// /start/saved (27 §3.3 → "Next: import your own song"): where the magic link from "Save your
-// progress?" lands. It claims what the visitor made on this device, says where it went, and
+// /start/saved (27 §3.3 → "Next: import your own song"): where "Save your progress?" lands once
+// signed in. It claims what the visitor made on this device, says where it went, and
 // offers the next step: a song of their own.
 export function SavedPage() {
   const queryClient = useQueryClient()

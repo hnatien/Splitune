@@ -4,47 +4,38 @@ import {
   caller,
   cookieHeader,
   createTestApi,
-  magicLinkFrom,
+  emailOf,
   nextIp,
-  requestMagicLink,
   signIn,
-  testEmail,
-  waitForMail,
+  signInRequest,
+  signUpRequest,
+  TEST_PASSWORD,
+  testUsername,
 } from './helpers.ts'
 
 const api = createTestApi()
 afterAll(() => api.close())
 
-describe('magic-link sign-in (Mailpit, end to end)', () => {
-  it('emails a link that creates a session cookie usable on /v1/me', async () => {
-    const email = testEmail()
-    const ip = nextIp()
-    expect((await requestMagicLink(api, email, ip)).status).toBe(200)
+const code = async (res: Response) => ((await res.json()) as { code?: string }).code
 
-    const text = await waitForMail(email)
-    const link = magicLinkFrom(text)
-    expect(link.origin).toBe(api.config.authUrl)
-    expect(text).toContain('expires in 5 minutes')
-
-    const verified = await api.app.request(`${link.pathname}${link.search}`, {
-      headers: { 'x-forwarded-for': ip },
-    })
-    expect(verified.status).toBe(302)
-    const [sessionCookie] = verified.headers
+describe('username and password sign-in', () => {
+  it('signs up with a session cookie usable on /v1/me, and no email', async () => {
+    const username = `Ana_${testUsername()}`.slice(0, 30)
+    const created = await signUpRequest(api, username)
+    expect(created.status).toBe(200)
+    const [sessionCookie] = created.headers
       .getSetCookie()
       .filter((c) => c.startsWith('splitune.session_token='))
     expect(sessionCookie).toMatch(/HttpOnly/i)
     expect(sessionCookie).toMatch(/SameSite=Lax/i)
     expect(sessionCookie).not.toMatch(/Secure/i) // HTTP locally; Secure in production
-    const cookie = cookieHeader(verified)
-
-    const session = await api.app.request('/v1/auth/get-session', { headers: { cookie } })
-    expect(((await session.json()) as { user: { email: string } }).user.email).toBe(email)
+    const cookie = cookieHeader(created)
 
     const me = await caller(api, cookie).request('GET', '/v1/me')
     expect(me.status).toBe(200)
     expect(await me.json()).toMatchObject({
-      email,
+      email: emailOf(username),
+      username,
       plan: 'free',
       display_name: null,
       handedness: 'right',
@@ -56,14 +47,61 @@ describe('magic-link sign-in (Mailpit, end to end)', () => {
       },
       entitlements: expect.arrayContaining(['practice.core', 'analysis.welcome', 'embed.view']),
     })
+    expect(api.outbox).toEqual([])
 
-    // Single use: a second click is refused and sets no session.
-    const reused = await api.app.request(`${link.pathname}${link.search}`, {
-      headers: { 'x-forwarded-for': ip },
+    // Usernames are case-insensitive for sign-in.
+    const again = await signInRequest(api, username.toUpperCase())
+    expect(again.status).toBe(200)
+    expect(cookieHeader(again)).toContain('splitune.session_token=')
+  })
+
+  it('derives the email from the username, whatever the request says', async () => {
+    const username = testUsername()
+    const res = await api.app.request('/v1/auth/sign-up/email', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: api.config.appUrl,
+        'x-forwarded-for': nextIp(),
+      },
+      body: JSON.stringify({
+        username,
+        email: 'someone-else@example.com',
+        password: TEST_PASSWORD,
+        name: '',
+      }),
     })
-    expect(reused.status).toBe(302)
-    expect(reused.headers.get('location')).toContain('error=')
-    expect(cookieHeader(reused)).not.toContain('splitune.session_token=')
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as { user: { email: string } }).user.email).toBe(emailOf(username))
+  })
+
+  it('refuses a wrong password, a taken username and weak input', async () => {
+    const username = testUsername()
+    await signIn(api, username)
+    const wrong = await signInRequest(api, username, 'not-the-password')
+    expect(wrong.status).toBe(401)
+    expect(await code(wrong)).toBe('INVALID_USERNAME_OR_PASSWORD')
+    expect(cookieHeader(wrong)).not.toContain('splitune.session_token=')
+    expect(await code(await signInRequest(api, testUsername()))).toBe(
+      'INVALID_USERNAME_OR_PASSWORD',
+    )
+
+    expect(await code(await signUpRequest(api, username.toUpperCase()))).toBe(
+      'USERNAME_IS_ALREADY_TAKEN',
+    )
+    expect((await signUpRequest(api, 'no spaces allowed')).status).toBe(400)
+    expect((await signUpRequest(api, 'ab')).status).toBe(400)
+    expect((await signUpRequest(api, testUsername(), 'short')).status).toBe(400)
+    const noUsername = await api.app.request('/v1/auth/sign-up/email', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: api.config.appUrl,
+        'x-forwarded-for': nextIp(),
+      },
+      body: JSON.stringify({ email: 'a@example.com', password: TEST_PASSWORD, name: '' }),
+    })
+    expect(noUsername.status).toBe(400)
   })
 
   it('signs out', async () => {
@@ -87,9 +125,9 @@ describe('magic-link sign-in (Mailpit, end to end)', () => {
   it('limits sign-in attempts per IP (10/min)', async () => {
     const ip = nextIp()
     for (let i = 0; i < 10; i++) {
-      expect((await requestMagicLink(api, testEmail(), ip)).status).toBe(200)
+      expect((await signInRequest(api, testUsername(), TEST_PASSWORD, ip)).status).toBe(401)
     }
-    const limited = await requestMagicLink(api, testEmail(), ip)
+    const limited = await signInRequest(api, testUsername(), TEST_PASSWORD, ip)
     expect(limited.status).toBe(429)
     const retryAfter = Number(limited.headers.get('retry-after'))
     expect(retryAfter).toBeGreaterThan(0)
@@ -99,7 +137,7 @@ describe('magic-link sign-in (Mailpit, end to end)', () => {
       retry_after_s: retryAfter,
     })
     // Another address is unaffected.
-    expect((await requestMagicLink(api, testEmail(), nextIp())).status).toBe(200)
+    expect((await signInRequest(api, testUsername(), TEST_PASSWORD, nextIp())).status).toBe(401)
   })
 
   it('has Google sign-in only when its credentials are configured', async () => {

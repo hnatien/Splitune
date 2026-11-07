@@ -10,9 +10,10 @@ import {
   type Caller,
   caller,
   createTestApi,
+  emailOf,
   sha256Hex,
   signIn,
-  testEmail,
+  testUsername,
   userIdOf,
 } from './helpers.ts'
 
@@ -30,15 +31,23 @@ const json = async <T = Record<string, unknown>>(res: Response) => (await res.js
 
 interface User {
   id: string
+  username: string
   email: string
   cookie: string
   call: Caller
 }
 
 async function newUser(): Promise<User> {
-  const email = testEmail()
-  const cookie = await signIn(api, email)
-  return { id: await userIdOf(api, cookie), email, cookie, call: caller(api, cookie) }
+  const username = testUsername()
+  const email = emailOf(username)
+  const cookie = await signIn(api, username)
+  return {
+    id: await userIdOf(api, cookie),
+    username,
+    email,
+    cookie,
+    call: caller(api, cookie),
+  }
 }
 
 async function songWithUpload(user: User) {
@@ -173,11 +182,14 @@ describe('delete my account', () => {
     expect((await sql('select deleted_at from users where id = $1', [user.id])).rows).toEqual([
       { deleted_at: null },
     ])
+    // Entering the password again is the fresh sign-in.
+    const fresh = caller(api, await signIn(api, user.username))
+    expect((await fresh.request('DELETE', '/v1/me')).status).toBe(202)
   })
 
   it('ends every session at once, then the worker removes all rows and objects', async () => {
     const user = await newUser()
-    const other = caller(api, await signIn(api, user.email)) // a second device
+    const other = caller(api, await signIn(api, user.username)) // a second device
     const { key } = await songWithUpload(user)
     await user.call.request('POST', '/v1/events', {
       events: [{ name: 'speed_changed', props: { speed_pct: 70, input_mode: 'pedal' } }],

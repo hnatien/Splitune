@@ -35,6 +35,7 @@ export const DataExport = z.object({
   account: z.object({
     id: z.string().min(1),
     email: z.email(),
+    username: z.string().nullable(),
     display_name: z.string().nullable(),
     primary_instrument: Instrument.nullable(),
     level: Level.nullable(),

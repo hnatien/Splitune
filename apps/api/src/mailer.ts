@@ -11,10 +11,11 @@ export interface Mailer {
   send(mail: Mail): Promise<void>
 }
 
-// SMTP: Mailpit, locally (UI http://localhost:8025) and as a Railway service in production
-// (25-personal-mode.md §1). Short timeouts: an unreachable server fails the request within
-// seconds instead of leaving sign-in spinning for nodemailer's default two minutes.
+// SMTP when SMTP_HOST is set; otherwise nothing is sent (25-personal-mode.md §1: no mail server
+// on Railway, whose Hobby plan blocks outbound SMTP). Short timeouts: an unreachable server fails
+// within seconds instead of nodemailer's default two minutes.
 export function createSmtpMailer(smtp: ApiConfig['smtp']): Mailer {
+  if (!smtp) return { send: async () => undefined }
   const transport = nodemailer.createTransport({
     host: smtp.host,
     port: smtp.port,
@@ -26,6 +27,8 @@ export function createSmtpMailer(smtp: ApiConfig['smtp']): Mailer {
   })
   return {
     async send({ to, subject, text }) {
+      // Username accounts carry a placeholder address under .invalid (auth.ts): nothing to send.
+      if (to.toLowerCase().endsWith('.invalid')) return
       await transport.sendMail({ from: smtp.from, to, subject, text })
     },
   }

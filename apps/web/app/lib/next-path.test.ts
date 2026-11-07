@@ -11,7 +11,7 @@ describe('safeNext', () => {
       'https://evil.example',
       '//evil.example',
       '/\\evil.example',
-      '/auth/verify',
+      '/auth/sign-up',
       42,
     ]) {
       expect(safeNext(value)).toBe('/library')

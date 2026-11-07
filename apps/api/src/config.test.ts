@@ -5,9 +5,6 @@ const base = {
   APP_URL: 'http://localhost:3000/',
   BETTER_AUTH_URL: 'http://localhost:3000',
   BETTER_AUTH_SECRET: 'x'.repeat(32),
-  SMTP_HOST: 'localhost',
-  SMTP_PORT: '1025',
-  EMAIL_FROM: 'Splitune <no-reply@splitune.localhost>',
   BILLING_WEBHOOK_SECRET: 'w'.repeat(16),
   ANALYTICS_SALT: 's'.repeat(16),
 }
@@ -30,11 +27,18 @@ describe('configFromEnv', () => {
       ...base,
       CORS_ORIGINS: 'https://splitune.up.railway.app, http://localhost:3000',
       TRUST_PROXY: 'true',
+      SMTP_HOST: 'smtp.example.com',
       SMTP_SECURE: 'true',
+      EMAIL_FROM: 'Splitune <no-reply@splitune.localhost>',
     })
     expect(config.corsOrigins).toEqual(['https://splitune.up.railway.app', 'http://localhost:3000'])
     expect(config.trustProxy).toBe(true)
-    expect(config.smtp.secure).toBe(true)
+    expect(config.smtp).toMatchObject({ host: 'smtp.example.com', port: 587, secure: true })
+  })
+
+  it('sends no email without SMTP_HOST, and needs EMAIL_FROM with it', () => {
+    expect(configFromEnv(base).smtp).toBeUndefined()
+    expect(() => configFromEnv({ ...base, SMTP_HOST: 'smtp.example.com' })).toThrow(/EMAIL_FROM/)
   })
 
   it('names bad settings without echoing their values', () => {

@@ -67,10 +67,14 @@ const NO_EXPORT: ExportState = {
 const IN_A_DAY = new Date(Date.now() + 86_400_000).toISOString()
 
 const privacy =
-  (state: ExportState | null, options: { worker?: boolean; dialog?: DeleteStep } = {}) =>
-  () =>
-    shell('privacy', <PrivacySettings me={ME} deleteDialog={options.dialog} />, (client) => {
-      client.setQueryData(meQuery.queryKey, ME)
+  (
+    state: ExportState | null,
+    options: { worker?: boolean; dialog?: DeleteStep; me?: typeof ME } = {},
+  ) =>
+  () => {
+    const me = options.me ?? ME
+    return shell('privacy', <PrivacySettings me={me} deleteDialog={options.dialog} />, (client) => {
+      client.setQueryData(meQuery.queryKey, me)
       if (state) client.setQueryData(exportStateQuery(false).queryKey, state)
       const runner = { online: options.worker ?? true, last_heartbeat_at: null }
       const worker: z.infer<typeof WorkerStatus> = {
@@ -79,6 +83,7 @@ const privacy =
       }
       client.setQueryData(workerStatusQuery.queryKey, worker)
     })
+  }
 
 /** Privacy (27 §3.9, 15 §4): training opt-in, "Download my data" and "Delete my account". */
 export const Privacy: Story = {
@@ -165,16 +170,21 @@ export const PrivacyDeleteReauth: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('alertdialog')
     await expect(dialog).toHaveTextContent("Confirm it's you")
-    await waitFor(() =>
-      expect(within(dialog).getByRole('button', { name: 'Email me a link' })).toBeVisible(),
-    )
+    const confirm = within(dialog).getByRole('button', { name: 'Confirm' })
+    await waitFor(() => expect(confirm).toBeVisible())
+    await expect(confirm).toBeDisabled()
+    await userEvent.type(within(dialog).getByLabelText('Password'), 'practice-slowly-42')
+    await expect(confirm).toBeEnabled()
   },
 }
-export const PrivacyDeleteLinkSent: Story = {
-  render: privacy(NO_EXPORT, { dialog: 'sent' }),
+/** A Google-only account has no password: it signs in with Google again. */
+export const PrivacyDeleteReauthGoogle: Story = {
+  render: privacy(NO_EXPORT, { dialog: 'reauth', me: { ...ME, username: null } }),
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('alertdialog')
-    await expect(dialog).toHaveTextContent(/We sent a link to/)
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: 'Continue with Google' })).toBeVisible(),
+    )
   },
 }
 

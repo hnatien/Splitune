@@ -3,20 +3,29 @@ import { createDb, type Database } from '@splitune/db'
 import { createStorage, type Storage, storageConfigFromEnv } from '@splitune/storage'
 import { expect, inject } from 'vitest'
 import { type Api, CSRF_HEADER, createApi } from '../src/app.ts'
+import { placeholderEmail } from '../src/auth.ts'
 import { type ApiConfig, configFromEnv } from '../src/config.ts'
-
-export const { MAILPIT_URL = 'http://localhost:8025' } = process.env
+import type { Mail } from '../src/mailer.ts'
 
 export interface TestApi {
   app: Api
   db: Database
   storage: Storage
   config: ApiConfig
+  // Every email any test app in this file sent, newest last (no SMTP server in tests).
+  outbox: Mail[]
   close(): Promise<void>
 }
 
-// The real app on the throwaway database, SeaweedFS and Mailpit. TRUST_PROXY lets each test pick
-// its client address with X-Forwarded-For (per-IP limits).
+const outbox: Mail[] = []
+const mailer = {
+  async send(mail: Mail) {
+    outbox.push(mail)
+  },
+}
+
+// The real app on the throwaway database and SeaweedFS, with an in-memory mailer. TRUST_PROXY lets
+// each test pick its client address with X-Forwarded-For (per-IP limits).
 export function createTestApi(env: Record<string, string> = {}): TestApi {
   const config = configFromEnv({
     ...process.env,
@@ -27,42 +36,19 @@ export function createTestApi(env: Record<string, string> = {}): TestApi {
   })
   const db = createDb({ url: inject('databaseUrl'), max: 10 })
   const storage = createStorage(storageConfigFromEnv())
-  const app = createApi({ db, storage, config })
-  return { app, db, storage, config, close: () => db.$client.end() }
+  const app = createApi({ db, storage, config, mailer })
+  return { app, db, storage, config, outbox, close: () => db.$client.end() }
 }
 
 // Random private addresses: the rate-limit table is shared by every test file, so a
 // per-file counter would make files collide on the per-IP sign-in limit.
 export const nextIp = () => `10.${randomInt(256)}.${randomInt(256)}.${randomInt(1, 255)}`
 
-export const testEmail = () => `${randomUUID()}@test.splitune.localhost`
-
-interface MailpitSummary {
-  ID: string
-}
-
-// Waits for the newest email to `to` in Mailpit and returns its plain-text body.
-export async function waitForMail(to: string, timeoutMs = 10_000): Promise<string> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const query = encodeURIComponent(`to:"${to}"`)
-    const res = await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}`)
-    const { messages } = (await res.json()) as { messages: MailpitSummary[] }
-    const [latest] = messages
-    if (latest) {
-      const message = await fetch(`${MAILPIT_URL}/api/v1/message/${latest.ID}`)
-      return ((await message.json()) as { Text: string }).Text
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100))
-  }
-  throw new Error(`no email to ${to} within ${timeoutMs} ms`)
-}
-
-export function magicLinkFrom(text: string): URL {
-  const match = /https?:\/\/\S+\/v1\/auth\/magic-link\/verify\?\S+/.exec(text)
-  if (!match) throw new Error('no magic link in email')
-  return new URL(match[0])
-}
+// Unique per call; within Better Auth's 3–30 characters of letters, digits and underscores.
+export const testUsername = () => `t_${randomUUID().replaceAll('-', '').slice(0, 24)}`
+export const TEST_PASSWORD = 'practice-slowly-42'
+// The placeholder address the server gives a username account (auth.ts).
+export const emailOf = (username: string) => placeholderEmail(username)
 
 // "name=value; name2=value2" from a response's Set-Cookie headers.
 export function cookieHeader(res: Response): string {
@@ -72,32 +58,45 @@ export function cookieHeader(res: Response): string {
     .join('; ')
 }
 
-export async function requestMagicLink(api: TestApi, email: string, ip = nextIp()) {
-  return api.app.request('/v1/auth/sign-in/magic-link', {
+const authPost = (api: TestApi, path: string, body: unknown, ip = nextIp()) =>
+  api.app.request(`/v1/auth${path}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       origin: api.config.appUrl,
       'x-forwarded-for': ip,
     },
-    body: JSON.stringify({ email, callbackURL: '/' }),
+    body: JSON.stringify(body),
   })
-}
 
-// Full magic-link sign-in: request the link, read it from Mailpit, follow it. Returns the session
-// cookie header.
-export async function signIn(api: TestApi, email = testEmail()): Promise<string> {
-  const ip = nextIp()
-  const sent = await requestMagicLink(api, email, ip)
-  expect(sent.status).toBe(200)
-  const link = magicLinkFrom(await waitForMail(email))
-  const verified = await api.app.request(`${link.pathname}${link.search}`, {
-    headers: { 'x-forwarded-for': ip },
-  })
-  expect(verified.status).toBe(302)
-  const cookie = cookieHeader(verified)
+export const signUpRequest = (
+  api: TestApi,
+  username: string,
+  password = TEST_PASSWORD,
+  ip = nextIp(),
+) => authPost(api, '/sign-up/email', { username, password, name: '' }, ip)
+
+export const signInRequest = (
+  api: TestApi,
+  username: string,
+  password = TEST_PASSWORD,
+  ip = nextIp(),
+) => authPost(api, '/sign-in/username', { username, password }, ip)
+
+const sessionCookie = (res: Response) => {
+  expect(res.status).toBe(200)
+  const cookie = cookieHeader(res)
   expect(cookie).toContain('splitune.session_token=')
   return cookie
+}
+
+// Signs in as `username`, creating the account first when it doesn't exist yet. Returns the
+// session cookie header.
+export async function signIn(api: TestApi, username = testUsername()): Promise<string> {
+  const created = await signUpRequest(api, username)
+  if (created.status === 200) return sessionCookie(created)
+  expect(((await created.json()) as { code?: string }).code).toBe('USERNAME_IS_ALREADY_TAKEN')
+  return sessionCookie(await signInRequest(api, username))
 }
 
 export interface Caller {

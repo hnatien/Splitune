@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { type AddressInfo, createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -478,27 +479,70 @@ describe('daily digest', () => {
     expect(text).toContain('85.0 % of the 10 GB-month free tier')
   })
 
-  it('sends the digest by SMTP (Mailpit)', async () => {
-    const to = `digest-${randomUUID().slice(0, 8)}@test.splitune.localhost`
-    const {
-      SMTP_HOST = 'localhost',
-      SMTP_PORT = '1025',
-      EMAIL_FROM = 'Splitune <no-reply@splitune.localhost>',
-    } = process.env
-    const result = await sendDigest(services, {
-      to,
-      at: { hour: 8, minute: 0 },
-      from: EMAIL_FROM,
-      smtp: { host: SMTP_HOST, port: Number(SMTP_PORT), secure: false },
-      cacheDir: join(tmpdir(), 'splitune-no-such-cache'),
-    })
-    expect(result.bucket_objects).toBeGreaterThanOrEqual(0)
-    expect(result.cache_bytes).toBeNull()
-    const search = await fetch(
-      `http://localhost:8025/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`,
-    )
-    const found = (await search.json()) as { messages: { Subject: string }[] }
-    expect(found.messages).toHaveLength(1)
-    expect(found.messages[0]?.Subject).toMatch(/^Splitune digest \d{4}-\d{2}-\d{2}: /)
+  it('sends the digest by SMTP', async () => {
+    const smtp = await smtpCatcher()
+    try {
+      const to = `digest-${randomUUID().slice(0, 8)}@test.splitune.localhost`
+      const result = await sendDigest(services, {
+        to,
+        at: { hour: 8, minute: 0 },
+        from: 'Splitune <no-reply@splitune.localhost>',
+        smtp: { host: '127.0.0.1', port: smtp.port, secure: false },
+        cacheDir: join(tmpdir(), 'splitune-no-such-cache'),
+      })
+      expect(result.bucket_objects).toBeGreaterThanOrEqual(0)
+      expect(result.cache_bytes).toBeNull()
+      expect(smtp.messages).toHaveLength(1)
+      expect(smtp.messages[0]?.to).toBe(`<${to}>`)
+      expect(smtp.messages[0]?.data).toMatch(/^Subject: Splitune digest \d{4}-\d{2}-\d{2}: /m)
+    } finally {
+      await smtp.close()
+    }
   })
 })
+
+// The smallest SMTP server nodemailer talks to (no TLS, no auth): records each message's
+// recipient and raw data.
+async function smtpCatcher() {
+  const messages: { to: string; data: string }[] = []
+  const server = createServer((socket) => {
+    let buffer = ''
+    let to = ''
+    let data = false
+    socket.write('220 test ESMTP\r\n')
+    socket.on('data', (chunk) => {
+      buffer += chunk.toString('utf8')
+      if (data) {
+        const end = buffer.indexOf('\r\n.\r\n')
+        if (end < 0) return
+        messages.push({ to, data: buffer.slice(0, end) })
+        buffer = buffer.slice(end + 5)
+        data = false
+        socket.write('250 queued\r\n')
+      }
+      let line = buffer.indexOf('\r\n')
+      while (line >= 0 && !data) {
+        const command = buffer.slice(0, line)
+        buffer = buffer.slice(line + 2)
+        const verb = command.slice(0, 4).toUpperCase()
+        if (verb === 'RCPT') to = command.slice(command.indexOf(':') + 1).trim()
+        if (verb === 'DATA') {
+          data = true
+          socket.write('354 go ahead\r\n')
+        } else if (verb === 'QUIT') {
+          socket.end('221 bye\r\n')
+        } else {
+          socket.write('250 ok\r\n')
+        }
+        line = buffer.indexOf('\r\n')
+      }
+    })
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address() as AddressInfo
+  return {
+    port,
+    messages,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  }
+}

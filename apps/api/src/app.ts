@@ -89,7 +89,7 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
   })
   const flags = createFlags(() => repos.flags.list())
   const deps: ApiDeps = { db, repos, storage, config, events, billing, flags, analyticsHash }
-  const auth = createAuth(db, config, mail)
+  const auth = createAuth(db, config)
 
   const handler = new OpenAPIHandler(router, {
     plugins: [new SmartCoercionPlugin({ schemaConverters: [new ZodToJsonSchemaConverter()] })],
@@ -272,9 +272,10 @@ export function createApi({ db, storage, config, mailer }: CreateApiOptions) {
     }),
   )
 
-  // Better Auth: magic link, Google OAuth, session cookies. Sign-in attempts are limited per IP.
+  // Better Auth: username and password, Google OAuth, session cookies. Sign-in and sign-up
+  // attempts (every POST) are limited per IP.
   app.on(['GET', 'POST'], `${AUTH_BASE_PATH}/*`, async (c) => {
-    if (c.req.method === 'POST' || c.req.path === `${AUTH_BASE_PATH}/magic-link/verify`) {
+    if (c.req.method === 'POST') {
       const { limit, windowS } = RATE_LIMITS.auth
       const result = await hitRateLimit(db, `auth:ip:${clientIp(c)}`, limit, windowS)
       if (!result.allowed)

@@ -90,14 +90,15 @@ Each spec lists **purpose · layout · content · primary action · states**. Si
 | 3 Where's your screen? | Desk · Music stand · Floor (illustrated with simple line drawings) + "Can you read this?" live sample at the chosen size | Continue | Sets the distance preset (`26` §6.3); skippable |
 | 4 Your first song | Example song card (title, "guitar riff", 0:45), **Play your part** | Play | Autoplay only after the tap (HIG) |
 | 5 Loop it | Practice screen in focus mode with a coach mark: "We've looped bars 5–8 at 70 %. Play along." | — | Coach marks: max 2, dismissible, never block the transport |
-| 6 Save | After the first completed pass: sheet "Save your progress?" Email field + Continue; "Not now" keeps practising | Continue | Never interrupts mid-pass |
+| 6 Save | After the first completed pass: sheet "Save your progress?" with the sign-up form (username + password; "Already have an account? Sign in" switches it to sign-in); "Not now" keeps practising | Create account | Never interrupts mid-pass |
 
 Progress dots (1–5) at top with "Step 2 of 5" text; Back always available.
 
 ### 3.4 Auth `/auth/*` (auth shell)
-- **Sign in:** "Sign in or create an account" · a lead saying the link replaces a password and sets up new accounts · email field · **Email me a link** · Google (if configured, under an "or" divider) · small print "By continuing, you agree to our Terms and Privacy policy." One form for both sign-in and sign-up.
-- **Check your email:** "We sent a link to {email}. It works for {minutes} minutes." (`MAGIC_LINK_TTL_S` in `apps/api/src/auth.ts`, currently 5 minutes) · "Open Mailpit" link in dev only · Resend (after 30 s) · Use a different email.
-- **Landing:** spinner ≤1 s then redirect; errors: expired ("This link has expired. We can send a new one."), used, invalid.
+Username and password only (25 §1): nothing to confirm by email, no mail server.
+- **Sign in** `/auth/sign-in`: "Sign in" · "Welcome back. Enter your username and password." · Username · Password · **Sign in** · "New to Splitune? Create an account" · Google (if configured, under an "or" divider) · small print "By continuing, you agree to our Terms and Privacy policy." A wrong pair: `auth.wrong_credentials`.
+- **Create an account** `/auth/sign-up`: "Create an account" · "Pick a username and a password. No email needed." · Username (hint "3–30 letters, numbers, dots or underscores.") · Password (hint "At least 8 characters.") · **Create account** (signs in at once) · "Already have an account? Sign in" · Google and small print as above. A taken name: `auth.username_taken`.
+- Both continue at `?next=` (same-origin paths only) after a full page load. Usernames are case-insensitive for sign-in and shown as typed.
 
 ### 3.5 Library `/library` (app shell, home)
 - **Layout:** page title "Library" + count; toolbar: search (title), filter chips (Instrument, Status), sort (Last practised · Added · Title), view toggle (grid/list ≥ `md`). Grid of `SongCard`s: 3–4 columns desktop, 2–3 tablet, list on phone.
@@ -277,8 +278,8 @@ Each section saves per field with inline "Saved" confirmation (no global save bu
 | `billing.demo` | Demo mode — no real charges. | — |
 | `billing.declined` | The (simulated) payment was declined. Nothing was charged. | Try again |
 | `billing.cancelled_at_period_end` | Plus stays active until {date}. Then you'll be on Free — nothing you've made is removed. | Resume Plus |
-| `auth.link_sent` | We sent a link to {email}. It works for {minutes} minutes. | Resend · Use a different email |
-| `auth.link_expired` | This link has expired. We can send a new one. | Send a new link |
+| `auth.wrong_credentials` | That username and password don't match. | — |
+| `auth.username_taken` | That username is taken. Try another. | — |
 | `system.offline` | You're offline. You can keep practising songs you've opened. | — |
 | `system.unsupported` | Your browser can't run Splitune's audio engine ({missing}). | See supported browsers |
 | `system.in_app_browser` | Open in your browser for audio and uploads. | Copy link |
@@ -311,7 +312,7 @@ Pipeline `reasons` codes (`05`) map to `analysis.reason.{code}` keys with the sa
 
 ## Implementation notes (step 10, 2026-10-22)
 - The catalogue lives in `apps/web/messages/en.json` (Paraglide keys = the keys above). Added for step 10's screens: navigation/shell, home, how it works, legal, auth, library, import, upload, stages, settings and system keys, plus `analysis.reason.{tagger_unavailable, chords_unavailable, notes_on_mixture, beats_fallback, separation_fallback, video_unavailable, too_long, audio_empty, beats_not_found}`, `import.{quiet, clipping, mostly_silent}`, `auth.link_invalid`, `upload.{choose_again, choose_file, wrong_file}`. Every step-09 machine code maps to copy in `apps/web/app/lib/reasons.ts` (unknown → `analysis.failed`). The copy-key test (`app/copy-keys.test.ts`) checks the §5.6 keys, every key the code uses, and that screens hold no hard-coded strings.
-- **Magic-link landing:** Better Auth reports expired, already used and unknown links all as `INVALID_TOKEN`, so they share `auth.link_expired`; a visitor who is already signed in (e.g. clicked the link twice) goes straight on. Other errors show `auth.link_invalid`.
+- **Auth as built (username + password):** `/auth/sign-in` and `/auth/sign-up` share `CredentialsForm` (`apps/web/app/features/auth/sign-in.tsx`), also used by "Save your progress?". Field errors under each field (`auth.username_missing`, `auth.password_missing`, `auth.username_invalid`, `auth.password_invalid`); server answers map to `auth.wrong_credentials`, `auth.username_taken`, `error.rate_limited` or `system.error`. The magic-link landing `/auth/verify`, "Check your email" and the Mailpit link are gone. The account menu shows the username (the email only for a Google-only account).
 - The "Check your email" step stays on `/auth/sign-in` (component state) so the address never appears in a URL.
 - Library: the phone layout is always the list; "Last practised" shows `last_opened_at`. Practice (provisional): stage list with ETA, worker-offline status, fallback banners, upload pill in the status bar.
 
@@ -332,7 +333,7 @@ Pipeline `reasons` codes (`05`) map to `analysis.reason.{code}` keys with the sa
 - Design QA (28 §5) from Storybook screenshots of every billing story at 390×844 touch, 1180×820 touch, 1440×900 (Light and Dark) and 320 px: no page errors, no overflow from billing content; fixed the pricing card footers, the header meter width for the longer Plus text and the phone matrix columns. The 320 px overflow of the app-shell story wrapper (account button + story padding) is pre-existing.
 
 ## Implementation notes (step 15, 2026-10-22)
-- **Settings → Privacy as built:** training opt-in Switch with per-field "Saved"; "Download my data" (Prepare my data → "Preparing your file…" with the worker-offline notice → "Your file is ready. The link works until {date, time}." + Download / Prepare a new file; failed and unavailable states); "Delete my account" (destructive outline button → AlertDialog with `delete.account_confirm` → Delete account; a stale session gets "Confirm it's you" + Email me a link → `auth.link_sent`). Offline: read-only notice. After deletion: bare page `/account-deleted`. New keys `privacy.*`; `settings.coming_privacy` removed; `legal.privacy.delete_body` updated. Stories for every state (Screens/Settings, Screens/System, Screens/Practice → Stems expired).
+- **Settings → Privacy as built:** training opt-in Switch with per-field "Saved"; "Download my data" (Prepare my data → "Preparing your file…" with the worker-offline notice → "Your file is ready. The link works until {date, time}." + Download / Prepare a new file; failed and unavailable states); "Delete my account" (destructive outline button → AlertDialog with `delete.account_confirm` → Delete account; a stale session gets "Confirm it's you" with a Password field + Confirm, which signs in again and deletes; a Google-only account signs in with Google again and returns to `?confirm=delete`). Offline: read-only notice. After deletion: bare page `/account-deleted`. New keys `privacy.*`; `settings.coming_privacy` removed; `legal.privacy.delete_body` updated. Stories for every state (Screens/Settings, Screens/System, Screens/Practice → Stems expired).
 - **Design QA (28 §5)** on the Privacy states and the account-deleted page: 390×844 touch, 1180×820 touch, 1440×900 × Light/Dark/Stage — no overflow, no page errors; fixed the re-auth action's emphasis (primary). 320 px shows the pre-existing 31 px app-shell story overflow.
 ## Implementation notes (step 15a, 2026-10-22)
 - **Practice status bar on phones** (< 640 px wide): the song title is screen-reader-only (as in Stage), so the loop badge — the thing read from the stand — keeps its words ("Loop · bars 5–6" was truncated to "L…" beside the title). Phone landscape (wider than 640 px) keeps the title.

@@ -18,7 +18,7 @@ import { SavedPage } from './saved-page'
 
 // Onboarding (27 §3.3): the three questions, the example song (signed in; failed to load), the
 // guide over the example's practice screen (song card, then the loop with its coach mark), the
-// "Save your progress?" sheet and the page the magic link lands on. Nothing reaches the network.
+// "Save your progress?" sheet and the page it lands on once signed in. Nothing reaches the network.
 const meta = { title: 'Screens/Onboarding', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -175,10 +175,17 @@ export const SaveProgress: Story = {
   render: saveSheet,
   play: async () => {
     const sheet = await within(document.body).findByRole('dialog', { name: 'Save your progress?' })
-    await userEvent.type(within(sheet).getByLabelText('Email'), 'ana@')
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Continue' }))
-    await expect(within(sheet).getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
+    await userEvent.type(within(sheet).getByLabelText('Username'), 'ab')
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Create account' }))
+    await expect(within(sheet).getByLabelText('Username')).toHaveAttribute('aria-invalid', 'true')
     await expect(within(sheet).getByRole('button', { name: 'Not now' })).toBeVisible()
+    // An existing account signs in instead.
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Sign in' }))
+    await expect(within(sheet).getByLabelText('Password')).toHaveAttribute(
+      'autocomplete',
+      'current-password',
+    )
+    await expect(within(sheet).getByRole('button', { name: 'Create an account' })).toBeVisible()
   },
 }
 export const SaveProgressDark: Story = {
@@ -192,7 +199,7 @@ function claimed(client: QueryClient) {
   client.setQueryData(meQuery.queryKey, ME)
 }
 
-/** Where the magic link lands: the progress is in the library; next, a song of their own. */
+/** After signing up from the sheet: the progress is in the library; next, a song of their own. */
 export const Saved: Story = {
   render: () => (
     <AppStory path="/start/saved" seed={claimed}>

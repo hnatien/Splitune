@@ -1,6 +1,13 @@
 import { expect, type Page, test } from '@playwright/test'
 import { E2E_EXAMPLE } from './global-setup'
-import { collectErrors, expectAccessible, expectNoHorizontalScroll, magicLink } from './helpers'
+import {
+  collectErrors,
+  E2E_PASSWORD,
+  e2eUsername,
+  expectAccessible,
+  expectNoHorizontalScroll,
+  submitPastRateLimit,
+} from './helpers'
 
 // Step 13 acceptance (prompt 13): a fresh browser reaches a slowed loop of an isolated part from
 // /start without signing in, in under 10 scripted steps, on a phone-sized viewport in Chromium,
@@ -80,20 +87,16 @@ test('a fresh visitor reaches a slowed loop of their part without signing in', a
   expect(errors).toEqual([])
 })
 
-test('signing in from "Save your progress?" keeps the loop and the pass', async () => {
-  const info = test.info()
+test('signing up from "Save your progress?" keeps the loop and the pass', async () => {
   // Mark the pass, then stop: the save sheet waits for playback to stop (never mid-pass).
   await page.getByRole('button', { name: 'Felt clean' }).click()
   await page.getByRole('button', { name: 'Pause', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Save your progress?' })
   await expect(sheet).toBeVisible()
   await expectAccessible(page)
-  const email = `e2e-onboarding-${info.project.name}-${Date.now()}@splitune.localhost`
-  await sheet.getByLabel('Email').fill(email)
-  await sheet.getByRole('button', { name: 'Continue' }).click()
-  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()
-
-  await page.goto(await magicLink(email))
+  await sheet.getByLabel('Username').fill(e2eUsername('onboarding'))
+  await sheet.getByLabel('Password').fill(E2E_PASSWORD)
+  await submitPastRateLimit(page, sheet.getByRole('button', { name: 'Create account' }))
   await expect(page).toHaveURL(/\/start\/saved/)
   await expect(page.getByRole('heading', { name: 'Your progress is saved' })).toBeVisible({
     timeout: 30_000,

@@ -10,7 +10,7 @@ import { collectErrors, expectAccessible, projectContext, signIn, wav } from './
 test('a learner deletes their account and everything in it goes', async ({ browser }) => {
   const context = await projectContext(browser, { serviceWorkers: 'block' })
   const page = await context.newPage()
-  await signIn(page, `e2e-account-${test.info().project.name}-${Date.now()}@splitune.localhost`)
+  await signIn(page, 'account')
   const errors = collectErrors(page)
   const me = (await (await page.request.get('/v1/me')).json()) as { id: string }
 

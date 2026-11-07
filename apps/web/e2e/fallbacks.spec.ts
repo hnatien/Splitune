@@ -158,10 +158,10 @@ test.describe('signed in', () => {
 
   let context: BrowserContext
 
-  test.beforeAll(async ({ browser }, info) => {
+  test.beforeAll(async ({ browser }) => {
     context = await projectContext(browser)
     const page = await context.newPage()
-    await signIn(page, `e2e-fallbacks-${info.project.name}-${Date.now()}@splitune.localhost`)
+    await signIn(page, 'fallbacks')
     await page.close()
   })
 

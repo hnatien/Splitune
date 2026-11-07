@@ -42,7 +42,10 @@ export const Handedness = z.enum(['right', 'left'])
 
 export const Me = z.object({
   id: z.string().min(1),
+  // Username accounts carry a placeholder email under .invalid; show `username` instead.
   email: z.email(),
+  // The sign-in name as typed at sign-up; null for a Google-only account.
+  username: z.string().nullable(),
   display_name: z.string().nullable(),
   primary_instrument: Instrument.nullable(),
   level: Level.nullable(),

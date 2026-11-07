@@ -7,21 +7,25 @@ import bundledExamples from '../examples.json' with { type: 'json' }
 // Runtime configuration of the API, read once from the environment (names from .env.example).
 export interface ApiConfig {
   env: 'development' | 'test' | 'production'
-  // Public origin of the app; Better Auth builds magic links and OAuth callbacks from authUrl.
+  // Public origin of the app; Better Auth builds OAuth callbacks from authUrl.
   appUrl: string
   authUrl: string
   authSecret: string
   // Origins allowed by CORS and Better Auth's origin check (no wildcard).
   corsOrigins: string[]
   google: { clientId: string; clientSecret: string } | undefined
-  smtp: {
-    host: string
-    port: number
-    secure: boolean
-    user: string | undefined
-    password: string | undefined
-    from: string
-  }
+  // Outgoing email (billing notices to Google accounts); undefined = none is sent. Sign-in needs
+  // no email (username and password).
+  smtp:
+    | {
+        host: string
+        port: number
+        secure: boolean
+        user: string | undefined
+        password: string | undefined
+        from: string
+      }
+    | undefined
   // Behind Railway's proxy the client address is the last X-Forwarded-For hop.
   trustProxy: boolean
   logLevel: string
@@ -60,12 +64,12 @@ const Env = z.object({
   CORS_ORIGINS: optional,
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
-  SMTP_HOST: z.string().min(1),
-  SMTP_PORT: z.coerce.number().int().min(1).max(65_535),
+  SMTP_HOST: optional,
+  SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(587),
   SMTP_SECURE: flag.default(false),
   SMTP_USER: optional,
   SMTP_PASSWORD: optional,
-  EMAIL_FROM: z.string().min(3),
+  EMAIL_FROM: optional,
   TRUST_PROXY: flag.default(false),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   // Railway sets RAILWAY_GIT_COMMIT_SHA on deploys from GitHub.
@@ -95,6 +99,9 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     throw new Error(`invalid API configuration: ${problems.join('; ')}`)
   }
   const e = parsed.data
+  if (e.SMTP_HOST && !e.EMAIL_FROM) {
+    throw new Error('invalid API configuration: EMAIL_FROM: required with SMTP_HOST')
+  }
   const corsOrigins = e.CORS_ORIGINS
     ? e.CORS_ORIGINS.split(',').map((value) => origin.parse(value.trim()))
     : [e.APP_URL]
@@ -109,14 +116,17 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
       e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET
         ? { clientId: e.GOOGLE_CLIENT_ID, clientSecret: e.GOOGLE_CLIENT_SECRET }
         : undefined,
-    smtp: {
-      host: e.SMTP_HOST,
-      port: e.SMTP_PORT,
-      secure: e.SMTP_SECURE,
-      user: e.SMTP_USER,
-      password: e.SMTP_PASSWORD,
-      from: e.EMAIL_FROM,
-    },
+    smtp:
+      e.SMTP_HOST && e.EMAIL_FROM
+        ? {
+            host: e.SMTP_HOST,
+            port: e.SMTP_PORT,
+            secure: e.SMTP_SECURE,
+            user: e.SMTP_USER,
+            password: e.SMTP_PASSWORD,
+            from: e.EMAIL_FROM,
+          }
+        : undefined,
     trustProxy: e.TRUST_PROXY,
     logLevel: e.LOG_LEVEL,
     pipelineVersion: e.PIPELINE_VERSION ?? e.RAILWAY_GIT_COMMIT_SHA?.slice(0, 12) ?? 'dev',

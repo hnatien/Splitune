@@ -78,7 +78,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
             })}
           </nav>
           <UploadPill />
-          <AccountMenu email={me.email} />
+          <AccountMenu name={me.username ?? me.email} />
         </div>
       </header>
       <SystemBanners installHint />

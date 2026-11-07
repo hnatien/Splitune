@@ -14,7 +14,8 @@ type Song = z.infer<typeof LibrarySong>
 
 export const ME: MeData = {
   id: 'user-story',
-  email: 'ana@splitune.localhost',
+  email: 'ana@users.splitune.invalid',
+  username: 'Ana',
   display_name: 'Ana',
   primary_instrument: 'guitar',
   level: 'few_songs',

@@ -61,7 +61,7 @@ if (hasCommand('docker')) {
   run('docker', ['pull', `emscripten/emsdk:${emsdk}`])
 } else {
   console.warn(
-    '\nDocker is not installed; `pnpm dev` needs it for Postgres, SeaweedFS and Mailpit, and the dsp.wasm build for the Emscripten image.',
+    '\nDocker is not installed; `pnpm dev` needs it for Postgres and SeaweedFS, and the dsp.wasm build for the Emscripten image.',
   )
 }
 

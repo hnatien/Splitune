@@ -4,7 +4,7 @@ import { type Logger, pino } from 'pino'
 export type { Logger }
 
 // Structured JSON logs on stdout (Railway logs; 16-observability-analytics-experiments.md). Request
-// logs carry the path without its query string: magic-link tokens and presigned signatures live in
+// logs carry the path without its query string: OAuth codes and presigned signatures live in
 // query strings and must never reach a log. Headers and bodies are never logged.
 export function createLogger(level: string): Logger {
   return pino({

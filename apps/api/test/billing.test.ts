@@ -9,16 +9,16 @@ import {
   type Caller,
   caller,
   createTestApi,
-  MAILPIT_URL,
+  emailOf,
   sha256Hex,
   signIn,
   type TestApi,
-  testEmail,
+  testUsername,
   userIdOf,
 } from './helpers.ts'
 
 // Mock billing end to end over HTTP (14 §2–§4, 25 §2): allowances and admission, checkout and
-// portal through the signed webhook, the dev clock, and the billing emails in Mailpit.
+// portal through the signed webhook, the dev clock, and the billing emails (the test mailer's outbox).
 
 const api = createTestApi({ ENABLE_DEV_CLOCK: 'true' })
 const sql = (text: string, values: unknown[] = []) => api.db.$client.query(text, values)
@@ -44,14 +44,16 @@ interface Me {
 
 interface User {
   id: string
+  username: string
   email: string
   call: Caller
 }
 
 async function newUser(on: TestApi = api): Promise<User> {
-  const email = testEmail()
-  const cookie = await signIn(on, email)
-  return { id: await userIdOf(on, cookie), email, call: caller(on, cookie) }
+  const username = testUsername()
+  const email = emailOf(username)
+  const cookie = await signIn(on, username)
+  return { id: await userIdOf(on, cookie), username, email, call: caller(on, cookie) }
 }
 
 const me = async (user: User) => json<Me>(await user.call.request('GET', '/v1/me'))
@@ -122,32 +124,20 @@ async function advance(on: TestApi, user: User, days: number) {
 const cookies = new Map<string, string>()
 const cookieOf = (user: User) => ({ cookie: cookies.get(user.id) ?? '' })
 async function signedIn(on: TestApi = api): Promise<User> {
-  const email = testEmail()
-  const cookie = await signIn(on, email)
+  const username = testUsername()
+  const email = emailOf(username)
+  const cookie = await signIn(on, username)
   const id = await userIdOf(on, cookie)
   cookies.set(id, cookie)
-  return { id, email, call: caller(on, cookie) }
+  return { id, username, email, call: caller(on, cookie) }
 }
 
-interface MailpitMessage {
-  ID: string
-  Subject: string
-}
-
+// The bodies of the emails to `to` whose subject contains `subject`, newest first.
 async function mails(to: string, subject: string, timeoutMs = 10_000): Promise<string[]> {
   const deadline = Date.now() + timeoutMs
-  const query = encodeURIComponent(`to:"${to}" subject:"${subject}"`)
   while (Date.now() < deadline) {
-    const res = await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}`)
-    const { messages } = (await res.json()) as { messages: MailpitMessage[] }
-    if (messages.length > 0) {
-      return Promise.all(
-        messages.map(async (m) => {
-          const message = await fetch(`${MAILPIT_URL}/api/v1/message/${m.ID}`)
-          return ((await message.json()) as { Text: string }).Text
-        }),
-      )
-    }
+    const found = api.outbox.filter((m) => m.to === to && m.subject.includes(subject))
+    if (found.length > 0) return found.reverse().map((m) => m.text)
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   return []
@@ -272,7 +262,7 @@ describe('Free allowances and admission', () => {
     const upgraded = createTestApi({ PIPELINE_VERSION: `next-${randomUUID()}` })
     try {
       const cookie = cookies.get(user.id)
-      const afterUpgrade = caller(upgraded, cookie ?? (await signIn(upgraded, user.email)))
+      const afterUpgrade = caller(upgraded, cookie ?? (await signIn(upgraded, user.username)))
       expect((await afterUpgrade.request('POST', `/v1/analyses/${id}/rerun`)).status).toBe(202)
       expect(await ledger(user.id)).toHaveLength(2)
     } finally {

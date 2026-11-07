@@ -4,12 +4,11 @@ import {
   type BrowserContext,
   type BrowserContextOptions,
   expect,
+  type Locator,
   type Page,
   test,
 } from '@playwright/test'
 import { APP_URL } from '../playwright.config.ts'
-
-const MAILPIT = 'http://localhost:8025'
 
 /** A WAV file of a plucked 220 Hz tone (16-bit mono, 44.1 kHz): real audio every browser decodes. */
 export function wav(seconds: number): Buffer {
@@ -37,52 +36,45 @@ export function wav(seconds: number): Buffer {
   return Buffer.concat([header, data])
 }
 
-export async function magicLink(email: string): Promise<string> {
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const search = await fetch(
-      `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}&limit=1`,
-    )
-    const { messages } = (await search.json()) as { messages: { ID: string }[] }
-    const [message] = messages
-    if (message) {
-      const body = (await (await fetch(`${MAILPIT}/api/v1/message/${message.ID}`)).json()) as {
-        Text: string
-      }
-      const link = body.Text.match(/https?:\/\/\S+/)?.[0]
-      if (link) return link
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250))
-  }
-  throw new Error(`no magic link for ${email}`)
+/** A fresh username for one test run: `e2e_<label>_<unique>`, within the 30-character limit. */
+export function e2eUsername(label: string): string {
+  const unique = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+  return `e2e_${label}_${unique}`.slice(0, 30)
 }
 
-/** Signs in through the real form and the emailed link (Mailpit), ending in the library. */
-export async function signIn(page: Page, email: string) {
-  await page.goto('/library')
-  await expect(page).toHaveURL(/\/auth\/sign-in/)
-  await page.getByLabel('Email').fill(email)
-  // Projects share one IP and its 10/min sign-in limit: wait out a "Too many tries" and retry.
+export const E2E_PASSWORD = 'practice-slowly-42'
+
+/** Clicks `button` until the response isn't "Too many tries" (projects share one IP and its
+ * 10/min sign-in limit), waiting out each limit it meets. */
+export async function submitPastRateLimit(page: Page, button: Locator) {
+  const limited = page.getByText(/Too many tries in a short time\. Try again in (\d+)/)
   for (let attempt = 0; ; attempt++) {
-    await page.getByRole('button', { name: 'Email me a link' }).click()
-    const sent = page.getByRole('heading', { name: 'Check your email' })
-    const limited = page.getByText(/Too many tries in a short time\. Try again in (\d+)/)
-    await expect(sent.or(limited)).toBeVisible()
-    if (await sent.isVisible()) break
+    const response = page.waitForResponse(
+      (r) => r.url().includes('/v1/auth/') && r.request().method() === 'POST',
+    )
+    await button.click()
+    if ((await response).status() !== 429) return
     if (attempt >= 3) throw new Error('sign-in stayed rate limited')
+    await expect(limited).toBeVisible()
     const seconds = Number((await limited.textContent())?.match(/in (\d+)/)?.[1] ?? 60)
     await page.waitForTimeout((seconds + 1) * 1000)
   }
-  // Opening the link counts against the same limit: wait out a 429 there too.
-  const link = await magicLink(email)
-  for (let attempt = 0; ; attempt++) {
-    const response = await page.goto(link)
-    if (response?.status() !== 429) break
-    if (attempt >= 3) throw new Error('magic link stayed rate limited')
-    const seconds = Number(response.headers()['retry-after'] ?? 60)
-    await page.waitForTimeout((seconds + 1) * 1000)
-  }
+}
+
+/** Creates an account through the real sign-up form (username and password), ending in the
+ * library signed in. Returns the username. */
+export async function signIn(page: Page, label: string): Promise<string> {
+  const username = e2eUsername(label)
+  await page.goto('/library')
+  await expect(page).toHaveURL(/\/auth\/sign-in/)
+  await page.getByRole('link', { name: 'Create an account' }).click()
+  await expect(page).toHaveURL(/\/auth\/sign-up/)
+  await page.getByLabel('Username').fill(username)
+  await page.getByLabel('Password').fill(E2E_PASSWORD)
+  await submitPastRateLimit(page, page.getByRole('button', { name: 'Create account' }))
   await expect(page).toHaveURL(/\/library/)
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible()
+  return username
 }
 
 // WebKit logs a fetch to the app's own API that a navigation cancels as "/localhost:3000/v1/…

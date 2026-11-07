@@ -21,8 +21,9 @@ import {
 
 const APPEARANCES: DisplayPreferences['appearance'][] = ['system', 'light', 'dark', 'stage']
 
-// Account menu (27 §1): Settings · Plan & billing · Keyboard & pedal · Appearance · Help · Sign out.
-export function AccountMenu({ email }: { email: string }) {
+// Account menu (27 §1): the username (the email for a Google-only account), then Settings · Plan &
+// billing · Keyboard & pedal · Appearance · Help · Sign out.
+export function AccountMenu({ name }: { name: string }) {
   const appearance = useDisplay((s) => s.appearance)
   const update = useDisplay((s) => s.update)
   const router = useRouter()
@@ -44,7 +45,7 @@ export function AccountMenu({ email }: { email: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+          <DropdownMenuLabel className="truncate">{name}</DropdownMenuLabel>
           <DropdownMenuItem render={<Link to="/settings/profile" />}>
             {m['nav.settings']()}
           </DropdownMenuItem>

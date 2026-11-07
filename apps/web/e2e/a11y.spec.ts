@@ -91,10 +91,10 @@ test.describe('axe in every appearance', () => {
 
   let context: BrowserContext
 
-  test.beforeAll(async ({ browser }, info) => {
+  test.beforeAll(async ({ browser }) => {
     context = await projectContext(browser, { serviceWorkers: 'block' })
     const page = await context.newPage()
-    await signIn(page, `e2e-a11y-${info.project.name}-${Date.now()}@splitune.localhost`)
+    await signIn(page, 'a11y')
     // A populated library.
     await page.goto('/import')
     await page.getByRole('tab', { name: 'File' }).click()
@@ -326,7 +326,7 @@ test.describe('200 % text', () => {
     )
     const context = await projectContext(browser, { serviceWorkers: 'block' })
     const page = await context.newPage()
-    await signIn(page, `e2e-zoom-${info.project.name}-${Date.now()}@splitune.localhost`)
+    await signIn(page, 'zoom')
     await page.addInitScript(doubleText)
     await page.goto('/library')
     await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible()

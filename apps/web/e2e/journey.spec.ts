@@ -1,8 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 import { collectErrors, expectAccessible, expectNoHorizontalScroll, signIn, wav } from './helpers'
 
-// Step 10 acceptance (prompt 10): sign in via Mailpit → upload a short audio file → stages
-// progress → ready in the library; URL import shows progress; delete works; an upload survives a
+// Step 10 acceptance (prompt 10): sign up with a username and a password → upload a short audio
+// file → stages progress → ready in the library; URL import shows progress; delete works; an upload survives a
 // reload mid-transfer; no console (CORS) errors; axe on landing, library and import.
 
 test.describe.configure({ mode: 'serial' })
@@ -49,8 +49,7 @@ test.beforeAll(async ({ browser }, info) => {
     ...(baseURL ? { baseURL } : {}),
   })
   page = await context.newPage()
-  const email = `e2e-${info.project.name}-${Date.now()}@splitune.localhost`
-  await signIn(page, email)
+  await signIn(page, 'journey')
   // From here on: the sign-in helper waits out the shared per-IP limit (429s it handles).
   errors = collectErrors(page)
 })

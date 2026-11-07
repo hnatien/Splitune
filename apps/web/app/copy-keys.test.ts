@@ -54,8 +54,8 @@ const CATALOGUE: Record<string, string> = {
   'billing.declined': 'The (simulated) payment was declined. Nothing was charged.',
   'billing.cancelled_at_period_end':
     "Plus stays active until {date}. Then you'll be on Free — nothing you've made is removed.",
-  'auth.link_sent': 'We sent a link to {email}. It works for {minutes} minutes.',
-  'auth.link_expired': 'This link has expired. We can send a new one.',
+  'auth.wrong_credentials': "That username and password don't match.",
+  'auth.username_taken': 'That username is taken. Try another.',
   'system.offline': "You're offline. You can keep practising songs you've opened.",
   'system.unsupported': "Your browser can't run Splitune's audio engine ({missing}).",
   'system.in_app_browser': 'Open in your browser for audio and uploads.',

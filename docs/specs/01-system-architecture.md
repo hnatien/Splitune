@@ -142,7 +142,7 @@ sequenceDiagram
 ## 6. Environments
 | Env | Web | API/DB | Storage | ML | Orchestration | Notes |
 |---|---|---|---|---|---|---|
-| Local / personal (current) | `pnpm dev` (Vite) or node server behind Caddy | Node + Docker Postgres 18 | SeaweedFS (S3-compatible) | Native ML worker (MPS) or mocks | Postgres job queue | `docker compose up` brings DB, SeaweedFS, Mailpit; see `25-personal-mode.md` |
+| Local / personal (current) | `pnpm dev` (Vite) or node server behind Caddy | Node + Docker Postgres 18 | SeaweedFS (S3-compatible) | Native ML worker (MPS) or mocks | Postgres job queue | `docker compose up` brings DB and SeaweedFS; see `25-personal-mode.md` |
 | Preview (per PR) | Cloudflare preview | Railway PR environment + Postgres branch/fresh DB | R2 `-preview` bucket, 3-day lifecycle | Mocks by default; real GPU on label | Inngest branch env | No real user data |
 | Staging | Cloudflare | Railway staging | R2 `-staging` | Modal `staging` env | Inngest staging | Real vendors in test mode where available |
 | Production | Cloudflare | Railway prod (HA Postgres) | R2 `-prod` | Modal `prod` env | Inngest prod | Profiles: only `production` licence profile allowed |

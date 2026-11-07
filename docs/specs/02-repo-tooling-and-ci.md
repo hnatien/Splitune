@@ -11,7 +11,7 @@ Monorepo layout, local development, coding standards and the CI pipeline. Step 1
 
 ## TL;DR
 - **One repo:** pnpm 12 workspaces + Turborepo 2 for TypeScript; a uv 0.13 workspace under `services/ml` for Python, invoked from Turborepo tasks.
-- **Local dev in one command:** `pnpm run setup && pnpm dev` → Docker Compose (Postgres 18, SeaweedFS, Mailpit) + web + API + Node worker; ML stages run as mocks returning golden fixtures unless `ML_MODE=local` (native Python worker on the Mac, MPS) — which is also how the personal deployment runs (`25-personal-mode.md`).
+- **Local dev in one command:** `pnpm run setup && pnpm dev` → Docker Compose (Postgres 18, SeaweedFS) + web + API + Node worker; ML stages run as mocks returning golden fixtures unless `ML_MODE=local` (native Python worker on the Mac, MPS) — which is also how the personal deployment runs (`25-personal-mode.md`).
 - **Quality gates on every PR:** Biome (lint+format), `tsc` (TS 7), ruff + pyright, Vitest 5, pytest 9, contracts drift check, licence register check, Playwright smoke on Chromium/Firefox/WebKit, preview deploy.
 - **Conventional commits, trunk-based on `dev`:** short-lived `impl/*` branches merged into `dev`; in personal mode `dev` auto-deploys to Railway production (the dormant hosted design would add staging and tagged releases). `docs/` and `docs/steps/` are local-only and untracked.
 
@@ -43,7 +43,7 @@ splitune/
     tofu/                # OpenTofu: Cloudflare (R2 buckets + lifecycle, DNS, Workers routes)
     railway/             # config-as-code for project `splitune` (service `app`, Postgres)
     r2/                  # cors.json for the R2 bucket `splitune-media` (applied with `cf r2 buckets cors update`)
-    docker-compose.yml   # local Postgres 18, SeaweedFS (S3), Mailpit, optional grafana/otel-lgtm
+    docker-compose.yml   # local Postgres 18, SeaweedFS (S3), optional grafana/otel-lgtm
   docs/                  # research + implementation docs
   .github/workflows/
 ```
@@ -59,7 +59,7 @@ splitune/
 ## 3. Local development
 ```bash
 pnpm run setup      # (`pnpm setup` alone is pnpm's built-in) pnpm install, uv sync, emsdk docker pull, .env from .env.example
-pnpm dev            # docker compose up (pg, seaweedfs, mailpit) + api + web + node worker (+ listening) with HMR
+pnpm dev            # docker compose up (pg, seaweedfs) + api + web + node worker (+ listening) with HMR
 pnpm dev:all        # same + native ml-worker (ML_MODE=local)
 pnpm db:migrate     # apply packages/db/migrations (Drizzle migrator, one transaction)
 pnpm db:roles       # login passwords for ml_worker/node_worker/maintenance from DB_*_PASSWORD

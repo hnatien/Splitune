@@ -9,8 +9,12 @@ export const users = pgTable(
   'users',
   {
     id: text('id').primaryKey(),
+    // Username sign-ups get a placeholder under .invalid (apps/api auth.ts), never mailed.
     email: citext('email').notNull().unique(),
-    // Better Auth: name from the OAuth profile ('' for magic-link sign-ups), not shown as-is.
+    // Better Auth's username plugin: the sign-in name, stored lower-case, and as typed.
+    username: text('username').unique(),
+    displayUsername: text('display_username'),
+    // Better Auth: name from the OAuth profile ('' for username sign-ups), not shown as-is.
     name: text('name').notNull().default(''),
     emailVerified: boolean('email_verified').notNull().default(false),
     image: text('image'),

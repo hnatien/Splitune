@@ -36,7 +36,7 @@ test.beforeAll(async ({ browser }, info) => {
     ...(baseURL ? { baseURL } : {}),
   })
   page = await context.newPage()
-  await signIn(page, `e2e-practice-${info.project.name}-${Date.now()}@splitune.localhost`)
+  await signIn(page, 'practice')
   // From here on: the sign-in helper waits out the shared per-IP limit (429s it handles).
   errors = collectErrors(page)
 })

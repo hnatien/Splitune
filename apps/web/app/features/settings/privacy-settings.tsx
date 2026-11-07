@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { DownloadIcon } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { client, clientFor, errorData } from '@/lib/api'
-import { MAGIC_LINK_MINUTES } from '@/lib/auth-client'
+import { authClient } from '@/lib/auth-client'
 import { formatDateTime } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
@@ -19,11 +19,13 @@ import {
   AlertDialogTitle,
 } from '@/ui/alert-dialog'
 import { Button, buttonVariants } from '@/ui/button'
+import { Field, FieldLabel } from '@/ui/field'
+import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
 import { InlineError } from '@/ui/status-message'
 import { Switch } from '@/ui/switch'
 import { WorkerStatus } from '@/ui/worker-status'
-import { sendLink } from '../auth/sign-in'
+import { authenticate } from '../auth/sign-in'
 import { workerStatusQuery } from '../library/queries'
 import { SettingRow } from './setting-row'
 import { useSaveState } from './use-save-state'
@@ -31,7 +33,7 @@ import { useSaveState } from './use-save-state'
 // Settings → Privacy (27 §3.9, 15 §4): the training opt-in (stored only; nothing trains on it
 // yet), "Download my data" (the node worker prepares a file kept for 24 h) and "Delete my account"
 // (27 §5.6 `delete.account_confirm`; a sign-in within 10 minutes is required, so a stale session
-// gets a magic link that returns here with the dialog open).
+// asks for the password again, or for Google again on an account without one).
 
 // Its own client (contracts `privacyContract`): only this page carries the privacy schemas.
 const privacyClient = clientFor(privacyContract)
@@ -44,17 +46,17 @@ export const exportStateQuery = (pending: boolean) =>
 const reauthRequired = (error: unknown) =>
   (errorData(error) as { reason?: unknown }).reason === 'reauth_required'
 
-// The path the re-authentication link returns to.
+// Where Google re-authentication returns to.
 export const CONFIRM_DELETE_PATH = '/settings/privacy?confirm=delete'
 
-export type DeleteStep = 'confirm' | 'reauth' | 'sent'
+export type DeleteStep = 'confirm' | 'reauth'
 
 export function PrivacySettings({
   me,
   deleteDialog,
 }: {
   me: MeData
-  /** Opens "Delete my account" at this step (the re-authentication link returns to confirm). */
+  /** Opens "Delete my account" at this step (Google re-authentication returns to confirm). */
   deleteDialog?: DeleteStep | undefined
 }) {
   const online = useOnline()
@@ -179,7 +181,9 @@ function DeleteAccount({
 }) {
   const [open, setOpen] = useState(initial !== undefined)
   const [step, setStep] = useState<DeleteStep>(initial ?? 'confirm')
-  const [linkFailure, setLinkFailure] = useState<string | undefined>()
+  const [password, setPassword] = useState('')
+  const [reauthFailure, setReauthFailure] = useState<string | undefined>()
+  const passwordId = useId()
   const remove = useMutation({
     mutationFn: () => privacyClient.me.delete(),
     // The sessions are gone: a full load leaves every cached query behind.
@@ -188,19 +192,25 @@ function DeleteAccount({
       if (reauthRequired(error)) setStep('reauth')
     },
   })
-  const sendReauth = useMutation({
+  // Signing in again starts a fresh session, which the delete then accepts.
+  const reauth = useMutation({
     mutationFn: async () => {
-      const problem = await sendLink(me.email, CONFIRM_DELETE_PATH)
+      if (!me.username) throw new Error(m['system.error']())
+      const problem = await authenticate('sign-in', me.username, password)
       if (problem) throw new Error(problem)
     },
-    onSuccess: () => setStep('sent'),
-    onError: (error) => setLinkFailure(error.message),
+    onSuccess: () => {
+      setReauthFailure(undefined)
+      remove.mutate()
+    },
+    onError: (error) => setReauthFailure(error.message),
   })
   const close = (next: boolean) => {
     setOpen(next)
     if (!next) {
       setStep('confirm')
-      setLinkFailure(undefined)
+      setPassword('')
+      setReauthFailure(undefined)
       remove.reset()
     }
   }
@@ -235,28 +245,64 @@ function DeleteAccount({
                 </Button>
               </AlertDialogFooter>
             </>
+          ) : me.username ? (
+            <form
+              noValidate
+              className="flex flex-col gap-4"
+              onSubmit={(event) => {
+                event.preventDefault()
+                if (password) reauth.mutate()
+              }}
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle>{m['privacy.reauth_title']()}</AlertDialogTitle>
+                <AlertDialogDescription>{m['privacy.reauth_body']()}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <Field>
+                <FieldLabel htmlFor={passwordId}>{m['auth.password_label']()}</FieldLabel>
+                <Input
+                  id={passwordId}
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </Field>
+              {reauthFailure && <InlineError title={reauthFailure} />}
+              {remove.isError && !reauthRequired(remove.error) && (
+                <InlineError title={m['privacy.delete_failed']()} />
+              )}
+              <AlertDialogFooter>
+                <AlertDialogCancel>{m['common.cancel']()}</AlertDialogCancel>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={!password}
+                  loading={reauth.isPending || remove.isPending}
+                >
+                  {m['privacy.reauth_send']()}
+                </Button>
+              </AlertDialogFooter>
+            </form>
           ) : (
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>{m['privacy.reauth_title']()}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {step === 'sent'
-                    ? m['auth.link_sent']({ email: me.email, minutes: String(MAGIC_LINK_MINUTES) })
-                    : m['privacy.reauth_body']({ email: me.email })}
-                </AlertDialogDescription>
+                <AlertDialogDescription>{m['privacy.reauth_body_google']()}</AlertDialogDescription>
               </AlertDialogHeader>
-              {linkFailure && <InlineError title={linkFailure} />}
               <AlertDialogFooter>
                 <AlertDialogCancel>{m['common.cancel']()}</AlertDialogCancel>
-                {step === 'reauth' && (
-                  <Button
-                    variant="primary"
-                    loading={sendReauth.isPending}
-                    onClick={() => sendReauth.mutate()}
-                  >
-                    {m['privacy.reauth_send']()}
-                  </Button>
-                )}
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    authClient.signIn.social({
+                      provider: 'google',
+                      callbackURL: CONFIRM_DELETE_PATH,
+                    })
+                  }
+                >
+                  {m['auth.google']()}
+                </Button>
               </AlertDialogFooter>
             </>
           )}

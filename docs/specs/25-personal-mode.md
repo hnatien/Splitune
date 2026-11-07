@@ -29,11 +29,11 @@ confidence: medium
 | Workers | Modal + API-side finalize | **On the Mac or Windows PC (WSL2 with NVIDIA GPU):** `ml-worker` (Python, MPS or CUDA) and `node-worker` (music-core finalize, sweepers, lifecycle). Keeping workers off Railway lets `app` sleep and avoids paying for idle polling |
 | ML compute | Modal L4 | Native Python on the Mac or Windows PC / WSL2 (PyTorch MPS or CUDA; ONNX; CPU fallback) |
 | Separation | AudioShake / Music.AI / LALAL.AI | Self-hosted open models (§3) |
-| Auth email | Resend | **Mailpit**, locally and as a Railway `mailpit` service reached over the private network (Hobby blocks outbound SMTP); the owner reads sign-in links in its basic-auth web UI. Google OAuth optional |
+| Auth | Resend magic links | **Username and password** (Better Auth `username` plugin; 2026-11-07): no email to confirm and no mail server, locally or on Railway. Google OAuth optional. Outgoing email (billing notices, the digest) only when `SMTP_HOST` is set |
 | Payments | Stripe Managed Payments / Paddle | `MockBillingProvider` (§2) |
 | Errors/traces | Sentry, Axiom | Railway logs + structured JSON; optional Railway tracing (OTel) on `app`; optional local `grafana/otel-lgtm` for the Mac workers |
 | Product analytics, flags | PostHog | `analytics_events` table + SQL/Grafana dashboards; flags in a `feature_flags` table |
-| Environments | dev / preview / staging / prod | **local** (Docker Compose: Postgres 18, SeaweedFS as a local S3, Mailpit) and **Railway production** only |
+| Environments | dev / preview / staging / prod | **local** (Docker Compose: Postgres 18, SeaweedFS as a local S3) and **Railway production** only |
 | CI/CD | GitHub Actions + Railway deploy | GitHub Actions (free plan) for checks; deploy with Railway GitHub autodeploy on `dev` or `railway up`; ML regression runs locally |
 | Device testing | Device cloud | Own devices |
 | Native apps | App Store / Play | PWA; optional free sideload builds |
@@ -44,7 +44,7 @@ confidence: medium
 - `apps/api/src/billing/mock.ts` implements the `BillingProvider` interface from `14-auth-billing-and-entitlements.md` §3; config `BILLING_PROVIDER=mock` (the only option in personal mode).
 - **Checkout:** `createCheckout` returns `/billing/mock-checkout?session=…`. The page shows the plan and price from config with a "Demo mode — no real charges" banner and three buttons: *Simulate successful payment*, *Simulate declined card*, *Cancel*. Success posts a normalised `subscription.activated` event to `/internal/billing/webhook`, HMAC-signed with a local secret, so the **real webhook handler and entitlement code run unchanged**.
 - **Portal:** `/billing/mock-portal` offers cancel at period end, resume, switch monthly ↔ yearly, *simulate payment failure*, *simulate refund*.
-- **Dev clock:** `POST /internal/dev/clock { advance_days }` (dev/admin only) moves "now" for billing logic to exercise renewals, expiry, renewal reminders (emails land in Mailpit) and allowance resets.
+- **Dev clock:** `POST /internal/dev/clock { advance_days }` (dev/admin only) moves "now" for billing logic to exercise renewals, expiry, renewal reminders (emails sent only when SMTP is configured) and allowance resets.
 - **Rules kept from the commercial design:** published allowances, failed analyses never consume them, one-tap cancel, no take-backs — so the product behaviour is what a real launch would have.
 - **Never** render card number/CVC inputs, even fake ones.
 
@@ -132,7 +132,7 @@ pnpm workers status                   # also: restart, uninstall; logs in ~/Libr
 # Only the launchd agents read .env.worker; `pnpm dev:all`, E2E and manual runs read only .env.
 ```
 **Windows PC workers (foreground):** `pnpm workers:prod` runs node-worker and ml-worker in the `dev:all` dashboard, both on `.env.worker` (never `.env`), with `ML_MODE=local` as the launchd agent sets it. Give the PC its own `ML_WORKER_ID`/`NODE_WORKER_ID` (e.g. `ml-windows`, `node-windows`), Windows `FFMPEG_BIN_DIR`, `ML_GPU_SLOTS`/`ML_TORCH_DEVICE=cuda`, and leave `PG_DUMP_DIR` empty so the Mac keeps the nightly backup (scheduled jobs are claimed once across workers). Run one machine's ML worker at a time: the decoded audio and raw separated stems stay on the machine that made them, and `audio_hash` depends on its FFmpeg build, so a stage picked up by the other machine fails (`decoded_audio_mismatch`, `separated_audio_missing`, not retried); "Analyse again" restarts such a song on the machine that is on. Nothing restarts the workers on crash or at login.
-**Local development:** `docker compose -f infra/docker-compose.yml up -d` (Postgres 18, SeaweedFS standing in for R2, Mailpit) + `pnpm dev:all`; HTTPS for testing on the iPad locally via Caddy + mkcert or Tailscale.
+**Local development:** `docker compose -f infra/docker-compose.yml up -d` (Postgres 18, SeaweedFS standing in for R2) + `pnpm dev:all`; HTTPS for testing on the iPad locally via Caddy + mkcert or Tailscale.
 **Local development across two machines** (code on the Mac, workers on the Windows PC's GPU): `pnpm dev:web` on the Mac runs the stack, migrations and web without workers; `pnpm dev:remote-workers <user>@<mac-host>` on the PC opens an SSH tunnel (key auth, Mac Remote Login on) forwarding 5432/8333/1025 to the Mac's `127.0.0.1` and runs the dev workers on `.env` through it. Same ports on both ends, so `.env` is unchanged and compose stays bound to `127.0.0.1`; the PC's own stack must be stopped. Both machines on the same commit; migrate only on the Mac; one machine's ML worker at a time (above). The other way round keeps the stack with the workers on the PC, so the Mac needs no Docker and may sleep: `pnpm dev:stack-workers` on the PC (stack, migrations, workers) and `pnpm dev:remote-stack <user>@<pc-host>` on the Mac (tunnel + web, also forwarding the Mailpit UI on 8025; the PC runs Windows OpenSSH Server, reached over Tailscale); migrate only on the PC.
 
 **Budget guard (recommended):** set a workspace usage alert/limit, e.g. `railway usage limit set --workspace <id> --target workspace --soft 10 --hard 15 --json` (the hard limit can stop *all* services in the workspace, including the owner's other projects — choose values deliberately).

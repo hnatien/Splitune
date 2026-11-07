@@ -32,6 +32,7 @@ async function readMe(deps: ApiDeps, userId: string): Promise<Me> {
   return {
     id: user.id,
     email: user.email,
+    username: user.displayUsername ?? user.username,
     // Splitune's own display name wins; the OAuth profile name is the fallback.
     display_name: user.displayName ?? (user.name.trim() || null),
     primary_instrument: user.primaryInstrument,

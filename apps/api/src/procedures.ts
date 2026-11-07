@@ -69,7 +69,7 @@ export const authed = pub.use(({ context, next }) => {
 // Per-user and per-IP limits (04 "Conventions", 17-security.md §5), counted in Postgres so they
 // hold across instances and survive Railway's serverless sleep.
 export const RATE_LIMITS = {
-  // per IP, POST /v1/auth/* and magic-link verification
+  // per IP, POST /v1/auth/* (sign-in and sign-up)
   auth: { limit: 10, windowS: 60 },
   // per user, POST /v1/uploads
   uploads: { limit: 20, windowS: 3600 },

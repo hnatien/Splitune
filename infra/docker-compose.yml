@@ -70,18 +70,6 @@ services:
         --cors-configuration file:///etc/seaweedfs/cors.json
     restart: "no"
 
-  mailpit:
-    image: axllent/mailpit:v1.31.6
-    ports:
-      - "127.0.0.1:1025:1025"
-      - "127.0.0.1:8025:8025"
-    healthcheck:
-      test: ["CMD", "/mailpit", "readyz"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    restart: unless-stopped
-
   # Optional observability (16 §1, 25 §1): Grafana with Tempo/Loki/Prometheus and an OTLP collector
   # in one container, plus the product dashboards over the `dashboards` views. Start with
   # `docker compose -f infra/docker-compose.yml --profile observability up -d`, run `pnpm db:roles`

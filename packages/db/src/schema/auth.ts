@@ -46,7 +46,7 @@ export const authAccounts = pgTable(
   (t) => [index('auth_accounts_user_idx').on(t.userId)],
 )
 
-// Magic-link tokens (stored hashed) and OAuth state.
+// OAuth state (Better Auth's verification table).
 export const authVerifications = pgTable(
   'auth_verifications',
   {

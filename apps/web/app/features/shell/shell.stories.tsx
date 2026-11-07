@@ -118,6 +118,9 @@ const playAccountMenu: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Account' }))
   const menu = within(await within(document.body).findByRole('menu'))
   await waitFor(() => expect(menu.getByText('Help')).toBeVisible())
+  // The username, never the placeholder email.
+  await expect(menu.getByText('Ana', { exact: true })).toBeVisible()
+  await expect(menu.queryByText(/splitune\.invalid/)).toBeNull()
   await expect(menu.getByRole('menuitem', { name: 'How it works' })).toHaveAttribute(
     'href',
     '/how-it-works',

@@ -46,6 +46,7 @@ Work done without a step prompt. Its progress-log headings use their own numbers
 | Step 18b | Guitar and bass Notes view | s21 |
 | Step 18c | Vocal Melody view (merged into `dev`) | Prerequisite of s23 |
 | Fix: … entries | Stage-start deadlock, production sign-in (SMTP) | — |
+| Username and password sign-in | Username + password replaces the magic link; Mailpit removed from Docker Compose and the Railway IaC (the live Railway service is removed separately) | Personal mode (25) |
 | Step 26 | Piano accuracy follow-up: candidate screen, Transkun pop fine-tune on the solo-piano path | s24 follow-up |
 | Step 27 | Guitar accuracy follow-up: P2g with intervals, note ends, bends, half/full-step-down detection; string-cue candidates and `chain_sw_becruily` measured, not shipped | s22 follow-up |
 | Step 28 | Separation evaluation: corrected scoring (silent references, MSST metrics), unbiased P1 v2, robustness matrix and P2g downstream, loud-master fix (contracts 1.8.0), SW back to the default overlap, full songs/seams/determinism, `pnpm eval:regression`, MoisesDB tier streamed from the signed link (guitar/piano against real references, in the matrix and the regression suite); listening ratings pending the owner | Step 28: Separation evaluation |

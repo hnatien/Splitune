@@ -1,19 +1,30 @@
 import { authAccounts, authSessions, authVerifications, type Database, users } from '@splitune/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { magicLink } from 'better-auth/plugins/magic-link'
+import { APIError, createAuthMiddleware } from 'better-auth/api'
+import { username } from 'better-auth/plugins/username'
 import type { ApiConfig } from './config.ts'
 import { apiError } from './errors.ts'
-import type { Mailer } from './mailer.ts'
 
 // The only module that knows Better Auth (14-auth-billing-and-entitlements.md §1: keep the auth
 // layer contained so a switch to a hosted provider stays local).
 
 export const AUTH_BASE_PATH = '/v1/auth'
-export const MAGIC_LINK_TTL_S = 5 * 60
 const SESSION_TTL_S = 30 * 24 * 3600 // rolling: refreshed at most once a day while in use
+export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_MAX_LENGTH = 128
+export const USERNAME_MIN_LENGTH = 3
+export const USERNAME_MAX_LENGTH = 30
 
-export function createAuth(db: Database, config: ApiConfig, mailer: Mailer) {
+// Sign-up is a username and a password, nothing to confirm by email. Better Auth's user model
+// still needs a unique email, so the account gets a placeholder derived from the username under
+// .invalid (RFC 6761: never deliverable; the mailer skips it). The server always sets it, so a
+// sign-up can't claim someone else's real address.
+export const PLACEHOLDER_EMAIL_DOMAIN = 'users.splitune.invalid'
+export const placeholderEmail = (name: string) =>
+  `${name.trim().toLowerCase()}@${PLACEHOLDER_EMAIL_DOMAIN}`
+
+export function createAuth(db: Database, config: ApiConfig) {
   return betterAuth({
     appName: 'Splitune',
     baseURL: config.authUrl,
@@ -33,26 +44,31 @@ export function createAuth(db: Database, config: ApiConfig, mailer: Mailer) {
     session: { modelName: 'authSessions', expiresIn: SESSION_TTL_S, updateAge: 24 * 3600 },
     account: {
       modelName: 'authAccounts',
-      // A verified Google email signs into the existing magic-link account with that email.
+      // A verified Google email signs into an existing account with that email.
       accountLinking: { enabled: true, trustedProviders: ['google'] },
     },
     verification: { modelName: 'authVerifications' },
-    emailAndPassword: { enabled: false },
+    emailAndPassword: {
+      enabled: true,
+      autoSignIn: true,
+      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
+    },
     socialProviders: config.google
       ? { google: { clientId: config.google.clientId, clientSecret: config.google.clientSecret } }
       : {},
-    plugins: [
-      magicLink({
-        expiresIn: MAGIC_LINK_TTL_S,
-        storeToken: 'hashed',
-        sendMagicLink: async ({ email, url }) => {
-          await mailer.send({
-            to: email,
-            subject: 'Your Splitune sign-in link',
-            text: `Sign in to Splitune:\n\n${url}\n\nThe link works once and expires in 5 minutes. If you did not ask for it, ignore this email.`,
-          })
-        },
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== '/sign-up/email') return
+        const body = ctx.body as { username?: unknown; email?: unknown }
+        if (typeof body.username !== 'string' || !body.username.trim()) {
+          throw new APIError('BAD_REQUEST', { message: 'Username is required' })
+        }
+        body.email = placeholderEmail(body.username)
       }),
+    },
+    plugins: [
+      username({ minUsernameLength: USERNAME_MIN_LENGTH, maxUsernameLength: USERNAME_MAX_LENGTH }),
     ],
     // The API's Postgres-backed limiter covers /v1/auth/* (rateLimit.ts); one limiter, one place.
     rateLimit: { enabled: false },
@@ -87,8 +103,8 @@ export async function resolveSession(auth: Auth, headers: Headers): Promise<Sess
 export const REAUTH_MAX_AGE_S = 10 * 60
 
 // Destructive account actions (account deletion, email change; 14 §1) require a sign-in within
-// the last `maxAgeS` seconds. The client reacts to details.reason = 'reauth_required' by sending a
-// fresh magic link.
+// the last `maxAgeS` seconds. The client reacts to details.reason = 'reauth_required' by asking for
+// the password again (a sign-in starts a new session).
 export function requireRecentAuth(
   session: SessionInfo,
   { maxAgeS = REAUTH_MAX_AGE_S, now = new Date() }: { maxAgeS?: number; now?: Date } = {},
