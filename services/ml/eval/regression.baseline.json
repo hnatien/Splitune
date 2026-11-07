@@ -1,0 +1,296 @@
+{
+  "full": {
+    "env": {
+      "created": "2026-11-07T05:18:14Z",
+      "device": "cuda",
+      "git": "8dbfbae+dirty",
+      "heads": {
+        "bass": "bs_roformer_sw",
+        "drums": "bs_roformer_sw",
+        "vocals": "mel_roformer_kim_vocals"
+      },
+      "libraries": {
+        "audio-separator": "0.44.5",
+        "numpy": "2.5.4",
+        "torch": "2.14.1+cu126"
+      },
+      "models": {
+        "bs_roformer_sw": {
+          "inference": {},
+          "weights_sha256": "7fdc760ba5ea760ba6aa6c4920e1c4c1526614f3e865dcd224fdbbbff03af875"
+        },
+        "bs_roformer_viperx_1297": {
+          "inference": {},
+          "weights_sha256": "caa6f8ca6713db312768dd931d1ddc0c7161f754fea4460379c6eea79839f49c"
+        },
+        "htdemucs_6s": {
+          "inference": {
+            "shifts": 1
+          },
+          "weights_sha256": "5a88a0acc079174ddb0acd057d0ce681f31471bd6a424b59153ec3d5c255cce5"
+        },
+        "htdemucs_ft": {
+          "inference": {
+            "shifts": 1
+          },
+          "weights_sha256": "1b4b968b68408eddad4f83256bb9e2edb43ce5f4d9f8ae0c0c95f1275cd00e64"
+        },
+        "mel_roformer_guitar_becruily": {
+          "inference": {},
+          "weights_sha256": "7d51a27d10a833fd231a5a7f8e4106fc64701b9f4c6a7fab5a38dc523c864f4e"
+        },
+        "mel_roformer_kim_vocals": {
+          "inference": {
+            "overlap": 11.0
+          },
+          "weights_sha256": "33109bf43d52f3e737fc2d42b33c4858486d7e94ae13c0240cad9ac8fafe78f1"
+        }
+      }
+    },
+    "seconds": {
+      "bs_roformer_sw": 136.3169999999982,
+      "bs_roformer_viperx_1297": 206.53100000000086,
+      "fullsong/bs_roformer_sw": 71.75,
+      "htdemucs_6s": 45.095000000002074,
+      "htdemucs_ft": 150.34100000000126,
+      "mel_roformer_kim_vocals": 98.78099999999995,
+      "p2g/separate": 34.672999999999774
+    },
+    "values": {
+      "fullsong/seam_db": 0.1639187601695875,
+      "p1-head/bass/clean/bleedless": 18.757393915885185,
+      "p1-head/bass/clean/fullness": 15.224226083853807,
+      "p1-head/bass/clean/si_sdr": 9.970076151357551,
+      "p1-head/bass/clean/usdr": 10.35808752442,
+      "p1-head/bass/limit-XL/bleedless": 21.109002950057967,
+      "p1-head/bass/limit-XL/fullness": 10.387914048980248,
+      "p1-head/bass/limit-XL/si_sdr": 9.730108488256416,
+      "p1-head/bass/limit-XL/usdr": 10.169027879443888,
+      "p1-head/bass/opus128/bleedless": 18.342837864466638,
+      "p1-head/bass/opus128/fullness": 10.3250510385775,
+      "p1-head/bass/opus128/si_sdr": 9.676710147537763,
+      "p1-head/bass/opus128/usdr": 10.091538706744984,
+      "p1-head/drums/clean/bleedless": 39.5592442878356,
+      "p1-head/drums/clean/fullness": 15.094981135331338,
+      "p1-head/drums/clean/si_sdr": 12.664099627815972,
+      "p1-head/drums/clean/usdr": 12.931831291140236,
+      "p1-head/drums/limit-XL/bleedless": 30.12702400512385,
+      "p1-head/drums/limit-XL/fullness": 15.236878801603538,
+      "p1-head/drums/limit-XL/si_sdr": 10.636990449073291,
+      "p1-head/drums/limit-XL/usdr": 10.801373480766662,
+      "p1-head/drums/opus128/bleedless": 34.24359923933402,
+      "p1-head/drums/opus128/fullness": 13.630929051671355,
+      "p1-head/drums/opus128/si_sdr": 11.297167087852726,
+      "p1-head/drums/opus128/usdr": 11.664076366005634,
+      "p1-head/vocals/clean/bleedless": 43.082992114196095,
+      "p1-head/vocals/clean/fullness": 14.42890346258644,
+      "p1-head/vocals/clean/si_sdr": 9.685885885157244,
+      "p1-head/vocals/clean/usdr": 10.126683288410927,
+      "p1-head/vocals/limit-XL/bleedless": 28.650130473417054,
+      "p1-head/vocals/limit-XL/fullness": 14.092771783628555,
+      "p1-head/vocals/limit-XL/si_sdr": 9.156904230767688,
+      "p1-head/vocals/limit-XL/usdr": 9.622502605179458,
+      "p1-head/vocals/opus128/bleedless": 35.287890777376646,
+      "p1-head/vocals/opus128/fullness": 13.997765057560505,
+      "p1-head/vocals/opus128/si_sdr": 9.03318340713383,
+      "p1-head/vocals/opus128/usdr": 9.543439375817256,
+      "p1/bs_roformer_sw/bass/clean/bleedless": 18.757393915885185,
+      "p1/bs_roformer_sw/bass/clean/fullness": 15.224226083853807,
+      "p1/bs_roformer_sw/bass/clean/si_sdr": 9.970076151357551,
+      "p1/bs_roformer_sw/bass/clean/usdr": 10.35808752442,
+      "p1/bs_roformer_sw/bass/limit-XL/bleedless": 21.109002950057967,
+      "p1/bs_roformer_sw/bass/limit-XL/fullness": 10.387914048980248,
+      "p1/bs_roformer_sw/bass/limit-XL/si_sdr": 9.730108488256416,
+      "p1/bs_roformer_sw/bass/limit-XL/usdr": 10.169027879443888,
+      "p1/bs_roformer_sw/bass/opus128/bleedless": 18.342837864466638,
+      "p1/bs_roformer_sw/bass/opus128/fullness": 10.3250510385775,
+      "p1/bs_roformer_sw/bass/opus128/si_sdr": 9.676710147537763,
+      "p1/bs_roformer_sw/bass/opus128/usdr": 10.091538706744984,
+      "p1/bs_roformer_sw/drums/clean/bleedless": 39.5592442878356,
+      "p1/bs_roformer_sw/drums/clean/fullness": 15.094981135331338,
+      "p1/bs_roformer_sw/drums/clean/si_sdr": 12.664099627815972,
+      "p1/bs_roformer_sw/drums/clean/usdr": 12.931831291140236,
+      "p1/bs_roformer_sw/drums/limit-XL/bleedless": 30.12702400512385,
+      "p1/bs_roformer_sw/drums/limit-XL/fullness": 15.236878801603538,
+      "p1/bs_roformer_sw/drums/limit-XL/si_sdr": 10.636990449073291,
+      "p1/bs_roformer_sw/drums/limit-XL/usdr": 10.801373480766662,
+      "p1/bs_roformer_sw/drums/opus128/bleedless": 34.24359923933402,
+      "p1/bs_roformer_sw/drums/opus128/fullness": 13.630929051671355,
+      "p1/bs_roformer_sw/drums/opus128/si_sdr": 11.297167087852726,
+      "p1/bs_roformer_sw/drums/opus128/usdr": 11.664076366005634,
+      "p1/bs_roformer_sw/vocals/clean/bleedless": 32.533424966443185,
+      "p1/bs_roformer_sw/vocals/clean/fullness": 14.716452484845474,
+      "p1/bs_roformer_sw/vocals/clean/si_sdr": 11.896598570772355,
+      "p1/bs_roformer_sw/vocals/clean/usdr": 12.167984770540958,
+      "p1/bs_roformer_sw/vocals/limit-XL/bleedless": 28.0546691011063,
+      "p1/bs_roformer_sw/vocals/limit-XL/fullness": 16.07254239835806,
+      "p1/bs_roformer_sw/vocals/limit-XL/si_sdr": 11.06692115764611,
+      "p1/bs_roformer_sw/vocals/limit-XL/usdr": 11.369386219024118,
+      "p1/bs_roformer_sw/vocals/opus128/bleedless": 24.905853112018036,
+      "p1/bs_roformer_sw/vocals/opus128/fullness": 14.946092320657362,
+      "p1/bs_roformer_sw/vocals/opus128/si_sdr": 10.93193740678749,
+      "p1/bs_roformer_sw/vocals/opus128/usdr": 11.26432518914748,
+      "p1/bs_roformer_viperx_1297/vocals/clean/bleedless": 30.89972769371428,
+      "p1/bs_roformer_viperx_1297/vocals/clean/fullness": 14.031700303858704,
+      "p1/bs_roformer_viperx_1297/vocals/clean/si_sdr": 10.949924436014252,
+      "p1/bs_roformer_viperx_1297/vocals/clean/usdr": 11.285210107529506,
+      "p1/bs_roformer_viperx_1297/vocals/limit-XL/bleedless": 28.088169251660872,
+      "p1/bs_roformer_viperx_1297/vocals/limit-XL/fullness": 14.267165218458143,
+      "p1/bs_roformer_viperx_1297/vocals/limit-XL/si_sdr": 10.419186720274663,
+      "p1/bs_roformer_viperx_1297/vocals/limit-XL/usdr": 10.780652544687971,
+      "p1/bs_roformer_viperx_1297/vocals/opus128/bleedless": 26.2878640993224,
+      "p1/bs_roformer_viperx_1297/vocals/opus128/fullness": 14.853844641035506,
+      "p1/bs_roformer_viperx_1297/vocals/opus128/si_sdr": 10.348635567363665,
+      "p1/bs_roformer_viperx_1297/vocals/opus128/usdr": 10.728494835356873,
+      "p1/htdemucs_6s/bass/clean/bleedless": 10.75531237353733,
+      "p1/htdemucs_6s/bass/clean/fullness": 12.580216268987435,
+      "p1/htdemucs_6s/bass/clean/si_sdr": 5.990458645410488,
+      "p1/htdemucs_6s/bass/clean/usdr": 6.94296972095592,
+      "p1/htdemucs_6s/bass/limit-XL/bleedless": 12.604412684325965,
+      "p1/htdemucs_6s/bass/limit-XL/fullness": 11.058292789562813,
+      "p1/htdemucs_6s/bass/limit-XL/si_sdr": 5.79939451284436,
+      "p1/htdemucs_6s/bass/limit-XL/usdr": 6.813636692123154,
+      "p1/htdemucs_6s/bass/opus128/bleedless": 11.363516235502038,
+      "p1/htdemucs_6s/bass/opus128/fullness": 12.576636211564221,
+      "p1/htdemucs_6s/bass/opus128/si_sdr": 5.937902570904731,
+      "p1/htdemucs_6s/bass/opus128/usdr": 6.902269593233439,
+      "p1/htdemucs_6s/drums/clean/bleedless": 20.751754571503128,
+      "p1/htdemucs_6s/drums/clean/fullness": 16.916348004480252,
+      "p1/htdemucs_6s/drums/clean/si_sdr": 10.939067233801193,
+      "p1/htdemucs_6s/drums/clean/usdr": 11.057167618876043,
+      "p1/htdemucs_6s/drums/limit-XL/bleedless": 19.904283136603524,
+      "p1/htdemucs_6s/drums/limit-XL/fullness": 15.78156137090658,
+      "p1/htdemucs_6s/drums/limit-XL/si_sdr": 8.427917180901805,
+      "p1/htdemucs_6s/drums/limit-XL/usdr": 8.729247578956572,
+      "p1/htdemucs_6s/drums/opus128/bleedless": 24.164292623128297,
+      "p1/htdemucs_6s/drums/opus128/fullness": 15.428762471575219,
+      "p1/htdemucs_6s/drums/opus128/si_sdr": 10.626709338763444,
+      "p1/htdemucs_6s/drums/opus128/usdr": 10.777104694576007,
+      "p1/htdemucs_6s/vocals/clean/bleedless": 17.30531580931036,
+      "p1/htdemucs_6s/vocals/clean/fullness": 17.818971887864656,
+      "p1/htdemucs_6s/vocals/clean/si_sdr": 7.468753978915181,
+      "p1/htdemucs_6s/vocals/clean/usdr": 8.095550513765588,
+      "p1/htdemucs_6s/vocals/limit-XL/bleedless": 20.387500013486786,
+      "p1/htdemucs_6s/vocals/limit-XL/fullness": 16.54036859722205,
+      "p1/htdemucs_6s/vocals/limit-XL/si_sdr": 6.676393854827209,
+      "p1/htdemucs_6s/vocals/limit-XL/usdr": 7.521921634437793,
+      "p1/htdemucs_6s/vocals/opus128/bleedless": 19.534397856419247,
+      "p1/htdemucs_6s/vocals/opus128/fullness": 14.965168980098717,
+      "p1/htdemucs_6s/vocals/opus128/si_sdr": 7.3020986410193895,
+      "p1/htdemucs_6s/vocals/opus128/usdr": 7.949604934774145,
+      "p1/htdemucs_ft/bass/clean/bleedless": 15.957142028420948,
+      "p1/htdemucs_ft/bass/clean/fullness": 15.187373603136736,
+      "p1/htdemucs_ft/bass/clean/si_sdr": 10.368984941295988,
+      "p1/htdemucs_ft/bass/clean/usdr": 10.74255800236019,
+      "p1/htdemucs_ft/bass/limit-XL/bleedless": 12.372434547732734,
+      "p1/htdemucs_ft/bass/limit-XL/fullness": 9.057643987283702,
+      "p1/htdemucs_ft/bass/limit-XL/si_sdr": 0.6213743328414211,
+      "p1/htdemucs_ft/bass/limit-XL/usdr": 3.264928323288684,
+      "p1/htdemucs_ft/bass/opus128/bleedless": 15.91259472389855,
+      "p1/htdemucs_ft/bass/opus128/fullness": 15.384997352016729,
+      "p1/htdemucs_ft/bass/opus128/si_sdr": 10.159192049725068,
+      "p1/htdemucs_ft/bass/opus128/usdr": 10.553530625415304,
+      "p1/htdemucs_ft/drums/clean/bleedless": 28.685436685713263,
+      "p1/htdemucs_ft/drums/clean/fullness": 15.452290093928877,
+      "p1/htdemucs_ft/drums/clean/si_sdr": 13.313663334731917,
+      "p1/htdemucs_ft/drums/clean/usdr": 13.396939449232494,
+      "p1/htdemucs_ft/drums/limit-XL/bleedless": 21.401308250382534,
+      "p1/htdemucs_ft/drums/limit-XL/fullness": 15.442318304384198,
+      "p1/htdemucs_ft/drums/limit-XL/si_sdr": 8.854542549346565,
+      "p1/htdemucs_ft/drums/limit-XL/usdr": 9.159381733353978,
+      "p1/htdemucs_ft/drums/opus128/bleedless": 28.71898868253554,
+      "p1/htdemucs_ft/drums/opus128/fullness": 14.426003743604781,
+      "p1/htdemucs_ft/drums/opus128/si_sdr": 12.98811197886269,
+      "p1/htdemucs_ft/drums/opus128/usdr": 13.107131365059146,
+      "p1/htdemucs_ft/vocals/clean/bleedless": 19.058599917916368,
+      "p1/htdemucs_ft/vocals/clean/fullness": 17.186492211199855,
+      "p1/htdemucs_ft/vocals/clean/si_sdr": 7.687685489190567,
+      "p1/htdemucs_ft/vocals/clean/usdr": 8.347405920078923,
+      "p1/htdemucs_ft/vocals/limit-XL/bleedless": 19.632972866444288,
+      "p1/htdemucs_ft/vocals/limit-XL/fullness": 15.745331702143517,
+      "p1/htdemucs_ft/vocals/limit-XL/si_sdr": 6.803515377412279,
+      "p1/htdemucs_ft/vocals/limit-XL/usdr": 7.612507832111245,
+      "p1/htdemucs_ft/vocals/opus128/bleedless": 17.950029246932267,
+      "p1/htdemucs_ft/vocals/opus128/fullness": 16.808207066641856,
+      "p1/htdemucs_ft/vocals/opus128/si_sdr": 7.314576712148561,
+      "p1/htdemucs_ft/vocals/opus128/usdr": 8.03856832558731,
+      "p1/mel_roformer_kim_vocals/vocals/clean/bleedless": 43.082992114196095,
+      "p1/mel_roformer_kim_vocals/vocals/clean/fullness": 14.42890346258644,
+      "p1/mel_roformer_kim_vocals/vocals/clean/si_sdr": 9.685885885157244,
+      "p1/mel_roformer_kim_vocals/vocals/clean/usdr": 10.126683288410927,
+      "p1/mel_roformer_kim_vocals/vocals/limit-XL/bleedless": 28.650130473417054,
+      "p1/mel_roformer_kim_vocals/vocals/limit-XL/fullness": 14.092771783628555,
+      "p1/mel_roformer_kim_vocals/vocals/limit-XL/si_sdr": 9.156904230767688,
+      "p1/mel_roformer_kim_vocals/vocals/limit-XL/usdr": 9.622502605179458,
+      "p1/mel_roformer_kim_vocals/vocals/opus128/bleedless": 35.287890777376646,
+      "p1/mel_roformer_kim_vocals/vocals/opus128/fullness": 13.997765057560505,
+      "p1/mel_roformer_kim_vocals/vocals/opus128/si_sdr": 9.03318340713383,
+      "p1/mel_roformer_kim_vocals/vocals/opus128/usdr": 9.543439375817256,
+      "p2g/onset_f1": 0.7178894157793952
+    }
+  },
+  "smoke": {
+    "env": {
+      "created": "2026-11-06T16:52:50Z",
+      "device": "cpu",
+      "git": "8dbfbae+dirty",
+      "heads": {
+        "bass": "bs_roformer_sw",
+        "drums": "bs_roformer_sw",
+        "vocals": "mel_roformer_kim_vocals"
+      },
+      "libraries": {
+        "audio-separator": "0.44.5",
+        "numpy": "2.5.4",
+        "torch": "2.14.1+cu126"
+      },
+      "models": {
+        "bs_roformer_sw": {
+          "inference": {
+            "overlap": 9.3
+          },
+          "weights_sha256": "7fdc760ba5ea760ba6aa6c4920e1c4c1526614f3e865dcd224fdbbbff03af875"
+        },
+        "bs_roformer_viperx_1297": {
+          "inference": {},
+          "weights_sha256": "caa6f8ca6713db312768dd931d1ddc0c7161f754fea4460379c6eea79839f49c"
+        },
+        "htdemucs_6s": {
+          "inference": {
+            "shifts": 1
+          },
+          "weights_sha256": "5a88a0acc079174ddb0acd057d0ce681f31471bd6a424b59153ec3d5c255cce5"
+        },
+        "htdemucs_ft": {
+          "inference": {
+            "shifts": 1
+          },
+          "weights_sha256": "1b4b968b68408eddad4f83256bb9e2edb43ce5f4d9f8ae0c0c95f1275cd00e64"
+        },
+        "mel_roformer_guitar_becruily": {
+          "inference": {},
+          "weights_sha256": "7d51a27d10a833fd231a5a7f8e4106fc64701b9f4c6a7fab5a38dc523c864f4e"
+        },
+        "mel_roformer_kim_vocals": {
+          "inference": {
+            "overlap": 11.0
+          },
+          "weights_sha256": "33109bf43d52f3e737fc2d42b33c4858486d7e94ae13c0240cad9ac8fafe78f1"
+        }
+      }
+    },
+    "seconds": {
+      "htdemucs_6s": 5.718999999999141
+    },
+    "values": {
+      "p1/htdemucs_6s/bass/clean/bleedless": 10.325379720391512,
+      "p1/htdemucs_6s/bass/clean/fullness": 9.396926138798703,
+      "p1/htdemucs_6s/bass/clean/si_sdr": 6.552331289477883,
+      "p1/htdemucs_6s/bass/clean/usdr": 7.419584482365816,
+      "p1/htdemucs_6s/drums/clean/bleedless": 17.209749156041106,
+      "p1/htdemucs_6s/drums/clean/fullness": 19.66391589744064,
+      "p1/htdemucs_6s/drums/clean/si_sdr": 11.555429145431571,
+      "p1/htdemucs_6s/drums/clean/usdr": 11.607131925286762
+    }
+  }
+}

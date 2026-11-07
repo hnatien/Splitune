@@ -1,0 +1,60 @@
+# Separation regression suite (08 §4, step 28): `uv run --no-sync splitune-eval regress` or the root
+# `pnpm eval:regression`. Run it after any change to stage_separation, config/separation.personal.yaml,
+# the audio-separator or torch pins, or model weights. Baseline values (git sha, weights, library
+# versions) are in regression.baseline.json, written by `--update-baseline`.
+version: 1
+
+# P1 windows of musdb18hq-p1-v2: 2 per referenced target plus 2 guitar windows (scored on their
+# vocals/drums/bass references), under three real-upload conditions, every model in the map with a
+# referenced output; median over clips per model, instrument and condition (and per chain head).
+p1:
+  root: ~/datasets/musdb18hq-p1
+  clips:
+    - nerve-9-pray-for-the-rain           # vocals
+    - al-james-schoolboy-facination       # vocals
+    - pr-happy-daze                       # drums
+    - mu-too-bright                       # drums (silent bass reference: excluded)
+    - skelpolu-resurrection               # bass (silent vocals reference: excluded)
+    - the-mountaineering-club-mallory     # bass
+    - hollow-ground-ill-fate              # guitar
+    - timboz-pony                         # guitar
+  variants: [clean, limit-XL, opus128]
+  metrics: [usdr, si_sdr, bleedless, fullness]
+
+# Held-out P2g hard-band items (2 per held-out source) through decode → separate → notes.guitar as
+# shipped (production configs): mean onset F1.
+p2g:
+  root: ~/datasets/p2g
+  items:
+    - gs-05_BN1-129-Eb_comp
+    - gs-05_BN1-147-Gb_solo
+    - techs-P2-chords-set3_maj
+    - techs-P2-palmmute-2
+    - idmt-FS-plain
+    - idmt-FS-bends-m
+
+# One whole song (the longest MUSDB18-HQ test song, 7:10) through the guitar chain's head: seam
+# ratio of its referenced stems and the time.
+fullsong:
+  root: ~/datasets/musdb18hq-full
+  song: georgia-wonder-siren
+  instrument: guitar
+
+# Allowed change against the baseline (worse by more than this = breach). dB for SDRs, points for
+# bleedless/fullness (0-100), F1 for onsets, dB for the seam ratio (higher is worse), and a ratio
+# for separation time.
+tolerances:
+  usdr: 0.5
+  si_sdr: 0.5
+  bleedless: 2.0
+  fullness: 2.0
+  onset_f1: 0.02
+  seam_db: 1.0
+  time_ratio: 1.25
+
+# `--smoke`: CPU only, the first seconds of one clip, one model, clean: checks the suite runs.
+smoke:
+  clips: [the-mountaineering-club-mallory]
+  variants: [clean]
+  model: htdemucs_6s
+  seconds: 8

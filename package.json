@@ -31,7 +31,8 @@
     "workers:prod": "node scripts/dev.mjs --prod-workers",
     "examples:build": "node --env-file-if-exists=.env apps/api/scripts/examples/build.ts",
     "secrets:scan": "gitleaks git --redact --verbose",
-    "audit:deps": "node scripts/audit.mjs"
+    "audit:deps": "node scripts/audit.mjs",
+    "eval:regression": "node scripts/eval-regression.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
