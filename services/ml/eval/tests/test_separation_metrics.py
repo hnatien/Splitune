@@ -158,21 +158,26 @@ def test_moisesdb_windows_pick_the_loudest_target_from_references(tmp_path: Path
     stems = {
         "drums": rng.normal(0, 0.05, (frames, 2)),
         "guitar": np.zeros((frames, 2)),
-        "other_keys": rng.normal(0, 0.05, (frames, 1)),  # mono, joins piano
+        "other_keys": rng.normal(0, 0.05, (frames - RATE * 3, 1)),  # mono, shorter, joins piano
     }
-    stems["guitar"][RATE * 10 :] = rng.normal(0, 0.2, (frames - RATE * 10, 2))
-    listed: list[dict[str, object]] = []
-    for name, audio in stems.items():
-        (track / name).mkdir(parents=True)
-        sf.write(str(track / name / f"{name}1.wav"), audio, RATE)  # pyright: ignore[reportUnknownMemberType]
-        track_entry = {"id": f"{name}1", "extension": "wav", "trackType": "x"}
-        listed.append({"stemName": name, "tracks": [track_entry]})
-    meta = {"artist": "A", "song": "S", "genre": "rock", "stems": listed}
-    (track / "data.json").write_text(json.dumps(meta))
+    stems["guitar"][RATE * 10 :] = rng.normal(0, 0.12, (frames - RATE * 10, 2))
+    solo = tmp_path / "src" / "moisesdb_v0.1" / "fedcba9876543210"  # guitar alone: no test
+    for folder, parts in ((track, stems), (solo, {"guitar": rng.normal(0, 0.1, (frames, 2))})):
+        listed: list[dict[str, object]] = []
+        for name, audio in parts.items():
+            (folder / name).mkdir(parents=True)
+            sf.write(str(folder / name / f"{name}1.wav"), audio, RATE)  # pyright: ignore[reportUnknownMemberType]
+            track_entry = {"id": f"{name}1", "extension": "wav", "trackType": "x"}
+            listed.append({"stemName": name, "tracks": [track_entry]})
+        meta = {"artist": "A", "song": "S", "genre": "rock", "stems": listed}
+        (folder / "data.json").write_text(json.dumps(meta))
     out = tmp_path / "out"
+    (out / "clips").mkdir(parents=True)
+    (out / "clips" / "fedcba98-guitar.json").write_text("{}")  # left by an earlier selection
     assert p1_moisesdb.main(["windows", "--source", str(tmp_path / "src"), "--out", str(out)]) == 0
     index = json.loads((out / "windows.json").read_text())["items"]
     assert set(index) == {"01234567-guitar", "01234567-piano"}
+    assert {p.stem for p in (out / "clips").glob("*.json")} == set(index)
     assert index["01234567-guitar"]["start_s"] == 10.0  # loudest guitar window
     clip = out / "01234567-guitar"
     assert {p.stem for p in clip.glob("*.wav")} == {
@@ -190,6 +195,35 @@ def test_moisesdb_windows_pick_the_loudest_target_from_references(tmp_path: Path
     )
     assert np.allclose(parts, sf.read(str(clip / "mixture.wav"))[0], atol=1e-6)
     assert (out / "clips" / "01234567-guitar.json").is_file()
+
+
+def test_moisesdb_zip_members_are_read_from_their_compressed_bytes() -> None:
+    import io
+    import zipfile
+
+    import p1_moisesdb  # pyright: ignore[reportMissingImports]
+    import pytest
+
+    blob = io.BytesIO()
+    payload = bytes(range(256)) * 400
+    with zipfile.ZipFile(blob, "w") as archive:
+        archive.writestr("moisesdb/moisesdb_v0.1/t1/data.json", b'{"stems": []}')
+        archive.writestr(
+            "moisesdb/moisesdb_v0.1/t1/guitar/a.wav", payload, compress_type=zipfile.ZIP_DEFLATED
+        )
+    data = blob.getvalue()
+    source = object.__new__(p1_moisesdb.ZipSource)
+    source.members = {i.filename: i for i in zipfile.ZipFile(io.BytesIO(data)).infolist()}
+    source.prefix = {"t1": "moisesdb/moisesdb_v0.1/t1"}
+    source.fetch = lambda first, count: data[first : first + count]  # pyright: ignore[reportAttributeAccessIssue]
+    assert source.read("t1", "guitar/a.wav") == payload
+    assert source.meta("t1") == {"stems": []}
+    corrupt = bytearray(data)
+    start = data.index(b"guitar/a.wav") + len(b"guitar/a.wav") + 5
+    corrupt[start] ^= 0xFF
+    source.fetch = lambda first, count: bytes(corrupt[first : first + count])  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(Exception, match=r"CRC|invalid|incorrect"):
+        source.read("t1", "guitar/a.wav")
 
 
 def band() -> tuple[np.ndarray, dict[str, np.ndarray]]:

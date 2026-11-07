@@ -8,6 +8,9 @@ and library versions they came from) live next to it in `eval/regression.baselin
   scored with `scoring.separation`: the median over clips per model, instrument and variant, and
   the same for each instrument's chain head (so a change of head shows up even when every model
   is unchanged);
+- **moisesdb**: the same on a few MoisesDB windows (`eval/p1_moisesdb.py`) for the guitar and
+  piano outputs, scored against MoisesDB's real guitar and piano references. Skipped, with its
+  baseline values, when the windows are not on this machine (MoisesDB needs a sign-up);
 - **p2g**: held-out P2g hard-band items through the shipped `decode` → `separate` (the guitar
   chain) → `notes.guitar` stages: mean onset F1 (mir_eval, ±50 ms);
 - **fullsong**: one whole song through the guitar chain's head: the seam ratio of its referenced
@@ -32,7 +35,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
@@ -42,13 +45,18 @@ from numpy.typing import NDArray
 from . import formats, scoring, seams, variants
 from .guitar_refs import GuitarRef
 
+if TYPE_CHECKING:
+    from stage_separation.config import Instrument
+
 EVAL_DIR = Path(__file__).resolve().parents[2]
 SUITE = EVAL_DIR / "regression.yaml"
 BASELINE = EVAL_DIR / "regression.baseline.json"
 RESULTS = EVAL_DIR / "results" / "regression"
 RATE = 44100
 STEMS = ("vocals", "drums", "bass", "other")
-REFERENCED = ("vocals", "drums", "bass")
+REFERENCED: tuple[Instrument, ...] = ("vocals", "drums", "bass")
+MOISESDB_STEMS = ("vocals", "drums", "bass", "guitar", "piano", "other")
+MOISESDB_REFERENCED: tuple[Instrument, ...] = ("guitar", "piano")
 LOWER_IS_BETTER = ("seam_db",)
 
 Array = NDArray[np.float64]
@@ -80,9 +88,12 @@ def root_of(value: str) -> Path:
 class Measured:
     values: dict[str, float]
     seconds: dict[str, float]
+    skipped: tuple[str, ...] = ()  # parts without their data: baseline keys not compared
 
 
-def separated(model: str, mixture: Array, work: Path) -> tuple[dict[str, Array], float]:
+def separated(
+    model: str, mixture: Array, work: Path, referenced: tuple[Instrument, ...] = REFERENCED
+) -> tuple[dict[str, Array], float]:
     """instrument → estimate of one shipped-wrapper run (files removed), and its seconds. Demucs
     draws its time shift from `random` (and torch), so both are seeded: a rerun reproduces it."""
     import torch
@@ -98,7 +109,7 @@ def separated(model: str, mixture: Array, work: Path) -> tuple[dict[str, Array],
     result = models.separate(model, spec, feed, out)
     estimates: dict[str, Array] = {}
     for name, instrument in spec.outputs.items():
-        if instrument in REFERENCED:
+        if instrument in referenced:
             path = result.files.get(name)
             audio = read(path) if path is not None else np.zeros_like(mixture)
             audio = np.pad(audio, ((0, max(0, len(mixture) - len(audio))), (0, 0)))
@@ -107,27 +118,36 @@ def separated(model: str, mixture: Array, work: Path) -> tuple[dict[str, Array],
     return estimates, result.seconds
 
 
-def referenced_models() -> list[str]:
+def referenced_models(referenced: tuple[Instrument, ...] = REFERENCED) -> list[str]:
     from stage_separation import config
 
     cfg = config.load()
-    return sorted(n for n, m in cfg.models.items() if set(m.outputs.values()) & set(REFERENCED))
+    return sorted(n for n, m in cfg.models.items() if set(m.outputs.values()) & set(referenced))
 
 
-def heads() -> dict[str, str]:
+def heads(referenced: tuple[Instrument, ...] = REFERENCED) -> dict[str, str]:
     from stage_separation import config
 
     cfg = config.load()
-    return {i: cfg.instruments[i].chain[0] for i in REFERENCED}
+    return {i: cfg.instruments[i].chain[0] for i in referenced}
 
 
-def p1_part(part: dict[str, Any], work: Path, models: list[str], seconds: float | None) -> Measured:
+def p1_part(
+    part: dict[str, Any],
+    work: Path,
+    models: list[str],
+    seconds: float | None,
+    prefix: str = "p1",
+    stems: tuple[str, ...] = STEMS,
+    referenced: tuple[Instrument, ...] = REFERENCED,
+) -> Measured:
+    """Medians per model, instrument, variant and metric (keys `<prefix>/...`), and per head."""
     root = root_of(part["root"])
     per_key: dict[str, list[float]] = {}
     times: dict[str, float] = {}
     for clip in part["clips"]:
         mixture = read(root / clip / "mixture.wav")
-        refs = {s: read(root / clip / f"{s}.wav") for s in STEMS}
+        refs = {s: read(root / clip / f"{s}.wav") for s in stems}
         if seconds is not None:
             frames = int(seconds * RATE)
             mixture, refs = mixture[:frames], {k: v[:frames] for k, v in refs.items()}
@@ -137,23 +157,23 @@ def p1_part(part: dict[str, Any], work: Path, models: list[str], seconds: float 
                 variant, mixture, refs, xl_ratio=lambda r=ratio: np.load(r).astype(np.float64)
             )
             for model in models:
-                estimates, took = separated(model, v.mixture, work)
-                times[model] = times.get(model, 0.0) + took
+                estimates, took = separated(model, v.mixture, work, referenced)
+                times[f"{prefix}/{model}"] = times.get(f"{prefix}/{model}", 0.0) + took
                 for instrument, est in estimates.items():
-                    others = [v.references[s] for s in STEMS if s != instrument]
+                    others = [v.references[s] for s in stems if s != instrument]
                     m = scoring.separation(v.references[instrument], est, v.mixture, others=others)
                     if m["silent"]:
                         continue
                     for metric in part["metrics"]:
-                        key = f"p1/{model}/{instrument}/{variant}/{metric}"
+                        key = f"{prefix}/{model}/{instrument}/{variant}/{metric}"
                         per_key.setdefault(key, []).append(float(m[metric]))
     per_model = {k: statistics.median(v) for k, v in per_key.items()}
     values = dict(per_model)
-    for instrument, head in heads().items():
+    for instrument, head in heads(referenced).items():
         for key, value in per_model.items():
             _, model, inst, variant, metric = key.split("/")
             if model == head and inst == instrument:
-                values[f"p1-head/{instrument}/{variant}/{metric}"] = value
+                values[f"{prefix}-head/{instrument}/{variant}/{metric}"] = value
     return Measured(values, times)
 
 
@@ -242,7 +262,16 @@ def measure(suite: dict[str, Any], smoke: bool) -> Measured:
             part = {**suite["p1"], **suite["smoke"]}
             return p1_part(part, work, [suite["smoke"]["model"]], float(suite["smoke"]["seconds"]))
         out = p1_part(suite["p1"], work, referenced_models(), None)
-        for extra in (p2g_part(suite["p2g"], work), fullsong_part(suite["fullsong"], work)):
+        extras = [p2g_part(suite["p2g"], work), fullsong_part(suite["fullsong"], work)]
+        moisesdb = suite["moisesdb"]
+        root = root_of(moisesdb["root"])
+        if all((root / clip / "mixture.wav").is_file() for clip in moisesdb["clips"]):
+            models = referenced_models(MOISESDB_REFERENCED)
+            stems, referenced = MOISESDB_STEMS, MOISESDB_REFERENCED
+            extras.append(p1_part(moisesdb, work, models, None, "moisesdb", stems, referenced))
+        else:
+            out.skipped += ("moisesdb",)
+        for extra in extras:
             out.values |= extra.values
             out.seconds |= extra.seconds
         return out
@@ -257,8 +286,14 @@ def compare(
 ) -> list[dict[str, Any]]:
     """One row per value (and per time unless `times` is off): baseline, now, allowed and
     whether it breaches."""
+
+    def skipped(key: str) -> bool:
+        return key.split("/", 1)[0].removesuffix("-head") in now.skipped
+
     rows: list[dict[str, Any]] = []
     for key, old in sorted(base["values"].items()):
+        if skipped(key):
+            continue
         new = now.values.get(key)
         tol = tolerance(suite, key)
         if new is None:
@@ -270,6 +305,8 @@ def compare(
         rows.append({"key": key, "base": old, "now": new, "limit": limit, "breach": breach})
     ratio = float(suite["tolerances"]["time_ratio"])
     for key, old in sorted(base["seconds"].items() if times else []):
+        if skipped(key):
+            continue
         new = now.seconds.get(key)
         breach = new is None or new > old * ratio
         rows.append(
@@ -278,7 +315,9 @@ def compare(
     return rows
 
 
-def report(rows: list[dict[str, Any]], env: dict[str, Any], base: dict[str, Any]) -> str:
+def report(
+    rows: list[dict[str, Any]], env: dict[str, Any], base: dict[str, Any], skipped: tuple[str, ...]
+) -> str:
     def fmt(value: float | None) -> str:
         return "missing" if value is None else f"{value:.3f}"
 
@@ -295,6 +334,10 @@ def report(rows: list[dict[str, Any]], env: dict[str, Any], base: dict[str, Any]
         f"- Baseline: git `{base['env']['git']}` ({base['env']['created']}), device "
         f"`{base['env']['device']}`; chain heads {base['env']['heads']}",
         f"- Metrics: {scoring.SEPARATION_VARIANT}",
+    ]
+    if skipped:
+        lines.append(f"- Skipped (data not on this machine): {', '.join(skipped)}")
+    lines += [
         "",
         "| value | baseline | now | limit | |",
         "|---|---:|---:|---:|---|",
@@ -330,7 +373,7 @@ def run(update_baseline: bool, smoke: bool, out: Path | None) -> int:
         return 1
     # CPU time in the smoke run depends on whatever else the test run is doing.
     rows = compare(suite, stored[section], measured, times=not smoke)
-    text = report(rows, env, stored[section])
+    text = report(rows, env, stored[section], measured.skipped)
     if not smoke:
         dest = out or RESULTS / f"{datetime.now(UTC).date().isoformat()}.md"
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -339,5 +382,7 @@ def run(update_baseline: bool, smoke: bool, out: Path | None) -> int:
     breaches = [r for r in rows if r["breach"]]
     for r in breaches:
         print(f"breach: {r['key']} {r['base']} → {r['now']} (limit {r['limit']})")
+    if measured.skipped:
+        print(f"skipped (data not on this machine): {', '.join(measured.skipped)}")
     print("PASS" if not breaches else f"FAIL ({len(breaches)} breaches)")
     return 1 if breaches else 0

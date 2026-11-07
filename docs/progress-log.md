@@ -1783,7 +1783,30 @@ Branch `impl/28-separation-eval` from `dev` (`8dbfbae`). Phase 0 plan approved b
 
 **Owner actions**
 1. Rate the new listening session **`p1-2026-11-07`** (20 clips, 256 items, 72 pairs; `D:\datasets\musdb18hq-p1\listening\p1-2026-11-07`): serve it with `apps/listening` on a free port (`LISTENING_SESSION_DIR=<that dir> LISTENING_PORT=<free port> pnpm --filter @splitune/listening dev`; check the port first, 4100/4101 may be taken), then `uv run --no-sync python eval/p1.py report --session p1-2026-11-07`.
-2. Sign up for and download MoisesDB, then `uv run --no-sync python eval/p1_moisesdb.py windows` and rerun the matrix with `--root ~/datasets/moisesdb-p1`.
+2. ~~Sign up for and download MoisesDB~~ Done 2026-11-07: the owner signed up and put the signed link in `.env`; the tier was streamed and run (below).
 3. Drop 10-15 commercially mastered snippets into `<extra-dir>/<target>/` and export a session with `--extra-dir`.
 4. Decide: the vocals head (Kim vs viperx/SW) after the ratings; a float decode cache (follow-up); keep or revert the SW overlap change (+14 % SW time).
 5. After merging: restart the workers (every `separate` recomputes once).
+
+**MoisesDB tier (owner action 2, 2026-11-07, same branch)**
+- **Streaming:** `moisesdb.zip` (88.8 GB, CC BY-NC-SA 4.0) fits on no disk here, so `p1_moisesdb.py windows --url` reads it in place from the signed link (`MOISESDB_URL` in the git-ignored `.env`; it expires about 2026-11-14; never logged or committed). Each zip member is now one exact range request for its compressed bytes, inflated in memory and CRC-checked (`5a31474`; a non-206 reply is refused, so a server ignoring `Range` can't pull the whole file). Pass 1 streamed the whole zip once (about 80 GB); pass 2 re-read the 40 chosen tracks. 3 GB is left in `D:\datasets\moisesdb-p1`.
+- **Fixed on the way:**
+  - The first resume crashed in `best_window`: MoisesDB stems differ in length. The `ThreadPoolExecutor` then kept every queued track downloading with nothing recorded, so 10.8 GB came in for 2 tracks before I stopped it. Short targets are now padded and a failure cancels the queued tracks (`9cfb10b`).
+  - The loudest-target rule picked near-solo windows: 2 guitar windows at -0.0 dB (the mix is the guitar) and 3 piano windows at -0.3 to -0.6 dB. Returning the mixture scores high there. Windows above -1 dB vs the mixture (the rest of the band below about -7 dB) are now excluded (`9586e45`). The 25 rows already scanned didn't hit either path and stayed valid.
+- **Set `moisesdb-p1`:** 40 windows, 20 guitar (-1.5 to -2.9 dB) and 20 piano/keys (-1.9 to -4.6 dB). Genres: 18 rock, 7 singer-songwriter, 15 others. `6b168ae6` is the same window under both targets.
+- **Matrix:** every map model × `clean`/`aac128`/`opus128`/`limit-L`/`limit-XL` on CUDA at the 129 W cap, 20 s between runs; 30 runs, all exit 0, 15:14-17:30. Report: `services/ml/eval/results/sep-robust/2026-11-07-moisesdb.md` + `.csv`, with a hand-written findings section.
+  - **Guitar:** SW heads with 11.75 dB median uSDR vs htdemucs_6s 7.62 and becruily 7.69. Paired, it loses to htdemucs_6s on ≤ 1/32 clips (never > 1 dB) and to becruily on ≤ 2/32. The one big loss is `3c557409-guitar` (becruily 12.74 vs SW 5.00 dB clean; it also wins under `aac128`/`limit-L`).
+  - **Piano:** SW 6.39 vs htdemucs_6s 1.58 dB. htdemucs_6s wins 5-6/25, all where both fail. On 3 windows whose keys are mostly synths/organs, SW outputs no piano.
+  - **`limit-XL` cost (SW):** guitar -0.77, piano -0.30, bass -0.76, drums -1.76, vocals -2.68 dB; codecs ≤ 1.1 dB.
+  - **Vocals:** viperx and SW beat the Kim head by 0.2-0.4 dB on most clips, as on MUSDB.
+  - No chain or map change is proposed.
+- **Regression suite:** new `moisesdb` part (`462f732`): 3 guitar + 3 piano windows near SW's median × `clean`/`limit-XL`/`opus128` × every model with a guitar or piano output, plus head rows. Real guitar/piano references; it is skipped, baseline values included, when the windows aren't on the machine (unit test). Time keys are now `<part>/<model>`. New baseline: 254 values, smoke baseline rewritten. Recorded at `462f732+dirty`, the dirt being only uncommitted docs and the MoisesDB report.
+- **Docs:** 08 step 28 notes (MoisesDB tier and `--url`, regression suite), `research/ml/source-separation.md` (own guitar/piano measurement), `status.md` row.
+- **Verification (MoisesDB follow-up):**
+  - `uv run --no-sync pytest eval/tests/test_separation_metrics.py -k moisesdb`: 2 passed. The new short-stem case fails before the padding fix and passes after it.
+  - `cd services/ml && uv run --no-sync ruff check`: clean; `ruff format --check`: 215 files formatted. `pyright`: the 5 pre-existing errors in `packages/stage_notes/tests/test_guitab.py` only.
+  - `SPLITUNE_DATASETS_DIR=D:/datasets uv run --no-sync pytest eval/tests`: 66 passed (the smoke regression test included).
+  - `pnpm lint`: exit 0.
+  - `splitune-eval regress --update-baseline` (254 values), then `splitune-eval regress`: **PASS**, 0 of 264 outside tolerance. `regress --smoke --update-baseline`, then `--smoke`: PASS.
+  - The full `pytest` and `pnpm typecheck`/`pnpm test` were not rerun for this follow-up (eval code only). The known failures from the entry above stand: `test_beats_model` CPU fallback, `test_stem_post` ×2.
+- **Incidents:** the GPU cap read 170 W at the start (a reboot); the owner re-applied 129 W before any GPU run. No crash.
