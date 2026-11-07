@@ -4,6 +4,7 @@ sets    [--check]                              list (and validate) the test-set 
 codec   IN OUT --codec {aac,opus} [--bitrate]  YouTube-style round-trip, loudness normalised
 predict --task beats --set ID --out DIR        run the shipped stages on a set
 score   --task T --set ID [--pred DIR]         score estimates; prints and writes a report
+regress [--update-baseline] [--smoke]          separation regression suite (eval/regression.yaml)
 """
 
 from __future__ import annotations
@@ -97,6 +98,12 @@ def cmd_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_regress(args: argparse.Namespace) -> int:
+    from . import regress  # torch + audio-separator: only here
+
+    return regress.run(args.update_baseline, args.smoke, Path(args.report) if args.report else None)
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="splitune-eval",
@@ -129,12 +136,20 @@ def parser() -> argparse.ArgumentParser:
     sc.add_argument("--task", choices=TASKS, required=True)
     sc.add_argument("--set", required=True)
     sc.add_argument("--pred", help="directory of <item>.<suffix> estimates (not for tab)")
-    sc.add_argument("--csdr", action="store_true", help="sep: also chunk-level SDR (slow)")
+    sc.add_argument(
+        "--csdr", action="store_true", help="sep: also chunk-level SDR (1 s frames, median)"
+    )
     sc.add_argument("--tab-mode", choices=["easiest", "as_played"], default="as_played")
     sc.add_argument("--report", help="Markdown path (default eval/results/<task>/<date>-<set>.md)")
     sc.add_argument("--no-report", action="store_true")
     sc.add_argument("--note", action="append", help="extra line for the report header")
     sc.set_defaults(fn=cmd_score)
+
+    rg = sub.add_parser("regress", help="separation regression suite; exit 1 on a breach")
+    rg.add_argument("--update-baseline", action="store_true", help="store this run as baseline")
+    rg.add_argument("--smoke", action="store_true", help="one short clip, htdemucs_6s, CPU")
+    rg.add_argument("--report", help="Markdown path (default eval/results/regression/<date>.md)")
+    rg.set_defaults(fn=cmd_regress)
     return p
 
 

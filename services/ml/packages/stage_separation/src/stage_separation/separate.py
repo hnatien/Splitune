@@ -9,6 +9,9 @@ failure after which the analysis continues without stems (06 §6).
 Only what the analysis needs is kept (06 §4 "request one target"): the learner's stem, the
 complement parts when mix-minus is `complement`, and the `keep` extras (drums, bass) when the same
 run produced them and the tagger hears them.
+
+Raw stems are cached as 24-bit FLAC, or as float32 WAV when they peak above full scale (a loud
+master's stems do, though its mixture doesn't), so `mixture - stem` stays exact (step 28).
 """
 
 from __future__ import annotations
@@ -76,6 +79,7 @@ def plan(
             "inference": cfg.models[spec.solo_check.model].inference,
         },
         "config_version": cfg.version,
+        "stem_store": STEM_STORE,
     }
 
 
@@ -102,6 +106,10 @@ def roles(spec: ModelSpec, params: dict[str, Any]) -> dict[str, Role]:
 
 
 RHYTHM = ("drums", "bass", "vocals")
+# How raw stems are cached; part of the cache key, so stems an older version stored (24-bit FLAC
+# clipped at full scale, after the library's rescaling) are separated again.
+STEM_STORE = "flac24-or-wav-f32"
+FULL_SCALE = 1.0 - 2.0**-23  # the largest 24-bit sample
 
 
 def solo_bypass(
@@ -152,13 +160,19 @@ def run_id(
     return hashlib.sha256(key.encode()).hexdigest()[:32]
 
 
-def store(audio: NDArray[np.float32], dest: Path) -> str:
-    """24-bit FLAC (atomic rename), like decode's cache; returns the file's sha256."""
+def store(audio: NDArray[np.float32], base: Path) -> tuple[Path, str]:
+    """`base`.flac (24-bit, like decode's cache) or, when the stem peaks above full scale,
+    `base`.wav (float32, nothing clipped); atomic rename. Returns (path, sha256)."""
+    loud = float(np.max(np.abs(audio), initial=0.0)) > FULL_SCALE
+    dest = base.with_name(f"{base.name}.{'wav' if loud else 'flac'}")
     dest.parent.mkdir(parents=True, exist_ok=True)
     temp = dest.with_name(f".{dest.name}.{os.getpid()}.tmp")
-    sf.write(str(temp), np.clip(audio, -1.0, 1.0), 44100, format="FLAC", subtype="PCM_24")  # pyright: ignore[reportUnknownMemberType]
+    if loud:
+        sf.write(str(temp), audio, 44100, format="WAV", subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+    else:
+        sf.write(str(temp), audio, 44100, format="FLAC", subtype="PCM_24")  # pyright: ignore[reportUnknownMemberType]
     temp.replace(dest)
-    return hashlib.sha256(dest.read_bytes()).hexdigest()
+    return dest, hashlib.sha256(dest.read_bytes()).hexdigest()
 
 
 def run(job: StageJob) -> StageOutput:
@@ -223,12 +237,12 @@ def run(job: StageJob) -> StageOutput:
     cache = Path(job.cache_dir) / "separated"
     entries: list[dict[str, Any]] = []
     for stem, audio in stems.items():
-        file = f"{directory}/{stem}.flac"
+        path, sha = store(audio, cache / directory / stem)
         entry: dict[str, Any] = {
             "name": stem,
             "role": kept[stem],
-            "file": file,
-            "sha256": store(audio, cache / file),
+            "file": f"{directory}/{path.name}",
+            "sha256": sha,
             "frames": frames,
         }
         if spec.outputs[stem] is not None:

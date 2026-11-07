@@ -27,6 +27,7 @@ pnpm test        # Vitest + pytest
 pnpm secrets:scan
 pnpm contracts:gen    # after changing Zod contracts: regenerate JSON Schema + Pydantic (contracts:check = CI drift check)
 pnpm db:migrate       # db:check fails if the Drizzle schema changed without a migration (`pnpm --filter @splitune/db generate`)
+pnpm eval:regression  # separation regression suite (services/ml/eval/regression.yaml); run after changing stage_separation, separation.personal.yaml, audio-separator/torch pins or weights; --smoke = CPU check
 ```
 - One package: `pnpm --filter @splitune/<pkg> test` (or `typecheck`). One file / test: `pnpm --filter @splitune/music-core test test/build-tab.test.ts -t "<name>"`.
 - Web: `pnpm --filter @splitune/web test` (unit), `test:stories` (Storybook stories with axe in Chromium/WebKit), `e2e` (Playwright). Its typecheck/test first run `generate` (Paraglide messages + `routeTree.gen.ts`).

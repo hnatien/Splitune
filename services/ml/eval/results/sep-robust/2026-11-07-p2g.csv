@@ -1,0 +1,28 @@
+tier,condition,items,onset_f1,delta_onset_f1,tab_f1,delta_tab_f1,usdr_median
+GuitarSet player 05,stem.hard,33,0.8624,0.0,0.657,0.0,15.015
+GuitarSet player 05,stem.robust-aac128,33,0.8632,0.0008,0.6581,0.0011,14.569
+GuitarSet player 05,stem.robust-opus128,33,0.8683,0.0059,0.6658,0.0088,14.45
+GuitarSet player 05,stem.robust-opus160,33,0.8676,0.0052,0.6608,0.0038,14.501
+GuitarSet player 05,stem.robust-mp3-128,33,0.863,0.0005,0.6633,0.0063,15.072
+GuitarSet player 05,stem.robust-mono,33,0.8497,-0.0127,0.6566,-0.0004,14.419
+GuitarSet player 05,stem.robust-sr48,33,0.862,-0.0004,0.6575,0.0005,14.99
+GuitarSet player 05,stem.robust-limit-L,33,0.8646,0.0022,0.6547,-0.0023,12.427
+GuitarSet player 05,stem.robust-limit-XL,33,0.8606,-0.0018,0.6538,-0.0032,9.672
+Guitar-TECHS,stem.hard,24,0.5217,0.0,0.363,0.0,15.71
+Guitar-TECHS,stem.robust-aac128,24,0.5186,-0.0032,0.3723,0.0093,15.267
+Guitar-TECHS,stem.robust-opus128,24,0.5406,0.0189,0.3844,0.0214,15.209
+Guitar-TECHS,stem.robust-opus160,24,0.5415,0.0197,0.3885,0.0255,15.892
+Guitar-TECHS,stem.robust-mp3-128,24,0.537,0.0152,0.3778,0.0148,15.871
+Guitar-TECHS,stem.robust-mono,24,0.478,-0.0438,0.3734,0.0104,14.634
+Guitar-TECHS,stem.robust-sr48,24,0.499,-0.0228,0.3632,0.0002,14.688
+Guitar-TECHS,stem.robust-limit-L,24,0.4899,-0.0319,0.3537,-0.0093,12.961
+Guitar-TECHS,stem.robust-limit-XL,24,0.4766,-0.0451,0.3561,-0.0069,9.498
+IDMT-SMT-Guitar,stem.hard,20,0.7426,0.0,0.3878,0.0,15.187
+IDMT-SMT-Guitar,stem.robust-aac128,20,0.7439,0.0013,0.3757,-0.0121,14.728
+IDMT-SMT-Guitar,stem.robust-opus128,20,0.7331,-0.0094,0.3687,-0.0192,14.561
+IDMT-SMT-Guitar,stem.robust-opus160,20,0.731,-0.0116,0.3727,-0.0151,14.514
+IDMT-SMT-Guitar,stem.robust-mp3-128,20,0.7434,0.0008,0.3786,-0.0092,15.133
+IDMT-SMT-Guitar,stem.robust-mono,20,0.7121,-0.0305,0.3513,-0.0365,13.883
+IDMT-SMT-Guitar,stem.robust-sr48,20,0.7282,-0.0144,0.3754,-0.0124,14.477
+IDMT-SMT-Guitar,stem.robust-limit-L,20,0.7243,-0.0183,0.3785,-0.0093,10.895
+IDMT-SMT-Guitar,stem.robust-limit-XL,20,0.7237,-0.0189,0.3666,-0.0213,8.411

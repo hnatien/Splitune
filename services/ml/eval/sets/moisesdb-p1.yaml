@@ -1,0 +1,19 @@
+id: moisesdb-p1
+description: >-
+  MoisesDB 30 s windows with real guitar and piano/keys references (step 28): the loudest-target
+  window per track, 20 per target
+licence: CC-BY-NC-SA-4.0 (MoisesDB; research use in personal mode)
+provenance: >-
+  MoisesDB v0.1 (Pereira et al., ISMIR 2023, https://music.ai/research/, download after a
+  sign-up by the owner). Windows cut by eval/p1_moisesdb.py from references only (no model picks
+  its own test). Until it has run, the glob below matches nothing and the set has no items.
+root: ~/datasets/moisesdb-p1
+split: test
+tasks: [sep]
+tags: {genre: mixed, live: studio, codec: wav}
+item_template:
+  glob: clips/*.json
+  id: "{stem}"
+  audio: "{stem}/mixture.wav"
+  annotations:
+    sep: "{stem}"

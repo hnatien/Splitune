@@ -8,8 +8,9 @@ export const SeparatedStem = z
     instrument: Instrument.optional(), // absent for complements such as "instrumental"
     role: z.enum(['target', 'complement', 'extra']),
     // Worker-local intermediate (25-personal-mode.md §5: separated audio stays on the Mac's disk),
-    // relative to the worker's separation cache directory. Never a bucket key.
-    file: z.string().regex(/^[a-z0-9]{16,64}\/[a-z0-9][a-z0-9_.-]{0,63}\.flac$/),
+    // relative to the worker's separation cache directory. Never a bucket key. 24-bit FLAC, or
+    // float32 WAV for a stem that peaks above full scale (a loud master's stems can; step 28).
+    file: z.string().regex(/^[a-z0-9]{16,64}\/[a-z0-9][a-z0-9_.-]{0,63}\.(flac|wav)$/),
     sha256: Sha256Hex,
     frames: z.number().int().positive(), // 44.1 kHz stereo frames
   })

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Splitune contracts",
-  "x-schema-version": "1.7.0",
+  "x-schema-version": "1.8.0",
   "$defs": {
     "ActivitySpan": {
       "type": "object",
@@ -2093,7 +2093,7 @@
         },
         "file": {
           "type": "string",
-          "pattern": "^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.flac$"
+          "pattern": "^[a-z0-9]{16,64}\\/[a-z0-9][a-z0-9_.-]{0,63}\\.(flac|wav)$"
         },
         "sha256": {
           "$ref": "#/$defs/Sha256Hex"

@@ -1,11 +1,14 @@
 """python-audio-separator 0.44.5 behind a small interface (torch island only).
 
 The library is driven with settings that keep its output usable for mix-minus: float WAV in and
-out (no 16/24-bit clipping) and peak normalisation only above 0 dBFS (its default rescales every
-stem to a 0.9 peak, which breaks `mixture - stem`). Per-model inference settings from the model
-map override single keys of the library's `mdxc_params` / `demucs_params`. Its public `separate()`
-logs and swallows exceptions, so the per-file method is called to see failures; the version is
-pinned.
+out (no 16/24-bit clipping) and no peak normalisation. Its default rescales every stem peaking
+above 0.9, and its constructor refuses thresholds above 1.0, yet on a loud master a stem often
+peaks above full scale while the mixture doesn't (stems cancel in the sum): 121 of BS-Roformer-SW's
+300 outputs on the limit-XL P1 windows were rescaled, which broke `mixture - stem` (step 28). The
+threshold is therefore lifted on the instance before the model loads. Per-model inference settings
+from the model map override single keys of the library's `mdxc_params` / `demucs_params`. Its
+public `separate()` logs and swallows exceptions, so the per-file method is called to see failures;
+the version is pinned.
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
+import math
 import os
 import threading
 import time
@@ -128,6 +132,8 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
     )
     # The library has no torch_device_cuda attribute (it builds its CUDA device inline).
     separator.torch_device = torch.device(device())
+    # No peak normalisation (module docstring); read by load_model into the model instance.
+    separator.normalization_threshold = math.inf
     if spec.config is not None:
         # Not in the library's catalogue: point its lookup at the files fetch_models.py placed.
         directory = models_dir() / "audio-separator"

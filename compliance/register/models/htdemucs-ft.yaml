@@ -16,7 +16,15 @@ weights:
     - { name: d12395a8-e57c48e6.th, sha256: "e57c48e6b0e38af4f7118d7bd08c49f0a0c0edf7d09143bdd902ea0d237303e6", bytes: 84141271 }
     - { name: 92cfc3b6-ef3bcb9c.th, sha256: "ef3bcb9c8b40d14ae5d51b6db2587339cc12c6b77c0be151ce6d69002e087bf2", bytes: 84141271 }
     - { name: 04573f0d-f3cf25b2.th, sha256: "f3cf25b222c4eed7cd49dd8b2c9597d50c18bd154090f7b919cfa5f93cf22c49", bytes: 84141271 }
-training_data: [{ name: MUSDB18-HQ + internal Meta data (800 songs), licence: unknown, commercial_ok: false }]
+training_data:
+  - name: MUSDB18-HQ train + internal Meta data (800 songs)
+    licence: unknown
+    commercial_ok: false
+    # Step 28: the paper evaluates on the MUSDB18-HQ test set and the released grids
+    # (demucs/grids/mmi.py, mmi_ft.py) use `allstems_44` ("Musdb + extra tracks"), not the
+    # `extra_test` set that adds the test split; not stated in so many words.
+    musdb18_test_in_training: probably_not
+    source: https://arxiv.org/abs/2211.08553
 tier: amber
 tier_reason: "training data partly non-commercial / undisclosed"
 used_in: [separate]

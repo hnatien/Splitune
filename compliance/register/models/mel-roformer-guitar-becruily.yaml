@@ -20,7 +20,13 @@ weights:
       sha256: "b681c3f886251b04b666b3f06e87ce65d7ec610e40b5d75915c01782e5444b0e"
       bytes: 1411
       url: https://huggingface.co/becruily/mel-band-roformer-guitar/resolve/e9624f565871f933ac48b7b2af3fbadf763bf438/config_guitar_becruily.yaml
-training_data: [{ name: undisclosed, licence: unknown, commercial_ok: false }]
+training_data:
+  - name: undisclosed
+    licence: unknown
+    commercial_ok: false
+    # Step 28: the dataset question on the model page has no answer.
+    musdb18_test_in_training: unknown
+    source: https://huggingface.co/becruily/mel-band-roformer-guitar/discussions/8
 tier: red
 tier_reason: "community checkpoint, weights licence and training data undisclosed"
 used_in: [separate]

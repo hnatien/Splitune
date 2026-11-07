@@ -13,12 +13,14 @@ models:
   # Values: the cheapest setting within 0.3 dB median uSDR of the default on the P1 clips
   # (services/ml/eval/results/p1/2026-10-21-overlap.md). RoFormer overlap = the model's chunk
   # length (no overlap between windows); viperx's chunk is 8 s, so its default already is.
+  # BS-Roformer-SW keeps the library default (8 s steps over a 9.29 s chunk, 1.29 s crossfade):
+  # abutting windows (overlap 9.3) left a seam in its bass stem on full songs, +0.16 dB uSDR for
+  # +14 % time at the default (step 28, eval/results/p1/2026-11-07-fullsong.md).
   bs_roformer_sw:
     record: bs-roformer-sw
     filename: BS-Roformer-SW.ckpt
     provider: "bs_roformer:BS-Roformer-SW"
     arch: mdxc
-    inference: {overlap: 9.3}  # chunk 9.29 s
     outputs: {bass: bass, drums: drums, guitar: guitar, piano: piano, vocals: vocals, other: other}
   htdemucs_6s:
     record: htdemucs-6s
