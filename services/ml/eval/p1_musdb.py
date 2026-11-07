@@ -2,6 +2,13 @@
 
     uv run python eval/p1_musdb.py windows --out ~/datasets/musdb18hq-p1 [--stem S] [--track T]
     uv run python eval/p1_musdb.py full --track "Al James - Schoolboy Facination" --out DIR
+    uv run python eval/p1_musdb.py full --stems --track T1 --track T2 ... --out DIR
+    uv run python eval/p1_musdb.py xl --zip musdb_XL_ratio.zip --out ~/datasets/musdb18hq-p1
+
+`xl` cuts the official musdb-XL gain ratios (Jeon & Lee, ISMIR 2022; Zenodo record 7041331,
+CC BY 4.0, `musdb_XL_ratio.zip`, md5 fa70c19c81ad65d778c5f2cf0ca80882) to the same windows as
+<out>/<slug>/xl_ratio.npy, float32 [frames, 2]: musdb-XL = ratio x MUSDB18-HQ, for the mixture and
+every stem alike.
 
 MUSDB18-HQ (Zenodo record 3338373, open access, 21 GB) is read with HTTP range requests instead of
 being downloaded: each member is streamed only up to the end of its window (the WAVs are deflated,
@@ -232,15 +239,63 @@ def cmd_windows(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def fetch_full(out: Path, track: str, stem: str) -> Path:
+    archive = open_archive()  # one connection per worker thread
+    total, rate = track_frames(archive, track)
+    dest = out / slug(track) / f"{stem}.wav"
+    if not dest.is_file():
+        data, _ = read_window(archive, track, stem, 0, total)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        temp = dest.with_suffix(".tmp.wav")
+        sf.write(str(temp), data, rate, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+        temp.replace(dest)
+    return dest
+
+
 def cmd_full(args: argparse.Namespace) -> int:
+    """One whole mixture as <out>/<slug>.wav, or with --stems every stem of each --track as
+    <out>/<slug>/<stem>.wav (resumable: finished files are skipped)."""
     out = Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
-    archive = open_archive()
-    total, rate = track_frames(archive, args.track)
-    data, _ = read_window(archive, args.track, "mixture", 0, total)
-    dest = out / f"{slug(args.track)}.wav"
-    sf.write(str(dest), data, rate, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
-    print(f"{dest} ({total / rate:.1f}s)")
+    if not args.stems:
+        archive = open_archive()
+        total, rate = track_frames(archive, args.track[0])
+        data, _ = read_window(archive, args.track[0], "mixture", 0, total)
+        dest = out / f"{slug(args.track[0])}.wav"
+        sf.write(str(dest), data, rate, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+        print(f"{dest} ({total / rate:.1f}s)")
+        return 0
+    jobs = [(t, s) for t in args.track for s in STEMS]
+    failed = 0
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        futures = {pool.submit(fetch_full, out, t, s): (t, s) for t, s in jobs}
+        for future in as_completed(futures):
+            try:
+                print(future.result(), flush=True)
+            except (OSError, http.client.HTTPException) as exc:
+                failed += 1
+                print(f"{futures[future]}: failed ({exc}); rerun to resume", file=sys.stderr)
+    return 1 if failed else 0
+
+
+def cmd_xl(args: argparse.Namespace) -> int:
+    out = Path(args.out).expanduser()
+    index = cast(
+        dict[str, dict[str, Any]],
+        json.loads((out / "windows.json").read_text(encoding="utf-8"))["items"],
+    )
+    with zipfile.ZipFile(Path(args.zip).expanduser()) as archive:
+        for clip, entry in sorted(index.items()):
+            dest = out / clip / "xl_ratio.npy"
+            if dest.is_file():
+                continue
+            with archive.open(f"musdb_XL_ratio/{entry['track']}.npy") as member:
+                ratio = np.load(io.BytesIO(member.read()))  # [2, frames] float64
+            start = round(float(entry["start_s"]) * 44100)
+            frames = round(float(entry["duration_s"]) * 44100)
+            window = np.ascontiguousarray(ratio[:, start : start + frames].T, dtype=np.float32)
+            np.save(dest, window)
+            print(f"{clip}: {window.shape[0]} frames", flush=True)
     return 0
 
 
@@ -255,10 +310,16 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--jobs", type=int, default=6, help="parallel connections")
     w.add_argument("--stem", action="append", choices=STEMS, help="only these files (repeatable)")
     w.set_defaults(fn=cmd_windows)
-    f = sub.add_parser("full", help="one whole test mixture")
-    f.add_argument("--track", required=True)
+    f = sub.add_parser("full", help="one whole test mixture (or all stems of several songs)")
+    f.add_argument("--track", action="append", required=True, help="repeatable with --stems")
     f.add_argument("--out", required=True)
+    f.add_argument("--stems", action="store_true", help="every stem, one folder per track")
+    f.add_argument("--jobs", type=int, default=10, help="parallel connections")
     f.set_defaults(fn=cmd_full)
+    x = sub.add_parser("xl", help="musdb-XL gain ratios cut to the windows")
+    x.add_argument("--zip", required=True, help="local musdb_XL_ratio.zip")
+    x.add_argument("--out", required=True, help="the windows' root (has windows.json)")
+    x.set_defaults(fn=cmd_xl)
     args = p.parse_args(argv)
     return int(args.fn(args))
 

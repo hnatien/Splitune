@@ -86,7 +86,7 @@ def score_sep(tset: TestSet, items: list[Item], pred_dir: Path, chunked: bool) -
         results.append(ItemResult(item, metrics))
     variant = "uSDR (MDX/MSST: whole-track energy ratio, dB)"
     if chunked:
-        variant += f"; cSDR (mir_eval {scoring.MIR_EVAL} BSS Eval v3 images, 1 s windows, median)"
+        variant += "; cSDR (plain SDR on 1 s frames, median, silent-reference frames skipped)"
     return TaskResult("sep", variant, results)
 
 

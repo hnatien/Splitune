@@ -7,6 +7,8 @@
     uv run python eval/p2g.py predict --variant V   # shipped notes.guitar stage per condition
     uv run python eval/p2g.py tab --variant V       # shipped buildTab (music-core CLI) per run
     uv run python eval/p2g.py report [--variant V ...]  # → eval/results/p2g/<date>.md + .csv
+    uv run python eval/p2g.py robust --robust limit-XL  # held-out hard mixtures under a variant
+    uv run python eval/p2g.py robust-report --variant s27   # → eval/results/sep-robust/
 
 Material (local only, under ~/datasets/p2g, never committed; manifest `eval/sets/p2g-guitar.yaml`):
 real guitar recordings with note and string/fret references, mixed into two band conditions:
@@ -23,7 +25,9 @@ Basic Pitch and YourMT3+ were trained on GuitarSet: every GuitarSet-derived numb
 for them and is reported as its own tier.
 
 Conditions: `clean` (the guitar alone: a ceiling), `stem.<band>` (separated: the production
-path), `mix.<band>`. Beats for the tab come from the shipped beats stage on the clean guitar, so
+path), `mix.<band>`, and (step 28) `stem.robust-<v>`: the held-out hard-band mixture under one of
+`splitune_eval.variants` (loud masters, lossy codecs, mono, 48 kHz through decode), separated by
+the shipped head model. Beats for the tab come from the shipped beats stage on the clean guitar, so
 the tab numbers measure notes and frets, not beat tracking on a tempo-mismatched band.
 """
 
@@ -799,6 +803,126 @@ def cmd_separate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_robust(args: argparse.Namespace) -> int:
+    """Held-out items' hard-band mixture under `--robust` (`splitune_eval.variants`; gain-like
+    variants change the guitar reference identically), clipped to ±1 as the decode stage's FLAC
+    cache would, written as mixture.robust-<v>.wav and separated by `--model` (default the head
+    of production's guitar chain) into sep/<model>/robust-<v>/."""
+    from splitune_eval import variants
+    from stage_separation import config, models
+
+    spec = config.load().models[args.model]
+    kind = f"robust-{args.robust}"
+    for item in load_items():
+        if is_fit(item):
+            continue
+        out = stem_path(item, args.model, kind).parent
+        if (out / "guitar.wav").is_file():
+            continue
+        mixture = item.dir / f"mixture.{kind}.wav"
+        if not mixture.is_file():
+            v = variants.apply(
+                args.robust,
+                read(item.dir / "mixture.hard.wav").astype(np.float64),
+                {"guitar": read(item.dir / "guitar.wav").astype(np.float64)},
+            )
+            if args.robust in variants.GAIN_LIKE:  # else the clean guitar is the reference
+                write(item.dir / f"guitar.{kind}.wav", v.references["guitar"].astype(np.float32))
+            write(mixture, np.clip(v.mixture, -1.0, 1.0).astype(np.float32))
+        result = models.separate(args.model, spec, mixture, out)
+        for name, path in result.files.items():  # only the guitar stem is used (disk)
+            if name != "guitar":
+                path.unlink()
+        print(f"{args.robust} {args.model} {item.id}", flush=True)
+    return 0
+
+
+def cmd_robust_report(args: argparse.Namespace) -> int:
+    """Held-out tiers per robustness condition against `stem.hard` (the clean-input stem):
+    onset F1 (mean over items), Tab F1 pooled (production tab: tuning suggestion applied) and the
+    guitar stem's uSDR; drops of more than 0.05 F1 are flagged."""
+    rows = [r for r in score_rows(args.variant) if not is_fit_id(r["item"])]
+    usdr: dict[tuple[str, str], float] = {}
+    for item in load_items():
+        if is_fit(item):
+            continue
+        for condition in ("stem.hard", *robust_conditions()):
+            kind = condition.partition(".")[2]
+            stem = stem_path(item, VARIANTS[args.variant].separator, kind)
+            ref = item.dir / f"guitar.{kind}.wav"
+            if not ref.is_file():  # stem.hard and the codec variants: the clean guitar
+                ref = item.dir / "guitar.wav"
+            if stem.is_file() and ref.is_file():
+                usdr[(item.id, condition)] = scoring.usdr(
+                    read(ref).astype(np.float64), read(stem).astype(np.float64)
+                )
+    key = "as_played.suggested"
+    lines = [
+        "# Separation robustness, downstream guitar (P2g held-out hard band, "
+        f"{datetime.now(UTC).date().isoformat()})",
+        "",
+        f"git `{git_sha()}` · variant `{args.variant}`: {VARIANTS[args.variant].note} · onset F1 "
+        "mir_eval ±50 ms (mean over items) · Tab F1 pooled, `as_played`, tuning suggestion applied "
+        "· uSDR of the guitar stem against the (variant-transformed) clean guitar, median · "
+        "Δ = against `stem.hard` on the same items; ⚠ = F1 down more than 0.05",
+        "",
+        f"Command: `uv run python eval/p2g.py {' '.join(sys.argv[1:])}`",
+        "",
+    ]
+    csv_rows: list[dict[str, Any]] = []
+    for tier, sel in held_out_tiers(rows):
+        base = {r["item"]: r for r in select(sel, condition="stem.hard")}
+        lines += [
+            f"## {tier}",
+            "",
+            "| condition | items | onset F1 | Δ onset | Tab F1 | Δ Tab | uSDR (dB) "
+            "| worst 3 onset Δ |",
+            "|---|---:|---:|---:|---:|---:|---:|---|",
+        ]
+        for condition in ("stem.hard", *robust_conditions()):
+            cur = [r for r in select(sel, condition=condition) if r["item"] in base]
+            if not cur:
+                continue
+            ref_rows = [base[r["item"]] for r in cur]
+            onset, onset0 = mean(cur, "onset_f1"), mean(ref_rows, "onset_f1")
+            tab, tab0 = pooled(cur, key), pooled(ref_rows, key)
+            tab_f1 = tab.f1 if tab is not None else float("nan")
+            tab_d = tab_f1 - tab0.f1 if tab is not None and tab0 is not None else float("nan")
+            sdrs = [usdr[(r["item"], condition)] for r in cur if (r["item"], condition) in usdr]
+            deltas = sorted((r["onset_f1"] - base[r["item"]]["onset_f1"], r["item"]) for r in cur)[
+                :3
+            ]
+            flag = " ⚠" if onset - onset0 < -0.05 or tab_d < -0.05 else ""
+            sdr_median = statistics.median(sdrs) if sdrs else float("nan")
+            worst = "; ".join(f"{i} {d:+.2f}" for d, i in deltas)
+            lines.append(
+                f"| {condition}{flag} | {len(cur)} | {fmt(onset)} | {onset - onset0:+.3f} | "
+                f"{fmt(tab_f1)} | {tab_d:+.3f} | {sdr_median:.2f} | {worst} |"
+            )
+            csv_rows.append(
+                {
+                    "tier": tier,
+                    "condition": condition,
+                    "items": len(cur),
+                    "onset_f1": round(onset, 4),
+                    "delta_onset_f1": round(onset - onset0, 4),
+                    "tab_f1": round(tab_f1, 4),
+                    "delta_tab_f1": round(tab_d, 4),
+                    "usdr_median": round(sdr_median, 3),
+                }
+            )
+        lines.append("")
+    out = RESULTS.parent / "sep-robust" / f"{datetime.now(UTC).date().isoformat()}-p2g.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with out.with_suffix(".csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(csv_rows[0]) if csv_rows else ["tier"])
+        writer.writeheader()
+        writer.writerows(csv_rows)
+    print(f"→ {out}")
+    return 0
+
+
 METRONOME_BPM = 60.0  # Guitar-TECHS technique drills: one note per 4 s bar, no trackable beat
 
 
@@ -1058,6 +1182,14 @@ def conditions() -> list[str]:
     return ["clean", *(f"{c}.{b}" for b in BANDS for c in ("stem", "mix"))]
 
 
+# Step 28 robustness variants for P2g (musdb-xl needs MUSDB's own ratio, so it is P1 only).
+ROBUST = ("aac128", "opus128", "opus160", "mp3-128", "mono", "sr48", "limit-L", "limit-XL")
+
+
+def robust_conditions() -> list[str]:
+    return [f"stem.robust-{v}" for v in ROBUST]
+
+
 def detune_conditions() -> list[str]:
     """The hard-band stem re-pitched (tape speed) by each of DETUNE_CENTS."""
     return [f"detune{c:+.0f}" for c in DETUNE_CENTS]
@@ -1098,6 +1230,8 @@ def cmd_predict(args: argparse.Namespace) -> int:
         local = LocalRun(Path(tmp) / "work")
         for item in load_items():
             if args.only and not re.search(args.only, item.id):
+                continue
+            if args.held_out and is_fit(item):
                 continue
             for condition in args.condition or conditions():
                 dest = run_dir(args.variant) / item.id / f"{condition}.notes.json"
@@ -2361,8 +2495,13 @@ def main() -> int:
     p.set_defaults(fn=cmd_calibrate)
     p = sub.add_parser("predict")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
-    p.add_argument("--condition", nargs="+", choices=conditions() + detune_conditions())
+    p.add_argument(
+        "--condition",
+        nargs="+",
+        choices=conditions() + detune_conditions() + robust_conditions(),
+    )
     p.add_argument("--only", help="regex on item ids (e.g. bend-labelled items)")
+    p.add_argument("--held-out", action="store_true", help="skip the fit split")
     p.set_defaults(fn=cmd_predict)
     p = sub.add_parser("tab")
     p.add_argument("--variant", choices=list(VARIANTS), required=True)
@@ -2371,6 +2510,13 @@ def main() -> int:
     p = sub.add_parser("sweep")
     p.add_argument("--variant", choices=list(VARIANTS), default="a4comp")
     p.set_defaults(fn=cmd_sweep)
+    p = sub.add_parser("robust")
+    p.add_argument("--robust", choices=ROBUST, required=True)
+    p.add_argument("--model", choices=SEPARATORS, default=SEPARATORS[0])
+    p.set_defaults(fn=cmd_robust)
+    p = sub.add_parser("robust-report")
+    p.add_argument("--variant", choices=list(VARIANTS), default="s27")
+    p.set_defaults(fn=cmd_robust_report)
     p = sub.add_parser("report")
     p.add_argument("--variant", nargs="+", choices=list(VARIANTS), default=["baseline"])
     p.add_argument("--focus", choices=conditions(), default="stem.hard")

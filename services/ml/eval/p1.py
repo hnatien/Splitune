@@ -3,11 +3,10 @@
     uv run python eval/p1.py codec                       # mixture.aac128.wav per window
     uv run python eval/p1.py separate --model bs_roformer_sw [--clip ID ...]
     uv run python eval/p1.py separate --model htdemucs_ft --set --tag shifts1 --inference shifts=1
-    uv run python eval/p1.py energies --model bs_roformer_sw   # stem/mixture energy per window
-    uv run python eval/p1.py select                      # 20 clips → eval/sets/musdb18hq-p1.yaml
-    uv run python eval/p1.py export --session p1-2026-10-21   # blinded listening session
+    uv run python eval/p1.py select                      # 20 clips → eval/sets/musdb18hq-p1-v2.yaml
+    uv run python eval/p1.py export --session p1-2026-11-06 [--extra-dir DIR]  # new session
     uv run python eval/p1.py sdr [--tag shifts1]          # uSDR where MUSDB has references
-    uv run python eval/p1.py report --session p1-2026-10-21   # ratings (Postgres) → results/p1
+    uv run python eval/p1.py report --session p1-2026-11-06   # ratings (Postgres) → results/p1
 
 Windows come from `eval/p1_musdb.py` (default root ~/datasets/musdb18hq-p1). Candidates run on the
 "YouTube-style" AAC 128 kb/s round-trip of each mixture, without loudness normalisation so the
@@ -15,6 +14,12 @@ reference stems keep their scale for SDR. Separation uses the shipped wrapper
 (`stage_separation.models`), and the listening items are encoded by the shipped stem encoder, so
 the raters hear what `separate` + `stem_post` would produce. A `--tag` keeps a sweep point's runs
 (model-map inference settings overridden with `--inference`) apart from the default `runs/`.
+
+Set versions: `musdb18hq-p1` (step 07) picked guitar/piano windows by BS-Roformer-SW's own stem
+energy, so the incumbent chose its own test; it is kept for comparison. `musdb18hq-p1-v2`
+(step 28, `select`) ranks vocals/drums/bass windows by the reference stem's energy and
+guitar/piano windows by the loudest stem any candidate model gives (among windows where the
+tagger hears the instrument), from the `aac128` records of `eval/sep_matrix.py`.
 """
 
 from __future__ import annotations
@@ -24,8 +29,10 @@ import csv
 import io
 import itertools
 import json
+import re
 import secrets
 import shlex
+import shutil
 import statistics
 import subprocess
 import sys
@@ -42,14 +49,15 @@ from splitune_eval.registry import SETS_DIR, load_set
 
 ROOT = Path("~/datasets/musdb18hq-p1").expanduser()
 CODEC_MIX = "mixture.aac128.wav"
-SET_ID = "musdb18hq-p1"
+SET_ID = "musdb18hq-p1-v2"
+SET_ID_V1 = "musdb18hq-p1"
 RESULTS = Path(__file__).resolve().parent / "results" / "p1"
 QUESTION = "Could I practise with this?"
 LISTENING_LUFS = -16.0  # every item played at the same loudness, so louder never sounds better
 
 # Candidates per learner instrument (only six-stem models output guitar and piano).
 CANDIDATES: dict[str, list[str]] = {
-    "guitar": ["bs_roformer_sw", "htdemucs_6s"],
+    "guitar": ["bs_roformer_sw", "htdemucs_6s", "mel_roformer_guitar_becruily"],
     "piano": ["bs_roformer_sw", "htdemucs_6s"],
     "bass": ["bs_roformer_sw", "htdemucs_ft", "htdemucs_6s"],
     "drums": ["bs_roformer_sw", "htdemucs_ft", "htdemucs_6s"],
@@ -143,28 +151,11 @@ def cmd_separate(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_energies(args: argparse.Namespace) -> int:
-    """dB of each separated stem relative to the mixture (selection aid for guitar/piano clips,
-    which MUSDB has no references for)."""
-    root = Path(args.root).expanduser()
-    runs = root / "runs" / args.model
-    table: dict[str, dict[str, float]] = {}
-    for clip in sorted(windows(root)):
-        if not (runs / clip).is_dir():
-            continue
-        mix = read(root / clip / CODEC_MIX)
-        table[clip] = {s.stem: db_ratio(read(s), mix) for s in sorted((runs / clip).glob("*.wav"))}
-    (runs / "energies.json").write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
-    for clip, row in table.items():
-        print(f"{clip[:40]:40} " + " ".join(f"{k}={v:6.1f}" for k, v in row.items()))
-    return 0
-
-
-def tagger_scores(root: Path, clip: str) -> dict[str, float]:
+def tagger_scores(mixture: Path) -> dict[str, float]:
     from scipy.signal import resample_poly  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
     from stage_tagger import stage
 
-    mono = read(root / clip / CODEC_MIX).mean(axis=1)
+    mono = read(mixture).mean(axis=1)
     resampled = np.asarray(resample_poly(mono, stage.MODEL_RATE, 44100), dtype=np.float32)
     batch = stage.windows(resampled, 10, 2)
     return {
@@ -173,51 +164,104 @@ def tagger_scores(root: Path, clip: str) -> dict[str, float]:
     }
 
 
-def cmd_select(args: argparse.Namespace) -> int:
-    """Picks QUOTA clips per instrument, each song once: the window where BS-Roformer-SW's stem of
-    that instrument carries the most energy (MUSDB has no guitar/piano references), among windows
-    where the tagger hears the instrument at all."""
-    root = Path(args.root).expanduser()
-    energies = cast(
-        dict[str, dict[str, float]],
-        json.loads((root / "runs" / "bs_roformer_sw" / "energies.json").read_text()),
-    )
-    index = windows(root)
-    tags = {clip: tagger_scores(root, clip) for clip in sorted(energies)}
-    floor = {"piano": 0.005, "guitar": 0.1, "vocals": 0.05, "bass": 0.0, "drums": 0.0}
+# Tagger floors for the unreferenced instruments (PANNs on mixes is low and uncalibrated).
+TAG_FLOOR = {"piano": 0.005, "guitar": 0.1}
+
+
+def select_clips(
+    model_energy: dict[str, dict[str, dict[str, float]]],
+    ref_energy: dict[str, dict[str, float]],
+    tags: dict[str, dict[str, float]],
+    quota: dict[str, int] = QUOTA,
+) -> dict[str, str]:
+    """clip → target, each clip once, instruments filled in `quota` order. Referenced instruments
+    rank by the reference's energy vs the mixture; guitar/piano by the loudest output of that
+    instrument across every model in `model_energy` (model → clip → instrument → dB), among clips
+    whose tagger score reaches TAG_FLOOR. Ties break by clip id, so neither the order of the
+    models nor of the clips can change the result."""
     chosen: dict[str, str] = {}
-    for instrument, count in QUOTA.items():
-        ranked = sorted(
-            (c for c in energies if c not in chosen and tags[c][instrument] >= floor[instrument]),
-            key=lambda c: energies[c].get(instrument, SILENT_DB),
-            reverse=True,
-        )
-        for clip in ranked[:count]:
+    clips = sorted(ref_energy)
+    for instrument, count in quota.items():
+        if instrument in REFERENCED:
+            score = {c: ref_energy[c].get(instrument, SILENT_DB) for c in clips}
+            eligible = [c for c in clips if c not in chosen]
+        else:
+            score = {
+                c: max(
+                    (e[c][instrument] for e in model_energy.values() if instrument in e.get(c, {})),
+                    default=SILENT_DB,
+                )
+                for c in clips
+            }
+            eligible = [
+                c
+                for c in clips
+                if c not in chosen and tags[c].get(instrument, 0.0) >= TAG_FLOOR[instrument]
+            ]
+        for clip in sorted(eligible, key=lambda c: (-score[c], c))[:count]:
             chosen[clip] = instrument
+    return chosen
+
+
+def matrix_energies(root: Path, variant: str) -> dict[str, dict[str, dict[str, float]]]:
+    """model → clip → instrument → output energy (dB vs mixture) from sep_matrix records."""
+    out: dict[str, dict[str, dict[str, float]]] = {}
+    for log in sorted((root / "matrix" / variant).glob("*.jsonl")):
+        if "@" in log.stem:  # library-default sweeps are not candidates
+            continue
+        model = log.stem
+        names = outputs_of(model)
+        for line in log.read_text(encoding="utf-8").splitlines():
+            row = json.loads(line)
+            out.setdefault(model, {})[row["clip"]] = {
+                str(names[k]): float(v) for k, v in row["energy_db"].items() if names.get(k)
+            }
+    return out
+
+
+def cmd_select(args: argparse.Namespace) -> int:
+    root = Path(args.root).expanduser()
+    index = windows(root)
+    energies = matrix_energies(root, "aac128")
+    missing = [m for m in {m for c in CANDIDATES.values() for m in c} if m not in energies]
+    if missing or any(len(e) < len(index) for e in energies.values()):
+        sys.exit(f"run eval/sep_matrix.py --variant aac128 for every window first ({missing})")
+    mixtures = {c: root / "variants" / "aac128" / c / "mixture.wav" for c in index}
+    refs = {
+        c: {
+            i: db_ratio(read(root / c / f"{i}.wav"), read(root / c / "mixture.wav"))
+            for i in REFERENCED
+        }
+        for c in index
+    }
+    tags = {c: tagger_scores(mixtures[c]) for c in sorted(index)}
+    chosen = select_clips(energies, refs, tags)
     items = [
         {
             "id": clip,
-            "audio": f"{clip}/{CODEC_MIX}",
+            "audio": f"variants/aac128/{clip}/mixture.wav",
             "annotations": {"sep": clip},
             "tags": {
                 "target": target,
                 "track": index[clip]["track"],
                 "start_s": str(index[clip]["start_s"]),
-                "sw_db": str(energies[clip].get(target, SILENT_DB)),
-                "tagger": f"{tags[clip][target]:.3f}",
+                "ref_db": str(refs[clip].get(target, "")),
+                "max_model_db": str(max(e[clip].get(target, SILENT_DB) for e in energies.values())),
+                "tagger": f"{tags[clip].get(target, 0.0):.3f}",
             },
         }
         for clip, target in chosen.items()
     ]
     document = {
         "id": SET_ID,
-        "description": "Prototype 1: 20 x 30 s MUSDB18-HQ test windows (AAC 128 kb/s), one target "
-        "instrument each",
+        "description": "Prototype 1, v2 selection: 20 x 30 s MUSDB18-HQ test windows (AAC 128 "
+        "kb/s), one target instrument each",
         "licence": "MUSDB18-HQ research use (tracks under their own licences)",
         "provenance": "Zenodo record 3338373, test split; windows cut by eval/p1_musdb.py at 30% "
-        "of each track; chosen by eval/p1.py select (most BS-Roformer-SW stem energy of the "
-        "target among windows where PANNs hears it; quota piano 4, guitar 8, vocals 3, bass 3, "
-        "drums 2; each song once)",
+        "of each track; chosen by eval/p1.py select (step 28): vocals/drums/bass by reference "
+        "stem energy vs the mixture, guitar/piano by the loudest stem of any candidate model "
+        "among windows where PANNs hears it; quota piano 4, guitar 8, vocals 3, bass 3, drums 2; "
+        "each song once. v1 (musdb18hq-p1) is kept for comparison.",
         "root": str(root).replace(str(Path.home()), "~"),
         "split": "test",
         "tasks": ["sep"],
@@ -226,8 +270,10 @@ def cmd_select(args: argparse.Namespace) -> int:
     }
     path = SETS_DIR / f"{SET_ID}.yaml"
     path.write_text(yaml.safe_dump(document, sort_keys=False, width=100), encoding="utf-8")
+    v1 = {i.id: i.tags["target"] for i in load_set(SET_ID_V1).items}
     for clip, target in chosen.items():
-        print(f"{target:7} {clip}")
+        same = "same as v1" if v1.get(clip) == target else ""
+        print(f"{target:7} {clip} {same}")
     print(f"→ {path}")
     return 0
 
@@ -258,90 +304,170 @@ def token() -> str:
     return secrets.token_hex(8)
 
 
-def cmd_export(args: argparse.Namespace) -> int:
-    """Per clip: each candidate's isolated stem and mixture-minus-stem, the head candidate's
-    complement mix-minus, isolated A/B pairs (all pairs, or a rotating three when there are
-    more) and subtract-vs-complement for the head candidate."""
-    root = Path(args.root).expanduser()
-    runs = runs_dir(root, None)
-    session = root / "listening" / args.session
-    media = session / "media"
-    media.mkdir(parents=True, exist_ok=True)
-    clips: list[dict[str, Any]] = []
-    items: list[dict[str, Any]] = []
-    pairs: list[dict[str, Any]] = []
-    for n, item in enumerate(load_set(SET_ID).items):
-        clip, target = item.id, item.tags["target"]
-        mixture = read(root / clip / CODEC_MIX)
-        frames = len(mixture)
-        clips.append(
-            {
-                "clip": clip,
-                "target": target,
-                "mixture": {
-                    "token": token(),
-                    "file": encode_item(mixture, media, f"{clip}.mixture"),
-                },
-            }
+EXPORT_VARIANTS = ("limit-XL", "opus128")  # robustness conditions rated as extra items
+EXTRA_SECONDS = 30.0
+
+
+def matrix_stems(root: Path, variant: str, model: str, clip: str) -> tuple[np.ndarray, np.ndarray]:
+    """(target, complement) kept by `sep_matrix.py run --keep` for one clip."""
+    folder = root / "matrix" / variant / "stems" / model / clip
+    if not (folder / "target.wav").is_file():
+        sys.exit(
+            f"missing {folder}: run eval/sep_matrix.py run --variant {variant} --model {model} "
+            f"--clips {SET_ID} --keep {SET_ID}"
         )
+    return read(folder / "target.wav"), read(folder / "complement.wav")
+
+
+def separated_snippet(
+    model: str, audio: Path, target: str, work: Path
+) -> tuple[np.ndarray, np.ndarray]:
+    """(target, complement) of a live run of the shipped wrapper on an unreferenced snippet."""
+    from stage_separation import config, models
+
+    spec = config.load().models[model]
+    result = models.separate(model, spec, audio, work / model)
+    frames = len(read(audio))
+    parts: dict[str, np.ndarray] = {}
+    for name, path in result.files.items():
+        data = read(path)[:frames]
+        parts[name] = np.pad(data, ((0, frames - len(data)), (0, 0)))
+    zero = np.zeros((frames, 2), dtype=np.float32)
+    target_name = next(k for k, v in spec.outputs.items() if v == target)
+    rest = [data for k, data in parts.items() if k != target_name]
+    return parts.get(target_name, zero), np.sum(rest, axis=0) if rest else zero
+
+
+def extra_snippets(extra: Path) -> list[tuple[str, str, Path]]:
+    """(clip id, target, file) for every audio file under <extra>/<target>/ (the owner's
+    unreferenced snippets; the folder name says which instrument to isolate)."""
+    out: list[tuple[str, str, Path]] = []
+    for folder in sorted(p for p in extra.iterdir() if p.is_dir() and p.name in CANDIDATES):
+        for file in sorted(f for f in folder.iterdir() if f.is_file()):
+            slug = re.sub(r"[^a-z0-9]+", "-", file.stem.lower()).strip("-")[:40] or "snippet"
+            out.append((f"extra-{folder.name}-{slug}", folder.name, file))
+    return out
+
+
+class Session:
+    """The manifest being written: clips, rated items and A/B pairs, media encoded as it goes."""
+
+    def __init__(self, media: Path) -> None:
+        self.media = media
+        self.clips: list[dict[str, Any]] = []
+        self.items: list[dict[str, Any]] = []
+        self.pairs: list[dict[str, Any]] = []
+
+    def item(self, clip: str, kind: str, system: str, audio: np.ndarray, name: str) -> str:
+        tok = token()
+        file = encode_item(audio, self.media, name)
+        self.items.append({"item": tok, "clip": clip, "kind": kind, "system": system, "file": file})
+        return tok
+
+    def clip(
+        self,
+        clip: str,
+        target: str,
+        mixture: np.ndarray,
+        runs: dict[str, tuple[np.ndarray, np.ndarray]],
+        n: int,
+    ) -> None:
+        """Mixture, each candidate's isolated + subtract items, the head's complement and the
+        pairs, as step 07 exported them."""
+        mix = {"token": token(), "file": encode_item(mixture, self.media, f"{clip}.mixture")}
+        self.clips.append({"clip": clip, "target": target, "mixture": mix})
         isolated: dict[str, str] = {}
         subtract: dict[str, str] = {}
+        frames = len(mixture)
         for model in CANDIDATES[target]:
-            stem = load_stem(runs, model, clip, stem_file(runs, model, clip, target).stem, frames)
-            for kind, system, audio, bucket in (
-                ("isolated", model, stem, isolated),
-                ("mix_minus", f"{model}:subtract", mixture - stem, subtract),
-            ):
-                name = f"{clip}.{system.replace(':', '.')}.{kind}"
-                bucket[model] = token()
-                items.append(
-                    {
-                        "item": bucket[model],
-                        "clip": clip,
-                        "kind": kind,
-                        "system": system,
-                        "file": encode_item(audio, media, name),
-                    }
-                )
+            stem = runs[model][0][:frames]
+            isolated[model] = self.item(clip, "isolated", model, stem, f"{clip}.{model}.isolated")
+            subtract[model] = self.item(
+                clip,
+                "mix_minus",
+                f"{model}:subtract",
+                mixture - stem,
+                f"{clip}.{model}.subtract.mix_minus",
+            )
         head = CANDIDATES[target][0]
-        others = [k for k, v in outputs_of(head).items() if v != target]
-        complement = np.sum([load_stem(runs, head, clip, o, frames) for o in others], axis=0)
-        complement_item = token()
-        items.append(
-            {
-                "item": complement_item,
-                "clip": clip,
-                "kind": "mix_minus",
-                "system": f"{head}:complement",
-                "file": encode_item(complement, media, f"{clip}.{head}.complement.mix_minus"),
-            }
+        complement = self.item(
+            clip,
+            "mix_minus",
+            f"{head}:complement",
+            runs[head][1][:frames],
+            f"{clip}.{head}.complement.mix_minus",
         )
         all_pairs = list(itertools.combinations(CANDIDATES[target], 2))
         if len(all_pairs) > PAIRS_PER_CLIP:
             start = n * PAIRS_PER_CLIP
             all_pairs = [all_pairs[(start + j) % len(all_pairs)] for j in range(PAIRS_PER_CLIP)]
         for a, b in all_pairs:
-            pairs.append({"pair": token(), "clip": clip, "a": isolated[a], "b": isolated[b]})
-        pairs.append({"pair": token(), "clip": clip, "a": subtract[head], "b": complement_item})
+            self.pairs.append({"pair": token(), "clip": clip, "a": isolated[a], "b": isolated[b]})
+        self.pairs.append({"pair": token(), "clip": clip, "a": subtract[head], "b": complement})
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    """A new blinded session. Per clip: each candidate's isolated stem and mixture-minus-stem,
+    the head candidate's complement mix-minus, isolated A/B pairs (all pairs, or a rotating three
+    when there are more) and subtract-vs-complement for the head candidate; then each candidate's
+    isolated stem under the EXPORT_VARIANTS (rated items only, system `<model>@<variant>`). Clips
+    are the v2 set's (stems from `sep_matrix.py --keep`) plus, with `--extra-dir`, the owner's
+    unreferenced snippets (first 30 s, through the shipped decode, separated here). The app shows
+    tokens only, in a per-rater order. An existing session is never touched."""
+    from splitune_eval import variants
+
+    root = Path(args.root).expanduser()
+    session = root / "listening" / args.session
+    if session.exists():
+        sys.exit(f"{session} exists: listening sessions are never overwritten; pick a new id")
+    (session / "media").mkdir(parents=True)
+    out = Session(session / "media")
+    for n, item in enumerate(load_set(SET_ID).items):
+        clip, target = item.id, item.tags["target"]
+        runs = {m: matrix_stems(root, "aac128", m, clip) for m in CANDIDATES[target]}
+        out.clip(clip, target, read(root / str(item.audio)), runs, n)
+        for variant in EXPORT_VARIANTS:
+            for model in CANDIDATES[target]:
+                stem = matrix_stems(root, variant, model, clip)[0]
+                name = f"{clip}.{model}.{variant.lower()}.isolated"
+                out.item(clip, "isolated", f"{model}@{variant}", stem, name)
         print(f"{clip}: {len(CANDIDATES[target])} candidates", flush=True)
+    if args.extra_dir:
+        work = session / "work"
+        for n, (clip, target, file) in enumerate(extra_snippets(Path(args.extra_dir).expanduser())):
+            audio = variants.shipped_decode(file)[: int(EXTRA_SECONDS * 44100)]
+            source = work / f"{clip}.wav"
+            source.parent.mkdir(parents=True, exist_ok=True)
+            sf.write(str(source), audio.astype(np.float32), 44100, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+            runs = {
+                m: separated_snippet(m, source, target, work / clip) for m in CANDIDATES[target]
+            }
+            out.clip(clip, target, audio, runs, n)
+            print(f"{clip}: extra snippet", flush=True)
+        shutil.rmtree(work, ignore_errors=True)
     manifest = {
         "id": args.session,
         "question": QUESTION,
-        "clips": clips,
-        "items": items,
-        "pairs": pairs,
+        "clips": out.clips,
+        "items": out.items,
+        "pairs": out.pairs,
     }
     (session / "session.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    print(f"{len(items)} ratings + {len(pairs)} pairs → {session}")
+    print(f"{len(out.items)} ratings + {len(out.pairs)} pairs → {session}")
     return 0
 
 
-def sdr_rows(root: Path, tag: str | None = None) -> list[dict[str, Any]]:
+def sdr_rows(root: Path, tag: str | None = None, set_id: str = SET_ID) -> list[dict[str, Any]]:
+    """Every `scoring.separation` metric of a sweep's runs (silent references scored as leakage
+    and left out of the SDR columns)."""
     runs = runs_dir(root, tag)
     rows: list[dict[str, Any]] = []
-    for item in load_set(SET_ID).items:
+    for item in load_set(set_id).items:
         clip = item.id
-        refs = {i: read(root / clip / f"{i}.wav").astype(np.float64) for i in REFERENCED}
+        mixture = read(root / clip / CODEC_MIX).astype(np.float64)  # what the runs separated
+        refs = {
+            i: read(root / clip / f"{i}.wav").astype(np.float64) for i in (*REFERENCED, "other")
+        }
         for model in sorted({m for c in CANDIDATES.values() for m in c}):
             if not (runs / model / clip).is_dir():
                 continue
@@ -355,15 +481,16 @@ def sdr_rows(root: Path, tag: str | None = None) -> list[dict[str, Any]]:
                     stem_file(runs, model, clip, instrument).stem,
                     len(refs[instrument]),
                 ).astype(np.float64)
+                others = [r for i, r in refs.items() if i != instrument]
+                metrics = scoring.separation(refs[instrument], est, mixture, others=others)
                 rows.append(
-                    {
-                        "clip": clip,
-                        "model": model,
-                        "instrument": instrument,
-                        "usdr": round(scoring.usdr(refs[instrument], est), 2),
-                    }
+                    {"clip": clip, "model": model, "instrument": instrument}
+                    | {k: round(metrics.get(k, float("nan")), 2) for k in SDR_COLUMNS}
                 )
     return rows
+
+
+SDR_COLUMNS = ("silent", "leakage_db", "usdr", "si_sdr", "csdr", "bleedless", "fullness", "si_sar")
 
 
 def seconds_per_clip(runs: Path, model: str) -> float:
@@ -379,17 +506,19 @@ def cmd_sdr(args: argparse.Namespace) -> int:
     out = RESULTS / ("sdr.csv" if args.tag is None else f"sdr-{args.tag}.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["clip", "model", "instrument", "usdr"])
+        writer = csv.DictWriter(f, fieldnames=["clip", "model", "instrument", *SDR_COLUMNS])
         writer.writeheader()
         writer.writerows(rows)
     for (model, instrument), group in itertools.groupby(
         sorted(rows, key=lambda r: (r["model"], r["instrument"])),
         key=lambda r: (r["model"], r["instrument"]),
     ):
-        values = [r["usdr"] for r in group]
+        cell = list(group)
+        values = [r["usdr"] for r in cell if not r["silent"]]
         print(
             f"{model:26} {instrument:7} median {statistics.median(values):6.2f} dB "
-            f"(n={len(values)}), {seconds_per_clip(runs_dir(root, args.tag), model):.1f} s/clip"
+            f"(n={len(values)}, {len(cell) - len(values)} silent), "
+            f"{seconds_per_clip(runs_dir(root, args.tag), model):.1f} s/clip"
         )
     return 0
 
@@ -426,6 +555,27 @@ def fetch_answers(
             [session],
         ).fetchall()
     return [dict(r) for r in ratings], [dict(r) for r in prefs], [dict(r) for r in raters]
+
+
+def matrix_record(
+    root: Path, variant: str, model: str, clip: str, instrument: str
+) -> dict[str, Any] | None:
+    """One clip's metrics for one instrument from eval/sep_matrix.py's records."""
+    log = root / "matrix" / variant / f"{model}.jsonl"
+    if not log.is_file():
+        return None
+    for line in log.read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        if row["clip"] == clip:
+            return cast(dict[str, Any] | None, row["metrics"].get(instrument))
+    return None
+
+
+def spearman(x: list[float], y: list[float]) -> tuple[float, float]:
+    from scipy.stats import spearmanr  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
+
+    result = spearmanr(x, y)  # pyright: ignore[reportUnknownVariableType]
+    return float(result.statistic), float(result.pvalue)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
 
 
 def git_sha() -> str:
@@ -512,22 +662,54 @@ def cmd_report(args: argparse.Namespace) -> int:
             }
         )
 
-    # SDR (secondary).
-    sdr = sdr_rows(root)
+    # Separation metrics of the rated isolated items (sep_matrix records), and how well each
+    # metric ranks the items as the raters did (Spearman per instrument): the calibration of the
+    # metric choice and of stem_post's bleed heuristic (06 §4).
+    metrics = ("usdr", "si_sdr", "csdr", "bleedless", "fullness", "si_sar")
+    by_token: dict[str, list[int]] = {}
+    for r in ratings:
+        by_token.setdefault(r["item"], []).append(int(r["score"]))
+    medians = {item: float(statistics.median(v)) for item, v in by_token.items()}
+    pairs_by: dict[tuple[str, str], list[tuple[float, float]]] = {}
+    for token_id, rating in medians.items():
+        item = by_item[token_id]
+        target = target_of[item["clip"]]
+        if item["kind"] != "isolated" or target not in REFERENCED:
+            continue
+        model, _, variant = str(item["system"]).partition("@")
+        record = matrix_record(root, variant or "aac128", model, item["clip"], target)
+        if record is None or record["silent"]:
+            continue
+        for metric in metrics:
+            if metric in record:
+                pairs_by.setdefault((target, metric), []).append((rating, float(record[metric])))
     lines += [
         "",
-        "## uSDR on the same clips (secondary; MUSDB references exist for vocals, drums, bass)",
+        "## Ratings vs separation metrics (isolated items with MUSDB references)",
         "",
-        "| System | Instrument | Median uSDR (dB) | n |",
-        "|---|---|---:|---:|",
+        "Spearman rho between each item's median rating and the metric (items pooled over models "
+        "and robustness variants); n < 5 is left out.",
+        "",
+        "| Instrument | Metric | n | Spearman rho | p |",
+        "|---|---|---:|---:|---:|",
     ]
-    for (model, instrument), group in itertools.groupby(
-        sorted(sdr, key=lambda r: (r["model"], r["instrument"])),
-        key=lambda r: (r["model"], r["instrument"]),
-    ):
-        values = [r["usdr"] for r in group]
-        lines.append(
-            f"| {model} | {instrument} | {statistics.median(values):.2f} | {len(values)} |"
+    for (instrument, metric), values in sorted(pairs_by.items()):
+        if len(values) < 5:
+            continue
+        rho, pval = spearman([r for r, _ in values], [m for _, m in values])
+        lines.append(f"| {instrument} | {metric} | {len(values)} | {rho:.2f} | {pval:.3f} |")
+        csv_rows.append(
+            {
+                "section": "spearman",
+                "instrument": instrument,
+                "kind": metric,
+                "system": "",
+                "n": len(values),
+                "median": round(rho, 3),
+                "mean": round(pval, 4),
+                "clips_median_ge4": "",
+                "clips": "",
+            }
         )
 
     header = [
@@ -574,14 +756,12 @@ def main(argv: list[str] | None = None) -> int:
         "--inference", action="append", metavar="KEY=VALUE", help="override (needs --tag)"
     )
     s.set_defaults(fn=cmd_separate)
-    e = sub.add_parser("energies", help="separated stem energy per window")
-    e.add_argument("--model", required=True)
-    e.set_defaults(fn=cmd_energies)
     sub.add_parser("select", help=f"choose the clips → eval/sets/{SET_ID}.yaml").set_defaults(
         fn=cmd_select
     )
-    x = sub.add_parser("export", help="write a blinded listening session")
+    x = sub.add_parser("export", help="write a new blinded listening session")
     x.add_argument("--session", required=True)
+    x.add_argument("--extra-dir", help="unreferenced snippets in <dir>/<target>/ (owner's songs)")
     x.set_defaults(fn=cmd_export)
     d = sub.add_parser("sdr", help="uSDR against MUSDB references")
     d.add_argument("--tag", help="score runs-<tag>/ instead of runs/")
