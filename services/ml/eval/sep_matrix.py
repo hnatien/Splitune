@@ -281,9 +281,13 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 
 def kept_output(base: Path, model: str, output: str, clip: str, frames: int) -> np.ndarray:
+    """A kept output, or silence when its clip was kept without it (audio-separator writes no
+    file for an all-zero stem)."""
     path = kept_outputs(base, model, clip) / f"{output}.wav"
-    if not path.is_file():
+    if not path.parent.is_dir():
         sys.exit(f"{path}: run {model} with --keep-outputs first")
+    if not path.is_file():
+        return np.zeros((frames, 2))
     return fit(read(path), frames)
 
 

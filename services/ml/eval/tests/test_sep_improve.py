@@ -4,6 +4,7 @@ limiter-then-codec variants."""
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -140,6 +141,23 @@ def test_routing_takes_the_fallback_only_when_the_primary_is_silent(kept: Path) 
     )
     assert rows["loud"]["seconds"] == 2.0  # the fallback ran only where routed
     assert rows["quiet"]["seconds"] == 4.0
+
+
+def test_a_kept_clip_without_an_output_counts_as_silence(kept: Path) -> None:
+    # audio-separator writes no file for an all-zero stem; a clip never kept is still an error.
+    outputs = kept / "matrix" / "clean" / "outputs"
+    (outputs / "s" / "quiet" / "vocals.wav").unlink()
+    rows = combine(
+        kept, "--name", "routed", "--recipe", "route", "--instrument", "vocals",
+        "--primary", "s:vocals", "--part", "f:vocals", "--threshold-db", "-40",
+    )  # fmt: skip
+    assert rows["quiet"]["virtual"]["routed"] is True
+    shutil.rmtree(outputs / "s" / "quiet")
+    with pytest.raises(SystemExit, match="--keep-outputs first"):
+        combine(
+            kept, "--name", "again", "--recipe", "route", "--instrument", "vocals",
+            "--primary", "s:vocals", "--part", "f:vocals",
+        )  # fmt: skip
 
 
 def test_a_limited_master_through_a_codec_keeps_the_limited_references() -> None:
