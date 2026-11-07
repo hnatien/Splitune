@@ -1,0 +1,40 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: bs-roformer-leap-xe
+kind: model
+name: "BS-RoFormer Leap Xe vocals (community checkpoint by unwa)"
+version: "4e47d66 Xe/bs_leap_xe_voc"
+repo_url: https://huggingface.co/pcunwa/BS-Roformer-Leap
+code_spdx: MIT
+weights:
+  licence: "none (discussion #4 asks; no reply)"
+  url: https://huggingface.co/pcunwa/BS-Roformer-Leap/tree/4e47d6662ae82eaa8b4ac4329fe66099a843b48e
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "d7d533785b6fb5ef2bc16ee2b56f617fc893e70601ede931eea0313713ecb1aa"
+  files:
+    - name: bs_roformer_leap_xe_voc.ckpt
+      sha256: "b739c1d2d87a81cd3dd3844ed9ad0bd678708c7a0a761a03a1aaff9af79a096d"
+      bytes: 267796851
+      url: https://huggingface.co/pcunwa/BS-Roformer-Leap/resolve/4e47d6662ae82eaa8b4ac4329fe66099a843b48e/Xe/bs_leap_xe_voc.ckpt
+    - name: bs_roformer_leap_xe_voc.yaml
+      sha256: "d3cb8c84be2e9bcbc64c1086e2256dc097ab5addebc5ce507818e90ff8cbdc25"
+      bytes: 2190
+      url: https://huggingface.co/pcunwa/BS-Roformer-Leap/resolve/4e47d6662ae82eaa8b4ac4329fe66099a843b48e/Xe/leap_xe_config_voc.yaml
+training_data:
+  - name: undisclosed
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    moisesdb_in_training: unknown
+    source: https://huggingface.co/pcunwa/BS-Roformer-Leap
+tier: red
+tier_reason: "community checkpoint, no weights licence, training data undisclosed"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Step 29 vocals-head candidate (research separation-improvements-2026-11 section 1: MVSep Multisong
+  vocals 11.79 / bleedless 38.07 / fullness 18.14, tier 2). dim 256, depth 16, 66.8 M parameters.
+  The YAML's inference.dim_t (1876) would chunk at 21.8 s in audio-separator 0.44.5, while MSST used
+  audio.chunk_size 881,559: eval/separation.eval.yaml sets chunk 881,664 (the nearest 512-sample
+  multiple). Stored under audio-separator naming ("roformer" in the name marks the architecture).
+reviewer: owner
+reviewed: 2026-11-08

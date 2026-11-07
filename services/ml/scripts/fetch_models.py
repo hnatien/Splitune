@@ -10,6 +10,13 @@ out of this repository) as `<models>/yourmt3/src` and links the checkpoint into 
 from the package's PyPI wheel. The separation models are downloaded by audio-separator itself,
 by the filename the separation map gives them. madmom's models arrive with its git install, and
 the tagger's ONNX file is exported locally (`scripts/export_tagger.py`).
+
+    uv run python scripts/fetch_models.py --eval [NAME ...]
+
+`--eval` fetches the evaluation-only separation candidates instead (step 29, eval/separation.eval.yaml),
+which setup never downloads and workers never expect: files with a URL are downloaded, configs we
+derived come from eval/model-configs/, and the Mega-53 keys slice is cut from the upstream
+checkpoint (kept under <models>/mega53/).
 """
 
 from __future__ import annotations
@@ -29,6 +36,7 @@ from typing import Any
 
 from audio_separator.separator import Separator  # pyright: ignore[reportMissingTypeStubs]
 from splitune_ml_core import register
+from splitune_ml_core.paths import ML_ROOT
 from stage_separation import config as separation_config
 
 YOURMT3_SPACE = "https://huggingface.co/spaces/mimbres/YourMT3"
@@ -57,6 +65,26 @@ TARGETS = {
     "guitab": "guitab-e25",
 }
 SEPARATION = {spec.record: spec.filename for spec in separation_config.load().models.values()}
+
+# Evaluation-only separation candidates (step 29): name → register record. All live in the
+# audio-separator directory; they are not in register.WEIGHTS_DIRS, so workers don't expect them.
+EVAL_TARGETS = {
+    "leap-xe": "bs-roformer-leap-xe",
+    "leap-v1": "bs-roformer-leap-v1",
+    "ft1-anvuew": "bs-roformer-ft1-anvuew",
+    "xlance-syn-mss": "xlance-syn-mss",
+    "xlance-syn-mss1": "xlance-syn-mss1",
+    "xlance-key-mss": "xlance-key-mss",
+    "xlance-gtr-mss": "xlance-gtr-mss",
+    "mega53-keys5": "bs-roformer-mega53-keys5",
+    "drumsep5": "mdx23c-drumsep5",
+}
+EVAL_CONFIGS = ML_ROOT / "eval" / "model-configs"
+MEGA53_URL = "https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.21"
+MEGA53_CKPT = "mvsep_mega_model_bs_roformer_53_stems_v1.ckpt"
+MEGA53_SHA256 = "c62820893bbf86d4e734f966bd142d9157cfc8bb8e79e9d8f9ea553f3ff3519f"
+# organ, keys, synth, piano, digital-piano in the 53-stem order
+MEGA53_HEADS = (31, 25, 38, 33, 12)
 
 
 def models_dir() -> Path:
@@ -107,6 +135,39 @@ def fetch_separation(directory: Path, record: register.ModelRecord) -> None:
     separator.download_model_files(SEPARATION[record.id])
 
 
+def slice_mega53(dest: Path) -> None:
+    """The Mega-53 backbone with five of its 53 mask estimators, renumbered 0-4 (the per-head
+    files on the noblebarkrr mirror are the same backbone with one head each). torch.save writes
+    a random serialization id, so a re-cut file needs its sha256 updated in the register."""
+    import torch
+
+    source = models_dir() / "mega53" / MEGA53_CKPT
+    download(f"{MEGA53_URL}/{MEGA53_CKPT}", source, MEGA53_SHA256)
+    state = torch.load(source, map_location="cpu", weights_only=True)
+    cut = {k: v for k, v in state.items() if not k.startswith("mask_estimators.")}
+    for new, old in enumerate(MEGA53_HEADS):
+        prefix = f"mask_estimators.{old}."
+        cut |= {f"mask_estimators.{new}.{k[len(prefix) :]}": v for k, v in state.items() if k.startswith(prefix)}
+    torch.save(cut, dest)
+    print(f"sliced   {dest}")
+
+
+def fetch_eval(names: list[str]) -> None:
+    directory = models_dir() / "audio-separator"
+    for name in names:
+        record = register.model(EVAL_TARGETS[name])
+        for entry in record.weights.files:
+            dest = directory / entry.name
+            if entry.url:
+                download(entry.url, dest, entry.sha256)
+            elif (EVAL_CONFIGS / entry.name).is_file():
+                shutil.copyfile(EVAL_CONFIGS / entry.name, dest)
+            elif name == "mega53-keys5" and not dest.is_file():
+                slice_mega53(dest)
+        register.verify(record, directory)
+        print(f"verified {record.id}")
+
+
 def fetch_yourmt3_code(directory: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         checkout = Path(tmp) / "space"
@@ -138,11 +199,17 @@ def fetch_yourmt3_code(directory: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n", 1)[0])
-    parser.add_argument("names", nargs="*", metavar="|".join(TARGETS))
-    names: list[str] = parser.parse_args().names or list(TARGETS)
-    unknown = sorted(set(names) - set(TARGETS))
+    parser.add_argument("names", nargs="*", metavar="|".join([*TARGETS, *EVAL_TARGETS]))
+    parser.add_argument("--eval", action="store_true", help="the evaluation-only candidates")
+    args = parser.parse_args()
+    targets = EVAL_TARGETS if args.eval else TARGETS
+    names: list[str] = args.names or list(targets)
+    unknown = sorted(set(names) - set(targets))
     if unknown:
         parser.error(f"unknown model(s): {', '.join(unknown)}")
+    if args.eval:
+        fetch_eval(names)
+        return
     for name in names:
         record_id = TARGETS[name]
         record = register.model(record_id)

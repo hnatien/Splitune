@@ -1,0 +1,50 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: xlance-syn-mss
+kind: model
+name: "X-LANCE MSR syn_mss.pth (synth; SJTU X-LANCE MSR Challenge 2025 system)"
+version: "c275b1f syn_mss.pth"
+repo_url: https://github.com/ModistAndrew/xlance-msr
+code_spdx: MIT
+weights:
+  licence: "MIT (Hugging Face tag)"
+  url: https://huggingface.co/chenxie95/xlance-msr-ckpt/tree/c275b1fda995b98fc061ce571327f91b2ca666a2
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "1f00e75bd005d5a6cdbd57513f07b3ccc485755ad4c75e4bcca4bea69cf87b84"
+  files:
+    - name: bs_roformer_xlance_syn_mss.ckpt
+      sha256: "e747867f1d0696760e4f5e83f259c1a022af20214a7f66fbef0d4f5df81a21bd"
+      bytes: 204409973
+      url: https://huggingface.co/chenxie95/xlance-msr-ckpt/resolve/c275b1fda995b98fc061ce571327f91b2ca666a2/syn_mss.pth
+    - name: bs_roformer_xlance_syn_mss.yaml
+      sha256: "11be19bab99e1162287bded73321530b9a18ca848f352f51a0535d3af194a089"
+      bytes: 3672
+training_data:
+  - name: MoisesDB
+    licence: CC-BY-NC-SA-4.0
+    commercial_ok: false
+    musdb18_test_in_training: "no"
+    # X-LANCE trained on MoisesDB: in-sample for the eval set moisesdb-p1.
+    moisesdb_in_training: "yes"
+    source: https://arxiv.org/abs/2602.09042
+  - name: RawStems
+    licence: "annotations Apache-2.0; audio rights retained by the creators"
+    commercial_ok: false
+    source: https://huggingface.co/datasets/yongyizang/RawStems
+  - name: BS-Roformer-SW initialisation (undisclosed data; see bs-roformer-sw)
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    source: https://github.com/ModistAndrew/xlance-msr/blob/main/system_card.md
+tier: red
+tier_reason: "MIT tag, but trained on non-commercial data (MoisesDB) from an SW initialisation of unknown provenance"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Step 29 keys-fallback candidate (research section 5). Per X-LANCE's train.py (checkpoint type
+  roformer_syn_frozenall, dummy training) it is BS-Roformer-SW's backbone with SW's 'other' mask
+  estimator, unchanged; eval/weights_check.py compares the tensors. The YAML is ours (eval/model-
+  configs/): X-LANCE's model params equal SW's except num_stems 1. ans.py also runs a denoise pre-
+  pass and a whole-track fp16 pass; step 29 runs it windowed like SW without the denoise pass
+  (owner's default, 2026-11-07). In-sample for moisesdb-p1.
+reviewer: owner
+reviewed: 2026-11-08
