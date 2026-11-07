@@ -192,6 +192,35 @@ def test_moisesdb_windows_pick_the_loudest_target_from_references(tmp_path: Path
     assert (out / "clips" / "01234567-guitar.json").is_file()
 
 
+def test_moisesdb_zip_members_are_read_from_their_compressed_bytes() -> None:
+    import io
+    import zipfile
+
+    import p1_moisesdb  # pyright: ignore[reportMissingImports]
+    import pytest
+
+    blob = io.BytesIO()
+    payload = bytes(range(256)) * 400
+    with zipfile.ZipFile(blob, "w") as archive:
+        archive.writestr("moisesdb/moisesdb_v0.1/t1/data.json", b'{"stems": []}')
+        archive.writestr(
+            "moisesdb/moisesdb_v0.1/t1/guitar/a.wav", payload, compress_type=zipfile.ZIP_DEFLATED
+        )
+    data = blob.getvalue()
+    source = object.__new__(p1_moisesdb.ZipSource)
+    source.members = {i.filename: i for i in zipfile.ZipFile(io.BytesIO(data)).infolist()}
+    source.prefix = {"t1": "moisesdb/moisesdb_v0.1/t1"}
+    source.fetch = lambda first, count: data[first : first + count]  # pyright: ignore[reportAttributeAccessIssue]
+    assert source.read("t1", "guitar/a.wav") == payload
+    assert source.meta("t1") == {"stems": []}
+    corrupt = bytearray(data)
+    start = data.index(b"guitar/a.wav") + len(b"guitar/a.wav") + 5
+    corrupt[start] ^= 0xFF
+    source.fetch = lambda first, count: bytes(corrupt[first : first + count])  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(Exception, match=r"CRC|invalid|incorrect"):
+        source.read("t1", "guitar/a.wav")
+
+
 def band() -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """Ten seconds of a drum-like and a bass-like stem with independent channels."""
     rng = np.random.default_rng(7)

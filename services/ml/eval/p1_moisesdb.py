@@ -30,13 +30,16 @@ on it with guitar and piano scored against these references.
 from __future__ import annotations
 
 import argparse
+import http.client
 import io
 import json
 import os
+import struct
 import sys
-import threading
+import time
 import urllib.request
 import zipfile
+import zlib
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -96,36 +99,66 @@ class LocalSource:
 
 
 class ZipSource:
-    """`moisesdb.zip` read in place over HTTP byte ranges (one connection per thread)."""
+    """`moisesdb.zip` read in place over HTTP byte ranges. Only the central directory goes through
+    `zipfile`; each member is then fetched as exactly its compressed bytes in one range request,
+    inflated in memory and checked against its CRC (`zipfile` over a buffered HTTP stream
+    re-fetched data several times over when tracks were read in parallel)."""
 
     def __init__(self, url: str) -> None:
         from p1_musdb import HttpRangeFile
 
-        request = urllib.request.Request(url, headers={"Range": "bytes=0-0"})
-        with urllib.request.urlopen(request, timeout=120) as response:  # signed GET: no HEAD
-            self.size = int(str(response.headers["Content-Range"]).rsplit("/", 1)[1])
         self.url = url
-        self.range_file = HttpRangeFile
-        self.local = threading.local()
+        size = int(str(self.fetch_headers(0, 0)["Content-Range"]).rsplit("/", 1)[1])
+        directory = zipfile.ZipFile(io.BufferedReader(HttpRangeFile(url, 0, size)))
         self.members = {
             i.filename: i
-            for i in self.archive().infolist()
+            for i in directory.infolist()
             if not i.is_dir() and i.filename.count("/") >= 3
         }
         self.prefix = {m.split("/")[2]: "/".join(m.split("/")[:3]) for m in self.members}
 
-    def archive(self) -> zipfile.ZipFile:
-        if not hasattr(self.local, "zip"):
-            stream = io.BufferedReader(self.range_file(self.url, 0, self.size), buffer_size=8 << 20)
-            self.local.zip = zipfile.ZipFile(stream)
-        return cast(zipfile.ZipFile, self.local.zip)
+    def fetch_headers(self, first: int, last: int) -> Any:
+        request = urllib.request.Request(self.url, headers={"Range": f"bytes={first}-{last}"})
+        with urllib.request.urlopen(request, timeout=120) as response:  # signed GET: no HEAD
+            return response.headers
+
+    def fetch(self, first: int, count: int) -> bytes:
+        """`count` bytes from `first`, retried until complete (never a whole-file 200 reply)."""
+        for attempt in range(8):
+            request = urllib.request.Request(
+                self.url, headers={"Range": f"bytes={first}-{first + count - 1}"}
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    if response.status != 206:
+                        raise OSError(f"range request answered {response.status}, not 206")
+                    data = response.read()
+                if len(data) == count:
+                    return data
+            except (OSError, http.client.HTTPException):
+                if attempt == 7:
+                    raise
+            time.sleep(2 * (attempt + 1))
+        raise OSError(f"incomplete range at {first}")
 
     def tracks(self) -> list[str]:
         return sorted(t for t, p in self.prefix.items() if f"{p}/data.json" in self.members)
 
     def read(self, track: str, relative: str) -> bytes:
-        with self.archive().open(self.members[f"{self.prefix[track]}/{relative}"]) as member:
-            return member.read()
+        info = self.members[f"{self.prefix[track]}/{relative}"]
+        header = self.fetch(info.header_offset, 30)
+        name_len, extra_len = struct.unpack("<HH", header[26:30])
+        start = info.header_offset + 30 + name_len + extra_len
+        raw = self.fetch(start, info.compress_size) if info.compress_size else b""
+        if info.compress_type == zipfile.ZIP_DEFLATED:
+            data = zlib.decompressobj(-zlib.MAX_WBITS).decompress(raw)
+        elif info.compress_type == zipfile.ZIP_STORED:
+            data = raw
+        else:
+            raise OSError(f"unsupported compression {info.compress_type} for {info.filename}")
+        if zlib.crc32(data) != info.CRC:
+            raise OSError(f"CRC mismatch for {info.filename}")
+        return data
 
     def meta(self, track: str) -> dict[str, Any]:
         return cast(dict[str, Any], json.loads(self.read(track, "data.json")))
