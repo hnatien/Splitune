@@ -14,6 +14,21 @@ recorded earlier without them is separated again (and not recorded twice). `--li
 model at audio-separator's default inference settings instead of the map's, recorded as
 `<model>@library` (the step 07b settings re-checked with the corrected scoring).
 
+Step 29: models come from the model map plus the eval overlay `eval/separation.eval.yaml`
+(`splitune_eval.sepmap`: candidates and setting variants such as `bs_roformer_sw@chunk13`).
+`--keep-outputs` keeps every output of the model as `<output>.wav` under
+<root>/matrix/<variant>/outputs/<model>/<clip>/, the input of `combine` and `--input-from`.
+`--input-from MODEL:OUTPUT` separates that kept output instead of the mixture (a cascade such as
+X-LANCE's syn_mss -> syn_mss1; record it under `--name`; its seconds add the upstream run's).
+`--no-clip` hands the model the float mixture without the decode cache's ±1 clip (recorded as
+`<model>@noclip`). Records carry the pre-separation gain the model applied (`gain_db`).
+
+`combine` scores a virtual model built from kept outputs and writes the same records under its
+own name (`virtual` says how it was built): `avg_wave` (weighted mean of the waveforms),
+`avg_fft` (weighted mean of the complex STFTs, n_fft 2048 / hop 1024 as MSST's ensemble.py;
+by linearity it equals avg_wave up to the STFT round trip) or `route` (the `--primary` output
+unless its energy is below `--threshold-db` vs the mixture, else the sum of the `--part`s).
+
 Variant audio is built once per clip under <root>/variants/<variant>/ (`splitune_eval.variants`).
 The mixture handed to the model is clipped to ±1, as the decode stage's 24-bit FLAC cache would.
 Records keep every metric of `scoring.separation` for each single-instrument reference the window
@@ -40,7 +55,8 @@ from typing import Any, cast
 
 import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
-from splitune_eval import scoring, variants
+from scipy.signal import istft, stft  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
+from splitune_eval import scoring, sepmap, variants
 from splitune_eval.registry import load_set
 
 ROOT = Path("~/datasets/musdb18hq-p1").expanduser()
@@ -89,7 +105,7 @@ def prepared(root: Path, variant: str, clip: str) -> Path:
         xl_ratio=lambda: np.load(ratio).astype(np.float64),
     )
     write(folder / "mixture.wav", v.mixture)
-    if variant in variants.GAIN_LIKE:
+    if variant in variants.OWN_REFERENCES:
         for stem, audio in v.references.items():
             write(folder / f"{stem}.wav", audio)
     (folder / "info.json").write_text(json.dumps(v.info) + "\n", encoding="utf-8")
@@ -98,30 +114,45 @@ def prepared(root: Path, variant: str, clip: str) -> Path:
 
 def references(root: Path, variant: str, clip: str) -> dict[str, np.ndarray]:
     folder = root / "variants" / variant / clip
-    base = folder if variant in variants.GAIN_LIKE else root / clip
+    base = folder if variant in variants.OWN_REFERENCES else root / clip
     return {s: read(base / f"{s}.wav") for s in stem_names(root / clip)}
 
 
 def outputs(model: str) -> dict[str, str | None]:
-    from stage_separation import config
+    return sepmap.outputs(model)
 
-    return dict(config.load().models[model].outputs)
+
+def fit(audio: np.ndarray, frames: int) -> np.ndarray:
+    audio = audio[:frames]
+    return np.pad(audio, ((0, frames - len(audio)), (0, 0)))
 
 
 def score_clip(
     mixture: np.ndarray, refs: dict[str, np.ndarray], files: dict[str, Path], model: str
 ) -> dict[str, Any]:
     frames = len(mixture)
+    audio = {
+        name: fit(read(files[name]), frames) if name in files else np.zeros_like(mixture)
+        for name in outputs(model)
+    }
+    return score_outputs(mixture, refs, audio, outputs(model))
+
+
+def score_outputs(
+    mixture: np.ndarray,
+    refs: dict[str, np.ndarray],
+    audio: dict[str, np.ndarray],
+    instruments: dict[str, str | None],
+) -> dict[str, Any]:
+    """Every metric for each output mapped to a referenced instrument, plus each output's energy
+    vs the mixture and its peak."""
     out: dict[str, Any] = {"energy_db": {}, "peak": {}, "metrics": {}}
     estimates: dict[str, np.ndarray] = {}
-    for name, instrument in outputs(model).items():
-        path = files.get(name)
-        audio = read(path)[:frames] if path is not None else np.zeros_like(mixture)
-        audio = np.pad(audio, ((0, frames - len(audio)), (0, 0)))
-        out["energy_db"][name] = round(scoring.leakage_db(audio, mixture), 2)
-        out["peak"][name] = round(float(np.abs(audio).max()), 4)
+    for name, instrument in instruments.items():
+        out["energy_db"][name] = round(scoring.leakage_db(audio[name], mixture), 2)
+        out["peak"][name] = round(float(np.abs(audio[name]).max()), 4)
         if instrument is not None:
-            estimates[instrument] = audio
+            estimates[instrument] = audio[name]
     for instrument in (i for i in REFERENCED if i in refs):
         if instrument not in estimates:
             continue
@@ -163,15 +194,21 @@ def kept_stems(stems: Path, model: str, target: str) -> None:
     (stems / "_complement.wav").replace(stems / "complement.wav")
 
 
+def kept_outputs(base: Path, model: str, clip: str) -> Path:
+    return base / "outputs" / model / clip
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     from stage_separation import config, models  # torch + audio-separator: only here
 
     root = Path(args.root).expanduser()
-    spec = config.load().models[args.model]
-    name = args.model
+    spec = sepmap.spec(args.model)
+    name = args.name or args.model
     if args.library:  # audio-separator's defaults instead of the map's inference settings
         spec = config.ModelSpec.model_validate({**spec.model_dump(), "inference": {}})
         name = f"{args.model}@library"
+    if args.no_clip:
+        name = f"{name}@noclip"
     clips = args.clip or (
         [i.id for i in load_set(args.clips).resolved_items()] if args.clips else windows(root)
     )
@@ -183,26 +220,54 @@ def cmd_run(args: argparse.Namespace) -> int:
     base = root / "matrix" / args.variant
     log = base / f"{name}.jsonl"
     done = recorded(log)
+    upstream: tuple[str, str] | None = None
+    upstream_rows: dict[str, dict[str, Any]] = {}
+    if args.input_from:
+        source_model, source_output = args.input_from.split(":")
+        upstream = (source_model, source_output)
+        upstream_rows = recorded(base / f"{source_model}.jsonl")
     for clip in clips:
         stems = base / "stems" / name / clip
+        kept = kept_outputs(base, name, clip)
         # A clip scored before its stems were wanted is separated again, not recorded twice.
-        if clip in done and (clip not in keep or (stems / "target.wav").is_file()):
+        if (
+            clip in done
+            and (clip not in keep or (stems / "target.wav").is_file())
+            and (not args.keep_outputs or kept.is_dir())
+        ):
             continue
         folder = prepared(root, args.variant, clip)
-        mixture = np.clip(read(folder / "mixture.wav"), -1.0, 1.0)
+        mixture = read(folder / "mixture.wav")
+        if not args.no_clip:
+            mixture = np.clip(mixture, -1.0, 1.0)
         feed = base / "input" / f"{clip}.wav"
-        write(feed, mixture)
+        if upstream is None:
+            write(feed, mixture)
+        else:
+            source = kept_outputs(base, upstream[0], clip) / f"{upstream[1]}.wav"
+            if not source.is_file() or clip not in upstream_rows:
+                sys.exit(f"{source}: run {upstream[0]} with --keep-outputs first")
+            write(feed, read(source))
         shutil.rmtree(stems, ignore_errors=True)
         result = models.separate(args.model, spec, feed, stems)
+        seconds = result.seconds + (upstream_rows[clip]["seconds"] if upstream else 0.0)
         row = {
             "clip": clip,
             "model": name,
             "variant": args.variant,
-            "seconds": round(result.seconds, 3),
+            "seconds": round(seconds, 3),
             "peak_mb": round(result.peak_mb),
+            "gain_db": round(result.gain_db, 2),
             **score_clip(mixture, references(root, args.variant, clip), result.files, args.model),
         }
+        if upstream is not None:
+            row["input_from"] = args.input_from
         feed.unlink()
+        if args.keep_outputs:
+            shutil.rmtree(kept, ignore_errors=True)
+            kept.mkdir(parents=True)
+            for output, path in result.files.items():
+                write(kept / f"{output}.wav", fit(read(path), len(mixture)))
         if clip in keep:
             kept_stems(stems, args.model, keep[clip])
         else:
@@ -212,6 +277,124 @@ def cmd_run(args: argparse.Namespace) -> int:
             with log.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(row) + "\n")
         print(f"{args.variant} {name} {clip}: {result.seconds:.1f}s", flush=True)
+    return 0
+
+
+def kept_output(base: Path, model: str, output: str, clip: str, frames: int) -> np.ndarray:
+    path = kept_outputs(base, model, clip) / f"{output}.wav"
+    if not path.is_file():
+        sys.exit(f"{path}: run {model} with --keep-outputs first")
+    return fit(read(path), frames)
+
+
+def parse_part(text: str) -> tuple[str, str, float]:
+    """`MODEL:OUTPUT` or `MODEL:OUTPUT*WEIGHT`."""
+    part, _, weight = text.partition("*")
+    model, _, output = part.partition(":")
+    if not model or not output:
+        raise argparse.ArgumentTypeError(f"{text}: expected MODEL:OUTPUT[*WEIGHT]")
+    return model, output, float(weight) if weight else 1.0
+
+
+STFT: dict[str, Any] = {"nperseg": 2048, "noverlap": 1024, "window": "hann"}
+
+
+def avg_fft(parts: list[np.ndarray], weights: list[float]) -> np.ndarray:
+    """MSST ensemble.py avg_fft: weighted mean of the complex STFTs, back to a waveform."""
+    frames = len(parts[0])
+    total: np.ndarray | None = None
+    for audio, weight in zip(parts, weights, strict=True):
+        _, _, spec = stft(audio.T, fs=44100, **STFT)  # pyright: ignore[reportUnknownVariableType]
+        term = np.asarray(spec) * weight  # pyright: ignore[reportUnknownArgumentType]
+        total = term if total is None else total + term
+    assert total is not None
+    _, wave = istft(total / sum(weights), fs=44100, **STFT)  # pyright: ignore[reportUnknownVariableType]
+    return fit(np.asarray(wave, dtype=np.float64).T, frames)  # pyright: ignore[reportUnknownArgumentType]
+
+
+def weighted_sum(audio: list[np.ndarray], weights: list[float]) -> np.ndarray:
+    return np.sum([a * w for a, w in zip(audio, weights, strict=True)], axis=0)
+
+
+def combined(
+    recipe: str,
+    weights: list[float],
+    audio: list[np.ndarray],
+    mixture: np.ndarray,
+    primary: np.ndarray | None,
+    threshold_db: float,
+) -> tuple[np.ndarray, bool | None]:
+    """(estimate, routed) of one virtual model on one clip; `routed` only for `route`."""
+    if recipe == "avg_wave":
+        return weighted_sum(audio, weights) / sum(weights), None
+    if recipe == "avg_fft":
+        return avg_fft(audio, weights), None
+    assert primary is not None
+    if scoring.leakage_db(primary, mixture) < threshold_db:
+        return weighted_sum(audio, weights), True
+    return primary, False
+
+
+def cmd_combine(args: argparse.Namespace) -> int:
+    """A virtual model from kept outputs, scored and recorded like a real one (see module doc)."""
+    root = Path(args.root).expanduser()
+    base = root / "matrix" / args.variant
+    parts: list[tuple[str, str, float]] = args.part
+    primary = parse_part(args.primary) if args.primary else None
+    if (args.recipe == "route") != (primary is not None):
+        sys.exit("--primary goes with --recipe route only")
+    part_models = {m for m, _, _ in parts}
+    used = part_models | ({primary[0]} if primary else set[str]())
+    records = {m: recorded(base / f"{m}.jsonl") for m in used}
+    clips = args.clip or (
+        [i.id for i in load_set(args.clips).resolved_items()] if args.clips else windows(root)
+    )
+    log = base / f"{args.name}.jsonl"
+    done = recorded(log)
+    for clip in clips:
+        if clip in done:
+            continue
+        missing = [m for m in used if clip not in records[m]]
+        if missing:
+            sys.exit(f"{clip}: no {args.variant} record for {', '.join(missing)}")
+        mixture = read(prepared(root, args.variant, clip) / "mixture.wav")
+        if not args.no_clip:
+            mixture = np.clip(mixture, -1.0, 1.0)
+        frames = len(mixture)
+        audio = [kept_output(base, m, o, clip, frames) for m, o, _ in parts]
+        lead = kept_output(base, primary[0], primary[1], clip, frames) if primary else None
+        weights = [w for _, _, w in parts]
+        estimate, routed = combined(args.recipe, weights, audio, mixture, lead, args.threshold_db)
+        fallback = sum(records[m][clip]["seconds"] for m in part_models)
+        if primary is None:
+            seconds = fallback
+        else:
+            seconds = records[primary[0]][clip]["seconds"] + (fallback if routed else 0.0)
+        virtual: dict[str, Any] = {
+            "recipe": args.recipe,
+            "parts": [f"{m}:{o}*{w:g}" for m, o, w in parts],
+        }
+        if primary is not None:
+            virtual |= {"primary": args.primary, "threshold_db": args.threshold_db}
+            virtual["routed"] = routed
+        row = {
+            "clip": clip,
+            "model": args.name,
+            "variant": args.variant,
+            "seconds": round(seconds, 3),
+            "peak_mb": max(records[m][clip]["peak_mb"] for m in used),
+            **score_outputs(
+                mixture,
+                references(root, args.variant, clip),
+                {args.instrument: estimate},
+                {args.instrument: args.instrument},
+            ),
+            "virtual": virtual,
+        }
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with log.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+        print(f"{args.variant} {args.name} {clip} {virtual.get('routed', '')}", flush=True)
     return 0
 
 
@@ -334,7 +517,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="audio-separator's default inference settings (records as <model>@library)",
     )
+    r.add_argument("--keep-outputs", action="store_true", help="keep every output for combine")
+    r.add_argument("--input-from", metavar="MODEL:OUTPUT", help="separate a kept output instead")
+    r.add_argument("--name", help="record under this model name (with --input-from)")
+    r.add_argument(
+        "--no-clip", action="store_true", help="no ±1 clip of the mixture (records <model>@noclip)"
+    )
     r.set_defaults(fn=cmd_run)
+    c = sub.add_parser("combine", help="score a virtual model built from kept outputs")
+    c.add_argument("--variant", required=True, choices=variants.VARIANTS)
+    c.add_argument("--name", required=True)
+    c.add_argument("--recipe", required=True, choices=("avg_wave", "avg_fft", "route"))
+    c.add_argument("--part", action="append", required=True, type=parse_part)
+    c.add_argument("--primary", metavar="MODEL:OUTPUT", help="route: used unless below threshold")
+    c.add_argument("--threshold-db", type=float, default=-40.0)
+    c.add_argument("--instrument", required=True, help="the reference the result is scored on")
+    c.add_argument("--clips", help="only this set's clips (default: every window)")
+    c.add_argument("--clip", action="append")
+    c.add_argument("--no-clip", action="store_true", help="the parts were run with --no-clip")
+    c.set_defaults(fn=cmd_combine)
     t = sub.add_parser("report", help="distribution tables per variant, model and instrument")
     t.add_argument("--set", required=True)
     t.add_argument("--out", required=True)

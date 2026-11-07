@@ -6,7 +6,10 @@ Each variant turns a clean mixture and its reference stems into (mixture, refere
 - lossy codecs (`aac128`, `opus128`, `opus160`, `mp3-128`) change only the mixture; the decoded
   audio is re-aligned to the clean mixture (measured lag) so the clean references stay valid;
 - `sr48` resamples the mixture to 48 kHz and brings it back through the shipped decode stage
-  (`stage_decode.decode`: ffmpeg to 44.1 kHz f32, then the 24-bit FLAC cache copy).
+  (`stage_decode.decode`: ffmpeg to 44.1 kHz f32, then the 24-bit FLAC cache copy);
+- composites `<gain-like>+<codec>` (step 29: `limit-XL+aac128`, `limit-XL+opus128`) apply the
+  gain-like transform to the mixture and the stems, then the codec to the mixture only: a lossy
+  upload of a hot master, whose decode peaks above full scale (`info` records the peak).
 
 Arrays are float64 [frames, channels] at 44.1 kHz.
 
@@ -59,7 +62,10 @@ CODECS = {
     "mp3-128": ("libmp3lame", "128k", ".mp3"),
 }
 GAIN_LIKE = ("limit-L", "limit-XL", "musdb-xl", "mono")
-VARIANTS = ("clean", *CODECS, "mono", "sr48", *LIMIT_TARGETS, "musdb-xl")
+COMPOSITES = ("limit-XL+aac128", "limit-XL+opus128")
+VARIANTS = ("clean", *CODECS, "mono", "sr48", *LIMIT_TARGETS, "musdb-xl", *COMPOSITES)
+# Variants whose references differ from the clean stems (gain-like transforms and composites).
+OWN_REFERENCES = (*GAIN_LIKE, *COMPOSITES)
 MAX_ALIGN_LAG = 4096
 
 
@@ -257,6 +263,14 @@ def apply(
 ) -> Variant:
     """One variant of (mixture, references). `xl_ratio` supplies the official musdb-XL
     sample-wise ratio [frames, channels] for this audio (needed only by `musdb-xl`)."""
+    if name in COMPOSITES:
+        first, codec = name.split("+")
+        loud = apply(first, mixture, references, xl_ratio)
+        audio, lag = codec_roundtrip(loud.mixture, codec)
+        peak = float(np.abs(audio).max())
+        info = {**loud.info, "lag": float(lag), "decoded_peak": round(peak, 4)}
+        info["over_full_scale"] = round(float(np.mean(np.abs(audio) > 1.0)), 7)
+        return Variant(audio, loud.references, info)
     if name == "clean":
         return Variant(mixture, references)
     if name in CODECS:

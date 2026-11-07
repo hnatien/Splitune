@@ -25,16 +25,20 @@ HIGHPASS_HZ = 1000.0
 
 def roformer_window() -> tuple[int, int] | None:
     """(chunk, step) in samples of the warm RoFormer in `stage_separation.models`, as
-    audio-separator's demix computes them; None for Demucs (or no warm model)."""
+    audio-separator's demix computes them (a configured `chunk` sets its segment); None for
+    Demucs, for shift averaging (each pass's boundaries fall elsewhere) or no warm model."""
     from stage_separation import models
 
     warm = models._warm  # pyright: ignore[reportPrivateUsage]
     instance: Any = warm.separator.model_instance if warm is not None else None
     if instance is None or not getattr(instance, "is_roformer", False):
         return None
+    if warm is not None and int(warm.inference.get("shifts", 1)) > 1:
+        return None
     cfg = instance.model_data_cfgdict
     hop = getattr(cfg.model, "stft_hop_length", None) or cfg.audio.hop_length
-    chunk = int(hop) * (int(cfg.inference.dim_t) - 1)
+    segment = instance.segment_size if instance.override_model_segment_size else cfg.inference.dim_t
+    chunk = int(hop) * (int(segment) - 1)
     desired = int(instance.overlap * cfg.audio.sample_rate)
     return chunk, chunk if desired <= 0 else min(desired, chunk)
 
