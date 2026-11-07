@@ -17,7 +17,9 @@ resumes); pass 2 re-reads only the chosen tracks.
 
 For every track and target (guitar; piano = `piano` + `other_keys`, since the models' piano output
 takes organs and synth keys too) the 30 s window (5 s hop) where the target's stem is loudest
-relative to the mixture is a candidate when that level is at least -15 dB; the `--per` loudest
+relative to the mixture is a candidate when that level is between -15 and -1 dB (above -1 dB the
+rest of the band is quieter than about -7 dB: a near-solo window that tests no separation, and
+2 guitar and 3 piano best windows of the 240 tracks are such solos); the `--per` loudest
 candidates per target are kept (ties by track id), each track once per target. The selection reads
 only references, never a model. Each window is written like a P1 window:
 <out>/<uuid8>-<target>/{mixture,vocals,drums,bass,guitar,piano,other}.wav (float, 44.1 kHz
@@ -53,6 +55,7 @@ RATE = 44100
 SECONDS = 30.0
 HOP_S = 5.0
 MIN_LEVEL_DB = -15.0
+MAX_LEVEL_DB = -1.0
 NAMED: dict[str, tuple[str, ...]] = {
     "vocals": ("vocals",),
     "drums": ("drums",),
@@ -283,7 +286,7 @@ def cmd_windows(args: argparse.Namespace) -> int:
         candidates = [
             (r[target][1], t, r[target][0])
             for t, r in rows.items()
-            if r[target] is not None and r[target][1] >= MIN_LEVEL_DB
+            if r[target] is not None and MIN_LEVEL_DB <= r[target][1] <= MAX_LEVEL_DB
         ]
         for level, track, start in sorted(candidates, key=lambda c: (-c[0], c[1]))[: args.per]:
             clip = f"{track[:8]}-{target}"
@@ -308,6 +311,9 @@ def cmd_windows(args: argparse.Namespace) -> int:
             index["items"][clip] = entry
             (out / "clips" / f"{clip}.json").write_text(json.dumps(entry) + "\n", "utf-8")
             print(f"{target:6} {clip} {level:.1f} dB", flush=True)
+    for marker in (out / "clips").glob("*.json"):
+        if marker.stem not in index["items"]:
+            marker.unlink()  # chosen by an earlier rule: not in the set any more
     (out / "windows.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
     return 0
 
