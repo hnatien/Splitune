@@ -650,15 +650,15 @@ def phase_keys(
     recipes: list[str],
 ) -> list[str]:
     root, every = resolve("moisesdb")
-    clips = [c for c in every if c.endswith("-piano")]
     sw = records(root, "clean", "bs_roformer_sw")
-    sw_piano = scored(sw, clips, "piano", "usdr")
+    sw_piano = scored(sw, every, "piano", "usdr")  # the windows with a piano reference
+    clips = sorted(sw_piano)
     rows = [
         report.compare("moisesdb", "clean", m, "bs_roformer_sw", "piano", only=clips)
         for m in SINGLES + recipes
     ]
     report.lines += [
-        f"## Candidates and routed models vs SW on the {len(clips)} moisesdb piano windows "
+        f"## Candidates and routed models vs SW on the {len(clips)} moisesdb windows with keys "
         "(piano + other_keys reference, uSDR)",
         "",
         "Routed models (`route_*`) take SW's piano unless its energy is below "
@@ -758,9 +758,9 @@ def phase_keys(
         "## Criterion (research experiment 4)",
         "",
         "Pass: the 3 silent windows reach median ≥ +3 dB uSDR; the router never triggers on a "
-        f"window where SW scores ≥ 3 dB; the median over the {len(clips)} piano windows doesn't "
-        "fall and the mean rises (the plan's reading: the silent windows sit below the median, "
-        "so it can't rise); and the fallback reaches ≥ +2 dB median uSDR out of sample (Slakh). "
+        f"window where SW scores ≥ 3 dB; the median over the {len(clips)} windows with keys "
+        "doesn't fall and the mean rises (the approved reading of the step's 'the median rises'); "
+        "and the fallback reaches ≥ +2 dB median uSDR out of sample (Slakh). "
         "Falsified: silent windows stay < 1 dB.",
         "",
         "| routed model | silent windows (median) | triggers where SW ≥ 3 dB | "
