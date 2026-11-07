@@ -158,7 +158,7 @@ def test_moisesdb_windows_pick_the_loudest_target_from_references(tmp_path: Path
     stems = {
         "drums": rng.normal(0, 0.05, (frames, 2)),
         "guitar": np.zeros((frames, 2)),
-        "other_keys": rng.normal(0, 0.05, (frames, 1)),  # mono, joins piano
+        "other_keys": rng.normal(0, 0.05, (frames - RATE * 3, 1)),  # mono, shorter, joins piano
     }
     stems["guitar"][RATE * 10 :] = rng.normal(0, 0.2, (frames - RATE * 10, 2))
     listed: list[dict[str, object]] = []

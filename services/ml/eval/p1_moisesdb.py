@@ -202,6 +202,7 @@ def best_window(target: np.ndarray, mixture: np.ndarray) -> tuple[int, float] | 
     size, hop = int(SECONDS * RATE), int(HOP_S * RATE)
     if len(mixture) < size:
         return None
+    target = np.pad(target, ((0, len(mixture) - len(target)), (0, 0)))  # stems differ in length
     t = np.concatenate([[0.0], np.cumsum(np.sum(np.square(target, dtype=np.float64), axis=1))])
     m = np.concatenate([[0.0], np.cumsum(np.sum(np.square(mixture, dtype=np.float64), axis=1))])
     best: tuple[int, float] | None = None
@@ -265,12 +266,16 @@ def cmd_windows(args: argparse.Namespace) -> int:
     todo = [t for t in tracks if t not in rows]
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         futures = {pool.submit(scan, source, t): t for t in todo}
-        for future in as_completed(futures):
-            row = future.result()
-            rows[row["track"]] = row
-            with log.open("a", encoding="utf-8", newline="\n") as f:
-                f.write(json.dumps(row) + "\n")
-            print(f"{len(rows)}/{len(tracks)} {row['track']}: scanned", flush=True)
+        try:
+            for future in as_completed(futures):
+                row = future.result()
+                rows[row["track"]] = row
+                with log.open("a", encoding="utf-8", newline="\n") as f:
+                    f.write(json.dumps(row) + "\n")
+                print(f"{len(rows)}/{len(tracks)} {row['track']}: scanned", flush=True)
+        except BaseException:
+            pool.shutdown(cancel_futures=True)  # a queued track would still stream its bytes
+            raise
     index: dict[str, Any] = {"source": origin, "seconds": SECONDS, "items": {}}
     (out / "clips").mkdir(parents=True, exist_ok=True)
     size = int(SECONDS * RATE)
