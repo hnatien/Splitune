@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { cpus, loadavg, platform, release, totalmem } from 'node:os'
+import { cpus, platform, release, totalmem } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import {
   type Browser,
@@ -23,17 +23,22 @@ import { openExample } from './helpers'
 //   kept too, but it only sees frames of 50 ms and more);
 // - p75 latency (Event Timing, the longest event of each interaction) of play/pause, a loop-edge
 //   nudge, a speed step and a mixer fader key step, N ≥ 10 each.
-// It records and writes JSON (PERF_PRACTICE_OUT, default test-results/perf-practice.json); it
-// asserts no thresholds yet. Each context runs PERF_PRACTICE_RUNS times (default 3) and keeps the
-// median run, with every run's p75 beside it as the spread.
+// It records and writes JSON (PERF_PRACTICE_OUT, default test-results/perf-practice.json) once
+// every run of every context has finished; it asserts no thresholds yet. Each context runs
+// PERF_PRACTICE_RUNS times (default 3) and keeps the median run, with every run's values beside it
+// as the spread. PERF_PRACTICE_MACHINE names the machine and PERF_PRACTICE_NOTES says what else
+// was running; both land in the JSON.
 //
+//   PERF_PRACTICE_OUT=e2e/perf-baseline.json PERF_PRACTICE_MACHINE='…' PERF_PRACTICE_NOTES='…' \
 //   UV_PROJECT_ENVIRONMENT=<ML venv> UV_NO_SYNC=1 \
 //     pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
 
 /**
- * Every control the record drives, by role and accessible name, in one place: a step that renames
- * one updates it here. Speed uses the on-screen −/+ buttons (↑/↓ stop changing speed in s35); the
- * loop nudge and the fader step use the arrow keys on the focused control, which keep that meaning.
+ * Every control the record drives or waits for, in one place: a step that renames one updates it
+ * here. Actions go by role and accessible name, or by a key that keeps its meaning after s35:
+ * speed uses the on-screen −/+ buttons (↑/↓ stop changing speed in s35); the loop nudge and the
+ * fader step use the arrow keys on the focused control. The count-in number is aria-hidden, so it
+ * is found by its slot (it is only waited for, never driven).
  */
 const SELECTORS = {
   playPause: { role: 'button', name: /^(Play|Pause)$/ },
@@ -42,6 +47,7 @@ const SELECTORS = {
   faster: { role: 'button', name: /^Faster$/ },
   loopStartEdge: { role: 'button', name: /^Loop start, bar \d+$/ },
   mixer: { role: 'button', name: /^Mix$/ },
+  // The stem faders ("Volume Guitar", "Volume Backing"), not the master "Volume".
   fader: { role: 'slider', name: /^Volume / },
   countIn: { css: '[data-slot=count-in]' },
   // The visitor's example offers to save progress the first time playback stops after a pass.
@@ -53,12 +59,13 @@ const SELECTORS = {
 >
 
 type Selector = (typeof SELECTORS)[keyof typeof SELECTORS]
-const find = (page: Page, selector: Selector): Locator =>
+const find = (scope: Page | Locator, selector: Selector): Locator =>
   'css' in selector
-    ? page.locator(selector.css)
-    : page.getByRole(selector.role, { name: selector.name })
+    ? scope.locator(selector.css)
+    : scope.getByRole(selector.role, { name: selector.name })
 
-const { PERF_PRACTICE_RUNS, PERF_PRACTICE_OUT } = process.env
+const { PERF_PRACTICE_RUNS, PERF_PRACTICE_OUT, PERF_PRACTICE_MACHINE, PERF_PRACTICE_NOTES } =
+  process.env
 const CPU_THROTTLING = 4
 const RUNS = Number(PERF_PRACTICE_RUNS ?? 3)
 const SAMPLES = 12
@@ -66,6 +73,8 @@ const LOAF_WINDOW_MS = 20_000
 const TRACE_WINDOW_MS = 10_000
 // Event Timing reports nothing shorter than its threshold; 16 ms is the lowest the API allows.
 const EVENT_THRESHOLD_MS = 16
+// Room after each action for the next frame to present and the observer to deliver its entries.
+const SETTLE_MS = 500
 const OUT = resolve(PERF_PRACTICE_OUT ?? 'test-results/perf-practice.json')
 
 const CONTEXTS = {
@@ -75,7 +84,7 @@ const CONTEXTS = {
     touch: false,
   },
   tablet: {
-    description: 'tablet Chromium, 1180 × 820, touch (hasTouch, isMobile), coarse pointer',
+    description: 'tablet Chromium, 1180 × 820 landscape, touch (hasTouch, isMobile)',
     options: {
       viewport: { width: 1180, height: 820 },
       deviceScaleFactor: 2,
@@ -156,12 +165,14 @@ function installRecorders(threshold: number) {
 
 type Stat = { n: number; p50: number | null; p75: number | null; max: number | null }
 
+const round = (value: number) => Math.round(value * 100) / 100
+
 /** Nearest-rank percentiles, rounded to 0.01 ms. */
 function stat(values: number[]): Stat {
   const sorted = [...values].sort((a, b) => a - b)
   const rank = (p: number) => {
     const value = sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)]
-    return value === undefined ? null : Math.round(value * 100) / 100
+    return value === undefined ? null : round(value)
   }
   return { n: sorted.length, p50: rank(0.5), p75: rank(0.75), max: rank(1) }
 }
@@ -171,9 +182,9 @@ const now = (page: Page) => page.evaluate(() => performance.now())
 type Latency = Stat & { belowThreshold: number }
 
 /**
- * Runs `act` SAMPLES times and returns each interaction's latency: the longest Event Timing entry
- * of the interaction it started. An interaction faster than the threshold leaves no entry; it is
- * counted as the threshold (an upper bound) and in `belowThreshold`.
+ * Runs `act` SAMPLES times; each run is one sample: the longest Event Timing entry of the
+ * interaction it started (the longest one, should it start more). An interaction faster than the
+ * threshold leaves no entry; it counts as the threshold (an upper bound) and in `belowThreshold`.
  */
 async function latencies(page: Page, act: (index: number) => Promise<void>): Promise<Latency> {
   const samples: number[] = []
@@ -181,23 +192,18 @@ async function latencies(page: Page, act: (index: number) => Promise<void>): Pro
   for (let index = 0; index < SAMPLES; index++) {
     const since = await now(page)
     await act(index)
-    // Room for the next frame to present and the observer to deliver its entries.
-    await page.waitForTimeout(500)
-    const durations = await page.evaluate((from) => {
-      const byInteraction = new Map<number, number>()
+    await page.waitForTimeout(SETTLE_MS)
+    const longest = await page.evaluate((from) => {
+      let max = 0
       for (const event of window.__perfPractice.events) {
-        if (event.start < from) continue
-        byInteraction.set(
-          event.interactionId,
-          Math.max(byInteraction.get(event.interactionId) ?? 0, event.duration),
-        )
+        if (event.start >= from) max = Math.max(max, event.duration)
       }
-      return [...byInteraction.values()]
+      return max
     }, since)
-    if (durations.length === 0) {
+    if (longest === 0) {
       belowThreshold++
       samples.push(EVENT_THRESHOLD_MS)
-    } else samples.push(...durations)
+    } else samples.push(longest)
   }
   return { ...stat(samples), belowThreshold }
 }
@@ -282,13 +288,9 @@ function forcedLayout(events: TraceEvent[]): ForcedLayout {
   }
   return {
     ...stat(forced.map((f) => f.ms)),
-    totalMs: Math.round(forced.reduce((sum, f) => sum + f.ms, 0) * 100) / 100,
+    totalMs: round(forced.reduce((sum, f) => sum + f.ms, 0)),
     byScript: [...bySource]
-      .map(([source, entry]) => ({
-        source,
-        count: entry.count,
-        totalMs: Math.round(entry.totalMs * 100) / 100,
-      }))
+      .map(([source, entry]) => ({ source, count: entry.count, totalMs: round(entry.totalMs) }))
       .sort((a, b) => b.totalMs - a.totalMs),
   }
 }
@@ -340,15 +342,39 @@ function summariseLoafs(loafs: Loaf[]): Loafs {
     duration: stat(loafs.map((l) => l.duration)),
     blockingDuration: stat(loafs.map((l) => l.blockingDuration)),
     byScript: [...byScript.values()]
-      .map((e) => ({ ...e, totalMs: Math.round(e.totalMs), forcedMs: Math.round(e.forcedMs) }))
+      .map((e) => ({ ...e, totalMs: round(e.totalMs), forcedMs: round(e.forcedMs) }))
       .sort((a, b) => b.totalMs - a.totalMs),
   }
 }
 
+/**
+ * How busy every core of the machine was, 0–1, over `ms` (os.cpus() times; Windows has no load
+ * average). Sampled while nothing of the run is open, it shows other load on the machine.
+ */
+async function machineBusy(ms: number): Promise<number> {
+  const totals = () =>
+    cpus().reduce(
+      (sum, cpu) => {
+        const { user, nice, sys, irq, idle } = cpu.times
+        return {
+          busy: sum.busy + user + nice + sys + irq,
+          all: sum.all + user + nice + sys + irq + idle,
+        }
+      },
+      { busy: 0, all: 0 },
+    )
+  const before = totals()
+  await new Promise((done) => setTimeout(done, ms))
+  const after = totals()
+  return round((after.busy - before.busy) / Math.max(1, after.all - before.all))
+}
+
 type Run = {
   run: number
-  /** The machine's 1-minute load average when the run started and ended. */
-  load: [number, number]
+  startedAt: string
+  /** Share of the machine's CPU in use over 3 s before the run opened its context. */
+  machineBusyBefore: number
+  layout: { coarsePointer: boolean; innerWidth: number; innerHeight: number }
   countInSeen: boolean
   loafs: Loafs
   forcedLayout: ForcedLayout
@@ -362,7 +388,8 @@ async function recordRun(
   baseURL: string | undefined,
 ): Promise<Run> {
   const setup = CONTEXTS[name]
-  const loadAtStart = loadavg()[0] ?? 0
+  const startedAt = new Date().toISOString()
+  const machineBusyBefore = await machineBusy(3_000)
   const context = await browser.newContext({
     ...setup.options,
     ...(baseURL ? { baseURL } : {}),
@@ -374,6 +401,11 @@ async function recordRun(
   const press = (locator: Locator) => (setup.touch ? locator.tap() : locator.click())
   try {
     const start = await openExample(page)
+    const layout = await page.evaluate(() => ({
+      coarsePointer: matchMedia('(pointer: coarse)').matches,
+      innerWidth,
+      innerHeight,
+    }))
     const cdp = await context.newCDPSession(page)
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLING })
 
@@ -381,10 +413,13 @@ async function recordRun(
     const pressed = await now(page)
     await press(start)
     await expect(find(page, SELECTORS.pause)).toBeVisible()
+    await expect(find(page, SELECTORS.loopStartEdge)).toBeVisible()
     const countInSeen = await find(page, SELECTORS.countIn)
       .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true)
-      .catch(() => false)
+      .then(
+        () => true,
+        () => false,
+      )
     const elapsed = (await now(page)) - pressed
     await page.waitForTimeout(Math.max(0, LOAF_WINDOW_MS - elapsed))
     const loafs = await page.evaluate(
@@ -395,24 +430,16 @@ async function recordRun(
     // Steady playback: well past the count-in, the loop wrapping.
     const forced = forcedLayout(await trace(cdp, page, TRACE_WINDOW_MS))
 
+    // Each action alternates direction, so the loop, speed and mix end where they started.
     const latency = {} as Record<Action, Latency>
     latency.speedStep = await latencies(page, (i) =>
       press(find(page, i % 2 === 0 ? SELECTORS.faster : SELECTORS.slower)),
     )
     const edge = find(page, SELECTORS.loopStartEdge)
-    await edge.focus()
     latency.loopNudge = await latencies(page, async (i) => {
       await edge.focus()
       await page.keyboard.press(i % 2 === 0 ? 'ArrowRight' : 'ArrowLeft')
     })
-    await press(find(page, SELECTORS.mixer))
-    const fader = find(page, SELECTORS.fader).first()
-    await expect(fader).toBeVisible()
-    latency.faderStep = await latencies(page, async (i) => {
-      await fader.focus()
-      await page.keyboard.press(i % 2 === 0 ? 'ArrowDown' : 'ArrowUp')
-    })
-    await press(find(page, SELECTORS.mixer))
     // The first stop after a pass opens the save sheet once; it is dismissed before measuring, so
     // every measured press is the transport's own work.
     await press(find(page, SELECTORS.pause))
@@ -423,20 +450,31 @@ async function recordRun(
         () => false,
       )
     ) {
-      await press(save.getByRole(SELECTORS.notNow.role, { name: SELECTORS.notNow.name }))
+      await press(find(save, SELECTORS.notNow))
       await expect(save).toBeHidden()
     }
+    // An even number of presses from paused, so it ends paused.
     latency.playPause = await latencies(page, async () => {
       await press(find(page, SELECTORS.playPause))
       // Play starts with the count-in; give each state a moment before the next press.
       await page.waitForTimeout(300)
     })
+    // The fader steps while the loop plays. The mixer stays open to the end: the drawer may cover
+    // its own toggle on narrower screens.
+    await press(find(page, SELECTORS.playPause))
+    await expect(find(page, SELECTORS.pause)).toBeVisible()
+    await press(find(page, SELECTORS.mixer))
+    const fader = find(page, SELECTORS.fader).first()
+    await expect(fader).toBeVisible()
+    latency.faderStep = await latencies(page, async (i) => {
+      await fader.focus()
+      await page.keyboard.press(i % 2 === 0 ? 'ArrowDown' : 'ArrowUp')
+    })
     return {
       run,
-      load: [loadAtStart, loadavg()[0] ?? 0].map((l) => Math.round(l * 100) / 100) as [
-        number,
-        number,
-      ],
+      startedAt,
+      machineBusyBefore,
+      layout,
       countInSeen,
       loafs: summariseLoafs(loafs),
       forcedLayout: forced,
@@ -446,6 +484,9 @@ async function recordRun(
     await context.close()
   }
 }
+
+// One run after another in one worker: a failed run stops the rest, and nothing is written.
+test.describe.configure({ mode: 'serial' })
 
 const results: Record<ContextName, Run[]> = { desktop: [], tablet: [] }
 
@@ -467,56 +508,72 @@ function medianRun(runs: Run[]): Run | undefined {
   return ranked[Math.floor((ranked.length - 1) / 2)]
 }
 
+/** Every run's value of one measure, and its range. */
+function spread(values: (number | null)[]) {
+  const known = values.filter((value): value is number => value !== null)
+  return {
+    runs: values,
+    min: known.length ? Math.min(...known) : null,
+    max: known.length ? Math.max(...known) : null,
+  }
+}
+
 function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' }).trim()
 }
 
 test.afterAll(async ({ browser }, info) => {
   if (info.project.name !== 'chromium') return
+  const names = Object.keys(CONTEXTS) as ContextName[]
+  // A partial record never overwrites a complete one.
+  if (names.some((name) => results[name].length < RUNS)) return
   const contexts = Object.fromEntries(
-    (Object.keys(CONTEXTS) as ContextName[]).map((name) => {
+    names.map((name) => {
       const runs = results[name]
       const kept = medianRun(runs)
-      const p75 = (pick: (run: Run) => number | null) => runs.map(pick)
+      if (!kept) throw new Error(`no run of ${name}`)
       return [
         name,
         {
           description: CONTEXTS[name].description,
           options: CONTEXTS[name].options,
-          runsRecorded: runs.length,
-          load: runs.map((run) => run.load),
-          keptRun: kept?.run ?? null,
-          countInSeen: kept?.countInSeen ?? null,
-          measures: kept
-            ? {
-                longAnimationFrames: kept.loafs.duration,
-                longAnimationFrameBlocking: kept.loafs.blockingDuration,
-                forcedStyleAndLayout: {
-                  n: kept.forcedLayout.n,
-                  p50: kept.forcedLayout.p50,
-                  p75: kept.forcedLayout.p75,
-                  max: kept.forcedLayout.max,
-                  totalMs: kept.forcedLayout.totalMs,
-                },
-                ...Object.fromEntries(
-                  ACTIONS.map((action) => [`latency.${action}`, kept.latency[action]]),
-                ),
-              }
-            : null,
-          attribution: kept
-            ? {
-                longAnimationFrames: kept.loafs.byScript,
-                forcedStyleAndLayout: kept.forcedLayout.byScript,
-              }
-            : null,
-          spread: {
-            'longAnimationFrames.n': runs.map((run) => run.loafs.duration.n),
-            'longAnimationFrames.max': p75((run) => run.loafs.duration.max),
-            'forcedStyleAndLayout.totalMs': runs.map((run) => run.forcedLayout.totalMs),
+          keptRun: kept.run,
+          runs: runs.map((run) => ({
+            run: run.run,
+            startedAt: run.startedAt,
+            machineBusyBefore: run.machineBusyBefore,
+            layout: run.layout,
+            countInSeen: run.countInSeen,
+          })),
+          measures: {
+            longAnimationFrames: kept.loafs.duration,
+            longAnimationFrameBlocking: kept.loafs.blockingDuration,
+            forcedStyleAndLayout: {
+              n: kept.forcedLayout.n,
+              p50: kept.forcedLayout.p50,
+              p75: kept.forcedLayout.p75,
+              max: kept.forcedLayout.max,
+              totalMs: kept.forcedLayout.totalMs,
+            },
             ...Object.fromEntries(
-              ACTIONS.map((action) => [
-                `latency.${action}.p75`,
-                p75((run) => run.latency[action].p75),
+              ACTIONS.map((action) => [`latency.${action}`, kept.latency[action]]),
+            ),
+          },
+          attribution: {
+            longAnimationFrames: kept.loafs.byScript,
+            forcedStyleAndLayout: kept.forcedLayout.byScript,
+          },
+          spread: {
+            'longAnimationFrames.n': spread(runs.map((run) => run.loafs.duration.n)),
+            'longAnimationFrames.p75': spread(runs.map((run) => run.loafs.duration.p75)),
+            'longAnimationFrames.max': spread(runs.map((run) => run.loafs.duration.max)),
+            'forcedStyleAndLayout.n': spread(runs.map((run) => run.forcedLayout.n)),
+            'forcedStyleAndLayout.totalMs': spread(runs.map((run) => run.forcedLayout.totalMs)),
+            ...Object.fromEntries(
+              ACTIONS.flatMap((action) => [
+                [`latency.${action}.p50`, spread(runs.map((run) => run.latency[action].p50))],
+                [`latency.${action}.p75`, spread(runs.map((run) => run.latency[action].p75))],
+                [`latency.${action}.max`, spread(runs.map((run) => run.latency[action].max))],
               ]),
             ),
           },
@@ -534,30 +591,38 @@ test.afterAll(async ({ browser }, info) => {
       uncommitted: git(['status', '--porcelain']).split('\n').filter(Boolean),
     },
     machine: {
+      name: PERF_PRACTICE_MACHINE ?? null,
       platform: `${platform()} ${release()}`,
       cpu: cpu[0]?.model ?? 'unknown',
-      cores: cpu.length,
+      logicalCores: cpu.length,
       memoryGb: Math.round(totalmem() / 2 ** 30),
       node: process.version,
+      notes: PERF_PRACTICE_NOTES ?? null,
     },
-    browser: { name: 'chromium', version: browser.version() },
+    browser: {
+      name: browser.browserType().name(),
+      version: browser.version(),
+      headless: info.project.use.headless ?? true,
+    },
     throttling: {
       cpu: CPU_THROTTLING,
-      via: 'CDP Emulation.setCPUThrottlingRate, after the example loads',
+      via: 'CDP Emulation.setCPUThrottlingRate on the page, after the example loads',
     },
     method: {
       screen:
-        'the onboarding example song (openExample), practice screen, guide card "Play your part"',
-      motion: 'full (reducedMotion no-preference)',
-      longAnimationFrames: `PerformanceObserver long-animation-frame, ${LOAF_WINDOW_MS / 1000} s from the press that starts the looped playback with its count-in`,
-      forcedStyleAndLayout: `CDP trace (devtools.timeline) over ${TRACE_WINDOW_MS / 1000} s of steady playback right after that window: Layout/UpdateLayoutTree nested in script on CrRendererMain, attributed to the innermost FunctionCall`,
-      latency: `Event Timing (durationThreshold ${EVENT_THRESHOLD_MS} ms), longest entry per interaction, ${SAMPLES} samples per action during playback (play/pause alternates); an interaction below the threshold counts as ${EVENT_THRESHOLD_MS} ms and in belowThreshold`,
+        'the onboarding example song (openExample: /start, Guitar, Just started, Skip), its practice screen, started from the "Play your part" card',
+      motion: 'full (reducedMotion no-preference); service workers blocked',
+      longAnimationFrames: `PerformanceObserver long-animation-frame (≥ 50 ms), ${LOAF_WINDOW_MS / 1000} s from the press that starts the looped playback with its count-in`,
+      forcedStyleAndLayout: `CDP trace (devtools.timeline) over ${TRACE_WINDOW_MS / 1000} s of steady playback right after that window: Layout/UpdateLayoutTree nested in script on CrRendererMain, attributed to the innermost FunctionCall; LoAF per-script forcedStyleAndLayoutDuration is in attribution.longAnimationFrames`,
+      latency: `Event Timing (durationThreshold ${EVENT_THRESHOLD_MS} ms), one sample per action = the longest entry of the interactions it started, ${SAMPLES} samples per action during playback (play/pause alternates while stopped and playing); a sample below the threshold counts as ${EVENT_THRESHOLD_MS} ms and in belowThreshold`,
       actions: {
         playPause: 'press Play/Pause in the transport',
         loopNudge: 'ArrowRight/ArrowLeft on the focused loop-start edge of the song map',
         speedStep: 'press Faster/Slower (the on-screen speed buttons)',
-        faderStep: 'ArrowDown/ArrowUp on the focused first volume fader in the mixer',
+        faderStep:
+          'ArrowDown/ArrowUp on the focused first stem fader in the open mixer, while playing',
       },
+      press: 'desktop: click; tablet: tap',
       percentiles: 'nearest rank; ms rounded to 0.01',
       keptRun: 'per context, the run with the median mean-p75 latency; spread lists every run',
       selectors: SELECTORS,
