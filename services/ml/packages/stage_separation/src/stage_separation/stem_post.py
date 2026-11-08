@@ -131,6 +131,8 @@ def run(job: StageJob) -> StageOutput:
     started = time.process_time()
     params = job.params
     separation = read_separation(job.inputs)
+    # The kept extras' instruments: an empty extra gets no stem (step 3 above).
+    extras = {s.instrument for s in separation.stems if s.role == "extra" and s.instrument}
     tags = read_tags(job.inputs)
     tag_probs: dict[str, float] = (
         {t.instrument: t.present_prob for t in tags.instruments} if tags else {}
@@ -158,8 +160,7 @@ def run(job: StageJob) -> StageOutput:
     mix_gain_db = round(dsp.TARGET_LUFS - mix_loudness, 2) if mix_loudness is not None else 0.0
     instrument_quality = {name: spec.quality for name, spec in cfg.instruments.items()}
 
-    # id, kind, instrument, audio, base quality, extra
-    outputs: list[tuple[str, str, str | None, Audio, str, bool]] = []
+    outputs: list[tuple[str, str, str | None, Audio, str]] = []  # id, kind, instrument, audio, base
     for s in separation.stems:
         if s.role == "complement" or s.instrument is None:
             continue
@@ -170,7 +171,6 @@ def run(job: StageJob) -> StageOutput:
                 s.instrument,
                 aligned[s.name],
                 instrument_quality.get(s.instrument, "good"),
-                s.role == "extra",
             )
         )
     outputs.append(
@@ -180,14 +180,13 @@ def run(job: StageJob) -> StageOutput:
             None,
             mix_minus.astype(np.float32),
             instrument_quality.get(separation.target, "good"),
-            False,
         )
     )
 
     stems: list[dict[str, Any]] = []
     presence: list[dict[str, Any]] = []
     blobs: dict[str, str] = {}
-    for stem_id, kind, instrument, audio, base_quality, extra in outputs:
+    for stem_id, kind, instrument, audio, base_quality in outputs:
         ratio = dsp.energy(audio) / mix_energy if mix_energy > 0 else 0.0
         act = dsp.activity(
             audio,
@@ -226,7 +225,7 @@ def run(job: StageJob) -> StageOutput:
             if subtype is not None:
                 entry["subtype"] = subtype
             presence.append(entry)
-        if extra and empty:
+        if empty and instrument in extras:
             continue
         files, stem_blobs = encode_stem(stem_id, audio, workdir, bool(params["opus"]))
         blobs.update(stem_blobs)

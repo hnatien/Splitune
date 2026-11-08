@@ -19,8 +19,8 @@ from splitune_ml_core import contracts, register
 from splitune_ml_core.errors import StageError
 from splitune_ml_core.keys import cache_key
 from splitune_ml_core.stage_api import StageJob
-from stage_separation import config, models, separate, stem_post
-from stage_separation.config import Instrument, ModelSpec
+from stage_separation import config, models, separate
+from stage_separation.config import ModelSpec
 
 AUDIO_HASH = "cd" * 32
 RATE = 44100
@@ -99,7 +99,7 @@ def test_plan_keeps_extras_unless_the_tagger_is_sure_they_are_absent() -> None:
     assert err.value.code == "invalid_params"
 
 
-EVERY_HEAD: list[tuple[str, Instrument, dict[str, float] | None, dict[str, str]]] = [
+EVERY_HEAD: list[tuple[str, config.Instrument, dict[str, float] | None, dict[str, str]]] = [
     # six-stem heads and fallbacks (subtract): every other output is an extra
     (
         "bs_roformer_sw",
@@ -175,7 +175,10 @@ EVERY_HEAD: list[tuple[str, Instrument, dict[str, float] | None, dict[str, str]]
 
 @pytest.mark.parametrize(("model", "instrument", "probs", "expected"), EVERY_HEAD)
 def test_every_output_of_the_producing_run_is_kept(
-    model: str, instrument: Instrument, probs: dict[str, float] | None, expected: dict[str, str]
+    model: str,
+    instrument: config.Instrument,
+    probs: dict[str, float] | None,
+    expected: dict[str, str],
 ) -> None:
     cfg = config.load()
     assert model in cfg.instruments[instrument].chain
@@ -233,16 +236,16 @@ def test_inference_settings_reject_unknown_and_foreign_keys() -> None:
             with_inference(name, bad)
 
 
-def default_document() -> dict[str, Any]:
-    return yaml.safe_load(config.DEFAULT_PATH.read_text(encoding="utf-8"))
-
-
 def describe_key(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, inference: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
     document = default_document()
     document["models"]["htdemucs_ft"]["inference"] = inference
     return described_with(tmp_path, monkeypatch, document, "bass")
+
+
+def default_document() -> dict[str, Any]:
+    return yaml.safe_load(config.DEFAULT_PATH.read_text(encoding="utf-8"))
 
 
 def described_with(
@@ -426,6 +429,8 @@ def test_every_model_failing_means_stems_unavailable(
 
 def stems_after(job: StageJob, separation: str) -> contracts.Stems:
     """stem_post over a separate run's output, in the same cache."""
+    from stage_separation import stem_post
+
     inputs = {"separation": separation}
     work = Path(job.workdir).parent / "stem_post"
     work.mkdir()
