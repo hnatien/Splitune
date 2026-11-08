@@ -1,11 +1,17 @@
-// Test helper: resolves the token CSS the way a browser would for <html>, for a given set of
-// data-* attributes and media features. It models only the selector and at-rule shapes this
-// package uses and throws on anything else, so an unmodelled rule can't be silently ignored.
+// Test helper: resolves the token CSS the way a browser would for <html>, or for an element inside
+// it (a themed subtree), for a given set of data-* attributes and media features. It models only
+// the selector and at-rule shapes this package uses and throws on anything else, so an unmodelled
+// rule can't be silently ignored.
 import { readFileSync } from 'node:fs'
 import Color from 'colorjs.io'
 
 export type Media = { prefersDark?: boolean; prefersMoreContrast?: boolean }
-export type Context = { attrs: Record<string, string>; media?: Media }
+/** `subtree`: read the tokens on an element inside <html> that carries these attributes. */
+export type Context = {
+  attrs: Record<string, string>
+  media?: Media
+  subtree?: Record<string, string>
+}
 
 type Rule = { media: string | null; selectors: string[]; decls: [string, string][]; order: number }
 
@@ -96,36 +102,63 @@ function mediaMatches(media: string, m: Media): boolean {
   }
 }
 
-/** Matches a compound selector against <html>; returns its specificity or null. */
-export function matchRoot(selector: string, attrs: Record<string, string>): number | null {
+const PART = /:root|:not\(\[[^\]]+\]\)|\[[^\]]+\]/g
+
+/**
+ * Matches one compound selector against an element; returns its specificity or null. `:root`
+ * matches <html> only, `*` any element, and a pseudo-element never the element itself.
+ */
+function matchCompound(compound: string, attrs: Record<string, string>, isRoot: boolean) {
+  if (compound === '*') return 0
+  if (compound === '::before' || compound === '::after') return null
   const attrMatches = (part: string) => {
     const m = /^\[([\w-]+)(?:=["']([^"']*)["'])?\]$/.exec(part)
     if (!m) throw new Error(`Unmodelled selector part ${part}`)
     const [, name, value] = m as unknown as [string, string, string | undefined]
     return value === undefined ? name in attrs : attrs[name] === value
   }
+  if (compound.replace(PART, '') !== '') throw new Error(`Unmodelled selector ${compound}`)
   let specificity = 0
-  for (const part of selector.match(/:root|:not\(\[[^\]]+\]\)|\[[^\]]+\]/g) ?? []) {
+  let matches = true
+  for (const part of compound.match(PART) ?? []) {
     specificity++
-    if (part === ':root') continue
-    if (part.startsWith(':not(')) {
-      if (attrMatches(part.slice(5, -1))) return null
-    } else if (!attrMatches(part)) return null
+    if (part === ':root') matches &&= isRoot
+    else if (part.startsWith(':not(')) matches &&= !attrMatches(part.slice(5, -1))
+    else matches &&= attrMatches(part)
   }
-  if (selector.replace(/:root|:not\(\[[^\]]+\]\)|\[[^\]]+\]/g, '') !== '') {
-    throw new Error(`Unmodelled selector ${selector}`)
-  }
-  return specificity
+  return matches ? specificity : null
 }
 
-/** Declared (unresolved) values for every custom property on <html> in this context. */
-export function cascade(rules: Rule[], context: Context): Map<string, string> {
+/**
+ * Matches a selector (one compound, or an ancestor and a descendant compound) against <html>
+ * (`subtree` undefined) or an element inside it; returns its specificity or null.
+ */
+export function matchSelector(
+  selector: string,
+  attrs: Record<string, string>,
+  subtree?: Record<string, string>,
+): number | null {
+  const compounds = selector.split(/\s+/)
+  if (compounds.length > 2) throw new Error(`Unmodelled selector ${selector}`)
+  const [first, second] = compounds as [string, string | undefined]
+  if (second === undefined) {
+    return subtree ? matchCompound(first, subtree, false) : matchCompound(first, attrs, true)
+  }
+  // "A B": A on <html>, B on the subtree element; it never matches <html> itself.
+  const ancestor = matchCompound(first, attrs, true)
+  const own = subtree ? matchCompound(second, subtree, false) : null
+  return ancestor === null || own === null ? null : ancestor + own
+}
+
+/** Declared (unresolved) values for every custom property on one element in this context. */
+function declaredOn(rules: Rule[], context: Context, onSubtree: boolean): Map<string, string> {
   const winners = new Map<string, { specificity: number; order: number; value: string }>()
+  const subtree = onSubtree ? (context.subtree ?? {}) : undefined
   for (const rule of rules) {
     if (rule.media && !mediaMatches(rule.media, context.media ?? {})) continue
     const specificity = Math.max(
       -1,
-      ...rule.selectors.map((s) => matchRoot(s, context.attrs) ?? -1),
+      ...rule.selectors.map((s) => matchSelector(s, context.attrs, subtree) ?? -1),
     )
     if (specificity < 0) continue
     for (const [name, value] of rule.decls) {
@@ -142,17 +175,30 @@ export function cascade(rules: Rule[], context: Context): Map<string, string> {
   return new Map([...winners].map(([name, w]) => [name, w.value]))
 }
 
-/** Substitutes var() references, like the computed value of a custom property. */
+/** Declared (unresolved) values for every custom property on <html> in this context. */
+export function cascade(rules: Rule[], context: Context): Map<string, string> {
+  return declaredOn(rules, context, false)
+}
+
+/**
+ * Substitutes var() references, like the computed value of a custom property. A name the element
+ * doesn't declare is inherited: `inherited` gives its computed value on the parent.
+ */
 export function resolveValue(
   declared: Map<string, string>,
   value: string,
   seen = new Set<string>(),
+  inherited?: (name: string) => string | undefined,
 ): string {
   return value.replace(/var\((--[\w-]+)\)/g, (_, name: string) => {
     if (seen.has(name)) throw new Error(`Cycle through ${name}`)
     const inner = declared.get(name)
-    if (inner === undefined) throw new Error(`Undefined ${name}`)
-    return resolveValue(declared, inner, new Set([...seen, name]))
+    if (inner === undefined) {
+      const fromParent = inherited?.(name)
+      if (fromParent === undefined) throw new Error(`Undefined ${name}`)
+      return fromParent
+    }
+    return resolveValue(declared, inner, new Set([...seen, name]), inherited)
   })
 }
 
@@ -178,19 +224,20 @@ export type Tokens = {
 }
 
 export function tokensFor(rules: Rule[], context: Context): Tokens {
-  const declared = cascade(rules, context)
-  return {
-    raw: (name) => {
-      const value = declared.get(name)
-      if (value === undefined) throw new Error(`Undefined ${name}`)
-      return resolveValue(declared, value)
-    },
-    color: (name) => {
-      const value = declared.get(name)
-      if (value === undefined) throw new Error(`Undefined ${name}`)
-      return toColor(resolveValue(declared, value))
-    },
+  const root = cascade(rules, context)
+  const rootValue = (name: string) => {
+    const value = root.get(name)
+    return value === undefined ? undefined : resolveValue(root, value)
   }
+  const declared = context.subtree ? declaredOn(rules, context, true) : root
+  const inherited = context.subtree ? rootValue : undefined
+  const raw = (name: string) => {
+    const value = declared.get(name) ?? (inherited ? root.get(name) : undefined)
+    if (value === undefined) throw new Error(`Undefined ${name}`)
+    if (!declared.has(name)) return resolveValue(root, value)
+    return resolveValue(declared, value, new Set(), inherited)
+  }
+  return { raw, color: (name) => toColor(raw(name)) }
 }
 
 /** Composites a translucent colour over an opaque backdrop in sRGB. */
@@ -211,18 +258,11 @@ export function contrast(fg: Color, bg: Color): number {
 }
 
 /** Every appearance × contrast context, with attributes set as the appearance script sets them. */
-export const CONTEXTS: { name: string; context: Context }[] = [
-  ...(['light', 'dark', 'stage'] as const).flatMap((appearance) =>
-    (['normal', 'more'] as const).map((contrastMode) => ({
-      name: `${appearance}/${contrastMode}`,
-      context: { attrs: { 'data-appearance': appearance, 'data-contrast': contrastMode } },
-    })),
-  ),
-  // Dark with the score matching the appearance (26 §2).
-  ...(['normal', 'more'] as const).map((contrastMode) => ({
-    name: `dark+match/${contrastMode}`,
-    context: {
-      attrs: { 'data-appearance': 'dark', 'data-contrast': contrastMode, 'data-score': 'match' },
-    },
+export const CONTEXTS: { name: string; context: Context }[] = (
+  ['dark', 'light', 'stage'] as const
+).flatMap((appearance) =>
+  (['normal', 'more'] as const).map((contrastMode) => ({
+    name: `${appearance}/${contrastMode}`,
+    context: { attrs: { 'data-appearance': appearance, 'data-contrast': contrastMode } },
   })),
-]
+)
