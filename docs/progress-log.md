@@ -1848,3 +1848,28 @@ Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch 
 - **By design for later steps:** some mockup values fail the existing minimums: tab and staff lines, field borders, Daylight amber marks and focus ring, piano keys, Night danger text, and the stem palette (the mockup's worst pair is 1.9 ΔE2000; the retuned palette's is 12.4). Doc 26 corrects them, and no minimum is lowered. Reading-size literals rise (for example `--read-chord-current` Desk 32 → 112 px), and s32 updates those token-test values.
 - **Owner calls:** taken under the owner's pre-approval of G1. D2: 3 theme cards. D3: the ladder steps up after 3 clean passes. D4: Stand view is the default on tablets. D5: the brighter lines and retuned stems. The rest of the deviation register is listed for the owner to revisit.
 - **Verification:** `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean, every relative link resolves and gitleaks is clean. The changes are Markdown only, so no build or tests were run.
+
+## 2026-11-08 — Step s31b: Redesign step prompts
+Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch `impl/s31b-step-prompts`.
+- **Built:** 16 step prompts in the house format: s32–s39, s40a/b, s41a/b and s42–s45 in `docs/steps/`. Each prompt has its owned globs, hard deps, gates and effort as in the plan table, a "What exists" section checked against the code, acceptance criteria with exact commands, and stop points. `docs/steps/README.md` gains rows s31a–s45 and a "Redesign steps" section: steps branch from `impl/redesign`, the orchestrator merges them, plus the gates and lanes.
+- **Facts checked in the code:**
+  - The speed trainer is behind `v1.speed_trainer`, and the web reads neither the trainer nor `me.flags`.
+  - `GET /v1/progress` is unused and has no session data, so s39 needs an additive contract.
+  - `stage_sections` is a one-line stub and isn't scheduled.
+  - Separation keeps the target plus drums/bass and a mix-minus.
+  - The next migration is `0016`, and Web Push doesn't exist.
+  - `impl/29-separation-improvements` doesn't exist on this machine or on origin, so s40a builds on the current tip, and reconciling it is an owner action.
+- **Ownership decided by the orchestrator** (ledger D8–D14):
+  - Files in `apps/web/app/ui/` are owned per file after s33. `story-fixtures.ts` goes to s33.
+  - s35 owns `lib/display-store.ts` and `features/practice/banners.tsx`.
+  - Each existing e2e spec has one owner: practice → s35; onboarding, account, billing, fallbacks and a11y → s36; journey → s34. A file becomes available to another step only after its owner merges.
+  - The orchestrator union-merges `en.json`, the `copy-keys.test.ts` CATALOGUE and additive `e2e/helpers.ts` changes.
+  - s33 owns `scripts/check-ui-tokens.mjs`: it adds the 28 §3 rules scoped to `ui/**`, and s45 widens the scope.
+  - s32 also writes the perf baseline (`e2e/perf-practice.spec.ts`, `perf-baseline.json`, desktop and 1180×820 tablet).
+  - s37 waits for s36. s41a and s44 are never in flight together.
+- **Review:** passed with 6 medium findings (shared `display-store`, shared e2e specs, the banners' owner, missing lint rules, the engine's ±0.15 s clamp, the s41a/s44 overlap). All were fixed in rework round 1.
+- **Verification:**
+  - `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean.
+  - 582 spec-section citations, none unresolved. Table globs, deps and effort have no mismatches.
+  - The glob overlap over the 33 parallel pairs finds only the union-merged hot files and the one-at-a-time contracts pairs.
+  - gitleaks is clean.
