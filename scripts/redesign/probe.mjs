@@ -1,18 +1,20 @@
 // Measures a page for fidelity checks: the aria snapshot and, per selector, bounding boxes and
 // computed styles. The target is a mockup board (rendered through the shim) or any URL (the app,
-// a Storybook iframe). The JSON shape (schema 1) is documented in README.md; keys and ordering are
-// stable so two probes can be diffed.
+// a Storybook iframe), themed for the requested look. The JSON shape (schema 2) is documented in
+// README.md; keys and ordering are stable so two probes can be diffed. A probe with load or theme
+// errors still prints its JSON (with `errors`) but exits 1; from Node, probe() throws ProbeError.
 //
 //   node scripts/redesign/probe.mjs Main --look daylight --width 1440 --select .play --select header
-//   node scripts/redesign/probe.mjs 'http://localhost:6006/iframe.html?id=ui-button--primary' \
-//     --look night --width 1180 --select button --wait-for button
+//   node scripts/redesign/probe.mjs 'http://localhost:6006/iframe.html?id=base-button--primary' \
+//     --look night --width 1180 --select button
 //
-// From Node: import { probe, probePage } from './scripts/redesign/probe.mjs'
+// From Node: import { probe, probePage, ProbeError } from './scripts/redesign/probe.mjs'
 import { realpathSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import {
   collectFonts,
+  emulation,
   FIXED_LOOK,
   LOOKS,
   launchBrowser,
@@ -22,10 +24,27 @@ import {
   readBoards,
   settle,
   startServer,
+  THEME,
 } from './harness.mjs'
 
-export const SCHEMA = 1
+export { THEME }
+
+export const SCHEMA = 2
 const DEFAULT_LIMIT = 20
+const DEFAULT_TIMEOUT = 30_000
+
+// apps/web/app/ui/display.ts DISPLAY_STORAGE_KEY: the app's head script reads the stored choice.
+const DISPLAY_STORAGE_KEY = 'splitune.display'
+// Storybook marks <body> once the story has rendered (sb-show-main) or failed.
+const STORYBOOK_SETTLED = 'body.sb-show-main, body.sb-show-errordisplay, body.sb-show-nopreview'
+
+export class ProbeError extends Error {
+  constructor(result) {
+    super(result.errors.join('; '))
+    this.name = 'ProbeError'
+    this.result = result
+  }
+}
 
 // Runs in the page: one record per matched element. Colours are the computed strings plus an
 // sRGB #rrggbbaa read back through a canvas, so oklch() and hex sources compare equal.
@@ -72,8 +91,12 @@ function measureElements(elements, limit) {
         fontFamily: s.fontFamily,
         fontSize: s.fontSize,
         fontWeight: s.fontWeight,
+        fontStyle: s.fontStyle,
         lineHeight: s.lineHeight,
         letterSpacing: s.letterSpacing,
+        textTransform: s.textTransform,
+        textAlign: s.textAlign,
+        margin: sides(s, (side) => `margin${side}`),
         padding: sides(s, (side) => `padding${side}`),
         borderWidth: sides(s, (side) => `border${side}Width`),
         borderStyle: sides(s, (side) => `border${side}Style`),
@@ -82,6 +105,7 @@ function measureElements(elements, limit) {
           (corner) => s[`border${corner}Radius`],
         ),
         gap: [s.rowGap, s.columnGap],
+        boxShadow: s.boxShadow,
         opacity: s.opacity,
       },
       srgb: {
@@ -103,14 +127,22 @@ export async function probePage(page, { selectors = [], limit = DEFAULT_LIMIT, a
     const items = await locator.evaluateAll(measureElements, limit)
     elements[selector] = { count, items }
   }
-  const info = await page.evaluate(() => ({
-    viewport: { width: innerWidth, height: innerHeight },
-    page: {
-      width: document.documentElement.scrollWidth,
-      height: document.documentElement.scrollHeight,
-    },
-    dataTheme: document.querySelector('[data-theme]')?.getAttribute('data-theme') ?? null,
-  }))
+  const info = await page.evaluate(() => {
+    const html = document.documentElement
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      page: { width: html.scrollWidth, height: html.scrollHeight },
+      display: {
+        dataTheme: document.querySelector('[data-theme]')?.getAttribute('data-theme') ?? null,
+        appearance: html.getAttribute('data-appearance'),
+        contrast: html.getAttribute('data-contrast'),
+        distance: html.getAttribute('data-distance'),
+        motion: html.getAttribute('data-motion'),
+        readingFont: html.getAttribute('data-reading-font'),
+        score: html.getAttribute('data-score'),
+      },
+    }
+  })
   let ariaOut = null
   if (aria) {
     const snapshot = await page.locator('body').ariaSnapshot()
@@ -124,10 +156,102 @@ export async function probePage(page, { selectors = [], limit = DEFAULT_LIMIT, a
   return { ...info, fonts: await collectFonts(page), aria: ariaOut, elements }
 }
 
+// Adds the Storybook globals for the look and motion to an iframe.html URL (globals=k:v;k:v):
+// `appearance` (THEME) and `motion` (Storybook pins both in initialGlobals, so emulating the media
+// queries alone doesn't reach a story). A URL that already pins a different value is a
+// contradiction, not something to override. Other URLs are returned unchanged.
+export function themedUrl(target, look, motion = 'reduce') {
+  const url = new URL(target)
+  if (!url.pathname.endsWith('/iframe.html')) return url.href
+  const globals = new Map(
+    (url.searchParams.get('globals') ?? '')
+      .split(';')
+      .filter(Boolean)
+      .map((pair) => pair.split(':')),
+  )
+  for (const [name, value, option] of [
+    ['appearance', THEME[look], `--look ${look}`],
+    ['motion', motion, `--motion ${motion}`],
+  ]) {
+    const pinned = globals.get(name)
+    if (pinned && pinned !== value) {
+      throw new Error(`URL sets globals ${name}:${pinned} but ${option} needs ${value}`)
+    }
+    globals.set(name, value)
+  }
+  url.searchParams.set('globals', [...globals].map(([k, v]) => `${k}:${v}`).join(';'))
+  return url.href
+}
+
+// Opens an app or Storybook URL themed for `look`. Waits for `load`, then for `waitFor` (default
+// on Storybook iframes: the story settled) and fonts, never for network idle (the app keeps an
+// EventSource open). Load problems from any host, a non-2xx document and a Storybook error panel
+// are returned as `problems`.
+async function openUrl(browser, target, { look, width, height, touch, motion, waitFor, timeout }) {
+  const url = themedUrl(target, look, motion)
+  const opened = await preparePage(browser, {
+    width,
+    height,
+    look,
+    touch,
+    motion,
+    track: () => true,
+  })
+  const { context, page, problems } = opened
+  await context.addInitScript(
+    ({ key, appearance }) => {
+      // Opaque frames (about:blank) have no storage and throw; only the app's origin matters.
+      try {
+        const stored = JSON.parse(localStorage.getItem(key) ?? '{}') ?? {}
+        localStorage.setItem(key, JSON.stringify({ ...stored, appearance }))
+      } catch {
+        return
+      }
+    },
+    { key: DISPLAY_STORAGE_KEY, appearance: THEME[look] },
+  )
+  let response
+  try {
+    response = await page.goto(url, { waitUntil: 'load', timeout })
+  } catch (error) {
+    problems.push(`navigation failed: ${error.message.split('\n')[0]}`)
+    return { context, page, url, problems, loaded: false }
+  }
+  // The response listener reports >= 400 already; this also catches a non-2xx document below that.
+  const status = response ? `HTTP ${response.status()}: ${response.url()}` : null
+  if (response && !response.ok() && !problems.includes(status)) problems.push(status)
+  const storybook = new URL(url).pathname.endsWith('/iframe.html')
+  const ready = waitFor ?? (storybook ? STORYBOOK_SETTLED : null)
+  if (ready) {
+    try {
+      await page.locator(ready).first().waitFor({ state: 'attached', timeout })
+    } catch {
+      problems.push(`timed out after ${timeout} ms waiting for ${ready}`)
+    }
+  }
+  if (storybook) {
+    const state = await page.evaluate(() => ({
+      main: document.body.classList.contains('sb-show-main'),
+      classes: document.body.className,
+      error: document.querySelector('#error-message')?.textContent?.trim() ?? '',
+    }))
+    if (!state.main) {
+      problems.push(`Storybook did not render the story (body: ${state.classes}) ${state.error}`)
+    }
+  }
+  try {
+    await settle(page, { networkIdle: false })
+  } catch (error) {
+    problems.push(`fonts did not settle: ${error.message.split('\n')[0]}`)
+  }
+  return { context, page, url, problems, loaded: true }
+}
+
 // Opens `target` (a board name such as Main / Main.dc.html, or an http(s) URL), probes it and
 // closes it. For a board, width and height default to its canvas size and `look` picks the look
-// prop; for a URL, `look` only sets prefers-color-scheme (put the app's theme in the URL).
-// Pass `browser` to reuse one Chromium across calls. Throws when the board fails to render.
+// prop; for a URL, `look` sets the app appearance (see THEME). Pass `browser` to reuse one Chromium.
+// Throws ProbeError (its `result` holds the JSON) when anything failed to load or the page shows a
+// theme other than the look's; other mistakes (unknown board or look) throw a plain Error.
 export async function probe(target, options = {}) {
   const {
     look: requestedLook,
@@ -137,6 +261,9 @@ export async function probe(target, options = {}) {
     limit,
     aria,
     waitFor,
+    touch = false,
+    motion = 'reduce',
+    timeout = DEFAULT_TIMEOUT,
     browser: shared,
   } = options
   const isUrl = /^https?:\/\//.test(target)
@@ -146,31 +273,62 @@ export async function probe(target, options = {}) {
   if (board && !board.looks.includes(look)) {
     throw new Error(`${board.file} has no look ${look} (has ${board.looks.join(', ')})`)
   }
-  if (isUrl && !(look in LOOKS) && look !== FIXED_LOOK) throw new Error(`unknown look ${look}`)
+  if (isUrl && !(look in THEME)) throw new Error(`unknown look ${look} for a URL (night, daylight)`)
+  if (look !== FIXED_LOOK && !(look in LOOKS)) throw new Error(`unknown look ${look}`)
+  emulation({ look, touch, motion })
   const browser = shared ?? (await launchBrowser())
   const server = board ? await startServer() : null
   let context
   try {
     const size = { width: width ?? board?.width ?? 1440, height: height ?? board?.height ?? 900 }
+    const errors = []
     let page
+    let url
+    let loaded
     if (board) {
-      const opened = await openMockup(browser, server.origin, { board, look, ...size })
+      const opened = await openMockup(browser, server.origin, {
+        board,
+        look,
+        touch,
+        motion,
+        ...size,
+      })
       ;({ context, page } = opened)
-      if (opened.errors.length) throw new Error(`${board.file}: ${opened.errors.join('; ')}`)
+      errors.push(...opened.errors)
+      url = `redesign/mockups${mockupPath(board, look).slice(2)}`
+      loaded = opened.shim.done
     } else {
-      ;({ context, page } = await preparePage(browser, { ...size, look }))
-      await page.goto(target, { waitUntil: 'networkidle' })
-      if (waitFor) await page.locator(waitFor).first().waitFor()
-      await settle(page)
+      const opened = await openUrl(browser, target, {
+        look,
+        touch,
+        motion,
+        waitFor,
+        timeout,
+        ...size,
+      })
+      ;({ context, page, url, loaded } = opened)
+      errors.push(...opened.problems)
     }
-    const measured = await probePage(page, { selectors, limit, aria })
-    return {
+    const measured = loaded ? await probePage(page, { selectors, limit, aria }) : null
+    if (measured && look in THEME) {
+      const [name, actual] = board
+        ? ['data-theme', measured.display.dataTheme]
+        : ['data-appearance', measured.display.appearance]
+      if (actual !== THEME[look]) {
+        errors.push(`look ${look} expects ${name}="${THEME[look]}", the page has ${actual}`)
+      }
+    }
+    const result = {
       schema: SCHEMA,
       target: board ? board.file : target,
-      url: board ? `redesign/mockups${mockupPath(board, look).slice(2)}` : target,
+      url,
       look,
-      ...measured,
+      emulation: { ...size, touch, motion },
+      errors,
+      ...(measured ?? {}),
     }
+    if (errors.length) throw new ProbeError(result)
+    return result
   } finally {
     await context?.close()
     await server?.close()
@@ -179,14 +337,19 @@ export async function probe(target, options = {}) {
 }
 
 const USAGE = `usage: node scripts/redesign/probe.mjs <board|url> [options]
-  --look <id>        night, daylight, or fixed (default: night, or fixed for boards without a look prop)
+  --look <id>        night, daylight, or fixed (default: night, or fixed for boards without a look
+                     prop). URLs: sets the Storybook appearance global / the app's stored appearance
   --width <px>       viewport width (default: the board's canvas width, 1440 for URLs)
   --height <px>      viewport height (default: the board's canvas height, 900 for URLs)
   --select <sel>     Playwright selector to measure (repeat for several)
   --limit <n>        elements measured per selector (default ${DEFAULT_LIMIT}; count is always total)
-  --wait-for <sel>   URL targets: wait for this selector before measuring
+  --touch            emulate a touch phone (hasTouch + isMobile: pointer is coarse)
+  --motion <m>       reduce (default) or full
+  --wait-for <sel>   URL targets: wait for this selector after load (Storybook: the story by default)
+  --timeout <ms>     URL targets: navigation and wait timeout (default ${DEFAULT_TIMEOUT})
   --no-aria          leave out the aria snapshot
-  --out <file>       write the JSON there instead of stdout`
+  --out <file>       write the JSON there instead of stdout
+Exit 1 on any error; the JSON (with its \`errors\`) is still written when the page was measured.`
 
 async function cli() {
   const { values, positionals } = parseArgs({
@@ -197,7 +360,10 @@ async function cli() {
       height: { type: 'string' },
       select: { type: 'string', multiple: true },
       limit: { type: 'string' },
+      touch: { type: 'boolean' },
+      motion: { type: 'string' },
       'wait-for': { type: 'string' },
+      timeout: { type: 'string' },
       'no-aria': { type: 'boolean' },
       out: { type: 'string' },
       help: { type: 'boolean' },
@@ -213,19 +379,33 @@ async function cli() {
     if (!Number.isInteger(n) || n <= 0) throw new Error(`bad --${name} ${values[name]}`)
     return n
   }
-  const result = await probe(positionals[0], {
-    look: values.look,
-    width: int('width'),
-    height: int('height'),
-    selectors: values.select ?? [],
-    limit: int('limit'),
-    aria: !values['no-aria'],
-    waitFor: values['wait-for'],
-  })
-  const json = `${JSON.stringify(result, null, 2)}\n`
-  if (values.out) writeFileSync(values.out, json)
-  else process.stdout.write(json)
-  return 0
+  const write = (result) => {
+    const json = `${JSON.stringify(result, null, 2)}\n`
+    if (values.out) writeFileSync(values.out, json)
+    else process.stdout.write(json)
+  }
+  try {
+    write(
+      await probe(positionals[0], {
+        look: values.look,
+        width: int('width'),
+        height: int('height'),
+        selectors: values.select ?? [],
+        limit: int('limit'),
+        touch: values.touch,
+        motion: values.motion,
+        waitFor: values['wait-for'],
+        timeout: int('timeout'),
+        aria: !values['no-aria'],
+      }),
+    )
+    return 0
+  } catch (error) {
+    if (!(error instanceof ProbeError)) throw error
+    write(error.result)
+    for (const message of error.result.errors) console.error(`error: ${message}`)
+    return 1
+  }
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {

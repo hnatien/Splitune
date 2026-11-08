@@ -7,9 +7,10 @@
 //   node scripts/redesign/render-mockups.mjs --check               # self-check, no PNGs
 //
 // One heavy browser run per machine: hold the run's heavy lock around it. See README.md.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
+import { NEGATIVE, POSITIVE, runChecks } from './fixtures.mjs'
 import {
   collectFonts,
   FIXED_LOOK,
@@ -22,6 +23,7 @@ import {
   readBoards,
   splitList,
   startServer,
+  THEME,
 } from './harness.mjs'
 
 const CONCURRENCY = 4
@@ -31,41 +33,10 @@ const USAGE = `usage: node scripts/redesign/render-mockups.mjs [options]
   --width <px>     only these widths (1440, 1180, 390; fixed boards use their own width)
   --look <id>      only these looks: night, daylight, fixed (boards without a look prop)
   --out <dir>      output folder (default redesign/.renders)
-  --check          self-check: every board in every look renders with no unknown tag or
-                   unresolved hole, and broken fixtures fail; writes nothing
+  --check          self-check, writes nothing: every board in every look renders with no unknown
+                   tag or unresolved hole and the look's data-theme, fixtures render exactly as
+                   expected, and broken fixtures fail
   --help`
-
-// Self-check fixtures: each must fail with an error containing `expect`.
-const FIXTURE = (body, vals = '{}', props = '{"$preview":{"width":390,"height":200}}') =>
-  `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>fixture</title>
-<script src="./support.js"></script><link rel="stylesheet" href="splitune.css"></head><body>
-<x-dc><helmet><style>body{margin:0}</style></helmet>${body}</x-dc>
-<script type="text/x-dc" data-dc-script data-props='${props}'>
-class Component extends DCLogic { renderVals() { return ${vals} } }
-</script></body></html>`
-
-const NEGATIVE = {
-  'unknown-tag.dc.html': {
-    html: FIXTURE('<div class="app"><sc-each><i>{{label}}</i></sc-each></div>', '{ label: "x" }'),
-    expect: 'unknown tag <sc-each>',
-  },
-  'unresolved-hole.dc.html': {
-    html: FIXTURE('<div class="app" style="width: {{w}}px">{{label}}</div>', '{ label: "x" }'),
-    expect: 'unresolved hole {{w}}',
-  },
-  'unresolved-item-hole.dc.html': {
-    html: FIXTURE(
-      '<ul class="app"><sc-for list="{{rows}}" as="r"><li>{{r.nope}}</li></sc-for></ul>',
-      '{ rows: [{ name: "a" }] }',
-    ),
-    expect: 'unresolved hole {{r.nope}}',
-  },
-  'unknown-look.dc.html': {
-    html: FIXTURE('<div class="app">x</div>'),
-    look: 'daylight',
-    expect: 'no look prop',
-  },
-}
 
 // Repo-relative inside the repo, absolute elsewhere.
 function shown(path) {
@@ -73,11 +44,19 @@ function shown(path) {
   return rel && !rel.startsWith('..') ? rel : path
 }
 
-async function pool(items, size, run) {
+// Runs jobs `size` at a time. A job that throws is reported through onError and the rest go on.
+async function pool(items, size, run, onError) {
   const queue = [...items]
   await Promise.all(
     Array.from({ length: Math.min(size, queue.length) }, async () => {
-      while (queue.length) await run(queue.shift())
+      while (queue.length) {
+        const item = queue.shift()
+        try {
+          await run(item)
+        } catch (error) {
+          onError(item, error)
+        }
+      }
     }),
   )
 }
@@ -100,36 +79,63 @@ async function measure(page) {
 }
 
 async function selfCheck(browser, boards) {
-  const fixtures = Object.fromEntries(Object.entries(NEGATIVE).map(([n, f]) => [n, f.html]))
-  const server = await startServer({ fixtures })
+  const all = { ...NEGATIVE, ...POSITIVE }
+  const server = await startServer({
+    fixtures: Object.fromEntries(Object.entries(all).map(([name, f]) => [name, f.html])),
+  })
   const failures = []
   let rendered = 0
+  const openFixture = (file, look) =>
+    openMockup(browser, server.origin, {
+      board: { file, width: 390 },
+      look: look ?? FIXED_LOOK,
+      width: 390,
+      height: 200,
+      area: 't',
+    })
   try {
     const { jobs } = planRenders(boards)
     const once = jobs.filter(
       (job, i) => jobs.findIndex((j) => j.board === job.board && j.look === job.look) === i,
     )
-    await pool(once, CONCURRENCY, async (job) => {
-      const { context, shim, errors } = await openMockup(browser, server.origin, {
-        ...job,
-        width: job.board.width,
-      })
-      await context.close()
-      if (errors.length) failures.push(`${job.board.file} (${job.look}): ${errors.join('; ')}`)
-      else rendered += 1
-      console.log(
-        `${errors.length ? 'FAIL' : 'ok  '} ${job.board.file} ${job.look} (${shim.holes} holes, ${shim.removedHandlers.length} handlers dropped)`,
-      )
-    })
+    await pool(
+      once,
+      CONCURRENCY,
+      async (job) => {
+        const { context, page, shim, errors } = await openMockup(browser, server.origin, {
+          ...job,
+          width: job.board.width,
+        })
+        try {
+          if (shim.done && job.look in THEME) {
+            const { theme } = await measure(page)
+            if (theme !== THEME[job.look]) {
+              errors.push(`look ${job.look} rendered data-theme="${theme}", not ${THEME[job.look]}`)
+            }
+          }
+        } finally {
+          await context.close()
+        }
+        if (errors.length) failures.push(`${job.board.file} (${job.look}): ${errors.join('; ')}`)
+        else rendered += 1
+        console.log(
+          `${errors.length ? 'FAIL' : 'ok  '} ${job.board.file} ${job.look} (${shim.holes} holes, ${shim.removedHandlers.length} handlers dropped)`,
+        )
+      },
+      (job, error) => failures.push(`${job.board.file} (${job.look}): ${error.message}`),
+    )
+    for (const [file, fixture] of Object.entries(POSITIVE)) {
+      const { context, page, shim, errors } = await openFixture(file, fixture.look)
+      try {
+        if (shim.done) errors.push(...(await page.evaluate(runChecks, fixture.checks)))
+      } finally {
+        await context.close()
+      }
+      if (errors.length) failures.push(`fixture ${file}: ${errors.join('; ')}`)
+      console.log(`${errors.length ? 'FAIL' : 'ok  '} fixture ${file} renders as expected`)
+    }
     for (const [file, fixture] of Object.entries(NEGATIVE)) {
-      const board = { file, width: 390 }
-      const { context, errors } = await openMockup(browser, server.origin, {
-        board,
-        look: fixture.look ?? FIXED_LOOK,
-        width: 390,
-        height: 200,
-        area: 't',
-      })
+      const { context, errors } = await openFixture(file, fixture.look)
       await context.close()
       const caught = errors.some((error) => error.includes(fixture.expect))
       if (!caught) failures.push(`fixture ${file}: expected "${fixture.expect}", got ${errors}`)
@@ -139,7 +145,7 @@ async function selfCheck(browser, boards) {
     await server.close()
   }
   console.log(
-    `\nself-check: ${rendered} board renders clean, ${Object.keys(NEGATIVE).length} broken fixtures checked, ${failures.length} failures`,
+    `\nself-check: ${rendered} board renders clean, ${Object.keys(POSITIVE).length} fidelity fixtures and ${Object.keys(NEGATIVE).length} broken fixtures checked, ${failures.length} failures`,
   )
   return failures
 }
@@ -149,13 +155,22 @@ async function renderAll(browser, plan, outDir) {
   const entries = []
   const failures = []
   try {
-    await pool(plan.jobs, CONCURRENCY, async (job) => {
+    const run = async (job) => {
       const { board, look, width, height } = job
       const started = Date.now()
       const { context, page, errors } = await openMockup(browser, server.origin, job)
       try {
         if (errors.length) {
-          failures.push(`${board.file} (${look}, ${width}): ${errors.join('; ')}`)
+          failures.push({ job, message: errors.join('; ') })
+          console.log(`FAIL ${board.file} ${look} ${width}`)
+          return
+        }
+        const measured = await measure(page)
+        if (look in THEME && measured.theme !== THEME[look]) {
+          failures.push({
+            job,
+            message: `rendered data-theme="${measured.theme}", not ${THEME[look]}`,
+          })
           console.log(`FAIL ${board.file} ${look} ${width}`)
           return
         }
@@ -172,7 +187,7 @@ async function renderAll(browser, plan, outDir) {
           width,
           viewportHeight: height,
           png: relative(outDir, png),
-          ...(await measure(page)),
+          ...measured,
           fonts,
           ms: Date.now() - started,
         })
@@ -181,6 +196,10 @@ async function renderAll(browser, plan, outDir) {
       } finally {
         await context.close()
       }
+    }
+    await pool(plan.jobs, CONCURRENCY, run, (job, error) => {
+      failures.push({ job, message: error.message.split('\n')[0] })
+      console.log(`FAIL ${job.board.file} ${job.look} ${job.width}`)
     })
   } finally {
     await server.close()
@@ -188,23 +207,36 @@ async function renderAll(browser, plan, outDir) {
   return { entries, failures }
 }
 
-// A filtered run updates only its own entries in an existing manifest.
-function writeManifest(outDir, entries, skips) {
+const key = (e) => `${e.board}|${e.look}|${e.width}`
+
+// An unfiltered run writes a fresh manifest; a filtered run replaces only its own entries and adds
+// its skips. Entries of failed jobs are dropped. Every PNG an entry no longer points at (a failed,
+// removed or renamed board) is deleted, so nothing stale passes as a reference. Only PNGs listed in
+// the previous manifest are ever deleted.
+function writeManifest(outDir, { entries, failures, skips, filtered }) {
   const path = join(outDir, 'manifest.json')
-  let previous = []
-  try {
-    previous = JSON.parse(readFileSync(path, 'utf8')).renders ?? []
-  } catch {
-    previous = []
-  }
-  const key = (e) => `${e.board}|${e.look}|${e.width}`
+  let previous = { skips: [], renders: [] }
+  if (existsSync(path)) previous = JSON.parse(readFileSync(path, 'utf8'))
+  const failed = new Set(
+    failures.map(({ job }) => key({ board: job.board.name, look: job.look, width: job.width })),
+  )
   const fresh = new Set(entries.map(key))
-  const renders = [...previous.filter((e) => !fresh.has(key(e))), ...entries].sort((a, b) =>
+  const kept = filtered
+    ? previous.renders.filter((e) => !fresh.has(key(e)) && !failed.has(key(e)))
+    : []
+  const renders = [...kept, ...entries].sort((a, b) =>
     key(a).localeCompare(key(b), 'en', { numeric: true }),
   )
+  const live = new Set(renders.map((e) => e.png))
+  for (const stale of previous.renders) {
+    const png = resolve(outDir, stale.png)
+    if (!live.has(stale.png) && !relative(outDir, png).startsWith('..'))
+      rmSync(png, { force: true })
+  }
+  const allSkips = filtered ? [...new Set([...previous.skips, ...skips])] : skips
   writeFileSync(
     path,
-    `${JSON.stringify({ schema: 1, generatedAt: new Date().toISOString(), skips, renders }, null, 2)}\n`,
+    `${JSON.stringify({ schema: 1, generatedAt: new Date().toISOString(), skips: allSkips, renders }, null, 2)}\n`,
   )
   return path
 }
@@ -243,7 +275,8 @@ async function main() {
     const outDir = values.out ? resolve(values.out) : OUT_DIR
     mkdirSync(outDir, { recursive: true })
     const { entries, failures } = await renderAll(browser, plan, outDir)
-    const manifest = writeManifest(outDir, entries, plan.skips)
+    const filtered = Boolean(values.file?.length || widths.length || looks.length)
+    const manifest = writeManifest(outDir, { entries, failures, skips: plan.skips, filtered })
     for (const skip of plan.skips) console.log(`skip ${skip}`)
     const counts = {}
     for (const e of entries)
@@ -251,7 +284,9 @@ async function main() {
     console.log(`\n${entries.length} PNGs in ${shown(outDir)}:`)
     for (const [k, n] of Object.entries(counts).sort()) console.log(`  ${k}: ${n}`)
     console.log(`manifest: ${shown(manifest)}`)
-    for (const failure of failures) console.error(`error: ${failure}`)
+    for (const { job, message } of failures) {
+      console.error(`error: ${job.board.file} (${job.look}, ${job.width}): ${message}`)
+    }
     return failures.length ? 1 : 0
   } finally {
     await browser.close()

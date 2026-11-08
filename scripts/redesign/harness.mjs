@@ -19,6 +19,9 @@ const SHIM = join(dirname(fileURLToPath(import.meta.url)), 'shim.js')
 // its own hard-coded look once.
 export const LOOKS = { night: 'Night Rehearsal', daylight: 'Daylight' }
 export const FIXED_LOOK = 'fixed'
+// What a page must show for a look. Boards: the root's data-theme (the mockups' LOOKS map). The app
+// and Storybook: <html data-appearance> (apps/web/app/ui/display.ts).
+export const THEME = { night: 'dark', daylight: 'light' }
 export const WIDTHS = [1440, 1180, 390]
 
 const SUFFIX = '.dc.html'
@@ -168,59 +171,101 @@ export function mockupPath(board, look, area = 'm') {
   return `/${area}/${board.file}${query}`
 }
 
-// Prepares a page for a board: viewport, colour-scheme emulation matching the look (form controls
-// follow it; the boards themselves switch on data-theme), reduced motion.
-export async function preparePage(browser, { width, height, look }) {
+// Emulation shared by boards and URLs: viewport, device scale 1, prefers-color-scheme matching the
+// look (form controls follow it; the boards themselves switch on data-theme), motion (`reduce` by
+// default for stable measurements) and, with `touch`, a touch phone (hasTouch + isMobile, so
+// `(pointer: coarse)` matches as on a real phone).
+export function emulation({ look, touch = false, motion = 'reduce' }) {
+  if (motion !== 'reduce' && motion !== 'full') throw new Error(`unknown motion ${motion}`)
+  return {
+    colorScheme: look === 'daylight' ? 'light' : 'dark',
+    reducedMotion: motion === 'reduce' ? 'reduce' : 'no-preference',
+    hasTouch: Boolean(touch),
+    isMobile: Boolean(touch),
+  }
+}
+
+// Opens a page and records load problems: page errors, failed requests and HTTP errors for the
+// requests `track(url)` accepts (boards: the local server only, so a font CDN outage is a font
+// fallback, not a failure; URL targets: every host).
+export async function preparePage(browser, { width, height, look, touch, motion, track }) {
   const context = await browser.newContext({
     viewport: { width, height },
     deviceScaleFactor: 1,
-    colorScheme: look === 'daylight' ? 'light' : 'dark',
-    reducedMotion: 'reduce',
+    ...emulation({ look, touch, motion }),
   })
   const page = await context.newPage()
   const problems = []
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`))
   page.on('requestfailed', (request) => {
-    const url = new URL(request.url())
-    if (url.hostname === '127.0.0.1') problems.push(`request failed: ${url.pathname}`)
+    if (track(new URL(request.url()))) {
+      problems.push(`request failed (${request.failure()?.errorText}): ${request.url()}`)
+    }
   })
   page.on('response', (response) => {
-    const url = new URL(response.url())
-    if (url.hostname === '127.0.0.1' && response.status() >= 400) {
-      problems.push(`HTTP ${response.status()}: ${url.pathname}`)
+    if (track(new URL(response.url())) && response.status() >= 400) {
+      problems.push(`HTTP ${response.status()}: ${response.url()}`)
     }
   })
   return { context, page, problems }
 }
 
-// Loads a board through the shim and waits for fonts. Returns the shim outcome plus same-origin
-// load problems; `errors` is empty only when the board rendered completely.
-export async function openMockup(browser, origin, { board, look, width, height, area = 'm' }) {
-  const { context, page, problems } = await preparePage(browser, { width, height, look })
-  await page.goto(`${origin}${mockupPath(board, look, area)}`, { waitUntil: 'networkidle' })
+const isLocalServer = (url) => url.hostname === '127.0.0.1'
+
+// Loads a board through the shim and waits for fonts. Returns the shim outcome plus load problems;
+// `errors` is empty only when the board rendered completely. Never throws for a broken board (a
+// navigation timeout is an error of that board), so one bad file can't stop a whole run.
+export async function openMockup(browser, origin, options) {
+  const { board, look, width, height, touch, motion, area = 'm' } = options
+  const opened = await preparePage(browser, {
+    width,
+    height,
+    look,
+    touch,
+    motion,
+    track: isLocalServer,
+  })
+  const { context, page, problems } = opened
+  const failed = (message) => ({
+    context,
+    page,
+    shim: { done: false, ok: false, errors: [message], holes: 0, removedHandlers: [] },
+    errors: [message, ...problems],
+  })
+  try {
+    await page.goto(`${origin}${mockupPath(board, look, area)}`, { waitUntil: 'networkidle' })
+  } catch (error) {
+    return failed(`navigation failed: ${error.message.split('\n')[0]}`)
+  }
   try {
     await page.waitForFunction(() => window.__dc?.done === true, null, { timeout: 15_000 })
   } catch {
-    const shim = { done: false, ok: false, errors: ['the shim never finished'], holes: 0 }
-    return {
-      context,
-      page,
-      shim: { ...shim, removedHandlers: [] },
-      errors: [...shim.errors, ...problems],
-    }
+    return failed('the shim never finished')
   }
   const shim = await page.evaluate(() => window.__dc)
-  await settle(page)
+  try {
+    await settle(page)
+  } catch (error) {
+    problems.push(`fonts did not settle: ${error.message.split('\n')[0]}`)
+  }
   return { context, page, shim, errors: [...shim.errors, ...problems] }
 }
 
-// Forces layout so every used face is requested, then waits for the font loads to finish.
-export async function settle(page) {
+// Forces layout so every used face is requested, then waits for the font loads to finish. Boards
+// are static, so they also wait for network idle; app pages may hold an EventSource open forever,
+// so URL targets don't.
+export async function settle(page, { networkIdle = true } = {}) {
   await page.evaluate(async () => {
     document.body?.getBoundingClientRect()
     await document.fonts.ready
   })
-  await page.waitForLoadState('networkidle')
+  if (networkIdle) await page.waitForLoadState('networkidle')
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      }),
+  )
   await page.evaluate(() => document.fonts.ready)
 }
 
@@ -239,7 +284,7 @@ const GENERIC = new Set([
   'emoji',
 ])
 
-// `requested`: the first family of every element that shows text. `loaded`: families with at
+// `requested`: the first family of every rendered element that shows text. `loaded`: families with at
 // least one loaded face. `missing`: requested but not loaded, i.e. drawn with a fallback.
 export async function collectFonts(page) {
   const { requested, loaded } = await page.evaluate(() => {
@@ -249,6 +294,7 @@ export async function collectFonts(page) {
     )
     const requestedSet = new Set()
     for (const el of document.body.querySelectorAll('*')) {
+      if (!el.checkVisibility()) continue
       const hasText = [...el.childNodes].some((n) => n.nodeType === 3 && n.data.trim())
       if (hasText) requestedSet.add(unquote(getComputedStyle(el).fontFamily.split(',')[0]))
     }
