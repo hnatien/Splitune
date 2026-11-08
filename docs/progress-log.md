@@ -1873,3 +1873,16 @@ Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch 
   - 582 spec-section citations, none unresolved. Table globs, deps and effort have no mismatches.
   - The glob overlap over the 33 parallel pairs finds only the union-merged hot files and the one-at-a-time contracts pairs.
   - gitleaks is clean.
+
+## 2026-11-08 — Redesign run paused and handed off to the owner's PC
+The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started on the owner's Mac and was paused there on the owner's instruction. Its state, the owner's later instructions and the decisions register D1–D15 are in `redesign/orchestrator/handoff.md`.
+- **Merged:** s31a (specs), s31b (step prompts) and s31c (mockup harness), via `impl/redesign`. G1 closed under the owner's pre-approval.
+- **Parked on pushed branches, unverified:**
+  - `impl/s32-tokens-fonts` (`cb8fcd3`): only a draft of `apps/web/e2e/perf-practice.spec.ts`, never run; no tokens changed.
+  - `impl/s40a-all-stems` (`ac460c6`): unfinished all-stems separation edits and tests, never run.
+- **Owner instructions:** ML work (s40a, s41a, G3) is tested on the owner's PC. The UI steps continue, with s40b and s41b built against fixture data. s44 (Web Push) is deferred until the owner asks for it.
+- **Measured at `8d6a3f6`:**
+  - lint, web typecheck, build and css-floor clean;
+  - web unit tests: 214 passed;
+  - `test:stories`: 988 passed (the first run failed on Vite dependency re-optimisation; the rerun was green);
+  - practice-route JS: 318.7 KB gzip of 320.0 KB.
