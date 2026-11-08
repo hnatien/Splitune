@@ -30,7 +30,7 @@ splitune/
     audio-dsp/           # C++ (Signalsmith wrapper) → dsp.wasm via Emscripten; CMake for native
     audio-engine/        # TS worklet processor, decode worker, clock
     notation/            # alphaTab wrapper + alphaTex helpers + confidence styling
-    ui-tokens/           # "Music Stand" design tokens: CSS variables + Tailwind v4 @theme, token tests (26-design-system.md)
+    ui-tokens/           # "Night Rehearsal" design tokens: CSS variables + Tailwind v4 @theme, token tests (26-design-system.md)
     analytics/           # typed event taxonomy shared by web/api (16-…)
     config/              # shared tsconfig, biome.json, vitest presets
   services/

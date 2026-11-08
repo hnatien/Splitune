@@ -58,7 +58,7 @@ The original commercial constraints (user files only, per-user storage, licence 
 | 23 | `23-plans-free-and-paid.md` | Free vs Plus feature split, analysis types, unit economics, paywall UX rules |
 | 24 | `24-browser-compatibility.md` | Support tiers and floor, capability fallbacks, browser-specific issues, test matrix |
 | 25 | `25-personal-mode.md` | **Current mode:** Railway Hobby (app + Postgres) + R2 storage + Mac ML worker, mock billing, open-model stack (licences ignored), URL import — overrides 00–24 where they differ |
-| 26 | `26-design-system.md` | "Music Stand" visual direction (chosen vs 3 alternatives), Light/Dark/Stage appearances, tokens with verified contrast, confidence encoding, type + reading sizes by distance, targets, motion, icons, component inventory |
+| 26 | `26-design-system.md` | "Night Rehearsal" visual direction (chosen vs 2 alternatives), Night Rehearsal/Daylight themes, tokens with verified contrast and a CVD-tested stem palette, confidence encoding, type + reading sizes by distance, targets, motion, icons, component inventory. Visual source: `redesign/mockups/` and `splitune.css`; `assets/design/reference.html` shows the superseded Music Stand system and is not a source |
 | 27 | `27-screens-flows-and-content.md` | Shells and navigation, every screen's layout and states, practice regions + progressive states, voice/terminology/style, message catalogue |
 | 28 | `28-ui-quality-and-design-review.md` | Storybook workbench, token/a11y/visual-regression checks, design QA checklist, usability rounds, review rubric |
 

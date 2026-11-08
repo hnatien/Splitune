@@ -17,7 +17,7 @@ Rewritten in place in step s31a (2026-11-08); section numbers are unchanged. The
 - **Storybook 10.6** in `apps/web`: every `app/ui` and `packages/notation` component and every screen has one story per state, rendered under an Appearance (Night Rehearsal / Daylight / Stage) × Contrast × Density × Distance × Reduced-motion toolbar; axe runs with `test: 'error'` and the WCAG 2.2 tags; `test:stories` runs them in Chromium and WebKit.
 - **Token tests** fail the build if any pair in `26` §4.6 drops below its WCAG minimum in any of the six contexts, leaves sRGB gamut, or if two stem colours fall under 12 ΔE2000 under simulated CVD.
 - **Mockup fidelity is measured, not eyeballed** (§5.1): `scripts/redesign` (s31c) renders every mockup at 1440 / 1180 / 390 in both themes and probes computed styles and boxes; a screen matches when structure, styles and boxes agree within tolerance (or with the `26` §4.9 deviation register); a pixel diff is a smoke signal only.
-- **Accessibility gates for the redesign:** target-size probe (44 / 52 / 64 / 88 / 24), focus-not-obscured probe, keyboard-only journeys, single-key shortcuts off, reduced-motion runs, no flash over 3/s, colour-not-alone review.
+- **Accessibility gates for the redesign:** target-size probe (64 main practice controls in every layout, 48 secondary practice, 44 everywhere else, 88 Stand view, 24 only for desktop section chips), focus-not-obscured probe, keyboard-only journeys, single-key shortcuts off, reduced-motion runs, no flash over 3/s, colour-not-alone review.
 - **Performance gate:** Long Animation Frames, forced layout and p75 practice-action latency on the practice screen in Chromium with CPU throttling, compared with the baseline s32 records before any restyle.
 - **Visual regression** with Playwright in the pinned Docker image; the 72 Music Stand baselines are all invalidated by the redesign and are regenerated screen by screen after the owner's review (s33, then s45).
 
@@ -58,7 +58,7 @@ Rule: a feature that needs a new visual pattern adds it to `app/ui` with stories
 | CSS floor | `apps/web/scripts/css-floor.mjs` (after build) | `light-dark()`, relative colour syntax, `@scope` or native CSS nesting in the built CSS |
 | Copy keys | `apps/web/app/copy-keys.test.ts` | A user-facing string in a screen is not a Paraglide message, a `27` §5.6 key is missing, or its copy differs from the catalogue (changed copy updates the test in the same step, per `27` §5.7) |
 | a11y | Storybook (all stories) + Playwright pages (`@axe-core/playwright`, WCAG 2.2 AA tags) | axe serious/critical violations |
-| Target size | Story `play` probe + E2E (s45) | An interactive element's hit area is under 44 × 44 (practice transport 52, Play 64, Stand view 88), except the `26` §8 exceptions at ≥ 24 with spacing on fine pointers |
+| Target size | Story `play` probe + E2E (s33 for components, every screen step for its screens, all screens in s45) | An interactive element's border box (`getBoundingClientRect()`) is under: **64 × 64** for a main practice control (Play/Pause, restart / back a bar, previous and next bar, speed −/+ and the speed readout, loop toggle or pill, count-in, Felt clean, Not yet, Loop this bar) in the desktop, tablet, phone and Fix-mode layouts; **88** tall for Stand view's dock buttons; **48 × 48** for a secondary practice control (`26` §8 list); **44 × 44** for anything else. Only exception: song-map section chips on a fine pointer, ≥ 24 × 24. Inline text links are exempt (WCAG). The existing `transport.stories.tsx` assertions (64 and 48) stay |
 | Focus not obscured | E2E focus spec | For each Tab stop on key screens, with the dock, sheets and drawers open, the focused element is fully covered (`elementFromPoint` at several points) — WCAG 2.4.11 |
 | Token membership | E2E (s45) | A rendered element's computed `color`, `background-color`, `border-color`, `outline-color`, `fill` or `stroke` is not a resolved token value of the active context |
 | Motion | Stories and E2E with `reducedMotion: 'reduce'` | A non-essential animation runs (computed `animation-name` / `transition-duration`), or the playhead stops |
@@ -110,7 +110,7 @@ Run on the changed screens (and every screen in s45). Record pass/fail in the st
 
 **Accessibility (WCAG 2.2 AA)**
 - [ ] Keyboard-only pass in visual order; focus always visible and never hidden by the dock, sheets or drawers (2.4.11).
-- [ ] Targets per `26` §8 (2.5.8; 44 internal rule); every drag has a single-pointer alternative (2.5.7).
+- [ ] Targets per `26` §8: 64 main practice controls in every layout, 48 secondary practice controls, 44 everywhere else, nothing under 24 (2.5.5, 2.5.8); every drag has a single-pointer alternative (2.5.7).
 - [ ] Single-key shortcuts can be switched off and are then inert (2.1.4); pausing playback stops scrolling (2.2.2).
 - [ ] Colour never the only cue (confidence, stems, status, selection, the downbeat, "Rough"); checked with a CVD simulator in both themes (1.4.1, 1.4.11).
 - [ ] 200 % text zoom and 320 px reflow on browse screens (1.4.4, 1.4.10).
