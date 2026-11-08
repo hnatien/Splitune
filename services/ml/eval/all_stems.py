@@ -245,7 +245,8 @@ def render(rows: list[dict[str, Any]], args: argparse.Namespace) -> str:
         "Times are wall-clock per stage in-process (warm models after the first item; the first "
         "item's separate includes loading). `before` = the same stages under the older map. "
         "Tagger: `ok` or its fallback reason (without it no extra is vetoed). Overlap: the "
-        "isolated extra most correlated with the learner's stem (near 0 within one run).",
+        "isolated extra most correlated with the learner's stem (small within one run; high = "
+        "that extra replays the learner's part).",
         "",
         "| item | learner | s | provider | tagger | stems before -> after"
         " | encoded MB before -> after | separate s before -> after"
