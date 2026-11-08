@@ -70,7 +70,7 @@ export const TabularReadouts: Story = {
     await expect(document.fonts.check('400 1em "Instrument Sans"')).toBe(true)
     for (const row of canvasElement.querySelectorAll('[data-readout]')) {
       const spans = [...row.querySelectorAll('span')]
-      await expect(getComputedStyle(spans[0] as Element).fontFamily).toMatch(/^"JetBrains Mono"/)
+      await expect(getComputedStyle(spans[0] as Element).fontFamily).toMatch(/^"?JetBrains Mono"?,/)
       const widths = spans.map(width)
       for (const value of widths) await expect(value).toBeCloseTo(widths[0] ?? 0, 1)
     }
