@@ -30,6 +30,7 @@ What is built, as of **2026-10-29**. Details, verification and open items for ea
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
 | s24 | Piano accuracy | Partial | Phases 0–6 built and measured (P2p); owner's songs end to end and Notes/Staff screenshots pending the owner | Step 24 |
 | s25 | Drums end to end | In progress | Phases 0–6 built: P2d (onset F1 0.838 vs 0.793 baseline), `notes.drums` behind `v1.drums`, drum score/levels/alphaTex, drum grid and staff views, gate pass (0.80) + confidence floor 0.75, local end to end done. Open: the owner's excerpts on the Mac, grid/staff screenshots, `v1.drums` on in production after deploy, DrumSep kit split (blocked) | Step 25 |
+| s31a | Redesign: Night Rehearsal specs (docs 26–28 rewritten; 12, 21 and the UI rule updated) | Done | Owner may revisit the deviation register (26 §4.9) | Step s31a |
 | s31c | Redesign: mockup harness (reference renders and fidelity probe) | Done | — | Step s31c |
 
 ## Ad-hoc work

@@ -1831,3 +1831,20 @@ Redesign orchestrator step s31c (`redesign/orchestrator/prompt.md` §5), branch 
   - `node scripts/redesign/render-mockups.mjs --check`: 46 board renders, 5 fidelity and 4 broken fixtures, 0 failures. A full render gives 110 PNGs.
   - URL probe against Storybook `base-button--primary`: exit 0 in both looks. A missing story or a 404 exits 1.
   - After the merge: web typecheck clean and web unit tests 214 passed. `test:stories` and the build were not re-run because no web file changed.
+
+## 2026-11-08 — Step s31a: Redesign specs (Night Rehearsal)
+Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch `impl/s31a-specs`.
+- **Built:** docs 26, 27 and 28 are rewritten in place for Night Rehearsal with their section numbers kept, so code comments citing "26 §5" still point at the right topic. They cover:
+  - the theme model: `dark` = Night Rehearsal (the default), `light` = Daylight, `stage` = Night with the stand reading sizes; the picker shows three cards and `stage` stays a valid id;
+  - OKLCH tokens with an sRGB-clamped amber, contrast pairs (§4.8), the amber-use list (§4.5) and a deviation register (§4.9, V1–V17);
+  - type: Instrument Sans and JetBrains Mono, with Inter 4 as the fallback;
+  - reading sizes per preset, and a phone fit rule (§6.3);
+  - targets: 64 px for main practice controls, 48 px secondary, ≥ 44 px elsewhere, 24 px AA floor;
+  - motion and confidence encoding (dashed outline plus "?" and frequency wording; calibration check C1);
+  - the component inventory, the IA and route map, every screen and state, and the copy catalogue (27 §5.6 changed/new keys, §5.7 every other change by owning step);
+  - design QA measured against the mockup renders (28 §5.1) and a perf gate (28 §3.1).
+- **Also updated:** doc 12 (practice layout) and doc 21 (V-feature UI notes). The UI rule in `CLAUDE.md`, `AGENTS.md` and `docs/steps/00-shared-context.md` now names Night Rehearsal. The budget line reads 318.7 KB gzip of 320 KB, about 1.3 KB left, measured on impl/redesign at 8d6a3f6. The rest: the Designer row in `docs/README.md`, row 26 in `docs/specs/README.md` (`assets/design/reference.html` marked superseded), and one wording line each in docs 02 and 10.
+- **Review:** the first review failed the draft: it lowered the main practice targets to 52 px and halved the reading sizes. Round 1 restored 64 px and today's tested floors, fixed the `--primary` text pairs (now `--primary-ink`, with an old → new table) and restored the §4.8 table that contrast.test.ts cites. Round 2 added the phone fit rule and the wash paint order (the loop band sits under the waveform bars) and made the size values consistent across docs.
+- **By design for later steps:** some mockup values fail the existing minimums: tab and staff lines, field borders, Daylight amber marks and focus ring, piano keys, Night danger text, and the stem palette (the mockup's worst pair is 1.9 ΔE2000; the retuned palette's is 12.4). Doc 26 corrects them, and no minimum is lowered. Reading-size literals rise (for example `--read-chord-current` Desk 32 → 112 px), and s32 updates those token-test values.
+- **Owner calls:** taken under the owner's pre-approval of G1. D2: 3 theme cards. D3: the ladder steps up after 3 clean passes. D4: Stand view is the default on tablets. D5: the brighter lines and retuned stems. The rest of the deviation register is listed for the owner to revisit.
+- **Verification:** `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean, every relative link resolves and gitleaks is clean. The changes are Markdown only, so no build or tests were run.
