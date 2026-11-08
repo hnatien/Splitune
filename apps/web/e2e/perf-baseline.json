@@ -1,0 +1,509 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-11-08T12:20:47.514Z",
+  "git": {
+    "sha": "a447ab3ab125019f7c73e3eeeddfc793b507ee26",
+    "subject": "test(web): fix the practice perf record so it runs on windows and writes only a complete baseline",
+    "uncommitted": []
+  },
+  "machine": {
+    "name": "owner's Windows PC: AMD Ryzen 5 7600 (6 cores, 12 threads), 32 GB, NVIDIA GeForce RTX 3060, Windows 11 Pro 10.0.26300",
+    "platform": "win32 10.0.26300",
+    "cpu": "AMD Ryzen 5 7600 6-Core Processor              ",
+    "logicalCores": 12,
+    "memoryGb": 32,
+    "node": "v24.21.0",
+    "notes": "Recorded under the redesign run's heavy lock, 3 runs per context back to back. Also running: a GPU source-separation eval from the main checkout (services/ml eval/sep_matrix.py, bs_roformer on CUDA, MUSDB18-HQ); Docker Desktop with the compose Postgres and SeaweedFS; this spec's e2e stack (built app server, mock-mode ML worker, node worker); an orphaned mock-mode ML worker left by the trial run's teardown, reconnecting to its dropped database once a second; two idle Playwright MCP servers. machineBusyBefore per run is the whole machine's CPU share over the 3 s before the run."
+  },
+  "browser": {
+    "name": "chromium",
+    "version": "156.0.8078.4",
+    "headless": true
+  },
+  "throttling": {
+    "cpu": 4,
+    "via": "CDP Emulation.setCPUThrottlingRate on the page, after the example loads"
+  },
+  "method": {
+    "screen": "the onboarding example song (openExample: /start, Guitar, Just started, Skip), its practice screen, started from the \"Play your part\" card",
+    "motion": "full (reducedMotion no-preference); service workers blocked",
+    "longAnimationFrames": "PerformanceObserver long-animation-frame (≥ 50 ms), 20 s from the press that starts the looped playback with its count-in",
+    "forcedStyleAndLayout": "CDP trace (devtools.timeline) over 10 s of steady playback right after that window: Layout/UpdateLayoutTree nested in script on CrRendererMain, attributed to the innermost FunctionCall; LoAF per-script forcedStyleAndLayoutDuration is in attribution.longAnimationFrames",
+    "latency": "Event Timing (durationThreshold 16 ms), one sample per action = the longest entry of the interactions it started, 12 samples per action during playback (play/pause alternates while stopped and playing); a sample below the threshold counts as 16 ms and in belowThreshold",
+    "actions": {
+      "playPause": "press Play/Pause in the transport",
+      "loopNudge": "ArrowRight/ArrowLeft on the focused loop-start edge of the song map",
+      "speedStep": "press Faster/Slower (the on-screen speed buttons)",
+      "faderStep": "ArrowDown/ArrowUp on the focused first stem fader in the open mixer, while playing"
+    },
+    "press": "desktop: click; tablet: tap",
+    "percentiles": "nearest rank; ms rounded to 0.01",
+    "keptRun": "per context, the run with the median mean-p75 latency; spread lists every run",
+    "selectors": {
+      "playPause": {
+        "role": "button",
+        "name": "^(Play|Pause)$"
+      },
+      "pause": {
+        "role": "button",
+        "name": "^Pause$"
+      },
+      "slower": {
+        "role": "button",
+        "name": "^Slower$"
+      },
+      "faster": {
+        "role": "button",
+        "name": "^Faster$"
+      },
+      "loopStartEdge": {
+        "role": "button",
+        "name": "^Loop start, bar \\d+$"
+      },
+      "mixer": {
+        "role": "button",
+        "name": "^Mix$"
+      },
+      "fader": {
+        "role": "slider",
+        "name": "^Volume "
+      },
+      "countIn": {
+        "css": "[data-slot=count-in]"
+      },
+      "saveProgress": {
+        "role": "dialog",
+        "name": "^Save your progress\\?$"
+      },
+      "notNow": {
+        "role": "button",
+        "name": "^Not now$"
+      }
+    }
+  },
+  "contexts": {
+    "desktop": {
+      "description": "desktop Chromium, 1440 × 900, fine pointer",
+      "options": {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "deviceScaleFactor": 1
+      },
+      "keptRun": 2,
+      "runs": [
+        {
+          "run": 1,
+          "startedAt": "2026-11-08T12:12:46.886Z",
+          "machineBusyBefore": 0.11,
+          "layout": {
+            "coarsePointer": false,
+            "innerWidth": 1440,
+            "innerHeight": 900
+          },
+          "countInSeen": true
+        },
+        {
+          "run": 2,
+          "startedAt": "2026-11-08T12:14:07.177Z",
+          "machineBusyBefore": 0.14,
+          "layout": {
+            "coarsePointer": false,
+            "innerWidth": 1440,
+            "innerHeight": 900
+          },
+          "countInSeen": true
+        },
+        {
+          "run": 3,
+          "startedAt": "2026-11-08T12:15:26.840Z",
+          "machineBusyBefore": 0.05,
+          "layout": {
+            "coarsePointer": false,
+            "innerWidth": 1440,
+            "innerHeight": 900
+          },
+          "countInSeen": true
+        }
+      ],
+      "measures": {
+        "longAnimationFrames": {
+          "n": 3,
+          "p50": 60.4,
+          "p75": 74.9,
+          "max": 74.9
+        },
+        "longAnimationFrameBlocking": {
+          "n": 3,
+          "p50": 0,
+          "p75": 21,
+          "max": 21
+        },
+        "forcedStyleAndLayout": {
+          "n": 604,
+          "p50": 0.04,
+          "p75": 0.18,
+          "max": 0.59,
+          "totalMs": 63.83
+        },
+        "latency.playPause": {
+          "n": 12,
+          "p50": 32,
+          "p75": 32,
+          "max": 48,
+          "belowThreshold": 0
+        },
+        "latency.loopNudge": {
+          "n": 12,
+          "p50": 32,
+          "p75": 40,
+          "max": 48,
+          "belowThreshold": 0
+        },
+        "latency.speedStep": {
+          "n": 12,
+          "p50": 40,
+          "p75": 48,
+          "max": 56,
+          "belowThreshold": 0
+        },
+        "latency.faderStep": {
+          "n": 12,
+          "p50": 48,
+          "p75": 48,
+          "max": 64,
+          "belowThreshold": 0
+        }
+      },
+      "attribution": {
+        "longAnimationFrames": [
+          {
+            "source": "vh index-BmDrlDe7.js",
+            "invoker": "DIV#_r_25_.onclick",
+            "count": 1,
+            "totalMs": 55.9,
+            "forcedMs": 9
+          },
+          {
+            "source": "D index-BmDrlDe7.js",
+            "invoker": "MessagePort.onmessage",
+            "count": 1,
+            "totalMs": 30.8,
+            "forcedMs": 5
+          }
+        ],
+        "forcedStyleAndLayout": [
+          {
+            "source": "r view-DeeptYpX.js",
+            "count": 604,
+            "totalMs": 63.83
+          }
+        ]
+      },
+      "spread": {
+        "longAnimationFrames.n": {
+          "runs": [1, 3, 2],
+          "min": 1,
+          "max": 3
+        },
+        "longAnimationFrames.p75": {
+          "runs": [117.8, 74.9, 89.9],
+          "min": 74.9,
+          "max": 117.8
+        },
+        "longAnimationFrames.max": {
+          "runs": [117.8, 74.9, 89.9],
+          "min": 74.9,
+          "max": 117.8
+        },
+        "forcedStyleAndLayout.n": {
+          "runs": [605, 604, 605],
+          "min": 604,
+          "max": 605
+        },
+        "forcedStyleAndLayout.totalMs": {
+          "runs": [78.67, 63.83, 80.85],
+          "min": 63.83,
+          "max": 80.85
+        },
+        "latency.playPause.p50": {
+          "runs": [32, 32, 32],
+          "min": 32,
+          "max": 32
+        },
+        "latency.playPause.p75": {
+          "runs": [32, 32, 40],
+          "min": 32,
+          "max": 40
+        },
+        "latency.playPause.max": {
+          "runs": [56, 48, 48],
+          "min": 48,
+          "max": 56
+        },
+        "latency.loopNudge.p50": {
+          "runs": [40, 32, 32],
+          "min": 32,
+          "max": 40
+        },
+        "latency.loopNudge.p75": {
+          "runs": [40, 40, 40],
+          "min": 40,
+          "max": 40
+        },
+        "latency.loopNudge.max": {
+          "runs": [56, 48, 56],
+          "min": 48,
+          "max": 56
+        },
+        "latency.speedStep.p50": {
+          "runs": [40, 40, 40],
+          "min": 40,
+          "max": 40
+        },
+        "latency.speedStep.p75": {
+          "runs": [48, 48, 48],
+          "min": 48,
+          "max": 48
+        },
+        "latency.speedStep.max": {
+          "runs": [64, 56, 72],
+          "min": 56,
+          "max": 72
+        },
+        "latency.faderStep.p50": {
+          "runs": [48, 48, 48],
+          "min": 48,
+          "max": 48
+        },
+        "latency.faderStep.p75": {
+          "runs": [48, 48, 48],
+          "min": 48,
+          "max": 48
+        },
+        "latency.faderStep.max": {
+          "runs": [72, 64, 64],
+          "min": 64,
+          "max": 72
+        }
+      }
+    },
+    "tablet": {
+      "description": "tablet Chromium, 1180 × 820 landscape, touch (hasTouch, isMobile)",
+      "options": {
+        "viewport": {
+          "width": 1180,
+          "height": 820
+        },
+        "deviceScaleFactor": 2,
+        "hasTouch": true,
+        "isMobile": true
+      },
+      "keptRun": 3,
+      "runs": [
+        {
+          "run": 1,
+          "startedAt": "2026-11-08T12:16:46.677Z",
+          "machineBusyBefore": 0.17,
+          "layout": {
+            "coarsePointer": true,
+            "innerWidth": 1180,
+            "innerHeight": 820
+          },
+          "countInSeen": true
+        },
+        {
+          "run": 2,
+          "startedAt": "2026-11-08T12:18:06.823Z",
+          "machineBusyBefore": 0.07,
+          "layout": {
+            "coarsePointer": true,
+            "innerWidth": 1180,
+            "innerHeight": 820
+          },
+          "countInSeen": true
+        },
+        {
+          "run": 3,
+          "startedAt": "2026-11-08T12:19:27.140Z",
+          "machineBusyBefore": 0.13,
+          "layout": {
+            "coarsePointer": true,
+            "innerWidth": 1180,
+            "innerHeight": 820
+          },
+          "countInSeen": true
+        }
+      ],
+      "measures": {
+        "longAnimationFrames": {
+          "n": 3,
+          "p50": 51,
+          "p75": 80.5,
+          "max": 80.5
+        },
+        "longAnimationFrameBlocking": {
+          "n": 3,
+          "p50": 0,
+          "p75": 22.9,
+          "max": 22.9
+        },
+        "forcedStyleAndLayout": {
+          "n": 606,
+          "p50": 0.18,
+          "p75": 0.19,
+          "max": 0.64,
+          "totalMs": 73.41
+        },
+        "latency.playPause": {
+          "n": 12,
+          "p50": 48,
+          "p75": 48,
+          "max": 48,
+          "belowThreshold": 0
+        },
+        "latency.loopNudge": {
+          "n": 12,
+          "p50": 40,
+          "p75": 40,
+          "max": 48,
+          "belowThreshold": 0
+        },
+        "latency.speedStep": {
+          "n": 12,
+          "p50": 72,
+          "p75": 72,
+          "max": 96,
+          "belowThreshold": 0
+        },
+        "latency.faderStep": {
+          "n": 12,
+          "p50": 48,
+          "p75": 48,
+          "max": 64,
+          "belowThreshold": 0
+        }
+      },
+      "attribution": {
+        "longAnimationFrames": [
+          {
+            "source": "vh index-BmDrlDe7.js",
+            "invoker": "DIV#_r_25_.onclick",
+            "count": 1,
+            "totalMs": 56.7,
+            "forcedMs": 9.6
+          },
+          {
+            "source": "(anonymous) src-Bd-pNHTl.js",
+            "invoker": "MessagePort.onmessage",
+            "count": 1,
+            "totalMs": 30.7,
+            "forcedMs": 3.8
+          },
+          {
+            "source": "D index-BmDrlDe7.js",
+            "invoker": "MessagePort.onmessage",
+            "count": 1,
+            "totalMs": 21.9,
+            "forcedMs": 0.2
+          }
+        ],
+        "forcedStyleAndLayout": [
+          {
+            "source": "r view-DeeptYpX.js",
+            "count": 606,
+            "totalMs": 73.41
+          }
+        ]
+      },
+      "spread": {
+        "longAnimationFrames.n": {
+          "runs": [1, 1, 3],
+          "min": 1,
+          "max": 3
+        },
+        "longAnimationFrames.p75": {
+          "runs": [70, 85.1, 80.5],
+          "min": 70,
+          "max": 85.1
+        },
+        "longAnimationFrames.max": {
+          "runs": [70, 85.1, 80.5],
+          "min": 70,
+          "max": 85.1
+        },
+        "forcedStyleAndLayout.n": {
+          "runs": [606, 606, 606],
+          "min": 606,
+          "max": 606
+        },
+        "forcedStyleAndLayout.totalMs": {
+          "runs": [81.79, 88.38, 73.41],
+          "min": 73.41,
+          "max": 88.38
+        },
+        "latency.playPause.p50": {
+          "runs": [48, 48, 48],
+          "min": 48,
+          "max": 48
+        },
+        "latency.playPause.p75": {
+          "runs": [48, 48, 48],
+          "min": 48,
+          "max": 48
+        },
+        "latency.playPause.max": {
+          "runs": [64, 56, 48],
+          "min": 48,
+          "max": 64
+        },
+        "latency.loopNudge.p50": {
+          "runs": [40, 40, 40],
+          "min": 40,
+          "max": 40
+        },
+        "latency.loopNudge.p75": {
+          "runs": [40, 40, 40],
+          "min": 40,
+          "max": 40
+        },
+        "latency.loopNudge.max": {
+          "runs": [48, 56, 48],
+          "min": 48,
+          "max": 56
+        },
+        "latency.speedStep.p50": {
+          "runs": [72, 64, 72],
+          "min": 64,
+          "max": 72
+        },
+        "latency.speedStep.p75": {
+          "runs": [72, 72, 72],
+          "min": 72,
+          "max": 72
+        },
+        "latency.speedStep.max": {
+          "runs": [88, 88, 96],
+          "min": 88,
+          "max": 96
+        },
+        "latency.faderStep.p50": {
+          "runs": [48, 48, 48],
+          "min": 48,
+          "max": 48
+        },
+        "latency.faderStep.p75": {
+          "runs": [48, 56, 48],
+          "min": 48,
+          "max": 56
+        },
+        "latency.faderStep.max": {
+          "runs": [72, 64, 64],
+          "min": 64,
+          "max": 72
+        }
+      }
+    }
+  }
+}
