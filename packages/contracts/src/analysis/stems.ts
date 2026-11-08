@@ -25,7 +25,7 @@ export const Stem = z
     gain_to_unity_db: z.number(), // applied only while soloing, so solo levels feel equal
     energy_ratio_to_mix: z.number().nonnegative(),
     quality_hint: z.enum(['good', 'rough']),
-    empty: z.boolean(), // hidden in mixer (M4 "hide empty stems")
+    empty: z.boolean(), // hidden in mixer; only the target or mix-minus (stem_post omits empty extras)
   })
   .register(contracts, { id: 'Stem' })
 

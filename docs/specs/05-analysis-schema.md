@@ -152,7 +152,7 @@ export const Stems = ArtefactHeader.extend({
     gain_to_unity_db: z.number(),             // applied only while soloing, so solo levels feel equal; the mix itself uses one shared gain
     energy_ratio_to_mix: z.number(),
     quality_hint: z.enum(["good", "rough"]),
-    empty: z.boolean(),                       // hidden in mixer (M4 "hide empty stems")
+    empty: z.boolean(),                       // hidden in mixer (M4 "hide empty stems"); since s40a only the target or the mix-minus can be empty: stem_post leaves an empty extra out
   })),
   alignment_offset_samples: z.number().int(), // vendor stems re-aligned to the mixture timeline
   mix_gain_db: z.number(),                    // ONE gain applied to every stem (mixture measured to −14 LUFS) so relative balance is preserved
