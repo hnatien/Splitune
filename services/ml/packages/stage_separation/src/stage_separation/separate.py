@@ -6,6 +6,11 @@ verify against the register and whose run succeeds wins. A later model than the 
 status `fallback` (`separation_fallback_model`); no model gives `stems_unavailable`, a permanent
 failure after which the analysis continues without stems (06 §6).
 
+An instrument with `fallback_when_silent` (piano, step 29) gets a second model when the chain's
+target stem is near silent while the tagger hears the instrument: SW outputs no piano for synth-
+and organ-heavy keys. That model's outputs mapped to the instrument, summed, replace the stem;
+`separation.json` records the check and the provider, and `stem_post` marks the stem rough.
+
 Only what the analysis needs is kept (06 §4 "request one target"): the learner's stem, the
 complement parts when mix-minus is `complement`, and the `keep` extras (drums, bass) when the same
 run produced them and the tagger hears them.
@@ -57,6 +62,13 @@ def heard(tags: contracts.Tags | None, instrument: str, min_prob: float) -> bool
     return probs.get(instrument, 1.0) >= min_prob
 
 
+def present_prob(tags: contracts.Tags | None, instrument: str) -> float | None:
+    """The tagger's `present_prob` for `instrument`; None without usable tags."""
+    if tags is None or tags.fallback_reason is not None:
+        return None
+    return next((t.present_prob for t in tags.instruments if t.instrument == instrument), 0.0)
+
+
 def plan(
     cfg: SeparationConfig, params: dict[str, Any], tags: contracts.Tags | None
 ) -> dict[str, Any]:
@@ -65,7 +77,7 @@ def plan(
         raise StageError("invalid_params", retry=False)
     spec = cfg.instruments[instrument]
     keep = [i for i in cfg.keep if i != instrument and heard(tags, i, cfg.keep_min_prob)]
-    return {
+    planned: dict[str, Any] = {
         "instrument": instrument,
         "chain": spec.chain,
         # Part of the cache key: other inference settings never reuse old stems.
@@ -81,6 +93,15 @@ def plan(
         "config_version": cfg.version,
         "stem_store": STEM_STORE,
     }
+    fallback = spec.fallback_when_silent
+    if fallback is not None:  # only where configured: other instruments keep their cache keys
+        prob = present_prob(tags, instrument)
+        planned["fallback_when_silent"] = {
+            **fallback.model_dump(),
+            "inference": cfg.models[fallback.model].inference,
+            "tagged": prob is not None and prob >= fallback.min_present_prob,
+        }
+    return planned
 
 
 def describe(params: dict[str, Any], inputs: dict[str, str] | None = None) -> StageDescription:
@@ -129,9 +150,22 @@ def solo_bypass(
     ]
     if not rhythm:
         return {"rhythm_db": 0.0, "applied": False}
-    energy = float(np.sum(np.square(sum(rhythm), dtype=np.float64)))
-    level = 10.0 * np.log10((energy + 1e-12) / (mixture_energy + 1e-12))
-    return {"rhythm_db": round(float(level), 1), "applied": bool(level < threshold_db)}
+    level = level_db(np.sum(rhythm, axis=0), mixture_energy)
+    return {"rhythm_db": round(level, 1), "applied": level < threshold_db}
+
+
+def level_db(audio: NDArray[np.float32], mixture_energy: float) -> float:
+    """Energy of `audio` relative to the mixture's, in dB."""
+    energy = float(np.sum(np.square(audio, dtype=np.float64)))
+    return float(10.0 * np.log10((energy + 1e-12) / (mixture_energy + 1e-12)))
+
+
+def summed_outputs(
+    spec: ModelSpec, files: dict[str, Path], instrument: str, frames: int
+) -> NDArray[np.float32]:
+    """The sum of a model's outputs mapped to `instrument`."""
+    parts = [load_stem(files.get(s), frames) for s, i in spec.outputs.items() if i == instrument]
+    return np.sum(parts, axis=0, dtype=np.float32)
 
 
 def load_stem(path: Path | None, frames: int) -> NDArray[np.float32]:
@@ -150,14 +184,20 @@ def load_stem(path: Path | None, frames: int) -> NDArray[np.float32]:
 
 
 def run_id(
-    job: StageJob, name: str, spec: ModelSpec, ref: contracts.ModelRef, kept: dict[str, Role]
+    job: StageJob,
+    name: str,
+    spec: ModelSpec,
+    ref: contracts.ModelRef,
+    kept: dict[str, Role],
+    fallback: SeparationRun | None = None,
 ) -> str:
     """Cache directory of one separation: same audio, weights, inference settings and kept
-    outputs → same files."""
-    key = canonical_json(
-        [job.audio_hash, name, ref.weights_sha256, spec.inference, sorted(kept.items())]
-    )
-    return hashlib.sha256(key.encode()).hexdigest()[:32]
+    outputs (and the fallback model that replaced the target, if any) → same files."""
+    parts: list[Any] = [job.audio_hash, name, ref.weights_sha256, spec.inference]
+    parts.append(sorted(kept.items()))
+    if fallback is not None:
+        parts += [fallback[0], fallback[2].weights_sha256, fallback[1].inference]
+    return hashlib.sha256(canonical_json(parts).encode()).hexdigest()[:32]
 
 
 def store(audio: NDArray[np.float32], base: Path) -> tuple[Path, str]:
@@ -233,7 +273,36 @@ def run(job: StageJob) -> StageOutput:
     kept = roles(spec, params)
     stems = {stem: load_stem(result.files.get(stem), frames) for stem in kept}
 
-    directory = run_id(job, name, spec, ref, kept)
+    refs = [ref]
+    peak_mb = result.peak_mb
+    replaced: SeparationRun | None = None
+    silence: dict[str, Any] | None = None
+    rule = params.get("fallback_when_silent")
+    if rule is not None and not (bypass is not None and bypass["applied"]):
+        target = next(stem for stem, role in kept.items() if role == "target")
+        level = level_db(stems[target], mixture_energy)
+        silence = {"target_db": round(level, 1), "applied": False}
+        prob = present_prob(read_tags(job.inputs), params["instrument"])
+        if prob is not None:
+            silence["present_prob"] = prob
+        if level < float(rule["threshold_db"]) and rule["tagged"]:
+            try:
+                replaced = attempt(str(rule["model"]))
+            except StageError as exc:  # the chain's stem stays
+                log.warning(
+                    "separation fallback failed",
+                    extra={"model": rule["model"], "error_code": exc.code},
+                )
+            else:
+                seconds += replaced[3].seconds
+                peak_mb = max(peak_mb, replaced[3].peak_mb)
+                stems[target] = summed_outputs(
+                    replaced[1], replaced[3].files, params["instrument"], frames
+                )
+                silence |= {"applied": True, "provider": replaced[1].provider}
+                refs.append(replaced[2])
+
+    directory = run_id(job, name, spec, ref, kept, replaced)
     cache = Path(job.cache_dir) / "separated"
     entries: list[dict[str, Any]] = []
     for stem, audio in stems.items():
@@ -251,6 +320,8 @@ def run(job: StageJob) -> StageOutput:
 
     device = models.device()
     extra: dict[str, Any] = {} if bypass is None else {"solo_bypass": bypass}
+    if silence is not None:
+        extra["fallback_when_silent"] = silence
     document = contracts.Separation.model_validate(
         {
             "schema_version": contracts.SCHEMA_VERSION,
@@ -261,7 +332,7 @@ def run(job: StageJob) -> StageOutput:
             "audio_hash": job.audio_hash,
             "sample_rate": 44100,
             "duration_s": job.duration_s,
-            "models": [ref.model_dump(mode="json")],
+            "models": [r.model_dump(mode="json") for r in refs],
             "params": params,
             "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "target": params["instrument"],
@@ -280,10 +351,10 @@ def run(job: StageJob) -> StageOutput:
     return StageOutput(
         status="fallback" if fallback else "done",
         files={"separation": str(out)},
-        model_refs=[ref],
+        model_refs=refs,
         metrics={
             metric: seconds,
-            "peak_vram_mb": result.peak_mb,
+            "peak_vram_mb": peak_mb,
             "audio_s": float(job.duration_s),
         },
         fallback_reason=fallback,

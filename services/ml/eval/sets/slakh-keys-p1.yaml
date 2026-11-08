@@ -1,0 +1,20 @@
+id: slakh-keys-p1
+description: >-
+  Synth- and organ-heavy 30 s windows of Slakh2100 test tracks (step 29 Phase 5): the keys
+  fallback's out-of-sample check, since its candidates trained on MoisesDB or undisclosed data
+licence: CC-BY-4.0 (Slakh2100)
+provenance: >-
+  Slakh2100 redux test split (Manilow et al., WASPAA 2019, https://zenodo.org/records/4599666),
+  the tracks already on disk from step 24. Windows cut by eval/p1_slakh.py from references only;
+  mono stems copied to both channels. Until it has run, the glob below matches nothing and the set
+  has no items.
+root: ~/datasets/slakh-keys-p1
+split: test
+tasks: [sep]
+tags: {genre: mixed, live: synthetic, codec: wav}
+item_template:
+  glob: clips/*.json
+  id: "{stem}"
+  audio: "{stem}/mixture.wav"
+  annotations:
+    sep: "{stem}"

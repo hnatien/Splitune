@@ -1,0 +1,100 @@
+# Eval-only separation models and settings (step 29; splitune_eval.sepmap). The eval tools
+# (sep_matrix.py, p1.py, p1_fullsong.py) see these next to config/separation.personal.yaml; the
+# stages and the regression suite never do. `base: <map model>` copies that entry and merges the
+# given `inference` keys over its own. Weights: `uv run python scripts/fetch_models.py --eval`.
+# Window steps (`overlap`, seconds) are chunk / 2 for the candidates (MSST num_overlap 2, the
+# setting behind their MVSep scores) and keep BS-Roformer-SW's shipped overlap fraction
+# (8 s / 9.29 s) for its longer chunks.
+version: 1
+
+models:
+  # Phase 2: vocals heads. MSST runs Leap at audio.chunk_size 881,559; 881,664 is the nearest
+  # multiple of the 512-sample STFT hop (audio-separator 0.44.5's chunk = hop * (dim_t - 1)).
+  bs_roformer_leap_xe:
+    record: bs-roformer-leap-xe
+    filename: bs_roformer_leap_xe_voc.ckpt
+    config: bs_roformer_leap_xe_voc.yaml
+    provider: "bs_roformer:leap-xe"
+    arch: mdxc
+    inference: {chunk: 881664, overlap: 9.9962}
+    outputs: {vocals: vocals, other: null}
+  bs_roformer_leap_v1:
+    record: bs-roformer-leap-v1
+    filename: bs_roformer_leap_voc.ckpt
+    config: bs_roformer_leap_voc.yaml
+    provider: "bs_roformer:leap-v1"
+    arch: mdxc
+    inference: {chunk: 881664, overlap: 9.9962}
+    outputs: {vocals: vocals, other: null}
+  bs_roformer_ft1_anvuew:
+    record: bs-roformer-ft1-anvuew
+    filename: bs_roformer_ft1_anvuew.ckpt
+    config: bs_roformer_ft1_anvuew.yaml
+    provider: "bs_roformer:ft1-anvuew"
+    arch: mdxc
+    inference: {chunk: 960000, overlap: 10.88435375}
+    outputs: {vocals: vocals, instrument: null}
+  # The time fallback: abutting windows (a step of one chunk; audio-separator clamps a longer one).
+  bs_roformer_leap_xe@abut: {base: bs_roformer_leap_xe, inference: {overlap: 20}}
+  bs_roformer_leap_v1@abut: {base: bs_roformer_leap_v1, inference: {overlap: 20}}
+  bs_roformer_ft1_anvuew@abut: {base: bs_roformer_ft1_anvuew, inference: {overlap: 21.77}}
+
+  # Phase 3: pre-separation gain on the shipped heads.
+  bs_roformer_sw@gain-14: {base: bs_roformer_sw, inference: {gain: {target_lufs: -14}}}
+  bs_roformer_sw@gain-18: {base: bs_roformer_sw, inference: {gain: {target_lufs: -18}}}
+  bs_roformer_sw@gain-6db: {base: bs_roformer_sw, inference: {gain: {db: -6}}}
+  mel_roformer_kim_vocals@gain-14: {base: mel_roformer_kim_vocals, inference: {gain: {target_lufs: -14}}}
+  mel_roformer_kim_vocals@gain-18: {base: mel_roformer_kim_vocals, inference: {gain: {target_lufs: -18}}}
+  mel_roformer_kim_vocals@gain-6db: {base: mel_roformer_kim_vocals, inference: {gain: {db: -6}}}
+
+  # Phase 4: SW's chunk (13.35 s = 588,800; 20 s -> 882,176) and autocast on every map RoFormer.
+  # `@s29` entries are the shipped settings under a new name: a same-session time baseline.
+  # Measured on the map before step 29 shipped SW's 13.35 s chunk and fp16 (each report's git
+  # sha); every `base:` entry now inherits both from the map.
+  bs_roformer_sw@s29: {base: bs_roformer_sw}
+  bs_roformer_viperx_1297@s29: {base: bs_roformer_viperx_1297}
+  mel_roformer_kim_vocals@s29: {base: mel_roformer_kim_vocals}
+  mel_roformer_guitar_becruily@s29: {base: mel_roformer_guitar_becruily}
+  bs_roformer_sw@chunk13: {base: bs_roformer_sw, inference: {chunk: 588800, overlap: 11.5}}
+  bs_roformer_sw@chunk20: {base: bs_roformer_sw, inference: {chunk: 882176, overlap: 17.23}}
+  bs_roformer_sw@autocast: {base: bs_roformer_sw, inference: {autocast: true}}
+  bs_roformer_viperx_1297@autocast: {base: bs_roformer_viperx_1297, inference: {autocast: true}}
+  mel_roformer_kim_vocals@autocast: {base: mel_roformer_kim_vocals, inference: {autocast: true}}
+  mel_roformer_guitar_becruily@autocast: {base: mel_roformer_guitar_becruily, inference: {autocast: true}}
+
+  # Phase 5: keys fallback. Each candidate's synth/keys output is scored against the piano
+  # reference (`piano` + `other_keys` on moisesdb-p1); the other heads only through `combine`.
+  mega53_keys5:
+    record: bs-roformer-mega53-keys5
+    filename: bs_roformer_mega53_keys5.ckpt
+    config: bs_roformer_mega53_keys5.yaml
+    provider: "bs_roformer:mega53-keys5"
+    arch: mdxc
+    inference: {chunk: 882176, overlap: 10.002}
+    outputs: {organ: null, keys: null, synth: null, piano: piano, digital-piano: null}
+  xlance_syn_mss:
+    record: xlance-syn-mss
+    filename: bs_roformer_xlance_syn_mss.ckpt
+    config: bs_roformer_xlance_syn_mss.yaml
+    provider: "bs_roformer:xlance-syn-mss"
+    arch: mdxc
+    outputs: {synth: piano, other: null}
+  xlance_syn_mss1:
+    record: xlance-syn-mss1
+    filename: bs_roformer_xlance_syn_mss1.ckpt
+    config: bs_roformer_xlance_syn_mss1.yaml
+    provider: "bs_roformer:xlance-syn-mss1"
+    arch: mdxc
+    inference: {sample_rate: 48000}
+    outputs: {synth: piano, other: null}
+  xlance_key_mss:
+    record: xlance-key-mss
+    filename: bs_roformer_xlance_key_mss.ckpt
+    config: bs_roformer_xlance_key_mss.yaml
+    provider: "bs_roformer:xlance-key-mss"
+    arch: mdxc
+    outputs: {piano: piano, other: null}
+
+  # Phase 6: shift averaging on SW (MSST --bigshifts).
+  bs_roformer_sw@shifts3: {base: bs_roformer_sw, inference: {shifts: 3}}
+  bs_roformer_sw@shifts5: {base: bs_roformer_sw, inference: {shifts: 5}}

@@ -73,6 +73,7 @@ Confidence is taken from each doc's frontmatter.
 | `executive-summary.md` | One-page synthesis of all workstreams: thesis, pipeline, top three risks, next 4–6 weeks | medium |
 | `research/product/recommendations-and-decisions.md` | ADR log D1–D13: input sources, separation, transcription, beat/chord stack, DSP, cost model, data handling, licensing, platform, pricing, launch instruments, mic scoring, rendering | medium |
 | `research/product/feature-roadmap-beginner-to-intermediate.md` | MVP / v1 / later feature tables tied to needs, evidence and dependencies; "not in MVP" list; proposed measurement plan | medium |
+| `research/product/additional-instruments.md` | Next instruments after the launch five: 18 candidates scored on demand, gap, separation, transcription, notation, reuse and licences; ranking with sensitivity; MVP paths for ukulele, drum-kit pieces and saxophone (2026-11-07) | medium |
 | `open-questions-and-risks.md` | Deduplicated open questions with method and priority; risk register; single-source claims; research gaps; resolved contradictions | medium |
 | `glossary.md` | Definitions of music, MIR/ML, evaluation, licensing/legal and UX terms, each pointing to its owning doc | high |
 | `sources.md` | Master bibliography of every cited URL, with tier, access date and the docs that use it | high |
@@ -91,6 +92,7 @@ Confidence is taken from each doc's frontmatter.
 | `research/ml/transcription-vocals-melody.md` | f0 trackers (RMVPE, SwiftF0, PESTO, CREPE), singing notes, Whisper lyrics, range and transposition | medium |
 | `research/ml/chords-beats-key-structure.md` | Beat This! (MIT), All-In-One sections, chord-recognition accuracy ceiling, key detection gap, madmom exclusion | medium |
 | `research/ml/video-and-audio-visual-analysis.md` | AV separation and video fingering are research-grade; MediaPipe hands; YouTube frames off-limits | medium |
+| `research/ml/other-instruments-feasibility.md` | Per-instrument separation and transcription state of the art, datasets and licences for ukulele, banjo, mandolin, extended range, keys, strings, winds, harmonica, hand percussion, backing vocals and drum pieces (2026-11-07) | medium |
 | `research/ml/playback-time-stretch-pitch-shift.md` | Signalsmith Stretch vs Rubber Band vs platform APIs; mix-then-stretch architecture; listening-test design | medium |
 | `research/ml/deployment-and-inference.md` | On-device vs server, runtimes, GPU prices and cost per song-minute, async job architecture | medium |
 | `research/ml/datasets-metrics-and-licensing.md` | Code/weights/data licence framework, green/amber/red tiers, dataset catalogue, metric definitions | medium |

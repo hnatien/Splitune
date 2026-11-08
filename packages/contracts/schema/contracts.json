@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Splitune contracts",
-  "x-schema-version": "1.8.0",
+  "x-schema-version": "1.9.0",
   "$defs": {
     "ActivitySpan": {
       "type": "object",
@@ -2212,6 +2212,30 @@
           },
           "required": [
             "rhythm_db",
+            "applied"
+          ]
+        },
+        "fallback_when_silent": {
+          "type": "object",
+          "properties": {
+            "target_db": {
+              "type": "number"
+            },
+            "present_prob": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "applied": {
+              "type": "boolean"
+            },
+            "provider": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "target_db",
             "applied"
           ]
         }

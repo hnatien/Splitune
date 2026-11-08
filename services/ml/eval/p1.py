@@ -86,9 +86,9 @@ def read(path: Path) -> np.ndarray:
 
 
 def outputs_of(model: str) -> dict[str, str | None]:
-    from stage_separation import config
+    from splitune_eval import sepmap
 
-    return dict(config.load().models[model].outputs)
+    return sepmap.outputs(model)
 
 
 def runs_dir(root: Path, tag: str | None) -> Path:
@@ -122,12 +122,13 @@ def cmd_codec(args: argparse.Namespace) -> int:
 
 
 def cmd_separate(args: argparse.Namespace) -> int:
+    from splitune_eval import sepmap
     from stage_separation import config, models  # torch + audio-separator: only here
 
     if args.inference and not args.tag:
         sys.exit("--inference needs --tag (the default runs/ follow the model map)")
     root = Path(args.root).expanduser()
-    spec = config.load().models[args.model]
+    spec = sepmap.spec(args.model)
     if args.inference:
         override = {k: yaml.safe_load(v) for k, v in (i.split("=", 1) for i in args.inference)}
         spec = config.ModelSpec.model_validate(
@@ -323,9 +324,10 @@ def separated_snippet(
     model: str, audio: Path, target: str, work: Path
 ) -> tuple[np.ndarray, np.ndarray]:
     """(target, complement) of a live run of the shipped wrapper on an unreferenced snippet."""
-    from stage_separation import config, models
+    from splitune_eval import sepmap
+    from stage_separation import models
 
-    spec = config.load().models[model]
+    spec = sepmap.spec(model)
     result = models.separate(model, spec, audio, work / model)
     frames = len(read(audio))
     parts: dict[str, np.ndarray] = {}
@@ -413,20 +415,28 @@ def cmd_export(args: argparse.Namespace) -> int:
     isolated stem under the EXPORT_VARIANTS (rated items only, system `<model>@<variant>`). Clips
     are the v2 set's (stems from `sep_matrix.py --keep`) plus, with `--extra-dir`, the owner's
     unreferenced snippets (first 30 s, through the shipped decode, separated here). The app shows
-    tokens only, in a per-rater order. An existing session is never touched."""
+    tokens only, in a per-rater order. An existing session is never touched. `--candidates`
+    replaces a target's candidates (the first is the head), `--targets` keeps only those clips and
+    `--variant` replaces the robustness conditions (`--variant none` for none)."""
     from splitune_eval import variants
 
+    for override in cast(list[str], args.candidates or []):
+        target, _, names = override.partition("=")
+        CANDIDATES[target] = names.split(",")
+    targets = set(args.targets.split(",")) if args.targets else set(CANDIDATES)
+    export_variants = [v for v in (args.variant or EXPORT_VARIANTS) if v != "none"]
     root = Path(args.root).expanduser()
     session = root / "listening" / args.session
     if session.exists():
         sys.exit(f"{session} exists: listening sessions are never overwritten; pick a new id")
     (session / "media").mkdir(parents=True)
     out = Session(session / "media")
-    for n, item in enumerate(load_set(SET_ID).items):
+    items = [i for i in load_set(SET_ID).items if i.tags["target"] in targets]
+    for n, item in enumerate(items):
         clip, target = item.id, item.tags["target"]
         runs = {m: matrix_stems(root, "aac128", m, clip) for m in CANDIDATES[target]}
         out.clip(clip, target, read(root / str(item.audio)), runs, n)
-        for variant in EXPORT_VARIANTS:
+        for variant in export_variants:
             for model in CANDIDATES[target]:
                 stem = matrix_stems(root, variant, model, clip)[0]
                 name = f"{clip}.{model}.{variant.lower()}.isolated"
@@ -762,6 +772,9 @@ def main(argv: list[str] | None = None) -> int:
     x = sub.add_parser("export", help="write a new blinded listening session")
     x.add_argument("--session", required=True)
     x.add_argument("--extra-dir", help="unreferenced snippets in <dir>/<target>/ (owner's songs)")
+    x.add_argument("--candidates", action="append", metavar="TARGET=MODEL,MODEL")
+    x.add_argument("--targets", metavar="TARGET,TARGET", help="only clips with these targets")
+    x.add_argument("--variant", action="append", help=f"default {', '.join(EXPORT_VARIANTS)}")
     x.set_defaults(fn=cmd_export)
     d = sub.add_parser("sdr", help="uSDR against MUSDB references")
     d.add_argument("--tag", help="score runs-<tag>/ instead of runs/")

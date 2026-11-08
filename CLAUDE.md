@@ -33,6 +33,7 @@ pnpm eval:regression  # separation regression suite (services/ml/eval/regression
 - Web: `pnpm --filter @splitune/web test` (unit), `test:stories` (Storybook stories with axe in Chromium/WebKit), `e2e` (Playwright). Its typecheck/test first run `generate` (Paraglide messages + `routeTree.gen.ts`).
 - music-core golden files (`packages/music-core/golden/`): `pnpm --filter @splitune/music-core golden:update` when an output change is intended.
 - Python: `cd services/ml && uv run --no-sync ruff check && uv run --no-sync pyright && uv run --no-sync pytest` (one test: `uv run --no-sync pytest packages/stage_notes -k <name>`). Always `--no-sync`: the workers run from `services/ml/.venv`. Tests marked `models` load real model weights.
+- Separation experiments (step 29, `services/ml`): `uv run --no-sync python scripts/fetch_models.py --eval` fetches the eval-only candidates of `eval/separation.eval.yaml`; `eval/sep_matrix.py run` scores a model per condition (`combine` builds ensembles and routed virtual models from `--keep-outputs` stems) and `eval/sep_improve.py <phase>` writes the step 29 reports.
 - Integration tests in `packages/db`, `packages/storage` and `apps/api` need the compose Postgres and SeaweedFS running (no mail server: sign-in is username + password; tests record email in memory).
 
 Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `splitune-media`).
