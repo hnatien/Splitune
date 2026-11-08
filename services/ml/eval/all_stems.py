@@ -4,14 +4,18 @@ stages, and the G3 listening session.
     uv run --no-sync python eval/all_stems.py run --tag 2026-11-08 [--before OLD.yaml] [--item ID]
     uv run --no-sync python eval/all_stems.py export --tag 2026-11-08 --session all-stems-2026-11-08
 
-`run` takes each item (a MUSDB18-HQ P1 window, or the whole song, under --root; ITEMS) through
-the shipped decode -> tag -> separate -> stem_post in-process (`LocalRun`), under the model map in
-force (ML_SEPARATION_CONFIG or the shipped one), and keeps separation.json, stems.json,
-presence.json and the browser stems (stems/*.m4a) under <root>/all-stems/<tag>/<item>/. With
-`--before`, separate and stem_post run again under an older map (for s40a the map at
-impl/redesign, `keep: [drums, bass]`): the report then compares the stems, their encoded bytes
-and stem_post's time, and checks that the learner's raw stem is byte-identical (the target can't
-move). The report goes to eval/results/all-stems/<tag>.md; audio never goes into git.
+`run` takes each item (a MUSDB18-HQ P1 window or the whole song under --root, or a MoisesDB
+window under --moisesdb-root; ITEMS) through the shipped decode -> tag -> separate -> stem_post
+in-process (`LocalRun`), under the model map in force (ML_SEPARATION_CONFIG or the shipped one),
+and keeps separation.json, stems.json, presence.json and the browser stems (stems/*.m4a) under
+<root>/all-stems/<tag>/<item>/. With `--before`, separate and stem_post run again under an older
+map (for s40a the map before the step, `keep: [drums, bass]`): the report then compares the
+stems, their encoded bytes and both stages' times, and checks that the learner's raw stem is
+byte-identical (the target can't move). It also names the tagger's state (a vetoed extra needs a
+working tagger) and the extra whose audio correlates most with the learner's stem: separated
+outputs of one run are near-orthogonal, so a high value means that extra replays part of the
+learner's part (the risk when a fallback model, not the run that made the extras, makes the
+target). The report goes to eval/results/all-stems/<tag>.md; audio never goes into git.
 
 `export` writes a new apps/listening session from a run: per item, one clip per stem the app can
 name (guitar, bass, piano, drums, vocals) with that stem to rate, plus the learner's mix-minus in
@@ -29,25 +33,37 @@ import secrets
 import shutil
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
+from numpy.typing import NDArray
 from splitune_eval.local import Decoded, LocalRun
 from splitune_ml_core import contracts
 
-ROOT = Path("~/datasets/musdb18hq-p1").expanduser()
+DATASETS = Path(os.environ.get("SPLITUNE_DATASETS_DIR", "~/datasets")).expanduser()
+ROOT = DATASETS / "musdb18hq-p1"
+MOISESDB_ROOT = DATASETS / "moisesdb-p1"
 RESULTS = Path(__file__).resolve().parent / "results" / "all-stems"
-# id -> (learner instrument, mixture under --root): one 30 s window per learner instrument
-# (musdb18hq-p1-v2 picks) and the whole 4:04 song of the bass window, for per-song numbers.
-ITEMS: dict[str, tuple[str, str]] = {
-    "hollow-ground-ill-fate": ("guitar", "hollow-ground-ill-fate/mixture.wav"),
-    "speak-softly-like-horses": ("piano", "speak-softly-like-horses/mixture.wav"),
-    "the-mountaineering-club-mallory": ("bass", "the-mountaineering-club-mallory/mixture.wav"),
-    "pr-happy-daze": ("drums", "pr-happy-daze/mixture.wav"),
-    "nerve-9-pray-for-the-rain": ("vocals", "nerve-9-pray-for-the-rain/mixture.wav"),
-    "mallory-full-song": ("guitar", "full/the-mountaineering-club-mallory.wav"),
+# id -> (learner instrument, dataset, mixture under that dataset's root): one 30 s window per
+# learner instrument (musdb18hq-p1-v2 picks), the whole 4:04 song of the bass window for per-song
+# numbers, and a MoisesDB synth-keys window (set moisesdb-p1) where BS-Roformer-SW's piano output
+# is near silent: the case a piano fallback model would take over.
+ITEMS: dict[str, tuple[str, str, str]] = {
+    "hollow-ground-ill-fate": ("guitar", "musdb", "hollow-ground-ill-fate/mixture.wav"),
+    "speak-softly-like-horses": ("piano", "musdb", "speak-softly-like-horses/mixture.wav"),
+    "the-mountaineering-club-mallory": (
+        "bass",
+        "musdb",
+        "the-mountaineering-club-mallory/mixture.wav",
+    ),
+    "pr-happy-daze": ("drums", "musdb", "pr-happy-daze/mixture.wav"),
+    "nerve-9-pray-for-the-rain": ("vocals", "musdb", "nerve-9-pray-for-the-rain/mixture.wav"),
+    "mallory-full-song": ("guitar", "musdb", "full/the-mountaineering-club-mallory.wav"),
+    "765d5131-piano": ("piano", "moisesdb", "765d5131-piano/mixture.wav"),
 }
 LISTENING_TARGETS = ("guitar", "bass", "piano", "drums", "vocals")  # apps/listening clip targets
 QUESTION = "Could I practise with this stem in the mixer?"
@@ -112,35 +128,73 @@ def target_sha(p: Pass) -> str:
     return next(s.sha256 for s in p.separation.stems if s.role == "target")
 
 
+def correlation(a: NDArray[np.float32], b: NDArray[np.float32]) -> float:
+    """Normalised cross-energy of two stems over their common length (0 when either is silent)."""
+    n = min(len(a), len(b))
+    x, y = a[:n].astype(np.float64).ravel(), b[:n].astype(np.float64).ravel()
+    scale = float(np.sqrt(np.dot(x, x) * np.dot(y, y)))
+    return float(np.dot(x, y)) / scale if scale > 0 else 0.0
+
+
+def overlap(p: Pass, folder: Path) -> str:
+    """The isolated extra most correlated with the learner's stem in stems.json, from the shipped
+    AAC files under `folder` (`-` when the learner has no isolated extras)."""
+    from stage_separation import encode
+
+    def audio(s: contracts.Stem) -> NDArray[np.float32]:
+        return encode.decode(folder / next(f.path for f in s.files if f.codec == "aac"))
+
+    target = p.separation.target
+    isolated = [s for s in p.stems.stems if s.kind == "isolated"]
+    learner = next((s for s in isolated if s.instrument == target), None)
+    extras = [s for s in isolated if s.instrument != target]
+    if learner is None or not extras:
+        return "-"
+    mine = audio(learner)
+    scores = {s.stem_id: correlation(mine, audio(s)) for s in extras}
+    worst = max(scores, key=lambda k: abs(scores[k]))
+    return f"{worst} {scores[worst]:.2f}"
+
+
+def tagger_state(tags: Path) -> str:
+    document = contracts.Tags.model_validate_json(tags.read_text(encoding="utf-8"))
+    return document.fallback_reason or "ok"
+
+
 def cmd_run(args: argparse.Namespace) -> int:
-    root = Path(args.root).expanduser()
-    out_dir = root / "all-stems" / args.tag
+    roots = {
+        "musdb": Path(args.root).expanduser(),
+        "moisesdb": Path(args.moisesdb_root).expanduser(),
+    }
+    out_dir = roots["musdb"] / "all-stems" / args.tag
     before_map = Path(args.before).expanduser().resolve() if args.before else None
     shipped_map = os.environ.get("ML_SEPARATION_CONFIG")
     rows: list[dict[str, Any]] = []
     for item in args.item or list(ITEMS):
-        instrument, relative = ITEMS[item]
-        source = root / relative
+        instrument, dataset, relative = ITEMS[item]
+        source = roots[dataset] / relative
         if not source.is_file():
-            sys.exit(f"missing {source} (eval/p1_musdb.py windows / full)")
+            sys.exit(f"missing {source} (eval/p1_musdb.py windows / full, eval/p1_moisesdb.py)")
         keep = out_dir / item
         work = LocalRun(keep / "work")
         decoded = work.decode(source)
         tag_out, tag_s = timed(work, "tag", {"source": str(source)}, decoded)
-        tags = str(work.keep(tag_out, "tags", keep / "tags.json"))
+        tags = work.keep(tag_out, "tags", keep / "tags.json")
         with_map(Path(shipped_map) if shipped_map else None)
-        after = separate_pass(work, decoded, tags, instrument, keep)
+        after = separate_pass(work, decoded, str(tags), instrument, keep)
         row: dict[str, Any] = {
             "item": item,
             "instrument": instrument,
             "seconds": decoded.duration_s,
             "tag_s": tag_s,
+            "tagger": tagger_state(tags),
+            "overlap": overlap(after, keep),
             "after": after,
         }
         if before_map is not None:
             with_map(before_map)
             old = LocalRun(keep / "before" / "work")
-            row["before"] = separate_pass(old, decoded, tags, instrument, keep / "before")
+            row["before"] = separate_pass(old, decoded, str(tags), instrument, keep / "before")
             with_map(Path(shipped_map) if shipped_map else None)
             shutil.rmtree(keep / "before" / "work", ignore_errors=True)
         (keep / "item.json").write_text(
@@ -159,6 +213,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     report.write_text(render(rows, args), encoding="utf-8")
     print(f"report → {report}")
     return 0
+
+
+def change(before: Pass | None, after: Pass, value: Callable[[Pass], float], fmt: str) -> str:
+    """`before -> after` of one figure (`-` without a before pass)."""
+    old = "-" if before is None else format(value(before), fmt)
+    return f"{old} -> {format(value(after), fmt)}"
 
 
 def stem_list(p: Pass) -> str:
@@ -183,11 +243,14 @@ def render(rows: list[dict[str, Any]], args: argparse.Namespace) -> str:
         + "`; device "
         + f"`{models.device()}`; model map keep = `{config.load().keep}`.",
         "Times are wall-clock per stage in-process (warm models after the first item; the first "
-        "item's separate includes loading). `before` = the same stages under the older map.",
+        "item's separate includes loading). `before` = the same stages under the older map. "
+        "Tagger: `ok` or its fallback reason (without it no extra is vetoed). Overlap: the "
+        "isolated extra most correlated with the learner's stem (near 0 within one run).",
         "",
-        "| item | learner | s | provider | stems before -> after | encoded MB before -> after"
-        " | stem_post s before -> after | separate s | target identical | empty extras left out |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| item | learner | s | provider | tagger | stems before -> after"
+        " | encoded MB before -> after | separate s before -> after"
+        " | stem_post s before -> after | target identical | empty extras left out | overlap |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for row in rows:
         after: Pass = row["after"]
@@ -200,16 +263,14 @@ def render(rows: list[dict[str, Any]], args: argparse.Namespace) -> str:
                     row["instrument"],
                     f"{row['seconds']:.1f}",
                     after.separation.provider,
-                    f"{len(before.stems.stems) if before else '-'} -> {len(after.stems.stems)}",
-                    f"{before.encoded_bytes / 1e6:.2f} -> {after.encoded_bytes / 1e6:.2f}"
-                    if before
-                    else f"- -> {after.encoded_bytes / 1e6:.2f}",
-                    f"{before.stem_post_s:.1f} -> {after.stem_post_s:.1f}"
-                    if before
-                    else f"- -> {after.stem_post_s:.1f}",
-                    f"{after.separate_s:.1f}",
+                    row["tagger"],
+                    change(before, after, lambda p: len(p.stems.stems), "d"),
+                    change(before, after, lambda p: p.encoded_bytes / 1e6, ".2f"),
+                    change(before, after, lambda p: p.separate_s, ".1f"),
+                    change(before, after, lambda p: p.stem_post_s, ".1f"),
                     ("yes" if target_sha(before) == target_sha(after) else "NO") if before else "-",
                     left_out(after),
+                    row["overlap"],
                 ]
             )
             + " |"
@@ -296,7 +357,8 @@ def cmd_export(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument("--root", default=str(ROOT))
+    p.add_argument("--root", default=str(ROOT), help="MUSDB18-HQ P1 windows; runs and sessions")
+    p.add_argument("--moisesdb-root", default=str(MOISESDB_ROOT), help="MoisesDB P1 windows")
     sub = p.add_subparsers(dest="command", required=True)
     r = sub.add_parser("run", help="separate the items and write the report")
     r.add_argument(
