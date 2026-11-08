@@ -33,14 +33,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { name: 'description', content: m['home.subhead']() },
-      // The browser chrome follows the page background (26 §2); Stage and an explicit appearance
-      // choice are page-level and not known before the first paint, so this follows the system.
+      // The browser chrome follows the page background (26 §2, §11): Daylight for a light system,
+      // Night Rehearsal (the default and the no-JS page) otherwise. An explicit appearance choice is
+      // page-level and not known before the first paint. The first matching meta wins.
       {
         name: 'theme-color',
         media: '(prefers-color-scheme: light)',
         content: BACKGROUND_HEX.light,
       },
-      { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: BACKGROUND_HEX.dark },
+      { name: 'theme-color', content: BACKGROUND_HEX.dark },
       { name: 'apple-mobile-web-app-title', content: 'Splitune' },
       { title: m['meta.title']() },
     ],
@@ -50,7 +51,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
       {
         rel: 'preload',
-        href: '/fonts/InterVariable.woff2',
+        href: '/fonts/InstrumentSans.woff2',
         as: 'font',
         type: 'font/woff2',
         crossOrigin: 'anonymous',
