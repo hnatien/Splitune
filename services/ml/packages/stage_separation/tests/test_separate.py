@@ -140,19 +140,20 @@ def test_inference_settings_reject_unknown_and_foreign_keys() -> None:
 
 
 def test_the_shipped_map_uses_wrapper_settings_only_where_step_29_measured_them() -> None:
-    """Step 29 ships the chunk of piano's fallback model; the other models' plans, cache keys and
-    library parameters are what they were, and wrapper settings never reach the library."""
+    """Step 29 ships the chunk of piano's fallback model and SW's 13.35 s chunk; the other models'
+    plans, cache keys and library parameters are what they were, and wrapper settings never
+    reach the library."""
     cfg = config.load()
     wrapped = {
         name: keys
         for name, spec in cfg.models.items()
         if (keys := set(spec.inference) & models.WRAPPER_KEYS[spec.arch])
     }
-    assert wrapped == {"mega53_keys": {"chunk"}}
+    assert wrapped == {"mega53_keys": {"chunk"}, "bs_roformer_sw": {"chunk"}}
     for name, spec in cfg.models.items():
         library = {k: v for k, v in spec.inference.items() if k not in wrapped.get(name, set())}
         assert models.library_params(spec) == {**models.LIBRARY_PARAMS[spec.arch], **library}
-    assert cfg.models["bs_roformer_sw"].inference == {}
+    assert cfg.models["bs_roformer_sw"].inference == {"chunk": 588800, "overlap": 11.5}
     assert cfg.models["mel_roformer_kim_vocals"].inference == {"overlap": 11}
     plan = separate.plan(cfg, {"instrument": "vocals"}, None)
     assert plan["inference"]["mel_roformer_kim_vocals"] == {"overlap": 11}
@@ -789,7 +790,7 @@ def test_the_library_peak_normalisation_is_off(
 ) -> None:
     import math
 
-    spec = config.load().models["bs_roformer_sw"]
+    spec = with_inference("bs_roformer_sw", {})  # a set chunk would read the fake's model config
     separator = models._separator("bs_roformer_sw", spec, tmp_path)  # pyright: ignore[reportPrivateUsage]
     assert fake_separator[0]["normalization_threshold"] == 1.0  # the most its constructor takes
     assert separator.normalization_threshold == math.inf
@@ -930,7 +931,7 @@ def test_wrapper_settings_change_a_real_roformer_and_stay_deterministic(tmp_path
         pytest.skip("BS-Roformer-SW weights not installed")
     long = band_mix(tmp_path / "long.wav", 15.0)
     short = band_mix(tmp_path / "short.wav", 5.0)
-    spec = config.load().models["bs_roformer_sw"]
+    spec = with_inference("bs_roformer_sw", {})  # the library's defaults, not the map's
 
     def bass(run: str, model: ModelSpec, audio: Path = long) -> NDArray[np.float64]:
         result = models.separate("bs_roformer_sw", model, audio, tmp_path / run)
