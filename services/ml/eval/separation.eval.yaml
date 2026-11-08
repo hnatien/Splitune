@@ -49,6 +49,8 @@ models:
 
   # Phase 4: SW's chunk (13.35 s = 588,800; 20 s -> 882,176) and autocast on every map RoFormer.
   # `@s29` entries are the shipped settings under a new name: a same-session time baseline.
+  # Measured on the map before step 29 shipped SW's 13.35 s chunk and fp16 (each report's git
+  # sha); every `base:` entry now inherits both from the map.
   bs_roformer_sw@s29: {base: bs_roformer_sw}
   bs_roformer_viperx_1297@s29: {base: bs_roformer_viperx_1297}
   mel_roformer_kim_vocals@s29: {base: mel_roformer_kim_vocals}

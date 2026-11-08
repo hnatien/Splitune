@@ -573,6 +573,18 @@ def phase_autocast(report: Report, regression: Path | None) -> list[str]:
             if (r["song"], i) in by
         ]
         ratios.append(sb / sa)
+        report.table.append(
+            {
+                "model": m,
+                "songs": len(songs),
+                "fp32_seconds": round(sa, 1),
+                "autocast_seconds": round(sb, 1),
+                "time_ratio": round(sb / sa, 3),
+                "delta_usdr": med(delta) if delta else None,
+                "peak_mb_fp32": max(r["peak_mb"] for r in a),
+                "peak_mb_autocast": max(r["peak_mb"] for r in b),
+            }
+        )
         peaks = f"{max(r['peak_mb'] for r in a)} / {max(r['peak_mb'] for r in b)}"
         report.lines.append(
             f"| {m} | {len(songs)} | {sa:.1f} | {sb:.1f} | {sb / sa:.2f} | "
