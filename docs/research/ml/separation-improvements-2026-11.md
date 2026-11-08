@@ -548,6 +548,21 @@ Ordered by expected gain per effort. Each has a falsifiable criterion on our har
 - **Checkpoints outside audio-separator's catalogue.** Mega-53 heads, the X-LANCE models and DrumSep 5-stem need either the existing `config` path (if they load as MDXC) or MSST inference. audio-separator ≥ 0.48 also needs local checksum-manifest entries.
 - **References.** There is no lead-vocal, kit-piece or acoustic/electric reference in our sets yet.
 
+## Results (step 29)
+
+Measured 2026-11-08 on our harness: MUSDB18-HQ P1 v2 and MoisesDB-p1, `clean` and `aac128` (plus `limit-XL` variants for experiment 2), on the RTX 3060. Reports: `services/ml/eval/results/sep-improve/2026-11-08-*.md`. Summary: 08, step 29 notes. "Paired" is the median over clips of candidate − baseline uSDR, as above.
+
+| # | Experiment | Verdict on our harness | Did the recommendation hold? |
+|---|---|---|---|
+| 1 | Leap Xe as the vocals head | Quality passes (+0.57 dB v2, +0.70 dB MoisesDB vs Kim at `aac128`), time fails (6.8× Kim, 3.6× with abutting windows). Leap v1 and anvuew ft1 with abutting windows pass: +0.48 / +0.59 dB at 2.45×, +0.48 / +0.56 dB at 2.08× | **Partly.** The Multisong ranking transfers; Xe's cost doesn't fit the 3060. Leap v1 with abutting windows goes to the listening session; the head stays Kim until the ratings |
+| 2 | Pre-separation gain on hot masters | **FALSIFIED.** No clip moves by 0.001 dB under any condition | **No**, by construction: BS- and Mel-RoFormer's band split RMS-normalises every band of every frame, so the masks ignore the level. The limiter loss is distortion; LimitAug fine-tuning is the remaining lever. Decode clipping costs ≤ 0.005 dB per stem, so the decode cache stays as it is |
+| 3 | SW chunk length | 13.35 s **PASS, shipped:** +0.02 to +0.18 dB paired on all five instruments, bass seam 0.47 dB (1.00 before), 1.09× full-song time, 1.8 GB peak. 20 s: **INCONCLUSIVE** (similar gains, 1.27× time) | **Yes** at 13.35 s, although the Multisong evidence was confounded by fp16 and overlap |
+| 4 | Keys fallback for synth and organ | **PASS, shipped:** Mega-53 keys + synth when SW's piano is below −40 dB and the tagger hears piano. The 3 silent windows go from 0 to a median 4.46 dB, the 25-window median from 6.39 to 11.84 dB, and 5 Slakh windows (out of sample) score 6.08 dB | **Yes.** X-LANCE `key_mss` is SW's own piano head, so it adds nothing; its synth chain passes but is in-sample on MoisesDB and runs two models |
+| 5 | Shift averaging for drums and bass | Bass **PASS** with 3 shifts (+0.17 / +0.16 dB paired, `clean` / `aac128`) at 2.91× SW's time; 5 shifts add ≤ 0.02 dB at 5.06×. Drums **INCONCLUSIVE** (+0.13 / +0.08 dB; +0.16 / +0.09 with 5) | **On bass**, close to Multisong's +0.16 / +0.17. Proposed, not applied: 3 shifts for the bass chain only; the bass listening items decide the "thin" question |
+| — | fp16 (open question below) | **PASS, shipped** on SW, Kim, viperx and becruily, CUDA only: 0.42–0.49× full-song time, median full-song uSDR +0.00 dB, regression suite 0 of 264 values outside tolerance | **Yes** on CUDA. MPS is unmeasured, so the Mac stays fp32 |
+
+**Harness gaps:** virtual models (ensembles, routing), the wrapper inference keys (`chunk`, `gain`, `shifts`, `autocast`, `sample_rate`) and eval-only checkpoints outside audio-separator's catalogue (through the `config` path) are built. Lead-vocal, kit-piece and acoustic/electric references are still missing. The optional DrumSep 5-stem comparison (step 29 Phase 7) wasn't run: drumsep5 has mixtures only.
+
 ## Implications for Splitune
 - **Vocals.** This is the only instrument where a checkpoint swap is likely to pay off now (experiment 1). Kim's head position was already doubtful on our own data.
 - **Drums, bass, guitar and piano.** Stop looking for a better downloadable checkpoint until something beats SW on MVSep. Spend effort on:
@@ -560,16 +575,16 @@ Ordered by expected gain per effort. Each has a falsifiable criterion on our har
   - Leap and Leap Xe have no licence; anvuew ft1 is GPL-3.0.
   - None of this blocks personal mode. It confirms that a later hosted mode needs its own trained models on licensed data (`source-separation-model-comparison.md` recommendation), and that fine-tuning SW does not get there.
 - **Evaluation.** MoisesDB-p1 is contaminated for any MoisesDB-trained candidate (X-LANCE, chenCFD, possibly Mega-53). Uploading outputs to MVSep's quality checker is the cheapest independent check for guitar and piano. It needs an account, which this research did not create.
-- **Upgrades.** Pin RoFormer `overlap` and chunk explicitly before upgrading audio-separator past 0.44.5.
+- **Upgrades.** Pin RoFormer `overlap` and chunk explicitly before upgrading audio-separator past 0.44.5. Step 29 pins every map RoFormer's `overlap`, and SW's and Mega-53's chunk. The other RoFormers' chunks come from their own model configs.
 
 ## Open questions
 - Is SW really Logic Pro's model? A weight-hash or architecture comparison with a Logic Pro Core ML file would settle it. That is a legal question as much as a technical one, so ask the owner before trying.
-- Do Leap Xe and ft1 load through our wrapper's `config` path unchanged? What are their real speed and VRAM on the 3060?
-- Does audio-separator 0.44.5 let the map set the RoFormer chunk? If not, is an upgrade to 0.48 with `overlap` pinned the cleaner route?
-- What training produced X-LANCE `gtr_mss.pth`, which is not an SW slice but scores below SW?
+- ~~Do Leap Xe and ft1 load through our wrapper's `config` path unchanged? What are their real speed and VRAM on the 3060?~~ Yes, with their configs pinned in `services/ml/eval/model-configs/` (step 29). At the library's half-chunk step they take 6.8× (Xe), 4.6× (Leap v1) and 3.0× (ft1) Kim's time; with abutting windows 3.6×, 2.45× and 2.08×. Peak VRAM is in `sep-improve/2026-11-08-vocals.md`.
+- ~~Does audio-separator 0.44.5 let the map set the RoFormer chunk?~~ Yes, through the wrapper's `chunk` key: it sets the library's segment size and restores it before every run (06, step 29 notes). No upgrade needed.
+- ~~What training produced X-LANCE `gtr_mss.pth`, which is not an SW slice but scores below SW?~~ It is an SW slice: the backbone and the guitar head are SW's, tensor for tensor (`sep-improve/2026-11-08-weights.md`), so its guitar output is SW's. A lower score can only come from the inference settings or the evaluation.
 - Which MoisesDB windows have lead-vs-background vocal and acoustic-vs-electric guitar sub-stems usable as references?
 - Is a licence-clean drum kit-piece model available? Every downloadable DrumSep is undocumented.
-- How large is fp16's speed-up on the 3060, and does it change any output beyond the regression tolerances?
+- ~~How large is fp16's speed-up on the 3060, and does it change any output beyond the regression tolerances?~~ 0.42–0.49× the fp32 full-song time on the RoFormers. It moves no regression value outside tolerance (0 of 264), and repeat runs are bit-identical (step 29). Unmeasured on MPS.
 
 ## Sources
 - [MVSep quality checker: custom leaderboard dataset descriptions](https://mvsep.com/quality_checker/custom_leaderboards) — tier 2, accessed 2026-11-07

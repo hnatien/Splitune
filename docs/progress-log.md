@@ -1819,3 +1819,106 @@ Owner request: sign-in and sign-up with only a username and a password, no Mailp
 - **Infra:** `mailpit` out of `infra/docker-compose.yml`, the Railway IaC (`infra/railway/railway.ts`: service, `SMTP_*`/`EMAIL_FROM` vars), `dev.mjs` tunnels, CI and `.env.example`. The live Railway `mailpit` service is not touched by this change.
 - **Tests:** API helpers sign up/in with a username and a password and record email in memory (`outbox`); new auth cases (placeholder email, wrong password, taken name, weak input, re-auth by password); the digest test talks to an in-process SMTP listener; e2e helpers sign up through the form.
 - **Verification:** `pnpm lint` exit 0; `pnpm --filter @splitune/{api,web,node-worker,contracts,db} typecheck` clean; `pnpm --filter @splitune/api test` 212 passed (after fixing the new delete assertion to 202); `pnpm --filter @splitune/db test` 161 passed; `pnpm --filter @splitune/web test` 214 passed; `pnpm contracts:check` and `pnpm db:check` clean; `vitest run --project storybook` on the auth, settings, shell and onboarding stories: 112 passed, `Guide`/`Guide Dark` time out in WebKit like the other audio-playing practice stories on this Windows machine. `pnpm --filter @splitune/node-worker test`: the digest passes; `pg-dump` fails because this machine has no `pg_dump` binary. Playwright e2e not run (needs the full stack with workers).
+
+## 2026-11-08 — Step 29: Separation improvements (done; owner actions pending)
+Branch `impl/29-separation-improvements` from `dev` (`d1449d3`). The owner approved the Phase 0 plan with its defaults:
+- Phase 5 passes if the median doesn't fall and the mean rises;
+- Phase 7 and the X-LANCE denoise pre-pass are skipped;
+- the research docs go in one docs commit.
+
+Overnight the owner said "choose whatever is recommended", so Stop point 2 (map, contract and cache-key changes) was decided by the recommended option and is reported here. The vocals head and SW shift averaging stay proposals, as the step requires. All runs on the Windows PC (RTX 3060, CUDA).
+
+**Downloads** (models dir and `D:\datasets`, never committed): the Leap Xe, Leap v1 and anvuew ft1 vocals checkpoints; X-LANCE `key_mss`, `syn_mss`, `syn_mss1` and `gtr_mss`; MVSep Mega-53 (1.4 GB, cut to a 177 MB keys slice); DrumSep 5-stem (registered, not run). The Slakh2100 test split was already on disk.
+
+**Built**
+- **Wrapper inference keys** (`stage_separation.config`, `models.py`): `chunk`, `gain`, `shifts` (MSST `--bigshifts`), `autocast` and `sample_rate`, each in the cache key only when set. Input shorter than a chunk is padded, and the library's under-10 s segment switch no longer sticks to a warm model.
+- **Eval-only models:** `eval/separation.eval.yaml` + `splitune_eval.sepmap`, `fetch_models.py --eval`, configs pinned in `eval/model-configs/`, a register record per candidate (tier red, `used_in: [eval]`), `eval/weights_check.py`.
+- **`sep_matrix.py`:** virtual models (`combine`: `avg_wave`, `avg_fft`, `route`), cascades (`--input-from`), `--no-clip`, `limit-XL+aac128` / `+opus128`. A model's outputs mapped to one instrument are scored as their sum (also in the regression suite).
+- **Sets and tools:** `slakh-keys-p1` (`eval/p1_slakh.py`), `eval/keys_tags.py`, `eval/sep_improve.py <phase>` (the reports).
+- **Keys fallback (shipped):** `fallback_when_silent` on piano. Mega-53's keys + synth replace SW's piano when that stem is below −40 dB of the mixture and the tagger's piano present_prob is at least 0.03. Contracts **1.9.0** (`separation.json` records the check). `stem_post` credits the fallback's provider and marks the stem rough.
+- **Map changes (shipped):**
+  - SW runs 13.35 s windows (`chunk: 588800`, `overlap: 11.5`).
+  - SW, Kim, viperx and becruily set `autocast: true`, applied on CUDA only.
+  - Every RoFormer states its `overlap`.
+- **Register:** SW's probable Logic Pro origin, its deleted host and its identical mirror.
+
+**Results** (08 step 29 notes; reports in `services/ml/eval/results/sep-improve/2026-11-08-*`)
+- **Phase 2 (vocals head): PASS with abutting windows; proposed.**
+  - Paired vs Kim at `aac128` (v2 / MoisesDB): Leap Xe +0.57 / +0.70 dB, Leap v1 +0.47 / +0.60, ft1 +0.47 / +0.56.
+  - All three fail on time at the half-chunk step: 6.8×, 4.6× and 3.0× Kim's.
+  - With abutting windows, Leap v1 (+0.48 / +0.59 dB, 2.45×) and ft1 (2.08×) pass; Xe (3.6×) still fails.
+  - Ensembles: FAIL (+0.04 / +0.05 dB).
+- **Phase 3 (loud masters): FALSIFIED.** Pre-separation gain moves no clip by 0.001 dB, because the RoFormer band split RMS-normalises every band. Decode clipping costs ≤ 0.005 dB per stem: no fix.
+- **Phase 4 (SW inference):**
+  - Chunk 13.35 s: PASS, shipped. +0.02 to +0.18 dB pooled on all five instruments, seam 0.47 dB (1.00 before), 1.09× time, 1.8 GB.
+  - Chunk 20 s: INCONCLUSIVE (1.27× time).
+  - Autocast: PASS, shipped. 0.42–0.49× full-song time, +0.00 dB, bit-identical repeats, regression with autocast 0 of 264 outside tolerance.
+- **Phase 5 (keys fallback): PASS, shipped.** The 3 windows where SW outputs no piano reach a median 4.46 dB (from 0). The 25-window median goes from 6.39 to 11.84 dB and the mean from 9.03 to 9.81 dB. 5 Slakh windows (out of sample) score 6.08 dB.
+- **Phase 6 (shift averaging): bass PASS, drums INCONCLUSIVE; proposed.** Bass +0.17 / +0.16 dB with 3 shifts (2.91× time) and +0.19 / +0.15 with 5 (5.06×). Drums +0.13 / +0.08 and +0.16 / +0.09.
+- **Phase 7:** not run (plan default).
+- **Regression on the final map:**
+  - **Against the step 28 baseline: FAIL**, 2 of 264 values. Both are SW's piano bleedless on the 3 MoisesDB piano windows under `opus128`, 53.47 → 24.17 (as SW and as the head).
+  - **Cause:** the 13.35 s chunk flips one clip, `c228818e-piano` (the median of three): bleedless 53.5 → 24.2, fullness 10.7 → 18.3, uSDR −0.02 dB. fp16 alone keeps it at 53.44.
+  - **On all 40 MoisesDB `opus128` windows:** the paired median uSDR is up on every stem (+0.05 to +0.16 dB) and fullness is up. Bleedless ranges from −0.11 (vocals) to +0.69 (drums), and single clips swing by up to 65 points both ways.
+  - **Decision:** shipped (08 has the analysis), tolerances unchanged.
+  - **Then:** `--update-baseline` (266 values), rerun **PASS** (0 of 277). The step 28 degraded config **FAILS** with 74 breaches (bass head uSDR 10.69 → 6.94 dB, P2g onset F1 0.721 → 0.638).
+  - Reports: `services/ml/eval/results/regression/2026-11-09*.md`.
+
+**Cache keys**
+- Piano's `separate` params gain `fallback_when_silent`: every piano `separate` artefact recomputes once.
+- The map change alters the `inference` of SW, Kim, viperx and becruily, which head or back up every chain, so every `separate` artefact recomputes once. `stem_post` and later stages recompute where the raw stems' bytes change: every SW- and Kim-headed analysis.
+- The device is still not in the key: a CUDA worker (fp16) and the Mac (fp32) write different bytes under one key.
+
+**Deviations and decisions**
+- **Abutting windows for the vocals candidates** (`<model>@abut`) are not in the step. All three candidates failed on time at MSST's half-chunk step, and Kim already runs abutting windows. They cost ≤ 0.01 dB.
+- **Kim re-timed in the same session** as the abutting runs (`mel_roformer_kim_vocals@s29-abut`), because the GPU power limit changed after Phase 2's first runs.
+- **Chunk and autocast measured separately.** The regression suite on the final map checks them together.
+- **Autocast on CUDA only:** fp16 on MPS isn't measured, so the Mac stays fp32. Mega-53 stays fp32 (not measured).
+- **20 s chunk not shipped:** it gains as much as 13.35 s but misses the time limit (1.27× vs 1.25×).
+- **Corrected baselines:** step 28 had re-run only SW and htdemucs_6s after its loud-master fix. Kim's and viperx's affected rows and SW's pre-overlap-change rows were re-run; the old rows are kept as `@before-fix` / `@overlap9.3`.
+- **Listening stems predate the map change:** SW's bass and vocals items use the step 28 settings (9.29 s chunk, fp32), the same settings as the shift runs they are compared with.
+
+**Incidents**
+- **Restarts and the power limit:**
+  - an unexpected shutdown at 06:11 during a GPU run;
+  - owner restarts at 10:27, before 18:26 and at 23:21, and an owner pause at 22:31.
+
+  The power limit moved between 170 W and the owner's 129 W cap with them. Every run resumed per clip; the reports state the limit and compare times only within one session.
+- **Two job loops shared the GPU from 12:27 to 14:47.** Stopping a queue with the agent's task stop killed only its running job, and its `while read` loop went on to the next line. Every record of that window was set aside (`D:\datasets\_s29\concurrent`) and re-run by one loop from 18:30. The runner now writes its PID, so a stop kills the loop first.
+- **A false failure exit from `splitune-eval regress`:** with its output redirected to a file, it failed on its last `print("→ …")` (cp1252 console encoding) after writing a PASS report. The exit code was 1, but the report is valid. Runs with redirected output now set `PYTHONIOENCODING=utf-8`. The same arrow print is in five eval scripts: a follow-up.
+
+**Verification**
+- **Lint and types:**
+  - `pnpm lint`: exit 0.
+  - `pnpm typecheck`: TS clean. ML: the 5 pre-existing pyright errors in `packages/stage_notes/tests/test_guitab.py` only (file untouched).
+  - `cd services/ml && uv run --no-sync ruff check` and `ruff format --check`: clean.
+- **JS tests:** `turbo run test` (all packages but ML, Docker Postgres and SeaweedFS up): every package passes except two pre-existing failures in packages this branch doesn't touch.
+  - `@splitune/node-worker` `pg-dump`: no `pg_dump` on this PC.
+  - `@splitune/db` `lifecycle.test.ts` "claims a run once per due time".
+
+  `vitest run --dir scripts`: 52 passed.
+- **Python tests:**
+  - `pytest -m "not models"` (`test_recovery.py` excluded, as in steps 27 and 28): 335 passed, 1 skipped, 3 failed. These are the same failures as on `dev` on this PC: `test_beats_model::test_cpu_fallback_uses_the_small_model` and `test_stem_post` ×2.
+  - `pytest -m models packages/stage_separation` on CUDA: 5 passed, including the real BS-Roformer-SW wrapper-settings test.
+- **Contracts and DB:** `pnpm contracts:check`: up to date. `pnpm db:check`: migrations match.
+- **Regression:** `splitune-eval regress` as above: the vs-step28 FAIL (analysed), then a new baseline, PASS on the rerun, and FAIL on the degraded config.
+
+**Owner actions**
+1. Rate the listening session **`p1-2026-11-09-s29`** (`D:\datasets\musdb18hq-p1\listening\p1-2026-11-09-s29`):
+   - **Contents:** 6 clips, 42 rated items and 24 pairs. The vocals head candidates are Leap v1 with abutting windows, SW and Kim, on the 3 v2 vocals clips. The bass candidates are SW, SW with 3 shifts and htdemucs_ft, on the 3 bass clips.
+   - **Serve it** with `apps/listening`: `LISTENING_SESSION_DIR=<that dir> LISTENING_PORT=<free port> pnpm --filter @splitune/listening dev`.
+   - **Then report:** `uv run --no-sync python eval/p1.py report --session p1-2026-11-09-s29`.
+2. OK or reject each change:
+   - **Shipped, reversible by reverting its commit:**
+     - SW 13.35 s windows: +0.02 to +0.18 dB, 1.09× time. Its one regression breach (piano bleedless under `opus128`, one clip) is analysed above.
+     - fp16 on CUDA: 0.42–0.49× time.
+     - Both invalidate every `separate` artefact.
+     - The keys fallback invalidates every piano `separate` artefact.
+   - **Proposed vocals head:** Leap v1 with abutting windows ahead of Kim. +0.48 / +0.59 dB, 2.45× Kim's time, no licence. It invalidates every vocals `separate` artefact.
+   - **Proposed bass shifts:** an SW entry with `shifts: 3` heading the bass chain. +0.17 / +0.16 dB, 2.91× SW's time on bass analyses. It invalidates every bass `separate` artefact.
+3. Optionally supply 3–5 synth- or organ-heavy clips with a keys stem for another out-of-sample check.
+4. **On the Mac:**
+   - Run `uv run python scripts/fetch_models.py mega53-keys`. Until then the keys fallback fails soft and SW's stem stays.
+   - Measure fp16 on MPS before enabling it there.
+5. **After merging:** restart the workers (every `separate` recomputes once). Re-apply the GPU cap after each reboot.
+6. s40a (all stems, G3) can resume now that this branch is in `dev`.
