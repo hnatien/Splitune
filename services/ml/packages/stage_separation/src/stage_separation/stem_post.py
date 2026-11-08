@@ -64,12 +64,16 @@ def read_tags(inputs: dict[str, str] | None) -> contracts.Tags | None:
 
 def describe(params: dict[str, Any], inputs: dict[str, str] | None = None) -> StageDescription:
     """The key follows the raw stems' content (and the tagger's verdict), so a different model,
-    or a re-run of the same one, gives a different stems.json."""
+    or a re-run of the same one, gives a different stems.json. It also follows what each raw stem
+    is for: since s40a every learner on a six-stem run keeps the same byte-identical outputs, and
+    only the target, the roles and the mix-minus mode tell a guitar analysis from a bass one."""
     separation = read_separation(inputs)
     tags = read_tags(inputs)
     effective = {**DEFAULTS, **{k: v for k, v in params.items() if k in DEFAULTS}}
-    stems = sorted(f"{s.name}:{s.sha256}" for s in separation.stems)
+    stems = sorted(f"{s.name}:{s.role}:{s.sha256}" for s in separation.stems)
     effective["separation"] = hashlib.sha256("\n".join(stems).encode()).hexdigest()
+    effective["target"] = separation.target
+    effective["mix_minus"] = separation.mix_minus
     if tags is not None:
         effective["tags"] = {t.instrument: t.present_prob for t in tags.instruments}
     return StageDescription(model_refs=separation.models, params=effective)

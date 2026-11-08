@@ -14,6 +14,7 @@ import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from numpy.typing import NDArray
 from splitune_ml_core import contracts
 from splitune_ml_core.errors import StageError
+from splitune_ml_core.keys import cache_key
 from splitune_ml_core.stage_api import StageJob
 from stage_separation import dsp, encode, stem_post
 
@@ -296,6 +297,39 @@ def test_cache_key_follows_the_kept_outputs(tmp_path: Path) -> None:
     separation["stems"] = [s for s in separation["stems"] if s["name"] != "bass"]
     Path(job.inputs["separation"]).write_text(json.dumps(separation))
     assert stem_post.describe({}, job.inputs).params["separation"] != every
+
+
+def stem_post_key(inputs: dict[str, str]) -> str:
+    described = stem_post.describe({}, inputs)
+    return cache_key(
+        scope="global",
+        audio_id=AUDIO_HASH,
+        stage="stem_post",
+        model_refs=described.model_refs,
+        params=described.params,
+    )
+
+
+def test_cache_key_follows_the_target_the_roles_and_the_mix_minus_mode(tmp_path: Path) -> None:
+    """The same raw stems serve a guitar and a bass learner (s40a keeps every output), but their
+    stems.json differ: the target, its mix-minus and the alignment follow the learner."""
+    job, _, _ = scenario(tmp_path, mix_minus="subtract")
+    path = Path(job.inputs["separation"])
+    guitar = load(job.inputs["separation"])
+    key = stem_post_key(job.inputs)
+    assert stem_post_key(job.inputs) == key  # the same learner again reuses it
+    roles = {"guitar": "extra", "drums": "extra", "bass": "target"}
+    bass = {
+        **guitar,
+        "target": "bass",
+        "stems": [{**s, "role": roles[s["name"]]} for s in guitar["stems"]],
+    }
+    path.write_text(json.dumps(bass))
+    assert stem_post_key(job.inputs) != key
+    path.write_text(json.dumps({**guitar, "mix_minus": "complement"}))
+    assert stem_post_key(job.inputs) != key
+    path.write_text(json.dumps(guitar))
+    assert stem_post_key(job.inputs) == key
 
 
 def band(

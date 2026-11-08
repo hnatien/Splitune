@@ -491,6 +491,36 @@ def test_a_two_stem_vocals_run_gives_the_vocals_and_their_mix_minus_only(
     assert [s.stem_id for s in stems.stems] == ["vocals", "mix_minus_vocals"]
 
 
+def test_learners_of_one_song_share_raw_stems_but_never_a_stem_post_cache_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """BS-Roformer-SW gives a guitar and a bass learner the same six raw stems, byte for byte;
+    stem_post must not hand the bass analysis the guitar's stems.json (mix_minus_guitar)."""
+    from stage_separation import stem_post
+
+    monkeypatch.setattr(models, "separate", FakeModels({}).separate)
+    runs: list[tuple[set[tuple[str, str]], str]] = []
+    for n, instrument in enumerate(["guitar", "bass", "guitar"]):
+        folder = tmp_path / str(n)
+        folder.mkdir()
+        job = make_job(folder, separate.plan(config.load(), {"instrument": instrument}, None))
+        path = separate.run(job).files["separation"]
+        doc = contracts.Separation.model_validate_json(Path(path).read_text())
+        described = stem_post.describe({}, {"separation": path})
+        key = cache_key(
+            scope="global",
+            audio_id=AUDIO_HASH,
+            stage="stem_post",
+            model_refs=described.model_refs,
+            params=described.params,
+        )
+        runs.append(({(s.name, s.sha256) for s in doc.stems}, key))
+    (guitar, guitar_key), (bass, bass_key), (again, again_key) = runs
+    assert guitar == bass == again
+    assert bass_key != guitar_key
+    assert again_key == guitar_key
+
+
 def test_a_skipped_silent_output_becomes_zeros_and_a_short_one_is_padded(tmp_path: Path) -> None:
     short = tmp_path / "short.wav"
     sf.write(str(short), np.ones((RATE - 10, 2), dtype=np.float32) * 0.1, RATE, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
