@@ -7,6 +7,9 @@ the browser encodes (06 §4 stem_post).
 3. Presence: frame-energy activity of each isolated stem, combined with the tagger. PANNs scores on
    full mixes are low and uncalibrated (bass never above ~0.15 on MUSDB), so the tagger only
    vetoes: a stem with energy whose instrument the tagger can't hear is `bleed_suspected`.
+   An empty extra stays in presence.json but gets no stem: the mixer hides empty stems, and the
+   CBR AAC of silence costs as much storage as music (step s40a). The target and the mix-minus are
+   always listed.
 4. Loudness: one shared `mix_gain_db` brings the mixture to -14 LUFS; `gain_to_unity_db` brings a
    soloed stem to -14 LUFS (it replaces the shared gain while soloing).
 5. Encode AAC (always) and Opus (optional), verify each against the PCM, write the JSON.
@@ -155,7 +158,8 @@ def run(job: StageJob) -> StageOutput:
     mix_gain_db = round(dsp.TARGET_LUFS - mix_loudness, 2) if mix_loudness is not None else 0.0
     instrument_quality = {name: spec.quality for name, spec in cfg.instruments.items()}
 
-    outputs: list[tuple[str, str, str | None, Audio, str]] = []  # id, kind, instrument, audio, base
+    # id, kind, instrument, audio, base quality, extra
+    outputs: list[tuple[str, str, str | None, Audio, str, bool]] = []
     for s in separation.stems:
         if s.role == "complement" or s.instrument is None:
             continue
@@ -166,6 +170,7 @@ def run(job: StageJob) -> StageOutput:
                 s.instrument,
                 aligned[s.name],
                 instrument_quality.get(s.instrument, "good"),
+                s.role == "extra",
             )
         )
     outputs.append(
@@ -175,13 +180,14 @@ def run(job: StageJob) -> StageOutput:
             None,
             mix_minus.astype(np.float32),
             instrument_quality.get(separation.target, "good"),
+            False,
         )
     )
 
     stems: list[dict[str, Any]] = []
     presence: list[dict[str, Any]] = []
     blobs: dict[str, str] = {}
-    for stem_id, kind, instrument, audio, base_quality in outputs:
+    for stem_id, kind, instrument, audio, base_quality, extra in outputs:
         ratio = dsp.energy(audio) / mix_energy if mix_energy > 0 else 0.0
         act = dsp.activity(
             audio,
@@ -220,6 +226,8 @@ def run(job: StageJob) -> StageOutput:
             if subtype is not None:
                 entry["subtype"] = subtype
             presence.append(entry)
+        if extra and empty:
+            continue
         files, stem_blobs = encode_stem(stem_id, audio, workdir, bool(params["opus"]))
         blobs.update(stem_blobs)
         gain = 0.0

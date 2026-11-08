@@ -6,9 +6,9 @@ verify against the register and whose run succeeds wins. A later model than the 
 status `fallback` (`separation_fallback_model`); no model gives `stems_unavailable`, a permanent
 failure after which the analysis continues without stems (06 §6).
 
-Only what the analysis needs is kept (06 §4 "request one target"): the learner's stem, the
-complement parts when mix-minus is `complement`, and the `keep` extras (drums, bass) when the same
-run produced them and the tagger hears them.
+Kept outputs: the learner's stem, the `keep` extras (every other instrument the same run produced,
+step s40a, so the mixer can play each stem) unless the tagger is near-certain they are absent, and
+the complement parts when mix-minus is `complement`.
 
 Raw stems are cached as 24-bit FLAC, or as float32 WAV when they peak above full scale (a loud
 master's stems do, though its mixture doesn't), so `mixture - stem` stays exact (step 28).

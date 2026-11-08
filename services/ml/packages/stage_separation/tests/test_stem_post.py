@@ -150,10 +150,28 @@ def scenario(
     ]
     if mix_minus == "complement":
         stems.append({**write_raw(cache, run, "other", np.zeros_like(drums)), "role": "complement"})
+    probs = {"guitar": tag_guitar, "drums": 0.4, "bass": 0.05, "vocals": 0.02}
+    job = stage_job(tmp_path, mixture, stems, mix_minus=mix_minus, probs=probs)
+    return job, mixture, drums
+
+
+def stage_job(
+    tmp_path: Path,
+    mixture: NDArray[np.float32],
+    stems: list[dict[str, Any]],
+    *,
+    mix_minus: str,
+    probs: dict[str, float],
+    target: str = "guitar",
+    provider: str = "htdemucs_6s",
+) -> StageJob:
+    """A stem_post job over raw stems already in `tmp_path/cache`, with separation.json, tags.json
+    (guitar subtype electric) and the decoded mixture."""
+    seconds = len(mixture) / RATE
     separation = {
         **header("separation", seconds),
-        "target": "guitar",
-        "provider": "htdemucs_6s",
+        "target": target,
+        "provider": provider,
         "mix_minus": mix_minus,
         "device": "cpu",
         "stems": stems,
@@ -165,10 +183,12 @@ def scenario(
         "window_s": 10,
         "windows": 1,
         "instruments": [
-            {"instrument": "guitar", "present_prob": tag_guitar, "subtype": "electric_guitar"},
-            {"instrument": "drums", "present_prob": 0.4},
-            {"instrument": "bass", "present_prob": 0.05},
-            {"instrument": "vocals", "present_prob": 0.02},
+            {
+                "instrument": k,
+                "present_prob": v,
+                **({"subtype": "electric_guitar"} if k == "guitar" else {}),
+            }
+            for k, v in probs.items()
         ],
     }
     inputs = {"separation": tmp_path / "separation.json", "tags": tmp_path / "tags.json"}
@@ -179,7 +199,7 @@ def scenario(
     named = {k: str(v) for k, v in inputs.items()}
     work = tmp_path / "work"
     work.mkdir()
-    job = StageJob(
+    return StageJob(
         stage="stem_post",
         analysis_id=str(uuid.uuid4()),
         user_id="pytest-stem-post",
@@ -187,12 +207,11 @@ def scenario(
         params=stem_post.describe({}, named).params,
         inputs=named,
         workdir=str(work),
-        cache_dir=str(cache),
+        cache_dir=str(tmp_path / "cache"),
         audio_hash=AUDIO_HASH,
         duration_s=seconds,
         decoded_path=str(decoded),
     )
-    return job, mixture, drums
 
 
 def load(out_path: str) -> dict[str, Any]:
@@ -206,12 +225,9 @@ def test_stem_post_aligns_derives_mix_minus_and_writes_presence(tmp_path: Path) 
     presence = contracts.Presence.model_validate(load(out.files["presence"]))
     assert stems.alignment_offset_samples == 64
     by_id = {s.stem_id: s for s in stems.stems}
-    assert set(by_id) == {"guitar", "drums", "bass", "mix_minus_guitar"}
+    # The silent bass extra is left out of stems.json (s40a) but stays in presence.json.
+    assert set(by_id) == {"guitar", "drums", "mix_minus_guitar"}
     assert by_id["mix_minus_guitar"].kind == "mix_minus"
-    assert by_id["bass"].empty
-    assert by_id["bass"].quality_hint == "rough"
-    assert by_id["bass"].gain_to_unity_db == 0.0
-    assert by_id["bass"].loudness_lufs == dsp.SILENCE_LUFS
     assert not by_id["guitar"].empty
     assert by_id["guitar"].quality_hint == "good"
     mix_loudness = dsp.loudness_lufs(mixture)
@@ -270,6 +286,116 @@ def test_cache_key_follows_the_raw_stems(tmp_path: Path) -> None:
     separation["stems"][0]["sha256"] = "0" * 64
     Path(job.inputs["separation"]).write_text(json.dumps(separation))
     assert stem_post.describe({}, job.inputs).params["separation"] != first
+
+
+def test_cache_key_follows_the_kept_outputs(tmp_path: Path) -> None:
+    """s40a: a separation that keeps more outputs gets a new stems.json."""
+    job, _, _ = scenario(tmp_path, mix_minus="subtract")
+    every = stem_post.describe({}, job.inputs).params["separation"]
+    separation = load(job.inputs["separation"])
+    separation["stems"] = [s for s in separation["stems"] if s["name"] != "bass"]
+    Path(job.inputs["separation"]).write_text(json.dumps(separation))
+    assert stem_post.describe({}, job.inputs).params["separation"] != every
+
+
+def band(
+    tmp_path: Path, *, mix_minus: str
+) -> tuple[StageJob, NDArray[np.float32], NDArray[np.float32]]:
+    """A six-stem run for a guitarist: guitar 2-8 s over bass, drums, vocals and "other"; the
+    piano output is silent; the tagger can't hear the vocals. Returns the job, the mixture and
+    the mixture without the guitar."""
+    seconds = 10.0
+    guitar = np.zeros((int(seconds * RATE), 2), dtype=np.float32)
+    guitar[2 * RATE : 8 * RATE] = tone(6, 523, 0.15, seed=4)
+    parts = {
+        "guitar": guitar,
+        "bass": tone(seconds, 55, 0.15, seed=5),
+        "drums": tone(seconds, 90, 0.15, seed=3),
+        "piano": np.zeros_like(guitar),
+        "vocals": tone(seconds, 880, 0.1, seed=6),
+        "other": tone(seconds, 1320, 0.1, seed=7),
+    }
+    mixture = np.sum(list(parts.values()), axis=0, dtype=np.float32)
+    run = "fedcba9876543210fedcba9876543210"
+    stems = [
+        {
+            **write_raw(tmp_path / "cache", run, name, audio),
+            "instrument": name,
+            "role": "target" if name == "guitar" else "extra",
+        }
+        for name, audio in parts.items()
+    ]
+    probs = {"guitar": 0.6, "bass": 0.05, "drums": 0.4, "piano": 0.2, "vocals": 0.005}
+    job = stage_job(
+        tmp_path,
+        mixture,
+        stems,
+        mix_minus=mix_minus,
+        probs=probs,
+        provider="bs_roformer:BS-Roformer-SW",
+    )
+    return job, mixture, mixture - guitar
+
+
+@pytest.mark.parametrize("mix_minus", ["subtract", "complement"])
+def test_every_kept_output_gets_a_stem_and_an_empty_extra_is_left_out(
+    tmp_path: Path, mix_minus: str
+) -> None:
+    job, mixture, backing = band(tmp_path, mix_minus=mix_minus)
+    out = stem_post.run(job)
+    stems = contracts.Stems.model_validate(load(out.files["stems"]))
+    presence = {
+        p.instrument: p
+        for p in contracts.Presence.model_validate(load(out.files["presence"])).instruments
+    }
+    assert [(s.stem_id, s.kind, s.instrument) for s in stems.stems] == [
+        ("guitar", "isolated", "guitar"),
+        ("bass", "isolated", "bass"),
+        ("drums", "isolated", "drums"),
+        ("vocals", "isolated", "vocals"),
+        ("other", "isolated", "other"),
+        ("mix_minus_guitar", "mix_minus", None),
+    ]
+    by_id = {s.stem_id: s for s in stems.stems}
+    assert not any(s.empty for s in stems.stems)
+    # energy the tagger can't hear is bleed: listed, but rough
+    assert presence["vocals"].bleed_suspected
+    assert by_id["vocals"].quality_hint == "rough"
+    assert {s.stem_id for s in stems.stems if s.quality_hint == "rough"} == {"vocals"}
+    # the empty piano: presence only, no stem and no file
+    assert presence["piano"].present_prob <= 0.1
+    assert presence["piano"].activity == []
+    assert presence["other"].present_prob > 0.5
+    assert set(out.blobs) == {f.path for s in stems.stems for f in s.files}
+    assert "stems/piano.m4a" not in out.blobs
+    # both mix-minus modes give the mixture without the guitar (every other output summed)
+    expected = dsp.energy(backing) / dsp.energy(mixture)
+    assert by_id["mix_minus_guitar"].energy_ratio_to_mix == pytest.approx(expected, abs=2e-4)
+
+
+def test_an_empty_target_stays_listed_as_silence(tmp_path: Path) -> None:
+    """The learner's stem and the mix-minus are always in stems.json, empty or not."""
+    seconds = 10.0
+    drums = tone(seconds, 90, 0.15, seed=3)
+    cache = tmp_path / "cache"
+    run = "00112233445566778899aabbccddeeff"
+    stems = [
+        {
+            **write_raw(cache, run, "guitar", np.zeros_like(drums)),
+            "instrument": "guitar",
+            "role": "target",
+        },
+        {**write_raw(cache, run, "drums", drums), "instrument": "drums", "role": "extra"},
+    ]
+    job = stage_job(tmp_path, drums, stems, mix_minus="subtract", probs={"guitar": 0.05})
+    out = stem_post.run(job)
+    by_id = {s.stem_id: s for s in contracts.Stems.model_validate(load(out.files["stems"])).stems}
+    assert set(by_id) == {"guitar", "drums", "mix_minus_guitar"}
+    guitar = by_id["guitar"]
+    assert guitar.empty
+    assert guitar.quality_hint == "rough"
+    assert guitar.gain_to_unity_db == 0.0
+    assert guitar.loudness_lufs == dsp.SILENCE_LUFS
 
 
 def test_a_raw_stem_above_full_scale_is_read_back_unclipped(tmp_path: Path) -> None:
