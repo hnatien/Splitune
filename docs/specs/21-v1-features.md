@@ -9,6 +9,8 @@ confidence: medium
 
 Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to-intermediate.md` (V1–V13). Native apps (V14) are in `22-native-apps.md`. Each entry lists the start gate, the components it touches and the acceptance check. Sequencing is in `20-delivery-plan.md` Phase 3.
 
+**Redesign (step s31a, 2026-11-08).** The "Night Rehearsal" redesign (`redesign/report.md`, steps s32–s45 in `redesign/orchestrator/prompt.md` §5) builds V1, V3 and V9 and gives V5, V10, V11 and V12 their place in the new screens. Each entry below has a **UI (redesign)** line naming the screen (`27-screens-flows-and-content.md`), the components (`26-design-system.md` §12.2) and the step. New scope that is not a V-feature is listed at the end.
+
 > **Personal mode is current (`25-personal-mode.md`).** Gates tied to counsel or licences disappear: V3 sections, V4 piano (Transkun or Aria-AMT), V10 offline and V11 export start whenever the code is ready. **V6 drums uses pretrained ADTOF** instead of training an in-house CRNN. V7 mic scoring still waits for P5 (it's a quality gate, not a legal one). V14 native = PWA plus optional free sideloaded Capacitor builds (`22-native-apps.md`).
 
 ## TL;DR
@@ -22,6 +24,7 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 - **Engine:** the loop scheduler (`11-audio-engine.md`) emits `loopWrapped(passIndex)`; the trainer advances tempo at pass boundaries and re-schedules the count-in at the *upcoming* tempo (Soundslice behaviour).
 - **UI:** shows % and BPM; BPM entry; progress "pass 3/4 at 70%".
 - **Accept:** tempo changes exactly at the loop seam; no audible glitch; trainer state survives reload.
+- **UI (redesign, s37):** the **Speed ladder** card in the Loop tab (`27` §3.7.4, `redesign/mockups/Main.dc.html`): switch, rungs from start to goal (done / current / upcoming), the summary line "Up 5 % after 3 clean passes…", chips Start, Goal, Step, clean passes and More (back down after n misses, count-in before each pass, at the goal keep looping or stop); the dock's speed readout shows the goal ("72 BPM · → 100"); the loop badge "pass 2 of 3 at 75 %"; Settings → Display & practice holds the default for new loops; the phone Tools sheet has the switch. Defaults per `12` §5 (report: an adjustable default, not science). The backend exists behind flag `v1.speed_trainer` (contract `SpeedTrainer` on the loop clip, `loop_clips.trainer`); s37 turns the flag on and extends the contract with the miss rule and the end action (`drop_after_misses`, `on_goal`). Clip rename (PATCH) and delete (DELETE) ship with it.
 
 ## V2. Transpose and capo suggestions
 - **Audio:** Signalsmith `setTransposeSemitones` on the single stretch node (Option C), with a tonality limit for vocals; ±12 semitones UI range with a warning beyond ±3 on vocal stems (artefacts; QX13).
@@ -33,6 +36,8 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 - **Pipeline:** `sections` stage on demixed stems (already in the stage graph; enabled by config). Fallback: novelty-based segmentation from chord/beat self-similarity in `music-core` (unsupervised, green) labelled "Part A/B/C".
 - **UI:** section chips above the timeline; tap → loop preset; labels editable (`set_section` op).
 - **Accept:** boundaries snap to downbeats; edits persist.
+- **State (2026-11-08):** section contracts exist (`set_section` op, section labels), but the ML stage `stage_sections` is an empty stub and isn't scheduled, so no song has sections yet.
+- **UI (redesign):** s41a builds `stage_sections` (the s18 plan: allin1 in a legacy island plus a `music-core` novelty fallback named "Part A/B/C") and schedules it (owner gate G3); s41b adds the **section chips** in the song map (`27` §3.7.1): flex-grown by bar count, tap loops exactly that section, the current one in the amber wash, rename through `set_section`; the Loop tab's heading badge names the section; ⌘K "Loop the next chorus". No chips are drawn until a song has sections; while analysing, "Sections appear when the chords are ready" shows only when the stage is scheduled.
 
 ## V4. Piano notes, hand split, falling-notes roll
 - **Gate:** Transkun sign-off (MAESTRO NC data; weights licence unstated) **and** P2 piano onset F1 ≥0.80 in band mixes, or ship solo-piano path only.
@@ -44,6 +49,7 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 - **Input:** Web MIDI works in Chromium and Firefox desktop but **not in Safari or any iOS browser** (MDN BCD, Oct 2026). iPad pianists therefore need the native app (CoreMIDI via a Capacitor plugin, `22-native-apps.md`); the web build offers wait mode only on desktop/Android Chrome.
 - **Logic:** pause the transport at each chord/note event until the expected pitch set is held (allow octave-insensitive mode for beginners); hands-separate practice mutes the other hand's notes.
 - **Accept:** zero false advances in a 100-event scripted MIDI test; latency from key press to advance <30 ms.
+- **UI (redesign, later than s45):** a **Wait for me** button with a "MIDI keyboard" badge in the piano transport dock (`redesign/mockups/Practice-Piano.dc.html`), shown only where Web MIDI exists (feature detection). Not in steps s32–s45; the slot is reserved.
 
 ## V6. Drums: 5-class transcription and drum grid
 - **Model project (owned by ML):**
@@ -69,20 +75,24 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 ## V9. Visual and haptic metronome
 - Visual pulse on the beat with flash limits (WCAG 2.3.1: ≤3 flashes/s); downbeat accent by shape, not colour only.
 - Haptics: `navigator.vibrate` where supported (not iOS Safari); native haptics in v1 apps.
+- **UI (redesign, s42):** `BeatPulse` in the Now column, phone glance, Stand view and drum grid header (`26` §10, §12.2): one dot per beat of the bar, the downbeat square and the others round, the current beat filled amber with a glow, done beats faint, upcoming outlined; dot sizes 14 / 20 / 22 / 26 px; the dot changes shape and fill in a small area instead of flashing; above 3 beats a second (> 180 BPM, or subdivisions) only the downbeat is marked; reduced motion shows a static "Beat 3 of 4". **Vibrate on beat** is a tile in the phone Tools sheet, off by default, on the same schedule. A unit test checks the pulse schedule at high tempos (`28` §3). s42 also ships the **sound delay** calibration ("Tap along with 8 clicks…", a range wide enough for Bluetooth: −150 to +500 ms) and a wireless-output warning from `AudioContext.outputLatency` where available.
 
 ## V10. Offline practice
 - **Gate:** counsel on retention/portable copies (D7).
 - Service worker + OPFS store per song: stems (Opus/AAC), artefacts, alphaTex; encrypted-at-rest not required by law but keys stay per user; expiry when the server copy expires or the user deletes the song (delete cascade must also clear local caches on next sync).
 - Practice logs and corrections queue offline and sync with idempotency keys.
+- **UI (redesign):** "Save offline" in the practice ⋯ menu and the song card menu; a "Saved offline" badge; the library's offline state dims songs that aren't saved with "Needs connection" (`27` §4). Not in steps s32–s45 beyond the banners and states that exist today.
 
 ## V11. Export (MusicXML, Guitar Pro, PDF)
 - **Gate:** counsel (export is "moderate exposure").
 - `music-core/export/musicxml.ts` on the effective view; Guitar Pro via alphaTab exporter if available in the pinned version; PDF via alphaTab print layout in a headless browser job or client print.
 - Every export carries an "auto-transcribed, for personal practice" footer and is logged.
+- **UI (redesign):** "Export" in the practice ⋯ menu once built; Pricing lists "Export and offline downloads: Coming soon" for both plans until then.
 
 ## V12. Alternative fingerings, tuning and capo input
 - UI exposes `alt_fingerings[]` per note (tap → cycle), global "easiest / as played" switch, tuning presets (standard, half-step down, drop-D, full-step down; bass 4/5-string) and capo.
 - All recompute client-side in the `music-core` Worker.
+- **UI (redesign):** the Fix tab's note card shows the alternatives as "or play it as string 3, fret 7" chips (`27` §3.7.4, s38); Add song's **Tuning** button and a tuning row in the Now column's Level/Capo card appear with the tuning presets (not in s32–s45).
 
 ## V13. Richer level adaptation
 - Piano: right-hand melody only; left-hand block chords from chord labels; rhythm simplified to quarter/half notes.
@@ -106,6 +116,15 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 - **The grand staff draws the sustain pedal** under the bass staff. Durations stay key releases (the model's offsets), so the roll still shows played length.
 - **Electric pianos** (Rhodes, Wurlitzer, CP80) transcribe well when rendered. P2's 0.68 came from Slakh's patches. The Notes view stays the piano default.
 - **Per-song gate (owner, 2026-10-25):** a song whose mean calibrated note confidence is below 0.80 opens on the Chart, with the existing low-confidence banner and "Show notes anyway".
+
+## Redesign scope that is not a V-feature
+| Feature | Step | Backend state (2026-11-08) | UI |
+|---|---|---|---|
+| Multi-stem mixer | s40a (backend, owner gate G3), s40b (UI) | Separation keeps only the target (plus drums/bass) and a mix-minus, although the model outputs six stems; keeping all six changes the cache key and needs `eval:regression` | Mix tab: every stem, presets incl. Rhythm only, Click and Hear the chords channels, Rough tags, phone mini-mixer (`27` §3.7.4) |
+| Progress | s39 | `GET /v1/progress` (per-clip attempts with time, tempo, outcome) exists; the web never calls it | Progress tab, Library's Continue card, This week, Worth a revisit; "first clean pass next session"; no streaks |
+| Fix tab | s38 | Correction ops exist (`set_chord`, `split_chord`, `set_note`, `add_note`, `delete_note`, `shift_downbeat`, `tempo_octave`, `nudge_beat`, `set_section`, `mark_correct`, `report_wrong`) | Fix mode: queue by consequence, alternatives with frequency wording, audition over the loop, It's right, Your edits with Revert |
+| "Notify me when it's ready" | s44 | Web Push doesn't exist anywhere | Button in the Getting ready card where Web Push exists; SW `push`/`notificationclick`, subscription contract and route, table + migration, sender on `analysis.done`; permission asked only on click; on iOS only when installed |
+| Stand view, phone Tools sheet, pedal wizard | s43 | — | `27` §3.7.2, §3.9 |
 
 ## Open questions
 - Web MIDI availability on iOS Safari (affects V5 on iPad before native).

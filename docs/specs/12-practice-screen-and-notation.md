@@ -1,73 +1,87 @@
 ---
 title: Practice screen and notation rendering
 workstream: engineering
-last_researched: 2026-10-20
+last_researched: 2026-11-08
 confidence: medium
 ---
 
 # Practice screen and notation rendering
 
-The screen where learning happens: synchronised tab/chords, bar-snapped loops, mixer, speed, count-in, confidence-aware editing, level toggle and hands-busy controls. Implements M4 (UI), M5–M11, M14, M15 and the P0 patterns in `research/ux/practice-tool-patterns.md`. Audio internals are in `11-audio-engine.md`; algorithms in `07-music-algorithms.md`.
+The screen where learning happens: synchronised notation and chords, bar-snapped loops, the speed ladder, mixer, count-in, confidence-aware fixing, levels and hands-busy controls. Implements M4 (UI), M5–M11, M14, M15 and the P0 patterns in `research/ux/practice-tool-patterns.md`. Audio internals are in `11-audio-engine.md`; algorithms in `07-music-algorithms.md`; regions, sizes, states and copy in `27-screens-flows-and-content.md` §3.7; tokens in `26-design-system.md`.
+
+Updated in step s31a (2026-11-08) for the "Night Rehearsal" redesign (`redesign/report.md`, "The Practice screen: five regions serving one loop"): five regions, the inspector tabs, the new keymap and the practice tools that later steps add. Section numbers are unchanged.
 
 ## TL;DR
-- **One master clock (audio time) drives everything;** alphaTab (`@coderline/alphatab` 1.8.x) runs with `PlayerMode.EnabledExternalMedia` and an `IExternalMediaHandler` implementation, and only *follows* the time we push with `updatePosition(ms)`. The display never owns the clock.
-- **Renderer-agnostic view model:** effective artefacts (`applyCorrections`) → `music-core` tab/level → alphaTex → alphaTab. The chord strip, waveform timeline and (v1) piano roll are custom components reading the same view model.
-- **Confidence is encoded by ink value + dashed outline + "?" glyph plus a legend — never colour alone and never below 4.5:1** (WCAG 1.4.1, 1.4.3; `26-design-system.md` §5). Low global confidence → chords-only with a banner (`summary.recommended_view`).
-- **Tablet-on-a-stand is the primary layout;** primary controls ≥64 CSS px in practice mode, transport at the bottom edge on touch devices (`27-screens-flows-and-content.md` §3.7); every action reachable by keyboard and Bluetooth page-turner pedals with a "learn this pedal" remap.
-- **Loops are created by tapping bars** (single-pointer, WCAG 2.5.7), with numeric fields as a third method; drag handles are secondary.
+- **One master clock (audio time) drives everything;** alphaTab (`@coderline/alphatab` 1.8.x) runs with `PlayerMode.EnabledExternalMedia` and only *follows* the time we push with `updatePosition(ms)`. The playhead and the sounding-note highlight are our own layer, moved by `transform` from the audio clock.
+- **Five regions serve one loop** (desktop): song map (where am I?), Now column (what do I play now?), notation (which notes?), inspector with **Loop / Mix / Progress / Fix** (how do I practise?), transport dock (control this pass), plus a pass prompt after each pass. Tablets get **Stand view**, phones the glance view and a **Tools** sheet (`27` §3.7).
+- **Renderer-agnostic view model:** effective artefacts (`applyCorrections`) → `music-core` tab/level → alphaTex → alphaTab. The song map, Now column, chord sheet, rolls and grids read the same view model.
+- **Confidence is shown by outline + "?" + words, never colour alone, never below 4.5:1** (`26` §5); the Fix tab queues unsure spots by consequence.
+- **A loop in at most two actions** (tap two bars, a section chip, or "Loop this bar"), median under 3 s; every key or pedal action confirmed within 100 ms.
+- **Keys:** speed is `,` / `.` (Shift = 1 %); ↑/↓ never change speed silently; single-key shortcuts can be switched off (WCAG 2.1.4); a pedal wizard maps whatever a pedal sends (§8).
 
 ## 1. Layouts
 | Device / orientation | Layout | Notes |
 |---|---|---|
-| Tablet landscape (primary) | Top: slim status bar (song, loop status, display settings); chord strip; centre: tab (2–3 systems, page-flip by bar group by default); right: collapsible mixer drawer; above the transport: waveform timeline with sections and loop clips; **bottom: transport + speed + pass controls** (closest to the hands at a stand; safe-area aware) | Designed for 0.5–1 m reading distance (`research/ux/hands-busy-and-device-context.md`); regions and sizes in `27-screens-flows-and-content.md` §3.7 |
-| Tablet portrait | Embed (if any) on top, notation below, controls in a bottom bar | Embed ≥200×200 px, no overlays |
-| Phone landscape | 1–2 bars visible, large now-line, horizontal scroll; chord strip enlarged; controls in a single bottom row | Phone shows only 1–2 legible bars at distance |
-| Phone portrait | Glance view by default (current/next chord, bar.beat, loop, speed) + big transport; tab on demand | `26-design-system.md` §6.3 |
-| Desktop | Import/edit surface: wider systems, editor side panel, keyboard shortcuts overlay | Editing corrections is easiest here |
+| Desktop, fine pointer, ≥ 1180 px | Top bar 60 · song map · Now column 264 · notation · inspector 380 · transport dock 96 | `27` §3.7.1, `redesign/mockups/Main.dc.html` |
+| Desktop 1024–1179 | Inspector becomes a right drawer ("Tools" in the top bar) | |
+| Desktop < 1024 | Also the Now column becomes a strip above the notation | |
+| Tablet (coarse pointer, shortest side > 640) | **Stand view** by default: Now panel 400, one tab system that always fits, four 88 px pedal-mirroring buttons, page turns on the downbeat from the audio clock; "All tools" switches to the full layout with the inspector in a drawer | `Stand.dc.html`; portrait stacks two systems and turns half a page; landscape shows a slice of the next bar |
+| Phone portrait | Glance view (current and next chord, beats, loop, speed) with Glance · Tab · Chords; **Tools** sheet for speed, ladder, count-in, click, vibrate, mix, level and capo | `Phone-Practice.dc.html`, `Phone-Tools.dc.html` |
+| Phone landscape | Horizontally scrolling tab strip that scrolls only when needed, compact ruler, one transport row | |
+| Fix mode (any layout with an inspector) | Top bar shows the "Fixing" pill and Done; the dock plays the selected bars on repeat with Listen to: Original / Your part / Tab synth / Both | `Practice-Fix.dc.html` |
 
-Practice mode hides navigation chrome and enables Screen Wake Lock (`11-audio-engine.md`).
+Practice hides navigation chrome and holds a Screen Wake Lock for the whole session, requested again on every `visibilitychange` (`11-audio-engine.md`), with the screen tip when it can't be held. Layout selection uses feature queries (viewport, `(pointer: coarse)`, orientation), never the user agent.
 
 ## 2. Component tree (web)
 ```
 PracticeRoute
-├─ PracticeProvider (XState actor: player state machine; see §6)
-├─ TransportBar        play/pause · speed (50–100% fine steps, % and BPM) · count-in toggle · metronome · loop toggle
-├─ VideoPane?          personal mode: local downloaded video, muted, slaved to the master clock (overlay allowed); fallback: IFrame embed + syncpoints (13-import-onboarding-and-youtube-embed.md)
-├─ ChordStrip          beat-synchronous chord chips, confidence style, tap → editor
-├─ NotationView        alphaTab host (tab / standard / drum tab), cursor, bar tap handlers, confidence styling
-├─ Timeline            stem waveform, sections, bar ruler, loop clips, tap-to-seek (bar-snapped), +/- zoom buttons
-├─ MixerDrawer         per stem: mute / solo / volume, presets "Your part loud", "Minus-one", "Original"; rough-stem warning
-├─ LevelToggle         M11 levels per instrument
-├─ EditorSheet         note/chord editor, "play this bar from the original", alternatives, report wrong
-├─ PassCounter         "Felt clean / Not yet", clean-pass streak, best clean tempo for this clip
-└─ InputMapper         keyboard + pedal bindings, "learn this pedal"
+├─ PracticeProvider     XState actor (§6) + practice store
+├─ PracticeTopBar       back · title/part line · view switch · legend chip · Display · Keyboard & pedal · More
+├─ SongMap              section chips (V3) · waveform overview · unsure hatch · loop band + handles · now-line · ruler
+├─ NowColumn            current chord + shape · BeatPulse (V9) · next chord · then chips · Level / Capo
+├─ NotationView         alphaTab host (tab / standard / drum staff) or chord sheet / chart / rolls / grid; overlay: confidence, loop, current bar, playhead
+├─ PassPrompt           "Pass n at s — how was it?" Felt clean / Not yet
+├─ Inspector            tabs: LoopTab (bars, nudges, SpeedLadder V1, repeats, clips) · MixTab (presets, StemRows, helpers) · ProgressTab · FixTab
+├─ TransportDock        restart · play · next · position · loop pill · speed group · count-in · click · mix pill · volume
+├─ StandView            (tablet) header · Now panel · one system · pedal dock
+├─ GlanceView + ToolsSheet (phone)
+├─ VideoPane?           personal mode: local downloaded video, muted, slaved to the master clock
+├─ PedalHud             confirmation chip ≤ 100 ms
+└─ InputMapper          keyboard + pedal bindings, wizard captures, single-key switch
 ```
+Lazy outside the route budget: Fix, Progress, Tools sheet, Stand view, command palette, every popover body, notation views (`§10`).
 
 ## 3. Notation rendering with alphaTab
-- **Load path:** `tab.{instrument}` + `chords` + meta → `music-core/export/alphatex.ts` → `api.tex(alphaTex)` (or build the score model directly if alphaTex lacks a needed feature). Re-render only the changed bars where the API allows; otherwise debounce full re-render ≤150 ms after an edit.
-- **Player mode:** alphaTab's built-in synth is **disabled**. Set `player.playerMode = PlayerMode.EnabledExternalMedia` (available since 1.6.0) and implement `IExternalMediaHandler` (`seekTo`, `play`, `pause`, `playbackRate`, `backingTrackDuration`) as thin calls into our audio engine; push our master clock with `updatePosition(ms)` from a `requestAnimationFrame` loop (alphaTab's guide suggests ~50 ms; we push every frame for a smooth cursor and let alphaTab interpolate). Tick ↔ time mapping comes from alphaTab **sync points** generated from our beat grid (one per downbeat), so the cursor follows rubato and drifting live takes. When the speed changes, call the handler's rate path so alphaTab's internal interpolation matches ([alphaTab audio/video sync guide](https://alphatab.net/docs/guides/audio-video-sync)).
-- **Wrapper:** alphaTab has no official React wrapper (it is an SDK); `packages/notation` provides a thin `<AlphaTabView>` that owns one `AlphaTabApi` instance, exposes imperative methods via ref, and never re-creates the API on React re-renders.
-- **Workers:** alphaTab renders in a Web Worker on all platforms since 1.8.2; fonts (Bravura, SIL OFL) self-hosted.
-- **Cursor & interaction:** beat cursor, bar highlight, click-to-seek (bar-snapped), range selection → loop.
-- **Confidence styling** (`26-design-system.md` §5): high = `--ink`; medium = `--conf-medium` ink + dashed outline; low = `--conf-low` ink + dashed outline + "?" glyph; quantize-residual-flagged = dotted underline. Ink is set per note with alphaTab's `NoteStyle` (`NoteSubElement.GuitarTabFretNumber`, noteheads); outlines and glyphs are drawn in an overlay layer positioned from `boundsLookup` (`core.includeNoteBounds = true`), because alphaTab documents that CSS styling of its rendered output isn't reliable. All levels stay ≥4.5:1 (the earlier 60%/40% opacity rule dropped low-confidence digits below 3:1). Legend chip "Auto-transcribed — may contain errors (v{model})" always visible, with a toggle to hide outlines and glyphs.
-- **Fonts and colours:** `display.resources.tablatureFont`, `barNumberFont`, `fretboardNumberFont` use the active reading family (Inter or Atkinson Hyperlegible Next) at the distance-preset size; staff/bar/glyph colours come from tokens via `readToken()` and are re-applied when the appearance changes.
-- **Display modes:** page-flip by bar group (default for reduced motion and notation) with ≥1 bar look-ahead; continuous horizontal scroll with fixed now-line (default for tab) with a pause control.
-- **Left-handed:** mirror chord diagrams/fretboard (not tab text) when `users.handedness='left'`.
-- **Licence:** alphaTab is MPL-2.0 — keep it unmodified or upstream patches; record in the register (`09-…`).
+- **Load path:** `tab.{instrument}` + `chords` + meta → `music-core/export/alphatex.ts` → `api.tex(alphaTex)`. Re-render only changed bars where the API allows; otherwise debounce a full re-render ≤ 150 ms after an edit.
+- **Player mode:** alphaTab's synth is **disabled**: `PlayerMode.EnabledExternalMedia` with an `IExternalMediaHandler` whose transport calls are no-ops (the audio engine is the only transport); the engine clock is pushed with `updatePosition(ms)` every frame; tick ↔ time from **sync points** on the beat grid (one per downbeat), so the cursor follows rubato. When the speed changes, the rate path keeps alphaTab's interpolation in step.
+- **Clock and playhead:** the playhead, the current-bar wash and the sounding-note fill are our own layers on the compositor, moved with `transform`; position = f(audio clock) read once per frame from `AudioContext.getOutputTimestamp()` (fallback `currentTime` where the output timestamp is unreliable, report gate G7), with no extrapolation, so the cursor never overshoots and snaps back (alphaTab #318). Every view (tab, rolls, grid, chord sheet) reads the same clock.
+- **Follow modes** (Display → "Notation follows the music"): **Page by page** (default; systems turn as the playhead enters the next one, the current bar always visible, at least one bar of look-ahead), **Scrolling** (fixed now-line, only when necessary), **Off** (for reading and fixing). Pausing stops any scrolling (WCAG 2.2.2). Reduced motion allows Page only and steps the playhead by beat. Stand view turns pages on the downbeat from the audio clock (never in the middle of a system); a pedal turn always wins over the automatic one.
+- **Playhead style** (Display): Line (2 px `--playhead`, glow in Night), Block (a small block on the beat, for anyone who finds the line glaring), Bar (shade the current bar only).
+- **Rhythm stems** under the tab always (stems and beams in `--faint-foreground`), chord names over the bars (`buildTab({ chordNames: true })`), bar numbers in mono.
+- **Confidence styling** (`26` §5): ink via `NoteStyle`; dashed outlines, "?", underlines (edited), the sounding fill and the shaky-bar outline in the overlay positioned from `boundsLookup` (`core.includeNoteBounds = true`); alphaTab's SVG is never styled with CSS. The legend chip shows the unsure count and opens the key and "Show uncertainty".
+- **Fonts and colours:** `display.resources` fonts use the reading family (JetBrains Mono digits, or Atkinson Hyperlegible Next) at `--read-tab`; staff, bar and glyph colours come from tokens via `readColor()` and are re-applied on appearance or contrast change. Notation sits on the page in both themes (no paper surface).
+- **Wrapper, workers, licence:** `packages/notation` `<AlphaTabView>` owns one `AlphaTabApi`; alphaTab renders in a Web Worker; Bravura self-hosted; alphaTab MPL-2.0 kept unmodified.
+- **Left-handed:** chord shapes and the fretboard mirror (not tab text) when `users.handedness = 'left'`.
 
-## 4. Chord strip, editing and corrections (M8, M10)
-- Chips aligned to beats; current chip enlarged (`--read-chord-current`); medium/low confidence → dashed border, low adds a "?" glyph; tap → `EditorSheet` with top-k alternatives, free entry (Harte-validated), split chord at beat.
-- Note editor: string/fret (or pitch), duration, delete/add; "hear original" plays the bar from the mixture or stem at current speed.
-- Every edit = `CorrectionOp` with `client_op_id`, applied optimistically, persisted via `POST /artefacts/{id}/corrections`; undo/redo stack per session.
-- "Report wrong" = `report_wrong` op; doesn't change the display, feeds the correction-rate metric.
-- **Global fallback:** if `recommended_view = chords_only`, open in chords + audio with a banner: "We're not confident in the note-level tab for this song — showing chords. [Show tab anyway]". With no chords to fall back on, the notation opens anyway under "We're not confident in the notes for this song." (no button). Choosing Chords in the view switch takes "Show tab anyway" back.
+## 4. Chords, the Fix tab and corrections (M8, M10)
+- **Now column:** the current chord large with its shape, "Next · in n beats", then up to five chords; unsure chords dashed with "?"; Level and Capo below. Chord names follow the song's key spelling.
+- **Fix tab** (replaces the editor sheet; `27` §3.7.4): entering it (tab, `E`, or tapping a "?") switches to Fix mode. The **queue** holds every unsure spot ranked by consequence (wrong pitch or string/fret, octave error, wrong chord root or quality) and then by probability; a mostly-unsure bar is one "shaky bar" spot. `J` / `K` (and the arrows in the tab) move through it; the selected bars loop at the Fix dock's speed with **Listen to: Original / Your part / Tab synth / Both**.
+  - **Chord:** ranked alternatives with frequency wording ("about 1 in 3"), **Hear over the loop** (plays the alternative's voicing with a soft synth over the loop), **Use**, "Type a chord" (Harte-validated), "Split at beat n", Replace all in this song.
+  - **Note:** "D4 · string 2, fret 3 ?" with "or play it as" alternatives from `alt_fingerings`, String and Fret steppers, length, **It's right** (`mark_correct` op: removes the mark, keeps the note), Delete note, Report wrong.
+  - **Beat:** "Metronome off the beat?" Half tempo · Double tempo · Move downbeat ("This is beat 1"); after a beat fix, quantization re-runs in the browser (`music-core`) and a line states the consequence ("Re-barred 84 bars") with Undo.
+  - **Your edits:** the corrections history with Revert per op and a "Show original" switch; edited marks are underlined, never only coloured.
+- Every edit = `CorrectionOp` with `client_op_id`, applied optimistically, persisted via `POST /artefacts/{id}/corrections`; undo/redo per session; offline edits queue. "Report wrong" doesn't change the display. Copy says "Your fixes are saved for this song" and never implies the model learns from them.
+- **Global fallback:** `recommended_view = chords_only` opens on chords with the banner and "Show tab anyway" (per instrument); with no chords to fall back on, the notation opens under "We're not confident in the notes for this song.".
+- **Desktop full editor** (`/songs/$id/edit`) is "Open full editor" in Fix and shares its components.
 
 ## 5. Loops and practice loop (M6, M7)
-- **Create:** tap bar A, tap bar B → loop spans both bars (pickup-aware snapping, `07-music-algorithms.md` §1); tapping one bar extends to the enclosing phrase when sections/phrases are known; numeric "bars 17–20" fields; long-press-drag as secondary.
-- **Options:** rest between repeats (none / 1 beat / 1 bar), count-in bars (default 1 on loop restart), "play loop once", nudge boundaries by 1/16.
-- **Saved clips:** named, listed under the song and on the timeline (`loop_clips`).
-- **Pass counter:** after each pass the "Felt clean / Not yet" control appears (pedal-mappable); clean-pass streak; `best_clean_tempo_pct` updates → this is the progress metric (tempo reached at clean pass), not minutes.
-- **Count-in/metronome** follow the detected beat grid; "metronome is off the beat" → one-tap fixes: half/double tempo, shift downbeat (`tempo_octave`, `shift_downbeat` ops).
+- **Create (≤ 2 actions):** tap bar A then bar B on any notation view, the chord sheet, the song map or the rolls (same bar twice = one bar); tap a **section chip** (V3, when sections exist; "Part A/B/C" names when unnamed); **Loop this bar** in the glance view; `L` loops the current bar (or the sung phrase for vocals) when no loop exists; From/To steppers in the Loop tab; drag the loop handles (secondary); ⌘K "loop 17-20". Pickup-aware snapping (`07` §1).
+- **Edit:** From/To steppers (one bar per step), ‹ › sixteenth-note nudges (Fine-tune), **Next phrase** (shift by the loop's own length), **×2** and **÷2**; section chips set the loop exactly to a section.
+- **Repeats:** rest between repeats (None / 1 beat / 1 bar), count-in bars (Off / 1 / 2; the model allows 4), "Ask how each pass went before the next" (pauses after a pass until answered).
+- **Speed ladder (V1, `21`):** on a loop clip; Start (best clean tempo, else 70 %), Goal (100 %), Step (5 %), clean passes per step (3), back down one step after n "Not yet" in a row (2; Off allowed), count-in before each pass, at the goal keep looping or stop. The tempo changes exactly at the loop seam and the count-in plays at the upcoming tempo. The ladder is an adjustable default, never presented as science (report; gate "G5 (after phase 3)" tests the defaults).
+- **Saved clips:** named, listed in the Loop tab and the command palette; the active loop auto-saves as an unnamed clip; **Rename** (PATCH) and **Delete** (DELETE) from each row's menu (s37).
+- **Pass tracking:** after each pass the pass prompt "Pass {n} at {speed} — how was it?" asks Felt clean (`C`, hold right pedal) / Not yet (`N`, hold left pedal); every answer is a complete data point (clip, speed, outcome, time) for Progress; `best_clean_tempo_pct` updates. **Progress** (`GET /v1/progress`, s39) shows the 30-day history and the first clean pass of each session; the retention metric is the tempo of the first clean pass in the next session, not minutes.
+- **Count-in and click** follow the beat grid; the beat pulse (V9) shows the beat visually; "Metronome off the beat?" fixes live in Fix.
 
 ## 6. Player state machine (XState v5)
 ```mermaid
@@ -80,41 +94,54 @@ stateDiagram-v2
   Playing --> Paused: pause / pedal
   Paused --> Playing: resume
   Playing --> LoopRest: loop end & rest>0
-  LoopRest --> CountIn: rest done & count-in on
+  LoopRest --> CountIn: rest done & count-in on (or ladder count-in each pass)
   LoopRest --> Playing: rest done
-  Playing --> Assess: loop end & assessment prompt enabled
-  Assess --> CountIn: clean / not yet recorded
+  Playing --> Assess: loop end & ask after each pass
+  Assess --> CountIn: clean / not yet recorded (ladder may change speed here)
+  Playing --> Audition: Fix "Hear over the loop"
+  Audition --> Playing: audition done
   Playing --> Ready: stop
 ```
-Context: speed, playback key, loop (start/end s), mix, view, level. Side effects (scheduling audio) live in the audio engine; the machine only sends commands, keeping UI logic testable without audio.
+Context: speed, playback key, loop (start/end s), ladder state (rung, clean count, miss count), mix, view, level, follow mode, inspector tab. Side effects (scheduling audio, speed changes at the seam) live in the audio engine; the machine only sends commands.
 
 ## 7. Mixer (M4)
-- One row per non-empty stem: M / S / volume (dB, −∞…+6); `gain_to_unity_db` applied so soloed stems feel equally loud.
-- Presets: **Minus-one** (mute my instrument → plays `mix_minus_*` when available, else mutes the isolated stem), **Your part loud** (+6 dB my stem, others −6 dB), **Original** (all stems at unity); default on first open = my part + backing at −6 dB. Preset names follow the terminology in `27-screens-flows-and-content.md` §5.2.
-- Rough stems show a warning icon and tooltip text, never just colour.
-- Changes are instant (gains on the pre-stretch submix bus; `11-audio-engine.md`).
+- **Channels:** one row per non-empty stem, "Your part" first and labelled; M / S / level (dB, −30…+6, `gain_to_unity_db` so soloed stems feel equally loud); a "Rough" badge where separation is poor. Today separation keeps the target, drums and bass where kept, and a mix-minus ("Band"); **s40a** keeps every separated stem (bass, drums, guitar, piano, vocals, other) and changes the cache key (owner gate G3); **s40b** shows them all.
+- **Helpers:** Click (level + switch), **Hear the chords** (a soft synth plays the transcribed chords; s40b), master volume in the dock.
+- **Presets:** **Your part loud** (+6 dB your stem, others −6 dB), **Minus-one** (mute your part → plays `mix_minus_*` when available), **Original** (unity), **Rhythm only** (bass and drums only; shown when both exist); "Use as default for {part}"; Reset mix. The dock's mix pill names the preset and the real stem count; a changed mix marks the Mix tab with a dot.
+- **Safety:** a limiter at unity: no preset pushes the master above 0 dBFS (WHO H.870 safe listening, report).
+- Changes are instant (gains on the pre-stretch submix bus; `11`). Every fader has a click-to-set track and a stepper (no drag needed, WCAG 2.5.7).
+- **Later scope (not s32–s45):** per-drum channels ("Kick only", "Drums minus snare", lane focus) and per-hand piano audio need deeper separation.
 
 ## 8. Hands-busy input (M15)
-| Action | Default keys (pedals send these) | Notes |
-|---|---|---|
-| Play/pause | Space, Enter | |
-| Restart loop / previous bar | ArrowLeft, PageUp | |
-| Next bar / loop next phrase | ArrowRight, PageDown | |
-| Slower / faster (5%) | ArrowDown / ArrowUp | |
-| Felt clean / Not yet | `C` / `N` (and remappable to pedal pair) | |
-| Toggle loop | `L` | |
-| Mute my part | `M` | |
-- "Learn this pedal": listen for the next keydown and bind it; store per device in local storage + profile.
-- Focus management: practice route keeps a focus sink so pedal keys never scroll the page; test on iPadOS Safari (QX2).
-- Touch targets ≥64 CSS px for primary practice controls, 48 for secondary, ≥44 elsewhere (WCAG 2.5.8 AA 24×24 CSS px floor); every key/pedal action shows a `PedalHud` confirmation (`26-design-system.md` §8, §12.2).
+| Action | Default keys | Pedal (after the wizard, preset "Restart loop · Play/pause") | Notes |
+|---|---|---|---|
+| Play / pause | Space, Enter | Right pedal | |
+| Restart loop / back a bar | ←, PageUp | Left pedal | AirTurn mode 3 sends PageUp/PageDown |
+| Next bar | →, PageDown | — | |
+| Slower / faster 5 % | `,` / `.` (Shift: 1 %) | — | |
+| ↑ / ↓ | **No speed change.** Until a pedal is set up, PedalHud shows "Pedal detected? Set it up" (opens the wizard); after setup they act only if the wizard bound them | — | AirTurn BT200S mode 2 and iRig BlueTurn send ↑/↓ out of the box |
+| Felt clean / Not yet | `C` / `N` | Hold right / hold left (≥ 0.5 s) | |
+| Loop on/off | `L` | — | No loop: loops the current bar (vocals: the phrase) |
+| Mute your part | `M` | — | |
+| Next / previous unsure spot | `J` / `K` | — | Enters Fix mode |
+| Fix the playing bar | `E` | — | |
+| Previous / next phrase, first note (vocals) | `[` / `]`, `P` | — | |
+| Command palette | ⌘K / Ctrl K | — | Works with single keys off |
+| Undo / redo | ⌘/Ctrl Z, Shift ⌘/Ctrl Z | — | |
+| Shortcuts overlay | `?` | — | Desktop |
+- **Single-key shortcuts** (Settings → Keyboard & pedal, WCAG 2.1.4): one switch, on by default. On: single keys act only while focus is in the practice screen and not in a text field. Off: single keys are inert; modifier chords and learned pedal keys keep working.
+- **Pedal wizard** (s43): step 1 "Press your left pedal", step 2 "Now press your right pedal" (each captures whatever key the device sends: ↑/↓, PageUp/PageDown, Space/Enter…), step 3 choose what they do (Restart loop · Play/pause; Not yet · Felt clean; Back a bar · Next bar); a pedal held ≥ 0.5 s does a second action, so two pedals cover four; conflicting default keys are unassigned automatically; "I only have one pedal"; finish in the test area. Saved per device. The per-action "Learn key" table stays for advanced use. No Web MIDI requirement (Safari has none); a MIDI pad is optional where Web MIDI exists.
+- **Focus:** the practice route keeps a focus sink so pedal keys never scroll the page or activate the focused control.
+- **Targets:** Play 64 (phone 72), transport 52, Stand view 88, everything else 44 hit area (`26` §8); every key or pedal action shows PedalHud within 100 ms ("Speed 75 %", "Loop · bars 5–6", "Left pedal · From the top of the loop").
 
 ## 9. Accessibility checklist (practice screen)
-WCAG 2.2 AA (plus the design QA checklist in `28-ui-quality-and-design-review.md` §5): contrast 4.5:1 text / 3:1 UI and graphics; non-colour cues for confidence, current bar, stems, hands; Okabe-Ito palette for categorical colours; reduced motion (page-flip, no flashing, pause on scroll); text resize to 200% without loss; screen-reader labels on all controls; a text alternative for notation ("Bar 12: G chord, strum down on 1 and 3; bass notes G2, B2") generated from the view model; visual metronome flash ≤3/s.
+WCAG 2.2 AA plus `28` §5: contrast 4.5:1 text / 3:1 graphics in both themes; non-colour cues for confidence, the current bar, the downbeat (square), stems, hands, "Rough" and every on-state; targets per §8; every drag has a single-pointer alternative (2.5.7); the dock, Tools sheet, drawers and pass prompt never fully cover the focused element (2.4.11); single-key shortcuts can be turned off (2.1.4); pausing stops scrolling (2.2.2); no more than 3 flashes a second at any tempo, the beat pulse confined to a small dot, downbeat by shape (2.3.1, 1.4.1); text resize to 200 %; screen-reader labels on all controls with state; a text alternative for notation per bar ("Bar 12: G chord, strum down on 1 and 3; bass notes G2, B2"), read on request, never every note live; processing progress in a polite live region by stage milestone, `role="progressbar"` with `aria-valuetext`, `role="alert"` only for blocking errors.
 
-## 10. Performance budgets (proposals; verified in `18-testing-strategy.md`)
-- Cursor/now-line jitter ≤1 frame at 60 fps on a mid-range tablet.
-- Re-render after an edit ≤150 ms; capo/level change (Worker recompute + render) ≤300 ms.
-- Practice route JS ≤300 KB gz excluding alphaTab and WASM; alphaTab and Signalsmith loaded lazily on the practice route.
+## 10. Performance budgets (verified in `18-testing-strategy.md` and `28` §3.1)
+- Cursor/now-line jitter ≤ 1 frame at 60 fps on a mid-range tablet; no Long Animation Frame from playhead, song-map or roll code during steady playback (Chromium, CPU 4×), compared with the s32 baseline.
+- Key, pedal and tap confirmation ≤ 100 ms; p75 practice-action latency ≤ 100 ms.
+- Re-render after an edit ≤ 150 ms; capo/level change (Worker recompute + render) ≤ 300 ms; re-quantize after a beat fix with its consequence line ≤ 300 ms.
+- **Practice route JS ≤ 320 KB gzip** (`pnpm --filter @splitune/web budget --enforce`; alphaTab and WASM excluded), about 3 KB left at the last measurement (317.1 KB, step 25). New panels load lazily outside it; raising it needs the owner.
 
 ## Implementation notes (step 12, 2026-10-22)
 - `packages/notation`: `.` = light exports (ChordDiagram, types); `./view` = `AlphaTabView` (alphaTab in its worker, `PlayerMode.EnabledExternalMedia`). The external-media handler's `play/pause/seekTo` are **no-ops**: alphaTab calls them on every score reload, which paused playback; the audio engine is the only transport. `output.updatePosition(ms)` runs per frame from the engine clock; sync points come from the beat grid (one per bar). The cursor and current-bar wash are our own layers (underlay z-0: bar wash then loop shading; alphaTab z-10; confidence marks z-20; bar/note buttons z-30) positioned from `boundsLookup`, so they never wait for a re-render.
@@ -166,9 +193,10 @@ All in `model/screen.ts` (`resolveScreen`, table-tested in `screen.test.ts`) and
 - **Saved view (13 §5):** `player_state.view` is `chords_only` once the learner chooses Chords and `tab` once they choose a notation or "Show tab anyway"; nothing until they choose. Resume (and `?view=tab|chords`) restores it: `tab` as "Show tab anyway", `chords` as the Chords view. Notes and Staff stay session-only and open as the first notation next time.
 
 ## Open questions
-- Page-flip vs scroll default for tab at different tempos (QX13) — A/B in beta.
-- Legibility at 1–2 m on phones (QX3) — test notation scale presets.
+- Page vs Scroll as the default follow mode at different tempos (QX13); Page is the default until tested.
 - Whether one sync point per downbeat is precise enough for live takes with strong drift, or per-beat sync points are needed (measure cursor error on the owned live-take set).
+- Whether `getOutputTimestamp()` is reliable on Safari (report gate G7: measure the playhead offset against the audio) or the `currentTime` fallback is needed there.
+- Stand view as the tablet default, and the ladder defaults (3 clean passes up, 2 misses down): owner checks at G4/G5.
 
 ## Sources
-Cross-linked: `research/ux/practice-tool-patterns.md` (Patterns 1–7, feature table), `research/ux/music-display-ui.md` (alphaTab, confidence UI, scrolling modes, left-handed), `research/ux/hands-busy-and-device-context.md` (targets, pedals, distance), `research/ux/accessibility.md` (WCAG 2.2 AA, Okabe-Ito), `research/product/recommendations-and-decisions.md` D13, `05-analysis-schema.md`, `07-music-algorithms.md`.
+Cross-linked: `redesign/report.md` (five regions, transport, keymap, loops, ladder, Fix, Progress, Stand view, phones), `redesign/research/practice_science_ergonomics.md`, `redesign/research/stem_practice_players.md`, `redesign/research/notation_learning_apps.md`, `research/ux/practice-tool-patterns.md` (Patterns 1–7), `research/ux/music-display-ui.md` (alphaTab, confidence UI, scrolling modes, left-handed), `research/ux/hands-busy-and-device-context.md` (targets, pedals, distance), `research/ux/accessibility.md` (WCAG 2.2 AA), `research/product/recommendations-and-decisions.md` D13, `05-analysis-schema.md`, `07-music-algorithms.md`. [AirTurn BT200S manual](https://manualslib.com/manual/1986862/Airturn-Bt200s-Series.html?page=13) (mode 2 sends ↑/↓), [alphaTab #318](https://github.com/CoderLine/alphaTab/issues/318), [MDN getOutputTimestamp](https://developer.mozilla.org/docs/Web/API/AudioContext/getOutputTimestamp).
