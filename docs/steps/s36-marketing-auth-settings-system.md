@@ -9,7 +9,8 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the screens lane) reviews these screens |
 | Owned globs (plan table) | `apps/web/app/features/{marketing,auth,onboarding,billing,settings,system,common}/**`, `routes/{_marketing,_auth,_bare}/**`, `routes/_app/settings*`, their `en.json` keys |
 | Also yours by the plan's rules | `en.json` keys in `home.*`, `how.*`, `pricing.*`, `legal.*`, `auth.*`, `start.*`, `billing.*`, `plan.*` (except `plan.allowance`, s34's), `privacy.*`, `settings.*`, `appearance.*`, `system.*`, `error.*`, `footer.*`, `delete.account_*`, and `shortcuts.single_keys` / `shortcuts.single_keys_hint` (inside their groups, never at the end); the `copy-keys.test.ts` `CATALOGUE` entries for `billing.demo`, `system.offline`, `system.unsupported` (changed) and `shortcuts.single_keys_hint` (new); the visual baselines `home--*`, `mock-checkout--*`, `settings-display--*`, `settings-privacy--*`, `account-deleted--*` |
-| Needs the orchestrator's OK first | `apps/web/app/lib/appearance.ts` (labels; it reads the retired `appearance.stage`) and `apps/web/app/lib/display-store.ts` (the `stage` → `dark` rewrite on the next change, 26 §2); existing `apps/web/app/ui/` files whose layout §12.2 gives to s36: `status-message.tsx`, `step-dots.tsx`, `coach-mark.tsx`, `save-status.tsx` (+ `ui/save-status.stories.tsx`, `ui/onboarding.stories.tsx`); `apps/web/app/copy-keys.test.ts` (entries above); selector/copy lines in `apps/web/e2e/{onboarding,account,billing,fallbacks,a11y}.spec.ts` and `e2e/helpers.ts` (`signIn`, `openExample`) that the changed copy breaks |
+| Needs the orchestrator's OK first | `apps/web/app/lib/appearance.ts` (labels; it reads the retired `appearance.stage`; yours by decision); `routes/_focus/start/{index,saved}.tsx` and the layout routes `routes/{_marketing,_auth,_bare}.tsx` if onboarding or a shell needs a route change; existing `apps/web/app/ui/` files whose layout 26 §12.2 gives to s36: `status-message.tsx`, `step-dots.tsx`, `coach-mark.tsx`, `save-status.tsx` (+ `ui/save-status.stories.tsx`, `ui/onboarding.stories.tsx`); `apps/web/app/copy-keys.test.ts` (entries above); additive changes to `apps/web/e2e/helpers.ts` (`signIn`, `openExample`; union-merged). **Not yours:** `apps/web/app/lib/display-store.ts` (s35's) |
+| E2E specs | You own `apps/web/e2e/{onboarding,account,billing,fallbacks,a11y}.spec.ts` (selector and copy lines your changes break; `a11y.spec.ts:239` presses ↑ for speed, which s35's keymap change breaks: fix it once s35 has merged, per Stop point 6). Other specs: Stop point 6 |
 | Effort | high |
 | Runs in parallel with | s34 and s35 (screens lane), backend steps |
 
@@ -41,6 +42,7 @@ Home, How it works, Pricing, Legal, Sign in / Create an account, onboarding (wit
 - **D3:** the ladder default (3 clean passes) is a setting in Display & practice, built by s37, not here.
 - **D6:** budget 318.7 of 320 KB gzip; these screens are outside the practice route, but report before/after bytes anyway (the entry chunk counts).
 - **D1:** compare desktop boards at 1440 and 1180 only (28 §5.1); none of these boards has a phone version, so phone layouts are checked against 27 and 28 §5 (reflow, 200 %), not a mockup.
+- **Display store (orchestrator decision):** `lib/display-store.ts` is s35's. Your Display & practice controls derive their options from the constants or types it exports (follow modes, playhead styles, distances, appearance ids), so values s35 adds show up without you touching the store. The `stage` → `dark` rewrite is s35's too. If you need a store change anyway, stop and report.
 - **Wave contract with s35:** the Keys section's "Single-key shortcuts" switch binds to `singleKeys` in `features/practice/keys-store.ts`, which s35 adds. If s35 hasn't merged when you reach it, ask the orchestrator to merge `impl/redesign` into your branch after s35, or stop.
 
 ## Deliverables
@@ -54,7 +56,7 @@ Home, How it works, Pricing, Legal, Sign in / Create an account, onboarding (wit
    - **Display & practice:** three appearance cards with themed miniatures (subtree `data-appearance`), Increase contrast, Where is your screen? + Reading size card with its live sample, Hyperlegible font, Show uncertainty, Left-handed switch, Notation follows the music, Reduce motion, Practice defaults (Starting speed, Count-in, Rest between repeats; the ladder row is s37's), and today's sound-delay stepper restyled (the tap-along card is s42's). Retire the Score setting.
    - **Keyboard & pedal:** intro, a "Have a pedal? Set it up" card placeholder for the s43 wizard (no wizard logic), **Keys**: "Single-key shortcuts" switch with its hint, the action table (Action · Keys · Pedal · Learn key, rows in 12 §8 order), the dashed test area, Reset to the defaults.
    - **About:** version and build date, the transcription models and versions, font licences (Instrument Sans, JetBrains Mono, Bravura, Atkinson Hyperlegible Next, with the OFL texts), the provenance register link, the personal-mode line. Use data the web already has (a build-time list or the analyses' model ids); if neither works without an API or contract change, stop (Stop point 4).
-7. **System states** (27 §3.11): unsupported (the missing feature in plain words), analysis-failed card content and keys, worker offline, offline, update ready ("It waits until you stop playing", never during playback), rough-part banner, in-app browser, iOS install hint, screen tip, playback interrupted, 404 (mono "404"), error boundary with a copyable id, delete-account dialog, toasts copy. (The song confirm and rename dialogs live in `features/library`, s34's.)
+7. **System states** (27 §3.11): unsupported (the missing feature in plain words), analysis-failed card content and keys, worker offline, offline, update ready ("It waits until you stop playing", never during playback), in-app browser, iOS install hint, 404 (mono "404"), error boundary with a copyable id, delete-account dialog, toasts copy. (The song confirm and rename dialogs live in `features/library`, s34's; the rough-part, screen-tip and playback-interrupted banners live in `features/practice/banners.tsx`, s35's.)
 8. **Copy:** every s36 row of 27 §5.7 (appearance names and hints, retire `appearance.stage`, `settings.score*`, the handedness radio pair, `settings.profile|billing|privacy` nav keys → section headings, new `settings.account` / `settings.about`, `settings.level*`, `privacy.training_hint`, `privacy.delete_body`, `auth.showcase_*`, `home.*`, `pricing.*`, `start.*`, `billing.demo`, `system.offline`, `system.unsupported`, `system.update_ready`), with the `copy-keys.test.ts` entries updated (list each with old and new copy).
 9. **Stories** for every screen and state above in both themes (keep the ids the visual matrix uses: `screens-home--signed-out`, `screens-billing--checkout`, `screens-settings--display`, `screens-settings--privacy`, `screens-system--account-was-deleted`; the privacy story may render inside Account but keeps its id), with phone and desktop variants.
 10. **Visual baselines:** regenerate the `home`, `mock-checkout`, `settings-display`, `settings-privacy` and `account-deleted` rows after the fidelity check and list the intended differences.
@@ -67,14 +69,16 @@ The app shell, account menu and marketing bar (s34), Practice and its Display po
 - Structure per screen against 27 (aria snapshot); one primary per view; amber only per 26 §4.5.
 - Browse targets 44; keyboard-only paths through sign-in, onboarding, settings and checkout; 200 % text and 320 px reflow on every screen; no horizontal scroll at 390.
 - Redirects: `/settings/profile?checkout=success` lands on `/settings/account#plan` with the query kept (test); `/settings/about` exists.
-- A stored `stage` shows Night Rehearsal selected and becomes `dark` on the next change (unit test).
+- A stored `stage` shows Night Rehearsal selected in the appearance cards (story); the rewrite itself is s35's and tested there.
 - Stories for every state in both themes; axe clean in Chromium and WebKit; copy-keys test green.
-- Budget before/after reported; `css-floor` clean. E2E smoke green with every renamed selector listed (pending the OK above).
+- Budget before/after reported; `css-floor` clean. E2E smoke green for the specs you own with every renamed selector listed; edits needed in specs you don't own recorded in your report (Stop point 6).
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget                  # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/features/marketing --path apps/web/app/features/auth --path apps/web/app/features/onboarding --path apps/web/app/features/billing --path apps/web/app/features/settings --path apps/web/app/features/system --path apps/web/app/features/common   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
 pnpm --filter @splitune/web test:stories                                                  # heavy lock
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
@@ -88,9 +92,10 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s (t
 ## Stop points (stop, report with 2–3 options and a recommendation, wait)
 1. 27 §3.x, a mockup and the code disagree (for example a mockup control with no behaviour in the specs).
 2. The budget would exceed 320 KB.
-3. You need a file outside the owned globs and the OK'd extras (the shell, `features/practice`, `features/library`, another step's `ui/` file).
+3. You need a file outside the owned globs and the OK'd extras (the shell, `features/practice`, `features/library`, `lib/display-store.ts`, another step's `ui/` file, `features/story-fixtures.ts` unless assigned to you at dispatch).
 4. An API, contract or DB change (About's model list, a new settings field on the account).
 5. Any copy that 27 doesn't give, or a claim that would promise an unbuilt feature.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s36-outside-app`; subject-only Conventional Commits (for example `feat(settings): group settings into account, display, keyboard and about so each answers one question`); stage exact paths; gitleaks before each commit.

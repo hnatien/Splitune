@@ -57,13 +57,15 @@ Native apps, Web MIDI pedals (optional where available, no requirement), new pra
 - Page turns: unit or E2E test that a turn happens on a downbeat and never mid-system; pausing stops any scroll (2.2.2).
 - Wizard: a scripted key sequence sets up a pair in < 30 s; holds trigger the second action at ≥ 0.5 s; ↑/↓ act only when bound; single keys off leaves learned pedal keys working.
 - Focus not obscured with the Tools sheet and the Stand dock (28 §3 focus spec); stories for every state in both themes; axe clean in Chromium and WebKit.
-- Budget before/after reported; all three new surfaces lazy; `budget --enforce` green; perf spec on the tablet layout shows no regression vs the s32 baseline.
+- Budget before/after reported; all three new surfaces lazy; `budget --enforce` green; the s32 perf spec in its **tablet context** (1180 × 820 touch) on Stand view shows no regression vs the tablet entries of `perf-baseline.json` (28 §3.1: ≤ 10 %, p75 ≤ 100 ms).
 - G4 and G5 owner actions written with exact steps (devices, pedal modes, the 15-minute wake-lock check).
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget                  # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path apps/web/app/features/settings   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
 pnpm --filter @splitune/web test:stories                                                  # heavy lock
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
@@ -71,6 +73,7 @@ node scripts/redesign/render-mockups.mjs --file Stand --file Phone-Practice --fi
 node scripts/redesign/probe.mjs Stand --look night --touch --select '<anchor>'
 node scripts/redesign/probe.mjs 'http://localhost:6006/iframe.html?id=<story>&viewMode=story&globals=distance:floor' --look night --width 390 --height 844 --touch --select '#storybook-root <anchor>'
 cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/phone-fit.spec.ts      # heavy lock
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # heavy lock; compare the tablet context
 cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test                # heavy lock
 pnpm --filter @splitune/web e2e:visual:update -g "practice @ phone|practice @ tablet|practice-tab-pending @|practice-stems-expired @"         # heavy lock, Docker
 ```
@@ -82,6 +85,7 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 3. A file outside the owned globs and the OK'd extras (the desktop regions, `features/shell`, other settings sections).
 4. The phone fit rule can't be met at 18 px on a test size (the rule says the box scrolls instead: if that breaks another rule, stop).
 5. Any layout choice that would need user-agent sniffing.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s43-phone-tablet`; subject-only Conventional Commits (for example `feat(practice): open tablets in stand view so the music reads from the stand and pedals drive the dock`); stage exact paths; gitleaks before each commit.

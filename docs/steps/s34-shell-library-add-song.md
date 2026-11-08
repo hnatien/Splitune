@@ -9,7 +9,8 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the screens lane) reviews these screens and places "Works best with" (27 §3.6) |
 | Owned globs (plan table) | `apps/web/app/features/{shell,library,import}/**`, `apps/web/app/routes/_app.tsx`, `routes/_app/{library,import}.tsx`, their `en.json` keys |
 | Also yours by the plan's rules | `en.json` keys in the groups `import.*`, `library.*`, `nav.*`, `upload.*`, `record.*`, `delete.song_*`, `plan.allowance` and `analysis.queued_offline` / `analysis.eta_inline`, added inside their group (alphabetical position), never at the end of the file; the `copy-keys.test.ts` `CATALOGUE` entries for `import.live`, `analysis.queued_offline`, `plan.allowance`, `library.empty`, `library.empty_body`, `delete.song_confirm`, `delete.song_confirm_body` (27 §5.6 changed/new); the visual baselines `library--*` and `import-file--*` |
-| Needs the orchestrator's OK first | Existing `apps/web/app/ui/` files whose layout 26 §12.2 gives to s34: `song-card.tsx`, `allowance-meter.tsx`, `empty-state.tsx`, `worker-status.tsx`, `drop-zone.tsx`, `waveform-preview.tsx`, `ui/library.stories.tsx`, `ui/import.stories.tsx`; new `ui/` files `command-palette.tsx`, `bottom-nav.tsx`, `continue-card.tsx`, `week-strip.tsx`, `revisit-list.tsx` (or the same components under `features/library`, composed from `ui/`, if they have no new visual primitive); `apps/web/app/copy-keys.test.ts` (entries above); selector/copy lines in `apps/web/e2e/{journey,account,billing,a11y,fallbacks,onboarding,practice}.spec.ts` and `e2e/helpers.ts` that the renamed copy breaks |
+| Needs the orchestrator's OK first | Existing `apps/web/app/ui/` files whose layout 26 §12.2 gives to s34: `song-card.tsx`, `allowance-meter.tsx`, `empty-state.tsx`, `worker-status.tsx`, `drop-zone.tsx`, `waveform-preview.tsx`, `ui/library.stories.tsx`, `ui/import.stories.tsx`; new `ui/` files `command-palette.tsx`, `bottom-nav.tsx`, `continue-card.tsx`, `week-strip.tsx`, `revisit-list.tsx` (or the same components under `features/library`, composed from `ui/`, if they have no new visual primitive); `apps/web/app/copy-keys.test.ts` (entries above); additive changes to `apps/web/e2e/helpers.ts` (union-merged); `routes/_focus.tsx` if the focus shell needs a route change |
+| E2E specs | You own `apps/web/e2e/journey.spec.ts` (selector and copy lines your renames break). Other specs: Stop point 6 |
 | Effort | high |
 | Runs in parallel with | s35 and s36 (screens lane after G2), and backend steps |
 
@@ -59,12 +60,14 @@ Progress data in the library (s39: This week, Worth a revisit, sparkline, first-
 - Stories for every state in both themes; axe clean in Chromium and WebKit; copy-keys test green with the changed entries listed.
 - `/import` and `/import?tab=record` redirect to `/library?add=file` / `?add=record`; `?add=` opens the dialog; dropping a file opens it with the file.
 - Budget before/after reported (palette lazy, outside the practice route); `css-floor` clean.
-- E2E smoke green, with any renamed selector listed against its 27 §5.7 row (pending the OK above).
+- E2E smoke green for the specs you own; renamed selectors listed against their 27 §5.7 rows; any needed edit in a spec you don't own recorded in your report (Stop point 6).
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget                 # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/features/shell --path apps/web/app/features/library --path apps/web/app/features/import   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test               # includes copy-keys.test.ts
 pnpm --filter @splitune/web test:stories                                                 # heavy lock
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
@@ -78,9 +81,10 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 ## Stop points (stop, report with 2–3 options and a recommendation, wait)
 1. 27 §3.5/§3.6, a mockup and the code disagree (for example a state the mockup shows and the spec doesn't name, or "Pick another" needing an API the spec doesn't give).
 2. The budget would exceed 320 KB, or the palette can't be lazy.
-3. You need a file outside the owned globs and the OK'd extras (a `ui/` file another step owns, `features/practice/**`, `features/settings/**`, `lib/**`).
+3. You need a file outside the owned globs and the OK'd extras (a `ui/` file another step owns, `features/practice/**`, `features/settings/**`, `lib/**`, `features/story-fixtures.ts` unless the orchestrator assigned it to you at dispatch).
 4. A contract, API or DB change (none is in scope).
 5. An existing e2e or story assertion fails for a reason other than copy or structure that doc 27 changed.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s34-shell-library`; subject-only Conventional Commits (for example `feat(web): open add song as a dialog over the library so a pick goes straight to practice`); stage exact paths; gitleaks before each commit.

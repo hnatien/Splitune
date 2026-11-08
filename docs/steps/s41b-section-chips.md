@@ -53,10 +53,12 @@ The sections stage itself (s41a), section-aware ladder or progress, the chord sh
 - Stories for every state in both themes; axe clean in Chromium and WebKit; perf spec shows no song-map LoAF vs the s32 baseline; budget before/after reported, `budget --enforce` green.
 - Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (heavy lock, Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget                  # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
 pnpm --filter @splitune/web test:stories                                                  # heavy lock
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
@@ -71,6 +73,7 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 2. The chip row doesn't fit the budget even after freeing bytes.
 3. A file outside the owned globs and the OK'd extras (contracts, `music-core`, the shell's palette code).
 4. `set_section` can't target the sections the user sees (for example browser-side fallback sections with no artefact) without a contract change.
+5. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s41b-section-chips`; subject-only Conventional Commits (for example `feat(practice): add section chips to the song map so a chorus loops in one tap`); stage exact paths; gitleaks before each commit.

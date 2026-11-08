@@ -55,10 +55,12 @@ Changing how passes are recorded, streaks or reminders, notifications (s44), ser
 - Copy review: no streak, missed-day or guilt wording (grep the new keys).
 - Stories for every state in both themes; axe clean in Chromium and WebKit; budget before/after reported, `budget --enforce` green.
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget                  # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path apps/web/app/features/library   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/contracts typecheck && pnpm --filter @splitune/contracts test
 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm contracts:check
 pnpm --filter @splitune/db test && pnpm --filter @splitune/api test                       # compose Postgres + SeaweedFS
@@ -77,6 +79,7 @@ Known pre-existing failures: db `lifecycle.test.ts` "claims a run once per due t
 3. A file outside the owned globs and the OK'd extras; any migration.
 4. A contract change the orchestrator hasn't approved, or another in-flight contracts step.
 5. A setting that would have to live on the account (Weekly goal) without a contract for it.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s39-progress`; subject-only Conventional Commits (for example `feat(practice): show the cold first clean pass so progress means what stuck, not minutes`); stage exact paths; gitleaks before each commit.

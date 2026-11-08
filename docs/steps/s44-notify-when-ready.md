@@ -12,7 +12,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 | Needs the orchestrator's OK first | `apps/api/src/router.ts` (mount the route), `apps/api/src/config.ts` (read the VAPID public key and subject), `packages/db/src/repo/notifications.ts` + `repo/index.ts` (user-scoped queries must go through repo helpers, `scripts/check-db-access.mjs`), `apps/node-worker/package.json` and `pnpm-lock.yaml` if you add a Web Push library (justify it against implementing VAPID + `aes128gcm` with `node:crypto`), `apps/web/messages/en.json` keys `analysis.notify` and the notification text, `apps/web/app/copy-keys.test.ts` (the `analysis.notify` entry, new in 27 §5.6), a new `apps/web/app/ui/notify-button.tsx` (+ stories, lazy), and the two mount points (the practice Getting ready card and the library processing card): mount them only if no in-flight step owns those files, otherwise leave a one-line mount for s45 and say so |
 | Contracts and DB | You change contracts and add a migration: only one in-flight step at a time may (prompt.md §5). Confirm with the orchestrator that s37, s39 and s40a aren't changing contracts, schema or migrations at the same time. The next migration number is **0016** (the last is `0015_username_sign_in.sql`) |
 | Effort | high |
-| Runs in parallel with | the practice lane (never touching `features/practice/**` without the OK), s36, s41a |
+| Runs in parallel with | the practice lane (never touching `features/practice/**` without the OK), s36; **never with s41a** (both write `apps/node-worker/**`; s41a's fallback may change `finalize.ts`) |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, **`docs/specs/25-personal-mode.md`** (no new paid service; Railway variables are the owner's), `docs/specs/24-browser-compatibility.md` (feature-detect; iOS Web Push needs an installed PWA, iOS 16.4+), `docs/specs/10-web-app-architecture.md` §6 (service worker), `docs/specs/03-data-model-and-storage.md` (tables, RLS, roles, deletion cascade), `docs/specs/04-api-contract.md`, `docs/specs/15-privacy-dmca-and-data-lifecycle.md` (data export and account deletion must cover subscriptions), `docs/specs/17-security.md` (secrets).
@@ -57,9 +57,11 @@ Any other notification, email, native push, reminders; generating or committing 
 - Stories in both themes; axe clean in Chromium and WebKit; budget before/after reported, `budget --enforce` green.
 - Owner actions written with exact steps (below).
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/lib   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/contracts typecheck && pnpm --filter @splitune/contracts test
 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm contracts:check
 pnpm --filter @splitune/db generate && pnpm db:check && pnpm --filter @splitune/db test      # compose Postgres + SeaweedFS
@@ -79,6 +81,7 @@ Known pre-existing failures: db `lifecycle.test.ts` "claims a run once per due t
 3. A file outside the concrete list and the OK'd extras (an existing API route, `features/practice/**` while the practice lane holds it, `features/library/**` while s39 holds it).
 4. The data export or account deletion contract would have to change.
 5. Any path that would request permission without a click, or put a key or endpoint in a log.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s44-notify`; subject-only Conventional Commits (for example `feat(notifications): send one web push when an analysis finishes so learners can leave while it works`); stage exact paths (never `.env`); gitleaks before each commit.

@@ -12,7 +12,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 | Also yours by the plan's rules | the `copy-keys.test.ts` `CATALOGUE` entry for `practice.fix_saved_note` (new) |
 | Needs the orchestrator's OK first | `apps/web/app/copy-keys.test.ts` (that entry); new `apps/web/app/ui/` files `fix-queue.tsx`, `alternative-row.tsx`, `edit-history.tsx` if they carry a new visual pattern (otherwise keep them in `features/practice`); `packages/audio-engine/**` only if the audition synth can't share the engine's `AudioContext` from practice code (see Deliverable 4) |
 | Effort | high |
-| Runs in parallel with | screens lane and backend steps; never another practice-lane step |
+| Runs in parallel with | s34 (if still in flight) and backend steps; never another practice-lane step |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -63,10 +63,12 @@ Model retraining or any ML change, new correction ops or contract changes, the m
 - Budget before/after reported; Fix lazy; `budget --enforce` green.
 - Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (heavy lock, Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
 
+- Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget                  # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
 pnpm --filter @splitune/web test:stories                                                  # heavy lock
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
@@ -82,6 +84,7 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 3. A file outside the owned globs and the OK'd extras (a contract, `packages/music-core`, `packages/audio-engine`).
 4. The data can't support a card the spec shows (for example no per-note alternative pitch) without a contract change.
 5. The synth can't stay in sync from practice code.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s38-fix-tab`; subject-only Conventional Commits (for example `feat(practice): queue unsure spots by consequence so the learner fixes what matters first`); stage exact paths; gitleaks before each commit.

@@ -8,6 +8,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 | Hard deps | s32 |
 | Gates | **G2** follows this step: the owner approves the foundations look from your Storybook screenshots of every base component in both themes beside the s31c mockup renders. s34–s36 wait for G2 |
 | Owned globs (plan table) | `apps/web/app/ui/**`, `apps/web/e2e/visual/**` |
+| Also yours (orchestrator decisions) | `scripts/check-ui-tokens.mjs` (Deliverable 8) and `apps/web/app/features/story-fixtures.ts` (shared story fixtures; after you it is assigned per file at dispatch) |
 | Needs the orchestrator's OK first | `apps/web/public/icons/**`, `apps/web/public/favicon.svg` and `apps/web/scripts/render-icons.mjs` if you change the brand mark's PWA icons and favicon (26 §11); otherwise leave them to s45 and say so |
 | Effort | xhigh |
 | Runs in parallel with | backend steps s40a, s41a; no shared files |
@@ -22,7 +23,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 ## What exists (verified on `impl/redesign` at `0c3d5c3`; s32 will have changed the tokens)
 - `apps/web/app/ui/` holds the shadcn/Base UI components and the Splitune kit (one file each: `button.tsx`, `toggle.tsx`, `toggle-group.tsx`, `tabs.tsx`, `switch.tsx`, `checkbox.tsx`, `radio-group.tsx`, `slider.tsx`, `number-field.tsx`, `field.tsx`, `input.tsx`, `label.tsx`, `select.tsx`, `dropdown-menu.tsx`, `popover*.tsx`, `tooltip*.tsx`, `dialog.tsx`, `alert-dialog.tsx`, `drawer.tsx`, `toast.tsx`, `badge.tsx`, `kbd.tsx`, `card.tsx`, `progress.tsx`, `meter.tsx`, `spinner.tsx`, `separator.tsx`, `scroll-area.tsx`, `skeleton.tsx`, and the kit files `transport-button.tsx`, `speed-control.tsx`, `speed-panel.tsx` (lazy), `loop-badge.tsx`, `pass-control.tsx`, `chord-chip.tsx`, `confidence-legend*.tsx`, `stem-row.tsx`, `mix-preset-group.tsx`, `waveform-timeline.tsx`, `waveform-preview.tsx`, `pedal-hud.tsx`, `stage-list.tsx`, `song-card.tsx`, `allowance-meter.tsx`, `empty-state.tsx`, `status-message.tsx`, `worker-status.tsx`, `choice-card.tsx`, `radio-card.tsx`, `step-dots.tsx`, `coach-mark.tsx`, `drop-zone.tsx`, `save-status.tsx`, `brand.tsx`) plus `display.ts` (`DEFAULT_DISPLAY.appearance` is `'system'`, `applyDisplay`), `icons/` (`bass.tsx`, `check-draw.tsx`, `index.tsx`) and story files (`button`, `dialog`, `drawer`, `feedback`, `form`, `foundations`, `import`, `library`, `mixer`, `music`, `notation`, `number-field`, `onboarding`, `overlays`, `save-status`, `slider`, `toast`, `toggle`, `transport`, `waveform-timeline`, `brand`, `display`).
 - `button.tsx` sizes: `sm` (`min-h-target-sm`, 32), `md`, `lg`, `practice-2`, `practice`, `icon-sm`, `icon`, `icon-practice-2`, `icon-practice`. `transport.stories.tsx` (around line 186) asserts practice targets ≥ 64 × 64 and practice-2 ≥ 48.
-- `apps/web/e2e/visual/screens.spec.ts` captures only `Screens/*` stories: 12 rows → 36 PNGs per engine, 72 committed baselines in `__screenshots__/{chromium,webkit}/`, named `<row>--<viewport>--<appearance>.png`. There is no component row. `focus.spec.ts` checks the sticky bar never hides focus. All 72 baselines are invalidated by the redesign (28 §4).
+- `apps/web/e2e/visual/screens.spec.ts` captures only `Screens/*` stories: 10 rows (home, library, import-file, practice, practice-tab-pending, practice-stems-expired, mock-checkout, settings-display, settings-privacy, account-deleted) → 36 PNGs per engine, 72 committed baselines in `__screenshots__/{chromium,webkit}/`, named `<row>--<viewport>--<appearance>.png`. There is no component row. `focus.spec.ts` checks the sticky bar never hides focus. All 72 baselines are invalidated by the redesign (28 §4).
 
 ## Goal
 Every component in `apps/web/app/ui/` looks like the `splitune.css` component classes and the Foundations board in Night Rehearsal and Daylight, at normal and increased contrast, with every 26 §12.3 state storied and its non-colour cue in place, its target box per 26 §8, and its props unchanged, so the screen steps compose a finished kit.
@@ -41,6 +42,7 @@ Every component in `apps/web/app/ui/` looks like the `splitune.css` component cl
 5. **Icons (26 §11):** lucide at `strokeWidth={1.8}` with the §11 sizes; the custom set in `ui/icons/` (pedal, two pedals, capo, tab staff, chord box, count-in, minus-one, your part, desk/stand/floor distance illustrations; `bass` exists) on the same grid. `Brand`: lowercase wordmark + 28 px amber disc crossed by a graphite wave.
 6. **Visual baselines:** add a component row set to `apps/web/e2e/visual/` (a new spec file beside `screens.spec.ts`, or rows in it) for the restyled base components in Night Rehearsal and Daylight at one viewport, generate them with `e2e:visual:update`, and list what each shows. Leave the 72 screen baselines stale (each screen step regenerates its own); say so in the report.
 7. **G2 evidence:** Storybook screenshots of every base component in both themes next to the matching crops of `System` and the boards that use them, saved to your report folder (`<run>/reports/s33/`), with a one-page index (component → story id → mockup crop).
+8. **`check-ui-tokens` rules (28 §3 "Raw values"):** add to `scripts/check-ui-tokens.mjs` the rules 28 §3 requires — arbitrary colour, radius, font-size and shadow values (Tailwind `[…]` arbitrary values and CSS literals), and style-prop colour literals — **scoped to `apps/web/app/ui/**`** (screens are restyled later; s45 widens the scope to all of `apps/web/app`). Add a repeatable `--path <dir>` option that runs the extended rules on the given paths, so every screen step can check its own area (`node scripts/check-ui-tokens.mjs --path apps/web/app/features/library`); document it in the script header. Unit-test each rule with a passing and a failing sample. Keep the existing rules and their scope unchanged.
 
 ## Out of scope
 Feature screens and their stories (s34–s43); new kit components (each later step adds its own); deleting Music Stand tokens (s45); regenerating screen baselines.
@@ -50,13 +52,14 @@ Feature screens and their stories (s34–s43); new kit components (each later st
 - Fidelity (28 §5.1): for each 26 §12.1 component, probe anchors in the Storybook story vs the `System` board (1440, `--look fixed`) and one board that uses it in both looks at 1440 and 1180 (for example `Main` for transport, `AddSong` for fields and radio cards, `Settings-Display` for switches and steppers): font family/size/weight/line height exact, colours ΔE2000 ≤ 2 (or the 26 §4.9 value), padding/gap/box ± 2 px, radius/borders ± 1 px. Report the mismatch count per component per iteration; at most 6 iterations without improvement.
 - One filled amber control per view in every story (26 §4.5); no `dark:` colour variants in `ui/`.
 - `display.ts` default is `dark`; a story or test proves `stage` at desk resolves to stand sizes.
-- `pnpm lint` JS checks clean (no raw values; `check-ui-tokens` extended rather than suppressed if a new raw-value pattern appears, which needs the orchestrator's OK since the script isn't yours).
+- `pnpm lint` JS checks clean, including the extended `check-ui-tokens` rules on `apps/web/app/ui/**` (Deliverable 8), with tests for the new rules; no rule suppressed.
 - Budget before/after reported; no growth beyond the headroom; `css-floor` clean.
 
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget          # before, then after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
+node scripts/check-ui-tokens.mjs --path apps/web/app/ui   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
 pnpm --filter @splitune/web test:stories                                          # heavy lock; rerun once on Vite optimisation failure
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
