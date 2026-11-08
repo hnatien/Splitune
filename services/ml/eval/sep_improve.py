@@ -856,6 +856,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--grep", action="append", default=[], help="only job lines containing one of these"
     )
+    p.add_argument(
+        "--also", action="append", default=[], help="job files listed whole (baselines re-run)"
+    )
     p.add_argument("--regression", help="autocast: the regression report of the autocast map")
     p.add_argument("--tags", help="keys: eval/keys_tags.py output for moisesdb-p1")
     p.add_argument("--slakh-tags", help="keys: eval/keys_tags.py output for slakh-keys-p1")
@@ -889,14 +892,18 @@ def main(argv: list[str] | None = None) -> int:
         models = phase_keys(report, tags, slakh_tags, args.recipe)
     else:
         models = phase_shifts(report)
+
+    def lines(path: str) -> list[str]:
+        text = Path(path).read_text(encoding="utf-8")
+        return [line for line in text.splitlines() if line and not line.startswith("#")]
+
     jobs = [
         line
         for path in args.jobs
-        for line in Path(path).read_text(encoding="utf-8").splitlines()
-        if line
-        and not line.startswith("#")
-        and (not args.grep or any(g in line for g in args.grep))
+        for line in lines(path)
+        if not args.grep or any(g in line for g in args.grep)
     ]
+    jobs += [line for path in args.also for line in lines(path)]
     report.write(Path(args.out), models, jobs, args.note)
     return 0
 
