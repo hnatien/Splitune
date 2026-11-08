@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice · Fix an unsure bar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="height: 100vh; min-height: 760px; display: flex; flex-direction: column; overflow: hidden;">
+
+  <header style="height: 60px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 8px; border-bottom: 1px solid var(--line-soft);">
+    <a class="btn ghost sm" href="Library.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Library</a>
+    <div class="vr" style="margin: 14px 0;"></div>
+    <div style="min-width: 0; display: flex; flex-direction: column; line-height: 1.25;">
+      <div style="font-weight: 650; font-size: 16px; white-space: nowrap;">Northbound Lights</div>
+      <div class="small muted" style="white-space: nowrap;">Mara Quinn · Guitar · A minor · 96 BPM</div>
+    </div>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 12px; background: var(--unsure-soft); color: var(--unsure);">
+      <svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+      <span style="font-weight: 650; font-size: 14px;">Fixing · every change saves as you go</span>
+      <button type="button" class="btn sm" aria-label="Undo"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+      <a class="btn sm pri" href="Main.dc.html">Done</a>
+    </div>
+    <div style="flex: 1;"></div>
+    <button type="button" class="ib" aria-label="Display and reading"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l5-14 5 14M5 14h6M14 19l3.5-9 3.5 9M15.2 16h4.6"/></svg></button>
+    <button type="button" class="ib" aria-label="More"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+  </header>
+
+  <section aria-label="Song map with unsure spots" style="flex: none; padding: 14px 16px 6px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 8px;">
+    <div class="map" style="height: 34px;">
+      <div class="wave">
+        <sc-for list="{{wave}}" as="w" hint-placeholder-count="120"><i class="{{w.c}}" style="height: {{w.h}}%;"></i></sc-for>
+      </div>
+      <sc-for list="{{hatches}}" as="h" hint-placeholder-count="6"><span class="hatch" style="left: {{h.l}}%; width: {{h.w}}%; top: -10px; height: 7px;"></span></sc-for>
+      <div class="loopband" style="left: {{selL}}%; width: {{selW}}%; background: var(--unsure-soft); border-color: var(--unsure);"></div>
+    </div>
+    <div class="ruler">
+      <sc-for list="{{ruler}}" as="r" hint-placeholder-count="12"><span style="left: {{r.l}}%;">{{r.n}}</span></sc-for>
+    </div>
+  </section>
+
+  <div style="flex: 1; min-height: 0; display: flex;">
+    <main aria-label="Tab, bars 25 to 32, bar 27 selected" style="flex: 1; min-width: 0; position: relative; overflow: hidden; padding: 92px 28px 0 20px; --paper: var(--bg);">
+      <div style="display: flex; flex-direction: column; gap: 92px;">
+        <sc-for list="{{systems}}" as="sys" hint-placeholder-count="2">
+          <div style="position: relative; display: flex;">
+            <div class="clef" aria-hidden="true"><span>T</span><span>A</span><span>B</span></div>
+            <div class="sys" style="flex: 1; min-width: 0;">
+              <sc-for list="{{sys.bars}}" as="b" hint-placeholder-count="4">
+                <div class="{{b.cls}}">
+                  <span class="bar-no">{{b.no}}</span>
+                  <span class="{{b.chordCls}}" style="left: 8px;">{{b.chord}}</span>
+                  <div class="strings">
+                    <sc-for list="{{b.notes}}" as="n" hint-placeholder-count="8"><span class="{{n.c}}" style="left: {{n.x}}%; top: {{n.y}}px;">{{n.f}}</span></sc-for>
+                  </div>
+                  <div class="rhythm" aria-hidden="true">
+                    <sc-for list="{{b.notes}}" as="n" hint-placeholder-count="8"><span class="stem" style="left: {{n.x}}%;"></span></sc-for>
+                    <span class="beam" style="left: 8%; width: 12%;"></span><span class="beam" style="left: 32%; width: 12%;"></span><span class="beam" style="left: 56%; width: 12%;"></span><span class="beam" style="left: 80%; width: 12%;"></span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="position: absolute; left: 50px; right: 28px; bottom: 96px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;" class="small muted">
+        <span style="display: inline-flex; align-items: center; gap: 8px;"><span class="fn u" style="position: static; transform: none; display: inline-block;">3</span>Unsure: we'd guess wrong about 1 time in 3</span>
+        <span style="display: inline-flex; align-items: center; gap: 8px;"><span class="fn fix" style="position: static; transform: none; display: inline-block;">7</span>Edited by you</span>
+        <span style="display: inline-flex; align-items: center; gap: 8px;"><span class="kbd">J</span><span class="kbd">K</span>next / previous unsure spot</span>
+      </div>
+
+      <div class="toast" role="status" style="position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); white-space: nowrap;">
+        <svg class="i s" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--ok);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+        <span>Edit saved · bar 31, string 3 → fret 2</span>
+        <button type="button" class="btn sm ghost">Undo</button>
+      </div>
+    </main>
+
+    <aside class="panel" aria-label="Fix" style="width: 400px; flex: none; display: flex; flex-direction: column; min-height: 0;">
+      <div class="tabs" role="tablist" style="padding: 0 12px;">
+        <button type="button" role="tab" aria-selected="false">Loop</button>
+        <button type="button" role="tab" aria-selected="false">Mix</button>
+        <button type="button" role="tab" aria-selected="false">Progress</button>
+        <button type="button" role="tab" aria-selected="true">Fix <span class="badge unsure">5</span></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="flex: 1;">
+            <div class="h3">Spot 2 of 6 · bar 27–28</div>
+            <div class="bar" style="margin-top: 8px;"><span style="width: 33%; background: var(--unsure);"></span></div>
+          </div>
+          <button type="button" class="ib box" aria-label="Previous unsure spot"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button type="button" class="ib box" aria-label="Next unsure spot"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+
+        <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;"><span class="eyebrow">Bar 28 · chord</span><button type="button" class="btn ghost sm"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>Hear bar</button></div>
+          <div style="display: flex; align-items: center; gap: 12px;"><span style="font-size: 40px; font-weight: 650; color: var(--unsure); outline: 1.5px dashed var(--unsure); outline-offset: 4px; border-radius: 6px; padding: 0 4px; line-height: 1;">Am</span><span class="small muted">Our first guess. Wrong about 1 time in 3 for bars like this.</span></div>
+          <div class="small faint" style="margin-top: 4px;">Other likely chords</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: var(--r2);"><span style="font-weight: 650; font-size: 18px; width: 56px;">Am7</span><span class="small muted" style="flex: 1;">about 1 in 3</span><button type="button" class="ib" aria-label="Hear Am7 over the loop"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg></button><button type="button" class="btn sm pri">Use</button></div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: var(--r2);"><span style="font-weight: 650; font-size: 18px; width: 56px;">C/A</span><span class="small muted" style="flex: 1;">about 1 in 5</span><button type="button" class="ib" aria-label="Hear C over A over the loop"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg></button><button type="button" class="btn sm">Use</button></div>
+          </div>
+          <div style="display: flex; gap: 8px;"><label style="flex: 1;"><span class="label" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Type a chord</span><input class="field" style="height: 40px;" placeholder="Type a chord, e.g. Am7"></label><button type="button" class="btn">Split at beat 3</button></div>
+        </div>
+
+        <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;"><span class="eyebrow">Bar 27 · note 4</span><button type="button" class="btn ghost sm"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>Hear the tab</button></div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="chip on" style="border-style: dashed;">D4 · string 2, fret 3 ?</span>
+            <span class="small faint">or play it as</span>
+            <button type="button" class="chip">string 3, fret 7</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span class="label">String</span><div class="stepper"><button type="button" aria-label="Lower string"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><span>2</span><button type="button" aria-label="Higher string"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span class="label">Fret</span><div class="stepper"><button type="button" aria-label="Lower fret"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><span>3</span><button type="button" aria-label="Higher fret"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></div>
+          </div>
+          <div style="display: flex; gap: 8px;"><button type="button" class="btn sm"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>It's right</button><button type="button" class="btn sm ghost">Delete note</button><button type="button" class="btn sm ghost">Report wrong</button></div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span class="small muted" style="flex: 1 1 100%;">Metronome off the beat?</span><button type="button" class="btn sm">Half tempo</button><button type="button" class="btn sm">Double tempo</button><button type="button" class="btn sm">Move downbeat</button></div>
+
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div class="eyebrow" style="margin-bottom: 4px;">Your edits</div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0;"><span style="flex: 1;" class="small">Changed a note · bar 31</span><span class="small faint">just now</span><button type="button" class="btn sm ghost">Revert</button></div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0;"><span style="flex: 1;" class="small">Changed a chord · bar 12 · F → Fmaj7</span><span class="small faint">2 days ago</span><button type="button" class="btn sm ghost">Revert</button></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer aria-label="Transport" style="flex: none; height: 80px; border-top: 1px solid var(--line-soft); background: var(--s1); display: flex; align-items: center; gap: 14px; padding: 0 20px;">
+    <button type="button" class="play" style="width: 52px; height: 52px;" aria-label="Play bars 27 to 28"><svg class="i l fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg></button>
+    <span style="font-weight: 600;">Bars 27–28</span>
+    <span class="small faint">Plays the selected bars on repeat while you fix</span>
+    <div style="flex: 1;"></div>
+    <div class="seg" role="group" aria-label="Listen to"><button type="button" aria-pressed="true">Original</button><button type="button" aria-pressed="false">Your part</button><button type="button" aria-pressed="false">Tab synth</button><button type="button" aria-pressed="false">Both</button></div>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button type="button" class="ib box" aria-label="Slower"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <span class="num" style="width: 64px; text-align: center; font-size: 18px;">50 %</span>
+      <button type="button" class="ib box" aria-label="Faster"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const TOTAL = 92;
+    const E = [[4, 0.32], [16, 0.5], [4, 0.62], [8, 0.86], [16, 0.52], [4, 0.64], [8, 0.88], [8, 0.56], [16, 0.92], [8, 0.38]];
+    const wave = [];
+    let k = 0;
+    for (const [len, e] of E) {
+      for (let b = 0; b < len * 3; b++) {
+        const n = k++;
+        wave.push({ h: Math.round(e * (0.58 + 0.42 * Math.abs(Math.sin(n * 1.93) * Math.cos(n * 0.41))) * 100), c: '' });
+      }
+    }
+    const pct = (b) => ((b - 1) / TOTAL * 100).toFixed(2);
+    const ruler = [1, 9, 17, 25, 33, 41, 49, 57, 65, 73, 81, 89].map((n) => ({ n, l: pct(n) }));
+    const hatches = [12, 27, 28, 44, 62, 63, 79].map((n) => ({ l: pct(n), w: (100 / TOTAL).toFixed(2) }));
+    const PAT = {
+      F: [[4, 3], [3, 2], [2, 1], [1, 1], [2, 1], [3, 2], [4, 3], [3, 2]],
+      C: [[5, 3], [4, 2], [3, 0], [2, 1], [1, 0], [2, 1], [3, 0], [4, 2]],
+      G: [[6, 3], [4, 0], [3, 0], [2, 3], [1, 3], [2, 3], [3, 0], [4, 0]],
+      Am: [[5, 0], [4, 2], [3, 2], [2, 1], [1, 0], [2, 1], [3, 2], [4, 2]],
+      E7: [[6, 0], [5, 2], [4, 0], [3, 1], [2, 0], [1, 0], [2, 0], [3, 1]]
+    };
+    const BARS = [[25, 'F'], [26, 'C'], [27, 'G'], [28, 'Am'], [29, 'F'], [30, 'C'], [31, 'G'], [32, 'E7']];
+    const mk = ([no, ch]) => {
+      const notes = PAT[ch].map(([s, f], i) => {
+        let c = 'fn';
+        if (no === 27 && i === 4) c = 'fn u';
+        if (no === 27 && i === 3) c = 'fn u sel';
+        if (no === 31 && i === 6) { c = 'fn fix'; f = 2; }
+        return { f: String(f), x: 8 + i * 12, y: (s - 1) * 20 + 0.5, c };
+      });
+      return { no, chord: ch, chordCls: no === 28 ? 'chord-sym u' : 'chord-sym', cls: (no === 27 || no === 28) ? 'bar-cell sel' : 'bar-cell', notes };
+    };
+    const systems = [0, 1].map((i) => ({ bars: BARS.slice(i * 4, i * 4 + 4).map(mk) }));
+    return { cls: look[0], theme: look[1], wave, ruler, hatches, systems, selL: pct(27), selW: (2 / TOTAL * 100).toFixed(2) };
+  }
+}
+</script>
+</body>
+</html>

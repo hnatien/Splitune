@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a song</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh; position: relative; overflow: hidden;">
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; gap: 12px; padding: 0 20px;">
+      <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 19px;">splitune</span>
+    </div>
+    <div style="max-width: 1260px; width: 100%; margin: 0 auto; padding: 28px 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+      <div class="card" style="height: 200px; grid-column: span 2;"></div><div class="card" style="height: 200px;"></div>
+      <div class="card" style="height: 160px;"></div><div class="card" style="height: 160px;"></div><div class="card" style="height: 160px;"></div>
+      <div class="card" style="height: 160px;"></div><div class="card" style="height: 160px;"></div><div class="card" style="height: 160px;"></div>
+    </div>
+  </div>
+  <div class="overlay" aria-hidden="true" style="position: absolute; inset: 0;"></div>
+
+  <div style="position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px;">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="add-title" style="width: 100%; max-width: 940px; display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 20px 20px 0 24px;">
+        <h1 id="add-title" class="h2" style="flex: 1;">Add a song</h1>
+        <a class="ib" href="Library.dc.html" aria-label="Close"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+      </div>
+      <div class="tabs" role="tablist" style="padding: 0 16px; margin-top: 8px;">
+        <button type="button" role="tab" aria-selected="true"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>File</button>
+        <button type="button" role="tab" aria-selected="false"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Link</button>
+        <button type="button" role="tab" aria-selected="false"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg>Record</button>
+      </div>
+
+      <div style="display: flex; gap: 24px; padding: 20px 24px; flex-wrap: wrap;">
+        <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 12px; background: var(--s2);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="tile" style="background: var(--s3); color: var(--tx2);"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 650;">paper-boats.m4a</span><span class="small faint num">7.4 MB · 3:12</span></span>
+              <button type="button" class="ib" aria-label="Remove file"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+            <div class="wave" style="height: 44px;" aria-label="Waveform preview">
+              <sc-for list="{{wave}}" as="w" hint-placeholder-count="90"><i style="height: {{w}}%;"></i></sc-for>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span class="badge"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>Sounds like a live recording. Separation may be rougher.</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+            <label style="display: flex; flex-direction: column; gap: 6px;"><span class="label">Title</span><input class="field" value="Paper Boats"></label>
+            <label style="display: flex; flex-direction: column; gap: 6px;"><span class="label">Artist <span class="faint" style="font-weight: 500;">(optional)</span></span><input class="field" placeholder="Who plays it"></label>
+          </div>
+          <div class="drop" style="padding: 16px; display: flex; align-items: center; gap: 12px; justify-content: center;">
+            <span class="small muted">Drop another file here, or</span><button type="button" class="btn sm">choose a file</button>
+            <span class="small faint">MP3, M4A, WAV, FLAC, OGG, MP4, MOV · up to 20 min</span>
+          </div>
+        </div>
+
+        <div style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+          <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+            <legend class="label" style="margin-bottom: 8px;">Your part</legend>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+              <sc-for list="{{parts}}" as="p" hint-placeholder-count="6">
+                <button type="button" role="radio" aria-checked="{{p.on}}" class="card" style="height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; {{p.style}}">
+                  <span style="width: 18px; height: 4px; border-radius: 2px; background: {{p.color}};"></span>
+                  <span style="font-weight: 650; font-size: 14px;">{{p.name}}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" class="btn sm" style="flex: 1; justify-content: space-between;"><span><span class="faint" style="font-weight: 500;">Tuning</span> Standard</span><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+              <button type="button" class="btn sm" style="flex: 1; justify-content: space-between;"><span><span class="faint" style="font-weight: 500;">Hand</span> Right</span><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+            </div>
+          </fieldset>
+          <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+            <legend class="label" style="margin-bottom: 8px;">Analysis</legend>
+            <button type="button" role="radio" aria-checked="true" class="card" style="padding: 12px 14px; text-align: left; cursor: pointer; border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); background: var(--acc-soft); display: flex; gap: 12px; align-items: flex-start;">
+              <span style="flex: 1;"><span style="display: block; font-weight: 650;">Full</span><span class="small muted">Your part isolated, a mixer for every stem, plus tab. About 5 min.</span></span>
+              <span class="badge acc">Welcome · free</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" class="card" style="padding: 12px 14px; text-align: left; cursor: pointer; display: flex; gap: 12px; align-items: flex-start;">
+              <span style="flex: 1;"><span style="display: block; font-weight: 650;">Lite</span><span class="small faint">Beat and chords, under a minute. No stems or tab.</span></span>
+              <span class="badge">3 of 5 left</span>
+            </button>
+          </fieldset>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--line-soft); flex-wrap: wrap;">
+        <span class="small muted" style="flex: 1 1 300px;">It opens right away. Loops and slow-down work while we analyse.</span>
+        <a class="btn" href="Library.dc.html">Cancel</a>
+        <a class="btn pri lg" href="Practice-Ready.dc.html">Start practising</a>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const wave = [];
+    for (let n = 0; n < 90; n++) {
+      const e = n < 8 ? 0.35 : n < 30 ? 0.55 : n < 42 ? 0.85 : n < 66 ? 0.6 : n < 82 ? 0.9 : 0.4;
+      wave.push(Math.round(e * (0.55 + 0.45 * Math.abs(Math.sin(n * 1.71) * Math.cos(n * 0.37))) * 100));
+    }
+    const P = [['Guitar', 'var(--st-gtr)'], ['Bass', 'var(--st-bass)'], ['Piano', 'var(--st-keys)'], ['Drums', 'var(--st-drm)'], ['Vocals', 'var(--st-voc)'], ['Something else', 'var(--st-oth)']];
+    const parts = P.map(([name, color], i) => ({ name, color, on: i === 0 ? 'true' : 'false', style: i === 0 ? 'border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc);' : '' }));
+    return { cls: look[0], theme: look[1], wave, parts };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone tools sheet</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="width: 390px; height: 844px; position: relative; overflow: hidden;">
+  <div aria-hidden="true" style="position: absolute; inset: 0; padding: 70px 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="height: 30px; border-radius: 6px; background: var(--s2);"></div>
+    <span class="display" style="font-size: 150px; line-height: 0.8;">C</span>
+  </div>
+  <div class="overlay" aria-hidden="true" style="position: absolute; inset: 0;"></div>
+
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="tools-title" style="position: absolute; left: 0; right: 0; bottom: 0; height: 690px; border-radius: 24px 24px 0 0; border-bottom: 0; display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: center; padding-top: 8px;"><span style="width: 40px; height: 5px; border-radius: 3px; background: var(--line);"></span></div>
+    <div style="display: flex; align-items: center; padding: 6px 8px 0 20px;">
+      <h2 id="tools-title" class="h3" style="flex: 1;">Tools</h2>
+      <a class="ib" href="Phone-Practice.dc.html" aria-label="Close tools" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+    </div>
+    <div style="flex: 1; min-height: 0; overflow: hidden; padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="eyebrow">Speed</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="ib lg box" aria-label="Slower by 5 percent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <div style="flex: 1; text-align: center; line-height: 1.1;"><div class="num" style="font-size: 30px; font-weight: 600;">75 %</div><div class="small faint num">72 BPM</div></div>
+          <button type="button" class="ib lg box" aria-label="Faster by 5 percent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+          <button type="button" class="chip" style="height: 40px; justify-content: center;">50</button><button type="button" class="chip on" style="height: 40px; justify-content: center;">75</button><button type="button" class="chip" style="height: 40px; justify-content: center;">85</button><button type="button" class="chip" style="height: 40px; justify-content: center;">100</button>
+        </div>
+        <div class="card" style="padding: 10px 12px; display: flex; align-items: center; gap: 10px;">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M4 20h4v-4h4v-4h4V8h4"/></svg>
+          <span style="flex: 1;"><span style="display: block; font-weight: 600; font-size: 14px;">Speed ladder</span><span class="small faint">+5 % after 2 clean passes, up to 100 %</span></span>
+          <span class="toggle on" role="switch" aria-checked="true" aria-label="Speed ladder"></span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <button type="button" class="card" aria-pressed="true" style="height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-color: var(--acc-line); background: var(--acc-soft); color: var(--acc-ink); cursor: pointer;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg><span class="small" style="font-weight: 650;">Count-in 1 bar</span></button>
+        <button type="button" class="card" aria-pressed="true" style="height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-color: var(--acc-line); background: var(--acc-soft); color: var(--acc-ink); cursor: pointer;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3h7l4 18h-15z"/><path d="M12 16l5-9"/><path d="M7 16h10"/></svg><span class="small" style="font-weight: 650;">Click on</span></button>
+        <button type="button" class="card" aria-pressed="false" style="height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; color: var(--tx2);"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M2 8v8M22 8v8"/></svg><span class="small" style="font-weight: 650;">Vibrate on beat</span></button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="eyebrow">Mix</div>
+        <div style="display: flex; gap: 6px;"><button type="button" class="chip on" style="height: 36px;">Your part loud</button><button type="button" class="chip" style="height: 36px;">Minus-one</button><button type="button" class="chip" style="height: 36px;">Original</button></div>
+        <div style="display: grid; grid-template-columns: 6px minmax(0, 1fr) 44px; gap: 10px; align-items: center;">
+          <span style="height: 24px; border-radius: 3px; background: var(--st-gtr);"></span><span style="display: flex; flex-direction: column; gap: 4px;"><span class="small" style="font-weight: 650;">Guitar · your part</span><input class="range" type="range" value="80" aria-label="Guitar level" style="accent-color: var(--st-gtr);"></span><button type="button" class="ms" style="width: 44px; height: 44px;" aria-label="Mute guitar">M</button>
+          <span style="height: 24px; border-radius: 3px; background: var(--st-oth);"></span><span style="display: flex; flex-direction: column; gap: 4px;"><span class="small" style="font-weight: 650;">Band</span><input class="range" type="range" value="55" aria-label="Band level"></span><button type="button" class="ms" style="width: 44px; height: 44px;" aria-label="Mute band">M</button>
+        </div>
+        <a class="small" href="Practice-Mix.dc.html" style="font-weight: 600;">All 5 stems</a>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <button type="button" class="btn" style="height: 48px; justify-content: space-between;"><span><span class="faint" style="font-weight: 500;">Level</span> As played</span><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button type="button" class="btn" style="height: 48px; justify-content: space-between;"><span><span class="faint" style="font-weight: 500;">Capo</span> None</span><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    return { cls: look[0], theme: look[1] };
+  }
+}
+</script>
+</body>
+</html>

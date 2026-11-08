@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone practice, glance view</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden;">
+  <header style="height: 56px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 6px;">
+    <a class="ib" href="Phone-Library.dc.html" aria-label="Back to library" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div style="flex: 1; min-width: 0; line-height: 1.2;">
+      <div style="font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Northbound Lights</div>
+      <div class="small faint">Guitar · A minor</div>
+    </div>
+    <button type="button" class="ib" aria-label="Display and reading" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l5-14 5 14M5 14h6M14 19l3.5-9 3.5 9M15.2 16h4.6"/></svg></button>
+  </header>
+
+  <div style="padding: 0 16px 10px; display: flex; flex-direction: column; gap: 8px;">
+    <div class="map" style="height: 30px;">
+      <div class="wave"><sc-for list="{{wave}}" as="w" hint-placeholder-count="90"><i class="{{w.c}}" style="height: {{w.h}}%;"></i></sc-for></div>
+      <div class="loopband" style="left: 26.1%; width: 4.4%;"></div>
+      <div class="nowline" style="left: 27.8%;"></div>
+    </div>
+    <div class="seg" role="group" aria-label="View" style="align-self: stretch; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));">
+      <button type="button" aria-pressed="true" style="justify-content: center; height: 38px;">Glance</button>
+      <button type="button" aria-pressed="false" style="justify-content: center; height: 38px;">Tab</button>
+      <button type="button" aria-pressed="false" style="justify-content: center; height: 38px;">Chords</button>
+    </div>
+  </div>
+
+  <main aria-label="Now and next" style="flex: 1; min-height: 0; padding: 8px 20px; display: flex; flex-direction: column; gap: 14px;">
+    <div class="eyebrow">Now · bar 26 · beat 3</div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <span class="display" style="font-size: 150px; line-height: 0.8;">C</span>
+      <svg width="92" height="120" viewBox="0 0 84 110" role="img" aria-label="C major shape, x 3 2 0 1 0">
+        <g fill="none" stroke="var(--line)" stroke-width="1.5"><path d="M12 40H72M12 60H72M12 80H72M12 100H72M12 20V100M24 20V100M36 20V100M48 20V100M60 20V100M72 20V100"/></g>
+        <path d="M11 20H73" stroke="var(--tx2)" stroke-width="4"/>
+        <g fill="var(--acc)"><circle cx="24" cy="70" r="6"/><circle cx="36" cy="50" r="6"/><circle cx="60" cy="30" r="6"/></g>
+        <g fill="none" stroke="var(--tx3)" stroke-width="1.5"><circle cx="48" cy="10" r="4"/><circle cx="72" cy="10" r="4"/><path d="M8.5 6.5l7 7M15.5 6.5l-7 7"/></g>
+      </svg>
+    </div>
+    <div class="beats" style="gap: 14px;" aria-label="Beat 3 of 4"><i class="down done" style="width: 20px; height: 20px;"></i><i class="done" style="width: 20px; height: 20px;"></i><i class="on" style="width: 20px; height: 20px;"></i><i style="width: 20px; height: 20px;"></i></div>
+    <div class="hr"></div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 4px;"><span class="eyebrow">Next · in 2 beats</span><span style="font-size: 64px; font-weight: 650; line-height: 0.9;">G</span></div>
+      <div style="display: flex; gap: 6px;"><span class="chip" style="border-style: dashed; color: var(--unsure); border-color: var(--unsure);">Am ?</span><span class="chip">F</span><span class="chip">C</span></div>
+    </div>
+    <div style="flex: 1;"></div>
+    <div class="card" role="group" aria-label="Rate this pass" style="padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--s2);">
+      <span style="font-weight: 600;">Pass 2 at 75 % — how was it?</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <button type="button" class="btn pri" style="height: 48px;"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Felt clean</button>
+        <button type="button" class="btn" style="height: 48px;">Not yet</button>
+      </div>
+    </div>
+  </main>
+
+  <footer aria-label="Transport" style="flex: none; border-top: 1px solid var(--line-soft); background: var(--s1); padding: 10px 12px 18px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button type="button" class="btn" style="flex: 1; height: 44px; justify-content: flex-start; background: var(--acc-soft); border-color: var(--acc-line); color: var(--acc-ink);"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>Bars 25–28 · pass 2</button>
+      <button type="button" class="ib box" aria-label="Slower" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <span class="num" style="width: 58px; text-align: center; font-size: 18px; font-weight: 600;">75 %</span>
+      <button type="button" class="ib box" aria-label="Faster" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <button type="button" class="ib lg" aria-label="Restart loop"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 6l-9 6 9 6z"/></svg></button>
+      <button type="button" class="play" style="width: 72px; height: 72px;" aria-label="Pause"><svg class="i xl fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <button type="button" class="ib lg" aria-label="Next bar"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 6l9 6-9 6z"/></svg></button>
+      <a class="btn" href="Phone-Tools.dc.html" style="height: 52px; flex-direction: column; gap: 0; padding: 0 14px; line-height: 1.1;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="small">Tools</span></a>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const wave = [];
+    for (let n = 0; n < 92; n++) {
+      const bar = n + 1;
+      const e = bar < 5 ? 0.32 : bar < 21 ? 0.5 : bar < 25 ? 0.62 : bar < 33 ? 0.86 : bar < 49 ? 0.52 : bar < 61 ? 0.8 : bar < 69 ? 0.56 : bar < 85 ? 0.92 : 0.38;
+      wave.push({ h: Math.round(e * (0.58 + 0.42 * Math.abs(Math.sin(n * 1.93) * Math.cos(n * 0.41))) * 100), c: bar >= 25 && bar <= 28 ? 'in' : (bar < 26.6 ? 'past' : '') });
+    }
+    return { cls: look[0], theme: look[1], wave };
+  }
+}
+</script>
+</body>
+</html>

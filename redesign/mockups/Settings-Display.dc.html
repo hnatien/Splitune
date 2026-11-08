@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings · Display and practice</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh;">
+  <header style="height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--line-soft);">
+    <a href="Library.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune library">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 19px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px; margin-left: 12px;"><a class="navlink" href="Library.dc.html">Library</a><a class="navlink" href="Settings-Display.dc.html" aria-current="page">Settings</a></nav>
+    <div style="flex: 1;"></div>
+    <a class="btn pri" href="AddSong.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add song</a>
+  </header>
+
+  <div style="max-width: 1180px; margin: 0 auto; padding: 32px 24px 56px; display: flex; gap: 40px; flex-wrap: wrap;">
+    <nav aria-label="Settings" style="flex: 1 1 200px; max-width: 220px; display: flex; flex-direction: column; gap: 2px;">
+      <a class="navlink" href="Settings-Account.dc.html">Account</a>
+      <a class="navlink" href="Settings-Display.dc.html" aria-current="page">Display &amp; practice</a>
+      <a class="navlink" href="Settings-Pedal.dc.html">Keyboard &amp; pedal</a>
+      <a class="navlink" href="States.dc.html">About</a>
+    </nav>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 30px;">
+      <div style="display: flex; align-items: center; gap: 12px;"><h1 class="h1" style="flex: 1;">Display &amp; practice</h1><span class="badge ok">Saved on this device</span></div>
+
+      <section aria-labelledby="look-title" style="display: flex; flex-direction: column; gap: 12px;">
+        <h2 id="look-title" class="h3">Appearance</h2>
+        <div role="radiogroup" aria-label="Appearance" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px;">
+          <button type="button" role="radio" aria-checked="true" class="card" style="padding: 12px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px; border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc);">
+            <span aria-hidden="true" style="height: 84px; border-radius: 10px; background: oklch(0.165 0.008 60); display: flex; align-items: center; gap: 10px; padding: 0 14px;"><span style="font-size: 38px; font-weight: 650; color: oklch(0.955 0.008 80);">C</span><span style="flex: 1; height: 40px; background: repeating-linear-gradient(to bottom, oklch(0.345 0.01 60) 0 1px, transparent 1px 8px);"></span><span style="width: 18px; height: 18px; border-radius: 50%; background: oklch(0.80 0.15 72);"></span></span>
+            <span><span style="display: block; font-weight: 650;">Night Rehearsal</span><span class="small faint">Dark. Easy on the eyes in dim rooms.</span></span>
+          </button>
+          <button type="button" role="radio" aria-checked="false" class="card" style="padding: 12px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px;">
+            <span aria-hidden="true" style="height: 84px; border-radius: 10px; background: oklch(0.972 0.007 85); display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid var(--line-soft);"><span style="font-size: 38px; font-weight: 650; color: oklch(0.21 0.012 60);">C</span><span style="flex: 1; height: 40px; background: repeating-linear-gradient(to bottom, oklch(0.84 0.012 80) 0 1px, transparent 1px 8px);"></span><span style="width: 18px; height: 18px; border-radius: 50%; background: oklch(0.80 0.15 72);"></span></span>
+            <span><span style="display: block; font-weight: 650;">Daylight</span><span class="small faint">Light. Best in a bright room or outdoors.</span></span>
+          </button>
+          <button type="button" role="radio" aria-checked="false" class="card" style="padding: 12px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px;">
+            <span aria-hidden="true" style="height: 84px; border-radius: 10px; overflow: hidden; display: flex; border: 1px solid var(--line-soft);"><span style="flex: 1; background: oklch(0.165 0.008 60);"></span><span style="flex: 1; background: oklch(0.972 0.007 85);"></span></span>
+            <span><span style="display: block; font-weight: 650;">Follow my device</span><span class="small faint">Switches with your system setting.</span></span>
+          </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;"><span style="flex: 1;">Increase contrast</span><div class="seg"><button type="button" aria-pressed="true">Follow system</button><button type="button" aria-pressed="false">On</button><button type="button" aria-pressed="false">Off</button></div></div>
+      </section>
+      <div class="hr"></div>
+
+      <section aria-labelledby="read-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="read-title" class="h3">Reading</h2>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="flex: 1 1 200px;">Where is your screen?</span><div class="seg"><button type="button" aria-pressed="false">Automatic</button><button type="button" aria-pressed="false">Desk</button><button type="button" aria-pressed="true">Music stand</button><button type="button" aria-pressed="false">Floor</button></div></div>
+        <div class="card" style="padding: 16px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; --paper: var(--s1);">
+          <label style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px;"><span class="label" style="display: flex; justify-content: space-between;"><span>Reading size</span><span class="num">110 %</span></span><input class="range" type="range" min="80" max="140" step="10" value="110"><span class="small faint">Can you read the fret numbers from where you play?</span></label>
+          <div aria-label="Sample at 110 percent" style="display: flex; gap: 20px; align-items: center;"><span style="font-size: 44px; font-weight: 650;">Am</span><span class="num" style="font-size: 26px; font-weight: 600; letter-spacing: 0.2em;">3 5 7 10</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;"><span style="flex: 1;">Hyperlegible font<span class="small faint" style="display: block;">Wider letters and clearer digits for low vision</span></span><span class="toggle" role="switch" aria-checked="false" aria-label="Hyperlegible font"></span></div>
+        <div style="display: flex; align-items: center; gap: 12px;"><span style="flex: 1;">Show uncertainty<span class="small faint" style="display: block;">Dashed outline and ? on notes and chords we're unsure of</span></span><span class="toggle on" role="switch" aria-checked="true" aria-label="Show uncertainty"></span></div>
+        <div style="display: flex; align-items: center; gap: 12px;"><span style="flex: 1;">Left-handed<span class="small faint" style="display: block;">Mirrors chord shapes and the fretboard</span></span><span class="toggle" role="switch" aria-checked="false" aria-label="Left-handed"></span></div>
+      </section>
+      <div class="hr"></div>
+
+      <section aria-labelledby="motion-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="motion-title" class="h3">Motion</h2>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="flex: 1 1 200px;">Notation follows the music</span><div class="seg"><button type="button" aria-pressed="true">Page by page</button><button type="button" aria-pressed="false">Scrolling</button><button type="button" aria-pressed="false">Off</button></div></div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="flex: 1 1 200px;">Reduce motion<span class="small faint" style="display: block;">Page turns instead of scrolling, the playhead steps by beat</span></span><div class="seg"><button type="button" aria-pressed="true">Follow system</button><button type="button" aria-pressed="false">On</button><button type="button" aria-pressed="false">Off</button></div></div>
+      </section>
+      <div class="hr"></div>
+
+      <section aria-labelledby="defaults-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="defaults-title" class="h3">Practice defaults</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px;">
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px;"><span class="label">Starting speed</span><div class="stepper"><button type="button" aria-label="Lower starting speed"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><span>70 %</span><button type="button" aria-label="Raise starting speed"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></div>
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px;"><span class="label">Speed ladder</span><span style="font-weight: 600;">+5 % after 2 clean passes</span><span class="small faint">Up to 100 %, on for new loops</span></div>
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px;"><span class="label">Count-in</span><div class="seg"><button type="button" aria-pressed="false">Off</button><button type="button" aria-pressed="true">1 bar</button><button type="button" aria-pressed="false">2 bars</button></div></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="delay-title" style="padding: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1 1 340px; display: flex; flex-direction: column; gap: 6px;">
+          <h2 id="delay-title" class="h3">Sound delay</h2>
+          <p class="small muted">Tap along with 8 clicks and we'll line up the beat lights, the playhead and your sound. Bluetooth headphones usually play about 0.2 s late; wired ones are best for playing along.</p>
+          <span class="badge acc" style="align-self: flex-start;">Now +180 ms · measured with Bluetooth headphones</span>
+        </div>
+        <button type="button" class="btn lg pri">Tap along to measure</button>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    return { cls: look[0], theme: look[1] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh; display: flex; flex-wrap: wrap;">
+  <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; padding: 28px 32px;">
+    <a href="Home.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune home">
+      <svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 20px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 0;">
+      <form style="width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 18px;" aria-labelledby="signin-title">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h1 id="signin-title" class="h1">Sign in</h1>
+          <p class="muted">Welcome back. Enter your username and password.</p>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 6px;"><span class="label">Username</span><input class="field" value="tien.h" autocomplete="username"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="label">Password</span>
+          <input class="field" type="password" autocomplete="current-password" style="border-color: var(--bad);" aria-describedby="pw-err">
+          <span id="pw-err" class="small" style="color: var(--bad); display: flex; align-items: center; gap: 6px;"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9.5 17H2.5z"/><path d="M12 10v4M12 17h.01"/></svg>That username and password don't match.</span>
+        </label>
+        <a class="btn pri lg block" href="Library.dc.html">Sign in</a>
+        <div style="display: flex; align-items: center; gap: 12px;" class="small faint"><span class="hr" style="flex: 1;"></span>or<span class="hr" style="flex: 1;"></span></div>
+        <button type="button" class="btn lg block">Continue with Google</button>
+        <p class="small muted">New to Splitune? <a href="SignIn.dc.html">Create an account</a>. No email needed.</p>
+        <p class="small faint">By continuing, you agree to our <a href="Home.dc.html">Terms</a> and <a href="Home.dc.html">Privacy policy</a>.</p>
+      </form>
+    </div>
+  </div>
+
+  <aside aria-label="What you get" style="flex: 1 1 560px; min-width: 0; background: var(--s1); border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; justify-content: center; gap: 28px; padding: 48px;">
+    <h2 class="display" style="font-size: 44px; max-width: 12em;">Your loops, speeds and fixes stay with every song.</h2>
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px;">
+      <li style="display: flex; gap: 12px; align-items: flex-start;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>Pick up on the same bar, at the same speed, on any device.</span></li>
+      <li style="display: flex; gap: 12px; align-items: flex-start;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>See how your clean speed grows on each clip.</span></li>
+      <li style="display: flex; gap: 12px; align-items: flex-start;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>Chords and notes you correct are kept for good.</span></li>
+    </ul>
+    <div class="sheet" aria-hidden="true" style="padding: 16px; display: flex; gap: 16px; align-items: center; max-width: 520px;">
+      <span class="display" style="font-size: 64px; line-height: 0.85;">Am</span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+        <span class="badge acc" style="align-self: flex-start;">Loop · bars 5–8 · pass 4</span>
+        <div class="ladder" style="height: 44px;"><div class="done">70</div><div class="done" style="height: 80%;">75</div><div class="cur" style="height: 90%;">80</div><div style="height: 100%;">85</div></div>
+      </div>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    return { cls: look[0], theme: look[1] };
+  }
+}
+</script>
+</body>
+</html>

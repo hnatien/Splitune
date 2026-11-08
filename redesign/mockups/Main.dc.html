@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice · Tab with loop and speed ladder</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="height: 100vh; min-height: 760px; display: flex; flex-direction: column; overflow: hidden;">
+
+  <header style="height: 60px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 8px; border-bottom: 1px solid var(--line-soft);">
+    <a class="btn ghost sm" href="Library.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Library</a>
+    <div class="vr" style="margin: 14px 0;"></div>
+    <div style="min-width: 0; display: flex; flex-direction: column; line-height: 1.25;">
+      <div style="font-weight: 650; font-size: 16px; white-space: nowrap;">Northbound Lights</div>
+      <div class="small muted" style="white-space: nowrap;">Mara Quinn · Guitar · A minor · 96 BPM</div>
+    </div>
+    <div style="flex: 1;"></div>
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" aria-pressed="true">Tab</button>
+      <button type="button" aria-pressed="false">Notes</button>
+      <button type="button" aria-pressed="false">Chords</button>
+    </div>
+    <div style="flex: 1;"></div>
+    <button type="button" class="chip" style="border-style: dashed;"><span class="num" style="font-weight: 700; color: var(--unsure);">?</span>Auto-transcribed · 6 unsure</button>
+    <button type="button" class="ib" aria-label="Display and reading"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l5-14 5 14M5 14h6M14 19l3.5-9 3.5 9M15.2 16h4.6"/></svg></button>
+    <button type="button" class="ib" aria-label="Keyboard and pedal"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>
+    <button type="button" class="ib" aria-label="More"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+  </header>
+
+  <section aria-label="Song map" style="flex: none; padding: 10px 16px 6px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 8px;">
+    <div class="secs">
+      <sc-for list="{{sections}}" as="s" hint-placeholder-count="10">
+        <button type="button" class="{{s.cls}}" style="flex-grow: {{s.grow}};">{{s.name}}</button>
+      </sc-for>
+    </div>
+    <div class="map" style="margin-top: 6px;">
+      <div class="wave">
+        <sc-for list="{{wave}}" as="w" hint-placeholder-count="120"><i class="{{w.c}}" style="height: {{w.h}}%;"></i></sc-for>
+      </div>
+      <sc-for list="{{hatches}}" as="h" hint-placeholder-count="6"><span class="hatch" style="left: {{h.l}}%; width: {{h.w}}%;"></span></sc-for>
+      <div class="loopband" style="left: {{loopL}}%; width: {{loopW}}%;"></div>
+      <div class="nowline" style="left: {{nowL}}%;"></div>
+    </div>
+    <div class="ruler">
+      <sc-for list="{{ruler}}" as="r" hint-placeholder-count="12"><span style="left: {{r.l}}%;">{{r.n}}</span></sc-for>
+    </div>
+  </section>
+
+  <div style="flex: 1; min-height: 0; display: flex;">
+
+    <aside aria-label="Now playing" style="width: 264px; flex: none; border-right: 1px solid var(--line-soft); padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 16px;">
+      <div class="eyebrow">Now · bar 26 · beat 3</div>
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">
+        <div class="display" style="font-size: 112px; line-height: 0.85;">C</div>
+        <svg width="84" height="110" viewBox="0 0 84 110" role="img" aria-label="C major shape, x 3 2 0 1 0">
+          <g fill="none" stroke="var(--line)" stroke-width="1.5">
+            <path d="M12 40H72M12 60H72M12 80H72M12 100H72M12 20V100M24 20V100M36 20V100M48 20V100M60 20V100M72 20V100"/>
+          </g>
+          <path d="M11 20H73" stroke="var(--tx2)" stroke-width="4"/>
+          <g fill="var(--acc)"><circle cx="24" cy="70" r="6"/><circle cx="36" cy="50" r="6"/><circle cx="60" cy="30" r="6"/></g>
+          <g fill="none" stroke="var(--tx3)" stroke-width="1.5"><circle cx="48" cy="10" r="4"/><circle cx="72" cy="10" r="4"/><path d="M8.5 6.5l7 7M15.5 6.5l-7 7"/></g>
+        </svg>
+      </div>
+      <div class="beats" aria-label="Beat 3 of 4"><i class="down done"></i><i class="done"></i><i class="on"></i><i></i></div>
+      <div class="hr"></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="eyebrow">Next · in 2 beats</div>
+        <div style="display: flex; align-items: baseline; gap: 10px;"><span style="font-size: 56px; font-weight: 650; letter-spacing: -0.02em; line-height: 1;">G</span><span class="small faint num">bar 27</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="eyebrow">Then</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <span class="chip" style="border-style: dashed; color: var(--unsure); border-color: var(--unsure);">Am ?</span>
+          <span class="chip">F</span><span class="chip">C</span><span class="chip">G</span><span class="chip">E7</span>
+        </div>
+      </div>
+      <div style="flex: 1;"></div>
+      <div class="card" style="padding: 4px; display: flex; flex-direction: column;">
+        <button type="button" class="row-item" style="border: 0; background: transparent; width: 100%; text-align: left;"><span class="small faint" style="width: 44px;">Level</span><span style="flex: 1; font-weight: 600; font-size: 14px;">As played</span><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button type="button" class="row-item" style="border: 0; background: transparent; width: 100%; text-align: left;"><span class="small faint" style="width: 44px;">Capo</span><span style="flex: 1; font-weight: 600; font-size: 14px;">None · standard tuning</span><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+    </aside>
+
+    <main aria-label="Tab, bars 25 to 36" style="flex: 1; min-width: 0; position: relative; overflow: hidden; padding: 92px 28px 0 20px; --paper: var(--bg);">
+      <div style="display: flex; flex-direction: column; gap: 92px;">
+        <sc-for list="{{systems}}" as="sys" hint-placeholder-count="3">
+          <div style="position: relative; display: flex;">
+            <div class="clef" aria-hidden="true"><span>T</span><span>A</span><span>B</span></div>
+            <sc-if value="{{sys.loop}}" hint-placeholder-val="{{false}}">
+              <div aria-hidden="true" style="position: absolute; left: 30px; right: 0; top: -76px; height: 12px; border: 2px solid var(--acc); border-bottom: 0; border-radius: 5px 5px 0 0;"></div>
+              <span class="badge acc" style="position: absolute; left: 44px; top: -88px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--acc-line);">Loop · bars 25–28 · pass 2 of 2 at 75 %</span>
+            </sc-if>
+            <div class="sys" style="flex: 1; min-width: 0;">
+              <sc-for list="{{sys.bars}}" as="b" hint-placeholder-count="4">
+                <div class="{{b.cls}}">
+                  <span class="bar-no">{{b.no}}</span>
+                  <span class="{{b.chordCls}}" style="left: 8px;">{{b.chord}}</span>
+                  <div class="strings">
+                    <sc-for list="{{b.notes}}" as="n" hint-placeholder-count="8"><span class="{{n.c}}" style="left: {{n.x}}%; top: {{n.y}}px;">{{n.f}}</span></sc-for>
+                    <sc-if value="{{b.ph}}" hint-placeholder-val="{{false}}"><span class="playhead" style="left: 62%;"></span></sc-if>
+                  </div>
+                  <div class="rhythm" aria-hidden="true">
+                    <sc-for list="{{b.notes}}" as="n" hint-placeholder-count="8"><span class="stem" style="left: {{n.x}}%;"></span></sc-for>
+                    <span class="beam" style="left: 8%; width: 12%;"></span><span class="beam" style="left: 32%; width: 12%;"></span><span class="beam" style="left: 56%; width: 12%;"></span><span class="beam" style="left: 80%; width: 12%;"></span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="sheet" role="group" aria-label="Rate this pass" style="position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 20px; white-space: nowrap;">
+        <span style="font-weight: 600;">Pass 2 at 75 % — how was it?</span>
+        <button type="button" class="btn pri"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Felt clean<span class="kbd" style="background: transparent; border-color: oklch(0.2 0.02 60 / 0.35); color: inherit;">C</span></button>
+        <button type="button" class="btn">Not yet<span class="kbd">N</span></button>
+      </div>
+
+      <div style="position: absolute; left: 50px; bottom: 32px; display: flex; gap: 14px; align-items: center;" class="small faint">
+        <span style="display: inline-flex; align-items: center; gap: 6px;"><span class="fn u" style="position: static; transform: none; display: inline-block;">3</span>unsure</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px;"><span class="fn now" style="position: static; transform: none; display: inline-block; box-shadow: none;">0</span>sounding</span>
+      </div>
+    </main>
+
+    <aside class="panel" aria-label="Practice tools" style="width: 360px; flex: none; display: flex; flex-direction: column; min-height: 0;">
+      <div class="tabs" role="tablist" style="padding: 0 12px;">
+        <button type="button" role="tab" aria-selected="true">Loop</button>
+        <button type="button" role="tab" aria-selected="false">Mix</button>
+        <button type="button" role="tab" aria-selected="false">Progress</button>
+        <button type="button" role="tab" aria-selected="false">Fix <span class="badge unsure">6</span></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow: hidden; padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;"><span class="h2">Bars 25–28</span><span class="badge acc">Chorus</span></div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;"><span class="label">From bar</span><div class="stepper"><button type="button" aria-label="Earlier start"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span>25</span><button type="button" aria-label="Later start"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div></div>
+            <div style="display: flex; flex-direction: column; gap: 6px;"><span class="label">To bar</span><div class="stepper"><button type="button" aria-label="Earlier end"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span>28</span><button type="button" aria-label="Later end"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div></div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M4 20h4v-4h4v-4h4V8h4"/></svg>
+            <span class="h3" style="flex: 1;">Speed ladder</span>
+            <span class="toggle on" role="switch" aria-checked="true" aria-label="Speed ladder"></span>
+          </div>
+          <div class="ladder" aria-label="70 and 75 percent done, 80 percent next">
+            <div class="done">70</div><div class="cur" style="height: 72%;">75</div><div style="height: 76%;">80</div><div style="height: 82%;">85</div><div style="height: 88%;">90</div><div style="height: 94%;">95</div><div style="height: 100%;">100</div>
+          </div>
+          <div class="small muted">Up 5 % after 2 clean passes. Clean pass 2 of 2 at 75 % moves you to 80 %.</div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="chip">Start 70 %</button><button type="button" class="chip">Goal 100 %</button><button type="button" class="chip">Step 5 %</button><button type="button" class="chip">2 clean passes</button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="eyebrow">Between repeats</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span class="small muted">Rest</span><div class="seg"><button type="button" aria-pressed="false">None</button><button type="button" aria-pressed="true">1 beat</button><button type="button" aria-pressed="false">1 bar</button></div></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span class="small muted">Count-in</span><div class="seg"><button type="button" aria-pressed="false">Off</button><button type="button" aria-pressed="true">1 bar</button><button type="button" aria-pressed="false">2 bars</button></div></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;"><span class="eyebrow">Saved clips</span><button type="button" class="btn ghost sm">Save this loop</button></div>
+          <div class="row-item" style="padding: 8px 6px;"><span class="dot" style="background: var(--acc);"></span><span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 600; font-size: 14px;">Chorus riff</span><span class="small faint num">bars 25–28 · best 80 %</span></span><button type="button" class="ib" aria-label="More for Chorus riff"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
+          <div class="row-item" style="padding: 8px 6px;"><span class="dot" style="background: var(--tx3);"></span><span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 600; font-size: 14px;">Bridge bends</span><span class="small faint num">bars 61–64 · best 65 %</span></span><button type="button" class="ib" aria-label="More for Bridge bends"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer aria-label="Transport" style="flex: none; height: 96px; border-top: 1px solid var(--line-soft); background: var(--s1); display: flex; align-items: center; gap: 18px; padding: 0 20px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button type="button" class="ib lg" aria-label="Restart loop"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 6l-9 6 9 6z"/></svg></button>
+      <button type="button" class="play" aria-label="{{playLabel}}" onClick="{{togglePlay}}">
+        <sc-if value="{{playing}}" hint-placeholder-val="{{true}}"><svg class="i xl fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></sc-if>
+        <sc-if value="{{paused}}" hint-placeholder-val="{{false}}"><svg class="i xl fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg></sc-if>
+      </button>
+      <button type="button" class="ib lg" aria-label="Next bar"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 6l9 6-9 6z"/></svg></button>
+    </div>
+    <div style="display: flex; flex-direction: column; line-height: 1.2; width: 116px;">
+      <span class="num" style="font-size: 22px; font-weight: 600;">26.3<span class="faint" style="font-size: 14px;"> / 92</span></span>
+      <span class="small faint num">1:04 / 3:50</span>
+    </div>
+    <div class="vr" style="margin: 22px 0;"></div>
+    <button type="button" class="btn" style="height: 52px; border-radius: 14px; background: var(--acc-soft); border-color: var(--acc-line); color: var(--acc-ink); gap: 10px;">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>
+      <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15;"><span>Loop · bars 25–28</span><span class="small" style="font-weight: 500; opacity: 0.85;">pass 2 · rest 1 beat</span></span>
+    </button>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button type="button" class="ib lg box" aria-label="Slower by 5 percent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <button type="button" class="btn quiet" style="height: 52px; flex-direction: column; gap: 0; line-height: 1.1; border-color: transparent; min-width: 104px;"><span class="num" style="font-size: 22px;">75 %</span><span class="small faint num" style="font-weight: 500;">72 BPM · → 100</span></button>
+      <button type="button" class="ib lg box" aria-label="Faster by 5 percent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <button type="button" class="ib lg on" aria-label="Count-in, 1 bar, on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg></button>
+      <button type="button" class="ib lg on" aria-label="Metronome, on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3h7l4 18h-15z"/><path d="M12 16l5-9"/><path d="M7 16h10"/></svg></button>
+      <button type="button" class="btn" style="height: 52px; border-radius: 14px; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15;"><span>Your part loud</span><span class="small faint" style="font-weight: 500;">5 stems · click on</span></span></button>
+      <div style="display: flex; align-items: center; gap: 8px; width: 150px; margin-left: 6px;">
+        <svg class="i faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+        <input class="range" type="range" min="0" max="100" value="80" aria-label="Volume">
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { playing: true };
+  }
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const TOTAL = 92, LA = 25, LB = 28, NOW = 26.62;
+    const SECS = [['Intro', 4, 0.32], ['Verse 1', 16, 0.5], ['Pre', 4, 0.62], ['Chorus', 8, 0.86], ['Verse 2', 16, 0.52], ['Pre', 4, 0.64], ['Chorus', 8, 0.88], ['Bridge', 8, 0.56], ['Chorus', 16, 0.92], ['Outro', 8, 0.38]];
+    const sections = [];
+    const wave = [];
+    let bar = 1;
+    let k = 0;
+    for (const [name, len, e] of SECS) {
+      sections.push({ name, grow: len, cls: bar === LA ? 'sec on' : 'sec' });
+      for (let b = 0; b < len; b++) {
+        for (let h = 0; h < 3; h++) {
+          const n = k++;
+          const v = e * (0.58 + 0.42 * Math.abs(Math.sin(n * 1.93) * Math.cos(n * 0.41)));
+          const pos = bar + b + h / 3;
+          wave.push({ h: Math.round(v * 100), c: pos >= LA && pos < LB + 1 ? 'in' : (pos < NOW ? 'past' : '') });
+        }
+      }
+      bar += len;
+    }
+    const pct = (b) => ((b - 1) / TOTAL * 100).toFixed(2);
+    const ruler = [1, 9, 17, 25, 33, 41, 49, 57, 65, 73, 81, 89].map((n) => ({ n, l: pct(n) }));
+    const hatches = [12, 27, 31, 44, 62, 63, 79].map((n) => ({ l: pct(n), w: (100 / TOTAL).toFixed(2) }));
+    const PAT = {
+      F: [[4, 3], [3, 2], [2, 1], [1, 1], [2, 1], [3, 2], [4, 3], [3, 2]],
+      C: [[5, 3], [4, 2], [3, 0], [2, 1], [1, 0], [2, 1], [3, 0], [4, 2]],
+      G: [[6, 3], [4, 0], [3, 0], [2, 3], [1, 3], [2, 3], [3, 0], [4, 0]],
+      Am: [[5, 0], [4, 2], [3, 2], [2, 1], [1, 0], [2, 1], [3, 2], [4, 2]],
+      E7: [[6, 0], [5, 2], [4, 0], [3, 1], [2, 0], [1, 0], [2, 0], [3, 1]],
+      Dm: [[4, 0], [3, 2], [2, 3], [1, 1], [2, 3], [3, 2], [4, 0], [3, 2]]
+    };
+    const unsure = { '27-3': 1, '27-4': 1, '31-5': 1, '35-2': 1 };
+    const BARS = [[25, 'F'], [26, 'C'], [27, 'G'], [28, 'Am'], [29, 'F'], [30, 'C'], [31, 'G'], [32, 'E7'], [33, 'Am'], [34, 'Am'], [35, 'Dm'], [36, 'Dm']];
+    const mk = ([no, ch]) => {
+      const notes = PAT[ch].map(([s, f], i) => {
+        let c = 'fn';
+        if (no < 26 || (no === 26 && i < 4)) c = 'fn past';
+        if (no === 26 && i === 4) c = 'fn now';
+        if (unsure[no + '-' + i]) c = 'fn u';
+        return { f: String(f), x: 8 + i * 12, y: (s - 1) * 20 + 0.5, c };
+      });
+      const inLoop = no >= LA && no <= LB;
+      return { no, chord: ch, chordCls: no === 28 ? 'chord-sym u' : 'chord-sym', cls: no === 26 ? 'bar-cell cur' : (inLoop ? 'bar-cell inloop' : 'bar-cell'), ph: no === 26, notes };
+    };
+    const systems = [0, 1, 2].map((i) => ({ loop: i === 0, bars: BARS.slice(i * 4, i * 4 + 4).map(mk) }));
+    const playing = this.state.playing;
+    return {
+      cls: look[0], theme: look[1],
+      sections, wave, ruler, hatches, systems,
+      loopL: pct(LA), loopW: ((LB - LA + 1) / TOTAL * 100).toFixed(2), nowL: pct(NOW),
+      playing, paused: !playing, playLabel: playing ? 'Pause' : 'Play',
+      togglePlay: () => this.setState({ playing: !this.state.playing })
+    };
+  }
+}
+</script>
+</body>
+</html>

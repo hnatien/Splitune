@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings · Account, plan and privacy</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh;">
+  <header style="height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--line-soft);">
+    <a href="Library.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune library">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 19px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px; margin-left: 12px;"><a class="navlink" href="Library.dc.html">Library</a><a class="navlink" href="Settings-Display.dc.html" aria-current="page">Settings</a></nav>
+    <div style="flex: 1;"></div>
+    <a class="btn pri" href="AddSong.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add song</a>
+  </header>
+
+  <div style="max-width: 1180px; margin: 0 auto; padding: 32px 24px 56px; display: flex; gap: 40px; flex-wrap: wrap;">
+    <nav aria-label="Settings" style="flex: 1 1 200px; max-width: 220px; display: flex; flex-direction: column; gap: 2px;">
+      <a class="navlink" href="Settings-Account.dc.html" aria-current="page">Account</a>
+      <a class="navlink" href="Settings-Display.dc.html">Display &amp; practice</a>
+      <a class="navlink" href="Settings-Pedal.dc.html">Keyboard &amp; pedal</a>
+      <a class="navlink" href="States.dc.html">About</a>
+    </nav>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 28px;">
+      <h1 class="h1">Account</h1>
+
+      <section aria-labelledby="profile-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="profile-title" class="h3">Profile</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 14px;">
+          <label style="display: flex; flex-direction: column; gap: 6px;"><span class="label">Name</span><input class="field" value="Tien"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px;"><span class="label">Username</span><input class="field" value="tien.h" readonly style="color: var(--tx2);"></label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="flex: 1 1 200px;">Main instrument</span><div class="seg"><button type="button" aria-pressed="true">Guitar</button><button type="button" aria-pressed="false">Bass</button><button type="button" aria-pressed="false">Piano</button><button type="button" aria-pressed="false">Drums</button><button type="button" aria-pressed="false">Vocals</button></div></div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="flex: 1 1 200px;">How long have you played?</span><div class="seg"><button type="button" aria-pressed="false">Just started</button><button type="button" aria-pressed="true">A few songs</button><button type="button" aria-pressed="false">Coming back</button></div></div>
+      </section>
+      <div class="hr"></div>
+
+      <section aria-labelledby="plan-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;"><h2 id="plan-title" class="h3" style="flex: 1;">Plan</h2><span class="badge acc">Demo billing</span></div>
+        <div class="card" style="padding: 20px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+          <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px;"><span class="h2">Free</span><span class="small muted">Your Welcome analysis is still unused.</span></div>
+          <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px;">
+            <span class="small" style="display: flex; justify-content: space-between;"><span>Lite analyses</span><span class="num muted">3 of 5 left · resets 1 Dec</span></span>
+            <div class="bar"><span style="width: 60%;"></span></div>
+          </div>
+          <a class="btn pri" href="Pricing.dc.html">See Plus</a>
+        </div>
+      </section>
+      <div class="hr"></div>
+
+      <section aria-labelledby="privacy-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="privacy-title" class="h3">Privacy</h2>
+        <div style="display: flex; align-items: center; gap: 12px;"><span style="flex: 1;">Help improve transcriptions<span class="small faint" style="display: block;">Share the chords and notes you correct, never your audio. Off by default.</span></span><span class="toggle" role="switch" aria-checked="false" aria-label="Help improve transcriptions"></span></div>
+        <div class="card" style="padding: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          <svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--ok);"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+          <div style="flex: 1 1 300px;"><span style="display: block; font-weight: 650;">Your file is ready</span><span class="small muted">Songs, loops, passes and edits. The link works until 15 Nov.</span></div>
+          <button type="button" class="btn pri">Download my data</button>
+          <button type="button" class="btn ghost">Prepare a new file</button>
+        </div>
+        <div class="card" style="padding: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; border-color: var(--bad-soft);">
+          <div style="flex: 1 1 300px;"><span style="display: block; font-weight: 650;">Delete my account</span><span class="small muted">Removes every song, stem, loop and edit. This can't be undone.</span></div>
+          <button type="button" class="btn danger">Delete account</button>
+        </div>
+      </section>
+      <div class="hr"></div>
+      <a class="btn ghost" href="SignIn.dc.html" style="align-self: flex-start;">Sign out</a>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    return { cls: look[0], theme: look[1] };
+  }
+}
+</script>
+</body>
+</html>

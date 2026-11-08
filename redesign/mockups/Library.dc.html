@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh;">
+
+  <header style="height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--line-soft); flex-wrap: wrap;">
+    <a href="Library.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune library">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 19px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px; margin-left: 12px;">
+      <a class="navlink" href="Library.dc.html" aria-current="page">Library</a>
+      <a class="navlink" href="Settings-Display.dc.html">Settings</a>
+    </nav>
+    <div style="flex: 1;"></div>
+    <button type="button" class="btn quiet" style="width: 320px; justify-content: flex-start; color: var(--tx3); font-weight: 500;"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span style="flex: 1; text-align: left;">Search songs, clips and actions</span><span class="kbd">Ctrl K</span></button>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; flex-direction: column; gap: 4px; width: 150px;" aria-label="Allowance">
+      <span class="small faint">3 of 5 Lite left · resets 1 Dec</span>
+      <div class="bar" style="height: 4px;"><span style="width: 60%;"></span></div>
+    </div>
+    <a class="btn pri" href="AddSong.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add song</a>
+    <button type="button" class="ib box" aria-label="Account menu" style="border-radius: 50%; font-weight: 700; color: var(--tx);">TH</button>
+  </header>
+
+  <div style="max-width: 1260px; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 28px;">
+
+    <section aria-labelledby="pick-title" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px;">
+      <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 18px; grid-column: span 2; min-width: 0; background: linear-gradient(135deg, var(--s2), var(--s1));">
+        <div style="display: flex; align-items: center; gap: 10px;"><span class="eyebrow" id="pick-title">Pick up where you left off</span><span class="small faint">· yesterday, 24 min</span></div>
+        <div style="display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap;">
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+            <h1 class="h1">Northbound Lights</h1>
+            <p class="muted">Mara Quinn · Guitar · clip <strong style="color: var(--tx);">Chorus riff</strong>, bars 25–28</p>
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+              <span class="badge acc">Ladder at 75 % → 100 %</span>
+              <span class="badge">Best clean 80 %</span>
+              <span class="badge">Yesterday's first clean pass: 70 %</span>
+            </div>
+          </div>
+          <div style="flex: 0 1 300px; min-width: 220px;">
+            <div class="small faint" style="margin-bottom: 6px;">Best clean speed, last 30 days</div>
+            <svg viewBox="0 0 300 80" width="100%" height="80" role="img" aria-label="Best clean speed rose from 60 to 80 percent over 9 sessions">
+              <path d="M0 79.5H300" stroke="var(--line)" stroke-width="1"/>
+              <path d="M0 64 L38 64 L75 56 L112 56 L150 48 L188 40 L225 40 L262 32 L300 24" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>
+              <g fill="var(--acc)"><circle cx="0" cy="64" r="3"/><circle cx="75" cy="56" r="3"/><circle cx="150" cy="48" r="3"/><circle cx="188" cy="40" r="3"/><circle cx="262" cy="32" r="3"/><circle cx="300" cy="24" r="4"/></g>
+              <text x="300" y="14" text-anchor="end" font-size="11" fill="var(--tx2)" font-family="JetBrains Mono, monospace">80 %</text>
+              <text x="0" y="52" font-size="11" fill="var(--tx3)" font-family="JetBrains Mono, monospace">60 %</text>
+            </svg>
+          </div>
+          <a class="btn pri lg" href="Main.dc.html" style="height: 56px; padding: 0 26px;"><svg class="i fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>Resume practice</a>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+        <div class="eyebrow">This week</div>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; text-align: center;" aria-label="Practised on 4 of the last 7 days">
+          <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span style="width: 30px; height: 30px; border-radius: 50%; {{d.style}}"></span>
+              <span class="small faint">{{d.l}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 18px;">
+          <div><div class="num" style="font-size: 22px; font-weight: 600;">1 h 20</div><div class="small faint">practised</div></div>
+          <div><div class="num" style="font-size: 22px; font-weight: 600;">23</div><div class="small faint">clean passes</div></div>
+          <div><div class="num" style="font-size: 22px; font-weight: 600;">+10 %</div><div class="small faint">on Chorus riff</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="revisit-title" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: baseline; gap: 10px;"><h2 class="h3" id="revisit-title">Worth a revisit</h2><span class="small faint">Clips you haven't played for a while. A cold first pass shows what stuck.</span></div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px;">
+        <a class="card row-item" href="Main.dc.html" style="padding: 14px;"><span class="tile" style="background: var(--st-gtr);">Gt</span><span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 650;">Bridge bends</span><span class="small faint">Northbound Lights · 6 days ago · best 65 %</span></span><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a class="card row-item" href="Main.dc.html" style="padding: 14px;"><span class="tile" style="background: var(--st-bass);">Bs</span><span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 650;">Walking line</span><span class="small faint">Low Tide Waltz · 9 days ago · best 90 %</span></span><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a class="card row-item" href="Main.dc.html" style="padding: 14px;"><span class="tile" style="background: var(--st-keys);">Pn</span><span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 650;">Left hand intro</span><span class="small faint">Copper Sky · 12 days ago · best 55 %</span></span><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+    </section>
+
+    <section aria-labelledby="songs-title" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <h2 class="h3" id="songs-title">Songs <span class="faint" style="font-weight: 500;">· 9</span></h2>
+        <div style="flex: 1;"></div>
+        <label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r2); background: var(--bg); width: 220px;"><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input style="border: 0; background: transparent; outline: none; flex: 1; min-width: 0; font-size: 14px;" placeholder="Filter by title" aria-label="Filter by title"></label>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;" role="group" aria-label="Instrument">
+          <button type="button" class="chip on">All</button><button type="button" class="chip">Guitar</button><button type="button" class="chip">Bass</button><button type="button" class="chip">Piano</button><button type="button" class="chip">Drums</button><button type="button" class="chip">Vocals</button>
+        </div>
+        <button type="button" class="btn sm">Last practised<svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="seg" role="group" aria-label="Layout"><button type="button" aria-pressed="true" aria-label="Grid"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button><button type="button" aria-pressed="false" aria-label="List"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
+        <sc-for list="{{songs}}" as="s" hint-placeholder-count="9">
+          <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; position: relative;">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <span class="tile" style="background: {{s.color}};">{{s.ab}}</span>
+              <div style="flex: 1; min-width: 0;">
+                <a href="{{s.href}}" style="display: block; color: var(--tx); text-decoration: none; font-weight: 650; font-size: 16px; line-height: 1.25;">{{s.title}}</a>
+                <div class="small faint" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.sub}}</div>
+              </div>
+              <button type="button" class="ib" aria-label="More for {{s.title}}" style="width: 32px; height: 32px;"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+            </div>
+            <div class="wave" style="height: 28px;" aria-hidden="true">
+              <sc-for list="{{s.wave}}" as="w" hint-placeholder-count="48"><i style="height: {{w}}%;"></i></sc-for>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="{{s.badgeCls}}">{{s.status}}</span>
+              <span class="small faint">{{s.meta}}</span>
+            </div>
+            <sc-if value="{{s.progress}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: 6px;"><div class="bar" style="height: 4px;"><span style="width: {{s.pct}}%;"></span></div><span class="small faint">{{s.stage}}</span></div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const DAYS = [['M', 0], ['T', 18], ['W', 0], ['T', 31], ['F', 7], ['S', 0], ['S', 24]];
+    const week = DAYS.map(([l, m]) => ({ l, style: m === 0 ? 'border: 2px solid var(--line);' : 'background: var(--acc); opacity: ' + (0.45 + m / 60).toFixed(2) + ';' }));
+    const C = { Guitar: ['var(--st-gtr)', 'Gt'], Bass: ['var(--st-bass)', 'Bs'], Piano: ['var(--st-keys)', 'Pn'], Drums: ['var(--st-drm)', 'Dr'], Vocals: ['var(--st-voc)', 'Vo'] };
+    const S = [
+      ['Northbound Lights', 'Mara Quinn · Guitar · 3:50', 'Guitar', 'Ready', 'badge ok', 'Practised yesterday · best 80 % on bars 25–28', 'Main.dc.html', 0, ''],
+      ['Paper Boats', 'Guitar · 3:12 · added just now', 'Guitar', 'Analysing 5/8', 'badge acc', 'You can loop it already', 'Practice-Ready.dc.html', 58, 'Isolating your part · about 4 min left'],
+      ['Low Tide Waltz', 'The Harbour Notes · Bass · 4:05', 'Bass', 'Ready', 'badge ok', '9 days ago · best 90 % on bars 9–16', 'Main.dc.html', 0, ''],
+      ['Copper Sky', 'June Alder · Piano · 2:58', 'Piano', 'Ready', 'badge ok', '12 days ago · best 55 % on bars 1–8', 'Practice-Piano.dc.html', 0, ''],
+      ['Slow Engine', 'Kit Marlow · Drums · 3:31', 'Drums', 'Partial', 'badge', 'Chords and beat ready, stems used a backup model', 'Practice-Drums.dc.html', 0, ''],
+      ['Wildflower Road', 'Guitar · 4:40 · added today', 'Guitar', 'Queued', 'badge', 'Processing machine offline. Starts automatically.', 'Practice-Ready.dc.html', 0, ''],
+      ['Night Market', 'Guitar · 3:02 · Lite analysis', 'Guitar', 'Chords only', 'badge', 'Add stems + tab with a Full analysis', 'Practice-Mix.dc.html', 0, ''],
+      ['Glass Garden', 'Ione Vale · Vocals · 3:44', 'Vocals', 'Ready', 'badge ok', '3 weeks ago · never looped', 'Main.dc.html', 0, ''],
+      ['Riff in A minor', 'Example song · Guitar · 1:12', 'Guitar', 'Ready', 'badge ok', 'Your first loop · best 85 %', 'Main.dc.html', 0, '']
+    ];
+    const songs = S.map(([title, sub, inst, status, badgeCls, meta, href, pct, stage], idx) => {
+      const wave = [];
+      for (let n = 0; n < 48; n++) wave.push(Math.round((0.3 + 0.7 * Math.abs(Math.sin((n + idx * 7) * 0.9) * Math.cos((n + idx) * 0.23))) * 100));
+      return { title, sub, color: C[inst][0], ab: C[inst][1], status, badgeCls, meta, href, progress: pct > 0, pct, stage, wave };
+    });
+    return { cls: look[0], theme: look[1], week, songs };
+  }
+}
+</script>
+</body>
+</html>

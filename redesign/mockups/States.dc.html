@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>System states, dialogs and toasts</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh; padding: 32px;">
+  <div style="max-width: 1376px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 24px;">
+
+    <section aria-label="Command palette" style="grid-column: span 2; display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Command palette · Ctrl K</span>
+      <div class="sheet" style="padding: 8px; display: flex; flex-direction: column;">
+        <label style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 12px; border-bottom: 1px solid var(--line-soft);"><svg class="i faint" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input style="flex: 1; border: 0; background: transparent; outline: none; font-size: 17px;" value="chor" aria-label="Search songs, clips and actions"><span class="kbd">Esc</span></label>
+        <div class="small faint" style="padding: 10px 12px 4px;">Clips</div>
+        <a class="row-item" href="Main.dc.html" style="background: var(--s2);"><span class="tile" style="width: 32px; height: 32px; background: var(--st-gtr); font-size: 12px;">Gt</span><span style="flex: 1;"><strong>Chor</strong>us riff <span class="faint">· Northbound Lights · bars 25–28</span></span><span class="kbd">Enter</span></a>
+        <a class="row-item" href="Main.dc.html"><span class="tile" style="width: 32px; height: 32px; background: var(--st-bass); font-size: 12px;">Bs</span><span style="flex: 1;"><strong>Chor</strong>us groove <span class="faint">· Low Tide Waltz · bars 17–24</span></span></a>
+        <div class="small faint" style="padding: 10px 12px 4px;">Actions</div>
+        <div class="row-item"><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg><span style="flex: 1;">Loop the next <strong>chor</strong>us</span><span class="kbd">L</span></div>
+        <div class="row-item"><svg class="i s faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span style="flex: 1;">Add song</span><span class="kbd">Ctrl N</span></div>
+      </div>
+    </section>
+
+    <section aria-label="On-screen confirmations" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Pedal / key confirmation · count-in</span>
+      <div class="card" style="flex: 1; min-height: 260px; position: relative; display: flex; align-items: center; justify-content: center; background: var(--bg); overflow: hidden;">
+        <span class="display" aria-live="polite" style="font-size: 150px; color: var(--acc-ink); line-height: 1;">3</span>
+        <span class="small faint" style="position: absolute; bottom: 14px; left: 0; right: 0; text-align: center;">Count-in · beat 3 of 4</span>
+        <span class="toast" role="status" style="position: absolute; top: 14px; right: 14px;"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M7 14l3-9h4l3 9"/></svg>Left pedal · From the top of the loop</span>
+      </div>
+    </section>
+
+    <section aria-label="Analysis failed" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Analysis failed</span>
+      <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--bad);"><path d="M12 3l9.5 17H2.5z"/><path d="M12 10v4M12 17h.01"/></svg><div><h2 class="h3">We couldn't find a steady beat</h2><p class="small muted" style="margin-top: 4px;">This recording speeds up and slows down a lot, so bar loops won't line up. This didn't use an analysis.</p></div></div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;"><button type="button" class="btn pri">Try again</button><button type="button" class="btn">Practise with time-based loops</button></div>
+      </div>
+    </section>
+
+    <section aria-label="Banners" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Banners</span>
+      <div class="card" role="status" style="padding: 12px 14px; display: flex; gap: 10px; align-items: center;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="small" style="flex: 1;">Processing machine offline. Your song is queued and starts automatically.</span></div>
+      <div class="card" role="status" style="padding: 12px 14px; display: flex; gap: 10px; align-items: center;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2l20 20"/><path d="M17.5 17.5H7a5 5 0 0 1-1.7-9.7M10 5.3A6 6 0 0 1 18 9a4 4 0 0 1 2.5 7.2"/></svg><span class="small" style="flex: 1;">You're offline. Songs you've opened keep working.</span></div>
+      <div class="card" role="status" style="padding: 10px 10px 10px 14px; display: flex; gap: 10px; align-items: center;"><span class="small" style="flex: 1;">A new version is ready. It waits until you stop playing.</span><button type="button" class="btn sm">Reload</button></div>
+      <div class="card" role="status" style="padding: 10px 10px 10px 14px; display: flex; gap: 10px; align-items: center;"><span class="small" style="flex: 1;">Your part didn't separate cleanly, so the tab may be rougher.</span><button type="button" class="btn sm ghost">Show chords instead</button></div>
+    </section>
+
+    <section aria-label="Delete song dialog" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Confirm dialog</span>
+      <div class="sheet" role="dialog" aria-labelledby="del-title" style="padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="del-title" class="h3">Delete “Night Market”?</h2>
+        <p class="small muted">Its stems, loops, passes and edits will be removed. This can't be undone.</p>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;"><button type="button" class="btn">Cancel</button><button type="button" class="btn danger" style="background: var(--bad); color: oklch(0.99 0 0); border-color: transparent;">Delete song</button></div>
+      </div>
+    </section>
+
+    <section aria-label="Empty library" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Empty library</span>
+      <div class="drop" style="padding: 32px 24px; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center;">
+        <svg class="i xl faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <h2 class="h3">Bring the first song you want to learn</h2>
+        <p class="small muted">Drop a file anywhere on this page, paste a link, or record it.</p>
+        <div style="display: flex; gap: 8px;"><a class="btn pri" href="AddSong.dc.html">Add song</a><a class="btn" href="Onboarding.dc.html">Try an example</a></div>
+      </div>
+    </section>
+
+    <section aria-label="Unsupported browser" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Unsupported browser</span>
+      <div class="card" style="padding: 22px; display: flex; flex-direction: column; gap: 12px;">
+        <h2 class="h3">Splitune can't run in this browser</h2>
+        <p class="small muted">It's missing AudioWorklet, which plays your stems in sync. Try a recent Chrome, Edge, Firefox or Safari.</p>
+        <div style="display: flex; gap: 8px;"><button type="button" class="btn">Copy link</button><a class="btn ghost" href="Library.dc.html">Your library is still available</a></div>
+      </div>
+    </section>
+
+    <section aria-label="Toasts and not found" style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="eyebrow">Toasts · 404</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+        <span class="toast" role="status"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--ok);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Edit saved<button type="button" class="btn sm ghost">Undo</button></span>
+        <span class="toast" role="status" style="padding-right: 16px;">Song deleted.</span>
+        <span class="toast" role="alert" style="border-color: var(--bad);"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--bad);"><path d="M12 3l9.5 17H2.5z"/><path d="M12 10v4M12 17h.01"/></svg>An edit couldn't be saved, so it was undone.</span>
+      </div>
+      <div class="card" style="padding: 18px; display: flex; gap: 14px; align-items: center; margin-top: 6px;"><span class="num faint" style="font-size: 36px; font-weight: 600;">404</span><span style="flex: 1;"><span style="display: block; font-weight: 650;">We couldn't find that page.</span><span class="small muted">The link may be old or mistyped.</span></span><a class="btn sm" href="Library.dc.html">Go to library</a></div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    return { cls: look[0], theme: look[1] };
+  }
+}
+</script>
+</body>
+</html>

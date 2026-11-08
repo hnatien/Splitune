@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone add a song, recording</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden;">
+  <header style="height: 56px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 16px;">
+    <h1 class="h3" style="flex: 1;">Add a song</h1>
+    <a class="ib" href="Phone-Library.dc.html" aria-label="Close" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+  </header>
+  <div class="tabs" role="tablist" style="padding: 0 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));">
+    <button type="button" role="tab" aria-selected="false" style="justify-content: center; height: 48px;">File</button>
+    <button type="button" role="tab" aria-selected="false" style="justify-content: center; height: 48px;">Link</button>
+    <button type="button" role="tab" aria-selected="true" style="justify-content: center; height: 48px;">Record</button>
+  </div>
+
+  <main style="flex: 1; min-height: 0; padding: 20px 16px; display: flex; flex-direction: column; gap: 18px;">
+    <div class="card" style="padding: 20px 16px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+      <span class="badge bad" style="height: 28px; padding: 0 12px;"><span class="dot" style="background: var(--bad);"></span>Recording</span>
+      <span class="num" style="font-size: 48px; font-weight: 600; line-height: 1;">0:42</span>
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
+        <span class="small faint">Input level</span>
+        <div class="wave" style="height: 48px;" aria-label="Input level, good">
+          <sc-for list="{{lvl}}" as="w" hint-placeholder-count="60"><i class="{{w.c}}" style="height: {{w.h}}%;"></i></sc-for>
+        </div>
+      </div>
+      <button type="button" aria-label="Stop recording" style="width: 84px; height: 84px; border-radius: 50%; border: 3px solid var(--bad); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer;"><span style="width: 30px; height: 30px; border-radius: 6px; background: var(--bad);"></span></button>
+      <div style="display: flex; gap: 18px;">
+        <span style="display: flex; align-items: center; gap: 8px;" class="small"><span class="toggle on" role="switch" aria-checked="true" aria-label="Count-in"></span>Count-in</span>
+        <span style="display: flex; align-items: center; gap: 8px;" class="small"><span class="toggle" role="switch" aria-checked="false" aria-label="Click"></span>Click</span>
+      </div>
+    </div>
+    <p class="small muted">Using a headset? Turn off its noise reduction for the cleanest take.</p>
+
+    <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+      <legend class="label" style="margin-bottom: 8px;">Your part</legend>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button type="button" class="chip on" style="height: 40px;">Guitar</button><button type="button" class="chip" style="height: 40px;">Bass</button><button type="button" class="chip" style="height: 40px;">Piano</button><button type="button" class="chip" style="height: 40px;">Drums</button><button type="button" class="chip" style="height: 40px;">Vocals</button>
+      </div>
+    </fieldset>
+    <div class="seg" role="radiogroup" aria-label="Analysis" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
+      <button type="button" role="radio" aria-checked="true" aria-pressed="true" style="justify-content: center; height: 44px;">Full · free once</button>
+      <button type="button" role="radio" aria-checked="false" aria-pressed="false" style="justify-content: center; height: 44px;">Lite · 3 left</button>
+    </div>
+  </main>
+
+  <footer style="flex: none; padding: 12px 16px 22px; border-top: 1px solid var(--line-soft);">
+    <button type="button" class="btn pri lg block" disabled style="opacity: 0.55; cursor: not-allowed;">Use this recording</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const lvl = [];
+    for (let n = 0; n < 60; n++) lvl.push({ h: Math.round((0.25 + 0.6 * Math.abs(Math.sin(n * 0.83) * Math.cos(n * 0.29))) * 100), c: n > 52 ? '' : 'past' });
+    return { cls: look[0], theme: look[1], lvl };
+  }
+}
+</script>
+</body>
+</html>

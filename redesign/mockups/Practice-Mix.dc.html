@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice · Chords view with full mixer</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="height: 100vh; min-height: 760px; display: flex; flex-direction: column; overflow: hidden;">
+
+  <header style="height: 60px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 8px; border-bottom: 1px solid var(--line-soft);">
+    <a class="btn ghost sm" href="Library.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Library</a>
+    <div class="vr" style="margin: 14px 0;"></div>
+    <div style="min-width: 0; display: flex; flex-direction: column; line-height: 1.25;">
+      <div style="font-weight: 650; font-size: 16px; white-space: nowrap;">Northbound Lights</div>
+      <div class="small muted" style="white-space: nowrap;">Mara Quinn · Guitar · A minor · 96 BPM</div>
+    </div>
+    <div style="flex: 1;"></div>
+    <div class="seg" role="group" aria-label="View">
+      <a href="Main.dc.html" aria-pressed="false">Tab</a>
+      <button type="button" aria-pressed="false">Notes</button>
+      <button type="button" aria-pressed="true">Chords</button>
+    </div>
+    <div style="flex: 1;"></div>
+    <button type="button" class="chip" style="border-style: dashed;"><span class="num" style="font-weight: 700; color: var(--unsure);">?</span>Auto-transcribed · 6 unsure</button>
+    <button type="button" class="ib" aria-label="Display and reading"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l5-14 5 14M5 14h6M14 19l3.5-9 3.5 9M15.2 16h4.6"/></svg></button>
+    <button type="button" class="ib" aria-label="Keyboard and pedal"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>
+    <button type="button" class="ib" aria-label="More"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+  </header>
+
+  <section aria-label="Song map" style="flex: none; padding: 10px 16px 6px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 8px;">
+    <div class="secs">
+      <sc-for list="{{sections}}" as="s" hint-placeholder-count="10">
+        <button type="button" class="sec" style="flex-grow: {{s.grow}};">{{s.name}}</button>
+      </sc-for>
+    </div>
+    <div class="map" style="margin-top: 6px;">
+      <div class="wave">
+        <sc-for list="{{wave}}" as="w" hint-placeholder-count="120"><i class="{{w.c}}" style="height: {{w.h}}%;"></i></sc-for>
+      </div>
+      <sc-for list="{{hatches}}" as="h" hint-placeholder-count="6"><span class="hatch" style="left: {{h.l}}%; width: {{h.w}}%;"></span></sc-for>
+      <div class="nowline" style="left: {{nowL}}%;"></div>
+    </div>
+    <div class="ruler">
+      <sc-for list="{{ruler}}" as="r" hint-placeholder-count="12"><span style="left: {{r.l}}%;">{{r.n}}</span></sc-for>
+    </div>
+  </section>
+
+  <div style="flex: 1; min-height: 0; display: flex;">
+    <main aria-label="Chord sheet, bars 21 to 40" style="flex: 1; min-width: 0; overflow: hidden; padding: 20px 28px 0; display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; align-items: center; gap: 22px; padding: 6px 4px 14px; border-bottom: 1px solid var(--line-soft);">
+        <span class="eyebrow" style="width: 70px;">Shapes in this song</span>
+        <sc-for list="{{shapes}}" as="sh" hint-placeholder-count="6">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div class="shape" style="margin-top: 14px;">
+              <sc-for list="{{sh.dots}}" as="d" hint-placeholder-count="3"><i style="left: {{d.x}}px; top: {{d.y}}px;"></i></sc-for>
+            </div>
+            <span style="font-weight: 650; font-size: 15px;">{{sh.name}}</span>
+          </div>
+        </sc-for>
+        <div style="flex: 1;"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
+          <div class="seg" role="group" aria-label="Level"><button type="button" aria-pressed="false">Simple</button><button type="button" aria-pressed="true">As played</button></div>
+          <span class="small faint">Capo none · sounds in A minor</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <sc-for list="{{lines}}" as="ln" hint-placeholder-count="5">
+          <div style="display: flex; align-items: stretch; gap: 0;">
+            <div style="width: 92px; flex: none; padding-top: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-weight: 650; font-size: 14px;">{{ln.sec}}</span>
+              <span class="small faint num">{{ln.range}}</span>
+            </div>
+            <div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-right: 1px solid var(--line);">
+              <sc-for list="{{ln.bars}}" as="b" hint-placeholder-count="4">
+                <button type="button" class="{{b.cls}}" style="border-top: 0; border-bottom: 0; border-right: 0; background-color: transparent; text-align: left; cursor: pointer;" aria-label="{{b.label}}">
+                  <span class="small faint num">{{b.no}}</span>
+                  <span class="cname"><sc-for list="{{b.chords}}" as="c" hint-placeholder-count="1"><span class="{{c.cls}}">{{c.n}}</span></sc-for></span>
+                  <span class="slashes"><sc-for list="{{b.beats}}" as="bt" hint-placeholder-count="4"><span class="{{bt.c}}">/</span></sc-for></span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+
+    <aside class="panel" aria-label="Practice tools" style="width: 380px; flex: none; display: flex; flex-direction: column; min-height: 0;">
+      <div class="tabs" role="tablist" style="padding: 0 12px;">
+        <button type="button" role="tab" aria-selected="false">Loop</button>
+        <button type="button" role="tab" aria-selected="true">Mix</button>
+        <button type="button" role="tab" aria-selected="false">Progress</button>
+        <button type="button" role="tab" aria-selected="false">Fix <span class="badge unsure">6</span></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow: hidden; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px;">
+        <div role="radiogroup" aria-label="Mix preset" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <button type="button" role="radio" aria-checked="false" class="card" style="padding: 10px 12px; text-align: left; cursor: pointer;"><span style="display: block; font-weight: 650; font-size: 14px;">Your part loud</span><span class="small faint">Learn it: guitar up, band down</span></button>
+          <button type="button" role="radio" aria-checked="true" class="card" style="padding: 10px 12px; text-align: left; cursor: pointer; border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); background: var(--acc-soft);"><span style="display: block; font-weight: 650; font-size: 14px; color: var(--acc-ink);">Minus-one</span><span class="small muted">Play it: your part muted</span></button>
+          <button type="button" role="radio" aria-checked="false" class="card" style="padding: 10px 12px; text-align: left; cursor: pointer;"><span style="display: block; font-weight: 650; font-size: 14px;">Original</span><span class="small faint">The song as recorded</span></button>
+          <button type="button" role="radio" aria-checked="false" class="card" style="padding: 10px 12px; text-align: left; cursor: pointer;"><span style="display: block; font-weight: 650; font-size: 14px;">Rhythm only</span><span class="small faint">Bass and drums, nothing else</span></button>
+        </div>
+        <div class="hr"></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <sc-for list="{{stems}}" as="st" hint-placeholder-count="6">
+            <div style="display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 4px; align-items: center; padding: 7px 4px;">
+              <span style="width: 6px; height: 34px; border-radius: 3px; background: {{st.color}}; grid-row: span 2;"></span>
+              <span style="display: flex; align-items: center; gap: 8px; min-width: 0;"><span style="font-weight: 650; font-size: 14px;">{{st.name}}</span><sc-if value="{{st.you}}" hint-placeholder-val="{{false}}"><span class="badge acc">Your part</span></sc-if><sc-if value="{{st.rough}}" hint-placeholder-val="{{false}}"><span class="badge" title="This stem may contain bits of other instruments.">Rough</span></sc-if></span>
+              <span style="display: flex; gap: 4px; grid-row: span 2;"><button type="button" class="{{st.mCls}}" aria-label="Mute {{st.name}}" aria-pressed="{{st.muted}}">M</button><button type="button" class="ms" aria-label="Solo {{st.name}}" aria-pressed="false">S</button></span>
+              <span style="display: flex; align-items: center; gap: 10px;"><input class="range" type="range" min="-30" max="6" value="{{st.db}}" aria-label="{{st.name}} level" style="accent-color: {{st.color}};"><span class="num small muted" style="width: 52px; text-align: right;">{{st.dbText}}</span></span>
+            </div>
+          </sc-for>
+        </div>
+        <div class="hr"></div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="eyebrow">Helpers</div>
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="flex: 1; font-size: 14px; font-weight: 600;">Click</span><span class="num small muted">−8 dB</span><span class="toggle on" role="switch" aria-checked="true" aria-label="Click"></span></div>
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="flex: 1; font-size: 14px; font-weight: 600;">Hear the chords<span class="small faint" style="display: block; font-weight: 500;">A soft synth plays what we transcribed</span></span><span class="toggle" role="switch" aria-checked="false" aria-label="Hear the chords"></span></div>
+        </div>
+        <div style="flex: 1;"></div>
+        <div style="display: flex; gap: 8px;"><button type="button" class="btn sm">Reset mix</button><button type="button" class="btn ghost sm">Use as default for guitar</button></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer aria-label="Transport" style="flex: none; height: 96px; border-top: 1px solid var(--line-soft); background: var(--s1); display: flex; align-items: center; gap: 18px; padding: 0 20px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button type="button" class="ib lg" aria-label="Back a bar"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 6l-9 6 9 6z"/></svg></button>
+      <button type="button" class="play" aria-label="Pause"><svg class="i xl fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <button type="button" class="ib lg" aria-label="Next bar"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 6l9 6-9 6z"/></svg></button>
+    </div>
+    <div style="display: flex; flex-direction: column; line-height: 1.2; width: 116px;">
+      <span class="num" style="font-size: 22px; font-weight: 600;">30.2<span class="faint" style="font-size: 14px;"> / 92</span></span>
+      <span class="small faint num">1:13 / 3:50</span>
+    </div>
+    <div class="vr" style="margin: 22px 0;"></div>
+    <button type="button" class="btn" style="height: 52px; border-radius: 14px; gap: 10px;">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>
+      <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15;"><span>No loop</span><span class="small faint" style="font-weight: 500;">tap two bars, or a section</span></span>
+    </button>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button type="button" class="ib lg box" aria-label="Slower by 5 percent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <button type="button" class="btn quiet" style="height: 52px; flex-direction: column; gap: 0; line-height: 1.1; border-color: transparent; min-width: 104px;"><span class="num" style="font-size: 22px;">100 %</span><span class="small faint num" style="font-weight: 500;">96 BPM</span></button>
+      <button type="button" class="ib lg box" aria-label="Faster by 5 percent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div style="flex: 1;"></div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <button type="button" class="ib lg" aria-label="Count-in, off"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg></button>
+      <button type="button" class="ib lg on" aria-label="Metronome, on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3h7l4 18h-15z"/><path d="M12 16l5-9"/><path d="M7 16h10"/></svg></button>
+      <button type="button" class="btn" style="height: 52px; border-radius: 14px; gap: 10px; background: var(--acc-soft); border-color: var(--acc-line); color: var(--acc-ink);"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15;"><span>Minus-one</span><span class="small" style="font-weight: 500; opacity: 0.85;">guitar muted · you play</span></span></button>
+      <div style="display: flex; align-items: center; gap: 8px; width: 150px; margin-left: 6px;">
+        <svg class="i faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+        <input class="range" type="range" min="0" max="100" value="80" aria-label="Volume">
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const TOTAL = 92, NOW = 30.3;
+    const SECS = [['Intro', 4, 0.32], ['Verse 1', 16, 0.5], ['Pre', 4, 0.62], ['Chorus', 8, 0.86], ['Verse 2', 16, 0.52], ['Pre', 4, 0.64], ['Chorus', 8, 0.88], ['Bridge', 8, 0.56], ['Chorus', 16, 0.92], ['Outro', 8, 0.38]];
+    const sections = [];
+    const wave = [];
+    let bar = 1;
+    let k = 0;
+    for (const [name, len, e] of SECS) {
+      sections.push({ name, grow: len });
+      for (let b = 0; b < len; b++) {
+        for (let h = 0; h < 3; h++) {
+          const n = k++;
+          const v = e * (0.58 + 0.42 * Math.abs(Math.sin(n * 1.93) * Math.cos(n * 0.41)));
+          wave.push({ h: Math.round(v * 100), c: bar + b + h / 3 < NOW ? 'past' : '' });
+        }
+      }
+      bar += len;
+    }
+    const pct = (b) => ((b - 1) / TOTAL * 100).toFixed(2);
+    const ruler = [1, 9, 17, 25, 33, 41, 49, 57, 65, 73, 81, 89].map((n) => ({ n, l: pct(n) }));
+    const hatches = [12, 27, 31, 44, 62, 63, 79].map((n) => ({ l: pct(n), w: (100 / TOTAL).toFixed(2) }));
+    const SH = { Am: [[4, 2], [3, 2], [2, 1]], F: [[6, 1], [5, 3], [4, 3], [3, 2], [2, 1], [1, 1]], C: [[5, 3], [4, 2], [2, 1]], G: [[6, 3], [5, 2], [1, 3]], E7: [[5, 2], [3, 1]], Dm: [[3, 2], [2, 3], [1, 1]] };
+    const shapes = ['Am', 'F', 'C', 'G', 'E7', 'Dm'].map((name) => ({ name, dots: SH[name].map(([s, f]) => ({ x: (6 - s) * 12 + 0.5, y: (f - 0.5) * 17 })) }));
+    const LINES = [
+      ['Pre', '21–24', [[21, ['Dm']], [22, ['Dm']], [23, ['E7']], [24, ['E7']]]],
+      ['Chorus', '25–32', [[25, ['F']], [26, ['C']], [27, ['G']], [28, ['Am']]]],
+      ['', '', [[29, ['F']], [30, ['C']], [31, ['G']], [32, ['E7']]]],
+      ['Verse 2', '33–48', [[33, ['Am']], [34, ['Am']], [35, ['Dm']], [36, ['Dm']]]],
+      ['', '', [[37, ['Am']], [38, ['G']], [39, ['F', 'G']], [40, ['E7']]]]
+    ];
+    const lines = LINES.map(([sec, range, bars]) => ({
+      sec, range,
+      bars: bars.map(([no, chords]) => {
+        const cur = no === 30;
+        return {
+          no, cls: cur ? 'cbar cur' : 'cbar',
+          label: 'Bar ' + no + ', ' + chords.join(' ') + (no === 28 ? ', unsure' : ''),
+          chords: chords.map((n) => ({ n, cls: no === 28 ? 'u' : '' })),
+          beats: [0, 1, 2, 3].map((i) => ({ c: cur && i === 1 ? 'on' : '' }))
+        };
+      })
+    }));
+    const STEMS = [
+      ['Guitar', 'var(--st-gtr)', 0, true, false, true],
+      ['Vocals', 'var(--st-voc)', 0, false, false, false],
+      ['Bass', 'var(--st-bass)', 0, false, false, false],
+      ['Drums', 'var(--st-drm)', -2, false, false, false],
+      ['Keys', 'var(--st-keys)', -4, false, true, false],
+      ['Other', 'var(--st-oth)', -6, false, false, false]
+    ];
+    const stems = STEMS.map(([name, color, db, you, rough, muted]) => ({
+      name, color, db, you, rough, muted: muted ? 'true' : 'false',
+      mCls: muted ? 'ms on' : 'ms',
+      dbText: muted ? 'muted' : (db === 0 ? '0 dB' : '−' + Math.abs(db) + ' dB')
+    }));
+    return { cls: look[0], theme: look[1], sections, wave, ruler, hatches, nowL: pct(NOW), shapes, lines, stems };
+  }
+}
+</script>
+</body>
+</html>

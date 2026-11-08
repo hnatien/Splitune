@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundations · tokens, type and components</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="app" data-theme="dark" style="width: 1440px; height: 1200px; padding: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; overflow: hidden;">
+
+  <section aria-label="Colour, Night Rehearsal" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;"><h1 class="h2">Night Rehearsal</h1><span class="small faint">default · warm graphite, one amber signal</span></div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;">
+      <sc-for list="{{tokens}}" as="t" hint-placeholder-count="12">
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 52px; border-radius: 10px; border: 1px solid var(--line-soft); background: {{t.v}};"></span><span class="num" style="font-size: 11px; color: var(--tx2);">{{t.n}}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section class="app" data-theme="light" aria-label="Colour, Daylight" style="display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 16px; margin: -18px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;"><h2 class="h2">Daylight</h2><span class="small faint">same roles, light ground</span></div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;">
+      <sc-for list="{{tokens}}" as="t" hint-placeholder-count="12">
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 52px; border-radius: 10px; border: 1px solid var(--line-soft); background: {{t.v}};"></span><span class="num" style="font-size: 11px; color: var(--tx2);">{{t.n}}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-label="Stem colours" style="display: flex; flex-direction: column; gap: 12px;">
+    <h2 class="h3">Stems · always labelled, never the only cue</h2>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;">
+      <sc-for list="{{stems}}" as="s" hint-placeholder-count="6">
+        <div class="card" style="padding: 10px; display: flex; flex-direction: column; gap: 8px;"><span style="height: 6px; border-radius: 3px; background: {{s.v}};"></span><span class="small" style="font-weight: 650;">{{s.n}}</span></div>
+      </sc-for>
+    </div>
+    <h2 class="h3" style="margin-top: 10px;">Confidence · shape first, colour second</h2>
+    <div class="card" style="padding: 18px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; --paper: var(--s1);">
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;"><span class="fn" style="position: static; transform: none; font-size: 20px; line-height: 24px;">5</span><span class="chip">G</span><span class="small muted">Sure</span></div>
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;"><span class="fn" style="position: static; transform: none; font-size: 20px; line-height: 24px; outline: 1.5px dashed var(--tx3); outline-offset: 1px;">5</span><span class="chip" style="border-style: dashed;">G</span><span class="small muted">Probably</span></div>
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;"><span class="fn u" style="position: static; transform: none; font-size: 20px; line-height: 24px;">5</span><span class="chip" style="border-style: dashed; color: var(--unsure); border-color: var(--unsure);">G ?</span><span class="small muted">Unsure</span></div>
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;"><span class="fn fix" style="position: static; transform: none; font-size: 20px; line-height: 24px;">5</span><span class="chip" style="text-decoration: underline; text-underline-offset: 3px;">G</span><span class="small muted">Edited by you</span></div>
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;"><span class="fn now" style="position: static; transform: none; font-size: 20px; line-height: 24px;">5</span><span class="chip on">G</span><span class="small muted">Sounding now</span></div>
+    </div>
+  </section>
+
+  <section aria-label="Type" style="display: flex; flex-direction: column; gap: 10px;">
+    <h2 class="h3">Type · Instrument Sans for words, JetBrains Mono for numbers</h2>
+    <div class="card" style="padding: 18px; display: flex; gap: 22px; align-items: flex-end;">
+      <span class="display" style="font-size: 112px; line-height: 0.8;">C</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+        <span class="h1">Northbound Lights · H1 32</span>
+        <span class="h2">Bars 25–28 · H2 22</span>
+        <span class="h3">Speed ladder · H3 17</span>
+        <span>Up 5 % after 2 clean passes · Body 15</span>
+        <span class="small muted">about 1 in 3 · Small 13</span>
+        <span class="eyebrow">Now · bar 26 · Eyebrow 12</span>
+        <span class="num" style="font-size: 22px;">75 % · 72 BPM · 1:04 / 3:50</span>
+      </div>
+    </div>
+    <div class="small faint">Chord letters: display 112 (now), 56 (next), 17 (on the staff). Tab digits 15 desk · 20 stand · 26 tablet stand view.</div>
+  </section>
+
+  <section aria-label="Components" style="grid-column: span 2; display: flex; flex-direction: column; gap: 14px;">
+    <h2 class="h3">Components</h2>
+    <div class="card" style="padding: 20px; display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center;">
+      <button type="button" class="btn pri">Start practising</button>
+      <button type="button" class="btn">Save clip</button>
+      <button type="button" class="btn ghost">Cancel</button>
+      <button type="button" class="btn danger">Delete song</button>
+      <button type="button" class="play" aria-label="Play"><svg class="i xl fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg></button>
+      <button type="button" class="ib lg box" aria-label="Faster"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button type="button" class="ib lg on" aria-label="Metronome on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3h7l4 18h-15z"/><path d="M12 16l5-9"/><path d="M7 16h10"/></svg></button>
+      <div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true">Tab</button><button type="button" aria-pressed="false">Notes</button><button type="button" aria-pressed="false">Chords</button></div>
+      <span style="display: flex; gap: 6px;"><button type="button" class="chip on">All</button><button type="button" class="chip">Guitar</button></span>
+      <span class="toggle on" role="switch" aria-checked="true" aria-label="On"></span><span class="toggle" role="switch" aria-checked="false" aria-label="Off"></span>
+      <div class="stepper" style="width: 140px;"><button type="button" aria-label="Earlier"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span>25</span><button type="button" aria-label="Later"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>
+      <span style="display: flex; gap: 6px;"><span class="badge ok">Ready</span><span class="badge acc">Analysing 5/8</span><span class="badge unsure">6 unsure</span><span class="badge bad">Failed</span><span class="badge">Queued</span></span>
+      <span style="display: flex; gap: 4px;"><span class="kbd">Space</span><span class="kbd">C</span><span class="kbd">N</span><span class="kbd">Ctrl K</span></span>
+      <div class="ladder" style="width: 220px; height: 52px;"><div class="done">70</div><div class="cur" style="height: 80%;">75</div><div style="height: 90%;">80</div><div style="height: 100%;">85</div></div>
+      <div class="beats"><i class="down done"></i><i class="done"></i><i class="on"></i><i></i></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+      <div class="card" style="padding: 14px;"><div class="eyebrow">Targets</div><div class="small muted" style="margin-top: 6px;">44 everywhere · 52 transport · 64 play · 88 stand view</div></div>
+      <div class="card" style="padding: 14px;"><div class="eyebrow">Radius</div><div class="small muted" style="margin-top: 6px;">6 · 10 · 16 · 22 · full for play and toggles</div></div>
+      <div class="card" style="padding: 14px;"><div class="eyebrow">Motion</div><div class="small muted" style="margin-top: 6px;">100 / 200 / 300 ms · playhead on the audio clock · reduced motion pages and steps</div></div>
+      <div class="card" style="padding: 14px;"><div class="eyebrow">Amber is reserved</div><div class="small muted" style="margin-top: 6px;">Now, playhead, loop, the one primary action per view. Never decoration.</div></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = ['bg', 's1', 's2', 's3', 'line', 'tx', 'tx2', 'tx3', 'acc', 'unsure', 'ok', 'bad'];
+    const tokens = T.map((n) => ({ n: '--' + n, v: 'var(--' + n + ')' }));
+    const S = [['Guitar', 'gtr'], ['Bass', 'bass'], ['Vocals', 'voc'], ['Drums', 'drm'], ['Keys', 'keys'], ['Other', 'oth']];
+    const stems = S.map(([n, k]) => ({ n, v: 'var(--st-' + k + ')' }));
+    return { tokens, stems };
+  }
+}
+</script>
+</body>
+</html>

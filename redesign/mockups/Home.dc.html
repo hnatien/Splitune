@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Splitune · practise just your part</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh;">
+  <header style="max-width: 1240px; margin: 0 auto; height: 72px; padding: 0 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+    <a href="Home.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune home">
+      <svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 20px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <div style="flex: 1;"></div>
+    <nav aria-label="Site" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+      <a class="navlink" href="Home.dc.html#how">How it works</a>
+      <a class="navlink" href="Pricing.dc.html">Pricing</a>
+      <a class="navlink" href="SignIn.dc.html">Sign in</a>
+      <a class="btn pri" href="Onboarding.dc.html" style="margin-left: 8px;">Try an example song</a>
+    </nav>
+  </header>
+
+  <section style="max-width: 1240px; margin: 0 auto; padding: 56px 24px 72px; display: flex; gap: 56px; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+      <span class="badge acc" style="align-self: flex-start; height: 28px; padding: 0 12px;">Free to try, no account needed</span>
+      <h1 class="display" style="font-size: clamp(44px, 6vw, 76px); text-wrap: balance;">Bring any song. Practise just your part.</h1>
+      <p class="muted" style="font-size: 19px; max-width: 34em; text-wrap: pretty;">Splitune pulls your instrument out of the mix, writes out the chords and tab, and loops any bar at any speed. Where it isn't sure of a note, it tells you.</p>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a class="btn pri lg" href="Onboarding.dc.html" style="height: 56px; padding: 0 26px;">Try an example song</a>
+        <a class="btn lg" href="SignIn.dc.html" style="height: 56px;">Sign in</a>
+      </div>
+      <p class="small faint">Guitar and bass today. Piano and drums are in early access.</p>
+    </div>
+
+    <div aria-label="The practice screen, looping bars 25 to 28 at 75 percent" role="img" style="flex: 1 1 520px; min-width: 0;">
+      <div class="sheet" style="padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;"><span style="font-weight: 650;">Northbound Lights</span><span class="small faint">Guitar</span><div style="flex: 1;"></div><span class="badge acc">Loop · bars 25–28 · 75 %</span></div>
+        <div style="display: flex; gap: 18px; align-items: stretch;">
+          <div style="width: 130px; flex: none; display: flex; flex-direction: column; gap: 10px; padding-right: 16px; border-right: 1px solid var(--line-soft);">
+            <span class="eyebrow">Now</span>
+            <span class="display" style="font-size: 88px; line-height: 0.85;">C</span>
+            <div class="beats"><i class="down done"></i><i class="done"></i><i class="on"></i><i></i></div>
+            <span class="eyebrow" style="margin-top: 6px;">Next</span>
+            <span style="font-size: 36px; font-weight: 650; line-height: 1;">G</span>
+          </div>
+          <div style="flex: 1; min-width: 0; padding-top: 46px; --paper: var(--s1);">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
+              <div class="bar-cell inloop"><span class="chord-sym" style="left: 8px;">F</span><div class="strings"><span class="fn past" style="left: 10%; top: 60.5px;">3</span><span class="fn past" style="left: 30%; top: 40.5px;">2</span><span class="fn past" style="left: 50%; top: 20.5px;">1</span><span class="fn past" style="left: 70%; top: 0.5px;">1</span><span class="fn past" style="left: 90%; top: 20.5px;">1</span></div></div>
+              <div class="bar-cell cur"><span class="chord-sym" style="left: 8px;">C</span><div class="strings"><span class="fn past" style="left: 10%; top: 80.5px;">3</span><span class="fn past" style="left: 30%; top: 60.5px;">2</span><span class="fn now" style="left: 50%; top: 40.5px;">0</span><span class="fn u" style="left: 70%; top: 20.5px;">1</span><span class="fn" style="left: 90%; top: 0.5px;">0</span><span class="playhead" style="left: 55%;"></span></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line-soft);">
+          <span class="play" style="width: 44px; height: 44px;"><svg class="i fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></span>
+          <span class="small muted" style="flex: 1;">Pass 2 at 75 % — how was it?</span>
+          <span class="btn sm pri">Felt clean</span><span class="btn sm">Not yet</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="What it does" style="border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--s1);">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 64px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 40px;">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg);" aria-hidden="true">
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 5px; height: 22px; border-radius: 3px; background: var(--st-gtr);"></span><span class="small" style="width: 64px; font-weight: 650;">Guitar</span><div class="bar" style="flex: 1;"><span style="width: 86%; background: var(--st-gtr);"></span></div></div>
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 5px; height: 22px; border-radius: 3px; background: var(--st-voc);"></span><span class="small" style="width: 64px; font-weight: 650;">Vocals</span><div class="bar" style="flex: 1;"><span style="width: 40%; background: var(--st-voc);"></span></div></div>
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 5px; height: 22px; border-radius: 3px; background: var(--st-bass);"></span><span class="small" style="width: 64px; font-weight: 650;">Bass</span><div class="bar" style="flex: 1;"><span style="width: 52%; background: var(--st-bass);"></span></div></div>
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 5px; height: 22px; border-radius: 3px; background: var(--st-drm);"></span><span class="small" style="width: 64px; font-weight: 650;">Drums</span><div class="bar" style="flex: 1;"><span style="width: 48%; background: var(--st-drm);"></span></div></div>
+        </div>
+        <h2 class="h2">Hear your part on its own</h2>
+        <p class="muted">Turn your instrument up to learn it, then mute it and play along with the band. Every stem has its own fader.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="card" style="padding: 14px; background: var(--bg);" aria-hidden="true">
+          <div class="ladder" style="height: 96px;"><div class="done">70</div><div class="done" style="height: 76%;">75</div><div class="cur" style="height: 82%;">80</div><div style="height: 88%;">85</div><div style="height: 94%;">90</div><div style="height: 100%;">100</div></div>
+        </div>
+        <h2 class="h2">Loop it slow, then climb</h2>
+        <p class="muted">Tap two bars to loop them. Start at 70 % and the speed ladder steps up each time you play it clean, without changing the pitch.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="card" style="padding: 22px 14px; background: var(--bg); display: flex; align-items: center; justify-content: space-around; --paper: var(--bg);" aria-hidden="true">
+          <span class="fn" style="position: static; transform: none; font-size: 26px; line-height: 30px;">5</span>
+          <span class="fn u" style="position: static; transform: none; font-size: 26px; line-height: 30px;">7</span>
+          <span style="display: flex; flex-direction: column; gap: 6px;"><span class="chip">Am7 · about 1 in 3</span><span class="chip">C/A · about 1 in 5</span></span>
+        </div>
+        <h2 class="h2">Tab that admits when it's unsure</h2>
+        <p class="muted">Unsure notes carry a dashed outline and a question mark. Tap one to hear the other likely options and keep the one that's right.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="stand-title" style="max-width: 1240px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 32px;">
+    <h2 id="stand-title" class="display" style="font-size: 44px;">Made for the music stand</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 28px 40px;">
+      <div style="display: flex; gap: 14px;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M7 14l3-9h4l3 9"/></svg><div><h3 class="h3">Hands stay on the strings</h3><p class="muted">A foot pedal or the keyboard restarts the loop, rates the pass and changes speed.</p></div></div>
+      <div style="display: flex; gap: 14px;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M3 19l5-14 5 14M5 14h6M14 19l3.5-9 3.5 9M15.2 16h4.6"/></svg><div><h3 class="h3">Readable from where you sit</h3><p class="muted">Tell it how far away the screen is and the chords and tab are sized for that distance.</p></div></div>
+      <div style="display: flex; gap: 14px;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg><div><h3 class="h3">A count-in that follows the band</h3><p class="muted">The click and the beat lights follow the song's real timing, not a fixed tempo.</p></div></div>
+      <div style="display: flex; gap: 14px;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg><div><h3 class="h3">Stand view for tablets</h3><p class="muted">Huge chords, one line of tab and page turns on the downbeat.</p></div></div>
+      <div style="display: flex; gap: 14px;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg><div><h3 class="h3">Works offline</h3><p class="muted">Songs you've opened keep working on the train or in a basement rehearsal room.</p></div></div>
+      <div style="display: flex; gap: 14px;"><svg class="i l" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M3 20h18"/><path d="M5 16l5-5 4 3 6-7"/></svg><div><h3 class="h3">Progress without nagging</h3><p class="muted">Your best clean speed per loop, logged for you. No streaks, no guilt.</p></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="session-title" style="background: var(--s1); border-top: 1px solid var(--line-soft);">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 32px;">
+      <h2 id="session-title" class="display" style="font-size: 44px;">How a session goes</h2>
+      <ol style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 20px;">
+        <li class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; background: var(--bg);"><span class="num" style="font-size: 32px; color: var(--acc-ink); font-weight: 600;">1</span><h3 class="h3">Bring a song</h3><p class="muted small">Upload a file, paste a link or record it. It plays at once.</p></li>
+        <li class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; background: var(--bg);"><span class="num" style="font-size: 32px; color: var(--acc-ink); font-weight: 600;">2</span><h3 class="h3">Pick your part</h3><p class="muted small">We isolate it and work out the beat, chords and tab in a few minutes.</p></li>
+        <li class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; background: var(--bg);"><span class="num" style="font-size: 32px; color: var(--acc-ink); font-weight: 600;">3</span><h3 class="h3">Loop the hard bars</h3><p class="muted small">Slow them down, add a count-in, and rate each pass.</p></li>
+        <li class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; background: var(--bg);"><span class="num" style="font-size: 32px; color: var(--acc-ink); font-weight: 600;">4</span><h3 class="h3">Speed up as it gets clean</h3><p class="muted small">Come back tomorrow and see what stuck.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto; padding: 72px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+    <div style="flex: 1 1 420px;"><h2 class="display" style="font-size: 40px;">Free is a real practice app</h2><p class="muted" style="margin-top: 10px;">Every practice tool is free. Plus adds more analyses each month.</p></div>
+    <a class="btn pri lg" href="Onboarding.dc.html">Try an example song</a>
+    <a class="btn lg" href="Pricing.dc.html">See pricing</a>
+  </section>
+
+  <footer style="border-top: 1px solid var(--line-soft);">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 28px 24px; display: flex; gap: 20px; flex-wrap: wrap;" class="small faint">
+      <span style="flex: 1;">splitune</span><a href="Home.dc.html#how" style="color: inherit;">How it works</a><a href="Pricing.dc.html" style="color: inherit;">Pricing</a><a href="Home.dc.html" style="color: inherit;">Terms</a><a href="Home.dc.html" style="color: inherit;">Privacy</a>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":2700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    return { cls: look[0], theme: look[1] };
+  }
+}
+</script>
+</body>
+</html>

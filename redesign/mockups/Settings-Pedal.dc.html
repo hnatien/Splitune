@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings · Keyboard and pedal</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh;">
+  <header style="height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--line-soft);">
+    <a href="Library.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune library">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 19px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 4px; margin-left: 12px;"><a class="navlink" href="Library.dc.html">Library</a><a class="navlink" href="Settings-Display.dc.html" aria-current="page">Settings</a></nav>
+    <div style="flex: 1;"></div>
+    <a class="btn pri" href="AddSong.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add song</a>
+  </header>
+
+  <div style="max-width: 1180px; margin: 0 auto; padding: 32px 24px 56px; display: flex; gap: 40px; flex-wrap: wrap;">
+    <nav aria-label="Settings" style="flex: 1 1 200px; max-width: 220px; display: flex; flex-direction: column; gap: 2px;">
+      <a class="navlink" href="Settings-Account.dc.html">Account</a>
+      <a class="navlink" href="Settings-Display.dc.html">Display &amp; practice</a>
+      <a class="navlink" href="Settings-Pedal.dc.html" aria-current="page">Keyboard &amp; pedal</a>
+      <a class="navlink" href="States.dc.html">About</a>
+    </nav>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 28px;">
+      <div><h1 class="h1">Keyboard &amp; pedal</h1><p class="muted" style="margin-top: 6px;">Control practice without taking your hands off the instrument. Pedals are saved on this device.</p></div>
+
+      <section class="card" aria-labelledby="wiz-title" style="padding: 24px; display: flex; gap: 28px; flex-wrap: wrap; align-items: center; border-color: var(--acc-line);">
+        <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 12px;">
+          <span class="eyebrow">Pedal setup · step 2 of 3</span>
+          <h2 id="wiz-title" class="h2">Now press your right pedal</h2>
+          <p class="muted">Left pedal: got it. It sends <span class="kbd">↑</span>, which most pedals send out of the box, so we won't use it for speed.</p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="badge ok"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px;"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Left · ↑</span>
+            <span class="badge acc"><span class="spin" style="width: 12px; height: 12px;"></span>Right · waiting</span>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 6px;"><button type="button" class="btn sm">Start over</button><button type="button" class="btn sm ghost">I only have one pedal</button></div>
+        </div>
+        <svg viewBox="0 0 260 150" width="260" height="150" role="img" aria-label="Two pedals, left one done, right one waiting">
+          <rect x="10" y="40" width="110" height="100" rx="16" fill="var(--s2)" stroke="var(--ok)" stroke-width="2"/>
+          <rect x="28" y="58" width="74" height="54" rx="10" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2"/>
+          <path d="M50 86l10 10 20-22" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="140" y="40" width="110" height="100" rx="16" fill="var(--s2)" stroke="var(--acc)" stroke-width="2"/>
+          <rect x="158" y="58" width="74" height="54" rx="10" fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="2" stroke-dasharray="6 5"/>
+          <text x="65" y="28" text-anchor="middle" font-size="13" fill="var(--tx2)" font-family="Instrument Sans, system-ui, sans-serif" font-weight="600">Left</text>
+          <text x="195" y="28" text-anchor="middle" font-size="13" fill="var(--acc-ink)" font-family="Instrument Sans, system-ui, sans-serif" font-weight="600">Right</text>
+        </svg>
+        <div style="flex: 1 1 100%; display: flex; flex-direction: column; gap: 8px;">
+          <span class="label">Step 3 will ask what they should do</span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 8px;">
+            <div class="card" style="padding: 10px 12px; background: var(--s2);"><span style="display: block; font-weight: 650; font-size: 14px;">Restart loop · Play/pause</span><span class="small faint">Recommended for most practice</span></div>
+            <div class="card" style="padding: 10px 12px; background: var(--s2);"><span style="display: block; font-weight: 650; font-size: 14px;">Not yet · Felt clean</span><span class="small faint">Rate passes with your foot</span></div>
+            <div class="card" style="padding: 10px 12px; background: var(--s2);"><span style="display: block; font-weight: 650; font-size: 14px;">Back a bar · Next bar</span><span class="small faint">Step through a tricky passage</span></div>
+          </div>
+          <span class="small faint">Holding a pedal for half a second does a second action, so two pedals can cover four.</span>
+        </div>
+      </section>
+
+      <section aria-labelledby="keys-title" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2 id="keys-title" class="h3" style="flex: 1;">Keys</h2>
+          <span class="small muted">Single-key shortcuts</span><span class="toggle on" role="switch" aria-checked="true" aria-label="Single-key shortcuts"></span>
+        </div>
+        <p class="small faint">Turn single keys off if you use speech input or switch control. Ctrl shortcuts keep working.</p>
+        <div class="card" style="padding: 4px 16px;">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 200px 150px 92px; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line-soft);">
+              <span style="font-weight: 600; font-size: 14px;">{{r.action}}</span>
+              <span style="display: flex; gap: 6px;"><sc-for list="{{r.keys}}" as="k" hint-placeholder-count="2"><span class="kbd">{{k}}</span></sc-for></span>
+              <span class="small muted">{{r.pedal}}</span>
+              <button type="button" class="btn sm ghost">Learn key</button>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section class="drop" aria-labelledby="test-title" style="padding: 20px; display: flex; align-items: center; gap: 16px;">
+        <svg class="i l faint" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+        <div style="flex: 1;"><h2 id="test-title" class="h3">Try a key or pedal here</h2><p class="small muted">Click here, then press. Last: <span class="kbd">PageDown</span> → Next bar</p></div>
+        <button type="button" class="btn">Reset to the defaults</button>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const R = [
+      ['Play or pause', ['Space', 'Enter'], 'Right pedal'],
+      ['Restart loop · back a bar', ['←', 'PageUp'], 'Left pedal'],
+      ['Next bar', ['→', 'PageDown'], '—'],
+      ['Slower by 5 %', [','], '—'],
+      ['Faster by 5 %', ['.'], '—'],
+      ['Felt clean', ['C'], 'Hold right pedal'],
+      ['Not yet', ['N'], 'Hold left pedal'],
+      ['Loop on or off', ['L'], '—'],
+      ['Mute your part', ['M'], '—'],
+      ['Next unsure spot', ['J'], '—'],
+      ['Command palette', ['Ctrl', 'K'], '—']
+    ];
+    const rows = R.map(([action, keys, pedal]) => ({ action, keys, pedal }));
+    return { cls: look[0], theme: look[1], rows };
+  }
+}
+</script>
+</body>
+</html>

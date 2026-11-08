@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>First run, where is your screen</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh; display: flex; flex-direction: column;">
+  <header style="height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--line-soft);">
+    <a class="btn ghost sm" href="Home.dc.html"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
+    <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 12px;">
+      <div style="display: flex; gap: 6px;" aria-hidden="true"><span class="dot" style="background: var(--acc);"></span><span class="dot" style="background: var(--acc);"></span><span style="width: 22px; height: 8px; border-radius: 4px; background: var(--acc);"></span><span class="dot" style="background: var(--line);"></span><span class="dot" style="background: var(--line);"></span></div>
+      <span class="small faint">Step 3 of 5</span>
+    </div>
+    <button type="button" class="btn ghost sm">Skip</button>
+  </header>
+
+  <main style="flex: 1; max-width: 1120px; width: 100%; margin: 0 auto; padding: 48px 24px; display: flex; flex-direction: column; gap: 32px;">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 640px;">
+      <h1 class="display" style="font-size: 48px;">Where's your screen?</h1>
+      <p class="muted" style="font-size: 18px;">We'll size chords and tab so you can read them from where you play. You can change this any time.</p>
+    </div>
+
+    <div role="radiogroup" aria-label="Screen distance" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px;">
+      <sc-for list="{{opts}}" as="o" hint-placeholder-count="3">
+        <button type="button" role="radio" aria-checked="{{o.on}}" class="card" style="padding: 18px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 14px; {{o.style}}">
+          <svg viewBox="0 0 200 90" width="100%" height="90" aria-hidden="true">
+            <path d="M10 82H190" stroke="var(--line)" stroke-width="2"/>
+            <circle cx="30" cy="34" r="10" fill="none" stroke="var(--tx2)" stroke-width="2"/>
+            <path d="M30 44V70M30 70l-8 12M30 70l8 12M30 52l14 8" fill="none" stroke="var(--tx2)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M44 62 H{{o.x}}" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4 4"/>
+            <rect x="{{o.x}}" y="{{o.y}}" width="{{o.w}}" height="{{o.h}}" rx="3" fill="none" stroke="var(--tx)" stroke-width="2"/>
+          </svg>
+          <span style="display: flex; flex-direction: column; gap: 4px;"><span class="h3">{{o.name}}</span><span class="small muted">{{o.hint}}</span></span>
+        </button>
+      </sc-for>
+    </div>
+
+    <section class="card" aria-labelledby="sample-title" style="padding: 24px; display: flex; gap: 32px; align-items: center; flex-wrap: wrap; background: var(--s1);">
+      <div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 12px;">
+        <h2 id="sample-title" class="h3">Can you read this from where you play?</h2>
+        <p class="small muted">Step back to your playing spot. If the numbers are hard to read, make them bigger.</p>
+        <label style="display: flex; flex-direction: column; gap: 8px; max-width: 360px;"><span class="label" style="display: flex; justify-content: space-between;"><span>Reading size</span><span class="num">110 %</span></span><input class="range" type="range" min="80" max="140" step="10" value="110"></label>
+      </div>
+      <div aria-label="Sample: chords A minor and F, tab 0 2 2 1 0" style="flex: 1 1 420px; display: flex; gap: 40px; align-items: flex-end; justify-content: center; padding: 10px; --paper: var(--s1);">
+        <div style="display: flex; gap: 26px;"><span style="font-size: 64px; font-weight: 650; letter-spacing: -0.02em; line-height: 1;">Am</span><span style="font-size: 64px; font-weight: 650; line-height: 1;">F</span></div>
+        <div class="strings" style="width: 220px; height: 121px; background: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 24px);">
+          <span class="fn" style="left: 12%; top: 96.5px; font-size: 22px; line-height: 24px;">0</span>
+          <span class="fn" style="left: 32%; top: 72.5px; font-size: 22px; line-height: 24px;">2</span>
+          <span class="fn" style="left: 52%; top: 48.5px; font-size: 22px; line-height: 24px;">2</span>
+          <span class="fn" style="left: 72%; top: 24.5px; font-size: 22px; line-height: 24px;">1</span>
+          <span class="fn" style="left: 92%; top: 0.5px; font-size: 22px; line-height: 24px;">0</span>
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: 12px;">
+      <a class="btn pri lg" href="Main.dc.html">Continue</a>
+      <button type="button" class="btn lg ghost">Skip for now</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const O = [
+      ['Desk', 'Laptop or desktop, about half a metre away', 74, 44, 46, 30, false],
+      ['Music stand', 'Tablet on a stand, about 75 cm away', 118, 30, 30, 40, true],
+      ['Floor', 'Phone on the floor or a chair, a metre or more', 168, 64, 16, 10, false]
+    ];
+    const opts = O.map(([name, hint, x, y, w, h, on]) => ({ name, hint, x, y, w, h, on: on ? 'true' : 'false', style: on ? 'border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); background: var(--acc-soft);' : '' }));
+    return { cls: look[0], theme: look[1], opts };
+  }
+}
+</script>
+</body>
+</html>

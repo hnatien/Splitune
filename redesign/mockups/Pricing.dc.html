@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pricing</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="min-height: 100vh;">
+  <div role="status" style="background: var(--acc-soft); color: var(--acc-ink); text-align: center; padding: 8px 16px; font-size: 14px; font-weight: 600;">Demo mode — no real charges. Payments are simulated.</div>
+  <header style="max-width: 1240px; margin: 0 auto; height: 72px; padding: 0 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+    <a href="Home.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tx);" aria-label="Splitune home">
+      <svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span style="font-weight: 700; font-size: 20px; letter-spacing: -0.02em;">splitune</span>
+    </a>
+    <div style="flex: 1;"></div>
+    <nav aria-label="Site" style="display: flex; gap: 4px; align-items: center;"><a class="navlink" href="Home.dc.html#how">How it works</a><a class="navlink" href="Pricing.dc.html" aria-current="page">Pricing</a><a class="navlink" href="SignIn.dc.html">Sign in</a></nav>
+  </header>
+
+  <main style="max-width: 1040px; margin: 0 auto; padding: 40px 24px 72px; display: flex; flex-direction: column; gap: 40px;">
+    <div style="text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center;">
+      <h1 class="display" style="font-size: 56px;">Every practice tool is free</h1>
+      <p class="muted" style="font-size: 18px; max-width: 36em;">Plus adds more full analyses each month: your part isolated, a mixer for every stem, and tab.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 20px;">
+      <section class="card" aria-labelledby="free-title" style="padding: 28px; display: flex; flex-direction: column; gap: 18px;">
+        <div><h2 id="free-title" class="h2">Free</h2><p class="muted" style="margin-top: 4px;">A real practice app, not a trial.</p></div>
+        <div class="num" style="font-size: 44px; font-weight: 600;">No charge</div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--ok);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>1 Welcome analysis, full quality</li>
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--ok);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>5 Lite analyses a month: beat and chords</li>
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--ok);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Loops, speed ladder, count-in, mixer, fixes</li>
+        </ul>
+        <div style="flex: 1;"></div>
+        <a class="btn lg block" href="Onboarding.dc.html">Try an example song</a>
+      </section>
+      <section class="card" aria-labelledby="plus-title" style="padding: 28px; display: flex; flex-direction: column; gap: 18px; border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc);">
+        <div style="display: flex; align-items: flex-start; gap: 10px;"><div style="flex: 1;"><h2 id="plus-title" class="h2">Plus</h2><p class="muted" style="margin-top: 4px;">For learning a new song every week.</p></div>
+          <div class="seg" role="radiogroup" aria-label="Billing period"><button type="button" role="radio" aria-checked="true" aria-pressed="true">Monthly</button><button type="button" role="radio" aria-checked="false" aria-pressed="false">Yearly</button></div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px;"><span class="num" style="font-size: 44px; font-weight: 600;">$9.99</span><span class="muted">a month</span><span class="small faint">· or $79.99 a year</span></div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>15 full analyses a month</li>
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Lite without a monthly limit</li>
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>A second instrument on the same song</li>
+          <li style="display: flex; gap: 10px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--acc-ink);"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Your songs go first in the queue</li>
+        </ul>
+        <div style="flex: 1;"></div>
+        <a class="btn pri lg block" href="SignIn.dc.html">Get Plus</a>
+        <p class="small faint" style="text-align: center;">Cancel anytime in one tap. Failed analyses never count.</p>
+      </section>
+    </div>
+
+    <section aria-labelledby="compare-title" style="display: flex; flex-direction: column; gap: 14px;">
+      <h2 id="compare-title" class="h3">Compare</h2>
+      <div style="overflow-x: auto;">
+        <div style="min-width: 560px; font-size: 15px;">
+          <div class="small faint" style="display: grid; grid-template-columns: minmax(0, 1fr) 180px 180px; padding: 10px 0; font-weight: 600;"><span>Feature</span><span>Free</span><span>Plus</span></div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 180px 180px; padding: 12px 0; border-top: 1px solid var(--line-soft);"><span>{{r.f}}</span><span class="muted">{{r.a}}</span><span>{{r.b}}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const R = [
+      ['Loops, clips and the speed ladder', 'Included', 'Included'],
+      ['Slow down to 25 % without changing pitch', 'Included', 'Included'],
+      ['Count-in, metronome and beat lights', 'Included', 'Included'],
+      ['Mixer, chords, tab and fixes', 'Included', 'Included'],
+      ['Keyboard, pedal and Stand view', 'Included', 'Included'],
+      ['Full analyses', '1 Welcome analysis', '15 a month'],
+      ['Lite analyses', '5 a month', 'No monthly limit'],
+      ['Export and offline downloads', 'Coming soon', 'Coming soon']
+    ];
+    const rows = R.map(([f, a, b]) => ({ f, a, b }));
+    return { cls: look[0], theme: look[1], rows };
+  }
+}
+</script>
+</body>
+</html>

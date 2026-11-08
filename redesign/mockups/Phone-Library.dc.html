@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone library</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="splitune.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400..700&amp;family=Space+Grotesk:wght@400..700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{cls}}" data-theme="{{theme}}" style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden;">
+  <header style="height: 56px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 16px;">
+    <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--acc)"/><path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke="var(--on-acc)" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span style="font-weight: 700; font-size: 18px; flex: 1;">Library</span>
+    <button type="button" class="ib" aria-label="Search" style="width: 44px; height: 44px;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    <button type="button" class="ib box" aria-label="Account menu" style="width: 40px; height: 40px; border-radius: 50%; font-weight: 700; color: var(--tx); font-size: 13px;">TH</button>
+  </header>
+
+  <main style="flex: 1; min-height: 0; overflow: hidden; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 16px;">
+    <a class="card" href="Phone-Practice.dc.html" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: inherit; background: var(--s2);">
+      <span class="eyebrow">Pick up where you left off</span>
+      <span style="display: flex; align-items: center; gap: 12px;">
+        <span style="flex: 1; min-width: 0;"><span class="h3" style="display: block;">Northbound Lights</span><span class="small muted">Chorus riff · bars 25–28 · ladder at 75 %</span></span>
+        <span class="play" style="width: 52px; height: 52px;" aria-hidden="true"><svg class="i l fill" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
+      </span>
+    </a>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span class="small faint" style="width: 74px;">This week</span>
+      <div style="display: flex; gap: 8px; flex: 1;" aria-label="Practised on 4 of the last 7 days">
+        <sc-for list="{{week}}" as="d" hint-placeholder-count="7"><span style="width: 22px; height: 22px; border-radius: 50%; {{d}}"></span></sc-for>
+      </div>
+      <span class="small num muted">1 h 20</span>
+    </div>
+
+    <div style="display: flex; gap: 6px; overflow: hidden;">
+      <button type="button" class="chip on" style="height: 36px;">All</button><button type="button" class="chip" style="height: 36px;">Guitar</button><button type="button" class="chip" style="height: 36px;">Bass</button><button type="button" class="chip" style="height: 36px;">Piano</button><button type="button" class="chip" style="height: 36px;">Drums</button>
+    </div>
+
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px;">
+      <sc-for list="{{songs}}" as="s" hint-placeholder-count="6">
+        <li>
+          <a class="row-item" href="Phone-Practice.dc.html" style="padding: 10px 4px; min-height: 60px;">
+            <span class="tile" style="background: {{s.color}};">{{s.ab}}</span>
+            <span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.title}}</span><span class="small faint" style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.meta}}</span></span>
+            <span class="{{s.badgeCls}}">{{s.status}}</span>
+          </a>
+        </li>
+      </sc-for>
+    </ul>
+  </main>
+
+  <nav aria-label="Main" style="flex: none; height: 76px; border-top: 1px solid var(--line-soft); background: var(--s1); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; padding: 0 12px 10px;">
+    <a href="Phone-Library.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--tx); text-decoration: none; font-size: 12px; font-weight: 650;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Library</a>
+    <a href="Phone-Add.dc.html" class="btn pri" style="height: 48px; border-radius: 24px; justify-self: center; padding: 0 20px;"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add song</a>
+    <a href="Settings-Display.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--tx3); text-decoration: none; font-size: 12px; font-weight: 650;"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["Night Rehearsal","Daylight","Annotated Score","Pedalboard"],"default":"Night Rehearsal"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const LOOKS = { 'Night Rehearsal': ['app', 'dark'], 'Daylight': ['app', 'light'], 'Annotated Score': ['app dir-b', 'light'], 'Pedalboard': ['app dir-c', 'light'] };
+    const look = LOOKS[this.props.look ?? 'Night Rehearsal'] || LOOKS['Night Rehearsal'];
+    const week = [0, 18, 0, 31, 7, 0, 24].map((m) => (m === 0 ? 'border: 2px solid var(--line);' : 'background: var(--acc); opacity: ' + (0.45 + m / 60).toFixed(2) + ';'));
+    const S = [
+      ['Paper Boats', 'Isolating your part · ~4 min', 'var(--st-gtr)', 'Gt', 'Analysing', 'badge acc'],
+      ['Low Tide Waltz', 'Bass · 9 days ago · best 90 %', 'var(--st-bass)', 'Bs', 'Ready', 'badge ok'],
+      ['Copper Sky', 'Piano · 12 days ago · best 55 %', 'var(--st-keys)', 'Pn', 'Ready', 'badge ok'],
+      ['Slow Engine', 'Drums · stems used a backup', 'var(--st-drm)', 'Dr', 'Partial', 'badge'],
+      ['Wildflower Road', 'Starts when the machine is on', 'var(--st-gtr)', 'Gt', 'Queued', 'badge'],
+      ['Night Market', 'Guitar · Lite analysis', 'var(--st-gtr)', 'Gt', 'Chords', 'badge']
+    ];
+    const songs = S.map(([title, meta, color, ab, status, badgeCls]) => ({ title, meta, color, ab, status, badgeCls }));
+    return { cls: look[0], theme: look[1], week, songs };
+  }
+}
+</script>
+</body>
+</html>
