@@ -33,8 +33,9 @@ What is built, as of **2026-10-29**. Details, verification and open items for ea
 | s31a | Redesign: Night Rehearsal specs (docs 26–28 rewritten; 12, 21 and the UI rule updated) | Done | Owner may revisit the deviation register (26 §4.9) | Step s31a |
 | s31b | Redesign: step prompts s32–s45 | Done | — | Step s31b |
 | s31c | Redesign: mockup harness (reference renders and fidelity probe) | Done | — | Step s31c |
-| s32 | Redesign: tokens, fonts, practice perf baseline | Parked | Draft perf spec only on `impl/s32-tokens-fonts` (`cb8fcd3`); resume on the owner's PC (`redesign/orchestrator/handoff.md`) | Redesign run paused |
-| s40a | Redesign: keep all separated stems (backend) | Parked | Unfinished, untested WIP on `impl/s40a-all-stems` (`ac460c6`); G3 on the owner's PC | Redesign run paused |
+| s32 | Redesign: tokens, fonts, practice perf baseline | In progress | Built on `impl/s32-tokens-fonts` (perf baseline `8bd9050`, tokens, fonts, Storybook); an interrupted last round is left (prompt's "Resume here"). Owner: legibility check | Step s32 (in progress) |
+| s40a | Redesign: keep all separated stems (backend) | In progress | Built on `impl/s40a-all-stems` with the review's cache-key fix; re-verification left, then the PC re-measurement, G3 and merge after `impl/29-separation-improvements` is in `dev` (D16) | Step s40a (in progress) |
+| s41a | Redesign: sections backend (allin1 stage + part fallback) | In progress | Built on `impl/s41a-sections` (`d944b61`); review fixes left, then G3 (island install, weights, timing, 3 songs by ear, `eval:regression`) before merge | Step s41a (in progress) |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.

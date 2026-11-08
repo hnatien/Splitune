@@ -975,7 +975,6 @@ Branch `impl/16-compat-a11y-hardening` from `dev` (`67721ac`). On the owner's re
 
 **Release gate (24 §6 / 18 §7)** — automated parts green on Playwright's three engines + 4 device emulations: import → analysis → practice (loop at 70 %, count-in, mixer, tab cursor sync), billing checkout, account deletion; PR checks; nightly matrix (as run here); accessibility checks; no open critical security findings. **Open, need devices or the owner:** real-device audio checklist (below), real Safari macOS/iOS sign-off (Playwright's WebKit is not Safari), Samsung Internet, VoiceOver/TalkBack pass, Bluetooth offset, page-turner hardware, PWA install on iOS/Android, ML regression on the pinned pipeline (not run this step), usability round (15a), low-privilege worker account (step 17).
 
-
 **Real-device checklist (deliverable 3): not run — needs the owner's devices.** I have only this Mac (macOS 27, Apple Silicon) and Playwright's engines; no iPhone/iPad, Android, real Safari or Firefox desktop session with audio, page turner or Bluetooth headphones. Serve over HTTPS for phones (Tailscale serve or Caddy + mkcert, doc 25), open `/start` (example song) and a song of your own, and fill in:
 
 | # | Device · OS · browser (versions) | Loop seam (100 % / 70 %) | 0.5× quality | Count-in on the downbeat | Sound delay (Bluetooth: cursor vs sound, value that lines up) | Interruption (call / Siri) → "Tap to resume" | Pedal keys (page turner) | PWA install / Home Screen | Keep-screen-on tip or screen stays on | VoiceOver (iOS/macOS) / TalkBack | Notes |
@@ -1428,7 +1427,6 @@ Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run 
 
 **Effect on P2p:** 4 of 81 songs gated (two roomy/phone uprights, a doubled band part, one BabySlakh electric piano), mean onset F1 0.516; no song with onset F1 ≥ 0.9.
 
-
 ## 2026-10-28 — Step 25: Drums (in progress)
 Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s25-drums`. Its own CUDA venv is `D:/venvs/s25-ml`; the shared `services/ml/.venv` is untouched.
 
@@ -1821,7 +1819,7 @@ Owner request: sign-in and sign-up with only a username and a password, no Mailp
 - **Verification:** `pnpm lint` exit 0; `pnpm --filter @splitune/{api,web,node-worker,contracts,db} typecheck` clean; `pnpm --filter @splitune/api test` 212 passed (after fixing the new delete assertion to 202); `pnpm --filter @splitune/db test` 161 passed; `pnpm --filter @splitune/web test` 214 passed; `pnpm contracts:check` and `pnpm db:check` clean; `vitest run --project storybook` on the auth, settings, shell and onboarding stories: 112 passed, `Guide`/`Guide Dark` time out in WebKit like the other audio-playing practice stories on this Windows machine. `pnpm --filter @splitune/node-worker test`: the digest passes; `pg-dump` fails because this machine has no `pg_dump` binary. Playwright e2e not run (needs the full stack with workers).
 
 ## 2026-11-08 — Step s31c: Mockup harness (Night Rehearsal redesign)
-Redesign orchestrator step s31c (`redesign/orchestrator/prompt.md` §5), branch `impl/s31c-mockup-harness`.
+Redesign step s31c, branch `impl/s31c-mockup-harness`.
 - **Built:** `scripts/redesign/` renders the 25 `redesign/mockups/*.dc.html` boards without the canvas runtime. `shim.js` stands in for the canvas `support.js` (`<x-dc>`, `<helmet>`, `<sc-for>`, `<sc-if>`, `{{holes}}`, `renderVals()`, the `look` prop) and fails loudly on an unknown tag or an unresolved hole. `render-mockups.mjs` writes full-page reference PNGs (Night Rehearsal and Daylight at 1440/1180/390; fixed boards at their own width) and a manifest (fonts, overflow) to the git-ignored `redesign/.renders/`. `probe.mjs` (CLI and module) returns the aria snapshot, role counts, bounding boxes and computed styles (sRGB-normalised colours) for a board or any URL. On Storybook it sets the `appearance` global, on the app it sets `splitune.display`, and it reports the `data-appearance` actually in effect. It never waits for network idle, and it exits 1 with an `errors` field on a bad status, page or request errors, or a theme that doesn't match.
 - **Review rework:** URL mode now themes, waits and fails the way the app does (review M1–M3). Fidelity fixtures pin the shim's output for `sc-if` branches, `sc-for` shadowing, nested holes and `?look=` (M4). Added probe fields margin, fontStyle, textTransform, textAlign and boxShadow, plus `--touch` and `--motion`.
 - **Notes for later steps:** at 390 px the desktop-only boards (Main, Practice-*) are squeezed desktop layouts, not phone designs. The manifest flags them with `overflowX`, and phone QA compares against the Phone-* boards only. The mockup fonts load from Google Fonts, so rendering needs network access.
@@ -1833,7 +1831,7 @@ Redesign orchestrator step s31c (`redesign/orchestrator/prompt.md` §5), branch 
   - After the merge: web typecheck clean and web unit tests 214 passed. `test:stories` and the build were not re-run because no web file changed.
 
 ## 2026-11-08 — Step s31a: Redesign specs (Night Rehearsal)
-Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch `impl/s31a-specs`.
+Redesign step s31a, branch `impl/s31a-specs`.
 - **Built:** docs 26, 27 and 28 are rewritten in place for Night Rehearsal with their section numbers kept, so code comments citing "26 §5" still point at the right topic. They cover:
   - the theme model: `dark` = Night Rehearsal (the default), `light` = Daylight, `stage` = Night with the stand reading sizes; the picker shows three cards and `stage` stays a valid id;
   - OKLCH tokens with an sRGB-clamped amber, contrast pairs (§4.8), the amber-use list (§4.5) and a deviation register (§4.9, V1–V17);
@@ -1843,15 +1841,15 @@ Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch 
   - motion and confidence encoding (dashed outline plus "?" and frequency wording; calibration check C1);
   - the component inventory, the IA and route map, every screen and state, and the copy catalogue (27 §5.6 changed/new keys, §5.7 every other change by owning step);
   - design QA measured against the mockup renders (28 §5.1) and a perf gate (28 §3.1).
-- **Also updated:** doc 12 (practice layout) and doc 21 (V-feature UI notes). The UI rule in `CLAUDE.md`, `AGENTS.md` and `docs/steps/00-shared-context.md` now names Night Rehearsal. The budget line reads 318.7 KB gzip of 320 KB, about 1.3 KB left, measured on impl/redesign at 8d6a3f6. The rest: the Designer row in `docs/README.md`, row 26 in `docs/specs/README.md` (`assets/design/reference.html` marked superseded), and one wording line each in docs 02 and 10.
+- **Also updated:** doc 12 (practice layout) and doc 21 (V-feature UI notes). The UI rule in `CLAUDE.md`, `AGENTS.md` and `docs/steps/00-shared-context.md` now names Night Rehearsal. The budget line reads 318.7 KB gzip of 320 KB, about 1.3 KB left, measured at 8d6a3f6. The rest: the Designer row in `docs/README.md`, row 26 in `docs/specs/README.md` (`assets/design/reference.html` marked superseded), and one wording line each in docs 02 and 10.
 - **Review:** the first review failed the draft: it lowered the main practice targets to 52 px and halved the reading sizes. Round 1 restored 64 px and today's tested floors, fixed the `--primary` text pairs (now `--primary-ink`, with an old → new table) and restored the §4.8 table that contrast.test.ts cites. Round 2 added the phone fit rule and the wash paint order (the loop band sits under the waveform bars) and made the size values consistent across docs.
 - **By design for later steps:** some mockup values fail the existing minimums: tab and staff lines, field borders, Daylight amber marks and focus ring, piano keys, Night danger text, and the stem palette (the mockup's worst pair is 1.9 ΔE2000; the retuned palette's is 12.4). Doc 26 corrects them, and no minimum is lowered. Reading-size literals rise (for example `--read-chord-current` Desk 32 → 112 px), and s32 updates those token-test values.
 - **Owner calls:** taken under the owner's pre-approval of G1. D2: 3 theme cards. D3: the ladder steps up after 3 clean passes. D4: Stand view is the default on tablets. D5: the brighter lines and retuned stems. The rest of the deviation register is listed for the owner to revisit.
 - **Verification:** `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean, every relative link resolves and gitleaks is clean. The changes are Markdown only, so no build or tests were run.
 
 ## 2026-11-08 — Step s31b: Redesign step prompts
-Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch `impl/s31b-step-prompts`.
-- **Built:** 16 step prompts in the house format: s32–s39, s40a/b, s41a/b and s42–s45 in `docs/steps/`. Each prompt has its owned globs, hard deps, gates and effort as in the plan table, a "What exists" section checked against the code, acceptance criteria with exact commands, and stop points. `docs/steps/README.md` gains rows s31a–s45 and a "Redesign steps" section: steps branch from `impl/redesign`, the orchestrator merges them, plus the gates and lanes.
+Redesign step s31b, branch `impl/s31b-step-prompts`.
+- **Built:** 16 step prompts in the house format: s32–s39, s40a/b, s41a/b and s42–s45 in `docs/steps/`. Each prompt has its owned globs, hard deps, gates and effort as in the plan table, a "What exists" section checked against the code, acceptance criteria with exact commands, and stop points. `docs/steps/README.md` gains rows s31a–s45 and a "Redesign steps" section with the gates and the order.
 - **Facts checked in the code:**
   - The speed trainer is behind `v1.speed_trainer`, and the web reads neither the trainer nor `me.flags`.
   - `GET /v1/progress` is unused and has no session data, so s39 needs an additive contract.
@@ -1859,11 +1857,11 @@ Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch 
   - Separation keeps the target plus drums/bass and a mix-minus.
   - The next migration is `0016`, and Web Push doesn't exist.
   - `impl/29-separation-improvements` doesn't exist on this machine or on origin, so s40a builds on the current tip, and reconciling it is an owner action.
-- **Ownership decided by the orchestrator** (ledger D8–D14):
+- **Ownership decided** (D8–D14, now in `docs/steps/00-shared-context.md`):
   - Files in `apps/web/app/ui/` are owned per file after s33. `story-fixtures.ts` goes to s33.
   - s35 owns `lib/display-store.ts` and `features/practice/banners.tsx`.
   - Each existing e2e spec has one owner: practice → s35; onboarding, account, billing, fallbacks and a11y → s36; journey → s34. A file becomes available to another step only after its owner merges.
-  - The orchestrator union-merges `en.json`, the `copy-keys.test.ts` CATALOGUE and additive `e2e/helpers.ts` changes.
+  - `en.json`, the `copy-keys.test.ts` CATALOGUE and additive `e2e/helpers.ts` changes are union-merged.
   - s33 owns `scripts/check-ui-tokens.mjs`: it adds the 28 §3 rules scoped to `ui/**`, and s45 widens the scope.
   - s32 also writes the perf baseline (`e2e/perf-practice.spec.ts`, `perf-baseline.json`, desktop and 1180×820 tablet).
   - s37 waits for s36. s41a and s44 are never in flight together.
@@ -1874,9 +1872,9 @@ Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch 
   - The glob overlap over the 33 parallel pairs finds only the union-merged hot files and the one-at-a-time contracts pairs.
   - gitleaks is clean.
 
-## 2026-11-08 — Redesign run paused and handed off to the owner's PC
-The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started on the owner's Mac and was paused there on the owner's instruction. Its state, the owner's later instructions and the decisions register D1–D15 are in `redesign/orchestrator/handoff.md`.
-- **Merged:** s31a (specs), s31b (step prompts) and s31c (mockup harness), via `impl/redesign`. G1 closed under the owner's pre-approval.
+## 2026-11-08 — Redesign paused on the Mac and moved to the owner's PC
+The Night Rehearsal redesign started on the owner's Mac and was paused there on the owner's instruction. Its decisions (D1–D15) are now in `docs/steps/00-shared-context.md` ("Redesign steps").
+- **Merged:** s31a (specs), s31b (step prompts) and s31c (mockup harness) into `dev`. G1 closed under the owner's pre-approval.
 - **Parked on pushed branches, unverified:**
   - `impl/s32-tokens-fonts` (`cb8fcd3`): only a draft of `apps/web/e2e/perf-practice.spec.ts`, never run; no tokens changed.
   - `impl/s40a-all-stems` (`ac460c6`): unfinished all-stems separation edits and tests, never run.
@@ -1886,3 +1884,135 @@ The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started
   - web unit tests: 214 passed;
   - `test:stories`: 988 passed (the first run failed on Vite dependency re-optimisation; the rerun was green);
   - practice-route JS: 318.7 KB gzip of 320.0 KB.
+
+## 2026-11-08 — Redesign steps moved to the normal step flow
+- **Setup.** The owner dropped the multi-agent setup and removed its files. The redesign steps branch from `dev` and run one at a time like every other step. Their shared decisions (D1–D21), owner gates, PC setup and known failures are in `docs/steps/00-shared-context.md` ("Redesign steps"). The design-system research moved to `redesign/research/design_system_migration.md`.
+- **PC baseline at `9b5bf01`:**
+  - lint, web typecheck, web unit (214), build + budget (318.7 KB of 320) and css-floor pass;
+  - `test:stories` has 80 WebKit-only failures (77 practice timeouts; import "Record Tab"; onboarding "Guide"/"Guide Dark" after a page crash);
+  - "Screen May Lock" also fails after 20:00 in both browsers (the evening "Try Stage" hint), carried to s35.
+- **Owner decisions:**
+  - D16: s40a sets `impl/29-separation-improvements` aside until it is in `dev`;
+  - D17: gate pre-approvals;
+  - D19: sections design;
+  - D20: font gaps;
+  - D21: steps one at a time.
+- **State:** s32, s41a and s40a are in progress (entries below). The other steps haven't started, and s44 is deferred.
+
+## 2026-11-08 — Step s32: tokens, fonts and the practice perf baseline (in progress)
+Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), from the redesign docs at `9b5bf01`. Not merged; the prompt's "Resume here" lists the interrupted last round (story values, the piano chart token, `e2e/security.spec.ts`'s font path).
+- Perf baseline first: apps/web/e2e/perf-practice.spec.ts (Chromium, CDP CPU 4×, desktop 1440×900 and tablet 1180×820 touch; LoAF over 20 s of looped playback with count-in, forced style/layout from a CDP trace over 10 s of steady playback, Event Timing p75 for play/pause, loop nudge, speed −/+ buttons and a mixer fader key step, N = 12) recorded on the owner's Windows PC (Ryzen 5 7600, Chromium 156.0.8078.4) from a447ab3, the unchanged Music Stand screen, committed alone in 8bd9050 as apps/web/e2e/perf-baseline.json (3 runs per context, median run kept, spread recorded; the owner's GPU separation eval was running). Every p75 ≤ 72 ms; steady playback has no LoAF but ~60 forced layouts a second from the alphaTab view chunk.
+- packages/ui-tokens now implements doc 26: Night Rehearsal on :root/dark/stage (stage = ×1.25 reading scale), Daylight on light, each × increased contrast, subtree theming on any [data-appearance], §3 roles and §4.7 component tokens (incl. --tile-foreground, --read-chord-sheet/-next, --target-stand), §6.2 browse scale, §6.3 reading sizes, §9 radius 4–22, §10 motion; data-score and the Music Stand primitives removed. CONTRAST_PAIRS mapped per §4.6 (81 → 113 pairs, none dropped, no minimum moved); token tests (1,329) check every pair in six contexts, the §4.6/§4.8 tables to ±0.1, translucent washes, gamut, CVD ≥ 12 ΔE2000 and naming. BACKGROUND_HEX = { light: #f8f5f1, dark: #110e0b }; manifest and theme-color follow (Night default).
+- Fonts: Instrument Sans 1.000 (38,192 B, preloaded) and JetBrains Mono 2.304 (35,704 B) subset reproducibly by scripts/fonts/subset.sh (wght 400–700, every layout feature, §6.1 code points); Inter removed; metric-matched fallbacks (scripts/fonts/fallback-metrics.py); scripts/fonts/fonts.test.mjs proves tnum/fixed-pitch, code points and the 80 KB preload; Foundations/Fonts story proves readouts keep their width in the browser. U+202F is mapped to each family's no-break space (missing upstream); Instrument Sans lacks 12 Latin-1 code points upstream (pinned).
+- Storybook: Appearance Night Rehearsal / Daylight / Stage / Side by side, Contrast, Density, Distance, Motion, Pointer, Reading font; Score removed.
+- Budget 326,389 → 326,398 B gzip (318.7 KB of 320); CSS −341 B gzip; css-floor clean.
+- test:stories: the 80 baseline WebKit failures plus 25 caused by doc 26 values in files s32 doesn't own (24 Music Stand assertions in app/ui stories, the piano chart at the 112 px current-chord size) and 2 evening-only ("Try Stage" hint after 20:00); the last round moves them to doc 26 values.
+- Next steps need to know: s35 moves tab digits/readouts to font-reading-mono, chart chord names to text-read-chord-sheet and the waveform ruler off Inter; s33 sets DEFAULT_DISPLAY to dark; owner legibility check queued (Foundations/Fonts › Legibility).
+
+## 2026-11-08 — Step s41a: sections backend (in progress)
+Branch `impl/s41a-sections` from the redesign docs at `9b5bf01`, worktree `.claude/worktrees/s41a-sections`, HEAD `d944b61`. Own CPU venv; the shared ML venv untouched; no weights fetched.
+
+**Owner decisions (Stop point 1, 2026-11-08)**
+- Q1: allin1 through the fork **all-in-one-infer** @ `566f96c`, with madmom-infer @ `a9ed04e` and demucs-infer @ `ffe0080`, pinned by full SHA. Upstream allin1 1.1.0 needs NATTEN's removed 1-D ops.
+- Q2: the decoded mixture through allin1's own htdemucs.
+- Q3: no allin1 job in Lite; finalize's fallback gives Lite "Part A/B/C". This deviates from 06 §2's Lite row.
+- Q5: no contract change. Fallback segments use `label: unknown` and ids `part-a1`, `part-b1`, `part-a2`… (`/^part-([a-z]+)(\d+)$/`).
+- Q7: no Isophonics evaluation.
+- Q8: `sections` hard on decode and beats, soft on stem_post, GPU slot.
+- Q4: (a), the fallback is written in finalize.
+
+**Built**
+- **music-core `sections/novelty.ts`** (CLI `sections`, 4 goldens).
+  - Downbeat bars described by beat-slot chord classes. A dynamic-programming cut into parts that each repeat a 1–8-bar unit (part, unit, mismatch and partial-unit costs).
+  - Letters reused for similar parts (≥ 0.75). Silent edges join their neighbours.
+  - No parts without chords or with a single part.
+  - The Foote / bag-of-chords novelty in the plan was dropped after it misplaced boundaries on the synthetic forms.
+- **`islands/legacy`** (own lock, 112 packages, torch 2.14.1 cpu / cu126).
+- **`stage_sections`.**
+  - `snap.py`: label map, `start` / `end` joined, nearest-downbeat snapping, collapse and `min_bars` joins.
+  - `allin1.py`: lazy library through a Protocol, one warm session. Weights verified first; htdemucs from `ML_MODELS_DIR/allin1` through demucs-infer's checkpoint runtime as allin1's stem provider; no MPS, so CPU on the Mac; `empty_cache` after each run.
+  - `stage.py`: params from `config/sections.personal.yaml` plus the beats hash → cache key.
+- **Registration and weights.** `stages.py` registration (legacy, gpu, 360 s, `failure_fallback: sections_novelty`). Register record `allin1` (tier red, about 95 MB) and a `fetch_models.py allin1` target.
+- **Pipeline.** The full graph gains `sections`. finalize reads it and has the same key as an optional output.
+- **finalize.** Writes the fallback when the stage's artefact is missing (stage failed, or Lite). Sections never change done / partial. Requests planned before the change, without a `sections` output, stay valid.
+- **Spec notes.** 06 (sections row and notes), 07 (module map), 21 V3 State, packages/db README.
+
+**Verification**
+- music-core: 195/195. api: 214/214 twice in a row, after moving `library.test.ts`'s stand-in stage from `sections` to `lyrics` (the mock pipeline now runs `sections`). node-worker: 42/43; pg_dump is missing on the PC (environment).
+- contracts:check up to date. `eval:regression --smoke`: PASS, with `SPLITUNE_DATASETS_DIR=D:/datasets`.
+- ruff clean. pyright: 5 pre-existing errors in `test_guitab.py`.
+- pytest `stage_sections`: 15 passed, 1 skipped. Full pytest: 341 passed, 4 pre-existing failures (`test_recovery` ×2, `test_stem_post` ×2).
+
+**Known gaps and next**
+- G3 (owner): install and import the island, fetch the weights, run the `models` test, time it on both machines (Stop point 2 ~30 % rule; fallback-only path documented), check 3 songs by ear, run the full `eval:regression` on the GPU.
+- Follow-ups:
+  - `scripts/setup.mjs` and `audit.mjs` for `islands/legacy`;
+  - the web's `stages.ts` labels `sections` "Other", and the ETA goes away until `sections` has timings (s41b / s35).
+- s41b reads `sections.json` (allin1 labels or `part-*` fallback ids).
+- An independent review found no high-severity problem. Its open fixes (timeout retries, an invalid `sections.json` failing finalize, a queue-level failing-job test, the fallback's sample rate and downbeats, two spec lines, the G3 test fixture) are listed in the prompt's "Resume here"; three web follow-ups are in s41b's prompt.
+
+## 2026-11-08 — Step s40a: all stems, backend (in progress)
+Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action after impl/29 is in `dev`. An independent review found a stem_post cache collision between learners, fixed in `4c1def6`.
+
+**Built:**
+- `config/separation.personal.yaml` `keep: [bass, drums, guitar, piano, vocals, other]`. Every output of the run that made the learner's stem is kept, unless the tagger is near-certain the instrument is absent (`keep_min_prob` 0.01 unchanged). The tagger has no "other" class, so "other" is never vetoed. Two-stem vocals heads have no extras: their "other" is the mix-minus.
+- `stem_post` writes one isolated stem per kept output (`instrument` set, "other" too).
+  - It leaves an **empty extra** out of stems.json: active fraction < 2 % or energy ratio < 0.001, so a part under ≈ 4.8 s of a 4-minute song isn't encoded. The extra stays in presence.json, and the target and the mix-minus are always listed.
+  - Empty extras are found by instrument, so impl/29's `provider` tuple field merges cleanly (trial merge: one docstring conflict left in `separate.py`).
+- **stem_post's cache key now carries the target, each raw stem's role and the mix-minus mode.**
+  - With every output kept, learners of one SW-headed song share byte-identical raw stems, and the old key (`name:sha256` only) let a bass analysis reuse a guitar analysis's stems.json (`mix_minus_guitar`).
+  - The collision already existed for bass↔drums before s40a. Two new tests cover it.
+- `eval/all_stems.py` (run/export for G3) now:
+  - warms each pass's first model;
+  - reports separate and stem_post time before → after, the tagger's state, and the isolated extra most correlated with the learner's stem;
+  - adds the MoisesDB synth-keys window `765d5131-piano`;
+  - follows `SPLITUNE_DATASETS_DIR`.
+- 06 (§4 "Request one target", `separate` and `stem_post` notes), the 05 `empty` comment and the `stems.ts` comment (no schema change) describe the new behaviour. The `stems.json` fixture holds drums, guitar, other and `mix_minus_guitar` (bass, piano and vocals are empty extras), so the bass stories get no mismatched mixer.
+- Confirmed that the API plans only `notes.<learner instrument>`, so notes always reads the target.
+
+**Impact (estimate):**
+- **R2:** inside the free tier (10 GB-month, 1 M Class A, 10 M Class B; pricing page updated 2026-10-30).
+  - AAC ≈ 4.85 MB per stem per 4 min (PC ffmpeg 4.0–5.1 MB).
+  - guitar/piano 19.4 → 34.0 MB, bass/drums 14.6 → 34.0 MB, vocals unchanged at 9.7 MB per analysis; ≈ 294 SW-headed 4-minute analyses fit in 10 GB.
+  - Stems are per analysis version, and an old version's stems stay while the song is opened.
+  - +6 to +8 Class A per analysis, negligible.
+- **Worker cache:** one raw directory per learner instrument per song, with no eviction.
+  - After s40a each SW-headed directory holds all six raw stems, ≈ 110–185 MB per 4-minute song (+75–130 MB per learner).
+  - A song practised on two instruments holds two sets.
+- **Compute:** separate's model time is unchanged (+0.8 s per stored stem).
+  - stem_post: Mac 11.3 → 18.6 s (measured); PC CPU 22.5 → 34.3 s (measured), bass/drums 18.5 → 34.3 s.
+  - Mac ≈ +3–5 %. PC guitar/piano ≈ 13–26 % depending on the uplink.
+  - **PC bass/drums: +31 % on the measured separate + stem_post, 18–37 % of a whole analysis** (unmeasured stages, uplink 50–10 Mbit/s). So approval there is conditional on G3's measurement.
+  - Recommended lever if needed: encode and verify stems in parallel in stem_post (not built).
+- **Vocals second run:** not proposed. SW would double a vocals analysis; an on-demand "split the band" is a later option.
+- **Cache:**
+  - every instrument's `separate` key and every stem_post key change once;
+  - a re-analysis re-separates once;
+  - with RoFormer heads (deterministic) notes and chords are reused;
+  - nothing recomputes on its own;
+  - best shipped with impl/29's piano key change.
+- **Regression suite:** it can't see s40a (its separation parts call `models.separate` directly; p2g scores only the target). The guard is `all_stems.py`'s "target identical" (yes on all six Mac items).
+
+**Changed expected values (design):** all in the WIP's tests.
+- `keep` lists in `test_plan_keeps_extras…`.
+- Six kept stems in `test_first_model_failing…` and in the `models`-marked `test_real_chain…htdemucs_6s` (the step said `models` tests stay; this one had to change).
+- The empty bass extra is out of `test_stem_post_aligns…` (its checks moved to the new empty-target test).
+
+**Verification (PC, worktree CPU venv):**
+- Before the review fixes:
+  - full pytest 344 passed, 4 known failures (the `test_stem_post` pair is identical on the base `54c9438`);
+  - ruff clean; `contracts:check` clean, contracts tests 61/61;
+  - web unit 214/214; `eval:regression --smoke` PASS.
+- After the fixes (`4c1def6`, `02d71b6`, `136f88e`, `f068351`): not yet re-run; the prompt's "Resume here" lists the commands.
+
+**Known gaps / next:**
+- G3 on the PC after impl/29 is in `dev`:
+  - resolve the one `separate.py` docstring conflict;
+  - `all_stems.py run --before <dev map>` with a working tagger and the Mega-53 weights;
+  - one timed Full bass analysis before and after (decides the PC ~30 %);
+  - full `pnpm eval:regression` (expected pass, unchanged baseline);
+  - `pytest -m models packages/stage_separation`;
+  - listening session `all_stems.py export`.
+- Songs analysed for both bass and drums before this fix may carry the other instrument's mix-minus: "Analyse again".
+- With impl/29, SW's "other" holds the synth keys the fallback put in the target. Recommended fix at the reconciliation: derive "other" as mixture − target − Σ other extras when the fallback applied; check it with the overlap column on `765d5131-piano`.
+- s40b: the isolated stems don't always sum to the song (vetoed extras, two-stem heads, short "empty" extras), so fall back to the mix-minus as the band unless a six- or four-stem run kept every instrument.
