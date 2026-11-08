@@ -11,6 +11,7 @@
       "!**/.venv",
       "!**/.turbo",
       "!docs/specs/assets",
+      "!redesign/mockups",
       "!packages/contracts/schema",
       "!packages/music-core/golden",
       "!services/ml/config/calibration"
