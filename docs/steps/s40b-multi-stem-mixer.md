@@ -1,6 +1,6 @@
 # Step s40b — Multi-stem mixer UI
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), fifth in the practice lane (s35 → s37 → s38 → s39 → **s40b** → s41b → s42 → s43). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s40b.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), fifth in the practice lane (s35 → s37 → s38 → s39 → **s40b** → s41b → s42 → s43). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s40b.
 
 ## Carried over from earlier steps (2026-11-08)
 - s40a (keep every stem) may not be merged when you start: its G3 waits for `impl/29-separation-improvements` (D16). Build against the stems fixture and story data (D15), and show only the stems an analysis actually has. Once s40a merges, its refreshed `packages/contracts/fixtures/stems.json` lists every kept stem and leaves empty extras out.
@@ -8,14 +8,13 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 
 | | |
 |---|---|
-| Branch | `impl/s40b-mixer` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s40b-mixer` from the current `dev` |
 | Hard deps | s39, s40a (merged, so after G3) |
 | Gates | G4 (practice-lane review, batched) |
-| Owned globs (plan table) | practice mixer files, `packages/audio-engine/**` if a channel needs it |
+| Owned globs | practice mixer files, `packages/audio-engine/**` if a channel needs it |
 | "Practice mixer files", concretely | `apps/web/app/features/practice/mixer-drawer.tsx`, `model/mixer.ts` (+ test), `model/practice-audio.ts` and `model/audio-source.ts` where channels are loaded, the Mix tab and mix-pill files s35 created, new mixer files under `features/practice/`, the hot practice files, and `en.json` keys in `mixer.*` and the mix rows of `practice.*` (`practice.preset_gloss_*`, `practice.rough_stem` use) |
-| Needs the orchestrator's OK first | `apps/web/app/ui/stem-row.tsx`, `mix-preset-group.tsx` and `ui/mixer.stories.tsx` (the "all stems s40b" row of 26 §12.2) |
+| Ask the owner first | `apps/web/app/ui/stem-row.tsx`, `mix-preset-group.tsx` and `ui/mixer.stories.tsx` (the "all stems s40b" row of 26 §12.2) |
 | Effort | high |
-| Runs in parallel with | backend steps (s41a, s44) and nothing else in the practice lane |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -26,7 +25,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - `docs/specs/28-ui-quality-and-design-review.md` §3, §5, §5.1; `docs/steps/s40a-all-stems-backend.md` and s40a's report (what `stems.json` now holds).
 - Mockups: `Practice-Mix.dc.html` (Mix tab and Chords view), `Phone-Tools.dc.html` (mini-mixer rows).
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`; s35 and s40a will have changed it)
+## What exists (verified at `0c3d5c3`; s35 and s40a will have changed it)
 - `features/practice/model/mixer.ts`: `mixChannels` returns exactly two channels, "Your part" (`isolated`, the learner's instrument) and the mix-minus ("backing"); presets `part-loud`, `minus-one`, `original`; the comment notes other isolated stems would double the mix-minus. `mixer-drawer.tsx` (lazy) renders them.
 - `packages/audio-engine`: `dsp.ts` `MAX_STEMS = 8`; `mixer.ts` (`MixerChannel`, `resolveGains`, `dbToGain`); `engine.ts` has a click (`metronome`, `clickGain`) and a master gain after the processor. No synth (s38 adds a practice-side synth for audition, which "Hear the chords" reuses).
 - After s40a, `stems.json` lists every kept stem (`isolated` with `instrument`, `quality_hint`, `empty`) plus the target's `mix_minus`.
@@ -58,7 +57,7 @@ Per-drum and per-hand channels (later scope), new separation (s40a), section chi
 - No drag needed (2.5.7): every fader has click-to-set and a stepper (E2E without dragging).
 - Targets: M/S and faders 48; colour never the only cue (Rough badge, "Your part" badge, muted text).
 - Stories for every state in both themes; axe clean in Chromium and WebKit; budget before/after reported, `budget --enforce` green; perf spec shows no regression on the mixer fader step vs the s32 baseline.
-- Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (heavy lock, Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
+- Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
 
 - Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
@@ -68,12 +67,12 @@ pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/chec
 node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/audio-engine typecheck && pnpm --filter @splitune/audio-engine test   # if you changed it
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                                  # heavy lock
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
 node scripts/redesign/probe.mjs Practice-Mix --look night --width 1440 --select '<mixer anchors>'
 node scripts/redesign/probe.mjs Phone-Tools --look night --touch --select '<mini-mixer anchors>'
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # heavy lock
-cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test        # heavy lock
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
+cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test
 ```
 Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; first `test:stories` run failing in Vite optimisation (rerun once).
 
@@ -83,8 +82,8 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 3. A file outside the owned globs and the OK'd extras (contracts, `services/ml`, the Tools sheet).
 4. `stems.json` from s40a lacks something a row needs (a contract change).
 5. Sync or the limiter can't be met without an engine change you haven't been given.
-6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an unmerged step becomes yours to change only after its owner has merged: then merge `dev` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your progress-log entry. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s40b-mixer`; subject-only Conventional Commits (for example `feat(practice): show every separated stem in the mixer so learners can solo the band part by part`); stage exact paths; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").

@@ -1,21 +1,20 @@
 # Step s45 — Hardening and QA: WCAG 2.2 gates, perf gate, full visual matrix, Music Stand removal, docs
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), the last one. Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s45. It runs alone: nothing else is in flight.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), the last one. Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s45. It runs alone: nothing else is unmerged.
 
 ## Carried over from earlier steps (2026-11-08)
 - If s41a merged without it: add `islands/legacy` to the `uv lock --check` list in `.github/workflows/ci.yml`, to `PROJECTS` in `scripts/audit.mjs` and to `scripts/setup.mjs` (s41a review L1).
 - s32 kept the Music Stand roles that doc 26 no longer lists, but nothing new reads them; delete them here.
-- Known failures and the `test:stories` baseline are in the brief. A failure that is still on that list at the end goes to the owner.
+- Known failures and the `test:stories` baseline are in `00-shared-context.md`, "Redesign steps". A failure that is still on that list at the end goes to the owner.
 
 | | |
 |---|---|
-| Branch | `impl/s45-hardening-qa` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s45-hardening-qa` from the current `dev` |
 | Hard deps | all above (s32–s44 merged, G3 passed for s40a and s41a) |
-| Gates | **G4** (owner, screen-wave reviews on devices; the full visual baselines are regenerated only after it), **G5** (owner, human-only checks before the final merge), then **G6** (the final merge into `dev`, only on the owner's explicit "go") |
-| Owned globs (plan table) | cross-cutting, assigned file by file at dispatch |
-| Proposed assignment (the orchestrator confirms or edits it at dispatch; anything else needs its OK) | **Tokens:** `packages/ui-tokens/src/*` (delete the Music Stand roles and primitives doc 26 no longer lists, `--target-sm`, the paper surface; add the 28 §3 "Music Stand role still defined" check to `tokens.test.ts`). **Components:** `apps/web/app/ui/**` (remove variants and code paths that only served Music Stand, for example `data-score`). **Storybook:** `apps/web/.storybook/preview.tsx` (a11y `runOnly` tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, `best-practice`, 28 §2). **E2E:** `apps/web/e2e/a11y.spec.ts` and `e2e/helpers.ts` updates, new specs for keyboard-only journeys, focus not obscured, target sizes on every screen, reduced motion, feedback timing, token membership and colour-vision screenshots; `apps/web/e2e/perf-practice.spec.ts` (gate assertions against the committed baseline, which never changes). **Visual:** `apps/web/e2e/visual/**` (the full 28 §4 matrix and every baseline). **Copy:** `apps/web/messages/en.json` and `apps/web/app/copy-keys.test.ts` for the 27 §3.1 honesty-gate flips (Home, Pricing, Add song's "a mixer for every stem") and retiring unused keys. **Lint:** `scripts/check-ui-tokens.mjs` (widen s33's extended 28 §3 rules from `apps/web/app/ui/**` to all of `apps/web/app` once every screen is restyled). **Fixtures:** `apps/web/app/features/story-fixtures.ts` if the matrix needs fixtures. **Brand:** `apps/web/public/icons/**`, `apps/web/public/favicon.svg`, `apps/web/scripts/render-icons.mjs` if s33 didn't do them. **Mounts left by earlier steps** (for example s44's Notify button). **Docs:** implementation-note sections in `docs/specs/{12,21,26,27,28}-*.md` (and 26 §6.1's font record after the owner's legibility check) |
+| Gates | **G4** (owner, screen-wave reviews on devices; the full visual baselines are regenerated only after it), **G5** (owner, human-only checks) |
+| Owned globs | cross-cutting: the files in the next row; anything else needs the owner's OK |
+| Owned files | **Tokens:** `packages/ui-tokens/src/*` (delete the Music Stand roles and primitives doc 26 no longer lists, `--target-sm`, the paper surface; add the 28 §3 "Music Stand role still defined" check to `tokens.test.ts`). **Components:** `apps/web/app/ui/**` (remove variants and code paths that only served Music Stand, for example `data-score`). **Storybook:** `apps/web/.storybook/preview.tsx` (a11y `runOnly` tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, `best-practice`, 28 §2). **E2E:** `apps/web/e2e/a11y.spec.ts` and `e2e/helpers.ts` updates, new specs for keyboard-only journeys, focus not obscured, target sizes on every screen, reduced motion, feedback timing, token membership and colour-vision screenshots; `apps/web/e2e/perf-practice.spec.ts` (gate assertions against the committed baseline, which never changes). **Visual:** `apps/web/e2e/visual/**` (the full 28 §4 matrix and every baseline). **Copy:** `apps/web/messages/en.json` and `apps/web/app/copy-keys.test.ts` for the 27 §3.1 honesty-gate flips (Home, Pricing, Add song's "a mixer for every stem") and retiring unused keys. **Lint:** `scripts/check-ui-tokens.mjs` (widen s33's extended 28 §3 rules from `apps/web/app/ui/**` to all of `apps/web/app` once every screen is restyled). **Fixtures:** `apps/web/app/features/story-fixtures.ts` if the matrix needs fixtures. **Brand:** `apps/web/public/icons/**`, `apps/web/public/favicon.svg`, `apps/web/scripts/render-icons.mjs` if s33 didn't do them. **Mounts left by earlier steps** (for example s44's Notify button). **Docs:** implementation-note sections in `docs/specs/{12,21,26,27,28}-*.md` (and 26 §6.1's font record after the owner's legibility check) |
 | Effort | xhigh |
-| Runs in parallel with | nothing |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -25,7 +24,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - Every step report in the run folder (`<run>/reports/s32.md` … `s44.md`) and their review files: open items, G4 placements, deferred mounts, "Notes for docs".
 - `scripts/redesign/README.md`.
 
-## What exists (to verify at dispatch; on `impl/redesign` after s44)
+## What exists (verify before you start; on `dev` after s43, s44 being deferred)
 - Each screen step regenerated only its own visual rows; rows for new screens (Add song dialog, Stand view, Tools sheet, Fix mode, Getting ready, command palette, Sign in, Pricing, system states) don't exist yet in `apps/web/e2e/visual/screens.spec.ts`.
 - `apps/web/e2e/perf-practice.spec.ts` records measurements and `apps/web/e2e/perf-baseline.json` holds the s32 baseline of the pre-redesign screen (verify both paths; s32's report names them).
 - Music Stand roles still defined in `packages/ui-tokens` (doc 26 §3 allowed them until now); `--target-sm` retired but present.
@@ -66,11 +65,11 @@ Every acceptance criterion of the redesign is met and shown: automated ones by g
 4. **Music Stand removal:** delete the old roles and primitives, `--target-sm`, the score-surface code paths and any variant only Music Stand used; the token test proves none is defined; `DisplaySettings.score_surface` keeps reporting `match` (contract unchanged, 26 §2).
 5. **Honesty gates and copy** (27 §3.1): flip every claim whose step shipped (s37 ladder, s40b "Every stem has its own fader." and Add song's "a mixer for every stem", s42 beat lights, s43 Stand view); retire keys no code uses; copy-keys test green.
 6. **Full visual matrix** (28 §4): every row of the matrix (Home, Library with progress, Add song with a file, Settings → Display & practice at 390 / 1180 / 1440 in both themes; Practice Tab with loop and ladder, Chords + Mix, Fix mode, Getting ready at 1180 / 1440; phone glance and Tools sheet at 390; Stand view at 1180 touch; Practice Tab increased contrast; system states, Sign in, Pricing), Chromium and WebKit, regenerated **after G4** with every diff image shown and the intended differences listed.
-7. **Docs:** implementation notes (redesign) in docs 12, 21, 26, 27 and 28 from the step reports (what was built, where it deviated and why); 26 §6.1 records the font outcome once the owner's legibility check is in; nothing in `docs/status.md`, `docs/progress-log.md` or `docs/steps/README.md` (the orchestrator's).
-8. **Human queue:** G4 and G5 items with exact steps, expected results, branch and SHA (for `human-queue.md` via your report): the device review of every screen in both themes at desk and stand distance; the music-stand reading test (28 §6) and its decision rule; pedals (AirTurn 2/3/5, iRig BlueTurn) through the wizard; iPad Safari and the installed PWA (wake lock 15 min, Web Push); audio sync by ear with wired and Bluetooth headphones; the task round; the knuckle-with-a-pick target test (28 §5); **research items for the owner** that no step runs: calibration check C1 per stage (26 §5: which stages are calibrated; the owner decides on marks) and the PAIR trust probes for Fix (report Phase 3 exit gate).
+7. **Docs:** implementation notes (redesign) in docs 12, 21, 26, 27 and 28 from the steps' progress-log entries (what was built, where it deviated and why); 26 §6.1 records the font outcome once the owner's legibility check is in; record the redesign as done in `docs/status.md` and `docs/progress-log.md`.
+8. **Human queue:** G4 and G5 items with exact steps, expected results, branch and SHA (in your progress-log entry): the device review of every screen in both themes at desk and stand distance; the music-stand reading test (28 §6) and its decision rule; pedals (AirTurn 2/3/5, iRig BlueTurn) through the wizard; iPad Safari and the installed PWA (wake lock 15 min, Web Push); audio sync by ear with wired and Bluetooth headphones; the task round; the knuckle-with-a-pick target test (28 §5); **research items for the owner** that no step runs: calibration check C1 per stage (26 §5: which stages are calibrated; the owner decides on marks) and the PAIR trust probes for Fix (report Phase 3 exit gate).
 
 ## Out of scope
-New features; changing any spec decision; raising the budget; editing `perf-baseline.json` or lowering any threshold; the final merge (G6, the orchestrator's on the owner's "go").
+New features; changing any spec decision; raising the budget; editing `perf-baseline.json` or lowering any threshold; merging into `dev` (only when the owner asks).
 
 ## Acceptance criteria
 - Every "Automated" row above runs in the repo's commands and passes; every "G4"/"G5" row is in the human queue with exact steps.
@@ -81,25 +80,25 @@ New features; changing any spec decision; raising the budget; editing `perf-base
 ### Commands (prefix each with `cd "<worktree>" &&`)
 ```bash
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
-pnpm typecheck && pnpm test                                     # turbo; ML tasks need a venv (see your brief) or run the JS packages one by one
-UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm contracts:check && pnpm db:check
-pnpm --filter @splitune/web test:stories                        # heavy lock
+pnpm typecheck && pnpm test                                     # turbo; ML tasks need a venv (see `00-shared-context.md`, "Redesign steps") or run the JS packages one by one
+UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm contracts:check && pnpm db:check
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test                      # full matrix, heavy lock
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test                      # full matrix
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
 node scripts/redesign/render-mockups.mjs && node scripts/redesign/probe.mjs <board> --look <night|daylight> --width <w> --select '<anchor>'
-pnpm --filter @splitune/web e2e:visual:update                    # after G4 only; heavy lock, Docker
+pnpm --filter @splitune/web e2e:visual:update                    # after G4 only; Docker
 pnpm --filter @splitune/web e2e:visual
 ```
 Known pre-existing failures: db `lifecycle.test.ts` "claims a run once per due time, across callers"; node-worker pg-dump (no `pg_dump` binary); ML `test_recovery.py` ×2, `test_beats_model::test_cpu_fallback_uses_the_small_model`, `test_stem_post` ×2; api `pipeline.test.ts` ×2 (intermittent); WebKit practice/audio stories timing out at 15 s; the first `test:stories` run in a fresh worktree failing in Vite optimisation (rerun once).
 
 ## Stop points (stop, report with 2–3 options and a recommendation, wait)
-1. A criterion fails and the fix belongs to a screen or feature (a defect in another step's work): report it with the file and the evidence; the orchestrator decides who fixes it.
+1. A criterion fails and the fix belongs to a screen or feature (a defect in another step's work): report it with the file and the evidence; the owner decides who fixes it.
 2. The perf gate or the budget fails.
-3. A file outside the assignment the orchestrator confirmed.
+3. A file outside the owned files above.
 4. Deleting a Music Stand role breaks a component that still reads it (that component's step missed it).
 5. Any spec, mockup or test conflict.
 
 ## Git
 - Branch `impl/s45-hardening-qa`; subject-only Conventional Commits, one logical change each (for example `test(web): gate every screen on 44 px targets so no control regresses below the internal rule`, `refactor(ui-tokens): delete the music stand roles now that nothing reads them`); stage exact paths; gitleaks before each commit; baselines committed with the change they show.
-- Never push, merge, rebase onto `dev` or open a PR. Progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").

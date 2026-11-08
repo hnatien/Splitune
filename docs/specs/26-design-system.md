@@ -38,7 +38,7 @@ Three directions were mocked on the same screens (`redesign/mockups/Dir-A.dc.htm
 | Against | Light-on-dark notation is "less traditional"; daylight glare on tablets; can look like any DAW | Four of seven Okabe-Ito hues fail 3:1 on paper; close to Music Stand; red reads as error | Tiring over long sessions; low density on desktop |
 | Role | **Brand default**, Daylight one tap away | Comparison variant in the music-stand test | Ideas borrowed for Stand view |
 
-**Decision: A.** Because Daylight is generated from the same roles, the default theme is reversible: the owner's music-stand reading test (gate G5 in `redesign/orchestrator/prompt.md` §10; procedure in `28` §6) decides the *default for Practice and Stand view*, not the identity. Both themes are built and tested regardless.
+**Decision: A.** Because Daylight is generated from the same roles, the default theme is reversible: the owner's music-stand reading test (gate G5 in `docs/steps/00-shared-context.md` ("Redesign steps"); procedure in `28` §6) decides the *default for Practice and Stand view*, not the identity. Both themes are built and tested regardless.
 
 ### 1.2 Principles (use them to settle design arguments)
 1. **The music is the brightest thing on screen.** Chrome is quiet graphite; ink is reserved for notation, chords and numbers; colour is spent on meaning.
@@ -603,7 +603,7 @@ Existing components are restyled with stable props (s33 unless noted); new ones 
 - The Floor preset has no mockup; its values follow the §6.3 floors and rationale.
 
 ## Sources
-- `redesign/report.md` (direction, OKLCH roles from four parameters, type, motion, targets, WCAG 2.2 mapping), `redesign/research/visual_direction.md`, `redesign/research/practice_science_ergonomics.md`, `redesign/research/ai_confidence_processing_ux.md`, `redesign/orchestrator/research/design_system_migration.md`; mockups `redesign/mockups/System.dc.html` (Foundations), `Dir-A/B/C.dc.html` and `splitune.css` — 2026-11-08.
+- `redesign/report.md` (direction, OKLCH roles from four parameters, type, motion, targets, WCAG 2.2 mapping), `redesign/research/visual_direction.md`, `redesign/research/practice_science_ergonomics.md`, `redesign/research/ai_confidence_processing_ux.md`, `redesign/research/design_system_migration.md`; mockups `redesign/mockups/System.dc.html` (Foundations), `Dir-A/B/C.dc.html` and `splitune.css` — 2026-11-08.
 - Contrast, gamut and CVD values computed in step s31a with `colorjs.io` 0.7.1 (the token tests' library) and the Machado, Oliveira & Fernandes 2009 matrices used by `palette.test.ts`.
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (1.4.1, 1.4.3, 1.4.11, 2.1.4, 2.2.2, 2.3.1, 2.4.11, 2.4.13, 2.5.5, 2.5.7, 2.5.8) — tier 1.
 - [Radix Colors scale roles](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale), [Paul Tol's palettes](https://tesselle.r-universe.dev/khroma/doc/tol.html), Okabe-Ito ([ggokabeito](https://malcolmbarrett.r-universe.dev/ggokabeito/doc/manual.html)) — tier 2.

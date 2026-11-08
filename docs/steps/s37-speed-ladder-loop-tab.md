@@ -1,18 +1,17 @@
 # Step s37 — Speed ladder (V1) and the finished Loop tab
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), second in the strictly sequential practice lane (s35 → **s37** → s38 → s39 → s40b → s41b → s42 → s43). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s37.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), second in the strictly sequential practice lane (s35 → **s37** → s38 → s39 → s40b → s41b → s42 → s43). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s37.
 
 | | |
 |---|---|
-| Branch | `impl/s37-speed-ladder` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
-| Hard deps | s35 (plan table); orchestrator decision: also **s36 merged** before you start (you add a row to its Display & practice section) |
+| Branch | `impl/s37-speed-ladder` from the current `dev` |
+| Hard deps | s35 (plan table); decision D12: also **s36 merged** before you start (you add a row to its Display & practice section) |
 | Gates | G4 (practice-lane review, batched) |
-| Owned globs (plan table) | practice loop files, `packages/contracts/src/api/{loops,flags}.ts`, `apps/api/src/routes/loops.ts`, `packages/db/src/repo/loops.ts` |
+| Owned globs | practice loop files, `packages/contracts/src/api/{loops,flags}.ts`, `apps/api/src/routes/loops.ts`, `packages/db/src/repo/loops.ts` |
 | "Practice loop files", concretely | `apps/web/app/features/practice/loop-panel.tsx`, `model/loops.ts` (+ test), `model/transport.ts` and `model/player-machine.ts` (+ tests) for ladder state and seam behaviour, the Loop tab and loop-pill files s35 created, new ladder files under `features/practice/`, the hot practice files (`practice-context.tsx`, `practice.stories.tsx`, `practice-story-data.ts`), and `en.json` keys in `ladder.*` (a new group at its alphabetical position) and the loop/clip keys in `practice.*` |
-| Needs the orchestrator's OK first | `apps/web/app/ui/speed-control.tsx`, `speed-panel.tsx` (the "→ 100" goal readout) and a new `ui/speed-ladder.tsx` (+ stories); the Speed ladder default row in `apps/web/app/features/settings/display-settings.tsx` (s36's, merged before you start) and its stored default in `apps/web/app/lib/display-store.ts` (s35's, then assigned per file at dispatch to the practice-lane step in flight); `packages/audio-engine/**` only if the seam rule below can't be met from practice code |
-| Contracts | This step changes `packages/contracts/**`: only one in-flight step at a time may (prompt.md §5 lanes). Check with the orchestrator before you start that s39, s40a and s44 aren't changing contracts at the same time |
+| Ask the owner first | `apps/web/app/ui/speed-control.tsx`, `speed-panel.tsx` (the "→ 100" goal readout) and a new `ui/speed-ladder.tsx` (+ stories); the Speed ladder default row in `apps/web/app/features/settings/display-settings.tsx` (s36's, merged before you start) and its stored default in `apps/web/app/lib/display-store.ts` (s35's; later practice steps may change it); `packages/audio-engine/**` only if the seam rule below can't be met from practice code |
+| Contracts | This step changes `packages/contracts/**`: only one unmerged step at a time may: before you start, check `docs/status.md` and `git branch --list 'impl/s*'` that no other unmerged step changes them |
 | Effort | high |
-| Runs in parallel with | s34 (if still in flight) and backend steps; not s36 (you wait for it to merge); never another practice-lane step |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -22,7 +21,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - `docs/specs/28-ui-quality-and-design-review.md` §3, §5, §5.1.
 - Mockups: `Main.dc.html` (Loop tab with the ladder), `Settings-Display.dc.html` (Practice defaults), `Home.dc.html` and `SignIn.dc.html` show ladder stills (s36/s45's).
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`; s35 will have rebuilt the Loop tab around it)
+## What exists (verified at `0c3d5c3`; s35 will have rebuilt the Loop tab around it)
 - **Contract** `packages/contracts/src/api/loops.ts`: `SpeedTrainer = { start_pct 25–200, end_pct 25–200, step_pct 1–50, plays_per_step 1–20, count_in_each_pass }`, `LoopClip.trainer: SpeedTrainer.nullable()`, `best_clean_tempo_pct`, `CreateLoopInput` / `UpdateLoopInput` (name, bars, rest, count-in, trainer) / `DeleteLoopInput`. `SpeedTrainer` is not registered for JSON Schema, so Pydantic doesn't change; `packages/contracts/src/api/privacy.ts` line 102 reuses it in the data export.
 - **Flag** `packages/contracts/src/api/flags.ts`: `'v1.speed_trainer': { default: false }`; flags reach the web as `me.flags` (`packages/contracts/src/api/me.ts` line 59), which no web code reads today.
 - **API** `apps/api/src/routes/loops.ts`: `checkTrainer` rejects a non-null trainer with `feature_disabled` while the flag is off, so no clip can have been saved with one through the API; list / create / update (PATCH, including `name`) / delete exist. **Repo** `packages/db/src/repo/loops.ts` has `update` and `delete`. **DB** `loop_clips.trainer` is `jsonb` typed from the contract (`packages/db/src/schema/practice.ts` line 50): a contract change needs no migration.
@@ -58,7 +57,7 @@ The Tools sheet ladder card (s43), Progress (s39), Fix (s38), any change to how 
 - Stories for every state in both themes; axe clean in Chromium and WebKit.
 - Budget before/after reported; `budget --enforce` green.
 - E2E: loop at 70 % with the ladder on, three Felt clean passes step it to 75 % (keys only).
-- Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (heavy lock, Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
+- Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
 
 - Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
@@ -67,15 +66,15 @@ pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget         
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
 node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/contracts typecheck && pnpm --filter @splitune/contracts test
-UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm contracts:check
+UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm contracts:check
 pnpm --filter @splitune/api typecheck && pnpm --filter @splitune/api test                 # compose Postgres + SeaweedFS running
 pnpm --filter @splitune/api openapi:check
 pnpm --filter @splitune/db typecheck && pnpm --filter @splitune/db test && pnpm db:check
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                                  # heavy lock
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
 node scripts/redesign/probe.mjs Main --look night --width 1440 --select '<ladder anchors>'
-cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test        # heavy lock
+cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test
 ```
 Known pre-existing failures: db `lifecycle.test.ts` "claims a run once per due time, across callers"; api `pipeline.test.ts` ×2 (intermittent); WebKit practice/audio stories timing out at 15 s; first `test:stories` run failing in Vite optimisation (rerun once).
 
@@ -85,10 +84,10 @@ Known pre-existing failures: db `lifecycle.test.ts` "claims a run once per due t
 3. A file outside the owned globs and the OK'd extras (another contract, a migration, `packages/audio-engine`).
 4. The seam rule can't be met without an engine change.
 5. Any stored clip already has a trainer (the reinterpretation would change its meaning).
-6. Another in-flight step is changing `packages/contracts/**`.
-7. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
+6. Another unmerged step is changing `packages/contracts/**`.
+7. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an unmerged step becomes yours to change only after its owner has merged: then merge `dev` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your progress-log entry. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s37-speed-ladder`; subject-only Conventional Commits (for example `feat(practice): add the speed ladder so loops climb after clean passes instead of by hand`); stage exact paths; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").
 - **Owner actions to list:** the production data check query; turning on `v1.speed_trainer` in production if a `feature_flags` row overrides the new default.

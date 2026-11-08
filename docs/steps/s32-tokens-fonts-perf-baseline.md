@@ -1,35 +1,35 @@
 # Step s32 — Night Rehearsal tokens, fonts and the practice perf baseline
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it. This prompt holds what is specific to s32.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates). This prompt holds what is specific to s32.
 
 ## Resume here (state on 2026-11-08)
-Built on `impl/s32-tokens-fonts` in the worktree `D:/Projects/Splitune/.claude/worktrees/s32-tokens-fonts`. The report is `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s32.md`, with artefacts in `reports/s32/`.
+Built on `impl/s32-tokens-fonts` in the worktree `D:/Projects/Splitune/.claude/worktrees/s32-tokens-fonts`. What it did and measured is in the progress-log entry "Step s32: tokens, fonts and the practice perf baseline (in progress)".
 - **Committed:**
   - the perf baseline on the unchanged screen, in its own commit `8bd9050`, after the Windows-safe spec fix `a447ab3`;
   - Night Rehearsal / Daylight tokens (`e1fedf6`);
   - Instrument Sans + JetBrains Mono (`27d41e4`);
   - the Storybook toolbar and fonts story (`99c9162`, `3727246`).
-- **A final round was still running in the old orchestrator session** when the owner switched modes. It left uncommitted edits in `piano-chart.tsx`, three `app/ui` stories, `security.spec.ts`, `themes.css` and `tokens.test.ts`. Read `git status`, `git log` and the report's latest round first, then finish what's half done:
-  1. **Orchestrator OK (Q1):** move the Music Stand assertions in `apps/web/app/ui/**/*.stories.tsx` to doc 26 values (expected values only, each listed). Switch the piano chart (`apps/web/app/features/practice/piano-chart.tsx`) to the chord-sheet reading token, but only if doc 26 §4.7/§6.3 assigns `--read-chord-sheet` to chord charts like it; otherwise ask the owner.
-  2. **Orchestrator OK (Q4):** `apps/web/e2e/security.spec.ts:63` requests the new preloaded font path instead of `InterVariable.woff2`. Run that spec in Chromium under the heavy lock.
+- **A last round was interrupted.** It left uncommitted edits in `piano-chart.tsx`, `dialog`/`drawer`/`foundations` stories, `security.spec.ts`, `themes.css` and `tokens.test.ts`. Read `git status` and `git diff` first, then finish it:
+  1. **Approved:** move the Music Stand assertions in `apps/web/app/ui/**/*.stories.tsx` to doc 26 values (expected values only, each listed with its doc 26 reference). Switch the piano chart (`apps/web/app/features/practice/piano-chart.tsx`) to the chord-sheet reading token, but only if doc 26 §4.7/§6.3 assigns `--read-chord-sheet` to chord charts like it; otherwise ask the owner.
+  2. **Approved:** `apps/web/e2e/security.spec.ts:63` requests the new preloaded font path instead of `InterVariable.woff2`. Run that spec in Chromium.
   3. **Owner (D20):** keep U+202F mapped to the no-break space, and accept the 12 Latin-1 gaps.
-  4. List any `themes.css` / `tokens.test.ts` change from this round under Changed expected values, with its doc 26 reference.
+  4. List any `themes.css` / `tokens.test.ts` change under the changed expected values in your progress-log entry.
 - **Then:**
-  - the full verification in Commands, with `test:stories` compared to the baseline list (plus Screen May Lock after 20:00);
-  - the independent review;
-  - the merge, per the brief's "Finish a step". The progress-log entry is in the report.
+  - merge `dev` into the branch;
+  - run the full verification in Commands, with `test:stories` compared to the known failures in `00-shared-context.md`;
+  - finish the progress-log entry and the status row;
+  - commit.
 - **Note for s33 (also in s33's prompt):** `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans.
-- **Owner action:** the legibility check (story URL in the report).
+- **Owner action:** the legibility check. Open the "Foundations/Fonts › Legibility" story (`pnpm --filter @splitune/web storybook`, then `http://localhost:6006/?path=/story/foundations-fonts--legibility`) and read it at 0.5, 0.75 and 1.5 m.
 
 | | |
 |---|---|
-| Branch | `impl/s32-tokens-fonts` from the current `impl/redesign` tip (redesign steps never branch from `dev`); the orchestrator merges it |
+| Branch | `impl/s32-tokens-fonts` from the current `dev` |
 | Hard deps | G1 |
 | Gates | G1 must be approved before you start. The Instrument Sans / JetBrains Mono / Inter legibility check is a human check: you add it to the owner's queue (Owner actions) and implement the primary choice. G2 (after s33) reviews the look |
-| Owned globs (plan table) | `packages/ui-tokens/**`, `scripts/fonts/**`, `apps/web/public/fonts/**`, `apps/web/public/manifest.webmanifest`, `apps/web/app/styles.css`, `apps/web/.storybook/**`, font-preload/theme-color lines in `apps/web/app/routes/__root.tsx`, `pnpm-lock.yaml` |
-| Also yours (orchestrator decision D9) | `apps/web/e2e/perf-practice.spec.ts` and `apps/web/e2e/perf-baseline.json` (new: the perf baseline below); the expected values in `apps/web/app/manifest.test.ts` lines 32–33 (they follow `BACKGROUND_HEX`, see Deliverable 4) |
+| Owned globs | `packages/ui-tokens/**`, `scripts/fonts/**`, `apps/web/public/fonts/**`, `apps/web/public/manifest.webmanifest`, `apps/web/app/styles.css`, `apps/web/.storybook/**`, font-preload/theme-color lines in `apps/web/app/routes/__root.tsx`, `pnpm-lock.yaml` |
+| Also yours (D9) | `apps/web/e2e/perf-practice.spec.ts` and `apps/web/e2e/perf-baseline.json` (new: the perf baseline below); the expected values in `apps/web/app/manifest.test.ts` lines 32–33 (they follow `BACKGROUND_HEX`, see Deliverable 4) |
 | Effort | xhigh |
-| Runs in parallel with | backend steps s40a, s41a (no shared files) |
 
 ## Before you start
 Read, in this order:
@@ -40,7 +40,7 @@ Read, in this order:
 - `redesign/mockups/splitune.css` (the `:root` and `[data-theme]` blocks are the source values; doc 26 is the binding version where they differ) and `redesign/mockups/System.dc.html` (Foundations board).
 - `scripts/redesign/README.md` (render and probe commands) and `redesign/report.md` "Type: Instrument Sans and JetBrains Mono…" and "Motion follows only the music".
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`)
+## What exists (verified at `0c3d5c3`)
 - **Tokens:** `packages/ui-tokens/src/{primitives.css,themes.css,theme.tailwind.css,fonts.css,index.ts}` hold the Music Stand system; tests `contrast.test.ts`, `palette.test.ts`, `tokens.test.ts` and the helper `testing/cascade.ts` (CSS cascade per context). `index.ts` exports `SEMANTIC_ROLES` (line 19), `COMPONENT_TOKENS` (86), `CONTRAST_PAIRS` (152), `STEMS` (248), `readToken`/`readColor` (280/291) and `BACKGROUND_HEX = { light: '#f7f6f2', dark: '#181612' }` (318).
 - **Reading sizes:** `theme.tailwind.css` sets `--read-*-base` per `data-distance` (Desk tab 1.5rem, current chord 2rem; Stand tab 2.25rem, current chord 3rem; Floor current chord 5.5rem) and `--read-scale` 1.25 for `stage`; the "reading sizes" block of `tokens.test.ts` (around lines 279–290, titled after 26 §6.3) asserts Stand tab `2.25rem`, Desk current chord `2rem`, Floor current chord `5.5rem`, `stage` `--read-scale` `1.25`.
 - **`BACKGROUND_HEX` consumers:** `apps/web/app/routes/__root.tsx` lines 41–43 (two `theme-color` metas, light and `prefers-color-scheme: dark`), `apps/web/app/manifest.test.ts` lines 32–33 (`background_color` and `theme_color` = `BACKGROUND_HEX.light`), `tokens.test.ts` "BACKGROUND_HEX" block (line 293). `apps/web/public/manifest.webmanifest` has `#f7f6f2` for both.
@@ -54,10 +54,10 @@ Read, in this order:
 
 ## Decisions that bind this step
 - **D5:** doc 26's corrections of mockup values that fail existing minimums are accepted; minimums are never lowered.
-- **D6:** measured practice-route budget at impl/redesign 8d6a3f6 is 318.7 KB gzip of 320.0 KB (about 1.3 KB headroom). Every UI step reports before/after bytes; raising the budget needs the owner.
+- **D6:** measured practice-route budget at dev 8d6a3f6 is 318.7 KB gzip of 320.0 KB (about 1.3 KB headroom). Every UI step reports before/after bytes; raising the budget needs the owner.
 - **D7:** raised reading-size token literals (doc 26 §6.3) are design value changes that s32 applies to `tokens.test.ts` expectations, listing each; floors never go down.
 - **D2:** the appearance picker shows 3 theme cards (System, Night Rehearsal, Daylight); `stage` stays a valid id, not a card. (Your Storybook toolbar still offers Stage, per 28 §2.)
-- Frozen decisions 1 and 2 (prompt.md §1): Night Rehearsal is the default and `:root`; ids stay `system | light | dark | stage`.
+- Frozen decisions 1 and 2: Night Rehearsal is the default and `:root`; ids stay `system | light | dark | stage`.
 
 ## Deliverables
 1. **Perf baseline first, before you change any token** (28 §3.1 step 1, 12 §10). On the current practice screen in Chromium with CDP `Emulation.setCPUThrottlingRate` 4×:
@@ -65,9 +65,9 @@ Read, in this order:
    - forced style/layout during steady playback (LoAF `forcedStyleAndLayoutDuration` per script, or a CDP trace; say which);
    - p75 latency (Event Timing, N ≥ 10 each) for play/pause, loop nudge, speed step and a mixer fader key step.
    Drive every action by role and accessible name or by a key that keeps its meaning after s35 (speed: the on-screen −/+ buttons, because ↑/↓ stop changing speed in s35). Put every selector in one table at the top of the spec so a later step can update a renamed control in one place.
-   Deliver it as `apps/web/e2e/perf-practice.spec.ts` (Chromium project only, using `openExample` from `e2e/helpers.ts` like `perf.spec.ts`; it records and writes JSON, it asserts no thresholds yet) and the committed result `apps/web/e2e/perf-baseline.json` (git sha, machine, browser version, throttling, every measure with n, p50, p75 and max). Copy the result into your report folder too. Record two contexts: desktop Chromium (1440 × 900, fine pointer) and a **tablet** context (1180 × 820, `hasTouch`/`isMobile`, Chromium, the same 4× throttling) so s43 has a tablet baseline; the JSON keys each measure by context. Run each 3 times and keep the median run; report the spread.
+   Deliver it as `apps/web/e2e/perf-practice.spec.ts` (Chromium project only, using `openExample` from `e2e/helpers.ts` like `perf.spec.ts`; it records and writes JSON, it asserts no thresholds yet) and the committed result `apps/web/e2e/perf-baseline.json` (git sha, machine, browser version, throttling, every measure with n, p50, p75 and max). Copy the result into `redesign/.renders/<id>/` (ignored) too. Record two contexts: desktop Chromium (1440 × 900, fine pointer) and a **tablet** context (1180 × 820, `hasTouch`/`isMobile`, Chromium, the same 4× throttling) so s43 has a tablet baseline; the JSON keys each measure by context. Run each 3 times and keep the median run; report the spread.
 2. **Tokens** (`primitives.css`, `themes.css`, `theme.tailwind.css`, `index.ts`): every value in 26 §4.1–§4.8 for `dark` (= `:root`), `light`, `stage`, each × `data-contrast="more"`; the Splitune roles of 26 §3 tier 2 and the component tokens of §4.7 (including the new `--tile-foreground`, `--read-chord-sheet`, `--read-chord-next`, `--target-stand`); static scales of 26 §6.2 (browse type), §6.3 (reading sizes per preset, phone clamps are s43's), §8 (targets), §9 (radius: `xs` 4 … `4xl` 22), §10 (durations, easings, stagger). Literals are rounded per 26 §3; saturated values are clamped in the source (26 §3 gamut rule). Subtree theming per 26 §2: every theme block also matches `[data-appearance]` on any element. Keep the Music Stand roles that doc 26 no longer lists defined until s45 deletes them, but nothing new may read them. Remove the `data-score` paper surface (26 §2: `--paper` = `--background`).
-3. **Token tests** rewritten to doc 26: `CONTRAST_PAIRS` per 26 §4.6 "How the Music Stand pairs map" (no pair dropped, no minimum changed; `--primary` as text becomes `--primary-ink`), the "§4.6 baseline values" and "§4.8 surface and status-surface values" blocks checked to ±0.1, a new translucent-wash block using `over()` (26 §4.6 "Translucent washes"), gamut and CVD (`palette.test.ts`, ≥ 12 ΔE2000) on the §4.4 stems. Every changed expected value is listed in your report with its reason (D7), including each reading-size literal (for example Desk `--read-chord-current-base` 2rem → 7rem) and the scrim values. Floors stay: Stand tab ≥ 36 px, Desk current chord ≥ 32, Floor current chord ≥ 88, tab digits ≥ 18.
+3. **Token tests** rewritten to doc 26: `CONTRAST_PAIRS` per 26 §4.6 "How the Music Stand pairs map" (no pair dropped, no minimum changed; `--primary` as text becomes `--primary-ink`), the "§4.6 baseline values" and "§4.8 surface and status-surface values" blocks checked to ±0.1, a new translucent-wash block using `over()` (26 §4.6 "Translucent washes"), gamut and CVD (`palette.test.ts`, ≥ 12 ΔE2000) on the §4.4 stems. Every changed expected value is listed in your progress-log entry with its reason (D7), including each reading-size literal (for example Desk `--read-chord-current-base` 2rem → 7rem) and the scrim values. Floors stay: Stand tab ≥ 36 px, Desk current chord ≥ 32, Floor current chord ≥ 88, tab digits ≥ 18.
 4. **`BACKGROUND_HEX`** = Night `#110e0b`, Daylight `#f8f5f1` (26 §11), still keyed `light`/`dark`. `manifest.webmanifest` `background_color` and `theme_color` use the Night value (Night is the default and the no-JS paint). The two `theme-color` metas in `__root.tsx`: Night for no media query and `prefers-color-scheme: dark`, Daylight for `prefers-color-scheme: light` (the head script still resolves the stored choice). `manifest.test.ts` asserts `BACKGROUND_HEX.light` today; changing it to `.dark` is an expected-value change by design (D9).
 5. **Fonts** (`scripts/fonts/subset.sh`, `apps/web/public/fonts/`, `packages/ui-tokens/src/fonts.css`): Instrument Sans Variable (roman, `wght` 400–700, `wdth` 100) and JetBrains Mono Variable (`wght` 400–700) from pinned upstream files with SHA-256, `pyftsubset --layout-features='*'`, the 26 §6.1 code points (add ♯ ♭ ♮ U+266D–266F, · × ÷, ‹ › U+2039/203A, U+202F; keep the existing ranges), `varLib.instancer` to the weights the scale uses; Instrument Sans roman ≤ 80 KB (the preload budget); OFL texts beside the files; `font-display: swap` with metric-matched fallbacks (`size-adjust`, `ascent-override`, …) so the dock can't reflow. Preload Instrument Sans only. Atkinson Hyperlegible Next stays (opt-in reading font). Inter: remove its files, `@font-face` and preload (its pinned recipe stays in git history; the owner's legibility check may bring it back as the fallback).
 6. **Font tests:** a test under `scripts/fonts/` (runs with `pnpm exec vitest run --dir scripts`, like `scripts/redesign`) that fails if a shipped WOFF2 lacks `tnum` or any 26 §6.1 code point, or the preloaded file exceeds 80 KB; and a browser check that JetBrains Mono readouts keep their width as digits change (a story `play` function or the font test in Playwright; say which).
@@ -80,7 +80,7 @@ Read, in this order:
 Restyling components (s33), any feature screen (s34–s43), deleting Music Stand roles (s45), the phone fit rule (s43), new visual baselines (none of the 72 is regenerated here; they are all invalidated by the redesign, 28 §4), the human legibility and music-stand tests (G5).
 
 ## Acceptance criteria
-- `perf-baseline.json` committed (or wherever the orchestrator decided) **from a run on the unchanged practice screen**, with the commit that recorded it named; the spread over 3 runs reported.
+- `perf-baseline.json` committed **from a run on the unchanged practice screen**, with the commit that recorded it named; the spread over 3 runs reported.
 - All token tests pass in every context (`dark`, `light`, `stage` × normal, more): contrast minimums, the ±0.1 baseline and surface blocks, translucent washes, gamut, CVD ≥ 12 ΔE2000, naming (`BACKGROUND_HEX` agrees with `--background`; component tokens never reference a primitive).
 - Every changed expected value listed with its reason; no minimum, tolerance or floor lowered.
 - Fonts reproducible (two runs of `subset.sh` give identical bytes), `tnum` and the code points proven by the test, preload ≤ 80 KB.
@@ -90,18 +90,18 @@ Restyling components (s33), any feature screen (s34–s43), deleting Music Stand
 
 ### Commands (bash on macOS or Git Bash on Windows; prefix each with `cd "<worktree>" &&`)
 ```bash
-# before changing anything: budget and the perf baseline (heavy lock; needs .env and the e2e stack, see your brief)
+# before changing anything: budget and the perf baseline (needs .env and the e2e stack)
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
 # after
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
 pnpm --filter @splitune/ui-tokens typecheck && pnpm --filter @splitune/ui-tokens test
 pnpm exec vitest run --dir scripts
 bash scripts/fonts/subset.sh && git status --short apps/web/public/fonts   # second run: no change
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                      # heavy lock; rerun once if Vite optimisation fails
+pnpm --filter @splitune/web test:stories                                      # rerun once if Vite optimisation fails
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
-node scripts/redesign/probe.mjs System --look fixed --select '<anchor>' --out <report dir>/system.json   # heavy lock
+node scripts/redesign/probe.mjs System --look fixed --select '<anchor>' --out <report dir>/system.json
 ```
 Known pre-existing failures (report as pre-existing, never skip): WebKit practice/audio stories timing out at 15 s; the first `test:stories` run in a fresh worktree failing during Vite dependency optimisation (rerun once).
 
@@ -115,5 +115,5 @@ Known pre-existing failures (report as pre-existing, never skip): WebKit practic
 
 ## Git
 - Branch `impl/s32-tokens-fonts`; subject-only Conventional Commits, lowercase imperative, explaining why (for example `feat(ui-tokens): replace music stand values with night rehearsal and daylight roles so every screen restyles from one source`); stage exact paths; `gitleaks git --pre-commit --staged --redact --verbose` before each commit. Commit the perf baseline in its own commit before the token commits, so its parent is the unchanged screen.
-- Never push, merge, rebase onto `dev` or open a PR. Don't edit `docs/status.md`, `docs/progress-log.md` or `docs/steps/README.md`; put the progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").
 - **Owner actions to list:** the legibility check of 26 §6.1 (JetBrains Mono tab digits vs Instrument Sans and Inter 4 tabular digits on 1/7, 3/8, 6/0 at 0.5 / 0.75 / 1.5 m, with a story or page you prepare for it and its exact URL); the outcome decides whether Inter 4 replaces a family in a later step.

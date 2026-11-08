@@ -1,17 +1,16 @@
 # Step s43 — Phone and tablet: glance view, Tools sheet, Stand view, pedal setup wizard
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), last in the practice lane (s35 → s37 → s38 → s39 → s40b → s41b → s42 → **s43**). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s43.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), last in the practice lane (s35 → s37 → s38 → s39 → s40b → s41b → s42 → **s43**). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s43.
 
 | | |
 |---|---|
-| Branch | `impl/s43-phone-tablet` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s43-phone-tablet` from the current `dev` |
 | Hard deps | s42 |
 | Gates | G4 (owner on real devices after the practice lane: phone, tablet on a stand); **G5** (owner, before the final merge): pedal hardware through the wizard (AirTurn modes 2/3/5, iRig BlueTurn), iPad Safari and the installed PWA (wake lock for 15 minutes) |
-| Owned globs (plan table) | practice layout files, `features/settings/**` keyboard parts |
+| Owned globs | practice layout files, `features/settings/**` keyboard parts |
 | Concretely | `apps/web/app/features/practice/{layout.ts,glance-view.tsx,practice-page.tsx}`, new Stand view, phone landscape and Tools-sheet files under `features/practice/` (all lazy), `input-mapper.ts`, `key-bindings.tsx`, `keys-store.ts`, `model/keymap.ts` (+ tests) for pedal capture, holds and presets, the hot practice files; `apps/web/app/features/settings/keyboard-settings.tsx` and new wizard files under `features/settings/`; `en.json` keys in `stand.*`, `tools.*`, `pedal.*` (new groups at their alphabetical positions) and the s43 `shortcuts.*` rows |
-| Needs the orchestrator's OK first | a new E2E spec for the phone fit rule (for example `apps/web/e2e/phone-fit.spec.ts`; 26 §6.3 says s43 builds and tests it); `apps/web/app/ui/pedal-hud.tsx` if the "Set it up" action needs a prop; the visual baselines `practice--phone--*` and `practice--tablet--*`, `practice-tab-pending--*`, `practice-stems-expired--*` (tablet rows change to Stand view) |
+| Ask the owner first | a new E2E spec for the phone fit rule (for example `apps/web/e2e/phone-fit.spec.ts`; 26 §6.3 says s43 builds and tests it); `apps/web/app/ui/pedal-hud.tsx` if the "Set it up" action needs a prop; the visual baselines `practice--phone--*` and `practice--tablet--*`, `practice-tab-pending--*`, `practice-stems-expired--*` (tablet rows change to Stand view) |
 | Effort | xhigh |
-| Runs in parallel with | backend steps (s44) only |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`, `docs/specs/24-browser-compatibility.md` (feature-detect, never UA-sniff; Tier 1 browsers).
@@ -21,7 +20,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - `docs/specs/28-ui-quality-and-design-review.md` §3 (Phone fit row, target sizes incl. 88 Stand view, focus not obscured with the Tools sheet open), §5, §5.1 (Stand at 1180 × 820 coarse, Music stand; Phone-* at 390 × 844 coarse), §6 (the task round items for pedals and the Tools sheet).
 - Mockups: `Stand.dc.html`, `Phone-Practice.dc.html`, `Phone-Tools.dc.html`, `Settings-Pedal.dc.html`. Report sections "Stand view on tablets", "Phones: glance first, Tools when needed", "Settings and the pedal wizard", "The new key and pedal map".
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`; s35–s42 will have changed it)
+## What exists (verified at `0c3d5c3`; s35–s42 will have changed it)
 - `features/practice/layout.ts` `usePracticeLayout()` returns `desktop`, `tablet-landscape`, `tablet-portrait`, `phone-landscape`, `phone-portrait` from `(pointer: coarse)`, `(max-width: 640px)`, `(max-height: 640px)` and orientation (feature queries only).
 - `glance-view.tsx` (lazy) is today's phone view; there is no Stand view, Tools sheet or wizard. `model/keymap.ts` has per-action learned keys (`LearnedKeys`, `learn()`); "Learn this pedal" exists in `keyboard-settings.tsx`. After s35 ↑/↓ show "Pedal detected? Set it up" and `keys-store` has `singleKeys`; after s36 Keyboard & pedal has a "Have a pedal? Set it up" placeholder card; after s40b the phone mini-mixer exists; after s42 `BeatPulse` animates and the vibrate setting exists.
 - `score-theme.ts` keeps tab digits ≥ 18 px.
@@ -67,15 +66,15 @@ pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget         
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
 node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path apps/web/app/features/settings   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                                  # heavy lock
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
 node scripts/redesign/render-mockups.mjs --file Stand --file Phone-Practice --file Phone-Tools --file Settings-Pedal
 node scripts/redesign/probe.mjs Stand --look night --touch --select '<anchor>'
 node scripts/redesign/probe.mjs 'http://localhost:6006/iframe.html?id=<story>&viewMode=story&globals=distance:floor' --look night --width 390 --height 844 --touch --select '#storybook-root <anchor>'
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/phone-fit.spec.ts      # heavy lock
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # heavy lock; compare the tablet context
-cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test                # heavy lock
-pnpm --filter @splitune/web e2e:visual:update -g "practice @ phone|practice @ tablet|practice-tab-pending @|practice-stems-expired @"         # heavy lock, Docker
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/phone-fit.spec.ts
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # compare the tablet context
+cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test
+pnpm --filter @splitune/web e2e:visual:update -g "practice @ phone|practice @ tablet|practice-tab-pending @|practice-stems-expired @"         # Docker
 ```
 Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; first `test:stories` run failing in Vite optimisation (rerun once).
 
@@ -85,8 +84,8 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 3. A file outside the owned globs and the OK'd extras (the desktop regions, `features/shell`, other settings sections).
 4. The phone fit rule can't be met at 18 px on a test size (the rule says the box scrolls instead: if that breaks another rule, stop).
 5. Any layout choice that would need user-agent sniffing.
-6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an unmerged step becomes yours to change only after its owner has merged: then merge `dev` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your progress-log entry. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s43-phone-tablet`; subject-only Conventional Commits (for example `feat(practice): open tablets in stand view so the music reads from the stand and pedals drive the dock`); stage exact paths; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").

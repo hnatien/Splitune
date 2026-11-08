@@ -1,45 +1,40 @@
 # Step s40a — All stems, backend: keep every separated stem plus the mix-minus
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), backend lane. Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s40a. This is a measurement-first ML step: **the cache-key and config change ships only after owner gate G3.**
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), backend lane. Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s40a. This is a measurement-first ML step: **the cache-key and config change ships only after owner gate G3.**
 
 ## Resume here (state on 2026-11-08)
-Built on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/worktrees/s40a-all-stems`: the Mac WIP `ac460c6` plus fixes. Report: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s40a.md`. Reviews: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s40a-wip-review.md` and `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s40a-review.md`.
-- **Owner (D16):** `impl/29-separation-improvements` is set aside, and s40a continues on `impl/redesign`. Stop point 6 is answered.
-- **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. The estimate is in the report.
-- **Review round 1** (`s40a-review.md`) was being fixed in the old session (commits after `59981bd`). Check the branch and the report for what's done, and finish the rest:
-  1. **HIGH:** `stem_post`'s cache key must include the target, the per-stem roles and the mix-minus mode, so two learners on the same raw stems get different keys. Test both cases (different learners, same learner twice). Correct the report's cache-invalidation section; the collision already existed for bass/drums.
-  2. **MEDIUM:** show the ~30 % limit honestly for bass/drums learners on the RTX 3060. If it can be exceeded, the pre-approval becomes conditional on the G3 measurement. Give options and build none.
-  3. **LOW:**
-     - correct the raw-FLAC cache growth per learner;
-     - make the stems fixture coherent for the bass stories, then run `test:stories` against the baseline;
-     - warm the model so before/after separate times compare;
-     - state the empty-extra threshold and its trade-off.
+Built and tested on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/worktrees/s40a-all-stems` (the Mac WIP `ac460c6` plus fixes). The estimate, the findings and the G3 commands are in the progress-log entry "Step s40a: all stems, backend (in progress)".
+- **Owner (D16):** `impl/29-separation-improvements` is set aside until the owner merges it into `dev`. Stop point 6 is answered.
+- **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. For bass/drums learners on the RTX 3060 the estimate is 18–37 %, so that case waits for G3's measurement.
+- **An independent review's fixes are committed:**
+  - `4c1def6`: `stem_post`'s cache key carries the target, the roles and the mix-minus mode;
+  - `02d71b6`: warmed models in `all_stems.py`;
+  - `136f88e`: a coherent stems fixture;
+  - `f068351`: the 06 note.
 
-  Re-verify. If this round changed code, do a second review round.
-- **Then wait for the owner to merge impl/29 into `dev`.** After that:
-  1. **Update `impl/redesign`.** In `redesign-int`, merge `dev` into `impl/redesign`. Expect conflicts in `CLAUDE.md` and `AGENTS.md`: keep both rule sets. Regenerate contracts with `pnpm contracts:gen`. Re-run the integration gates and push.
-  2. **Update the step branch.** Merge `impl/redesign` into `impl/s40a-all-stems`. The only expected conflict is `separate.py`'s module docstring: keep both paragraphs and drop impl/29's stale "(drums, bass)". Re-run ruff, pyright and pytest in this worktree's venv.
-  3. **Decide the "other" stem case:** when impl/29's piano fallback fires, "other" can hold the learner's keys. The report has the options. Recommendation: when the fallback applies, derive "other" as the mixture − the target − Σ the other extras, and check it with `all_stems.py`'s overlap column.
-  4. **G3 (owner, on the GPU):**
-     - re-run `all_stems.py` on the PC with `--before` set to impl/29's map with `keep: [drums, bass]`, a working tagger, the Mega-53 weights and the synth-keys window `765d5131-piano`;
-     - run `pnpm eval:regression`. It can't see this change; the real guard is `all_stems.py`'s "target identical" column;
-     - hold the listening session.
-
-     The exact commands are in the report's Owner actions.
-  5. **Merge** per the brief.
+  Their verification was interrupted, so re-run it: ruff, pyright and `pytest packages/stage_separation eval/tests/test_all_stems.py` in this worktree's venv; the full `pytest`; `pnpm contracts:check` and the contracts tests; `pnpm lint`; web unit tests; and `test:stories` against the known failures (the fixture feeds the bass stories). Then fill in the entry's Verification line.
+- **After the owner merges impl/29 into `dev`:**
+  1. **Update the branch.** Merge `dev` into `impl/s40a-all-stems`. The only expected conflict is `separate.py`'s module docstring: keep both paragraphs and drop impl/29's stale "(drums, bass)". Run `pnpm contracts:gen`, then ruff, pyright and pytest.
+  2. **Decide the "other" stem case:** when impl/29's piano fallback fires, "other" can hold the learner's keys. Recommendation: when the fallback applies, derive "other" as the mixture − the target − Σ the other extras, and check it with `all_stems.py`'s overlap column on `765d5131-piano`.
+  3. **G3 (owner, on the GPU):**
+     - `all_stems.py run --before <dev's map with keep: [drums, bass]>` with a working tagger and the Mega-53 weights;
+     - one timed Full bass analysis before and after (decides the PC ~30 %);
+     - the full `pnpm eval:regression`. It can't see this change; the real guard is `all_stems.py`'s "target identical" column;
+     - `pytest -m models packages/stage_separation`;
+     - the listening session from `all_stems.py export`.
+  4. **Merge** into `dev` when the owner asks.
 - **Note for s40b (also in s40b's prompt):** isolated stems don't always sum to the song, so use the mix-minus as the band unless every instrument was kept.
 
 | | |
 |---|---|
-| Branch | `impl/s40a-all-stems` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it, **only after G3** |
-| Hard deps | G1, and (per the plan) `impl/29-separation-improvements` merged into `dev` by the owner, then `dev` merged into `impl/redesign`. **That branch doesn't exist** on this machine or on `origin` (checked 2026-11-08), so build on the current `impl/redesign` tip and list the reconciliation as an owner action (below) |
+| Branch | `impl/s40a-all-stems` from the current `dev`; it merges only after **G3** |
+| Hard deps | G1. The merge also waits for `impl/29-separation-improvements` to be in `dev` (D16): it changes the same separation code and contracts, so merge `dev` into this branch once the owner has merged it |
 | Gates | **G3** (blocks the merge, not the work): the owner approves the separation-config and cache-key change, runs (or approves running) `pnpm eval:regression` on the GPU machine, and listens to the separated stems by ear |
-| Owned globs (plan table) | `services/ml/**` (separation, stem_post, config), `packages/contracts/src/analysis/**`, generated contracts |
+| Owned globs | `services/ml/**` (separation, stem_post, config), `packages/contracts/src/analysis/**`, generated contracts |
 | Concretely | `services/ml/packages/stage_separation/**`, `services/ml/config/separation.personal.yaml`, `services/ml/eval/**` only for a measurement script or report (never `regression.baseline.json`), `packages/contracts/src/analysis/{stems,separation}.ts` (+ fixtures under `packages/contracts/fixtures/` if a field changes), `packages/contracts/schema/**` and `services/ml/packages/splitune_ml_core/src/splitune_ml_core/contracts/_generated.py` regenerated by `pnpm contracts:gen` (never hand-edited) |
 | Not yours (even though `services/ml/**` matches) | `services/ml/packages/stage_sections/**` and `services/ml/islands/**` (s41a's; the two steps may run together), every other `stage_*` package, `services/ml/uv.lock` unless a dependency must change (ask first) |
-| Contracts | Only one in-flight step at a time may change `packages/contracts/**` or generated contracts: confirm with the orchestrator that s37, s39 and s44 aren't |
+| Contracts | Contracts and generated contracts: only one unmerged step at a time may: before you start, check `docs/status.md` and `git branch --list 'impl/s*'` that no other unmerged step changes them |
 | Effort | xhigh |
-| Runs in parallel with | s32/s33 and the screens or practice lane; s41a only if neither touches the other's files (above) |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, **`docs/specs/25-personal-mode.md`** (R2 free tier, the Mac workers, no billable resources).
@@ -47,13 +42,13 @@ Built on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/wor
 - `docs/steps/s28-separation-evaluation.md` and the progress-log entries for steps 07, 07b, 22, 24, 28 (how separation was chosen and measured).
 - `redesign/report.md` Risks row "The multi-stem mixer costs compute and storage" (estimate first; ask the owner before expanding billable resources).
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`)
+## What exists (verified at `0c3d5c3`)
 - **Config** `services/ml/config/separation.personal.yaml`: per-instrument chains (guitar `[bs_roformer_sw, htdemucs_6s]`; bass and drums `[bs_roformer_sw, htdemucs_ft, htdemucs_6s]`; piano `[bs_roformer_sw, htdemucs_6s]` with a `solo_check`; vocals `[mel_roformer_kim_vocals, bs_roformer_viperx_1297, bs_roformer_sw, htdemucs_ft]`), `mix_minus: subtract` (complement for vocals), and **`keep: [drums, bass]`** with `keep_min_prob: 0.01`. So separation keeps only the target, drums and bass (when the producing run made them and the tagger doesn't rule them out) and a mix-minus, although BS-Roformer-SW and htdemucs_6s output six stems (bass, drums, guitar, piano, vocals, other); the vocals head is a two-stem model (vocals, other).
 - **Stage** `services/ml/packages/stage_separation/src/stage_separation/`: `separate.py` (`plan` filters `keep` by the tagger, `roles` maps model outputs to `target` / `extra` / `complement`, `store` writes 24-bit FLAC to the worker's cache dir), `stem_post.py` (aligns, measures presence and bleed, encodes AAC 160 kbps and optional Opus, writes `stems.json`; its cache key hashes the raw stems), `models.py`, `config.py`, `dsp.py`, `encode.py`.
 - **Contracts** `packages/contracts/src/analysis/stems.ts` (`Stem { stem_id, kind: isolated | mix_minus | residual, instrument?, provider, files, loudness_lufs, gain_to_unity_db, energy_ratio_to_mix, quality_hint, empty }`) and `separation.ts` (`role: target | complement | extra`, `mix_minus: subtract | complement`).
 - **Regression suite** `services/ml/eval/regression.yaml` + `regression.baseline.json`, run by `pnpm eval:regression` (`scripts/eval-regression.mjs` → `uv run --no-sync splitune-eval regress`; `--smoke` is a CPU check).
 - **Web** (`apps/web/app/features/practice/model/mixer.ts`) plays only "Your part" and the mix-minus, so extra isolated stems don't double up today; s40b changes that.
-- **Reconciliation:** `impl/29-separation-improvements` isn't present locally or on `origin`; its changes (if the owner has them elsewhere) touch the same separation code and contracts.
+- **Reconciliation:** `impl/29-separation-improvements` (the owner's, local on the PC) touches the same separation code and contracts; it is set aside until it is in `dev` (D16).
 
 ## Goal
 Every Full analysis keeps all the stems its separation run produced (bass, drums, guitar, piano, vocals, other, as the model gives them) plus the mix-minus of the learner's part, each with presence, loudness, quality hint and files in `stems.json`, so s40b can mix every stem, with the storage and compute impact measured and approved by the owner before the cache-key change merges.
@@ -68,7 +63,7 @@ Every Full analysis keeps all the stems its separation run produced (bass, drums
    - **storage:** bytes per stem from `stem_post`'s encodings (AAC 160 kbps, plus Opus when written) × the extra stems per song, for a 4-minute song and for the owner's current library (count songs and their stems from the local database or ask), against the R2 free tier (10 GB-month storage, 1 M Class A and 10 M Class B operations a month; re-check the current limits on Cloudflare's R2 pricing page and cite it); the worker's local cache growth for raw 24-bit FLAC;
    - **compute:** separation time on the owner's Mac (MPS) and the RTX 3060 worker per song before and after. Extra stems from the same run cost only `stem_post` encoding; a part whose head model is two-stem (vocals) would need a second run for the other stems: estimate it and propose whether to run it, run it only on demand, or leave vocals with vocals + "other";
    - **cache invalidation:** which stage cache keys change (`separate` params, `stem_post`) and what that re-runs for existing songs (none automatically; a re-analysis recomputes).
-   Wait for the orchestrator to relay the owner's answer before writing code.
+   Wait for the owner's answer before writing code.
 2. **Config and stage:** replace `keep: [drums, bass]` with keeping every output of the producing run (minus empty ones per presence), keep the mix-minus of the target, keep `keep_min_prob` semantics for the tagger veto or state why it changes; `roles` and `stem_post` produce one `Stem` per kept output with `instrument` set (`other` for "other"), presence, `quality_hint` and `empty`; mixer order "Your part" first stays a web concern.
 3. **Contracts:** only if a field is needed (for example a stem role or a "from a second run" provider note); every change additive, fixtures updated, `pnpm contracts:gen` regenerated; say exactly which artefacts change shape.
 4. **Tests (own CPU venv, no weights):** unit tests for `plan`/`roles` per chain head (six-stem, four-stem, two-stem), the tagger veto, presence/empty handling, `stems.json` shape and cache-key change; `models`-marked tests stay as they are (they need weights: the owner runs them at G3).
@@ -101,11 +96,11 @@ Known pre-existing failures: ML `test_recovery.py` ×2, `test_beats_model::test_
 1. The impact estimate (always: wait for the owner's answer).
 2. The estimate exceeds the R2 free tier or adds more than ~30 % to analysis time on either worker.
 3. A file outside the concrete list (another stage, `stage_sections`, `islands`, `uv.lock`, the API or the web).
-4. A contract change that isn't additive, or another in-flight contracts step.
+4. A contract change that isn't additive, or another unmerged contracts step.
 5. The regression suite would only pass with a new baseline.
-6. Any sign that `impl/29-separation-improvements` exists after all (a branch, a PR, owner files): stop and ask how to reconcile before going further.
+6. Answered by D16: `impl/29-separation-improvements` is set aside until the owner has merged it into `dev`; then merge `dev` into this branch.
 
 ## Git
 - Branch `impl/s40a-all-stems`; subject-only Conventional Commits (for example `feat(separation): keep every stem the model returns so the mixer can show each one`); stage exact paths; never commit audio, weights or eval data; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
-- **Owner actions to list:** G3 (config and cache-key approval, full `pnpm eval:regression` on the GPU machine, listening by ear); the `impl/29-separation-improvements` reconciliation (if that work exists somewhere, merge it into `dev`, then the orchestrator merges `dev` into `impl/redesign` and this branch merges `impl/redesign` before G3; `pnpm contracts:gen` regenerates the generated files after the merge); after the merge, the production-worker update (`git pull`, `uv sync` on the Mac, `pnpm workers restart`).
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").
+- **Owner actions to list:** G3 (config and cache-key approval, full `pnpm eval:regression` on the GPU machine, listening by ear); the `impl/29-separation-improvements` reconciliation (the owner merges it into `dev`; then this branch merges `dev` before G3, and `pnpm contracts:gen` regenerates the generated files after the merge); after the merge, the production-worker update (`git pull`, `uv sync` on the Mac, `pnpm workers restart`).

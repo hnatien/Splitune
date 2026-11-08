@@ -1,18 +1,17 @@
 # Step s34 — App shell, ⌘K palette, Library and Add song
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s34.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s34.
 
 | | |
 |---|---|
-| Branch | `impl/s34-shell-library` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s34-shell-library` from the current `dev` |
 | Hard deps | G2 |
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the screens lane) reviews these screens and places "Works best with" (27 §3.6) |
-| Owned globs (plan table) | `apps/web/app/features/{shell,library,import}/**`, `apps/web/app/routes/_app.tsx`, `routes/_app/{library,import}.tsx`, their `en.json` keys |
-| Also yours by the plan's rules | `en.json` keys in the groups `import.*`, `library.*`, `nav.*`, `upload.*`, `record.*`, `delete.song_*`, `plan.allowance` and `analysis.queued_offline` / `analysis.eta_inline`, added inside their group (alphabetical position), never at the end of the file; the `copy-keys.test.ts` `CATALOGUE` entries for `import.live`, `analysis.queued_offline`, `plan.allowance`, `library.empty`, `library.empty_body`, `delete.song_confirm`, `delete.song_confirm_body` (27 §5.6 changed/new); the visual baselines `library--*` and `import-file--*` |
-| Needs the orchestrator's OK first | Existing `apps/web/app/ui/` files whose layout 26 §12.2 gives to s34: `song-card.tsx`, `allowance-meter.tsx`, `empty-state.tsx`, `worker-status.tsx`, `drop-zone.tsx`, `waveform-preview.tsx`, `ui/library.stories.tsx`, `ui/import.stories.tsx`; new `ui/` files `command-palette.tsx`, `bottom-nav.tsx`, `continue-card.tsx`, `week-strip.tsx`, `revisit-list.tsx` (or the same components under `features/library`, composed from `ui/`, if they have no new visual primitive); `apps/web/app/copy-keys.test.ts` (entries above); additive changes to `apps/web/e2e/helpers.ts` (union-merged); `routes/_focus.tsx` if the focus shell needs a route change |
+| Owned globs | `apps/web/app/features/{shell,library,import}/**`, `apps/web/app/routes/_app.tsx`, `routes/_app/{library,import}.tsx`, their `en.json` keys |
+| Also yours | `en.json` keys in the groups `import.*`, `library.*`, `nav.*`, `upload.*`, `record.*`, `delete.song_*`, `plan.allowance` and `analysis.queued_offline` / `analysis.eta_inline`, added inside their group (alphabetical position), never at the end of the file; the `copy-keys.test.ts` `CATALOGUE` entries for `import.live`, `analysis.queued_offline`, `plan.allowance`, `library.empty`, `library.empty_body`, `delete.song_confirm`, `delete.song_confirm_body` (27 §5.6 changed/new); the visual baselines `library--*` and `import-file--*` |
+| Ask the owner first | Existing `apps/web/app/ui/` files whose layout 26 §12.2 gives to s34: `song-card.tsx`, `allowance-meter.tsx`, `empty-state.tsx`, `worker-status.tsx`, `drop-zone.tsx`, `waveform-preview.tsx`, `ui/library.stories.tsx`, `ui/import.stories.tsx`; new `ui/` files `command-palette.tsx`, `bottom-nav.tsx`, `continue-card.tsx`, `week-strip.tsx`, `revisit-list.tsx` (or the same components under `features/library`, composed from `ui/`, if they have no new visual primitive); `apps/web/app/copy-keys.test.ts` (entries above); additive changes to `apps/web/e2e/helpers.ts` (union-merged); `routes/_focus.tsx` if the focus shell needs a route change |
 | E2E specs | You own `apps/web/e2e/journey.spec.ts` (selector and copy lines your renames break). Other specs: Stop point 6 |
 | Effort | high |
-| Runs in parallel with | s35 and s36 (screens lane after G2), and backend steps |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`, `docs/specs/23-plans-free-and-paid.md` §5 (locks and limits at the point of action), `docs/specs/13-import-onboarding-and-youtube-embed.md` (import mechanics).
@@ -22,7 +21,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - Mockups: `Library.dc.html`, `AddSong.dc.html`, `Phone-Library.dc.html`, `Phone-Add.dc.html`, `States.dc.html` (empty library, command palette).
 - `redesign/research/product_inventory.md` §2 "Shells", "Routes", §4 (import and start flow), §5 (library).
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`)
+## What exists (verified at `0c3d5c3`)
 - **Shell** `apps/web/app/features/shell/`: `app-shell.tsx`, `marketing-shell.tsx`, `focus-shell.tsx`, `bare-shell.tsx`, `account-menu.tsx`, `usage-meter.tsx`, `skip-link.tsx`, `shell.stories.tsx` (`Screens/Shell`). The marketing, focus and bare shells are in your glob: the marketing bar (27 §1) is yours; s36 builds the pages inside it.
 - **Library** `features/library/`: `library-page.tsx`, `song-entry.tsx`, `song-dialogs.tsx` (rename, delete), `song-status.ts` (+ test), `library-skeleton.tsx`, `queries.ts`, `library.stories.tsx` (`Screens/Library`: `Populated`, `ViewSwitch`, `PopulatedList`, `PopulatedDark`, `PopulatedStage`, `WorkerOffline`, `Empty`, `NoResults`, `Loading`, `LoadError`). The songs list contract already has `last_opened_at` and `best_clean` (`packages/contracts/src/api/songs.ts` lines 49, 67–87), enough for the pre-s39 Continue card.
 - **Import** `features/import/`: `import-page.tsx` (the `/import` page), `analysis-choice.tsx`, `file-row.tsx`, `link-panel.tsx`, `record-panel.tsx`, `upload-pill.tsx`, `upload-manager.ts` (uploads continue in the background), `preflight.ts` (warning checks), `local-audio.ts`, `recorder.ts`, `import.stories.tsx` (`Screens/Import`).
@@ -37,8 +36,8 @@ The app shell (64 px bar with ⌘K, allowance and a global Add song; phone heade
 - **D1:** 390 px renders of desktop-only boards are not phone references; phone QA compares against `Phone-Library` and `Phone-Add`.
 - **D2:** the appearance choices in the account menu and ⌘K are exactly Night Rehearsal / Daylight / Follow my device; `stage` is a valid id, not a choice.
 - **D6:** budget 318.7 of 320 KB gzip; the command palette is lazy; report before/after bytes.
-- Frozen decision 3 (prompt.md §1): top-bar shell with ⌘K and a global "Add song"; Add song is a dialog (desktop) or a full-screen sheet (phone).
-- **Wave contract with s35 (put in the orchestrator's decisions register):** the palette exposes one registration hook in `features/shell` (for example `usePaletteActions(group, actions)`), which s35 calls from Practice for "Loop bars a–b", view switches and "Display and reading". Agree the name with the orchestrator before s35 needs it.
+- Frozen decision 3: top-bar shell with ⌘K and a global "Add song"; Add song is a dialog (desktop) or a full-screen sheet (phone).
+- **Contract with s35 (record it in your progress-log entry):** the palette exposes one registration hook in `features/shell` (for example `usePaletteActions(group, actions)`), which s35 calls from Practice for "Loop bars a–b", view switches and "Display and reading". Record the name in your progress-log entry so s35 uses it.
 
 ## Deliverables
 1. **App shell** (27 §1, 26 §12.2 `AppBar`): wordmark → Library, Library · Settings nav links, search button "Search songs, clips and actions" + `Kbd` (`Ctrl K` / `⌘ K`; an icon below `lg`), `AllowanceMeter` from `lg`, **Add song** (the one primary), account avatar menu (username · Settings · Keyboard & pedal · Appearance with the three choices · Help · Sign out). Sticky bar; `scroll-padding` so focus is never hidden (2.4.11). Phone: 56 px header + 76 px `BottomNav` (Library · Add song · Settings) with safe-area padding. Files dropped anywhere in the app shell show a "Drop to add" overlay and open Add song with the file. Restyle the marketing, focus and bare shells' bars on the new tokens (27 §1 table).
@@ -60,7 +59,7 @@ Progress data in the library (s39: This week, Worth a revisit, sparkline, first-
 - Stories for every state in both themes; axe clean in Chromium and WebKit; copy-keys test green with the changed entries listed.
 - `/import` and `/import?tab=record` redirect to `/library?add=file` / `?add=record`; `?add=` opens the dialog; dropping a file opens it with the file.
 - Budget before/after reported (palette lazy, outside the practice route); `css-floor` clean.
-- E2E smoke green for the specs you own; renamed selectors listed against their 27 §5.7 rows; any needed edit in a spec you don't own recorded in your report (Stop point 6).
+- E2E smoke green for the specs you own; renamed selectors listed against their 27 §5.7 rows; any needed edit in a spec you don't own recorded in your progress-log entry (Stop point 6).
 
 - Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
@@ -69,23 +68,23 @@ pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget         
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
 node scripts/check-ui-tokens.mjs --path apps/web/app/features/shell --path apps/web/app/features/library --path apps/web/app/features/import   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test               # includes copy-keys.test.ts
-pnpm --filter @splitune/web test:stories                                                 # heavy lock
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
 node scripts/redesign/render-mockups.mjs --file Library --file AddSong --file Phone-Library --file Phone-Add --file States
 node scripts/redesign/probe.mjs Library --look night --width 1440 --select '<anchor>'   # and the story URL with the same anchors
-pnpm --filter @splitune/web e2e:visual:update -g "library @|import-file @"               # heavy lock, Docker
-cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test   # heavy lock, .env copied
+pnpm --filter @splitune/web e2e:visual:update -g "library @|import-file @"               # Docker
+cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test   # .env copied
 ```
 Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; first `test:stories` run failing in Vite optimisation (rerun once); api `pipeline.test.ts` ×2 (intermittent) if you run api tests.
 
 ## Stop points (stop, report with 2–3 options and a recommendation, wait)
 1. 27 §3.5/§3.6, a mockup and the code disagree (for example a state the mockup shows and the spec doesn't name, or "Pick another" needing an API the spec doesn't give).
 2. The budget would exceed 320 KB, or the palette can't be lazy.
-3. You need a file outside the owned globs and the OK'd extras (a `ui/` file another step owns, `features/practice/**`, `features/settings/**`, `lib/**`, `features/story-fixtures.ts` unless the orchestrator assigned it to you at dispatch).
+3. You need a file outside the owned globs and the OK'd extras (a `ui/` file another step owns, `features/practice/**`, `features/settings/**`, `lib/**`, `features/story-fixtures.ts` beyond additive fixtures for your own stories).
 4. A contract, API or DB change (none is in scope).
 5. An existing e2e or story assertion fails for a reason other than copy or structure that doc 27 changed.
-6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an unmerged step becomes yours to change only after its owner has merged: then merge `dev` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your progress-log entry. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s34-shell-library`; subject-only Conventional Commits (for example `feat(web): open add song as a dialog over the library so a pick goes straight to practice`); stage exact paths; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").
