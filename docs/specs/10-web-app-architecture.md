@@ -17,7 +17,7 @@ Structure of `apps/web`: routing and rendering modes, state, data fetching, work
 - **Heavy work off the main thread:** decode Worker, `music-core` Worker, alphaTab Worker, AudioWorklet, (v1) pitch-tracking Worker. Communication via Comlink-style typed messaging.
 - **Not cross-origin isolated** (COEP would break the YouTube embed in Safari/Firefox), so no `SharedArrayBuffer`; ONNX Runtime Web runs single-threaded WASM SIMD or WebGPU.
 - **PWA with Serwist:** app-shell precache, runtime caching for fonts/WASM; OPFS for offline stems (v1); IndexedDB for metadata, sync queue and pre-signup progress.
-- **Design system:** the "Music Stand" system in `26-design-system.md` — shadcn/ui CLI v4 on Base UI primitives + Tailwind v4 tokens (Light/Dark/Stage appearances, paper score surface, one indigo accent), Okabe-Ito stem palette, practice targets 64/48 CSS px, reading sizes by distance preset. Screens and copy: `27-screens-flows-and-content.md`; UI quality workflow: `28-ui-quality-and-design-review.md`.
+- **Design system:** the "Night Rehearsal" system in `26-design-system.md` — shadcn/ui CLI v4 on Base UI primitives + Tailwind v4 tokens (Night Rehearsal and Daylight themes, notation on the page, one amber accent), a CVD-tested stem palette, practice targets 64/48 CSS px, reading sizes by distance preset. Screens and copy: `27-screens-flows-and-content.md`; UI quality workflow: `28-ui-quality-and-design-review.md`.
 
 ## 1. Routes
 | Route | Render mode | Content |
