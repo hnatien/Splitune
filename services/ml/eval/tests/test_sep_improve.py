@@ -24,7 +24,8 @@ def test_the_overlay_adds_candidates_and_settings_without_touching_the_map() -> 
     for name, spec in shipped.items():
         assert merged[name] == spec
     kim = merged["mel_roformer_kim_vocals@gain-14"]
-    assert kim.inference == {"overlap": 11, "gain": {"target_lufs": -14}}  # merged over the base
+    gain = {"overlap": 11, "autocast": True, "gain": {"target_lufs": -14}}
+    assert kim.inference == gain  # merged over the base
     assert kim.filename == shipped["mel_roformer_kim_vocals"].filename
     assert merged["bs_roformer_sw@shifts3"].inference == {
         **shipped["bs_roformer_sw"].inference,

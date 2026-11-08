@@ -140,23 +140,32 @@ def test_inference_settings_reject_unknown_and_foreign_keys() -> None:
 
 
 def test_the_shipped_map_uses_wrapper_settings_only_where_step_29_measured_them() -> None:
-    """Step 29 ships the chunk of piano's fallback model and SW's 13.35 s chunk; the other models'
-    plans, cache keys and library parameters are what they were, and wrapper settings never
-    reach the library."""
+    """Step 29 ships the chunk of piano's fallback model, SW's 13.35 s chunk and fp16 on the four
+    measured RoFormers; every RoFormer states its overlap, the Demucs models are what they were,
+    and wrapper settings never reach the library."""
     cfg = config.load()
     wrapped = {
         name: keys
         for name, spec in cfg.models.items()
         if (keys := set(spec.inference) & models.WRAPPER_KEYS[spec.arch])
     }
-    assert wrapped == {"mega53_keys": {"chunk"}, "bs_roformer_sw": {"chunk"}}
+    assert wrapped == {
+        "mega53_keys": {"chunk"},
+        "bs_roformer_sw": {"chunk", "autocast"},
+        "bs_roformer_viperx_1297": {"autocast"},
+        "mel_roformer_guitar_becruily": {"autocast"},
+        "mel_roformer_kim_vocals": {"autocast"},
+    }
     for name, spec in cfg.models.items():
         library = {k: v for k, v in spec.inference.items() if k not in wrapped.get(name, set())}
         assert models.library_params(spec) == {**models.LIBRARY_PARAMS[spec.arch], **library}
-    assert cfg.models["bs_roformer_sw"].inference == {"chunk": 588800, "overlap": 11.5}
-    assert cfg.models["mel_roformer_kim_vocals"].inference == {"overlap": 11}
+        if spec.arch == "mdxc":
+            assert "overlap" in spec.inference, name
+    sw = {"chunk": 588800, "overlap": 11.5, "autocast": True}
+    assert cfg.models["bs_roformer_sw"].inference == sw
+    assert cfg.models["mel_roformer_kim_vocals"].inference == {"overlap": 11, "autocast": True}
     plan = separate.plan(cfg, {"instrument": "vocals"}, None)
-    assert plan["inference"]["mel_roformer_kim_vocals"] == {"overlap": 11}
+    assert plan["inference"]["mel_roformer_kim_vocals"] == {"overlap": 11, "autocast": True}
 
 
 def describe_key(
@@ -237,6 +246,22 @@ def test_inference_settings_reach_the_separator_over_library_defaults(
     assert mdxc["demucs_params"] == models.LIBRARY_PARAMS["demucs"]
     assert demucs["demucs_params"] == {**models.LIBRARY_PARAMS["demucs"], "shifts": 1}
     assert demucs["demucs_params"]["overlap"] == 0.25
+
+
+@pytest.mark.parametrize(("accelerator", "fp16"), [("cuda", True), ("mps", False), ("cpu", False)])
+def test_autocast_runs_on_cuda_only(
+    tmp_path: Path,
+    fake_separator: list[dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    accelerator: str,
+    fp16: bool,
+) -> None:
+    monkeypatch.setattr(models, "device", lambda: accelerator)
+    autocast = with_inference("bs_roformer_sw", {"autocast": True})
+    models._separator("bs_roformer_sw", autocast, tmp_path)  # pyright: ignore[reportPrivateUsage]
+    models.release()
+    models._separator("bs_roformer_sw", with_inference("bs_roformer_sw", {}), tmp_path)  # pyright: ignore[reportPrivateUsage]
+    assert [b["use_autocast"] for b in fake_separator] == [fp16, False]
 
 
 def test_the_warm_model_reloads_when_its_settings_change(

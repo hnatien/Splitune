@@ -183,7 +183,8 @@ def _separator(name: str, spec: ModelSpec, output_dir: Path) -> Any:
         amplification_threshold=0.0,
         sample_rate=int(spec.inference.get("sample_rate", RATE)),
         use_soundfile=True,
-        use_autocast=bool(spec.inference.get("autocast", False)),
+        # Measured on CUDA only (08, step 29): MPS and CPU keep fp32 until measured there.
+        use_autocast=bool(spec.inference.get("autocast", False)) and device() == "cuda",
         mdxc_params=params if spec.arch == "mdxc" else LIBRARY_PARAMS["mdxc"],
         demucs_params=params if spec.arch == "demucs" else LIBRARY_PARAMS["demucs"],
     )
