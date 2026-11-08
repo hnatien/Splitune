@@ -30,6 +30,11 @@ What is built, as of **2026-10-29**. Details, verification and open items for ea
 | s23 | Vocal accuracy | Not started | Needs the owner's OK on plan and time budget | — |
 | s24 | Piano accuracy | Partial | Phases 0–6 built and measured (P2p); owner's songs end to end and Notes/Staff screenshots pending the owner | Step 24 |
 | s25 | Drums end to end | In progress | Phases 0–6 built: P2d (onset F1 0.838 vs 0.793 baseline), `notes.drums` behind `v1.drums`, drum score/levels/alphaTex, drum grid and staff views, gate pass (0.80) + confidence floor 0.75, local end to end done. Open: the owner's excerpts on the Mac, grid/staff screenshots, `v1.drums` on in production after deploy, DrumSep kit split (blocked) | Step 25 |
+| s31a | Redesign: Night Rehearsal specs (docs 26–28 rewritten; 12, 21 and the UI rule updated) | Done | Owner may revisit the deviation register (26 §4.9) | Step s31a |
+| s31b | Redesign: step prompts s32–s45 | Done | — | Step s31b |
+| s31c | Redesign: mockup harness (reference renders and fidelity probe) | Done | — | Step s31c |
+| s32 | Redesign: tokens, fonts, practice perf baseline | Parked | Draft perf spec only on `impl/s32-tokens-fonts` (`cb8fcd3`); resume on the owner's PC (`redesign/orchestrator/handoff.md`) | Redesign run paused |
+| s40a | Redesign: keep all separated stems (backend) | Parked | Unfinished, untested WIP on `impl/s40a-all-stems` (`ac460c6`); G3 on the owner's PC | Redesign run paused |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.

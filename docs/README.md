@@ -43,7 +43,7 @@ Spec numbers are stable: code comments cite them hundreds of times, so a spec is
 | Full-stack engineer | `specs/` 00–05, 14, 23 |
 | ML engineer | `specs/08`, `06`, `05`, `07`; `research/ml/pipeline-overview.md` |
 | Client / audio engineer | `specs/10`, `11`, `12`, `24` |
-| Designer | `specs/26`, `27`, `28` |
+| Designer | `specs/26`, `27`, `28` (the "Night Rehearsal" design system), then the mockups and `splitune.css` in [`../redesign/`](../redesign/README.md) |
 | Owner | `status.md` and the "needs the owner" items in `progress-log.md` |
 
 ## Keeping docs tidy

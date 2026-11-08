@@ -1819,3 +1819,70 @@ Owner request: sign-in and sign-up with only a username and a password, no Mailp
 - **Infra:** `mailpit` out of `infra/docker-compose.yml`, the Railway IaC (`infra/railway/railway.ts`: service, `SMTP_*`/`EMAIL_FROM` vars), `dev.mjs` tunnels, CI and `.env.example`. The live Railway `mailpit` service is not touched by this change.
 - **Tests:** API helpers sign up/in with a username and a password and record email in memory (`outbox`); new auth cases (placeholder email, wrong password, taken name, weak input, re-auth by password); the digest test talks to an in-process SMTP listener; e2e helpers sign up through the form.
 - **Verification:** `pnpm lint` exit 0; `pnpm --filter @splitune/{api,web,node-worker,contracts,db} typecheck` clean; `pnpm --filter @splitune/api test` 212 passed (after fixing the new delete assertion to 202); `pnpm --filter @splitune/db test` 161 passed; `pnpm --filter @splitune/web test` 214 passed; `pnpm contracts:check` and `pnpm db:check` clean; `vitest run --project storybook` on the auth, settings, shell and onboarding stories: 112 passed, `Guide`/`Guide Dark` time out in WebKit like the other audio-playing practice stories on this Windows machine. `pnpm --filter @splitune/node-worker test`: the digest passes; `pg-dump` fails because this machine has no `pg_dump` binary. Playwright e2e not run (needs the full stack with workers).
+
+## 2026-11-08 — Step s31c: Mockup harness (Night Rehearsal redesign)
+Redesign orchestrator step s31c (`redesign/orchestrator/prompt.md` §5), branch `impl/s31c-mockup-harness`.
+- **Built:** `scripts/redesign/` renders the 25 `redesign/mockups/*.dc.html` boards without the canvas runtime. `shim.js` stands in for the canvas `support.js` (`<x-dc>`, `<helmet>`, `<sc-for>`, `<sc-if>`, `{{holes}}`, `renderVals()`, the `look` prop) and fails loudly on an unknown tag or an unresolved hole. `render-mockups.mjs` writes full-page reference PNGs (Night Rehearsal and Daylight at 1440/1180/390; fixed boards at their own width) and a manifest (fonts, overflow) to the git-ignored `redesign/.renders/`. `probe.mjs` (CLI and module) returns the aria snapshot, role counts, bounding boxes and computed styles (sRGB-normalised colours) for a board or any URL. On Storybook it sets the `appearance` global, on the app it sets `splitune.display`, and it reports the `data-appearance` actually in effect. It never waits for network idle, and it exits 1 with an `errors` field on a bad status, page or request errors, or a theme that doesn't match.
+- **Review rework:** URL mode now themes, waits and fails the way the app does (review M1–M3). Fidelity fixtures pin the shim's output for `sc-if` branches, `sc-for` shadowing, nested holes and `?look=` (M4). Added probe fields margin, fontStyle, textTransform, textAlign and boxShadow, plus `--touch` and `--motion`.
+- **Notes for later steps:** at 390 px the desktop-only boards (Main, Practice-*) are squeezed desktop layouts, not phone designs. The manifest flags them with `overflowX`, and phone QA compares against the Phone-* boards only. The mockup fonts load from Google Fonts, so rendering needs network access.
+- **Verification:**
+  - `pnpm exec biome check .`, `check-db-access`, `check-ui-tokens`: clean.
+  - `pnpm exec vitest run --dir scripts`: 65 passed.
+  - `node scripts/redesign/render-mockups.mjs --check`: 46 board renders, 5 fidelity and 4 broken fixtures, 0 failures. A full render gives 110 PNGs.
+  - URL probe against Storybook `base-button--primary`: exit 0 in both looks. A missing story or a 404 exits 1.
+  - After the merge: web typecheck clean and web unit tests 214 passed. `test:stories` and the build were not re-run because no web file changed.
+
+## 2026-11-08 — Step s31a: Redesign specs (Night Rehearsal)
+Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch `impl/s31a-specs`.
+- **Built:** docs 26, 27 and 28 are rewritten in place for Night Rehearsal with their section numbers kept, so code comments citing "26 §5" still point at the right topic. They cover:
+  - the theme model: `dark` = Night Rehearsal (the default), `light` = Daylight, `stage` = Night with the stand reading sizes; the picker shows three cards and `stage` stays a valid id;
+  - OKLCH tokens with an sRGB-clamped amber, contrast pairs (§4.8), the amber-use list (§4.5) and a deviation register (§4.9, V1–V17);
+  - type: Instrument Sans and JetBrains Mono, with Inter 4 as the fallback;
+  - reading sizes per preset, and a phone fit rule (§6.3);
+  - targets: 64 px for main practice controls, 48 px secondary, ≥ 44 px elsewhere, 24 px AA floor;
+  - motion and confidence encoding (dashed outline plus "?" and frequency wording; calibration check C1);
+  - the component inventory, the IA and route map, every screen and state, and the copy catalogue (27 §5.6 changed/new keys, §5.7 every other change by owning step);
+  - design QA measured against the mockup renders (28 §5.1) and a perf gate (28 §3.1).
+- **Also updated:** doc 12 (practice layout) and doc 21 (V-feature UI notes). The UI rule in `CLAUDE.md`, `AGENTS.md` and `docs/steps/00-shared-context.md` now names Night Rehearsal. The budget line reads 318.7 KB gzip of 320 KB, about 1.3 KB left, measured on impl/redesign at 8d6a3f6. The rest: the Designer row in `docs/README.md`, row 26 in `docs/specs/README.md` (`assets/design/reference.html` marked superseded), and one wording line each in docs 02 and 10.
+- **Review:** the first review failed the draft: it lowered the main practice targets to 52 px and halved the reading sizes. Round 1 restored 64 px and today's tested floors, fixed the `--primary` text pairs (now `--primary-ink`, with an old → new table) and restored the §4.8 table that contrast.test.ts cites. Round 2 added the phone fit rule and the wash paint order (the loop band sits under the waveform bars) and made the size values consistent across docs.
+- **By design for later steps:** some mockup values fail the existing minimums: tab and staff lines, field borders, Daylight amber marks and focus ring, piano keys, Night danger text, and the stem palette (the mockup's worst pair is 1.9 ΔE2000; the retuned palette's is 12.4). Doc 26 corrects them, and no minimum is lowered. Reading-size literals rise (for example `--read-chord-current` Desk 32 → 112 px), and s32 updates those token-test values.
+- **Owner calls:** taken under the owner's pre-approval of G1. D2: 3 theme cards. D3: the ladder steps up after 3 clean passes. D4: Stand view is the default on tablets. D5: the brighter lines and retuned stems. The rest of the deviation register is listed for the owner to revisit.
+- **Verification:** `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean, every relative link resolves and gitleaks is clean. The changes are Markdown only, so no build or tests were run.
+
+## 2026-11-08 — Step s31b: Redesign step prompts
+Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch `impl/s31b-step-prompts`.
+- **Built:** 16 step prompts in the house format: s32–s39, s40a/b, s41a/b and s42–s45 in `docs/steps/`. Each prompt has its owned globs, hard deps, gates and effort as in the plan table, a "What exists" section checked against the code, acceptance criteria with exact commands, and stop points. `docs/steps/README.md` gains rows s31a–s45 and a "Redesign steps" section: steps branch from `impl/redesign`, the orchestrator merges them, plus the gates and lanes.
+- **Facts checked in the code:**
+  - The speed trainer is behind `v1.speed_trainer`, and the web reads neither the trainer nor `me.flags`.
+  - `GET /v1/progress` is unused and has no session data, so s39 needs an additive contract.
+  - `stage_sections` is a one-line stub and isn't scheduled.
+  - Separation keeps the target plus drums/bass and a mix-minus.
+  - The next migration is `0016`, and Web Push doesn't exist.
+  - `impl/29-separation-improvements` doesn't exist on this machine or on origin, so s40a builds on the current tip, and reconciling it is an owner action.
+- **Ownership decided by the orchestrator** (ledger D8–D14):
+  - Files in `apps/web/app/ui/` are owned per file after s33. `story-fixtures.ts` goes to s33.
+  - s35 owns `lib/display-store.ts` and `features/practice/banners.tsx`.
+  - Each existing e2e spec has one owner: practice → s35; onboarding, account, billing, fallbacks and a11y → s36; journey → s34. A file becomes available to another step only after its owner merges.
+  - The orchestrator union-merges `en.json`, the `copy-keys.test.ts` CATALOGUE and additive `e2e/helpers.ts` changes.
+  - s33 owns `scripts/check-ui-tokens.mjs`: it adds the 28 §3 rules scoped to `ui/**`, and s45 widens the scope.
+  - s32 also writes the perf baseline (`e2e/perf-practice.spec.ts`, `perf-baseline.json`, desktop and 1180×820 tablet).
+  - s37 waits for s36. s41a and s44 are never in flight together.
+- **Review:** passed with 6 medium findings (shared `display-store`, shared e2e specs, the banners' owner, missing lint rules, the engine's ±0.15 s clamp, the s41a/s44 overlap). All were fixed in rework round 1.
+- **Verification:**
+  - `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean.
+  - 582 spec-section citations, none unresolved. Table globs, deps and effort have no mismatches.
+  - The glob overlap over the 33 parallel pairs finds only the union-merged hot files and the one-at-a-time contracts pairs.
+  - gitleaks is clean.
+
+## 2026-11-08 — Redesign run paused and handed off to the owner's PC
+The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started on the owner's Mac and was paused there on the owner's instruction. Its state, the owner's later instructions and the decisions register D1–D15 are in `redesign/orchestrator/handoff.md`.
+- **Merged:** s31a (specs), s31b (step prompts) and s31c (mockup harness), via `impl/redesign`. G1 closed under the owner's pre-approval.
+- **Parked on pushed branches, unverified:**
+  - `impl/s32-tokens-fonts` (`cb8fcd3`): only a draft of `apps/web/e2e/perf-practice.spec.ts`, never run; no tokens changed.
+  - `impl/s40a-all-stems` (`ac460c6`): unfinished all-stems separation edits and tests, never run.
+- **Owner instructions:** ML work (s40a, s41a, G3) is tested on the owner's PC. The UI steps continue, with s40b and s41b built against fixture data. s44 (Web Push) is deferred until the owner asks for it.
+- **Measured at `8d6a3f6`:**
+  - lint, web typecheck, build and css-floor clean;
+  - web unit tests: 214 passed;
+  - `test:stories`: 988 passed (the first run failed on Vite dependency re-optimisation; the rerun was green);
+  - practice-route JS: 318.7 KB gzip of 320.0 KB.

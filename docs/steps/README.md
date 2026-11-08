@@ -43,6 +43,25 @@ The agent works on a branch `impl/NN-<name>` from the current `dev` (the integra
 | s24 | `s24-piano-accuracy.md` — pop-piano test set, then mixture fallback, stereo input, bleed gate, real per-note confidence, solo-piano bypass, separation, Aria-AMT and ensembles, pedal, electric-piano gate, PM2S hands (**stops for the owner's OK on plan and time budget**) | 16, piano work on `dev` | 18, 21, 22, 23 (19 only for wait mode/levels: both touch piano rendering) |
 | s25 | `s25-drums.md` — drums end to end: drum test set (P2d), ADTOF and other candidates measured, calibrated `notes.drums`, drum score + core-groove level, drum grid and drum tab, drums gate (**stops for the owner's OK on plan, time budget, any training and the gate**) | 16, 24 on `dev` (its method and harness) | 18, 22, 23 (19 only for piano: both touch the practice notation) |
 | s28 | `s28-separation-evaluation.md` — separation measured on real-upload conditions: silent-reference scoring, MSST metrics, unbiased P1 selection, robustness matrix (loud masters, codecs, mono, 48 kHz), loud-master fix, full songs/seams/determinism, regression suite, MoisesDB reader and listening export (**stops for the owner's OK on the plan and on any map, contract or cache-key change**) | 22, 24, 25, 27 on `dev` (P2g/P2p/P2d harnesses) | — |
+| s31a | (no prompt file; the row in `redesign/orchestrator/prompt.md` §5) — redesign specs: docs 26, 27, 28 rewritten for Night Rehearsal, 12 and 21 updated, the UI rule in `CLAUDE.md`, `AGENTS.md`, `00-shared-context.md` | — | s31c |
+| s31b | (no prompt file; the row in `redesign/orchestrator/prompt.md` §5) — these redesign step prompts s32–s45 and their rows here | s31a | — |
+| s31c | (no prompt file; the row in `redesign/orchestrator/prompt.md` §5) — mockup harness: reference renders of `redesign/mockups` and the fidelity probe (`scripts/redesign`) | — | s31a, s31b |
+| s32 | `s32-tokens-fonts-perf-baseline.md` — Night Rehearsal + Daylight tokens, Instrument Sans + JetBrains Mono, `BACKGROUND_HEX`/manifest/Storybook, the practice perf baseline (**after G1**; legibility check to the owner) | G1 (s31a, s31b) | s40a, s41a |
+| s33 | `s33-base-components.md` — every `app/ui` component restyled with stable props, all states storied; ends at **G2** (owner approves the foundations look) | s32 | s40a, s41a |
+| s34 | `s34-shell-library-add-song.md` — app shell, ⌘K palette, Library, Add song dialog/sheet | G2 | s35, s36, backend lane |
+| s35 | `s35-practice-core.md` — five-region practice, notation restyle, progressive "Getting ready", new keymap (opens the practice lane) | G2 | s34, s36, backend lane |
+| s36 | `s36-marketing-auth-settings-system.md` — home, auth, onboarding, pricing/billing, settings IA, system states | G2 | s34, s35, backend lane |
+| s37 | `s37-speed-ladder-loop-tab.md` — speed ladder V1 (`v1.speed_trainer` on), clip rename/delete (contracts) | 35, and s36 merged | s34, backend lane (not another contracts step) |
+| s38 | `s38-fix-tab.md` — Fix mode: unsure-spot queue, alternatives in frequencies, audition, desktop editor | 37 | screens and backend lanes |
+| s39 | `s39-progress.md` — Progress tab and library strips from `GET /v1/progress` (contracts if needed) | 38, 34 | backend lane (not another contracts step) |
+| s40a | `s40a-all-stems-backend.md` — keep every separated stem, cache-key change (**G3**: owner approval, `eval:regression`, listening; plan dep on `impl/29-separation-improvements`, an owner action) | G1 | s32–s39 (not s41a unless their files are split; not another contracts step) |
+| s40b | `s40b-multi-stem-mixer.md` — every stem in the mixer, presets, Rough, Click and "Hear the chords", phone mini-mixer | 39, 40a | backend lane |
+| s41a | `s41a-sections-backend.md` — `stage_sections` (allin1 in a `legacy` island) + `music-core` novelty fallback, pipeline scheduling (**G3**) | G1 | s32–s40b (not s40a unless their files are split; never s44) |
+| s41b | `s41b-section-chips.md` — section chips in the song map, loop a section, rename | 40b, 41a | backend lane |
+| s42 | `s42-beat-pulse-sound-delay.md` — beat pulse V9 (≤ 3 changes/s), vibrate, tap-along sound delay (−150…+500 ms) | 41b, 36 | backend lane |
+| s43 | `s43-phone-tablet-pedal.md` — Stand view (tablet default), phone glance + Tools sheet, phone fit rule, pedal wizard (closes the practice lane) | 42 | backend lane |
+| s44 | `s44-notify-when-ready.md` — Web Push end to end, migration `0016` (VAPID keys are an owner action) | 34, G1 | practice lane, s36 (never s41a; not another contracts/migration step) |
+| s45 | `s45-hardening-and-qa.md` — WCAG 2.2 gates, perf gate, full visual matrix after **G4**, Music Stand removal, docs; **G5** human checks, then **G6** final merge | all of s32–s44 | — |
 
 ```mermaid
 flowchart LR
@@ -71,6 +90,33 @@ flowchart LR
   S09c -.-> S22
 ```
 
+### Redesign steps (s31a–s45, "Night Rehearsal")
+The redesign is driven by one orchestrator session (`redesign/orchestrator/prompt.md`), not by hand. Its steps **branch from `impl/redesign`, not `dev`**, each on `impl/<id>-<name>` in its own worktree, and the **orchestrator merges** them into `impl/redesign` one at a time; only the owner's explicit "go" merges `impl/redesign` into `dev` (gate G6). Workers don't edit `docs/status.md`, `docs/progress-log.md` or this file: they put their progress-log entry in their report and the orchestrator records it. Each prompt names its owned globs (from the plan table), hard deps and gates (G1 specs and prompts; G2 foundations look; G3 separation/sections; G4 screen reviews on devices; G5 human-only checks; G6 final merge), and is wrapped in the orchestrator's worker brief (§6), which carries the generic rules.
+
+Lanes (prompt.md §5): s32 → s33 → G2; then the screens lane (s34 and s36 in parallel with s35); the practice lane strictly in order s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43; the backend lane (s40a, s41a, then s44 after s34) fills free slots after G1; s45 last. Never two steps with overlapping owned files at once, and only one in-flight step at a time may change `packages/contracts/**`, generated contracts, `packages/db/src/schema/**` or migrations. s37 waits for s36 to merge (it adds a Display & practice row); s41a and s44 are never in flight together (both may write `apps/node-worker/**`).
+
+Shared-file rules for the redesign (orchestrator decisions):
+- **Existing e2e specs have one owner each:** `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34. New cases go into the step's own new spec files; additive `e2e/helpers.ts` changes, `en.json` keys and `copy-keys.test.ts` `CATALOGUE` entries are union-merged by the orchestrator. A spec owned by an in-flight step becomes available to another step only once its owner has merged: the later step merges `impl/redesign` into its branch first, then makes the change. Until then a step that breaks a spec it doesn't own records the exact edit it needs in its report.
+- `apps/web/app/lib/display-store.ts` belongs to s35, then per file at dispatch to the practice-lane step in flight; s36's settings controls derive their options from the constants it exports.
+- `apps/web/app/features/story-fixtures.ts` belongs to s33, then per file at dispatch.
+- `scripts/check-ui-tokens.mjs` belongs to s33, which adds the 28 §3 raw-value rules scoped to `apps/web/app/ui/**` and a `--path` option; every screen step keeps its own area clean with `--path`; s45 widens the scope to all of `apps/web/app`.
+
+```mermaid
+flowchart LR
+  S31a[s31a specs] --> S31b[s31b prompts] --> G1{G1}
+  S31c[s31c harness] --> S32
+  G1 --> S32[s32 tokens/fonts/perf] --> S33[s33 base components] --> G2{G2}
+  G2 --> S34[s34 shell/library/add song] & S35[s35 practice core] & S36[s36 outside the app]
+  S35 --> S37[s37 ladder] --> S38[s38 fix] --> S39[s39 progress] --> S40b[s40b mixer] --> S41b[s41b section chips] --> S42[s42 beat pulse] --> S43[s43 phone/tablet/pedal]
+  S34 --> S39
+  S36 --> S42
+  S36 --> S37
+  G1 --> S40a[s40a all stems] --> G3a{G3} --> S40b
+  G1 --> S41a[s41a sections] --> G3b{G3} --> S41b
+  S34 --> S44[s44 notify]
+  S43 & S44 --> S45[s45 hardening + QA] --> G5{G4/G5} --> G6{G6 merge to dev}
+```
+
 Running steps in parallel: give each agent its own git worktree so two agents never edit the same checkout. `docs/` is tracked, so a worktree has its own copy; each agent commits its doc changes on its own branch.
 
 ```bash
@@ -85,6 +131,6 @@ git worktree add ../splitune-s11 -b impl/11-audio-engine dev
 - The practice route's JS budget is nearly used up: new practice UI loads on demand and reports before/after bytes.
 - The owner doesn't play an instrument: no step may depend on owner-played recordings.
 
-Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy. s25 (2026-10-28) takes drums over from s19. s28 (2026-11-06) re-evaluates separation on real-upload conditions.
+Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy. s25 (2026-10-28) takes drums over from s19. s28 (2026-11-06) re-evaluates separation on real-upload conditions. s31a–s45 (2026-11-08) are the "Night Rehearsal" redesign (see "Redesign steps" above).
 
 Edit `00-shared-context.md` once to change a rule for every step.
