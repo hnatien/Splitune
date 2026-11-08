@@ -1886,3 +1886,42 @@ The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started
   - web unit tests: 214 passed;
   - `test:stories`: 988 passed (the first run failed on Vite dependency re-optimisation; the rerun was green);
   - practice-route JS: 318.7 KB gzip of 320.0 KB.
+
+## 2026-11-08 — Redesign run resumed on the owner's PC, then switched to one agent per step
+The orchestrator run resumed on the PC from `redesign/orchestrator/handoff.md`. Later the same day the owner switched to running each remaining step in its own session with one agent (D21). The run order, the decisions register D1–D21, the PC baseline, the known failures and the review/merge procedure are now in `docs/steps/00-redesign-brief.md`. The step prompts point at the brief instead of the orchestrator's worker brief, and the orchestrator files are marked superseded.
+
+**Baseline on `impl/redesign` at `9b5bf01` (PC):**
+- lint, web typecheck, web unit 214/214, build + budget (318.7 KB of 320 KB) and css-floor pass.
+- `test:stories` failures, all WebKit-only, 80 in total:
+  - 77 `practice.stories.tsx` timeouts;
+  - import "Record Tab", plus onboarding "Guide" and "Guide Dark", after a WebKit page crash.
+- After 20:00, "Screen May Lock" (both variants) also fails in Chromium and WebKit on the unchanged base. The evening "Try Stage" hint adds a second Close button. That is carried to s35.
+
+**Owner decisions:**
+- **D16:** s40a sets `impl/29-separation-improvements` aside until it is in `dev`.
+- **D17:** the Mac pre-approvals of G2–G4 and the final merge hold.
+- **D19:** sections:
+  - allin1 from the fork `all-in-one-infer@566f96c`, fed the mixture;
+  - soft on `stem_post`;
+  - Lite runs the fallback only;
+  - `part-*` ids and no contract change;
+  - no Isophonics evaluation.
+- **D20:** fonts: U+202F is mapped to the no-break space, and Instrument Sans' 12 missing Latin-1 glyphs are accepted.
+- **D21:** one agent per step, with one review each.
+
+**State (nothing merged into `impl/redesign` yet):**
+- **s32** (`impl/s32-tokens-fonts`): built and verified.
+  - Perf baseline on the unchanged screen: `8bd9050`, desktop and tablet, every p75 ≤ 72 ms.
+  - Tokens: ui-tokens 1,329 tests pass, 113 contrast pairs (from 81), no minimum moved.
+  - Fonts: Instrument Sans 38 KB preloaded, JetBrains Mono, reproducible subsets.
+  - Its final round (story values, piano chart token, `security.spec.ts` font path), the review and the merge remain.
+- **s41a** (`impl/s41a-sections`, `d944b61`): built.
+  - music-core repetition-based part fallback, the `legacy` island + `stage_sections`, scheduled in the full graph, and finalize's fallback.
+  - music-core 195/195, api 214/214 (twice), full pytest 341 + the 4 known failures.
+  - Review: 0 high, 2 medium (banner copy carried to s41b; retried timeouts to fix), 7 low.
+  - The review fixes and G3 remain.
+- **s40a** (`impl/s40a-all-stems`): built and tested.
+  - pytest 344 passed + the 4 known failures; smoke PASS; R2 stays in the free tier (≈ 294 four-minute analyses in 10 GB).
+  - Its review found a stem_post cache-key collision between learners, being fixed.
+  - The PC re-measurement, G3 and the merge wait for impl/29 (D16).
+- **Not started:** s33–s39, s40b, s41b, s42, s43 and s45. s44 is deferred.

@@ -1,6 +1,25 @@
 # Step s32 — Night Rehearsal tokens, fonts and the practice perf baseline
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). The orchestrator wraps this prompt in its worker brief (prompt.md §6): the brief gives your worktree, the setup commands, the heavy-lock path, the generic rules (test integrity, tokens only, commits, report format) and the frozen decisions. This prompt holds what is specific to s32.
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it. This prompt holds what is specific to s32.
+
+## Resume here (state on 2026-11-08)
+Built on `impl/s32-tokens-fonts` in the worktree `D:/Projects/Splitune/.claude/worktrees/s32-tokens-fonts`. The report is `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s32.md`, with artefacts in `reports/s32/`.
+- **Committed:**
+  - the perf baseline on the unchanged screen, in its own commit `8bd9050`, after the Windows-safe spec fix `a447ab3`;
+  - Night Rehearsal / Daylight tokens (`e1fedf6`);
+  - Instrument Sans + JetBrains Mono (`27d41e4`);
+  - the Storybook toolbar and fonts story (`99c9162`, `3727246`).
+- **A final round was still running in the old orchestrator session** when the owner switched modes. It left uncommitted edits in `piano-chart.tsx`, three `app/ui` stories, `security.spec.ts`, `themes.css` and `tokens.test.ts`. Read `git status`, `git log` and the report's latest round first, then finish what's half done:
+  1. **Orchestrator OK (Q1):** move the Music Stand assertions in `apps/web/app/ui/**/*.stories.tsx` to doc 26 values (expected values only, each listed). Switch the piano chart (`apps/web/app/features/practice/piano-chart.tsx`) to the chord-sheet reading token, but only if doc 26 §4.7/§6.3 assigns `--read-chord-sheet` to chord charts like it; otherwise ask the owner.
+  2. **Orchestrator OK (Q4):** `apps/web/e2e/security.spec.ts:63` requests the new preloaded font path instead of `InterVariable.woff2`. Run that spec in Chromium under the heavy lock.
+  3. **Owner (D20):** keep U+202F mapped to the no-break space, and accept the 12 Latin-1 gaps.
+  4. List any `themes.css` / `tokens.test.ts` change from this round under Changed expected values, with its doc 26 reference.
+- **Then:**
+  - the full verification in Commands, with `test:stories` compared to the baseline list (plus Screen May Lock after 20:00);
+  - the independent review;
+  - the merge, per the brief's "Finish a step". The progress-log entry is in the report.
+- **Note for s33 (also in s33's prompt):** `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans.
+- **Owner action:** the legibility check (story URL in the report).
 
 | | |
 |---|---|

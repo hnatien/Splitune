@@ -1,6 +1,47 @@
 # Step s41a — Sections, backend: `stage_sections`, the novelty fallback and pipeline scheduling
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), backend lane. The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s41a. It carries out the sections part of the s18 plan (`docs/steps/s18-v1-practice-depth.md` Deliverable 4). **The pipeline change ships only after owner gate G3.**
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), backend lane. Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s41a. It carries out the sections part of the s18 plan (`docs/steps/s18-v1-practice-depth.md` Deliverable 4). **The pipeline change ships only after owner gate G3.**
+
+## Resume here (state on 2026-11-08)
+Built on `impl/s41a-sections` at `d944b61`, in the clean worktree `D:/Projects/Splitune/.claude/worktrees/s41a-sections`.
+- **Files:**
+  - report: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s41a.md` (its Files changed list misses `apps/api/test/library.test.ts`; the branch has 40 files);
+  - plan: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s41a-plan.md`;
+  - review: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s41a-review.md`.
+- **Owner answers:** D19.
+- **OKs already given:**
+  - finalize writes the fallback (Deliverable 4 option a);
+  - `apps/api/test/{analyses,pipeline,library}.test.ts` (expected stage-graph values and the stand-in stage only);
+  - `apps/node-worker/src/execute.ts` and new cases in `apps/node-worker/test/{finalize,worker}.test.ts`;
+  - `services/ml/uv.lock` (regenerated);
+  - the `WEIGHTS_DIRS` line in `register.py`;
+  - `packages/music-core/scripts/update-golden.ts`;
+  - the `OUTPUT_FILES` line in `devtools.py`;
+  - the example stage in `services/ml/packages/splitune_ml_core/tests/test_islands.py:21`;
+  - `packages/music-core/src/cli.ts` and `src/index.ts` (additive);
+  - the spec notes in 07 (module map), 21 (V3 State), `packages/db/README.md` and the sections paragraphs of 06.
+- **Review round 1, still to do** (the review gives file:line for each):
+  1. **M2:** the 360 s timeout is retried up to 3 times (queue default `max_attempts` 3), which can delay `analysis.done` by up to about 18 minutes for a cosmetic, soft stage. Enqueue `sections` with one attempt (`maxAttempts: 1` from `pipeline.ts`; check that the planned job carries it into `enqueue`) or make its timeout permanent, with a test.
+  2. **L2:** an unreadable or invalid `sections.json` still fails finalize (`execute.ts:194`). For `sections` only, treat it as absent so the fallback runs, with a test.
+  3. **L9:** add a queue-level test showing that a failing `sections` job leaves the analysis `done` (or `partial`), never `failed`.
+  4. **L4:** the fallback's `sample_rate` comes from `beats` in finalize and from the probe in the stage, not from a literal 44100.
+  5. **L3:** make both paths snap to the same downbeats, or state in the report why the fallback's inferred downbeats are right.
+  6. **L7:** fix the older lines in 06 §2 "Profiles" (Lite no longer runs sections) and 21 V3 "Pipeline" ("on demixed stems" → the decoded mixture).
+  7. **L8:** make the G3 `models` test meaningful: a tonal fixture, or accept `sections_not_found` with a clear message.
+  8. Update the report's Files changed list.
+
+  Re-verify. If this round changed code, do a second review round.
+- **Carried to s41b:** M1 (a failed sections job shows "We couldn't analyse this song"), L5 (no ETA while sections never succeeds) and the "Other" label in `apps/web/app/lib/stages.ts`.
+- **G3 (owner):** the report's Owner actions:
+  - install `islands/legacy` and check it imports;
+  - fetch the allin1 weights;
+  - run the `models` sections test;
+  - time `sections` on both machines (Stop point 2: above ~30 % means the one-line fallback-only path in `pipeline.ts`);
+  - re-analyse 3 songs by ear, plus 1 Lite;
+  - run the full `pnpm eval:regression`.
+
+  Merge only after G3.
+- **After G3 proves the island installs** (granted, review L1): add `islands/legacy` to the `uv lock --check` list in `.github/workflows/ci.yml`, to `PROJECTS` in `scripts/audit.mjs` and to the `uv sync` in `scripts/setup.mjs`, on this branch before it merges.
 
 | | |
 |---|---|

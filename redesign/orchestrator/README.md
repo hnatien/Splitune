@@ -1,5 +1,7 @@
 # Running the redesign orchestrator
 
+> **Superseded on 2026-11-08.** The owner switched the redesign to one agent per step (D21). Run the remaining steps with `docs/steps/00-redesign-brief.md` and the step prompts in `docs/steps/`; this file is kept for history.
+
 `prompt.md` is the prompt for **one** Claude Code session acting as orchestrator. A run that was paused leaves `handoff.md`, with the state, the owner's later instructions and the decisions so far; start a resumed run from it. That session hands each step to an Opus worker on its own branch and worktree, reviews and merges the steps into the integration branch `impl/redesign`, and asks the owner at the review gates. `report.md` is the research behind the prompt; `research/` holds the source notes.
 
 ## Before you start

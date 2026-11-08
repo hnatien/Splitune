@@ -1,6 +1,11 @@
 # Step s33 — Base components restyled for Night Rehearsal
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). The orchestrator wraps this prompt in its worker brief (prompt.md §6), which gives your worktree, setup, the heavy-lock path, the generic rules and the frozen decisions. This prompt holds what is specific to s33.
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it. This prompt holds what is specific to s33.
+
+## Carried over from earlier steps (2026-11-08)
+- s32 moved the Music Stand assertions in several `apps/web/app/ui/**/*.stories.tsx` files (and possibly the Foundations story) to doc 26 values, so `impl/redesign` stayed green. You restyle these components anyway, so check that each story still asserts the right thing.
+- Instrument Sans has no ⌘ ⇧ ⌥ ↵: set `Kbd` in JetBrains Mono, which has them. Its 12 missing Latin-1 glyphs fall back per glyph (D20).
+- `test:stories` baseline: see the brief (80 WebKit failures, plus Screen May Lock after 20:00).
 
 | | |
 |---|---|

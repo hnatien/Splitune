@@ -1,6 +1,6 @@
 # Step s39 — Progress: the Progress tab and the library strips from `GET /v1/progress`
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), fourth in the practice lane (s35 → s37 → s38 → **s39** → s40b → s41b → s42 → s43). The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s39.
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), fourth in the practice lane (s35 → s37 → s38 → **s39** → s40b → s41b → s42 → s43). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s39.
 
 | | |
 |---|---|

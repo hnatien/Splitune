@@ -1,6 +1,33 @@
 # Step s40a — All stems, backend: keep every separated stem plus the mix-minus
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), backend lane. The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s40a. This is a measurement-first ML step: **the cache-key and config change ships only after owner gate G3.**
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), backend lane. Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s40a. This is a measurement-first ML step: **the cache-key and config change ships only after owner gate G3.**
+
+## Resume here (state on 2026-11-08)
+Built on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/worktrees/s40a-all-stems`: the Mac WIP `ac460c6` plus fixes. Report: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s40a.md`. Reviews: `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s40a-wip-review.md` and `D:/Projects/Splitune/.claude/worktrees/_redesign-run/reports/s40a-review.md`.
+- **Owner (D16):** `impl/29-separation-improvements` is set aside, and s40a continues on `impl/redesign`. Stop point 6 is answered.
+- **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. The estimate is in the report.
+- **Review round 1** (`s40a-review.md`) was being fixed in the old session (commits after `59981bd`). Check the branch and the report for what's done, and finish the rest:
+  1. **HIGH:** `stem_post`'s cache key must include the target, the per-stem roles and the mix-minus mode, so two learners on the same raw stems get different keys. Test both cases (different learners, same learner twice). Correct the report's cache-invalidation section; the collision already existed for bass/drums.
+  2. **MEDIUM:** show the ~30 % limit honestly for bass/drums learners on the RTX 3060. If it can be exceeded, the pre-approval becomes conditional on the G3 measurement. Give options and build none.
+  3. **LOW:**
+     - correct the raw-FLAC cache growth per learner;
+     - make the stems fixture coherent for the bass stories, then run `test:stories` against the baseline;
+     - warm the model so before/after separate times compare;
+     - state the empty-extra threshold and its trade-off.
+
+  Re-verify. If this round changed code, do a second review round.
+- **Then wait for the owner to merge impl/29 into `dev`.** After that:
+  1. **Update `impl/redesign`.** In `redesign-int`, merge `dev` into `impl/redesign`. Expect conflicts in `CLAUDE.md` and `AGENTS.md`: keep both rule sets. Regenerate contracts with `pnpm contracts:gen`. Re-run the integration gates and push.
+  2. **Update the step branch.** Merge `impl/redesign` into `impl/s40a-all-stems`. The only expected conflict is `separate.py`'s module docstring: keep both paragraphs and drop impl/29's stale "(drums, bass)". Re-run ruff, pyright and pytest in this worktree's venv.
+  3. **Decide the "other" stem case:** when impl/29's piano fallback fires, "other" can hold the learner's keys. The report has the options. Recommendation: when the fallback applies, derive "other" as the mixture − the target − Σ the other extras, and check it with `all_stems.py`'s overlap column.
+  4. **G3 (owner, on the GPU):**
+     - re-run `all_stems.py` on the PC with `--before` set to impl/29's map with `keep: [drums, bass]`, a working tagger, the Mega-53 weights and the synth-keys window `765d5131-piano`;
+     - run `pnpm eval:regression`. It can't see this change; the real guard is `all_stems.py`'s "target identical" column;
+     - hold the listening session.
+
+     The exact commands are in the report's Owner actions.
+  5. **Merge** per the brief.
+- **Note for s40b (also in s40b's prompt):** isolated stems don't always sum to the song, so use the mix-minus as the band unless every instrument was kept.
 
 | | |
 |---|---|

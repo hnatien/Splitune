@@ -1,6 +1,14 @@
 # Step s41b — Section chips in the song map
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), sixth in the practice lane (s35 → s37 → s38 → s39 → s40b → **s41b** → s42 → s43). The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s41b.
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), sixth in the practice lane (s35 → s37 → s38 → s39 → s40b → **s41b** → s42 → s43). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s41b.
+
+## Carried over from earlier steps (2026-11-08)
+- s41a's merge waits for the owner's G3. If it isn't merged yet, build against `packages/contracts/fixtures/sections.json` and story data (D15).
+- **Fallback ids (D19):** fallback segments have `label: "unknown"` and ids `part-<letter><n>` (`part-a1`, `part-b1`, `part-a2`…). Show "Part A" for an unknown segment whose id matches `^part-([a-z])\d+$`. `set_section` renames by id.
+- **From s41a's review, yours to fix:**
+  - **M1:** a failed `sections` job (fallback `sections_novelty`) makes the practice banner say "We couldn't analyse this song" on an analysis that finished `done` (`features/practice/banners.tsx:102`; `reasons.ts` has no copy for it). Suppress it or give it the right copy. `banners.tsx` is free once s35 has merged (D13).
+  - **L5:** `remainingSeconds()` in `apps/web/app/lib/stages.ts` returns no ETA while `sections` has no successful timing, so the ETA vanishes.
+  - `stages.ts` labels `sections` as "Other".
 
 | | |
 |---|---|

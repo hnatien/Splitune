@@ -1,5 +1,7 @@
 # Handoff: continue the Night Rehearsal redesign on the owner's PC
 
+> **Superseded on 2026-11-08.** The owner switched the redesign to one agent per step (D21). Run the remaining steps with `docs/steps/00-redesign-brief.md` and the step prompts in `docs/steps/`; this file is kept for history.
+
 This prompt is for a new Claude Code orchestrator session on the owner's Windows PC (`D:\Projects\Splitune`). It picks up the run that started on the owner's Mac on 2026-11-08 and was paused there the same day. Read this file first, then `redesign/orchestrator/prompt.md`, and carry out prompt.md from the state below. Where this file and prompt.md disagree, this file wins: it records the owner's later instructions and what has already happened.
 
 ## How to start

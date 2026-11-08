@@ -1,6 +1,10 @@
 # Step s40b — Multi-stem mixer UI
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), fifth in the practice lane (s35 → s37 → s38 → s39 → **s40b** → s41b → s42 → s43). The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s40b.
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), fifth in the practice lane (s35 → s37 → s38 → s39 → **s40b** → s41b → s42 → s43). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s40b.
+
+## Carried over from earlier steps (2026-11-08)
+- s40a (keep every stem) may not be merged when you start: its G3 waits for `impl/29-separation-improvements` (D16). Build against the stems fixture and story data (D15), and show only the stems an analysis actually has. Once s40a merges, its refreshed `packages/contracts/fixtures/stems.json` lists every kept stem and leaves empty extras out.
+- Isolated stems don't always sum to the song: a two-stem head has no extras, and with impl/29 "other" can hold the learner's keys. Use the mix-minus as the band unless every instrument was kept.
 
 | | |
 |---|---|

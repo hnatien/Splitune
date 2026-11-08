@@ -1,6 +1,10 @@
 # Step s35 — Practice core: five regions, notation restyle, progressive state, new keymap
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s35. It opens the **practice lane**, which is strictly sequential: s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43.
+Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). Run it with `docs/steps/00-redesign-brief.md` (one agent per step since D21), which gives the worktree, setup, heavy-lock path, generic rules, frozen decisions, decisions register, review and merge procedure; wherever this prompt says "the orchestrator", the brief says who does it; this prompt holds what is specific to s35. It opens the **practice lane**, which is strictly sequential: s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43.
+
+## Carried over from earlier steps (2026-11-08)
+- The "Screen May Lock" and "Screen May Lock No Storage" stories fail after 20:00 in Chromium and WebKit: the evening "Try Stage" hint adds a second Close button. `banners.tsx` is yours (D13): pin the stories' clock, or make the hint testable, so they pass at any hour.
+- Compare against s32's perf baseline (`apps/web/e2e/perf-baseline.json`). It already shows about 60 forced layouts per second during steady playback, coming from the alphaTab view chunk.
 
 | | |
 |---|---|
