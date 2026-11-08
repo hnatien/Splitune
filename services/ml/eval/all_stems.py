@@ -26,6 +26,7 @@ are the shipped AAC files, unchanged and at their own level. A session is never 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import random
@@ -43,6 +44,7 @@ import soundfile as sf  # pyright: ignore[reportMissingTypeStubs]
 from numpy.typing import NDArray
 from splitune_eval.local import Decoded, LocalRun
 from splitune_ml_core import contracts
+from splitune_ml_core.errors import StageError
 
 DATASETS = Path(os.environ.get("SPLITUNE_DATASETS_DIR", "~/datasets")).expanduser()
 ROOT = DATASETS / "musdb18hq-p1"
@@ -87,12 +89,34 @@ def timed(run: LocalRun, stage: str, inputs: dict[str, str], d: Decoded, **param
     return out, time.monotonic() - started
 
 
+def warm(instrument: str, work: Path) -> None:
+    """Loads the model a pass runs first (the solo check's, else the chain head's) and runs it on
+    12 s of noise (longer than any model's chunk), so neither pass's separate time carries the
+    model load or the device's first inference. A model a pass loads later (the chain after a solo
+    check, a fallback) loads in both passes alike."""
+    from stage_separation import config, models
+
+    cfg = config.load()
+    spec = {str(name): s for name, s in cfg.instruments.items()}[instrument]
+    first = spec.solo_check.model if spec.solo_check is not None else spec.chain[0]
+    noise = work / "noise.wav"
+    noise.parent.mkdir(parents=True, exist_ok=True)
+    rng = np.random.default_rng(0)
+    audio = (0.1 * rng.standard_normal((12 * 44100, 2))).astype(np.float32)
+    sf.write(str(noise), audio, 44100, subtype="FLOAT")  # pyright: ignore[reportUnknownMemberType]
+    # A model that fails here is left to the pass, which falls back as the worker does.
+    with contextlib.suppress(StageError):
+        models.separate(first, cfg.models[first], noise, work / first)
+    shutil.rmtree(work, ignore_errors=True)
+
+
 def separate_pass(run: LocalRun, d: Decoded, tags: str, instrument: str, keep: Path) -> Pass:
     """separate and stem_post as the worker runs them; the outputs are copied to `keep`."""
     import torch
     from stage_separation import config
 
     config.load.cache_clear()
+    warm(instrument, run.work / "warm")
     random.seed(0)  # Demucs (the piano solo check) draws its time shift from random and torch
     torch.manual_seed(0)  # pyright: ignore[reportUnknownMemberType]
     sep, sep_s = timed(run, "separate", {"tags": tags}, d, instrument=instrument)
@@ -242,8 +266,10 @@ def render(rows: list[dict[str, Any]], args: argparse.Namespace) -> str:
         + (f" --before {args.before}" if args.before else "")
         + "`; device "
         + f"`{models.device()}`; model map keep = `{config.load().keep}`.",
-        "Times are wall-clock per stage in-process (warm models after the first item; the first "
-        "item's separate includes loading). `before` = the same stages under the older map. "
+        "Times are wall-clock per stage in-process; each pass first warms the model it runs "
+        "first, so neither carries the load. `before` = the same stages under the older map, "
+        "with the new stem_post (it leaves out empty extras the old code listed, so `before` "
+        "undercounts the old stems and bytes a little). "
         "Tagger: `ok` or its fallback reason (without it no extra is vetoed). Overlap: the "
         "isolated extra most correlated with the learner's stem (small within one run; high = "
         "that extra replays the learner's part).",

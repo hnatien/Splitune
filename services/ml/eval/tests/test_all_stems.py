@@ -186,6 +186,28 @@ def test_overlap_names_the_extra_that_replays_the_learners_part(tmp_path: Path) 
     assert all_stems.correlation(parts["piano"], np.zeros_like(keys)) == 0.0
 
 
+def test_warm_loads_the_model_each_pass_runs_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The chain head, or piano's solo-check model; a model that fails is left to the pass."""
+    from splitune_ml_core.errors import StageError
+    from stage_separation import models
+
+    calls: list[str] = []
+
+    def separate(name: str, spec: Any, audio: Path, output_dir: Path) -> None:
+        calls.append(name)
+        assert sf.info(str(audio)).duration == pytest.approx(12.0)
+        if name == "htdemucs_6s":
+            raise StageError("weights_missing")
+
+    monkeypatch.setattr(models, "separate", separate)
+    for instrument in ("guitar", "piano", "vocals"):
+        all_stems.warm(instrument, tmp_path / instrument)
+        assert not (tmp_path / instrument).exists()
+    assert calls == ["bs_roformer_sw", "htdemucs_6s", "mel_roformer_kim_vocals"]
+
+
 def test_export_never_overwrites_a_session(tmp_path: Path) -> None:
     fake_run(tmp_path, "t")
     (tmp_path / "listening" / "s1").mkdir(parents=True)
