@@ -9,6 +9,8 @@ export interface NoteMark {
   timingFlagged?: boolean
   /** Played an octave higher/lower than recorded (unplayable with a position). */
   octave?: '8va' | '8vb'
+  /** Changed by the learner (a correction): `--edited` ink and a 2 px underline (26 §5). */
+  edited?: boolean
 }
 
 /**

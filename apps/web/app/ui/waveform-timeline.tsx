@@ -1,16 +1,21 @@
 import { readColor, type TokenName } from '@splitune/ui-tokens'
-import { MinusIcon, PlusIcon } from 'lucide-react'
 import type * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/ui/button'
 
-// Doc 26 §12.2: the practice timeline on a canvas — peak (outer) and RMS (inner) per lane, a bar
-// ruler (or seconds before the beat grid exists), the loop band with edges and ≥44 px handles,
-// hatching on unsure bars (a pattern, never colour alone, 26 §5) and the now-line. Tap seeks;
-// zoom with the +/- buttons. The loop band eases in, out and between ranges over --duration-base
-// (straight to the end state under reduced motion). The canvas is decorative for assistive tech:
-// seeking and the loop are reachable through the transport and the handles' keys.
+// Doc 26 §4.7, §12.2 (Main.dc.html "Song map"): the song's overview on a canvas — a 40 px row of
+// waveform bars from your part (or the song before stems) in `--waveform-peak`, the bars already
+// played in `--waveform-played` and those inside the loop in `--waveform-loop`; the loop band
+// painted beneath the bars (`--loop-fill`, V17) with 2 px `--loop-edge` edges; the unsure hatch as
+// a striped band above the bars (a pattern, never colour alone, 26 §5); the 2 px now-line; and a
+// 14 px mono ruler (bar numbers every 8 bars, or seconds before the beat is known). The loop's edges
+// are ≥ 44 px handles that the arrow keys nudge (dragging is the secondary way). Tap seeks. The
+// waveform is drawn when its data changes; during playback only the now-line moves (transform) and
+// the played part is revealed by a clip on a second canvas, so no frame reads layout (28 §3.1).
+// The loop band eases in, out and between ranges over --duration-base (straight to the end state
+// under reduced motion). `compact` (phone landscape, 27 §3.7.2) keeps the ruler with the band and
+// the now-line in 32 px. The canvas is decorative for assistive tech: seeking and the loop are
+// reachable through the transport and the handles' keys.
 
 export interface TimelineLane {
   id: string
@@ -29,8 +34,6 @@ export interface TimelineBar {
 
 type WaveformTimelineProps = {
   lanes: TimelineLane[]
-  /** Seconds per peak/RMS block. */
-  blockSeconds: number
   duration: number
   /** Downbeats for the ruler; omitted before the beat grid exists (seconds ruler). */
   bars?: TimelineBar[] | undefined
@@ -43,23 +46,26 @@ type WaveformTimelineProps = {
   onNudgeLoop?: (edge: 'start' | 'end', direction: 1 | -1) => void
   onDragLoop?: (edge: 'start' | 'end', seconds: number) => void
   labels: {
-    zoomIn: string
-    zoomOut: string
     loopStart: string
     loopEnd: string
   }
-  /** Compact ruler only (phone landscape, 27 §3.7.2). */
+  /** Ruler only (phone landscape, 27 §3.7.2). */
   compact?: boolean
-  /** A slim song overview above the transport: a small ruler over one lane, no zoom. */
-  overview?: boolean
   className?: string
 }
 
-const ZOOMS = [1, 2, 4, 8]
-const RULER_PX = 20
-const OVERVIEW_RULER_PX = 16
 /** The loop band's ease, in milliseconds: `--duration-base`, which a canvas can't take from CSS. */
 const BAND_MS = 200
+// Rows of the map's canvas (Main.dc.html): the hatch band, then the 40 px waveform with the loop band
+// 3 px beyond it on both sides and the now-line 5 px beyond it.
+const HOST_PX = 54
+const HATCH = { top: 0, height: 5 }
+const MAP = { top: 9, height: 40 }
+const COLUMN_PX = 5
+const COMPACT_PX = 32
+// Bar numbers every 8 bars (27 §3.7.1), thinned further when they'd crowd.
+const RULER_EVERY = 8
+const RULER_GAP_PX = 28
 
 /** The loop band as drawn: the range and how opaque it is, so it can ease in, out and between. */
 interface Band {
@@ -77,18 +83,37 @@ function colors() {
   const read = (name: TokenName) => readColor(name)
   return {
     peak: read('--waveform-peak'),
-    rms: read('--waveform-rms'),
+    played: read('--waveform-played'),
+    inLoop: read('--waveform-loop'),
     loopFill: read('--loop-fill'),
     loopEdge: read('--loop-edge'),
-    text: read('--muted-foreground'),
-    rule: read('--border'),
-    hatch: read('--muted-foreground'),
+    hatch: read('--hatch'),
+    rule: read('--input'),
   }
+}
+
+/** One loudness per column: the loudest block in each, 0–1 against the song's loudest. */
+export function columnLevels(lane: TimelineLane | undefined, columns: number) {
+  const levels = new Float32Array(Math.max(0, columns))
+  if (!lane || columns <= 0) return levels
+  const blocks = lane.rms.length
+  let loudest = 0
+  for (let b = 0; b < blocks; b++) {
+    loudest = Math.max(loudest, Math.abs(lane.peaks[2 * b] ?? 0), lane.peaks[2 * b + 1] ?? 0)
+  }
+  const per = blocks / columns
+  for (let c = 0; c < columns; c++) {
+    let peak = 0
+    for (let b = Math.floor(c * per); b < Math.min(blocks, Math.ceil((c + 1) * per)); b++) {
+      peak = Math.max(peak, Math.abs(lane.peaks[2 * b] ?? 0), lane.peaks[2 * b + 1] ?? 0)
+    }
+    levels[c] = loudest > 0 ? peak / loudest : 0
+  }
+  return levels
 }
 
 function WaveformTimeline({
   lanes,
-  blockSeconds,
   duration,
   bars,
   loop = null,
@@ -99,24 +124,21 @@ function WaveformTimeline({
   onDragLoop,
   labels,
   compact = false,
-  overview = false,
   className,
 }: WaveformTimelineProps) {
   const host = useRef<HTMLDivElement>(null)
-  const canvas = useRef<HTMLCanvasElement>(null)
+  const base = useRef<HTMLCanvasElement>(null)
+  const played = useRef<HTMLCanvasElement>(null)
   const nowLine = useRef<HTMLDivElement>(null)
-  const [zoom, setZoom] = useState(1)
   const [width, setWidth] = useState(0)
-  const [offset, setOffset] = useState(0)
   const [palette, setPalette] = useState(colors)
   const band = useRef<Band | null>(loop && { ...loop, alpha: 1 })
   const tween = useRef<{ from: Band; to: Band; at: number } | null>(null)
   const redraw = useRef(() => {})
   const loopStart = loop?.start
   const loopEnd = loop?.end
-  const span = duration / zoom
-  const viewStart = Math.min(offset, Math.max(0, duration - span))
-  const x = (seconds: number) => ((seconds - viewStart) / Math.max(1e-6, span)) * width
+  const height = compact ? COMPACT_PX : HOST_PX
+  const x = (seconds: number) => (seconds / Math.max(1e-6, duration)) * width
 
   // Size and appearance changes redraw (colours are read from the tokens each time).
   useEffect(() => {
@@ -135,127 +157,94 @@ function WaveformTimeline({
     }
   }, [])
 
-  const height = compact ? 32 : overview ? 48 : 104
-  const ruler = compact ? 0 : overview ? OVERVIEW_RULER_PX : RULER_PX
+  const lane = lanes[0]
   useEffect(() => {
-    const c = canvas.current
-    const context = c?.getContext('2d')
-    if (!c || !context || width === 0) return
+    const canvases = [base.current, played.current]
+    const contexts = canvases.map((c) => c?.getContext('2d') ?? null)
+    if (width === 0 || contexts.some((c) => !c)) return
     const ratio = window.devicePixelRatio || 1
-    c.width = Math.round(width * ratio)
-    c.height = Math.round(height * ratio)
-    context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    canvases.forEach((c, i) => {
+      if (!c) return
+      c.width = Math.round(width * ratio)
+      c.height = Math.round(height * ratio)
+      contexts[i]?.setTransform(ratio, 0, 0, ratio, 0, 0)
+    })
+    const [back, front] = contexts
+    if (!back || !front) return
+    const columns = compact ? 0 : Math.floor(width / COLUMN_PX)
+    const levels = columnLevels(lane, columns)
     const draw = () => {
-      context.clearRect(0, 0, width, height)
-      const x = (seconds: number) => ((seconds - viewStart) / Math.max(1e-6, span)) * width
-      const laneTop = compact ? height : ruler
-      const laneHeight = compact ? 0 : (height - ruler) / Math.max(1, lanes.length)
-
+      back.clearRect(0, 0, width, height)
+      front.clearRect(0, 0, width, height)
       const shown = band.current
+      const at = (seconds: number) => (seconds / Math.max(1e-6, duration)) * width
+      const bandTop = compact ? 0 : MAP.top - 3
+      const bandHeight = compact ? height : MAP.height + 6
       if (shown) {
-        context.globalAlpha = shown.alpha
-        context.fillStyle = palette.loopFill
-        context.fillRect(x(shown.start), 0, x(shown.end) - x(shown.start), height)
-        context.globalAlpha = 1
+        back.globalAlpha = shown.alpha
+        back.fillStyle = palette.loopFill
+        back.fillRect(at(shown.start), bandTop, at(shown.end) - at(shown.start), bandHeight)
+        back.globalAlpha = 1
       }
-      // Unsure bars: 45° hatching over the lanes.
-      context.strokeStyle = palette.hatch
-      context.lineWidth = 1
-      for (const range of unsure) {
-        const left = x(range.start)
-        const right = x(range.end)
-        if (right < 0 || left > width) continue
-        context.save()
-        context.beginPath()
-        context.rect(left, laneTop, right - left, height - laneTop || height)
-        context.clip()
-        context.beginPath()
-        for (let p = left - height; p < right; p += 6) {
-          context.moveTo(p, height)
-          context.lineTo(p + height, 0)
+      // Waveform bars over the band: in the loop amber, else unplayed (base) and played (front).
+      const columnW = width / Math.max(1, columns)
+      for (let c = 0; c < columns; c++) {
+        const level = Math.max(0.06, levels[c] ?? 0)
+        const h = Math.max(2, level * MAP.height)
+        const left = c * columnW
+        const mid = (c + 0.5) * (duration / Math.max(1, columns))
+        const inLoop = shown !== null && shown.alpha > 0.5 && mid >= shown.start && mid < shown.end
+        const top = MAP.top + (MAP.height - h) / 2
+        back.fillStyle = inLoop ? palette.inLoop : palette.peak
+        back.fillRect(left, top, Math.max(1, columnW - 1), h)
+        if (!inLoop) {
+          front.fillStyle = palette.played
+          front.fillRect(left, top, Math.max(1, columnW - 1), h)
         }
-        context.stroke()
-        context.restore()
       }
-
-      lanes.forEach((lane, index) => {
-        const top = laneTop + index * laneHeight
-        const mid = top + laneHeight / 2
-        // Each lane fills its height (a quiet stem stays readable), at most 8× its level.
-        let loudest = 0
-        for (const value of lane.peaks) loudest = Math.max(loudest, Math.abs(value))
-        const gain = loudest > 0 ? Math.min(8, 1 / loudest) : 1
-        const firstBlock = Math.max(0, Math.floor(viewStart / blockSeconds))
-        const lastBlock = Math.min(lane.rms.length, Math.ceil((viewStart + span) / blockSeconds))
-        const step = Math.max(1, Math.floor((lastBlock - firstBlock) / Math.max(1, width)))
-        for (let b = firstBlock; b < lastBlock; b += step) {
-          let min = 0
-          let max = 0
-          let rms = 0
-          for (let k = b; k < Math.min(lastBlock, b + step); k++) {
-            min = Math.min(min, lane.peaks[2 * k] ?? 0)
-            max = Math.max(max, lane.peaks[2 * k + 1] ?? 0)
-            rms = Math.max(rms, lane.rms[k] ?? 0)
+      // Unsure bars: a striped band above the waveform (135°, 2 px on, 2 px off).
+      if (!compact) {
+        back.strokeStyle = palette.hatch
+        back.lineWidth = 1.4
+        for (const range of unsure) {
+          const left = at(range.start)
+          const right = at(range.end)
+          if (right < 0 || left > width) continue
+          back.save()
+          back.beginPath()
+          back.rect(left, HATCH.top, right - left, HATCH.height)
+          back.clip()
+          back.beginPath()
+          for (let p = left - HATCH.height; p < right + HATCH.height; p += 4) {
+            back.moveTo(p, HATCH.top + HATCH.height)
+            back.lineTo(p + HATCH.height, HATCH.top)
           }
-          const px = x(b * blockSeconds)
-          const w = Math.max(1, x((b + step) * blockSeconds) - px - 0.5)
-          const half = (laneHeight / 2 - 1) * gain
-          context.fillStyle = palette.peak
-          context.fillRect(px, mid - max * half, w, Math.max(1, (max - min) * half))
-          context.fillStyle = palette.rms
-          context.fillRect(px, mid - rms * half, w, Math.max(1, 2 * rms * half))
+          back.stroke()
+          back.restore()
         }
-      })
-
-      // Ruler: bar numbers (or seconds), thinned to what fits.
-      context.fillStyle = palette.text
-      context.strokeStyle = palette.rule
-      context.font = `${overview ? 11 : 12}px Inter, ui-sans-serif, system-ui, sans-serif`
-      context.textBaseline = 'top'
-      const ticks = bars
-        ? bars.map((b) => ({ at: b.start, label: b.label }))
-        : Array.from({ length: Math.floor(duration) + 1 }, (_, s) => ({
-            at: s,
-            label: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`,
-          }))
-      let lastLabel = Number.NEGATIVE_INFINITY
-      for (const tick of ticks) {
-        const px = x(tick.at)
-        if (px < -1 || px > width + 1) continue
-        context.beginPath()
-        context.moveTo(px + 0.5, 0)
-        context.lineTo(px + 0.5, compact ? height : ruler - 4)
-        context.stroke()
-        if (!compact && px - lastLabel >= 28) {
-          context.fillText(tick.label, px + 3, 2)
-          lastLabel = px
+      }
+      if (compact) {
+        back.strokeStyle = palette.rule
+        back.lineWidth = 1
+        for (const bar of bars ?? []) {
+          const px = Math.round(at(bar.start)) + 0.5
+          back.beginPath()
+          back.moveTo(px, height - 8)
+          back.lineTo(px, height)
+          back.stroke()
         }
       }
       if (shown) {
-        context.globalAlpha = shown.alpha
-        context.fillStyle = palette.loopEdge
-        context.fillRect(x(shown.start) - 1, 0, 2, height)
-        context.fillRect(x(shown.end) - 1, 0, 2, height)
-        context.globalAlpha = 1
+        back.globalAlpha = shown.alpha
+        back.fillStyle = palette.loopEdge
+        back.fillRect(at(shown.start), bandTop, 2, bandHeight)
+        back.fillRect(at(shown.end) - 2, bandTop, 2, bandHeight)
+        back.globalAlpha = 1
       }
     }
     redraw.current = draw
     draw()
-  }, [
-    lanes,
-    blockSeconds,
-    duration,
-    bars,
-    unsure,
-    width,
-    height,
-    ruler,
-    compact,
-    overview,
-    viewStart,
-    span,
-    palette,
-  ])
+  }, [lane, duration, bars, unsure, width, height, compact, palette])
 
   // A new, moved or removed loop starts the band's ease from what is drawn now.
   useEffect(() => {
@@ -276,10 +265,11 @@ function WaveformTimeline({
     if (origin && target) tween.current = { from: origin, to: target, at: performance.now() }
   }, [loopStart, loopEnd])
 
-  // The now-line follows the clock; a zoomed view pages along with it. The loop band's ease
-  // steps on the same frame.
+  // The now-line follows the clock and the played canvas is revealed up to it; the loop band's
+  // ease steps on the same frame. Only transforms and a clip change: no layout is read.
   useEffect(() => {
     let frame = 0
+    let lastX = Number.NaN
     const tick = () => {
       frame = requestAnimationFrame(tick)
       const move = tween.current
@@ -300,13 +290,13 @@ function WaveformTimeline({
         if (done === 1) tween.current = null
         redraw.current()
       }
-      const seconds = position()
-      const line = nowLine.current
-      if (!line || width === 0) return
-      if (zoom > 1 && (seconds < viewStart || seconds > viewStart + span)) {
-        setOffset(Math.max(0, seconds - span * 0.1))
-      }
-      line.style.transform = `translateX(${x(seconds)}px)`
+      if (width === 0) return
+      const now = Math.round(x(position()) * 2) / 2
+      if (now === lastX) return
+      lastX = now
+      if (nowLine.current) nowLine.current.style.transform = `translateX(${now}px)`
+      if (played.current)
+        played.current.style.clipPath = `inset(0 ${Math.max(0, width - now)}px 0 0)`
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
@@ -314,7 +304,7 @@ function WaveformTimeline({
 
   const seekAt = (event: React.PointerEvent<HTMLDivElement>) => {
     const box = event.currentTarget.getBoundingClientRect()
-    onSeek(viewStart + ((event.clientX - box.left) / box.width) * span)
+    onSeek(((event.clientX - box.left) / box.width) * duration)
   }
 
   const handle = (edge: 'start' | 'end') => {
@@ -326,7 +316,7 @@ function WaveformTimeline({
         type="button"
         aria-label={edge === 'start' ? labels.loopStart : labels.loopEnd}
         data-slot="loop-handle"
-        className="absolute top-0 z-10 flex h-full w-11 -translate-x-1/2 cursor-ew-resize items-start justify-center focus-visible:outline-2 focus-visible:outline-ring"
+        className="group/handle absolute top-1.5 z-10 flex size-11 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
         style={{ left: at }}
         onKeyDown={(event) => {
           const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
@@ -344,52 +334,77 @@ function WaveformTimeline({
           if (!onDragLoop || !event.currentTarget.hasPointerCapture(event.pointerId)) return
           const box = host.current?.getBoundingClientRect()
           if (!box) return
-          onDragLoop(edge, viewStart + ((event.clientX - box.left) / box.width) * span)
+          onDragLoop(edge, ((event.clientX - box.left) / box.width) * duration)
         }}
       >
-        <span aria-hidden className="mt-0 h-5 w-4 rounded-b-md bg-loop-edge" />
+        <span
+          aria-hidden
+          className="h-5 w-1.5 rounded-full bg-loop-edge opacity-0 transition-opacity duration-(--duration-fast) group-hover/handle:opacity-100 group-focus-visible/handle:opacity-100"
+        />
       </button>
     )
   }
 
+  // Ruler marks: every 8th bar from the first (or each half minute before the beat is known).
+  const marks: { at: number; label: string }[] = []
+  if (!compact && width > 0) {
+    const ticks = bars
+      ? bars.filter((b) => b.bar >= 0 && b.bar % RULER_EVERY === 0)
+      : Array.from({ length: Math.floor(duration / 30) + 1 }, (_, i) => ({
+          start: i * 30,
+          label: `${Math.floor((i * 30) / 60)}:${String((i * 30) % 60).padStart(2, '0')}`,
+        }))
+    let last = Number.NEGATIVE_INFINITY
+    for (const tick of ticks) {
+      const px = x(tick.start)
+      if (px - last < RULER_GAP_PX || px > width - 12) continue
+      marks.push({ at: px, label: tick.label })
+      last = px
+    }
+  }
+
   return (
-    <div data-slot="waveform-timeline" className={cn('flex items-stretch gap-2', className)}>
+    <div data-slot="waveform-timeline" className={cn('flex flex-col', className)}>
       <div
         ref={host}
-        className="relative min-w-0 flex-1 cursor-pointer overflow-hidden rounded-lg border border-border bg-card"
+        className="relative w-full cursor-pointer"
         style={{ height }}
         onPointerUp={seekAt}
       >
-        <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" />
+        <canvas ref={base} aria-hidden className="absolute inset-0 h-full w-full" />
+        <canvas
+          ref={played}
+          aria-hidden
+          data-slot="played"
+          className="absolute inset-0 h-full w-full"
+        />
         <div
           ref={nowLine}
           aria-hidden
           data-slot="now-line"
-          className="pointer-events-none absolute top-0 left-0 h-full w-0.5 bg-playhead will-change-transform"
+          className={cn(
+            'pointer-events-none absolute left-0 w-0.5 -translate-x-px rounded-full bg-now-line will-change-transform',
+            compact ? 'inset-y-0' : 'top-1 bottom-0',
+          )}
         />
         {handle('start')}
         {handle('end')}
       </div>
-      {!compact && !overview && (
-        <div className="flex flex-col justify-center gap-1">
-          <Button
-            size="icon-sm"
-            variant="outline"
-            aria-label={labels.zoomIn}
-            disabled={zoom === ZOOMS.at(-1)}
-            onClick={() => setZoom(ZOOMS[ZOOMS.indexOf(zoom) + 1] ?? zoom)}
-          >
-            <PlusIcon aria-hidden />
-          </Button>
-          <Button
-            size="icon-sm"
-            variant="outline"
-            aria-label={labels.zoomOut}
-            disabled={zoom === 1}
-            onClick={() => setZoom(ZOOMS[ZOOMS.indexOf(zoom) - 1] ?? 1)}
-          >
-            <MinusIcon aria-hidden />
-          </Button>
+      {!compact && (
+        <div
+          aria-hidden
+          data-slot="ruler"
+          className="relative h-3.5 font-mono text-2xs leading-3.5 font-normal text-faint-foreground"
+        >
+          {marks.map((mark) => (
+            <span
+              key={mark.at}
+              className="absolute top-0 border-l border-input pl-0.75 tabular-nums"
+              style={{ left: mark.at }}
+            >
+              {mark.label}
+            </span>
+          ))}
         </div>
       )}
     </div>

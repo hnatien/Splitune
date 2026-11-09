@@ -34,6 +34,7 @@ const CATALOGUE: Record<string, string> = {
   'analysis.stems_unavailable':
     "Stems are unavailable right now; chords and beat are ready. This didn't use an analysis.",
   'analysis.failed': "We couldn't analyse this song. This didn't use an analysis.",
+  'analysis.wrong_instrument': 'Is {instrument} the part you play?',
   'practice.chords_only':
     "We're not confident in the note-level tab for this song — showing chords.",
   'practice.rough_stem': 'This stem may contain bits of other instruments.',
@@ -42,7 +43,7 @@ const CATALOGUE: Record<string, string> = {
     'The stems for this song were removed after 180 days unused. Your loops and edits are safe.',
   'practice.not_offline': "This song isn't saved for offline yet.",
   'practice.beat_off': 'Metronome off the beat?',
-  'practice.pass_prompt': 'How was that pass?',
+  'practice.pass_prompt': 'Pass {pass} at {speed} — how was it?',
   'practice.best_tempo': 'Best clean pass: {pct}\u00a0%',
   'plan.cap_lite':
     "You've used this month's {limit} Lite analyses. They reset on {date}. You can keep practising every song you already have.",
@@ -65,6 +66,10 @@ const CATALOGUE: Record<string, string> = {
   'delete.song_confirm_body':
     "Its stems, loops, passes and edits will be removed. This can't be undone.",
   'delete.account_confirm': "Delete your account and everything in it? This can't be undone.",
+  'analysis.heard': 'We hear {instruments}.',
+  'practice.pedal_detected': 'Pedal detected? Set it up',
+  'shortcuts.single_keys_hint':
+    'Turn single keys off if you use speech input or switch control. Ctrl shortcuts keep working.',
   'practice.reason.notes_unavailable':
     "Note-level tab isn't available for this song — showing chords.",
   'practice.reason.notation_not_supported':

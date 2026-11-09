@@ -54,10 +54,24 @@ function syncPoint(seconds: number, ratioPosition: number): alphaTab.model.Autom
   return automation
 }
 
-export type InkColors = Record<ConfidenceLevel, alphaTab.model.Color>
+export type InkColors = Record<ConfidenceLevel, alphaTab.model.Color> & {
+  /** A note the learner edited (26 §5); the level's ink without it. */
+  edited?: alphaTab.model.Color
+  /** Rhythm stems, flags and beams under the tab (26 §4.7 `--faint-foreground`). */
+  rhythm?: alphaTab.model.Color
+}
+
+const RHYTHM = [
+  alphaTab.model.BeatSubElement.GuitarTabStem,
+  alphaTab.model.BeatSubElement.GuitarTabFlags,
+  alphaTab.model.BeatSubElement.GuitarTabBeams,
+  alphaTab.model.BeatSubElement.GuitarTabTuplet,
+]
 
 // Confidence ink per note via NoteStyle (26 §5): fret number and notehead, in the token colours
-// (readColor → Color.fromJson). Every level keeps ≥4.5:1, so the ink alone never hides a digit.
+// (readColor → Color.fromJson). Every level keeps ≥4.5:1, so the ink alone never hides a digit;
+// edited notes take `--edited` (with the overlay's underline). The tab's rhythm stems and beams
+// take the faint colour per beat (BeatStyle), never CSS on alphaTab's SVG.
 export function applyInk(
   score: alphaTab.model.Score,
   noteMap: readonly NoteRef[],
@@ -67,10 +81,24 @@ export function applyInk(
   for (const ref of noteMap) {
     const note = noteOf(score, ref)
     if (!note) continue
-    const color = colors[marks.get(ref.noteId)?.level ?? 'high']
+    const mark = marks.get(ref.noteId)
+    const color = (mark?.edited && colors.edited) || colors[mark?.level ?? 'high']
     const style = new alphaTab.model.NoteStyle()
     style.colors.set(alphaTab.model.NoteSubElement.GuitarTabFretNumber, color)
     style.colors.set(alphaTab.model.NoteSubElement.StandardNotationNoteHead, color)
     note.style = style
+  }
+  const rhythm = colors.rhythm
+  if (!rhythm) return
+  for (const staff of score.tracks[0]?.staves ?? []) {
+    for (const bar of staff.bars) {
+      for (const voice of bar.voices) {
+        for (const beat of voice.beats) {
+          const style = new alphaTab.model.BeatStyle()
+          for (const element of RHYTHM) style.colors.set(element, rhythm)
+          beat.style = style
+        }
+      }
+    }
   }
 }

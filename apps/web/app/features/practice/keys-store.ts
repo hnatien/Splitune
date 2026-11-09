@@ -2,11 +2,15 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { type Action, KEYS_STORAGE_KEY, type LearnedKeys, learn } from './model/keymap'
 
-// Learned pedal keys, per device (12 §8 "Learn this pedal"). `learning` is the action waiting for
-// its key: the next keydown anywhere binds it.
+// Learned pedal keys and the single-key switch, per device (12 §8 "Learn this pedal", WCAG 2.1.4:
+// Settings → Keyboard & pedal binds `singleKeys`). `learning` is the action waiting for its key:
+// the next keydown anywhere binds it.
 
 interface KeysStore {
   learned: LearnedKeys
+  /** Character key shortcuts (C, N, L, `,` …); off, only chords, pedal keys and learned keys act. */
+  singleKeys: boolean
+  setSingleKeys: (on: boolean) => void
   learning: Action | null
   startLearning: (action: Action) => void
   bind: (key: string) => void
@@ -18,6 +22,8 @@ export const useKeys = create<KeysStore>()(
   persist(
     (set, get) => ({
       learned: {},
+      singleKeys: true,
+      setSingleKeys: (on) => set({ singleKeys: on }),
       learning: null,
       startLearning: (action) => set({ learning: action }),
       bind: (key) => {
@@ -36,13 +42,15 @@ export const useKeys = create<KeysStore>()(
           return sessionStorage
         }
       }),
-      partialize: ({ learned }) => ({ learned }),
-      // The stored object is the bare map (read defensively by readLearnedKeys too).
-      merge: (persisted, current) => ({
-        ...current,
-        learned: ((persisted as { learned?: LearnedKeys } | undefined)?.learned ??
-          {}) as LearnedKeys,
-      }),
+      partialize: ({ learned, singleKeys }) => ({ learned, singleKeys }),
+      merge: (persisted, current) => {
+        const stored = persisted as { learned?: LearnedKeys; singleKeys?: unknown } | undefined
+        return {
+          ...current,
+          learned: (stored?.learned ?? {}) as LearnedKeys,
+          singleKeys: stored?.singleKeys !== false,
+        }
+      },
     },
   ),
 )

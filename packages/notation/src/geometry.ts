@@ -38,10 +38,14 @@ export function barBoxes(lookup: Lookup): BarBox[] {
   )
 }
 
-/** Where a time falls: the alphaTab bar and the fraction of it played (metric beats, linear). */
+/**
+ * Where a time falls: the alphaTab bar and the fraction of it played (metric beats, linear).
+ * `stepped` (reduced motion, 26 §10): the fraction holds at the start of the beat being played.
+ */
 export function barFraction(
   timeline: NotationTimeline,
   seconds: number,
+  stepped = false,
 ): { index: number; fraction: number } | undefined {
   const { bars } = timeline
   if (bars.length === 0) return undefined
@@ -61,12 +65,14 @@ export function barFraction(
   while (beat + 1 < beats.length && (beats[beat + 1] ?? 0) <= seconds) beat++
   const start = beats[beat] ?? 0
   const next = beats[beat + 1] ?? barEnd
-  const within = next > start ? (seconds - start) / (next - start) : 0
+  const within = stepped ? 0 : next > start ? (seconds - start) / (next - start) : 0
   return { index: lo, fraction: Math.min(1, (beat + within) / Math.max(1, beats.length)) }
 }
 
 export interface CursorPosition extends Rect {
   index: number
+  /** The rendered beat being played (its notes are the sounding ones). */
+  beat?: alphaTab.rendering.BeatBounds | undefined
 }
 
 // The beat cursor: inside the bar, x interpolates between the rendered beats around the playing
@@ -78,8 +84,9 @@ export function cursorAt(
   score: alphaTab.model.Score,
   timeline: NotationTimeline,
   seconds: number,
+  stepped = false,
 ): CursorPosition | undefined {
-  const where = barFraction(timeline, seconds)
+  const where = barFraction(timeline, seconds, stepped)
   if (!where) return undefined
   const masterBar = score.masterBars[where.index]
   const bounds = findMasterBar(lookup, where.index)
@@ -98,6 +105,7 @@ export function cursorAt(
   const left = bounds.realBounds.x
   const right = bounds.realBounds.x + bounds.realBounds.w
   let x = left + where.fraction * bounds.realBounds.w
+  let current: alphaTab.rendering.BeatBounds | undefined
   for (let i = 0; i < beats.length; i++) {
     const beat = beats[i] as alphaTab.rendering.BeatBounds
     const start = beat.beat.playbackStart
@@ -105,10 +113,12 @@ export function cursorAt(
     if (tick < start || tick >= end) continue
     const from = i === 0 ? Math.min(beat.onNotesX, left) : beat.onNotesX
     const to = beats[i + 1]?.onNotesX ?? right
-    x = from + ((tick - start) / Math.max(1, end - start)) * (to - from)
+    // Stepped, the playhead waits on the note that starts the beat (26 §10).
+    x = stepped ? from : from + ((tick - start) / Math.max(1, end - start)) * (to - from)
+    current = beat
     break
   }
-  return { index: where.index, x, y: system.y, w: 2, h: system.h }
+  return { index: where.index, x, y: system.y, w: 2, h: system.h, beat: current }
 }
 
 function findMasterBar(lookup: Lookup, index: number) {
@@ -147,6 +157,25 @@ export function noteBoxes(
 export interface MarkerBox extends Rect {
   noteId: string
   label: string
+}
+
+/** The bar boxes of a loop on each system it spans: one bracket per system (26 §12.2). */
+export function loopSpans(
+  bars: readonly BarBox[],
+  start: number,
+  end: number,
+): (Rect & { system: number; first: boolean })[] {
+  const spans = new Map<number, Rect & { system: number; first: boolean }>()
+  for (const bar of bars) {
+    if (bar.index < start || bar.index > end) continue
+    const span = spans.get(bar.system)
+    if (!span) {
+      spans.set(bar.system, { ...rect(bar), system: bar.system, first: bar.index === start })
+    } else {
+      span.w = bar.x + bar.w - span.x
+    }
+  }
+  return [...spans.values()]
 }
 
 /** "!" markers for notes without a fret position, on the beat they would sound. */

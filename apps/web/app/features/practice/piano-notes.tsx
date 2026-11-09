@@ -44,8 +44,8 @@ function readRollTheme(element: HTMLElement): RollTheme {
     playhead: token('--score-playhead'),
     loopFill: token('--score-loop-fill'),
     loopEdge: token('--score-loop-edge'),
-    barLabel: token('--conf-medium'),
-    medium: token('--conf-medium'),
+    barLabel: token('--faint-foreground'),
+    medium: token('--conf-medium-edge'),
     low: token('--conf-low'),
     left: token('--key-left'),
     leftFg: token('--key-left-fg'),
@@ -134,8 +134,9 @@ export function PianoNotes({
       .filter((n) => n.hand === hand)
       .map((n) => n.pitch)
       .sort((a, b) => a - b)
-  const left = hands === 'both' ? pitches('left') : []
-  const right = pitches('right')
+  // The hand not chosen (27 §3.7.5) is drawn at 45 % on the roll and left off the keys.
+  const left = hands === 'right' ? [] : pitches('left')
+  const right = hands === 'left' ? [] : pitches('right')
   // Named in the song's key (E♭4, not D#4), as on the strip's keyboard.
   const spelled = (p: number) =>
     music?.noteNames
@@ -170,7 +171,7 @@ export function PianoNotes({
             loop={loop ? { t0: grid.barStart(loop.startBar), t1: grid.barEnd(loop.endBar) } : null}
             page={reduced ? (t) => grid.barStart(barAt(grid, t)) : undefined}
             showUncertainty={showUncertainty}
-            dim={hands === 'right' ? 'left' : undefined}
+            dim={hands === 'both' ? undefined : hands === 'right' ? 'left' : 'right'}
             theme={theme}
             label={m['practice.falling_notes']()}
             onTimeActivate={(t) => onBarActivate(barAt(grid, t))}

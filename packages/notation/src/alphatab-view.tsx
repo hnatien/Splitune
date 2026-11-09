@@ -13,7 +13,9 @@ import { externalMediaHandler, externalOutput, type MediaTarget } from './extern
 import {
   type BarBox,
   barBoxes,
+  type CursorPosition,
   cursorAt,
+  loopSpans,
   type MarkerBox,
   markerBoxes,
   type NoteBox,
@@ -23,12 +25,18 @@ import { applyTheme, inkColors, type ScoreTheme } from './resources.ts'
 import { applyInk, applySyncPoints, loadScore, resolveTimeline } from './score.ts'
 import type { BarTimes, BeatMarker, NotationTimeline, NoteMark, NoteRef } from './types.ts'
 
-// <AlphaTabView> (12 §3): owns one AlphaTabApi for its lifetime (never re-created on re-render),
-// renders in alphaTab's Web Worker, and follows the audio clock. The display never owns the clock:
-// every animation frame pushes the engine's heard position into alphaTab's external-media output
-// and draws our own beat cursor, current-bar wash and loop shading from boundsLookup, so the
-// cursor is computed from the same clock as everything else. Bars are buttons (tap = loop
-// selection, WCAG 2.5.7 single pointer; keyboard reachable with a roving tab stop).
+// <AlphaTabView> (12 §3, 26 §5, §10): owns one AlphaTabApi for its lifetime (never re-created on
+// re-render), renders in alphaTab's Web Worker, and follows the audio clock. The display never owns
+// the clock: every animation frame pushes the engine's heard position into alphaTab's external-media
+// output and moves our own playhead by `transform`. Everything else is overlay: the current-bar
+// wash and the loop wash beneath the score, the confidence marks, the shaky-bar outline, the loop
+// bracket with its badge and the sounding fill above it, all positioned from boundsLookup (alphaTab's
+// SVG is never styled with CSS). Bars are buttons (tap = loop selection, WCAG 2.5.7 single pointer;
+// keyboard reachable with a roving tab stop).
+//
+// Steady playback reads no layout (28 §3.1): the scroller's size and offsets are cached from a
+// ResizeObserver and its scroll events, page turns are decided once per bar, and the sounding fill
+// changes once per beat.
 
 export interface Clock {
   /** Heard position in seconds. */
@@ -43,6 +51,9 @@ export interface AlphaTabViewHandle {
   focusBar(bar: number): void
 }
 
+export type FollowMode = 'page' | 'scroll' | 'off'
+export type PlayheadStyle = 'line' | 'block' | 'bar'
+
 export interface AlphaTabViewProps {
   tex: string
   noteMap: readonly NoteRef[]
@@ -51,13 +62,24 @@ export interface AlphaTabViewProps {
   /** The beat grid (memoise it: a new object re-renders the score). */
   times: BarTimes
   theme: ScoreTheme
-  /** page = systems that flip by bar group; scroll = one line under a fixed now-line. */
-  layout: 'page' | 'scroll'
+  /**
+   * Notation follows the music (12 §3): page = systems turn as the playhead reaches the next one;
+   * scroll = one line under a fixed now-line; off = it doesn't move (reading and fixing).
+   */
+  layout: FollowMode
+  /** A 2 px line, a small block on the beat, or only the current bar's wash (12 §3). */
+  playhead?: PlayheadStyle
+  /** Reduced motion (26 §10): the playhead steps by beat. */
+  stepped?: boolean
   clock: Clock
   media: MediaTarget
   showUncertainty: boolean
+  /** Mostly-unsure bars (grid bars): one outline and one "?" instead of a mark per note (26 §5). */
+  shakyBars?: ReadonlySet<number>
   /** Loop range in grid bars (inclusive). */
   loop?: { startBar: number; endBar: number } | null
+  /** The loop bracket's badge ("Loop · bars 25–28 · pass 2 of 2 at 75 %"). */
+  loopLabel?: string | undefined
   /** First bar tapped, waiting for the second (dashed shading). */
   armedBar?: number | null
   interaction: 'bars' | 'notes'
@@ -70,7 +92,7 @@ export interface AlphaTabViewProps {
   onCurrentBarChange?: (bar: number) => void
   /** Milliseconds from handing the score to alphaTab until the render finished. */
   onRendered?: (ms: number) => void
-  /** Smooth page flips (off under reduced motion: jumps). */
+  /** Smooth page turns (off under reduced motion: jumps). */
   smoothScroll?: boolean
   ref?: Ref<AlphaTabViewHandle>
   className?: string
@@ -83,19 +105,31 @@ interface Overlay {
 }
 
 const EMPTY: Overlay = { bars: [], notes: [], markers: [] }
-// One empty list for every render: the overlay effect depends on `markers`.
+// One empty list or set for every render: the overlay effect depends on them.
 const NO_MARKERS: readonly BeatMarker[] = []
-const LOOK_AHEAD_PX = 8
+const NO_BARS: ReadonlySet<number> = new Set()
+// Room above each system for the loop bracket and its badge (Main.dc.html), kept whether or not a
+// loop exists so a new loop never re-lays out the score under the playhead. alphaTab's system
+// bounds start below the top padding and their height counts both paddings.
+const SYSTEM_TOP_PX = 44
+const SYSTEM_BOTTOM_PX = 10
+const PADDING_PX = SYSTEM_TOP_PX + SYSTEM_BOTTOM_PX
 
-function createApi(host: HTMLElement, layout: 'page' | 'scroll'): alphaTab.AlphaTabApi {
+function createApi(host: HTMLElement, scroll: boolean): alphaTab.AlphaTabApi {
   const settings = new alphaTab.Settings()
   settings.core.engine = 'svg'
   settings.core.useWorkers = true
   settings.core.includeNoteBounds = true
   settings.core.smuflFontSources = new Map([[alphaTab.FontFileFormat.Woff2, bravuraWoff2]])
   settings.core.logLevel = alphaTab.LogLevel.Warning
-  settings.display.layoutMode =
-    layout === 'scroll' ? alphaTab.LayoutMode.Horizontal : alphaTab.LayoutMode.Page
+  settings.display.layoutMode = scroll ? alphaTab.LayoutMode.Horizontal : alphaTab.LayoutMode.Page
+  // Systems of four bars (Page) with room above each for the loop bracket (27 §3.7.1).
+  if (!scroll) settings.display.barsPerRow = 4
+  settings.display.firstSystemPaddingTop = SYSTEM_TOP_PX
+  settings.display.systemPaddingTop = SYSTEM_TOP_PX
+  settings.display.systemPaddingBottom = SYSTEM_BOTTOM_PX
+  // Rhythm stems and beams under the tab, always (12 §3).
+  settings.notation.rhythmMode = alphaTab.TabRhythmMode.ShowWithBars
   settings.player.playerMode = alphaTab.PlayerMode.EnabledExternalMedia
   settings.player.enableCursor = false
   settings.player.enableUserInteraction = false
@@ -128,10 +162,14 @@ export function AlphaTabView({
   times,
   theme,
   layout,
+  playhead = 'line',
+  stepped = false,
   clock,
   media,
   showUncertainty,
+  shakyBars = NO_BARS,
   loop = null,
+  loopLabel,
   armedBar = null,
   interaction,
   selectedNoteId = null,
@@ -150,6 +188,7 @@ export function AlphaTabView({
   const host = useRef<HTMLDivElement>(null)
   const cursor = useRef<HTMLDivElement>(null)
   const wash = useRef<HTMLDivElement>(null)
+  const sounding = useRef<HTMLDivElement>(null)
   const buttons = useRef(new Map<number, HTMLButtonElement>())
   const apiRef = useRef<alphaTab.AlphaTabApi | null>(null)
   const scoreRef = useRef<alphaTab.model.Score | null>(null)
@@ -158,18 +197,38 @@ export function AlphaTabView({
     bars: [],
     end: 0,
   })
-  const latest = useRef({ clock, media, timeline, onCurrentBarChange, onRendered, smoothScroll })
-  latest.current = { clock, media, timeline, onCurrentBarChange, onRendered, smoothScroll }
+  const latest = useRef({
+    clock,
+    media,
+    timeline,
+    onCurrentBarChange,
+    onRendered,
+    smoothScroll,
+    stepped,
+    playhead,
+  })
+  latest.current = {
+    clock,
+    media,
+    timeline,
+    onCurrentBarChange,
+    onRendered,
+    smoothScroll,
+    stepped,
+    playhead,
+  }
   const [overlay, setOverlay] = useState<Overlay>(EMPTY)
   const [currentBar, setCurrentBar] = useState(times.firstBar)
   const [lookupVersion, setLookupVersion] = useState(0)
   const renderStarted = useRef(0)
+  // Page and Off share alphaTab's page layout; only Scrolling needs the horizontal one.
+  const scroll = layout === 'scroll'
 
   // One API per mounted view and layout mode (alphaTab switches layout only at creation).
   useEffect(() => {
     const element = host.current
     if (!element) return
-    const api = createApi(element, layout)
+    const api = createApi(element, scroll)
     apiRef.current = api
     const handler = externalMediaHandler({ duration: () => latest.current.media.duration() })
     const attach = () => {
@@ -188,7 +247,7 @@ export function AlphaTabView({
       api.destroy()
       apiRef.current = null
     }
-  }, [layout])
+  }, [scroll])
 
   // A changed score, ink, timeline or theme re-renders; overlay-only props don't.
   useEffect(() => {
@@ -220,33 +279,68 @@ export function AlphaTabView({
     })
   }, [lookupVersion, noteMap, marks, markers, timeline])
 
-  // The frame loop: push the clock, move the cursor, flip pages while playing.
+  // The frame loop: push the clock, move the playhead, turn pages while playing.
   useEffect(() => {
+    const element = scroller.current
+    if (!element) return
+    // Cached scroller geometry: read on resize and scroll, never inside a frame.
+    const view = { top: 0, left: 0, width: 0, height: 0 }
+    const resize = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect
+      if (box) {
+        view.width = box.width
+        view.height = box.height
+      }
+    })
+    resize.observe(element)
+    const onScroll = () => {
+      view.top = element.scrollTop
+      view.left = element.scrollLeft
+    }
+    element.addEventListener('scroll', onScroll, { passive: true })
+    // Scrolling waits for the end of the frame: after rendering the layout is clean, so the
+    // scroll never forces one (the frame has already written the playhead and the fill).
+    let scrollTask = 0
+    const scrollAfterFrame = (to: ScrollToOptions) => {
+      window.clearTimeout(scrollTask)
+      scrollTask = window.setTimeout(() => element.scrollTo(to), 0)
+    }
     let frame = 0
     let lastTime = Number.NaN
     let lastBar = -1
+    let lastBeat: CursorPosition['beat'] | null = null
+    let wasPlaying = false
+    let lastStyle = ''
     const tick = () => {
       frame = requestAnimationFrame(tick)
       const api = apiRef.current
       const lookup = api?.boundsLookup
       const score = scoreRef.current
-      const { clock: c, timeline: t } = latest.current
+      const { clock: c, timeline: t, stepped: s, playhead: style } = latest.current
       const seconds = c.position()
-      if (!api || !lookup || !score || seconds === lastTime) return
+      const playing = c.playing()
+      if (!api || !lookup || !score) return
+      if (seconds === lastTime && playing === wasPlaying && style === lastStyle) return
       lastTime = seconds
+      lastStyle = style
       externalOutput(api)?.updatePosition(seconds * 1000)
-      const at = cursorAt(lookup, score, t, seconds)
+      const at = cursorAt(lookup, score, t, seconds, s)
       const el = cursor.current
       if (!at || !el) return
-      el.style.transform = `translate(${at.x}px, ${at.y}px)`
-      el.style.height = `${at.h}px`
+      const block = style === 'block'
+      el.style.transform = block
+        ? `translate(${at.x - 6}px, ${at.y - 14}px)`
+        : `translate(${at.x}px, ${at.y}px)`
+      if (!block) el.style.height = `${Math.max(0, at.h - PADDING_PX)}px`
       el.setAttribute('data-time', seconds.toFixed(4))
+      const turned = at.index !== lastBar || (playing && !wasPlaying)
       if (at.index !== lastBar) {
         lastBar = at.index
         const bar = t.firstBar + at.index
         setCurrentBar(bar)
         latest.current.onCurrentBarChange?.(bar)
-        const box = barBoxes(lookup).find((b) => b.index === at.index)
+        const found = barBoxes(lookup).find((b) => b.index === at.index)
+        const box = found && barBody(found)
         const w = wash.current
         if (box && w) {
           w.style.transform = `translate(${box.x}px, ${box.y}px)`
@@ -254,10 +348,33 @@ export function AlphaTabView({
           w.style.height = `${box.h}px`
         }
       }
-      if (c.playing()) follow(scroller.current, lookup, at, layout, latest.current.smoothScroll)
+      if (at.beat !== lastBeat || playing !== wasPlaying) {
+        lastBeat = at.beat
+        showSounding(sounding.current, playing ? at.beat : undefined)
+      }
+      wasPlaying = playing
+      // Pausing stops any scrolling (WCAG 2.2.2); Off never scrolls.
+      if (!playing || layout === 'off') return
+      if (layout === 'scroll') {
+        const left = Math.max(0, at.x - view.width / 3)
+        if (Math.abs(view.left - left) > 1) {
+          scrollAfterFrame({ left, behavior: 'auto' })
+          view.left = left
+        }
+      } else if (turned) {
+        const top = pageTop(view, lookup, at)
+        if (top !== null) {
+          scrollAfterFrame({ top, behavior: latest.current.smoothScroll ? 'smooth' : 'auto' })
+        }
+      }
     }
     frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(scrollTask)
+      resize.disconnect()
+      element.removeEventListener('scroll', onScroll)
+    }
   }, [layout])
 
   useImperativeHandle(
@@ -276,6 +393,9 @@ export function AlphaTabView({
       ? null
       : { start: loop.startBar - timeline.firstBar, end: loop.endBar - timeline.firstBar }
   const focusIndex = (armedBar ?? currentBar) - timeline.firstBar
+  const shaky = new Set([...shakyBars].map((bar) => bar - timeline.firstBar))
+  const barOf = new Map(noteMap.map((ref) => [ref.noteId, ref.bar]))
+  const shakyNote = (note: NoteBox) => shaky.has(barOf.get(note.noteId) ?? Number.NaN)
 
   const onBarKey = (index: number) => (event: KeyboardEvent<HTMLButtonElement>) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
@@ -294,6 +414,7 @@ export function AlphaTabView({
       aria-label={labels.region}
       data-slot="alphatab-view"
       data-layout={layout}
+      data-playhead={playhead}
       className={[
         // Isolated: the overlay's layers stay below anything floating over the score (the video).
         'relative isolate min-h-0 overscroll-contain bg-paper text-ink',
@@ -302,13 +423,8 @@ export function AlphaTabView({
       ].join(' ')}
     >
       <div className="relative w-full">
+        {/* Washes beneath the score (26 §4.5, V17): the loop's bars, then the current bar. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-          {/* Under the loop shading: inside the loop the shading shows and the rule marks the bar. */}
-          <div
-            ref={wash}
-            data-slot="current-bar"
-            className="absolute top-0 left-0 border-b-2 border-ink bg-bar-current"
-          />
           {overlay.bars.map((bar) => {
             const inLoop =
               loopIndexes !== null && bar.index >= loopIndexes.start && bar.index <= loopIndexes.end
@@ -320,40 +436,57 @@ export function AlphaTabView({
                 data-slot="loop-shade"
                 className={
                   armed && !inLoop
-                    ? 'absolute border-2 border-dashed border-score-loop-edge'
+                    ? 'absolute rounded-xs border-2 border-dashed border-score-loop-edge'
                     : 'absolute bg-score-loop-fill'
                 }
-                style={boxStyle(bar)}
+                style={boxStyle(barBody(bar))}
               />
             )
           })}
+          <div
+            ref={wash}
+            data-slot="current-bar"
+            className="absolute top-0 left-0 bg-bar-current will-change-transform"
+          />
         </div>
         <div ref={host} className="relative z-10" />
-        {/* The loop reads as one quiet band: a rail along its top with A and B at its ends, not a
-            rule around every bar (a whole-song loop drew a cage over the score). */}
         <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
           {loopIndexes !== null &&
-            overlay.bars.map((bar) =>
-              bar.index < loopIndexes.start || bar.index > loopIndexes.end ? null : (
-                <div
-                  key={`rail-${bar.index}-${bar.system}`}
-                  data-slot="loop-rail"
-                  className="absolute h-0.75 bg-score-loop-edge"
-                  style={{ left: bar.x, top: bar.y, width: bar.w }}
-                >
-                  {bar.index === loopIndexes.start && <LoopFlag edge="start" />}
-                  {bar.index === loopIndexes.end && <LoopFlag edge="end" />}
-                </div>
-              ),
-            )}
-        </div>
-        <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
+            loopSpans(overlay.bars, loopIndexes.start, loopIndexes.end).map((span) => (
+              <LoopBracket
+                key={`loop-${span.system}`}
+                span={span}
+                label={span.first ? loopLabel : undefined}
+              />
+            ))}
           {showUncertainty &&
-            overlay.notes.map((note) =>
-              note.level === 'high' && !note.timingFlagged ? null : (
-                <NoteOutline key={note.noteId} note={note} />
-              ),
+            overlay.bars.map((bar) =>
+              shaky.has(bar.index) ? (
+                <span
+                  key={`shaky-${bar.index}-${bar.system}`}
+                  data-slot="shaky-bar"
+                  className="absolute rounded-xs border-[1.5px] border-dashed border-unsure"
+                  style={boxStyle(barBody(bar))}
+                >
+                  <Unsure />
+                </span>
+              ) : null,
             )}
+          {overlay.notes.map((note) =>
+            showUncertainty && !shakyNote(note) ? (
+              <NoteMarks key={note.noteId} note={note} />
+            ) : null,
+          )}
+          {overlay.notes.map((note) =>
+            note.edited ? (
+              <span
+                key={`edited-${note.noteId}`}
+                data-slot="edited-mark"
+                className="absolute h-0.5 rounded-full bg-edited"
+                style={{ left: note.x, top: note.y + note.h + 3, width: note.w }}
+              />
+            ) : null,
+          )}
           {overlay.notes.map((note) =>
             note.octave ? (
               <span
@@ -375,10 +508,18 @@ export function AlphaTabView({
               {marker.label}
             </span>
           ))}
+          <div ref={sounding} data-slot="sounding" className="contents" />
           <div
             ref={cursor}
             data-slot="notation-cursor"
-            className="absolute top-0 left-0 w-0.5 bg-score-playhead will-change-transform"
+            data-style={playhead}
+            className={
+              playhead === 'block'
+                ? 'absolute top-0 left-0 size-3 rounded-xs bg-score-playhead shadow-glow will-change-transform'
+                : playhead === 'bar'
+                  ? 'hidden'
+                  : 'absolute top-0 left-0 w-0.5 rounded-full bg-score-playhead shadow-glow will-change-transform'
+            }
           />
         </div>
         <div className="absolute inset-0 z-30">
@@ -402,7 +543,7 @@ export function AlphaTabView({
               onClick={() => onBarActivate(timeline.firstBar + bar.index)}
               onKeyDown={onBarKey(bar.index)}
               className="absolute cursor-pointer rounded-sm bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
-              style={boxStyle(bar)}
+              style={boxStyle(barBody(bar))}
             />
           ))}
           {interaction === 'notes' &&
@@ -431,19 +572,38 @@ export function AlphaTabView({
   )
 }
 
-// The loop's ends, as on a DAW ruler: A where it starts, B where it ends (decorative — the bars'
-// pressed state and the loop badge carry the range for assistive tech).
-function LoopFlag({ edge }: { edge: 'start' | 'end' }) {
+/** A bar's box without the system's paddings: its staff and what's drawn on it. */
+function barBody(bar: BarBox): BarBox {
+  return { ...bar, h: Math.max(0, bar.h - PADDING_PX) }
+}
+
+// The loop bracket (26 §12.2, Main.dc.html): a 2 px rail over the looped bars of a system with its
+// ends turned down, and on the loop's first system the badge "Loop · bars 25–28 · pass 2 of 2 at
+// 75 %" (decorative: the loop pill and the bars' pressed state carry it for assistive tech).
+function LoopBracket({
+  span,
+  label,
+}: {
+  span: { x: number; y: number; w: number }
+  label: string | undefined
+}) {
   return (
-    <span
-      data-slot="loop-flag"
-      className={[
-        'absolute top-0 grid size-5 place-items-center rounded-b-md bg-score-loop-edge text-xs leading-none font-bold text-paper',
-        edge === 'start' ? 'left-0' : 'right-0',
-      ].join(' ')}
-    >
-      {edge === 'start' ? 'A' : 'B'}
-    </span>
+    <>
+      <span
+        data-slot="loop-bracket"
+        className="absolute h-3 rounded-t-sm border-2 border-b-0 border-score-loop-edge"
+        style={{ left: span.x, top: span.y - 16, width: span.w }}
+      />
+      {label && (
+        <span
+          data-slot="loop-badge"
+          className="absolute inline-flex h-5.5 items-center rounded-full bg-paper px-2 text-xs font-semibold whitespace-nowrap text-primary-ink tabular-nums inset-ring inset-ring-primary-line"
+          style={{ left: span.x + 14, top: span.y - 38 }}
+        >
+          {label}
+        </span>
+      )}
+    </>
   )
 }
 
@@ -451,8 +611,20 @@ function boxStyle(box: { x: number; y: number; w: number; h: number }): CSSPrope
   return { left: box.x, top: box.y, width: box.w, height: box.h }
 }
 
-function NoteOutline({ note }: { note: NoteBox }) {
-  const pad = 2
+/** The superscript "?" of an unsure mark (26 §5: 10 px, 700, `--unsure`). */
+function Unsure() {
+  return (
+    <sup className="absolute -top-2.5 -right-2.5 text-2xs leading-none font-bold text-conf-low">
+      ?
+    </sup>
+  )
+}
+
+// Confidence marks (26 §5): Probably a 1.5 px dashed `--conf-medium-edge` box 1 px off the digit,
+// Unsure a dashed `--unsure` box with "?", a timing flag a dotted underline.
+function NoteMarks({ note }: { note: NoteBox }) {
+  if (note.level === 'high' && !note.timingFlagged) return null
+  const pad = 2.5
   const style: CSSProperties = {
     left: note.x - pad,
     top: note.y - pad,
@@ -464,8 +636,8 @@ function NoteOutline({ note }: { note: NoteBox }) {
       data-slot="note-mark"
       data-confidence={note.level}
       className={[
-        'absolute rounded-sm',
-        note.level === 'medium' ? 'border-[1.5px] border-dashed border-conf-medium' : '',
+        'absolute rounded-xs',
+        note.level === 'medium' ? 'border-[1.5px] border-dashed border-conf-medium-edge' : '',
         note.level === 'low' ? 'border-[1.5px] border-dashed border-conf-low' : '',
         note.timingFlagged && note.level === 'high'
           ? 'border-b-[1.5px] border-dotted border-ink'
@@ -473,41 +645,47 @@ function NoteOutline({ note }: { note: NoteBox }) {
       ].join(' ')}
       style={style}
     >
-      {note.level === 'low' && (
-        <sup className="absolute -top-2 -right-2 text-xs leading-none font-bold text-conf-low">
-          ?
-        </sup>
-      )}
+      {note.level === 'low' && <Unsure />}
     </span>
   )
 }
 
-// Page flips by staff system with at least the next bar in view; the continuous layout keeps
-// the now-line a third of the way in.
-function follow(
-  element: HTMLElement | null,
+// The sounding fill (26 §5 "Sounding now"): the beat's fret digits as amber boxes with the digit in
+// `--primary-foreground`, redrawn once per beat while playing (tab only; noteheads keep their ink).
+function showSounding(container: HTMLElement | null, beat: CursorPosition['beat']) {
+  if (!container) return
+  container.replaceChildren()
+  for (const bounds of beat?.notes ?? []) {
+    const note = bounds.note
+    if (!note.isStringed) continue
+    const box = bounds.noteHeadBounds
+    const fill = document.createElement('span')
+    fill.setAttribute('data-slot', 'sounding-note')
+    fill.className =
+      'absolute grid place-items-center rounded-xs bg-primary font-reading-mono text-read-tab leading-none font-semibold text-primary-foreground shadow-glow'
+    fill.style.left = `${box.x - 3}px`
+    fill.style.top = `${box.y - 1}px`
+    fill.style.width = `${box.w + 6}px`
+    fill.style.height = `${box.h + 2}px`
+    fill.textContent = String(note.fret)
+    container.append(fill)
+  }
+}
+
+// Page turns by staff system with at least the next bar in view (once per bar), from the cached
+// scroller geometry: the top to scroll to, or null when the page stays.
+function pageTop(
+  view: { top: number; height: number },
   lookup: alphaTab.rendering.BoundsLookup,
   at: { index: number; x: number; y: number; h: number },
-  layout: 'page' | 'scroll',
-  smooth: boolean,
-) {
-  if (!element) return
-  if (layout === 'scroll') {
-    const left = Math.max(0, at.x - element.clientWidth / 3)
-    if (Math.abs(element.scrollLeft - left) > 1) element.scrollLeft = left
-    return
-  }
+): number | null {
   const system = lookup.staffSystems.find((s) => s.bars.some((b) => b.index === at.index))
-  if (!system) return
-  const top = element.scrollTop
-  const bottom = top + element.clientHeight
+  if (!system) return null
+  const bottom = view.top + view.height
   const lastOfSystem = system.bars.at(-1)?.index === at.index
   const next = lookup.staffSystems[system.index + 1]
   const needed = lastOfSystem && next ? next.realBounds.y + next.realBounds.h : at.y + at.h
-  if (at.y < top || needed > bottom) {
-    element.scrollTo({
-      top: Math.max(0, at.y - LOOK_AHEAD_PX),
-      behavior: smooth ? 'smooth' : 'auto',
-    })
-  }
+  if (at.y >= view.top && needed <= bottom) return null
+  // The system's own top room (its loop bracket and badge) stays in view.
+  return Math.max(0, at.y - SYSTEM_TOP_PX)
 }

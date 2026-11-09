@@ -76,16 +76,41 @@ const transparent = () => {
 }
 
 const STAGES: Stage[] = [
-  { id: 'decode', label: 'Reading the file', status: 'done', statusText: 'Done' },
-  { id: 'beats', label: 'Finding the beat', status: 'done', statusText: 'Done' },
+  {
+    id: 'decode',
+    label: 'Reading the audio',
+    status: 'done',
+    statusText: 'Done',
+    detail: '3:12, stereo',
+  },
+  {
+    id: 'beats',
+    label: 'Finding the beat',
+    status: 'done',
+    statusText: 'Done',
+    detail: '84 BPM in 4/4, starts on a pickup bar',
+  },
   {
     id: 'separate',
-    label: 'Separating your part',
+    label: 'Isolating your part',
     status: 'running',
-    statusText: 'About 2 min left',
+    statusText: '~2 min',
+    detail: 'Separating guitar from the band',
   },
-  { id: 'chords', label: 'Working out the chords', status: 'queued', statusText: 'Queued' },
-  { id: 'notes', label: 'Writing the tab', status: 'queued', statusText: 'Queued' },
+  {
+    id: 'chords',
+    label: 'Working out the chords',
+    status: 'queued',
+    statusText: 'Waiting',
+    detail: 'Also finds the key',
+  },
+  {
+    id: 'notes',
+    label: 'Building the tab',
+    status: 'queued',
+    statusText: 'Waiting',
+    detail: 'Fingerings you can actually play',
+  },
 ]
 
 export const Stages: Story = {
@@ -98,23 +123,14 @@ export const Stages: Story = {
     />
   ),
   play: async ({ canvasElement }) => {
-    // The overall bar is the one progressbar; the running stage's own bar is decorative.
+    // One overall bar (27 §3.7.3); each stage says its state by icon and words, never colour alone.
     await expect(within(canvasElement).getAllByRole('progressbar')).toHaveLength(1)
-    const running = canvasElement.querySelector<HTMLElement>('[data-status=running]')
-    const indicator = running?.querySelector<HTMLElement>('[data-slot=progress-indicator]')
-    await expect(indicator).toHaveAttribute('data-indeterminate')
-    await expect(getComputedStyle(indicator as Element).animationName).toBe(
-      'progress-indeterminate',
-    )
-    const done = canvasElement.querySelectorAll<SVGPathElement>('[data-status=done] svg path')
-    await expect(done).toHaveLength(2)
-    for (const tick of done) {
-      await expect(tick).toHaveAttribute('pathLength', '1')
-      await expect(getComputedStyle(tick).animationName).toBe('check-draw')
-    }
     await expect(
-      canvasElement.querySelector('[data-status=queued] [data-slot=progress]'),
-    ).toBeNull()
+      canvasElement.querySelector('[data-status=running] [data-slot=spinner]'),
+    ).not.toBeNull()
+    await expect(canvasElement.querySelectorAll('[data-status=done] svg')).toHaveLength(2)
+    await expect(canvasElement.querySelector('[data-status=queued] svg')).toBeNull()
+    await expect(within(canvasElement).getByText('Separating guitar from the band')).toBeVisible()
   },
 }
 export const StagesDark: Story = {
