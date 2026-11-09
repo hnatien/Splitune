@@ -37,7 +37,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), sixth in the
 When a song has sections, the song map shows chips sized by bar count; tapping one loops exactly that section, the current one is in the amber wash, labels can be renamed, and every section is reachable by keyboard, from ⌘K and from the Loop tab, with no chips drawn when a song has none.
 
 ## Decisions that bind this step
-- **D6:** budget 318.7 of 320 KB gzip (about 1.3 KB headroom): the chip row is on the route's critical path, so free bytes first if it doesn't fit and keep rename lazy; report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6): the chip row is on the route's critical path, so free bytes first if it doesn't fit and keep rename lazy; report before/after bytes.
 - **D1:** compare `Main` at 1440 and 1180 only.
 - 21 V3: no fake chips; "Part A/B/C" only from the fallback's labels.
 

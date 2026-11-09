@@ -3,7 +3,7 @@
 Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), fifth in the practice lane (s35 → s37 → s38 → s39 → **s40b** → s41b → s42 → s43). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s40b.
 
 ## Carried over from earlier steps (2026-11-08)
-- s40a (keep every stem) may not be merged when you start: its G3 waits for `impl/29-separation-improvements` (D16). Build against the stems fixture and story data (D15), and show only the stems an analysis actually has. Once s40a merges, its refreshed `packages/contracts/fixtures/stems.json` lists every kept stem and leaves empty extras out.
+- s40a (keep every stem) may not be merged when you start: it waits for the owner's G3. Build against the stems fixture and story data (D15), and show only the stems an analysis actually has. Once s40a merges, its refreshed `packages/contracts/fixtures/stems.json` lists every kept stem and leaves empty extras out.
 - Isolated stems don't always sum to the song: a two-stem head has no extras, and with impl/29 "other" can hold the learner's keys. Use the mix-minus as the band unless every instrument was kept.
 
 | | |
@@ -34,7 +34,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), fifth in the
 The Mix tab and the dock's mix pill offer every real stem with "Your part" first and labelled, presets (Your part loud, Minus-one, Original, Rhythm only), "Rough" tags, Click and "Hear the chords" channels, and a phone mini-mixer, with changes instant, no preset louder than the original, and every control usable without dragging.
 
 ## Decisions that bind this step
-- **D6:** budget 318.7 of 320 KB gzip; the Mix tab body is lazy; report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6); the Mix tab body is lazy; report before/after bytes.
 - 26 §4.4 and frozen decision 1: stems are colour-coded but always labelled; "Your part" is a badge and its name, never a colour.
 - 12 §7 safety: a limiter at unity; no preset pushes the master above 0 dBFS.
 

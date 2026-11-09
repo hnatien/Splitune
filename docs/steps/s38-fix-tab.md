@@ -34,7 +34,7 @@ Choosing Fix (the tab, `E`, or a "?") enters Fix mode: the learner steps through
 
 ## Decisions that bind this step
 - Frozen decision 4: confidence is never shown by colour alone: dashed outline plus "?", frequency wording such as "about 1 in 3"; never a percentage or a probability.
-- **D6:** budget 318.7 of 320 KB gzip; the Fix tab and Fix mode are lazy and stay outside the route budget; report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6); the Fix tab and Fix mode are lazy and stay outside the route budget; report before/after bytes.
 - **D1:** compare `Practice-Fix` at 1440 and 1180 only.
 - 26 §5 (C1): no step in s32–s45 hides marks; Fix shows every stage that produces bands.
 

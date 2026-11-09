@@ -203,5 +203,5 @@ You're done when all of these are true:
 </completion_checklist>
 
 <final_response>
-When finished, reply in chat with: the docs tree you created, the five most important findings, the three biggest risks (technical, legal, product), the recommended first prototype, and any part of the research you couldn't complete and why. Keep it under 400 words; the detail belongs in the docs.
+When finished, reply in chat with: the docs tree you created, the five most important findings, the three biggest risks (technical, legal, product), the recommended first prototype, and any part of the research you couldn't complete and why. Keep it brief; the detail belongs in the docs.
 </final_response>

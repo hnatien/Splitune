@@ -32,7 +32,7 @@ A learner turns on the speed ladder for a loop, sees its rungs from start to goa
 
 ## Decisions that bind this step
 - **D3:** the speed ladder steps up after 3 clean passes by default (a setting).
-- **D6:** budget 318.7 of 320 KB gzip; the ladder card and its chip steppers load lazily with the Loop tab; report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6); the ladder card and its chip steppers load lazily with the Loop tab; report before/after bytes.
 - 12 §5: `plays_per_step` is reinterpreted as *clean passes per step* (same field, same 1–20 range) only after confirming no stored clip has a trainer; the contract gains `drop_after_misses` (0 = off, 1–5) and `on_goal` (`'keep' | 'stop'`). Defaults: Start = best clean tempo else 70 %, Goal 100 %, Step 5 %, 3 clean passes, back down after 2 misses, count-in before each pass on, at the goal keep looping. The ladder is an adjustable default, never presented as science.
 
 ## Deliverables
