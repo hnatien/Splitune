@@ -1,13 +1,21 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-/** Raised surface (doc 26 §4.8, §9): shadow-1 lifts it; the border shows only under increased contrast. */
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
+/**
+ * `.card` (doc 26 §4.8, §9, §12.1): --card with a 1 px --border edge, 16 px corners and no shadow
+ * (cards are bordered, not lifted). `emphasis` sits one step up on --muted.
+ */
+function Card({
+  className,
+  variant = 'default',
+  ...props
+}: React.ComponentProps<'div'> & { variant?: 'default' | 'emphasis' }) {
   return (
     <div
       data-slot="card"
+      data-variant={variant}
       className={cn(
-        'group/card flex flex-col gap-4 overflow-hidden rounded-2xl border border-transparent bg-surface-raised py-4 shadow-1 contrast-more:border-border text-sm text-card-foreground has-data-[slot=card-footer]:pb-0',
+        'group/card flex flex-col gap-4 overflow-hidden rounded-3xl border border-border bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0 data-[variant=emphasis]:bg-muted',
         className,
       )}
       {...props}
@@ -60,10 +68,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-footer"
-      className={cn(
-        'flex items-center gap-3 border-t border-border bg-surface-sunken p-4',
-        className,
-      )}
+      className={cn('flex items-center gap-3 border-t border-border p-4', className)}
       {...props}
     />
   )

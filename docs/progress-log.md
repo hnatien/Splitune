@@ -2223,3 +2223,98 @@ Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), 
 - **`display.ts` still writes `data-score`.** Nothing reads it; s35 owns the display store.
 - **s33:** the Foundations story is still Music Stand-labelled ("Inter features", radius labels); `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans; set `DEFAULT_DISPLAY` to `dark`.
 - **s35:** move tab digits and readouts to `font-reading-mono`, chart chord names to `text-read-chord-sheet`, and the waveform ruler off Inter.
+
+## 2026-11-09 — Step s33: base components restyled for Night Rehearsal (done, not merged; G2 next)
+Branch `impl/s33-base-components` (worktree `.claude/worktrees/s33-base-components`) from `dev` at `bb42507`. Not merged into `dev`.
+
+**Built**
+- **Base components (26 §12.1) restyled in place, props kept.**
+  - Button: `primary`, `secondary`, `quiet` (new), `outline` (= quiet, kept for callers), `ghost`, `box` and `on` (new; `.ib.box`, `.ib.on`), `destructive`, `destructiveSolid` (new), `link`. Sizes `sm` 32, `md` 40, `lg` 48 (new), `xl` 56 (new), `practice-2` 48, `practice` 64, and icon sizes `icon-sm` 32, `icon` 40, `icon-practice-2` 52 (`.ib.lg`), `icon-practice` 64; `block` (new) and `unavailableLabel` (new).
+  - Toggle (`.chip`), ToggleGroup (`.seg`), Tabs (`.tabs`), Switch (`.toggle`), Checkbox, RadioGroup (`.check`), Slider (`.range`), NumberField (`.stepper`), Field, Input, Label (`.field`, `.label`), Select, DropdownMenu, Popover, Tooltip (`.sheet`), Dialog, AlertDialog, Drawer, Toast, Badge (`unsure` is new), Kbd (JetBrains Mono), Card (`variant="emphasis"` is new), Progress, Meter, Spinner (an SVG ring and arc), Separator, ScrollArea and Skeleton.
+- **Targets (26 §8, V12).** A painted face inside the target box:
+  - Each size sets `--face` and `--r`.
+  - The box pads out to `max(--control-size, --face)` with a transparent border.
+  - The edge is an inset ring.
+  - Focus sits 2 px off the face (`outline-offset: calc(2px - pad)`).
+  - This works on `buttonVariants` links too, and no `::after` hit areas are left (checkbox, radio, slider thumb).
+  - `--target-sm` is no longer used (s45 deletes it).
+  - Segments paint 34 px faces inside a 44/48 box over a 42 px track drawn by `::before`. The sliding capsule takes the item's box and pads to the same face, so the capsule contract the library story asserts is unchanged.
+- **Kit restyles marked s33 (26 §12.2):**
+  - TransportButton: tones `neutral` (`.ib.lg`), `box` (new, `.ib.lg.box`) and `primary` (`.play`); on and active are `.ib.on`; `practice` 64, `practice-2` 52.
+  - SpeedControl: boxed −/+ at 64 in every layout, including `compact` (V11), and a quiet 64 px mono readout.
+  - SpeedPanel, CoachMark, DropZone (dragging turns the dashed edge solid `--signal` over `--primary-soft`), WaveformPreview, SaveStatus (saved is the success badge), Brand (lowercase wordmark, 28 px amber disc crossed by a graphite wave).
+- **Every other `ui/` file** is on the new radius scale (old `xl` 14 / `2xl` 18 / `3xl` 24 → `2xl` / `3xl` / `4xl`) and reads only doc 26 roles: amber is never text or a mark. ChoiceCard's icon, PassControl's ring, RadioCard's checked ring, StageList's running tone and StepDots moved to `--muted-foreground`, `--signal` or `--primary-ink`. Their layouts stay with s34–s43.
+- **Display defaults (26 §2):**
+  - `DEFAULT_DISPLAY.appearance` is `dark`, and nothing stored resolves to Night.
+  - `system` follows the OS.
+  - `stage` at Desk resolves to Music stand.
+  - `color-scheme` is written; `.dark` is set for `dark` and `stage` as before.
+- **Icons (26 §11):** `ui/icons/create.tsx` makes custom icons at a 1.8 px stroke. New icons: two pedals, and the desk, stand and floor distances. Lucide icons inside `ui/` controls draw at 1.8.
+- **Stories (28 §2):**
+  - Every base component has a story per 26 §12.3 state: Default, Hover, Focus, Pressed, On, Disabled, Loading, Error and the domain states.
+  - Static states render side by side, Night beside Daylight. Hover, Focus and the open popups have a Daylight twin.
+  - `AllStates` and `AllStatesIncreasedContrast` galleries; `Targets` probes measure each control's own border box.
+  - Shared helpers are in `ui/story-kit.tsx`; `tabs.stories.tsx` and `transport-button.stories.tsx` are new.
+  - Synthetic pointer events don't apply `:hover`, so the Hover stories hover without asserting colour.
+- **`scripts/check-ui-tokens.mjs` (28 §3 "Raw values")** has new rules, on `apps/web/app/ui/**`:
+  - arbitrary colours, including named and system colours and `color-mix()`;
+  - arbitrary radii;
+  - arbitrary font sizes (em multiples pass, because they scale a token size);
+  - arbitrary shadows;
+  - style-prop colour literals and colour-valued JSX attributes.
+
+  A value built only from `var(--…)` tokens passes. The repeatable `--path <dir>` runs these rules on another area, as documented in the script header. The base rules and their scope are unchanged. `scripts/check-ui-tokens.test.mjs` tests each rule with a passing and a failing sample (14 tests). `--path apps/web/app/features` already flags 9 one-off font sizes in `features/marketing` for its screen step.
+- **Visual baselines:** `e2e/visual/components.spec.ts` captures 16 side-by-side component boards plus 9 popups × 2 themes at 1440 × 900, in both engines. `e2e/visual/story.ts` is the story opener, now shared with `screens.spec.ts`. The 72 screen baselines are left stale on purpose: each screen step regenerates its own.
+
+**Expected values changed by design**
+- `display.test.ts`:
+  - "follows the OS" now stores `system`;
+  - `color-scheme` is asserted;
+  - new tests: nothing stored is Night whatever the OS says, and `stage` at Desk resolves to stand;
+  - `DISPLAY_SCRIPT`: empty, corrupt or blocked storage falls back to Night, and stored `system` follows the OS.
+- `dialog` OpenScrim radius 14 → 22 (`rounded-4xl`). The delete confirm is `destructiveSolid`.
+- `drawer` BottomSheetShape: radius 16 → 22; grabber 36 × 4 → 40 × 5.
+- `foundations` RadiusScale adds `xs` 4 and `4xl` 22, with the §9 uses. The "Inter features" section is relabelled for Instrument Sans.
+- `form` ChoiceKeyboard: the `::after` hit area is gone, so it asserts `content: none`.
+- `slider` ThumbHitArea → Targets: the thumb's own box.
+- `import` DropZoneDragging: the ring became a solid `--signal` edge.
+- `feedback` StatusBadgeStates: badges have no outline (`.badge`).
+- `number-field` Steppers measure the 40 px well and its 44 px halves.
+
+**Tokens added at the owner's request (stop point 3: s32 hadn't shipped them; doc 26 updated)**
+1. `--primary-hover`: `oklch(0.826 0.152 75)`, the amber at `brightness(1.06)` computed in sRGB (the mockup's `.btn.pri:hover`). It is the primary button's and Play's hover; `--primary-foreground` on it is 10.6:1, now a `CONTRAST_PAIRS` entry. `destructiveSolid` keeps `brightness(1.06)`.
+2. `text-button-lg`: 16 / 22 / 600, for Button `lg` and `xl`.
+3. `--elevation-capsule` (`shadow-capsule`): `0 1px 2px oklch(0 0 0 / 0.25)`, the pressed segment's shadow. The capsule keeps the item's box and paints its 34 px face, with the shadow, in `::before`.
+4. `rounded-5xl` (24): phone bottom sheets' top corners. Side drawers keep 22.
+5. `--elevation-play` (`shadow-play`): `0 6px 20px oklch(0.8 0.15 72 / 0.28)` under Play. Dropped under increased contrast and forced colours, like `--glow`, and on a disabled Play.
+6. Sizes, with no token needed: `practice-2` TransportButtons grow from 48 to the mockup's 52, and the `compact` SpeedControl steppers are 64 (V11).
+
+Token tests: `pnpm --filter @splitune/ui-tokens test` 1,342 / 1,342 (it was 1,329). The new checks: the radius scale to `5xl`, `text-button-lg`, the two shadows per context and the new contrast pair.
+
+Feature components that override button or toggle border colours draw them only where the face fills the whole box (`practice-2`/`practice` sizes), so no feature story breaks; their own restyles belong to s34–s43. AllowanceMeter keeps its sunken track until s34.
+
+**Fidelity (28 §5.1, `redesign/.renders/s33/`, ignored)**
+- Night stories were measured against `System` (fixed, 1440) or AddSong (night, 1440 and 1180); Daylight stories against Main, AddSong and Settings-Display (daylight, 1440 and 1180). 26 components, 66 comparisons. The script is kept there as `g2.mjs`.
+- Differences per iteration: 170 → 85 → 66 → 66 (iteration 4, after the token additions; the probe now reads the capsule's `::before` face). Iteration 2 fixed segment-item radii and the field's vertical padding, plus probe parsing (inset rings, elliptical radii, fonts on text-less controls). After iteration 3, 0 are unexplained. The 66 are:
+  - **Register:** V2 (`--input` edges), V5, V11, V16 and V17.
+  - **Doc 26 values the mockup's own cascade overrides:** `.app button { font: inherit; color: inherit }` turns its `<button class="btn">`/`.chip`/`.ib` into 15/400 `--tx` text (its `<a class="btn">` measures 14/600 like ours) and Play's icon light on amber (1.9:1). Line heights are 1.45× where §6.2 binds 18/16.
+- `fidelity-<n>.md` has every difference per component. `index.html` puts story crops beside mockup crops and the full side-by-side boards.
+
+**Verification (PC, 2026-11-09)**
+- **Lint:** `pnpm exec biome check .` (2 infos, pre-existing in `features/practice`); `node scripts/check-db-access.mjs` and `node scripts/check-ui-tokens.mjs` clean; `--path apps/web/app/ui` clean.
+- **Scripts:** `pnpm exec vitest run --dir scripts` 94 / 94.
+- **Web:** `pnpm --filter @splitune/web typecheck` clean; unit tests 217 / 217.
+- **Stories:** `vitest run --project storybook` in Chromium and WebKit, in batches:
+  - `app/ui` + `.storybook`: 688 / 688; after the token additions, `app/ui` + `.storybook` + `features/library` 708 / 708;
+  - features except practice: 253 / 256. The 3 failures are the known WebKit Record Tab, Guide and Guide Dark;
+  - `practice.stories.tsx`: Chromium 89 / 89; WebKit 77 failures, all the known 15 s timeouts.
+
+  `transport.stories.tsx` Targets (64 / 48) is unchanged and green.
+- **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route 326,384 → 327,515 B gzip (318.7 → 319.8 KB of 320.0; +1,131 B, 165 B left). css-floor clean.
+- **Visual:** `pnpm --filter @splitune/web e2e:visual:update -g "components"` in `mcr.microsoft.com/playwright:v1.64.1-noble` wrote 68 baselines (34 per engine, `component-*.png`). A compare run with `-g "components"` then passed 68 / 68. After the token additions, the changed rows were regenerated: button (`lg`), drawer (24 px corners), and toggle and transport (capsule and Play shadows; these two were deleted and rewritten, because the faint shadows sit inside the 20-pixel tolerance). The compare run passed 68 / 68 again. The 72 `Screens/` baselines are not regenerated, so `screens.spec.ts` fails until each screen step regenerates its own (28 §4).
+
+**Next**
+- **G2:** the owner reviews `redesign/.renders/s33/index.html` (Night beside Daylight, crops beside the mockup).
+- **s34–s36:** run `node scripts/check-ui-tokens.mjs --path <your area>`. Feature code that passes border colours to buttons or toggles should move to the variants.
+- **The 165 B budget headroom:** the next practice UI must free bytes first.
+- **s45:** widens the raw-value rules to `apps/web/app`, redraws the PWA icons and favicon with the new mark (D12), and deletes `--target-sm`.

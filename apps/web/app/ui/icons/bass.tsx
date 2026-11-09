@@ -1,8 +1,8 @@
-import { createLucideIcon } from 'lucide-react'
+import { createIcon } from './create'
 
 // Its own module: only onboarding uses it, so the practice screen's icon module stays as it was.
 /** Bass guitar: a smaller body and a longer neck than Lucide's guitar (onboarding's choice). */
-export const BassIcon = createLucideIcon('bass', [
+export const BassIcon = createIcon('bass', [
   ['path', { d: 'M8.5 13.5 19 3', key: 'neck' }],
   ['path', { d: 'm17.5 2.5 4 4', key: 'head' }],
   [

@@ -12,23 +12,25 @@ function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
   )
 }
 
-/** 20 px ring with a 44 px hit area; selected shows a filled dot inside the indigo ring. */
+/**
+ * `.check` as a radio (doc 26 §12.1): an 18 px ring (--input edge) painted in the middle of a
+ * 44 px target box; selected fills it with --signal around a --primary-foreground dot.
+ */
 function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
   return (
     <RadioPrimitive.Root
       data-slot="radio-group-item"
       className={cn(
-        'group/radio-group-item peer relative flex aspect-square size-5 shrink-0 rounded-full border border-input bg-card after:absolute after:top-1/2 after:left-1/2 after:size-target after:-translate-1/2 disabled:cursor-not-allowed disabled:bg-muted aria-invalid:border-destructive data-checked:border-primary data-checked:border-2',
+        'group/radio-group-item peer relative grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-offset-[-11px] data-disabled:cursor-not-allowed',
         className,
       )}
       {...props}
     >
-      <RadioPrimitive.Indicator
-        data-slot="radio-group-indicator"
-        className="flex size-full items-center justify-center"
-      >
-        <span className="size-2.5 rounded-full bg-primary group-data-disabled/radio-group-item:bg-muted-foreground" />
-      </RadioPrimitive.Indicator>
+      <span className="grid size-4.5 place-items-center rounded-full bg-background inset-ring inset-ring-input transition-colors group-aria-invalid/radio-group-item:inset-ring-destructive group-data-checked/radio-group-item:bg-signal group-data-checked/radio-group-item:inset-ring-signal group-data-disabled/radio-group-item:bg-muted group-data-disabled/radio-group-item:inset-ring-input">
+        <RadioPrimitive.Indicator data-slot="radio-group-indicator" className="grid">
+          <span className="size-2 rounded-full bg-primary-foreground group-data-disabled/radio-group-item:bg-faint-foreground" />
+        </RadioPrimitive.Indicator>
+      </span>
     </RadioPrimitive.Root>
   )
 }

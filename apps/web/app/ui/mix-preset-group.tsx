@@ -46,7 +46,7 @@ function MixPresetGroup({
           <ToggleGroupItem
             key={option.value}
             value={option.value}
-            className={orientation === 'vertical' ? 'justify-start rounded-xl' : undefined}
+            className={orientation === 'vertical' ? 'justify-start rounded-2xl' : undefined}
           >
             {value === option.value && <CheckIcon aria-hidden />}
             {option.label}

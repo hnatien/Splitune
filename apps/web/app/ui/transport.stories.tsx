@@ -95,7 +95,7 @@ function Transport({
         </fieldset>
         <fieldset
           aria-label="Loop"
-          className="m-0 flex min-w-0 items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
+          className="m-0 flex min-w-0 items-center gap-1 rounded-3xl border-0 bg-surface-sunken p-1"
         >
           {loop ? (
             <TransportButton
@@ -117,7 +117,7 @@ function Transport({
           )}
           <LoopBadge
             state={loop ? (loopOn ? 'active' : 'off') : 'off'}
-            className="min-h-target-practice rounded-xl text-read-label"
+            className="min-h-target-practice rounded-2xl text-read-label"
           >
             {loop ? 'Loop · bars 17–20 · pass 3' : 'No loop — tap two bars'}
           </LoopBadge>

@@ -1,10 +1,11 @@
-import { createLucideIcon } from 'lucide-react'
+import { createIcon } from './create'
 
-// Custom music icons on Lucide's grid (24 px, 2 px stroke, round caps), doc 26 §11. Like Lucide
-// icons they are decorative: the control that uses one carries the text or aria-label.
+// Custom music icons on Lucide's grid (24 px, 1.8 px stroke, round caps and joins), doc 26 §11:
+// sizes 16 / 20 / 24 / 28 like Lucide's. Like Lucide icons they are decorative: the control that
+// uses one carries the text or aria-label.
 
 /** Foot pedal (page-turner / footswitch) — keyboard & pedal settings, PedalHud. */
-export const PedalIcon = createLucideIcon('pedal', [
+export const PedalIcon = createIcon('pedal', [
   ['path', { d: 'M3 20h18', key: 'base' }],
   ['path', { d: 'M5 17 7.5 9h9l2.5 8Z', key: 'plate' }],
   ['path', { d: 'M12 9V5', key: 'stem' }],
@@ -12,7 +13,7 @@ export const PedalIcon = createLucideIcon('pedal', [
 ])
 
 /** Capo clamped across the neck. */
-export const CapoIcon = createLucideIcon('capo', [
+export const CapoIcon = createIcon('capo', [
   ['path', { d: 'M3 9h18', key: 'string-top' }],
   ['path', { d: 'M3 15h18', key: 'string-bottom' }],
   ['path', { d: 'M9 5v14', key: 'bar' }],
@@ -20,7 +21,7 @@ export const CapoIcon = createLucideIcon('capo', [
 ])
 
 /** Tab staff: lines with the opening bar line. */
-export const TabStaffIcon = createLucideIcon('tab-staff', [
+export const TabStaffIcon = createIcon('tab-staff', [
   ['path', { d: 'M3 5v14', key: 'barline' }],
   ['path', { d: 'M3 6h18', key: 'line-1' }],
   ['path', { d: 'M3 10h18', key: 'line-2' }],
@@ -29,7 +30,7 @@ export const TabStaffIcon = createLucideIcon('tab-staff', [
 ])
 
 /** Chord box (fretboard diagram) with one fingered note. */
-export const ChordBoxIcon = createLucideIcon('chord-box', [
+export const ChordBoxIcon = createIcon('chord-box', [
   ['rect', { x: '5', y: '3', width: '14', height: '18', rx: '1', key: 'frame' }],
   ['path', { d: 'M9.7 3v18', key: 'string-1' }],
   ['path', { d: 'M14.3 3v18', key: 'string-2' }],
@@ -39,7 +40,7 @@ export const ChordBoxIcon = createLucideIcon('chord-box', [
 ])
 
 /** Count-in "1-2-3-4": four beats, the first accented. */
-export const CountInIcon = createLucideIcon('count-in', [
+export const CountInIcon = createIcon('count-in', [
   ['circle', { cx: '4.5', cy: '12', r: '2.5', key: 'beat-1' }],
   ['circle', { cx: '10', cy: '12', r: '1.5', key: 'beat-2' }],
   ['circle', { cx: '15', cy: '12', r: '1.5', key: 'beat-3' }],
@@ -47,7 +48,7 @@ export const CountInIcon = createLucideIcon('count-in', [
 ])
 
 /** Minus-one: a stem with a slash through it (your part removed from the mix). */
-export const MinusOneIcon = createLucideIcon('minus-one', [
+export const MinusOneIcon = createIcon('minus-one', [
   ['path', { d: 'M6 9v6', key: 'bar-1' }],
   ['path', { d: 'M10 6v12', key: 'bar-2' }],
   ['path', { d: 'M14 8v8', key: 'bar-3' }],
@@ -56,7 +57,7 @@ export const MinusOneIcon = createLucideIcon('minus-one', [
 ])
 
 /** Your part: a stem with the left rule that marks it in the mixer. */
-export const YourPartIcon = createLucideIcon('your-part', [
+export const YourPartIcon = createIcon('your-part', [
   ['path', { d: 'M4 4v16', key: 'rule' }],
   ['path', { d: 'M9 9v6', key: 'bar-1' }],
   ['path', { d: 'M13 5v14', key: 'bar-2' }],
@@ -64,12 +65,49 @@ export const YourPartIcon = createLucideIcon('your-part', [
   ['path', { d: 'M21 10v4', key: 'bar-4' }],
 ])
 
+/** Two pedals side by side (the pedal wizard's illustration). */
+export const TwoPedalsIcon = createIcon('two-pedals', [
+  ['path', { d: 'M2 20h20', key: 'base' }],
+  ['path', { d: 'M3 17 4.5 10h5L11 17Z', key: 'left' }],
+  ['path', { d: 'm13 17 1.5-7h5l1.5 7Z', key: 'right' }],
+  ['path', { d: 'M7 10V6', key: 'left-stem' }],
+  ['path', { d: 'M17 10V6', key: 'right-stem' }],
+])
+
+/** Desk distance (0.5 m): a laptop on the desk. */
+export const DistanceDeskIcon = createIcon('distance-desk', [
+  ['rect', { x: '5', y: '5', width: '14', height: '9', rx: '1.5', key: 'screen' }],
+  ['path', { d: 'M3 17h18', key: 'deck' }],
+  ['path', { d: 'M2 21h20', key: 'desk' }],
+])
+
+/** Music-stand distance (0.75 m): a tablet on a stand. */
+export const DistanceStandIcon = createIcon('distance-stand', [
+  ['rect', { x: '7', y: '2', width: '10', height: '13', rx: '1.5', key: 'tablet' }],
+  ['path', { d: 'M5 15h14', key: 'ledge' }],
+  ['path', { d: 'M12 15v7', key: 'pole' }],
+  ['path', { d: 'm8 22 4-3 4 3', key: 'feet' }],
+])
+
+/** Floor distance (1.5 m): a phone on the floor, seen from where you play. */
+export const DistanceFloorIcon = createIcon('distance-floor', [
+  ['path', { d: 'M2 20h20', key: 'floor' }],
+  ['path', { d: 'm8 17 1-6h6l1 6Z', key: 'phone' }],
+  ['path', { d: 'M4 4h16', key: 'reach' }],
+  ['path', { d: 'm7 2-3 2 3 2', key: 'reach-left' }],
+  ['path', { d: 'm17 2 3 2-3 2', key: 'reach-right' }],
+])
+
 export const CUSTOM_ICONS = {
   PedalIcon,
+  TwoPedalsIcon,
   CapoIcon,
   TabStaffIcon,
   ChordBoxIcon,
   CountInIcon,
   MinusOneIcon,
   YourPartIcon,
+  DistanceDeskIcon,
+  DistanceStandIcon,
+  DistanceFloorIcon,
 }

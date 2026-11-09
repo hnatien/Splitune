@@ -2,8 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
 import { COPY } from './fixtures.ts'
+import { DAYLIGHT } from './story-kit.tsx'
 import { Toaster, toast } from './toast.tsx'
 
+// Doc 26 §12.1 `.toast`: an --accent chip with a --border-strong edge, 14 px corners and
+// --elevation-2; an error toast has a --destructive edge as well as its icon.
 const meta = { title: 'Base/Toast' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -26,6 +29,18 @@ const Demo = () => (
       <Button variant="outline" onClick={() => toast.add({ title: 'Song renamed', type: 'info' })}>
         Rename song
       </Button>
+      <Button
+        variant="outline"
+        onClick={() =>
+          toast.add({
+            title: "Couldn't save the edit",
+            description: 'The change is undone. Try again.',
+            type: 'error',
+          })
+        }
+      >
+        Fail a save
+      </Button>
     </div>
   </Toaster>
 )
@@ -41,5 +56,15 @@ export const WithUndo: Story = {
   },
 }
 
-export const WithUndoDark: Story = { ...WithUndo, globals: { appearance: 'dark' } }
+export const WithUndoDaylight: Story = { ...WithUndo, globals: DAYLIGHT }
+
+const openError = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  await userEvent.click(within(canvasElement).getByRole('button', { name: 'Fail a save' }))
+  const title = await screen.findByText("Couldn't save the edit")
+  await waitFor(() => expect(title).toBeVisible())
+  const toastRoot = title.closest('[data-slot="toast"]') as HTMLElement
+  await expect(getComputedStyle(toastRoot).borderTopLeftRadius).toBe('14px')
+}
+export const ErrorState: Story = { render: Demo, play: openError }
+export const ErrorDaylight: Story = { ...ErrorState, globals: DAYLIGHT }
 export const WithUndoStage: Story = { ...WithUndo, globals: { appearance: 'stage' } }
