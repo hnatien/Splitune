@@ -103,13 +103,13 @@ export const Hover: Story = {
 }
 export const HoverDaylight: Story = { ...Hover, globals: DAYLIGHT }
 
-/** The primary hover is brightness(1.06), as in the mockup (`.btn.pri:hover`). */
+/** The primary hover is --primary-hover: the amber at brightness(1.06), the mockup's `.btn.pri:hover`. */
 export const HoverPrimary: Story = {
   args: { variant: 'primary' },
   play: async ({ canvasElement }) => {
     const button = within(canvasElement).getByRole('button')
     await userEvent.hover(button)
-    await expect(button.className).toContain('hover:brightness-106')
+    await expect(button.className).toContain('hover:bg-primary-hover')
   },
 }
 

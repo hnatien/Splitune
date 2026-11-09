@@ -25,7 +25,7 @@ const on =
 
 const tones = {
   primary:
-    "rounded-full bg-primary text-primary-foreground inset-ring-transparent hover:brightness-106 [&_svg]:fill-current [&_svg:not([class*='size-'])]:size-7",
+    "rounded-full bg-primary text-primary-foreground shadow-play inset-ring-transparent hover:bg-primary-hover disabled:shadow-none [&_svg]:fill-current [&_svg:not([class*='size-'])]:size-7",
   neutral: `text-muted-foreground inset-ring-transparent hover:bg-muted hover:text-foreground ${on}`,
   box: `bg-card text-muted-foreground inset-ring-border-strong hover:bg-muted hover:text-foreground ${on}`,
 }

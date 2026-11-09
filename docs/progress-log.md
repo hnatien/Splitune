@@ -2281,19 +2281,21 @@ Branch `impl/s33-base-components` (worktree `.claude/worktrees/s33-base-componen
 - `feedback` StatusBadgeStates: badges have no outline (`.badge`).
 - `number-field` Steppers measure the 40 px well and its 44 px halves.
 
-**Deviations and gaps (owner decisions, stop point 3: tokens s32 didn't ship)**
-1. `--primary-hover` (26 §12.1) doesn't exist. The primary hover is `filter: brightness(1.06)`, the mockup's own rule.
-2. There is no 16 px type token. Button `lg`/`xl` use `text-lg` (17 px; the mockup uses 16).
-3. There is no shadow token for the segmented capsule's `0 1px 2px` shadow. The capsule is the `--accent` fill alone.
-4. There is no 24 px radius for phone-sheet top corners. Drawers use `rounded-4xl` (22).
-5. There is no token for Play's amber drop shadow (`.play`). Play has none.
-6. `practice-2` TransportButtons grow from 48 to the mockup's 52; `compact` SpeedControl steppers are 64 (V11).
+**Tokens added at the owner's request (stop point 3: s32 hadn't shipped them; doc 26 updated)**
+1. `--primary-hover`: `oklch(0.826 0.152 75)`, the amber at `brightness(1.06)` computed in sRGB (the mockup's `.btn.pri:hover`). It is the primary button's and Play's hover; `--primary-foreground` on it is 10.6:1, now a `CONTRAST_PAIRS` entry. `destructiveSolid` keeps `brightness(1.06)`.
+2. `text-button-lg`: 16 / 22 / 600, for Button `lg` and `xl`.
+3. `--elevation-capsule` (`shadow-capsule`): `0 1px 2px oklch(0 0 0 / 0.25)`, the pressed segment's shadow. The capsule keeps the item's box and paints its 34 px face, with the shadow, in `::before`.
+4. `rounded-5xl` (24): phone bottom sheets' top corners. Side drawers keep 22.
+5. `--elevation-play` (`shadow-play`): `0 6px 20px oklch(0.8 0.15 72 / 0.28)` under Play. Dropped under increased contrast and forced colours, like `--glow`, and on a disabled Play.
+6. Sizes, with no token needed: `practice-2` TransportButtons grow from 48 to the mockup's 52, and the `compact` SpeedControl steppers are 64 (V11).
+
+Token tests: `pnpm --filter @splitune/ui-tokens test` 1,342 / 1,342 (it was 1,329). The new checks: the radius scale to `5xl`, `text-button-lg`, the two shadows per context and the new contrast pair.
 
 Feature components that override button or toggle border colours draw them only where the face fills the whole box (`practice-2`/`practice` sizes), so no feature story breaks; their own restyles belong to s34–s43. AllowanceMeter keeps its sunken track until s34.
 
 **Fidelity (28 §5.1, `redesign/.renders/s33/`, ignored)**
 - Night stories were measured against `System` (fixed, 1440) or AddSong (night, 1440 and 1180); Daylight stories against Main, AddSong and Settings-Display (daylight, 1440 and 1180). 26 components, 66 comparisons. The script is kept there as `g2.mjs`.
-- Differences per iteration: 170 → 85 → 66. Iteration 2 fixed segment-item radii and the field's vertical padding, plus probe parsing (inset rings, elliptical radii, fonts on text-less controls). After iteration 3, 0 are unexplained. The 66 are:
+- Differences per iteration: 170 → 85 → 66 → 66 (iteration 4, after the token additions; the probe now reads the capsule's `::before` face). Iteration 2 fixed segment-item radii and the field's vertical padding, plus probe parsing (inset rings, elliptical radii, fonts on text-less controls). After iteration 3, 0 are unexplained. The 66 are:
   - **Register:** V2 (`--input` edges), V5, V11, V16 and V17.
   - **Doc 26 values the mockup's own cascade overrides:** `.app button { font: inherit; color: inherit }` turns its `<button class="btn">`/`.chip`/`.ib` into 15/400 `--tx` text (its `<a class="btn">` measures 14/600 like ours) and Play's icon light on amber (1.9:1). Line heights are 1.45× where §6.2 binds 18/16.
 - `fidelity-<n>.md` has every difference per component. `index.html` puts story crops beside mockup crops and the full side-by-side boards.
@@ -2303,16 +2305,16 @@ Feature components that override button or toggle border colours draw them only 
 - **Scripts:** `pnpm exec vitest run --dir scripts` 94 / 94.
 - **Web:** `pnpm --filter @splitune/web typecheck` clean; unit tests 217 / 217.
 - **Stories:** `vitest run --project storybook` in Chromium and WebKit, in batches:
-  - `app/ui` + `.storybook`: 688 / 688;
+  - `app/ui` + `.storybook`: 688 / 688; after the token additions, `app/ui` + `.storybook` + `features/library` 708 / 708;
   - features except practice: 253 / 256. The 3 failures are the known WebKit Record Tab, Guide and Guide Dark;
   - `practice.stories.tsx`: Chromium 89 / 89; WebKit 77 failures, all the known 15 s timeouts.
 
   `transport.stories.tsx` Targets (64 / 48) is unchanged and green.
-- **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route 326,384 → 327,496 B gzip (318.7 → 319.8 KB of 320.0; +1,112 B, 184 B left). css-floor clean.
-- **Visual:** `pnpm --filter @splitune/web e2e:visual:update -g "components"` in `mcr.microsoft.com/playwright:v1.64.1-noble` wrote 68 baselines (34 per engine, `component-*.png`). A compare run with `-g "components"` then passed 68 / 68. The 72 `Screens/` baselines are not regenerated, so `screens.spec.ts` fails until each screen step regenerates its own (28 §4).
+- **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route 326,384 → 327,515 B gzip (318.7 → 319.8 KB of 320.0; +1,131 B, 165 B left). css-floor clean.
+- **Visual:** `pnpm --filter @splitune/web e2e:visual:update -g "components"` in `mcr.microsoft.com/playwright:v1.64.1-noble` wrote 68 baselines (34 per engine, `component-*.png`). A compare run with `-g "components"` then passed 68 / 68. After the token additions, the changed rows were regenerated: button (`lg`), drawer (24 px corners), and toggle and transport (capsule and Play shadows; these two were deleted and rewritten, because the faint shadows sit inside the 20-pixel tolerance). The compare run passed 68 / 68 again. The 72 `Screens/` baselines are not regenerated, so `screens.spec.ts` fails until each screen step regenerates its own (28 §4).
 
 **Next**
-- **G2:** the owner reviews `redesign/.renders/s33/index.html` (Night beside Daylight, crops beside the mockup) and decides the six token gaps above.
+- **G2:** the owner reviews `redesign/.renders/s33/index.html` (Night beside Daylight, crops beside the mockup).
 - **s34–s36:** run `node scripts/check-ui-tokens.mjs --path <your area>`. Feature code that passes border colours to buttons or toggles should move to the variants.
-- **The 184 B budget headroom:** the next practice UI must free bytes first.
+- **The 165 B budget headroom:** the next practice UI must free bytes first.
 - **s45:** widens the raw-value rules to `apps/web/app`, redraws the PWA icons and favicon with the new mark (D12), and deletes `--target-sm`.

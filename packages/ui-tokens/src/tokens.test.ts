@@ -218,6 +218,20 @@ describe('elevation (§4.7, §9)', () => {
       )
     }
   })
+
+  it('the segmented capsule and Play have their own shadows; Play drops its haze under increased contrast', () => {
+    for (const appearance of ['dark', 'light', 'stage']) {
+      expect(at({ 'data-appearance': appearance }).raw('--elevation-capsule')).toBe(
+        '0 1px 2px oklch(0 0 0 / 0.25)',
+      )
+      expect(at({ 'data-appearance': appearance }).raw('--elevation-play')).toBe(
+        '0 6px 20px oklch(0.8 0.15 72 / 0.28)',
+      )
+      expect(
+        at({ 'data-appearance': appearance, 'data-contrast': 'more' }).raw('--elevation-play'),
+      ).toBe(NO_SHADOW)
+    }
+  })
 })
 
 describe('motion (§10)', () => {
@@ -443,8 +457,8 @@ describe('static scales', () => {
       return 10 + (m[1] === '+' ? 1 : -1) * Number(m[2])
     }
     expect(theme('--radius')).toBe('0.625rem')
-    expect(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl'].map(radius)).toEqual([
-      4, 6, 8, 10, 12, 14, 16, 22,
+    expect(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl'].map(radius)).toEqual([
+      4, 6, 8, 10, 12, 14, 16, 22, 24,
     ])
   })
 
@@ -455,6 +469,7 @@ describe('static scales', () => {
       ['xs', 12, 16, 650],
       ['sm', 13, 18, undefined],
       ['md', 14, 20, 600],
+      ['button-lg', 16, 22, 600],
       ['base', 15, 22, 400],
       ['lg', 17, 22, 650],
       ['xl', 22, 26, 650],
