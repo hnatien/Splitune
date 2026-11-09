@@ -3,14 +3,14 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { m } from '@/lib/i18n'
 import { Button, buttonVariants } from '@/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
 import { Skeleton } from '@/ui/skeleton'
 import { Banner, InlineError } from '@/ui/status-message'
+import { BillingCard } from './billing-card'
 import { billingClient, billingOrpc, planName, planPrice, plansQuery, useRefreshMe } from './plans'
 
-// Mock checkout (27 §3.10, 25 §2): the demo banner, the plan and its price, and three buttons
-// that make the mock provider act — success sends the real webhook event, declined and cancel
-// create nothing. No card fields, ever.
+// Mock checkout (27 §3.10, 25 §2): the demo banner, the plan and its price on the Pricing card, and
+// three buttons that make the mock provider act — success sends the real webhook event, declined
+// and cancel create nothing. No card fields, ever.
 
 type Outcome = 'success' | 'declined' | 'cancel'
 
@@ -19,7 +19,7 @@ export function SessionExpired() {
     <InlineError
       title={m['billing.session_expired']()}
       actions={
-        <Link to="/settings/billing" className={buttonVariants({ variant: 'outline' })}>
+        <Link to="/settings/account" hash="plan" className={buttonVariants({ variant: 'outline' })}>
           {m['billing.go_billing']()}
         </Link>
       }
@@ -56,6 +56,18 @@ export function MockCheckout({ session }: { session: string }) {
       setPending(undefined)
     }
   }
+  const button = (outcome: Outcome, label: string, variant: 'primary' | 'secondary' | 'ghost') => (
+    <Button
+      variant={variant}
+      size="lg"
+      block
+      loading={pending === outcome}
+      disabled={pending !== undefined}
+      onClick={() => act(outcome)}
+    >
+      {label}
+    </Button>
+  )
 
   return (
     <>
@@ -64,18 +76,11 @@ export function MockCheckout({ session }: { session: string }) {
       {details.isError ? (
         <SessionExpired />
       ) : details.data && plan ? (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">{planName(plan.plan)}</CardTitle>
-              <CardDescription className="text-base tabular-nums">
-                {planPrice(plan)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-base">{m['billing.renews_note']()}</p>
-            </CardContent>
-          </Card>
+        <BillingCard
+          title={planName(plan.plan)}
+          price={planPrice(plan)}
+          note={m['billing.renews_note']()}
+        >
           {declined && (
             <InlineError
               title={m['billing.declined']()}
@@ -87,33 +92,12 @@ export function MockCheckout({ session }: { session: string }) {
             />
           )}
           {failed && <InlineError title={m['billing.action_failed']()} />}
-          <div className="flex flex-col gap-3">
-            <Button
-              variant="primary"
-              loading={pending === 'success'}
-              disabled={pending !== undefined}
-              onClick={() => act('success')}
-            >
-              {m['billing.simulate_success']()}
-            </Button>
-            <Button
-              variant="outline"
-              loading={pending === 'declined'}
-              disabled={pending !== undefined}
-              onClick={() => act('declined')}
-            >
-              {m['billing.simulate_declined']()}
-            </Button>
-            <Button
-              variant="ghost"
-              loading={pending === 'cancel'}
-              disabled={pending !== undefined}
-              onClick={() => act('cancel')}
-            >
-              {m['common.cancel']()}
-            </Button>
+          <div className="flex flex-col gap-2">
+            {button('success', m['billing.simulate_success'](), 'primary')}
+            {button('declined', m['billing.simulate_declined'](), 'secondary')}
+            {button('cancel', m['common.cancel'](), 'ghost')}
           </div>
-        </>
+        </BillingCard>
       ) : plans.isError ? (
         <InlineError
           title={m['plan.prices_failed']()}
@@ -125,9 +109,9 @@ export function MockCheckout({ session }: { session: string }) {
         />
       ) : (
         <div className="flex flex-col gap-3" aria-hidden>
-          <Skeleton className="h-36" />
-          <Skeleton className="h-11" />
-          <Skeleton className="h-11" />
+          <Skeleton className="h-40 rounded-3xl" />
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
         </div>
       )}
     </>

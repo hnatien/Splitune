@@ -52,12 +52,18 @@ export function AccountMenu({ name }: { name: string }) {
           />
         }
       >
-        <span aria-hidden>{initials(name)}</span>
+        {/* The initials are a picture of the account, not its label (WCAG 2.5.3): painted from an
+            attribute so the button's only text is its name, "Account". */}
+        <span
+          aria-hidden
+          data-initials={initials(name)}
+          className="before:content-[attr(data-initials)]"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="truncate">{name}</DropdownMenuLabel>
-          <DropdownMenuItem render={<Link to="/settings/profile" />}>
+          <DropdownMenuItem render={<Link to="/settings/account" />}>
             {m['nav.settings']()}
           </DropdownMenuItem>
           <DropdownMenuItem render={<Link to="/settings/keyboard" />}>

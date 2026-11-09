@@ -291,10 +291,15 @@ export const StatusTonesLight: Story = {
     await expect(boxes).toHaveLength(8)
     for (const box of boxes) {
       const style = getComputedStyle(box)
-      // A tinted surface and an icon carry the tone; the hairline border waits for increased contrast.
+      // A surface off the page and an icon carry the tone. Inline messages wait for increased
+      // contrast for their hairline; banners are cards and always have their edge (26 §12.2).
       await expect(style.backgroundColor).not.toBe(page)
       await expect(style.backgroundColor).not.toBe(transparent())
-      await expect(style.borderTopColor).toBe(transparent())
+      if (box.getAttribute('data-slot') === 'banner') {
+        await expect(style.borderTopColor).not.toBe(transparent())
+      } else {
+        await expect(style.borderTopColor).toBe(transparent())
+      }
       await expect(box.querySelector('svg')).not.toBeNull()
     }
     await expect(

@@ -6,10 +6,12 @@ import { Button } from './button.tsx'
 import { ChoiceCard } from './choice-card.tsx'
 import { CoachMark } from './coach-mark.tsx'
 import { BassIcon } from './icons/bass.tsx'
+import { DistanceIllustration } from './icons/distance.tsx'
 import { StepDots } from './step-dots.tsx'
 
 // Onboarding's kit pieces (27 §3.3): tap-to-choose cards (available and "coming soon"), the
-// progress dots with their "Step n of 5" text, and a dismissible, non-modal coach mark.
+// progress dots with their "Step n of 5" text, a dismissible, non-modal coach mark, and the
+// distance drawings of "Where's your screen?".
 const meta = { title: 'Kit/Onboarding' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -45,7 +47,7 @@ export const Choices: Story = {
   },
 }
 export const ChoicesDark: Story = { render: choices, globals: { appearance: 'dark' } }
-export const ChoicesStage: Story = { render: choices, globals: { appearance: 'stage' } }
+export const ChoicesDaylight: Story = { render: choices, globals: { appearance: 'light' } }
 
 export const ChoicesRaised: Story = {
   render: choices,
@@ -84,15 +86,15 @@ export const Steps: Story = {
     await expect(canvas.getByText('Step 3 of 5')).toBeVisible()
     const current = canvasElement.querySelectorAll<HTMLElement>('[aria-current=step]')
     await expect(current).toHaveLength(3)
-    // The current dot is a 24 px pill, the others 10 px dots.
-    for (const dot of current) await expect(dot.getBoundingClientRect().width).toBe(24)
+    // The current dot is a 22 × 8 pill, the others 8 px dots (26 §12.2).
+    for (const dot of current) await expect(dot.getBoundingClientRect().width).toBe(22)
     const others = canvasElement.querySelectorAll<HTMLElement>('li:not([aria-current])')
     await expect(others).toHaveLength(12)
-    for (const dot of others) await expect(dot.getBoundingClientRect().width).toBe(10)
+    for (const dot of others) await expect(dot.getBoundingClientRect().width).toBe(8)
   },
 }
 export const StepsDark: Story = { render: steps, globals: { appearance: 'dark' } }
-export const StepsStage: Story = { render: steps, globals: { appearance: 'stage' } }
+export const StepsDaylight: Story = { render: steps, globals: { appearance: 'light' } }
 
 function StepAdvance() {
   const [step, setStep] = useState(1)
@@ -112,8 +114,8 @@ export const StepsAdvance: Story = {
     // The widening is a width transition (not a swap), so it settles on the new pill.
     await waitFor(() => {
       const [first, second] = canvasElement.querySelectorAll<HTMLElement>('li')
-      expect((first as HTMLElement).getBoundingClientRect().width).toBe(10)
-      expect((second as HTMLElement).getBoundingClientRect().width).toBe(24)
+      expect((first as HTMLElement).getBoundingClientRect().width).toBe(8)
+      expect((second as HTMLElement).getBoundingClientRect().width).toBe(22)
     })
     await expect(canvas.getByText('Step 2 of 3')).toBeVisible()
   },
@@ -146,7 +148,22 @@ export const CoachBothThemes: Story = {
   render: () => <CoachDemo />,
   globals: { appearance: 'side-by-side' },
 }
-export const CoachStage: Story = {
-  render: () => <CoachDemo />,
-  globals: { appearance: 'stage' },
+
+// The line drawings of onboarding's "Where's your screen?" cards (26 §11).
+const drawings = () => (
+  <div className="grid max-w-3xl gap-4 sm:grid-cols-3">
+    {(['desk', 'stand', 'floor'] as const).map((distance) => (
+      <DistanceIllustration key={distance} distance={distance} />
+    ))}
+  </div>
+)
+
+export const Distances: Story = {
+  render: drawings,
+  play: async ({ canvasElement }) => {
+    const svgs = canvasElement.querySelectorAll('[data-slot=distance-illustration]')
+    await expect(svgs).toHaveLength(3)
+    for (const svg of svgs) await expect(svg).toHaveAttribute('aria-hidden', 'true')
+  },
 }
+export const DistancesDaylight: Story = { render: drawings, globals: { appearance: 'light' } }

@@ -4,19 +4,22 @@ import { useState } from 'react'
 import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
-import { AllowanceMeter } from '@/ui/allowance-meter'
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
+import { Card } from '@/ui/card'
+import { Meter, MeterLabel, MeterValue } from '@/ui/meter'
 import { InlineError } from '@/ui/status-message'
-import { UsageMeter } from '../shell/usage-meter'
+import { SettingSection } from '../settings/setting-row'
 import { billingClient, periodLine, planName, portalAction, useRefreshMe } from './plans'
 import { UpgradeSheet } from './upgrade-sheet'
 
-// Settings → Plan & billing (27 §3.9): the plan, allowances with their reset dates, the renewal
-// date, Manage (→ mock portal) and one-tap Cancel (14 §4.4: never a retention maze). The return
-// states of checkout (27 §3.10) land here.
+// Settings → Account → Plan (27 §3.9, Settings-Account): the "Demo billing" badge, then one card
+// with the plan, the Welcome status or renewal line, the allowance that limits new analyses and
+// the action: See Plus on Free; Cancel or Resume Plus and Manage plan on Plus (14 §4.4: one tap,
+// never a retention maze). The return states of checkout (27 §3.10) land here.
 
 // A checkout cancelled from here comes back to say so.
-const CANCELLED_PATH = '/settings/billing?checkout=cancelled'
+const CANCELLED_PATH = '/settings/account?checkout=cancelled#plan'
 
 export function BillingSettings({
   me,
@@ -37,6 +40,8 @@ export function BillingSettings({
   const plus = current.plan !== 'free' && subscription !== null
   const { full, lite } = current.usage
   const resets = (iso: string | null) => (iso ? formatDate(new Date(iso)) : '')
+  // The allowance that limits new analyses (23 §5): Lite on Free, full analyses on Plus.
+  const allowance = plus ? full : lite
 
   const run = async (action: 'cancel' | 'resume' | 'manage') => {
     setPending(action)
@@ -58,8 +63,11 @@ export function BillingSettings({
   }
 
   return (
-    <section className="flex flex-col gap-5">
-      <h2 className="text-xl">{m['settings.billing']()}</h2>
+    <SettingSection
+      id="plan"
+      title={m['settings.billing']()}
+      aside={<Badge variant="primary">{m['settings.demo_billing']()}</Badge>}
+    >
       {checkout === 'success' && plus && (
         <InlineError
           tone="success"
@@ -73,44 +81,72 @@ export function BillingSettings({
         <InlineError tone="info" title={m['billing.checkout_cancelled']()} />
       )}
 
-      <div className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">{m['billing.current_plan']()}</p>
-        <p className="text-lg font-semibold">
-          {plus ? planName(subscription.plan) : m['billing.plan_free']()}
-        </p>
-        {plus && <p className="text-base">{periodLine(current)}</p>}
-        {plus && subscription.status === 'past_due' && (
-          <p className="text-base">{m['billing.status_past_due']()}</p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-3">
-        {plus ? (
-          <>
-            {full.cap !== null && (
-              <AllowanceMeter
-                left={Math.max(0, full.cap - full.used)}
-                limit={full.cap}
-                text={m['billing.full_allowance']({
-                  left: String(Math.max(0, full.cap - full.used)),
-                  limit: String(full.cap),
-                  date: resets(full.resets_at),
-                })}
-              />
-            )}
-            {lite.cap === null && <p className="text-base">{m['billing.lite_unlimited']()}</p>}
-          </>
-        ) : (
-          <>
-            <p className="text-base">
+      <Card className="flex-row flex-wrap items-center gap-x-6 gap-y-4 p-5">
+        <div className="flex min-w-0 grow basis-65 flex-col gap-1">
+          <p className="text-xl">{plus ? planName(subscription.plan) : m['billing.plan_free']()}</p>
+          {plus ? (
+            <>
+              <p className="text-sm text-muted-foreground">{periodLine(current)}</p>
+              {subscription.status === 'past_due' && (
+                <p className="text-sm text-muted-foreground">{m['billing.status_past_due']()}</p>
+              )}
+              {lite.cap === null && (
+                <p className="text-sm text-muted-foreground">{m['billing.lite_unlimited']()}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
               {current.usage.welcome_available
                 ? m['billing.welcome_unused']()
                 : m['billing.welcome_used']()}
             </p>
-            <UsageMeter me={current} />
-          </>
+          )}
+        </div>
+        {allowance.cap !== null && (
+          <Allowance
+            label={plus ? m['settings.plan_full']() : m['settings.plan_lite']()}
+            left={Math.max(0, allowance.cap - allowance.used)}
+            limit={allowance.cap}
+            date={resets(allowance.resets_at)}
+          />
         )}
-      </div>
+        <div className="flex flex-wrap gap-3">
+          {plus ? (
+            <>
+              {subscription.cancel_at_period_end ? (
+                <Button
+                  variant="primary"
+                  loading={pending === 'resume'}
+                  disabled={pending !== undefined}
+                  onClick={() => run('resume')}
+                >
+                  {m['billing.resume_plus']()}
+                </Button>
+              ) : (
+                <Button
+                  loading={pending === 'cancel'}
+                  disabled={pending !== undefined}
+                  onClick={() => run('cancel')}
+                >
+                  {m['billing.cancel_plus']()}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                loading={pending === 'manage'}
+                disabled={pending !== undefined}
+                onClick={() => run('manage')}
+              >
+                {m['billing.manage']()}
+              </Button>
+            </>
+          ) : (
+            <Button variant="primary" onClick={() => setUpgrading(true)}>
+              {m['plan.see_plus']()}
+            </Button>
+          )}
+        </div>
+      </Card>
 
       {cancelled && subscription?.cancel_at_period_end && (
         <InlineError
@@ -121,50 +157,39 @@ export function BillingSettings({
         />
       )}
       {failed && <InlineError title={m['billing.action_failed']()} />}
-
-      <div className="flex flex-wrap gap-3">
-        {plus ? (
-          <>
-            {subscription.cancel_at_period_end ? (
-              <Button
-                variant="primary"
-                loading={pending === 'resume'}
-                disabled={pending !== undefined}
-                onClick={() => run('resume')}
-              >
-                {m['billing.resume_plus']()}
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                loading={pending === 'cancel'}
-                disabled={pending !== undefined}
-                onClick={() => run('cancel')}
-              >
-                {m['billing.cancel_plus']()}
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              loading={pending === 'manage'}
-              disabled={pending !== undefined}
-              onClick={() => run('manage')}
-            >
-              {m['billing.manage']()}
-            </Button>
-          </>
-        ) : (
-          <Button variant="primary" onClick={() => setUpgrading(true)}>
-            {m['plan.see_plus']()}
-          </Button>
-        )}
-      </div>
       <UpgradeSheet
         open={upgrading}
         onClose={() => setUpgrading(false)}
         trigger="settings"
         returnPath={CANCELLED_PATH}
       />
-    </section>
+    </SettingSection>
+  )
+}
+
+/** "Lite analyses · 3 of 5 left · resets 1 Dec" over a 4 px bar (27 §3.9). */
+function Allowance({
+  label,
+  left,
+  limit,
+  date,
+}: {
+  label: string
+  left: number
+  limit: number
+  date: string
+}) {
+  const value = m['settings.plan_left']({ left: String(left), limit: String(limit), date })
+  return (
+    <Meter
+      value={left}
+      min={0}
+      max={limit}
+      getAriaValueText={() => value}
+      className="min-w-0 grow basis-65 gap-y-1.5 **:data-[slot=meter-track]:h-1"
+    >
+      <MeterLabel className="font-normal">{label}</MeterLabel>
+      <MeterValue>{() => value}</MeterValue>
+    </Meter>
   )
 }

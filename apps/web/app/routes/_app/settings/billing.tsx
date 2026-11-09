@@ -1,16 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BillingSettings } from '@/features/billing/billing-settings'
+import { toAccount } from '@/features/settings/account-redirect'
 
-// Plan & billing (27 §3.9); `?checkout=` is the mock checkout's return state (27 §3.10).
-export const Route = createFileRoute('/_app/settings/billing')({ component: Billing })
-
-function Billing() {
-  const { me } = Route.useRouteContext()
-  const { checkout }: { checkout?: unknown } = Route.useSearch()
-  return (
-    <BillingSettings
-      me={me}
-      checkout={checkout === 'success' || checkout === 'cancelled' ? checkout : undefined}
-    />
-  )
-}
+// Plan & billing moved into Account; the mock checkout still returns here with `?checkout=`, which
+// the redirect keeps (27 §1 route map, §3.10).
+export const Route = createFileRoute('/_app/settings/billing')({
+  beforeLoad: ({ search }) => toAccount('plan', search),
+})

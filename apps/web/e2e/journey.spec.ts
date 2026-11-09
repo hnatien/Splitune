@@ -62,10 +62,10 @@ test.afterAll(async () => {
 test('landing page is accessible and leads to the example', async () => {
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Learn the songs you love, one loop at a time.',
+    'Bring any song. Practise just your part.',
   )
   await expect(
-    page.getByRole('main').getByRole('link', { name: 'Try an example song' }),
+    page.getByRole('main').getByRole('link', { name: 'Try an example song' }).first(),
   ).toHaveAttribute('href', '/start')
   await expectAccessible(page)
 })

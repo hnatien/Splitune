@@ -3,21 +3,30 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { QueryClient } from '@tanstack/react-query'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import type { z } from 'zod'
+import { useDisplay } from '@/lib/display-store'
 import { meQuery } from '@/lib/session'
+import { DEFAULT_DISPLAY } from '@/ui/display'
 import { AppStory } from '../../../.storybook/app.tsx'
+import { plansQuery } from '../billing/plans'
 import { workerStatusQuery } from '../library/queries'
 import { AppShell } from '../shell/app-shell'
-import { ME } from '../story-fixtures'
+import { ME, PLANS } from '../story-fixtures'
+import { AboutSettings } from './about-settings'
+import { AccountSettings } from './account-settings'
 import { DisplaySettings } from './display-settings'
 import { KeyboardSettings } from './keyboard-settings'
-import { type DeleteStep, exportStateQuery, PrivacySettings } from './privacy-settings'
-import { ProfileSettings } from './profile-settings'
+import { type DeleteStep, exportStateQuery } from './privacy-settings'
 import { SettingsLayout } from './settings-layout'
 
-// Settings sections (27 §3.9): Profile, Display & practice, Keyboard & pedal and Privacy.
+// Settings (27 §3.9): Account (Profile, Plan, Privacy, Sign out), Display & practice, Keyboard &
+// pedal and About, in Night Rehearsal (the default), Daylight and on a phone. The Privacy stories
+// render Account (Privacy is one of its sections) and keep their ids for the visual matrix.
 const meta = { title: 'Screens/Settings', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
+
+const DAYLIGHT = { appearance: 'light' }
+const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
 
 const shell = (
   section: string,
@@ -31,30 +40,57 @@ const shell = (
   </AppStory>
 )
 
-export const Profile: Story = {
-  render: () => shell('profile', <ProfileSettings me={ME} />),
-  play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findByLabelText('Name')).toHaveValue('Ana')
-  },
+async function noSidewaysScroll({ canvasElement }: { canvasElement: HTMLElement }) {
+  const root = canvasElement.ownerDocument.documentElement
+  await waitFor(() => expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth))
 }
-export const ProfileDark: Story = {
-  render: () => shell('profile', <ProfileSettings me={ME} />),
-  globals: { appearance: 'dark' },
-}
+
+/** Display & practice (27 §3.9, Settings-Display): appearance cards, reading, motion, defaults. */
 export const Display: Story = {
-  render: () => shell('display', <DisplaySettings />),
+  render: () => shell('display', <DisplaySettings me={ME} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const cards = await canvas.findByRole('radiogroup', { name: 'Appearance' })
+    await expect(within(cards).getAllByRole('radio')).toHaveLength(3)
+    await expect(within(cards).getByRole('radio', { name: 'Night Rehearsal' })).toBeChecked()
+    await expect(canvas.getByText('Saved on this device')).toBeVisible()
     await expect(
-      await canvas.findByText('Can you read the fret numbers from where you play?'),
+      canvas.getByText('Can you read the fret numbers from where you play?'),
     ).toBeVisible()
     await expect(canvas.getByRole('switch', { name: 'Hyperlegible font' })).not.toBeChecked()
+    await expect(canvas.getByRole('switch', { name: 'Left-handed' })).not.toBeChecked()
+    await expect(canvas.queryByText('Score')).toBeNull()
   },
 }
-export const DisplayStage: Story = {
-  render: () => shell('display', <DisplaySettings />),
-  globals: { appearance: 'stage' },
+export const DisplayDaylight: Story = {
+  render: () => shell('display', <DisplaySettings me={ME} />),
+  globals: DAYLIGHT,
 }
+export const DisplayPhone: Story = {
+  render: () => shell('display', <DisplaySettings me={ME} />),
+  globals: PHONE,
+  play: noSidewaysScroll,
+}
+/** A stored `stage` (26 §2, D2) has no card: it shows Night Rehearsal and the distance it raised. */
+export const DisplayStage: Story = {
+  render: () => shell('display', <DisplaySettings me={ME} />),
+  globals: { appearance: 'stage', distance: 'stand' },
+  beforeEach: () => {
+    useDisplay.setState({ appearance: 'stage', distance: undefined })
+    return () => useDisplay.setState(DEFAULT_DISPLAY)
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const cards = await canvas.findByRole('radiogroup', { name: 'Appearance' })
+    await expect(within(cards).getByRole('radio', { name: 'Night Rehearsal' })).toBeChecked()
+    const distance = canvas.getByRole('group', { name: 'Where is your screen?' })
+    await expect(within(distance).getByRole('button', { name: 'Music stand' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  },
+}
+
 type ExportState = z.infer<typeof DataExportState>
 
 const NO_EXPORT: ExportState = {
@@ -73,8 +109,9 @@ const privacy =
   ) =>
   () => {
     const me = options.me ?? ME
-    return shell('privacy', <PrivacySettings me={me} deleteDialog={options.dialog} />, (client) => {
+    return shell('account', <AccountSettings me={me} deleteDialog={options.dialog} />, (client) => {
       client.setQueryData(meQuery.queryKey, me)
+      client.setQueryData(plansQuery.queryKey, PLANS)
       if (state) client.setQueryData(exportStateQuery(false).queryKey, state)
       const runner = { online: options.worker ?? true, last_heartbeat_at: null }
       const worker: z.infer<typeof WorkerStatus> = {
@@ -85,6 +122,26 @@ const privacy =
     })
   }
 
+/** Account (27 §3.9, Settings-Account): Profile, Plan, Privacy and Sign out. */
+export const Account: Story = {
+  render: privacy(NO_EXPORT),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('heading', { level: 1, name: 'Account' })).toBeVisible()
+    await expect(canvas.getByLabelText('Name')).toHaveValue('Ana')
+    await expect(canvas.getByRole('group', { name: 'Main instrument' })).toBeVisible()
+    await expect(canvas.getByRole('group', { name: 'How long have you played?' })).toBeVisible()
+    await expect(canvas.getByText('Demo billing')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'See Plus' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  },
+}
+export const AccountDaylight: Story = { render: privacy(NO_EXPORT), globals: DAYLIGHT }
+export const AccountPhone: Story = {
+  render: privacy(NO_EXPORT),
+  globals: PHONE,
+  play: noSidewaysScroll,
+}
 /** Privacy (27 §3.9, 15 §4): training opt-in, "Download my data" and "Delete my account". */
 export const Privacy: Story = {
   render: privacy(NO_EXPORT),
@@ -97,8 +154,24 @@ export const Privacy: Story = {
     await expect(canvas.getByRole('button', { name: 'Delete account' })).toBeEnabled()
   },
 }
-export const PrivacyDark: Story = { render: privacy(NO_EXPORT), globals: { appearance: 'dark' } }
-export const PrivacyStage: Story = { render: privacy(NO_EXPORT), globals: { appearance: 'stage' } }
+export const PrivacyDaylight: Story = { render: privacy(NO_EXPORT), globals: DAYLIGHT }
+export const PrivacyOffline: Story = {
+  render: privacy(NO_EXPORT),
+  beforeEach: () => {
+    const online = Object.getOwnPropertyDescriptor(Navigator.prototype, 'onLine')
+    Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false })
+    return () => {
+      if (online) Object.defineProperty(Navigator.prototype, 'onLine', online)
+    }
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByText("You're offline. These settings need a connection."),
+    ).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Delete account' })).toBeDisabled()
+  },
+}
 export const PrivacyExportPending: Story = {
   render: privacy(
     { ...NO_EXPORT, status: 'pending', requested_at: new Date().toISOString() },
@@ -165,6 +238,10 @@ export const PrivacyDeleteConfirm: Story = {
     )
   },
 }
+export const PrivacyDeleteConfirmDaylight: Story = {
+  ...PrivacyDeleteConfirm,
+  globals: DAYLIGHT,
+}
 export const PrivacyDeleteReauth: Story = {
   render: privacy(NO_EXPORT, { dialog: 'reauth' }),
   play: async ({ canvasElement }) => {
@@ -188,7 +265,7 @@ export const PrivacyDeleteReauthGoogle: Story = {
   },
 }
 
-/** Keyboard & pedal (27 §3.9): the binding table, "Learn this pedal" and the test area. */
+/** Keyboard & pedal (27 §3.9, Settings-Pedal Keys): the table, learning a key, the test area. */
 export const Keyboard: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
   play: async ({ canvasElement }) => {
@@ -203,7 +280,33 @@ export const Keyboard: Story = {
   },
 }
 
-export const KeyboardDark: Story = {
+export const KeyboardDaylight: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
-  globals: { appearance: 'dark' },
+  globals: DAYLIGHT,
+}
+export const KeyboardPhone: Story = {
+  render: () => shell('keyboard', <KeyboardSettings />),
+  globals: PHONE,
+  play: noSidewaysScroll,
+}
+
+/** About (27 §3.9): version, models from the register, font licences, the register. */
+export const About: Story = {
+  render: () => shell('about', <AboutSettings />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('heading', { level: 1, name: 'About' })).toBeVisible()
+    await expect(canvas.getByText(/^(Version \w+, built|Built) /)).toBeVisible()
+    await expect(canvas.getAllByRole('link', { name: 'SIL Open Font License 1.1' })).toHaveLength(4)
+    await expect(canvas.getByText(/^Basic Pitch/)).toBeVisible()
+  },
+}
+export const AboutDaylight: Story = {
+  render: () => shell('about', <AboutSettings />),
+  globals: DAYLIGHT,
+}
+export const AboutPhone: Story = {
+  render: () => shell('about', <AboutSettings />),
+  globals: PHONE,
+  play: noSidewaysScroll,
 }
