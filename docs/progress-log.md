@@ -1899,16 +1899,6 @@ The Night Rehearsal redesign started on the owner's Mac and was paused there on 
   - D21: steps one at a time.
 - **State:** s32, s41a and s40a are in progress (entries below). The other steps haven't started, and s44 is deferred.
 
-## 2026-11-08 — Step s32: tokens, fonts and the practice perf baseline (in progress)
-Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), from the redesign docs at `9b5bf01`. Not merged; the prompt's "Resume here" lists the interrupted last round (story values, the piano chart token, `e2e/security.spec.ts`'s font path).
-- Perf baseline first: apps/web/e2e/perf-practice.spec.ts (Chromium, CDP CPU 4×, desktop 1440×900 and tablet 1180×820 touch; LoAF over 20 s of looped playback with count-in, forced style/layout from a CDP trace over 10 s of steady playback, Event Timing p75 for play/pause, loop nudge, speed −/+ buttons and a mixer fader key step, N = 12) recorded on the owner's Windows PC (Ryzen 5 7600, Chromium 156.0.8078.4) from a447ab3, the unchanged Music Stand screen, committed alone in 8bd9050 as apps/web/e2e/perf-baseline.json (3 runs per context, median run kept, spread recorded; the owner's GPU separation eval was running). Every p75 ≤ 72 ms; steady playback has no LoAF but ~60 forced layouts a second from the alphaTab view chunk.
-- packages/ui-tokens now implements doc 26: Night Rehearsal on :root/dark/stage (stage = ×1.25 reading scale), Daylight on light, each × increased contrast, subtree theming on any [data-appearance], §3 roles and §4.7 component tokens (incl. --tile-foreground, --read-chord-sheet/-next, --target-stand), §6.2 browse scale, §6.3 reading sizes, §9 radius 4–22, §10 motion; data-score and the Music Stand primitives removed. CONTRAST_PAIRS mapped per §4.6 (81 → 113 pairs, none dropped, no minimum moved); token tests (1,329) check every pair in six contexts, the §4.6/§4.8 tables to ±0.1, translucent washes, gamut, CVD ≥ 12 ΔE2000 and naming. BACKGROUND_HEX = { light: #f8f5f1, dark: #110e0b }; manifest and theme-color follow (Night default).
-- Fonts: Instrument Sans 1.000 (38,192 B, preloaded) and JetBrains Mono 2.304 (35,704 B) subset reproducibly by scripts/fonts/subset.sh (wght 400–700, every layout feature, §6.1 code points); Inter removed; metric-matched fallbacks (scripts/fonts/fallback-metrics.py); scripts/fonts/fonts.test.mjs proves tnum/fixed-pitch, code points and the 80 KB preload; Foundations/Fonts story proves readouts keep their width in the browser. U+202F is mapped to each family's no-break space (missing upstream); Instrument Sans lacks 12 Latin-1 code points upstream (pinned).
-- Storybook: Appearance Night Rehearsal / Daylight / Stage / Side by side, Contrast, Density, Distance, Motion, Pointer, Reading font; Score removed.
-- Budget 326,389 → 326,398 B gzip (318.7 KB of 320); CSS −341 B gzip; css-floor clean.
-- test:stories: the 80 baseline WebKit failures plus 25 caused by doc 26 values in files s32 doesn't own (24 Music Stand assertions in app/ui stories, the piano chart at the 112 px current-chord size) and 2 evening-only ("Try Stage" hint after 20:00); the last round moves them to doc 26 values.
-- Next steps need to know: s35 moves tab digits/readouts to font-reading-mono, chart chord names to text-read-chord-sheet and the waveform ruler off Inter; s33 sets DEFAULT_DISPLAY to dark; owner legibility check queued (Foundations/Fonts › Legibility).
-
 ## 2026-11-08 — Step s41a: sections backend (in progress)
 Branch `impl/s41a-sections` from the redesign docs at `9b5bf01`, worktree `.claude/worktrees/s41a-sections`, HEAD `d944b61`. Own CPU venv; the shared ML venv untouched; no weights fetched.
 
@@ -2119,3 +2109,117 @@ Overnight the owner said "choose whatever is recommended", so Stop point 2 (map,
    - Measure fp16 on MPS before enabling it there.
 5. **After merging:** restart the workers (every `separate` recomputes once). Re-apply the GPU cap after each reboot.
 6. s40a (all stems, G3) can resume now that this branch is in `dev`.
+
+## 2026-11-09 — Step s32: Night Rehearsal tokens, fonts and the practice perf baseline (done, not merged)
+Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), from the redesign docs at `9b5bf01`, with `dev` merged in at `58bcf42` (which brings in step 29). Not merged into `dev`.
+
+**Built**
+- **Perf baseline, recorded before any token changed.**
+  - `apps/web/e2e/perf-practice.spec.ts`: Chromium only, CDP `Emulation.setCPUThrottlingRate` 4×, `openExample`, one selector table at the top. It records JSON and asserts nothing.
+  - Two contexts: desktop 1440 × 900 with a fine pointer, and tablet 1180 × 820 with `hasTouch` and `isMobile`.
+  - Measures:
+    - Long Animation Frames over 20 s of looped playback with count-in, with script attribution;
+    - forced style and layout from a **CDP trace** over 10 s of steady playback;
+    - Event Timing p75 for play/pause, loop nudge, the on-screen speed −/+ buttons and a mixer fader key step, N = 12 each.
+  - Recorded on the owner's PC (Ryzen 5 7600, Chromium 156.0.8078.4) from `a447ab3`, the unchanged Music Stand screen, and committed alone in `8bd9050` as `apps/web/e2e/perf-baseline.json`. Each context ran 3 times; the median run is kept and the spread is in the file.
+  - Results:
+    - every p75 is ≤ 72 ms (desktop 32–48 ms; tablet speed step 72 ms);
+    - steady playback has no LoAF, but about 60 forced layouts a second come from the alphaTab view chunk;
+    - across the 3 runs, desktop LoAF p75 spread 74.9–117.8 ms and tablet 70–85.1 ms; latency p75 moved ≤ 8 ms.
+- **Tokens (`packages/ui-tokens`) follow doc 26.**
+  - Night Rehearsal on `:root`, `dark` and `stage` (`stage` = ×1.25 reading scale); Daylight on `light`; each × increased contrast. Subtree theming on any `[data-appearance]`.
+  - §3 roles; §4.7 component tokens, including `--tile-foreground`, `--read-chord-sheet`, `--read-chord-next` and `--target-stand`.
+  - Static scales: §6.2 browse type, §6.3 reading sizes, §8 targets, §9 radius 4–22, §10 motion.
+  - `data-score` and the Music Stand primitives are removed. The Music Stand roles doc 26 no longer lists stay defined until s45.
+  - `CONTRAST_PAIRS` mapped per §4.6: 81 → 113 pairs, none dropped, no minimum moved.
+  - Token tests (1,329) check every pair in six contexts, the §4.6 and §4.8 tables to ±0.1, translucent washes via `over()`, gamut, CVD ≥ 12 ΔE2000 and naming.
+  - `BACKGROUND_HEX` = `{ light: #f8f5f1, dark: #110e0b }`. The manifest and the `theme-color` meta without a media query (which also covers dark) use the Night value; the `prefers-color-scheme: light` meta uses Daylight.
+- **Fonts.**
+  - `scripts/fonts/subset.sh` subsets Instrument Sans 1.000 (38,192 B, preloaded) and JetBrains Mono 2.304 (35,704 B) reproducibly: pinned SHA-256, `wght` 400–700, every layout feature, the §6.1 code points.
+  - Inter's files, `@font-face` and preload are removed.
+  - Metric-matched fallbacks come from `scripts/fonts/fallback-metrics.py`.
+  - `scripts/fonts/fonts.test.mjs` proves `tnum` (JetBrains Mono is fixed-pitch), the code points and the 80 KB preload.
+  - The browser check is a story `play` function, Foundations/Fonts › Tabular Readouts: readouts keep their width as digits change.
+- **Storybook toolbar:** Appearance (Night Rehearsal / Daylight / Stage / Side by side, default Night Rehearsal), Contrast, Density, Distance, Motion, Pointer, Reading font. The Score global is removed.
+- **Last round (2026-11-09).**
+  - No shadow is now written as a transparent zero shadow (deviation below).
+  - The piano chart's chord names and bar height use `--read-chord-sheet`: doc 26 §6.3 assigns it to "chord sheet and piano chart names".
+  - `e2e/security.spec.ts` requests `/fonts/InstrumentSans.woff2`.
+  - Music Stand story values moved to doc 26.
+
+**Deviations**
+- **No shadow.** `--elevation-1` (both themes) and the dropped `--glow` (increased contrast and forced colours) are `0 0 0 0 transparent`, not doc 26's `none`. Tailwind joins `shadow-*` and `ring-*` into one `box-shadow` list, and a `none` inside that list drops the whole declaration: a checked `RadioCard` (`shadow-1` with `ring-2`) lost its ring. It looks the same as `none`.
+- **D20 (owner).** U+202F maps to each family's no-break space (no upstream glyph). Instrument Sans' 12 missing Latin-1 glyphs (¤ ¦ ¬ soft hyphen ± ² ³ µ ¹ ¼ ½ ¾) fall back per glyph, pinned by the font test.
+
+**Changed expected values (by design; no minimum, tolerance or floor lowered)**
+- **`tokens.test.ts` reading sizes (D7, §6.3).**
+
+  | Token | Desk | Music stand | Floor |
+  |---|---|---|---|
+  | `--read-chord-current-base` | 2 → 7rem | 3 → 9.375rem | 5.5 → 12.5rem |
+  | `--read-chord-base` | 1.375 → 1.6875rem | 2 → 2.5rem | 3.5 → 4.9375rem |
+  | `--read-readout-base` | 1.25 → 1.375rem | unchanged | unchanged |
+  | `--read-tab-base` | unchanged | unchanged | 2.25 → 3.375rem |
+  | `--read-chord-sheet-base` (new) | 1.875rem | 2.75rem | 5.5rem |
+  | `--read-chord-next-base` (new) | 3.5rem | 4rem | 6.25rem |
+
+  Bar number and label are unchanged. `stage`'s `--read-scale` stays 1.25. The floors still hold: Stand tab ≥ 36 px, Desk current chord ≥ 32, Floor current chord ≥ 88, tab digits ≥ 18.
+- **`tokens.test.ts`, other values.**
+  - **Scrim (§4.7):** Light `oklch(0.2 0.01 75 / 0.4)` and Dark/Stage `oklch(0 0 0 / 0.6)` → `oklch(0.1 0.01 60 / 0.62)` in every theme.
+  - **`BACKGROUND_HEX` (§11):** light `#f7f6f2` → `#f8f5f1`, dark `#181612` → `#110e0b`.
+  - **Radius (§9):** `xl` / `2xl` / `3xl` 14 / 18 / 24 → 12 / 14 / 16; new `xs` 4 and `4xl` 22.
+  - **Targets (§8):** `--target-stand` 88 px added.
+  - **No shadow:** `--elevation-1` and the increased-contrast / forced-colours `--glow` `none` → `0 0 0 0 transparent` (deviation above).
+  - **Contrast pairs (§4.6):** where `--primary` was text, the pair is now `--primary-ink`.
+- **`manifest.test.ts` (D9):** `background_color` and `theme_color` expect `BACKGROUND_HEX.dark` instead of `.light`.
+- **`app/ui` stories (owner-approved, expected values only).**
+  - `dialog` OpenScrim: scrim alpha 0.6 → 0.62 (§4.7). Dialog radius "> 16" → 14, because `rounded-2xl` is 14 in §9; s33 moves dialogs to `rounded-4xl`.
+  - `drawer` BottomSheetShape: radius "> 20" → 16 (`rounded-3xl`, §9).
+  - `foundations` TargetSizes: `--target-stand` 88 added (§8).
+  - `foundations` Surfaces: 3 → 2 distinct shadows, because `--elevation-2` = `--elevation-3` (§4.7).
+  - `foundations` RadiusScale: 14 / 18 / 24 → 12 / 14 / 16 (§9).
+  - `foundations` TypeScale: `frac` now leaves the width unchanged, because Instrument Sans has no `frac` feature (§6.1).
+  - `onboarding` ChoicesRaised: available and unavailable cards now have the same (no) shadow, because cards are bordered, not lifted (§9). The surface check is unchanged.
+- **`e2e/security.spec.ts`:** the cached font path `InterVariable.woff2` → `InstrumentSans.woff2`.
+
+**Glyph check (26 §6.1)**
+- Instrument Sans: − · × U+202F yes; ♯ ♭ ♮ no.
+- JetBrains Mono: ♯ ♭ − · × U+202F yes; ♮ no.
+- Atkinson Hyperlegible Next (opt-in, unchanged): − · × yes; ♯ ♭ ♮ U+202F no.
+- Missing ♯ ♭ ♮ fall back through `ChordSymbol`. Nothing else is missing in the two new families.
+
+**Verification (PC, 2026-11-09, after the `dev` merge unless noted)**
+- **Lint:** `pnpm exec biome check .` clean (2 infos, pre-existing); `check-db-access` and `check-ui-tokens` clean.
+- **Tokens:** `pnpm --filter @splitune/ui-tokens typecheck` clean; `test` 1,329 / 1,329.
+- **Scripts:** `pnpm exec vitest run --dir scripts` 80 / 80.
+- **Font reproducibility:** `bash scripts/fonts/subset.sh` gave byte-identical files (`git status` clean).
+- **Web:** `pnpm --filter @splitune/web typecheck` clean; `test` 214 / 214.
+- **`pnpm --filter @splitune/web test:stories`** (before the merge, which changed nothing under `apps/web`): 992 tests, 906 passed, 86 failed.
+  - 82 failures are known (`00-shared-context.md`):
+    - 75 WebKit `practice.stories.tsx` timeouts;
+    - `import` Record Tab;
+    - `onboarding` Guide and Guide Dark;
+    - "Screen May Lock" and "Screen May Lock No Storage" in both browsers (run after 20:00).
+    - That is 78 WebKit failures against the 80-failure baseline.
+  - 4 were new (`foundations` TypeScale and `onboarding` ChoicesRaised, × 2 browsers). After `0e765b5`, the `foundations`, `onboarding`, `dialog`, `drawer` and `.storybook/fonts` stories pass 90 / 90 in Chromium and WebKit.
+- **e2e:** `playwright test e2e/security.spec.ts --project chromium` passed (`test-results/.last-run.json`). Global teardown then hung on Windows (gaps below).
+- **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`: practice route 318.7 KB gzip of 320.0 KB. That is unchanged from before the step (326,389 → 326,398 B measured mid-step); CSS −341 B gzip; css-floor clean.
+- **Fidelity smoke.** `probe.mjs System --look fixed` at 1440 against the Foundations stories at 1440 in both looks (results in `redesign/.renders/s32/`, ignored).
+  - `--bg`, `--s1`, `--s2` and `--s3` match `--background`, `--card`, `--muted` and `--accent` exactly.
+  - The other mockup colours match the token cascade, except Night `--unsure` and Daylight `--ok`. Those differ by 1/255 in one sRGB channel only because two converters round differently; the OKLCH literals are identical.
+  - Type: Instrument Sans and JetBrains Mono loaded, none missing. The display chord is 112 px (Desk `--read-chord-current`) and the mono readout 22 px (Desk `--read-readout`).
+  - Radii 6–16 match §9; card 16, chip full.
+  - No mismatch outside 26 §4.9.
+
+**Known gaps and next**
+- **Owner action, the legibility check (26 §6.1).**
+  - Run `pnpm --filter @splitune/web storybook` and open `http://localhost:6006/?path=/story/foundations-fonts--legibility`.
+  - Read JetBrains Mono tab digits against Instrument Sans and Inter 4 tabular digits on 1/7, 3/8 and 6/0, at 0.5, 0.75 and 1.5 m.
+  - The outcome decides whether Inter 4 replaces a family in a later step.
+- **e2e teardown hang (pre-existing, `e2e/global-setup.ts`).**
+  - The teardown waits for each child's `exit` event unless `exitCode !== null`. A child that already died from a signal has a null `exitCode` and its event has already fired, so the teardown waits forever.
+  - On Windows this left the run hanging for hours after the tests passed, and earlier left an orphaned mock ML worker.
+  - Fix: also check `signalCode`, and use a timeout.
+- **`display.ts` still writes `data-score`.** Nothing reads it; s35 owns the display store.
+- **s33:** the Foundations story is still Music Stand-labelled ("Inter features", radius labels); `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans; set `DEFAULT_DISPLAY` to `dark`.
+- **s35:** move tab digits and readouts to `font-reading-mono`, chart chord names to `text-read-chord-sheet`, and the waveform ruler off Inter.

@@ -2,25 +2,8 @@
 
 Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates). This prompt holds what is specific to s32.
 
-## Resume here (state on 2026-11-08)
-Built on `impl/s32-tokens-fonts` in the worktree `D:/Projects/Splitune/.claude/worktrees/s32-tokens-fonts`. What it did and measured is in the progress-log entry "Step s32: tokens, fonts and the practice perf baseline (in progress)".
-- **Committed:**
-  - the perf baseline on the unchanged screen, in its own commit `8bd9050`, after the Windows-safe spec fix `a447ab3`;
-  - Night Rehearsal / Daylight tokens (`e1fedf6`);
-  - Instrument Sans + JetBrains Mono (`27d41e4`);
-  - the Storybook toolbar and fonts story (`99c9162`, `3727246`).
-- **A last round was interrupted.** It left uncommitted edits in `piano-chart.tsx`, `dialog`/`drawer`/`foundations` stories, `security.spec.ts`, `themes.css` and `tokens.test.ts`. Read `git status` and `git diff` first, then finish it:
-  1. **Approved:** move the Music Stand assertions in `apps/web/app/ui/**/*.stories.tsx` to doc 26 values (expected values only, each listed with its doc 26 reference). Switch the piano chart (`apps/web/app/features/practice/piano-chart.tsx`) to the chord-sheet reading token, but only if doc 26 §4.7/§6.3 assigns `--read-chord-sheet` to chord charts like it; otherwise ask the owner.
-  2. **Approved:** `apps/web/e2e/security.spec.ts:63` requests the new preloaded font path instead of `InterVariable.woff2`. Run that spec in Chromium.
-  3. **Owner (D20):** keep U+202F mapped to the no-break space, and accept the 12 Latin-1 gaps.
-  4. List any `themes.css` / `tokens.test.ts` change under the changed expected values in your progress-log entry.
-- **Then:**
-  - merge `dev` into the branch;
-  - run the full verification in Commands, with `test:stories` compared to the known failures in `00-shared-context.md`;
-  - finish the progress-log entry and the status row;
-  - commit.
-- **Note for s33 (also in s33's prompt):** `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans.
-- **Owner action:** the legibility check. Open the "Foundations/Fonts › Legibility" story (`pnpm --filter @splitune/web storybook`, then `http://localhost:6006/?path=/story/foundations-fonts--legibility`) and read it at 0.5, 0.75 and 1.5 m.
+## State (2026-11-09)
+Done on `impl/s32-tokens-fonts` (not merged into `dev`). The progress-log entry "Step s32: Night Rehearsal tokens, fonts and the practice perf baseline" lists what was built and measured, and every changed expected value. Owner action left: the legibility check in the "Foundations/Fonts › Legibility" story (`pnpm --filter @splitune/web storybook`, then `http://localhost:6006/?path=/story/foundations-fonts--legibility`).
 
 | | |
 |---|---|
