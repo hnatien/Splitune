@@ -30,5 +30,5 @@ export const Practise: Story = {
     await expect(canvas.getByText(/Best clean pass: 70/)).toBeInTheDocument()
   },
 }
-export const PractiseDark: Story = { render: scene(3), globals: { appearance: 'dark' } }
-export const TranscribeStage: Story = { render: scene(2), globals: { appearance: 'stage' } }
+export const PractiseDaylight: Story = { render: scene(3), globals: { appearance: 'light' } }
+export const TranscribeDaylight: Story = { render: scene(2), globals: { appearance: 'light' } }

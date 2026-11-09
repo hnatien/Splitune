@@ -47,7 +47,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
   const name = me.display_name || me.username || me.email
   const links = [
     { to: '/library', section: '/library', label: m['nav.library']() },
-    { to: '/settings/profile', section: '/settings', label: m['nav.settings']() },
+    { to: '/settings/account', section: '/settings', label: m['nav.settings']() },
   ] as const
   return (
     <div data-density="browse" className="flex min-h-dvh flex-col">

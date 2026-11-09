@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { alphaTab } from '@coderline/alphatab-vite'
 import { paraglideVitePlugin } from '@inlang/paraglide-js'
@@ -26,4 +28,47 @@ const notation = () => alphaTab({ assetOutputDir: false, audioWorklets: false })
 // After the plugins that must see JSX first (TanStack Router's code splitter).
 export const sharedPlugins = () => [react(), tailwindcss(), paraglide(), notation()]
 
-export default defineConfig({ plugins: sharedPlugins(), resolve: { alias } })
+// Settings → About (27 §3.9): the build's commit and date, and the models the pipeline runs, read
+// from the provenance register at build time (`compliance/register/models`; eval-only candidates
+// left out). Only the About chunk references it.
+const REGISTER = fileURLToPath(new URL('../../compliance/register/models/', import.meta.url))
+
+function commit(): string | null {
+  const railway = process.env['RAILWAY_GIT_COMMIT_SHA']
+  if (railway) return railway.slice(0, 7)
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+  } catch {
+    return null
+  }
+}
+
+function models(): { name: string; version: string }[] {
+  const field = (text: string, key: string) =>
+    new RegExp(`^${key}: "?(.*?)"?$`, 'm').exec(text)?.[1] ?? ''
+  return readdirSync(REGISTER)
+    .filter((file) => file.endsWith('.yaml'))
+    .map((file) => readFileSync(REGISTER + file, 'utf8'))
+    .filter((text) =>
+      field(text, 'used_in')
+        .replace(/[[\]\s]/g, '')
+        .split(',')
+        .some((s) => s && s !== 'eval'),
+    )
+    .map((text) => ({ name: field(text, 'name'), version: field(text, 'version') }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const buildDefines = () => ({
+  __SPLITUNE_BUILD__: JSON.stringify({
+    commit: commit(),
+    builtAt: new Date().toISOString(),
+    models: models(),
+  }),
+})
+
+export default defineConfig({
+  plugins: sharedPlugins(),
+  resolve: { alias },
+  define: buildDefines(),
+})

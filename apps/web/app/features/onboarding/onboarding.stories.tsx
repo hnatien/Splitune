@@ -36,11 +36,20 @@ const start = (initial: StartSearch) => () => (
   </AppStory>
 )
 
+const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+
 export const Instrument: Story = {
   render: start({}),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByText('Step 1 of 5')).toBeVisible()
+    await expect(canvas.getByRole('heading', { level: 1, name: 'What do you play?' })).toBeVisible()
+    // Step 1's Back leaves onboarding; Skip goes to adding a song of one's own (27 §2).
+    await expect(canvas.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/')
+    await expect(canvas.getByRole('link', { name: 'Skip' })).toHaveAttribute(
+      'href',
+      '/auth/sign-up?next=%2Flibrary%3Fadd%3Dfile',
+    )
     await expect(canvas.getByRole('button', { name: /^Piano/ })).toHaveAttribute(
       'aria-disabled',
       'true',
@@ -49,7 +58,8 @@ export const Instrument: Story = {
     await expect(await canvas.findByText('Step 2 of 5')).toBeVisible()
   },
 }
-export const InstrumentDark: Story = { render: start({}), globals: { appearance: 'dark' } }
+export const InstrumentDaylight: Story = { render: start({}), globals: { appearance: 'light' } }
+export const InstrumentPhone: Story = { render: start({}), globals: PHONE }
 
 export const Level: Story = {
   render: start({ step: 'level', instrument: 'guitar' }),
@@ -59,23 +69,51 @@ export const Level: Story = {
     await expect(await canvas.findByText('Step 1 of 5')).toBeVisible()
   },
 }
+export const LevelDaylight: Story = {
+  render: start({ step: 'level', instrument: 'guitar' }),
+  globals: { appearance: 'light' },
+}
+
+const screenStep = start({ step: 'screen', instrument: 'guitar', level: 'just_started' })
 
 export const Screen: Story = {
-  render: start({ step: 'screen', instrument: 'guitar', level: 'just_started' }),
+  render: screenStep,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const before = useDisplay.getState().distance
+    const before = useDisplay.getState()
+    const { distance, calibration } = before
+    await expect(canvas.getByText('Step 3 of 5')).toBeVisible()
+    // Choosing a card applies its preset at once.
     await userEvent.click(canvas.getByRole('radio', { name: /Music stand/ }))
     await expect(canvas.getByRole('radio', { name: /Music stand/ })).toBeChecked()
     await expect(useDisplay.getState().distance).toBe('stand')
-    // Skip keeps what was there before.
-    await userEvent.click(canvas.getByRole('button', { name: 'Skip' }))
-    await expect(useDisplay.getState().distance).toBe(before)
+    // The Reading size slider sets the calibration, shown as a percentage.
+    const size = canvas.getByRole('slider', { name: 'Reading size' })
+    size.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await waitFor(() => expect(useDisplay.getState().calibration).toBeCloseTo(calibration + 0.1))
+    // Testing Library reads the no-break space before % (27 \u00a75.3) as a plain space.
+    await expect(
+      await canvas.findByText(new RegExp(`^${Math.round((calibration + 0.1) * 100)}\\s%$`)),
+    ).toBeVisible()
+    await expect(
+      canvas.getByRole('heading', { name: 'Can you read this from where you play?' }),
+    ).toBeVisible()
+    // "Skip for now" puts back what was there before.
+    await userEvent.click(canvas.getByRole('button', { name: 'Skip for now' }))
+    await expect(useDisplay.getState().distance).toBe(distance)
+    await expect(useDisplay.getState().calibration).toBe(calibration)
   },
 }
-export const ScreenDark: Story = {
-  render: start({ step: 'screen', instrument: 'guitar', level: 'just_started' }),
-  globals: { appearance: 'dark' },
+export const ScreenDaylight: Story = { render: screenStep, globals: { appearance: 'light' } }
+/** At Floor the sample is at its largest; on a phone it still fits the column (28 §5 reflow). */
+export const ScreenPhone: Story = {
+  render: screenStep,
+  globals: { ...PHONE, distance: 'floor' },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.ownerDocument.documentElement
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth)
+  },
 }
 
 /** The example song as GET /v1/examples gives it: the practice fixture as a ready song. */
@@ -163,7 +201,7 @@ export const Guide: Story = {
   },
 }
 // The same steps, so the checks run on the loop (not on the screen dimmed behind the card).
-export const GuideDark: Story = { ...Guide, globals: { appearance: 'dark' } }
+export const GuideDaylight: Story = { ...Guide, globals: { appearance: 'light' } }
 
 const saveSheet = () => (
   <AppStory path={`/songs/${SONG_ID}/practice`}>
@@ -188,9 +226,9 @@ export const SaveProgress: Story = {
     await expect(within(sheet).getByRole('button', { name: 'Create an account' })).toBeVisible()
   },
 }
-export const SaveProgressDark: Story = {
+export const SaveProgressDaylight: Story = {
   render: saveSheet,
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
 }
 
 function claimed(client: QueryClient) {

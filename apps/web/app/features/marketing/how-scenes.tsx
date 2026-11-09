@@ -166,7 +166,7 @@ function SeparateScene() {
             />
             <rect x={0} y={y - 26} width={4} height={52} rx={2} className={STEM_FILL[stem]} />
             <Icon x={14} y={y - 24} width={20} height={20} className="text-foreground" />
-            <text x={40} y={y - 8} className="fill-foreground text-[18px] font-semibold">
+            <text x={40} y={y - 8} className="fill-foreground text-lg font-semibold">
               {name()}
             </text>
             {yours && (
@@ -177,7 +177,7 @@ function SeparateScene() {
                   y={y + 15}
                   dy="0.35em"
                   textAnchor="middle"
-                  className="fill-accent-foreground text-[15px] font-semibold"
+                  className="fill-accent-foreground text-base font-semibold"
                 >
                   {m['home.still_your_part']()}
                 </text>
@@ -188,7 +188,7 @@ function SeparateScene() {
                   height={64}
                   rx={10}
                   strokeWidth={2}
-                  className="fill-none stroke-primary"
+                  className="fill-none stroke-signal"
                 />
               </>
             )}
@@ -240,7 +240,7 @@ function TranscribeScene() {
             className={beat % 4 === 0 ? 'stroke-foreground' : 'stroke-muted-foreground'}
           />
         ))}
-        <g className="fill-muted-foreground text-[12px] font-semibold tabular-nums">
+        <g className="fill-muted-foreground text-xs font-semibold tabular-nums">
           {[5, 6, 7, 8].map((bar, i) => (
             <text key={bar} x={barX(i) + 6} y={14}>
               {bar}

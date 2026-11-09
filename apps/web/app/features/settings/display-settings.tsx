@@ -1,4 +1,5 @@
 import { RestBetween } from '@splitune/contracts'
+import { useQuery } from '@tanstack/react-query'
 import type * as React from 'react'
 import { useId } from 'react'
 import type { z } from 'zod'
@@ -11,112 +12,266 @@ import {
 } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
+import { type MeData, meQuery } from '@/lib/session'
+import { useHydrated } from '@/lib/use-hydrated'
+import { Badge } from '@/ui/badge'
+import { Card } from '@/ui/card'
 import type { DisplayPreferences } from '@/ui/display'
 import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
+import { SaveStatus } from '@/ui/save-status'
 import { Slider } from '@/ui/slider'
-import { Switch } from '@/ui/switch'
-import { OptionSelect } from '../common/option-select'
-import { SettingRow } from './setting-row'
-import { useSaveState } from './use-save-state'
+import { useUpdateMe } from './account-settings'
+import { AppearanceCards } from './appearance-cards'
+import {
+  SectionRule,
+  SegmentSetting,
+  SettingRow,
+  SettingSection,
+  SettingsPage,
+  SwitchSetting,
+} from './setting-row'
+import { type SaveState, useSaveState } from './use-save-state'
 
-// Display & practice (27 §3.9): the Display popover's controls plus practice defaults. Stored on
-// this device only (10 §3), applied immediately through the data-* attributes (26 §2).
+// Settings → Display & practice (27 §3.9, Settings-Display): Appearance, Reading, Motion, Practice
+// defaults and the sound delay. Stored on this device (10 §3) and applied at once through the
+// data-* attributes (26 §2); Left-handed is stored on the account, as before.
+//
+// `stage` (26 §2, D2) is a valid stored appearance without a card: it shows as Night Rehearsal with
+// its resolved distance, and the next change to either control stores `dark` and the distance shown.
 
-type Choice<T extends string> = { value: T; label: string }
+type Distance = NonNullable<DisplayPreferences['distance']>
+type DistanceChoice = Distance | 'auto'
 
-function useDeviceSetting() {
+const DISTANCES: Record<DistanceChoice, () => string> = {
+  auto: () => m['settings.distance_auto'](),
+  desk: () => m['settings.distance_desk'](),
+  stand: () => m['settings.distance_stand'](),
+  floor: () => m['settings.distance_floor'](),
+}
+
+const FOLLOW: Record<PracticeDefaults['notationLayout'], () => string> = {
+  page: () => m['practice.tab_layout_page'](),
+  scroll: () => m['practice.tab_layout_scroll'](),
+}
+
+const choices = <T extends string>(labels: Record<T, () => string>) =>
+  (Object.keys(labels) as T[]).map((value) => ({ value, label: labels[value]() }))
+
+/** The distance <html> resolved to (after `stage` raised it); Music stand before hydration. */
+function useResolvedDistance(): Distance {
+  const hydrated = useHydrated()
+  const applied = hydrated ? document.documentElement.getAttribute('data-distance') : null
+  return applied === 'desk' || applied === 'floor' ? applied : 'stand'
+}
+
+export function DisplaySettings({ me }: { me: MeData }): React.ReactElement {
+  return (
+    <SettingsPage
+      title={m['settings.display']()}
+      badge={<Badge variant="success">{m['settings.device_badge']()}</Badge>}
+    >
+      <Appearance />
+      <SectionRule />
+      <Reading me={me} />
+      <SectionRule />
+      <Motion />
+      <SectionRule />
+      <PracticeDefaultsSection />
+      <SoundDelay />
+    </SettingsPage>
+  )
+}
+
+function Appearance() {
+  const display = useDisplay()
+  const resolved = useResolvedDistance()
+  const stored = display.appearance
+  const stage = stored === 'stage'
   const save = useSaveState()
-  return { state: save.state, apply: (change: () => void) => save.run(change) }
-}
-
-function Row<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-  description,
-}: {
-  label: string
-  value: T
-  options: Choice<T>[]
-  onChange: (value: T) => void
-  description?: string
-}) {
-  const setting = useDeviceSetting()
+  const systemOnOff = (on: 'more'): { value: DisplayPreferences['contrast']; label: string }[] => [
+    { value: 'system', label: m['settings.follow_system']() },
+    { value: on, label: m['settings.on']() },
+    { value: 'normal', label: m['settings.off']() },
+  ]
   return (
-    <SettingRow state={setting.state} {...(description ? { description } : {})}>
-      <OptionSelect
-        label={label}
-        value={value}
-        options={options}
-        onChange={(next) => setting.apply(() => onChange(next))}
-        className="w-64"
+    <SettingSection
+      id="appearance"
+      title={m['nav.appearance']()}
+      aside={<SaveStatusSlot state={save.state} />}
+    >
+      <AppearanceCards
+        label={m['nav.appearance']()}
+        value={stored === 'stage' ? 'dark' : stored}
+        options={(['dark', 'light', 'system'] as const).map((value) => ({
+          value,
+          label: appearanceLabel(value),
+          hint:
+            value === 'dark'
+              ? m['appearance.dark_hint']()
+              : value === 'light'
+                ? m['appearance.light_hint']()
+                : m['appearance.system_hint'](),
+        }))}
+        onChange={(appearance) =>
+          save.run(() =>
+            display.update(
+              stage ? { appearance, distance: display.distance ?? resolved } : { appearance },
+            ),
+          )
+        }
       />
-    </SettingRow>
+      <SegmentSetting
+        label={m['settings.increase_contrast']()}
+        value={display.contrast}
+        options={systemOnOff('more')}
+        onChange={(contrast) => display.update({ contrast })}
+      />
+    </SettingSection>
   )
 }
 
-function SwitchRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string
-  checked: boolean
-  onChange: (on: boolean) => void
-}) {
-  const setting = useDeviceSetting()
-  const id = useId()
+function SaveStatusSlot({ state }: { state: SaveState }) {
   return (
-    <SettingRow state={setting.state}>
-      <div className="flex min-h-control items-center gap-3">
-        <Switch
-          id={id}
-          checked={checked}
-          onCheckedChange={(on) => setting.apply(() => onChange(on))}
-        />
-        <Label htmlFor={id}>{label}</Label>
-      </div>
-    </SettingRow>
+    <SaveStatus
+      state={state}
+      savingLabel={m['settings.saving']()}
+      savedLabel={m['settings.saved']()}
+      errorLabel={m['settings.save_failed']()}
+    />
   )
 }
 
-const DISTANCE = { auto: 'auto', desk: 'desk', stand: 'stand', floor: 'floor' } as const
+function Reading({ me }: { me: MeData }) {
+  const display = useDisplay()
+  const resolved = useResolvedDistance()
+  const defaults = usePracticeDefaults()
+  const current = useQuery({ ...meQuery, initialData: me }).data ?? me
+  const updateMe = useUpdateMe()
+  const stage = display.appearance === 'stage'
+  // A stored `stage` shows the distance it resolved to; Automatic stays Automatic otherwise.
+  const distance: DistanceChoice = stage
+    ? (display.distance ?? resolved)
+    : (display.distance ?? 'auto')
+  return (
+    <SettingSection id="reading" title={m['settings.reading']()}>
+      <SegmentSetting
+        label={m['settings.distance']()}
+        value={distance}
+        options={choices(DISTANCES)}
+        onChange={(value) =>
+          display.update({
+            distance: value === 'auto' ? undefined : value,
+            ...(stage ? { appearance: 'dark' as const } : {}),
+          })
+        }
+      />
+      <ReadingSize />
+      <SwitchSetting
+        label={m['settings.hyperlegible']()}
+        hint={m['settings.hyperlegible_hint']()}
+        checked={display.readingFont === 'hyperlegible'}
+        onChange={(on) => display.update({ readingFont: on ? 'hyperlegible' : 'inter' })}
+      />
+      <SwitchSetting
+        label={m['practice.show_uncertainty']()}
+        hint={m['settings.show_uncertainty_hint']()}
+        checked={defaults.showUncertainty}
+        onChange={(on) => defaults.update({ showUncertainty: on })}
+      />
+      <SwitchSetting
+        label={m['settings.left_handed']()}
+        hint={m['settings.left_handed_hint']()}
+        checked={current.handedness === 'left'}
+        onChange={(on) => updateMe({ handedness: on ? 'left' : 'right' })}
+      />
+    </SettingSection>
+  )
+}
 
-function Calibration() {
+// Reading size (26 §6.3): 80–140 % in 10 % steps, with a live sample at the reading sizes.
+function ReadingSize() {
   const calibration = useDisplay((s) => s.calibration)
   const update = useDisplay((s) => s.update)
-  const setting = useDeviceSetting()
+  const save = useSaveState()
   const id = useId()
+  const hintId = useId()
+  const size = formatPercent(calibration * 100)
   return (
-    <SettingRow state={setting.state} description={m['settings.calibration_hint']()}>
-      <div className="flex w-full max-w-md flex-col gap-3">
-        <Label id={id}>{m['settings.calibration']()}</Label>
+    <Card className="flex-row flex-wrap items-center gap-x-6 gap-y-4 p-4">
+      <div className="flex min-w-0 grow basis-65 flex-col gap-2">
+        <div className="flex items-center gap-2.5">
+          <Label id={id} className="flex-1">
+            {m['settings.calibration']()}
+          </Label>
+          <SaveStatusSlot state={save.state} />
+          <span className="font-mono text-sm text-muted-foreground tabular-nums">{size}</span>
+        </div>
         <Slider
           aria-labelledby={id}
+          aria-describedby={hintId}
           thumbLabels={[m['settings.calibration']()]}
           min={0.8}
           max={1.4}
           step={0.1}
           largeStep={0.2}
           value={calibration}
-          onValueChange={(value) => setting.apply(() => update({ calibration: Number(value) }))}
+          onValueChange={(value) => save.run(() => update({ calibration: Number(value) }))}
         />
-        <p
-          data-density="practice"
-          className="font-reading text-read-tab font-semibold tabular-nums text-foreground"
-        >
-          {m['settings.calibration_sample']({ size: formatPercent(calibration * 100) })}
-        </p>
+        <span id={hintId} className="text-sm text-faint-foreground">
+          {m['settings.calibration_hint']()}
+        </span>
       </div>
-    </SettingRow>
+      <div
+        data-density="practice"
+        role="img"
+        aria-label={m['settings.sample_label']({ size })}
+        className="flex items-center gap-5 text-foreground"
+      >
+        <span aria-hidden className="text-read-chord-sheet font-semibold">
+          {m['settings.sample_chord']()}
+        </span>
+        <span
+          aria-hidden
+          className="font-reading text-read-tab font-semibold tracking-widest tabular-nums"
+        >
+          {m['settings.sample_tab']()}
+        </span>
+      </div>
+    </Card>
+  )
+}
+
+function Motion() {
+  const display = useDisplay()
+  const layout = usePracticeDefaults((s) => s.notationLayout)
+  const updateDefaults = usePracticeDefaults((s) => s.update)
+  return (
+    <SettingSection id="motion" title={m['settings.motion']()}>
+      <SegmentSetting
+        label={m['settings.follow']()}
+        value={layout}
+        options={choices(FOLLOW)}
+        onChange={(notationLayout) => updateDefaults({ notationLayout })}
+      />
+      <SegmentSetting
+        label={m['settings.reduced_motion']()}
+        hint={m['settings.reduced_motion_hint']()}
+        value={display.motion}
+        options={[
+          { value: 'system', label: m['settings.follow_system']() },
+          { value: 'reduce', label: m['settings.on']() },
+          { value: 'full', label: m['settings.off']() },
+        ]}
+        onChange={(motion) => display.update({ motion })}
+      />
+    </SettingSection>
   )
 }
 
 function PracticeDefaultsSection() {
   const defaults = usePracticeDefaults()
-  const speed = useDeviceSetting()
+  const speed = useSaveState()
   const speedId = useId()
   const set = (patch: Partial<PracticeDefaults>) => defaults.update(patch)
   const rests: Record<z.infer<typeof RestBetween>, string> = {
@@ -125,60 +280,70 @@ function PracticeDefaultsSection() {
     bar: m['settings.rest_bar'](),
   }
   return (
-    <>
-      <h2 className="mt-8 text-xl">{m['settings.practice_defaults']()}</h2>
-      <SettingRow state={speed.state}>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={speedId}>{m['settings.default_speed']()}</Label>
-          <NumberField
-            id={speedId}
-            min={25}
-            max={100}
-            step={5}
-            unit="%"
-            value={defaults.speedPct}
-            decrementLabel={m['settings.speed_decrease']()}
-            incrementLabel={m['settings.speed_increase']()}
-            onValueChange={(value) => value !== null && speed.apply(() => set({ speedPct: value }))}
+    <SettingSection id="defaults" title={m['settings.practice_defaults']()}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-3">
+        <Card className="gap-2 p-3.5">
+          <SettingRow label={m['settings.default_speed']()} htmlFor={speedId} state={speed.state}>
+            <NumberField
+              id={speedId}
+              min={25}
+              max={110}
+              step={5}
+              unit="%"
+              value={defaults.speedPct}
+              decrementLabel={m['settings.speed_decrease']()}
+              incrementLabel={m['settings.speed_increase']()}
+              onValueChange={(value) => value !== null && speed.run(() => set({ speedPct: value }))}
+            />
+          </SettingRow>
+        </Card>
+        <Card className="gap-2 p-3.5">
+          <SegmentSetting
+            label={m['settings.count_in']()}
+            value={String(defaults.countInBars)}
+            options={['0', '1', '2'].map((value) => ({
+              value,
+              label:
+                value === '0'
+                  ? m['settings.count_in_off']()
+                  : value === '1'
+                    ? m['settings.count_in_one_bar']()
+                    : m['settings.count_in_bars']({ bars: value }),
+            }))}
+            onChange={(value) => set({ countInBars: Number(value) })}
           />
-        </div>
-      </SettingRow>
-      <Row
-        label={m['settings.count_in']()}
-        value={String(defaults.countInBars)}
-        options={['0', '1', '2'].map((value) => ({
-          value,
-          label:
-            value === '0'
-              ? m['settings.count_in_off']()
-              : value === '1'
-                ? m['settings.count_in_one_bar']()
-                : m['settings.count_in_bars']({ bars: value }),
-        }))}
-        onChange={(value) => set({ countInBars: Number(value) })}
-      />
-      <Row
-        label={m['settings.rest']()}
-        value={defaults.restBetween}
-        options={RestBetween.options.map((value) => ({ value, label: rests[value] }))}
-        onChange={(value) => set({ restBetween: value })}
-      />
-      <SoundDelay />
-    </>
+        </Card>
+        <Card className="gap-2 p-3.5">
+          <SegmentSetting
+            label={m['settings.rest']()}
+            value={defaults.restBetween}
+            options={RestBetween.options.map((value) => ({ value, label: rests[value] }))}
+            onChange={(restBetween) => set({ restBetween })}
+          />
+        </Card>
+      </div>
+    </SettingSection>
   )
 }
 
 // The display offset (11 §3, 24 §3): what the browser's reported output latency misses, mostly
-// Bluetooth headphones. The cursor and beat counter follow the sound this much later.
+// Bluetooth headphones. The cursor and beat counter follow the sound this much later. Tap-along
+// measuring is s42's; until then the stepper is the whole card.
 function SoundDelay() {
   const delay = usePracticeDefaults((s) => s.soundDelayMs)
   const update = usePracticeDefaults((s) => s.update)
-  const setting = useDeviceSetting()
+  const save = useSaveState()
   const id = useId()
   return (
-    <SettingRow state={setting.state} description={m['settings.sound_delay_hint']()}>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={id}>{m['settings.sound_delay']()}</Label>
+    <Card className="flex-row flex-wrap items-center gap-5 p-5">
+      <SettingSection
+        id="sound-delay"
+        title={m['settings.sound_delay']()}
+        className="grow basis-85"
+      >
+        <p className="text-sm text-muted-foreground">{m['settings.sound_delay_hint']()}</p>
+      </SettingSection>
+      <SettingRow label={m['settings.sound_delay']()} htmlFor={id} state={save.state}>
         <NumberField
           id={id}
           min={-MAX_SOUND_DELAY_MS}
@@ -189,78 +354,10 @@ function SoundDelay() {
           decrementLabel={m['settings.sound_delay_decrease']()}
           incrementLabel={m['settings.sound_delay_increase']()}
           onValueChange={(value) =>
-            value !== null && setting.apply(() => update({ soundDelayMs: value }))
+            value !== null && save.run(() => update({ soundDelayMs: value }))
           }
         />
-      </div>
-    </SettingRow>
-  )
-}
-
-export function DisplaySettings(): React.ReactElement {
-  const display = useDisplay()
-  const update = display.update
-  const systemOnOff = (key: 'contrast' | 'motion', on: string): Choice<string>[] => [
-    { value: 'system', label: m['settings.follow_system']() },
-    { value: on, label: m['settings.on']() },
-    { value: key === 'contrast' ? 'normal' : 'full', label: m['settings.off']() },
-  ]
-  return (
-    <section className="flex flex-col">
-      <h2 className="text-xl">{m['settings.display']()}</h2>
-      <Row
-        label={m['nav.appearance']()}
-        value={display.appearance}
-        options={(['system', 'light', 'dark', 'stage'] as const).map((value) => ({
-          value,
-          label: appearanceLabel(value),
-        }))}
-        onChange={(appearance) => update({ appearance })}
-      />
-      <Row
-        label={m['settings.score']()}
-        value={display.score}
-        options={[
-          { value: 'paper', label: m['settings.score_paper']() },
-          { value: 'match', label: m['settings.score_match']() },
-        ]}
-        onChange={(score) => update({ score })}
-        description={m['settings.score_hint']()}
-      />
-      <Row
-        label={m['settings.distance']()}
-        value={display.distance ?? DISTANCE.auto}
-        options={[
-          { value: 'auto', label: m['settings.distance_auto']() },
-          { value: 'desk', label: m['settings.distance_desk']() },
-          { value: 'stand', label: m['settings.distance_stand']() },
-          { value: 'floor', label: m['settings.distance_floor']() },
-        ]}
-        onChange={(value) =>
-          update({
-            distance: value === 'auto' ? undefined : (value as DisplayPreferences['distance']),
-          })
-        }
-      />
-      <Calibration />
-      <SwitchRow
-        label={m['settings.hyperlegible']()}
-        checked={display.readingFont === 'hyperlegible'}
-        onChange={(on) => update({ readingFont: on ? 'hyperlegible' : 'inter' })}
-      />
-      <Row
-        label={m['settings.reduced_motion']()}
-        value={display.motion}
-        options={systemOnOff('motion', 'reduce')}
-        onChange={(motion) => update({ motion: motion as DisplayPreferences['motion'] })}
-      />
-      <Row
-        label={m['settings.increase_contrast']()}
-        value={display.contrast}
-        options={systemOnOff('contrast', 'more')}
-        onChange={(contrast) => update({ contrast: contrast as DisplayPreferences['contrast'] })}
-      />
-      <PracticeDefaultsSection />
-    </section>
+      </SettingRow>
+    </Card>
   )
 }

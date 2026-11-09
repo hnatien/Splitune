@@ -1,7 +1,8 @@
 import type { BillingPlansOutput } from '@splitune/contracts'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { CheckIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { CheckIcon, InfoIcon } from 'lucide-react'
+import type * as React from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { z } from 'zod'
 import { analytics } from '@/lib/analytics'
 import { m } from '@/lib/i18n'
@@ -9,78 +10,90 @@ import type { MeData } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/ui/badge'
 import { Button, buttonVariants } from '@/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/ui/card'
-import { Banner, InlineError } from '@/ui/status-message'
-import { checkoutUrl, DEFAULT_PLAN, type PaidPlanName, PlanChoice } from './plans'
+import { Card } from '@/ui/card'
+import { InlineError } from '@/ui/status-message'
+import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
+import { checkoutUrl, DEFAULT_PLAN, type PaidPlanName, type Plan, planPrice } from './plans'
+import { formatPrice } from './price'
 
-// Pricing (27 §3.2, 23 §3 and §5): Free and Plus side by side, the feature matrix with practice
-// first (all of it free), monthly and yearly prices side by side as the same choice cards as the
-// upgrade sheet (monthly chosen, no emphasis on yearly), "Cancel anytime in one tap", the
-// demo-mode banner. No countdowns, no "most popular" badge.
+// Pricing (27 §3.2, `Pricing.dc.html`; 23 §3 and §5): the demo-mode banner, "Every practice tool is
+// free", Free and Plus cards (Monthly / Yearly segmented with neither emphasised, monthly chosen,
+// the price from the provider), and the Compare table. No countdowns, no "most popular" badge,
+// never a card field (25 §2). Honesty gates (27 §3.1, flipped in s45): the mixer phrase of the lead
+// (s40b), the speed ladder (s37), beat lights (s42) and Stand view (s43) stay out until they ship.
 
 type Plans = z.infer<typeof BillingPlansOutput>
-type Cell = boolean | string
 
-function MatrixCell({ value }: { value: Cell }) {
-  if (value === true) {
-    return (
-      <>
-        <CheckIcon aria-hidden className="size-5 text-primary" />
-        <span className="sr-only">{m['pricing.included']()}</span>
-      </>
-    )
-  }
-  if (value === false) {
-    return (
-      <>
-        <span aria-hidden className="text-muted-foreground">
-          —
-        </span>
-        <span className="sr-only">{m['pricing.not_included']()}</span>
-      </>
-    )
-  }
-  return <span>{value}</span>
-}
-
-function matrix(plans: Plans): { group: string; rows: [string, Cell, Cell][] }[] {
+function compareRows(plans: Plans): [string, string, string][] {
   const { allowances } = plans
-  const perMonth = (count: number) => m['pricing.per_month']({ count: String(count) })
+  const included = m['pricing.included']()
   const soon = m['pricing.coming_soon']()
   return [
-    {
-      group: m['pricing.group_practice'](),
-      rows: [
-        [m['pricing.f_loops'](), true, true],
-        [m['pricing.f_slow'](), true, true],
-        [m['pricing.f_count_in'](), true, true],
-        [m['pricing.f_mixer'](), true, true],
-        [m['pricing.f_notation'](), true, true],
-        [m['pricing.f_level'](), true, true],
-        [m['pricing.f_pedal'](), true, true],
-        [m['pricing.f_examples'](), true, true],
-        [m['pricing.f_library'](), true, true],
-      ],
-    },
-    {
-      group: m['pricing.group_analyses'](),
-      rows: [
-        [m['pricing.f_welcome'](), m['pricing.once'](), false],
-        [m['pricing.f_full'](), false, perMonth(allowances.plus_full_per_period)],
-        [m['pricing.f_lite'](), perMonth(allowances.free_lite_per_month), m['pricing.fair_use']()],
-        [m['pricing.f_extra'](), false, true],
-        [m['pricing.f_priority'](), false, true],
-      ],
-    },
-    {
-      group: m['pricing.group_depth'](),
-      rows: [
-        [m['pricing.f_mic'](), false, soon],
-        [m['pricing.f_offline'](), false, soon],
-        [m['pricing.f_export'](), false, soon],
-      ],
-    },
+    [m['pricing.row_loops'](), included, included],
+    [m['pricing.row_slow'](), included, included],
+    [m['pricing.row_count_in'](), included, included],
+    [m['pricing.row_tools'](), included, included],
+    [m['pricing.row_keys'](), included, included],
+    [
+      m['pricing.row_full'](),
+      m['pricing.welcome_one'](),
+      m['pricing.per_month']({ count: String(allowances.plus_full_per_period) }),
+    ],
+    [
+      m['pricing.row_lite'](),
+      m['pricing.per_month']({ count: String(allowances.free_lite_per_month) }),
+      m['pricing.no_limit'](),
+    ],
+    [m['pricing.row_export'](), soon, soon],
   ]
+}
+
+function Points({ points }: { points: string[] }) {
+  return (
+    <ul className="flex flex-col gap-2.5">
+      {points.map((point) => (
+        <li key={point} className="flex gap-2.5 text-base">
+          <CheckIcon aria-hidden strokeWidth={1.8} className="size-5 shrink-0 text-foreground" />
+          {point}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function PlanCard({
+  title,
+  lead,
+  current,
+  aside,
+  children,
+}: {
+  title: string
+  lead: string
+  current: boolean
+  aside?: React.ReactNode
+  children: React.ReactNode
+}) {
+  const id = useId()
+  return (
+    <Card role="region" aria-labelledby={id} className="gap-4.5 p-7">
+      <div className="flex flex-wrap items-start gap-2.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 id={id} className="flex flex-wrap items-center gap-2 text-xl">
+            {title}
+            {current && (
+              <Badge className="forced-colors:bg-card forced-colors:inset-ring forced-colors:inset-ring-border">
+                {m['billing.current_plan']()}
+              </Badge>
+            )}
+          </h2>
+          <p className="text-base text-muted-foreground">{lead}</p>
+        </div>
+        {aside}
+      </div>
+      {children}
+    </Card>
+  )
 }
 
 function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
@@ -92,7 +105,7 @@ function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
       <Link
         to="/auth/sign-in"
         search={{ next: '/pricing' }}
-        className={cn(buttonVariants({ variant: 'primary' }), 'w-full')}
+        className={buttonVariants({ variant: 'primary', size: 'lg', block: true })}
       >
         {m['pricing.plus_cta']()}
       </Link>
@@ -100,7 +113,11 @@ function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
   }
   if (me.plan !== 'free') {
     return (
-      <Link to="/settings/billing" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
+      <Link
+        to="/settings/account"
+        hash="plan"
+        className={buttonVariants({ size: 'lg', block: true })}
+      >
         {m['pricing.manage']()}
       </Link>
     )
@@ -118,7 +135,7 @@ function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
   }
   return (
     <div className="flex w-full flex-col gap-3">
-      <Button variant="primary" className="w-full" loading={pending} onClick={buy}>
+      <Button variant="primary" size="lg" block loading={pending} onClick={buy}>
         {m['pricing.plus_cta']()}
       </Button>
       {failed && <InlineError title={m['billing.action_failed']()} />}
@@ -126,9 +143,35 @@ function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
   )
 }
 
+/** "$9.99 a month · or $79.99 a year": the chosen interval large, the other beside it. */
+function PlusPrice({ chosen, other }: { chosen: Plan | undefined; other: Plan | undefined }) {
+  if (!chosen) return null
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2">
+      <span className="font-mono text-3xl tabular-nums">
+        {formatPrice(chosen.price_minor, chosen.currency)}
+      </span>{' '}
+      <span className="text-base text-muted-foreground">
+        {chosen.interval === 'year' ? m['pricing.unit_year']() : m['pricing.unit_month']()}
+      </span>
+      {other && (
+        <>
+          {' '}
+          <span className="text-sm text-faint-foreground">
+            {m['pricing.or_price']({ price: planPrice(other) })}
+          </span>
+        </>
+      )}
+    </p>
+  )
+}
+
 export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) {
   const [plan, setPlan] = useState<PaidPlanName>(DEFAULT_PLAN)
   const onPlus = me !== null && me.plan !== 'free'
+  const chosen = plans.plans.find((p) => p.plan === plan)
+  const other = plans.plans.find((p) => p.plan !== plan)
+  const periodId = useId()
 
   useEffect(() => {
     if (me?.plan === 'free') analytics.track('paywall_viewed', { trigger: 'pricing' })
@@ -136,92 +179,123 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
 
   return (
     <div className="flex flex-col">
-      <Banner tone="info" title={m['billing.demo']()} />
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-12">
-        <header className="flex flex-col gap-3">
-          <h1 className="text-4xl">{m['pricing.title']()}</h1>
-          <p className="text-lg text-muted-foreground">{m['pricing.intro']()}</p>
+      <p
+        role="status"
+        className="flex items-center justify-center gap-2 bg-accent px-4 py-2 text-center text-md text-foreground forced-colors:border-b forced-colors:bg-card"
+      >
+        <InfoIcon aria-hidden strokeWidth={1.8} className="size-4 shrink-0 text-info" />
+        {m['billing.demo']()}
+      </p>
+      <div className="mx-auto flex w-full max-w-pricing flex-col gap-10 px-4 pt-10 pb-18 sm:px-6">
+        <header className="flex flex-col items-center gap-3 text-center">
+          <h1 className="text-5xl text-balance">{m['pricing.title']()}</h1>
+          <p className="max-w-2xl text-lead text-pretty text-muted-foreground">
+            {m['pricing.lead']()}
+          </p>
         </header>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2 text-xl">
-                {m['pricing.free_name']()}
-                {me && !onPlus && <Badge>{m['billing.current_plan']()}</Badge>}
-              </CardTitle>
-              <CardDescription className="text-base">{m['pricing.free_price']()}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-base">{m['pricing.free_body']()}</p>
-            </CardContent>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(23.75rem,100%),1fr))] gap-5">
+          <PlanCard
+            title={m['pricing.free_name']()}
+            lead={m['pricing.free_lead']()}
+            current={me !== null && !onPlus}
+          >
+            <p className="font-mono text-3xl">{m['pricing.free_price']()}</p>
+            <Points
+              points={[
+                m['pricing.free_point_welcome'](),
+                m['pricing.free_point_lite']({
+                  count: String(plans.allowances.free_lite_per_month),
+                }),
+                m['pricing.free_point_tools'](),
+              ]}
+            />
             {!me && (
-              <CardFooter className="mt-auto border-t border-border py-4">
-                <Link to="/start" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
-                  {m['home.cta_example']()}
-                </Link>
-              </CardFooter>
+              <Link
+                to="/start"
+                className={cn(buttonVariants({ size: 'lg', block: true }), 'mt-auto')}
+              >
+                {m['home.cta_example']()}
+              </Link>
             )}
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2 text-xl">
-                {m['pricing.plus_name']()}
-                {onPlus && <Badge>{m['billing.current_plan']()}</Badge>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <PlanChoice
-                plans={plans.plans}
-                value={plan}
-                onChange={setPlan}
-                className="sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2"
-              />
-              <p className="text-base">{m['plan.cancel_anytime']()}</p>
-            </CardContent>
-            <CardFooter className="mt-auto border-t border-border py-4">
+          </PlanCard>
+          <PlanCard
+            title={m['pricing.plus_name']()}
+            lead={m['pricing.plus_lead']()}
+            current={onPlus}
+            aside={
+              <div className="flex flex-col items-end">
+                <span id={periodId} className="sr-only">
+                  {m['pricing.period']()}
+                </span>
+                <ToggleGroup
+                  aria-labelledby={periodId}
+                  value={[plan]}
+                  onValueChange={(next) => {
+                    const picked = next[0]
+                    if (picked) setPlan(picked as PaidPlanName)
+                  }}
+                >
+                  {plans.plans.map((p) => (
+                    <ToggleGroupItem key={p.plan} value={p.plan}>
+                      {p.interval === 'year' ? m['plan.yearly']() : m['plan.monthly']()}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+            }
+          >
+            <PlusPrice chosen={chosen} other={other} />
+            <Points
+              points={[
+                m['pricing.plus_point_full']({
+                  count: String(plans.allowances.plus_full_per_period),
+                }),
+                m['pricing.plus_point_lite'](),
+                m['pricing.plus_point_extra'](),
+                m['pricing.plus_point_priority'](),
+              ]}
+            />
+            <div className="mt-auto flex flex-col gap-3">
               <PlusAction me={me} plan={plan} />
-            </CardFooter>
-          </Card>
+              <p className="text-center text-sm text-faint-foreground">
+                {m['pricing.cancel_note']()}
+              </p>
+            </div>
+          </PlanCard>
         </div>
 
-        <table className="w-full border-collapse text-left text-base">
-          <thead>
-            <tr className="border-b border-border">
-              <th scope="col" className="py-3 pr-4 font-semibold">
-                {m['pricing.plan_column']()}
-              </th>
-              <th scope="col" className="w-18 py-3 pr-2 font-semibold sm:w-40">
-                {m['pricing.free_name']()}
-              </th>
-              <th scope="col" className="w-22 py-3 font-semibold sm:w-44">
-                {m['pricing.plus_name']()}
-              </th>
-            </tr>
-          </thead>
-          {matrix(plans).map(({ group, rows }) => (
-            <tbody key={group}>
-              <tr>
-                <th scope="colgroup" colSpan={3} className="pt-6 pb-2 text-lg font-semibold">
-                  {group}
+        <section aria-labelledby="compare" className="flex flex-col gap-3.5">
+          <h2 id="compare" className="text-lg">
+            {m['pricing.compare']()}
+          </h2>
+          <table className="w-full border-collapse text-left text-base">
+            <thead>
+              <tr className="text-sm text-faint-foreground">
+                <th scope="col" className="py-2.5 pr-4 font-semibold">
+                  {m['pricing.feature']()}
+                </th>
+                <th scope="col" className="w-24 py-2.5 pr-3 font-semibold sm:w-45">
+                  {m['pricing.free_name']()}
+                </th>
+                <th scope="col" className="w-24 py-2.5 font-semibold sm:w-45">
+                  {m['pricing.plus_name']()}
                 </th>
               </tr>
-              {rows.map(([feature, free, plus]) => (
-                <tr key={feature} className="border-b border-border align-top">
+            </thead>
+            <tbody>
+              {compareRows(plans).map(([feature, free, plus]) => (
+                <tr key={feature} className="border-t border-border align-top">
                   <th scope="row" className="py-3 pr-4 font-normal">
                     {feature}
                   </th>
-                  <td className="py-3 pr-2">
-                    <MatrixCell value={free} />
-                  </td>
-                  <td className="py-3">
-                    <MatrixCell value={plus} />
-                  </td>
+                  <td className="py-3 pr-3 text-muted-foreground">{free}</td>
+                  <td className="py-3">{plus}</td>
                 </tr>
               ))}
             </tbody>
-          ))}
-        </table>
+          </table>
+        </section>
       </div>
     </div>
   )

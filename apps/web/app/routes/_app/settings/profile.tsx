@@ -1,9 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ProfileSettings } from '@/features/settings/profile-settings'
+import { toAccount } from '@/features/settings/account-redirect'
 
-export const Route = createFileRoute('/_app/settings/profile')({ component: Profile })
-
-function Profile() {
-  const { me } = Route.useRouteContext()
-  return <ProfileSettings me={me} />
-}
+// Profile moved into Account (27 §1 route map).
+export const Route = createFileRoute('/_app/settings/profile')({
+  beforeLoad: ({ search }) => toAccount('profile', search),
+})

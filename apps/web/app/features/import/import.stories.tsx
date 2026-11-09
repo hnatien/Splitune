@@ -44,8 +44,12 @@ const page =
     </AppStory>
   )
 
+// The dialog is a lazy chunk: on a cold dev server Vite compiles it on first request, which can
+// take longer than Testing Library's 1 s default when many stories run at once.
+const LAZY = { timeout: 10_000 }
+
 const dialog = async () => {
-  const add = await within(document.body).findByRole('dialog')
+  const add = await within(document.body).findByRole('dialog', undefined, LAZY)
   // The dialog fades and zooms in (26 §10); wait until it has.
   await waitFor(() =>
     expect(within(add).getByRole('heading', { name: 'Add a song' })).toBeVisible(),

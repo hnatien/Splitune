@@ -17,6 +17,9 @@ const meta = { title: 'Screens/System', parameters: { layout: 'fullscreen' } } s
 export default meta
 type Story = StoryObj<typeof meta>
 
+const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+const DAYLIGHT = { appearance: 'light' }
+
 const accountDeleted = () => (
   <AppStory path="/account-deleted">
     <BareShell>
@@ -37,18 +40,32 @@ export const AccountWasDeleted: Story = {
     )
   },
 }
-export const AccountWasDeletedDark: Story = {
-  render: accountDeleted,
-  globals: { appearance: 'dark' },
-}
+export const AccountWasDeletedDaylight: Story = { render: accountDeleted, globals: DAYLIGHT }
+export const AccountWasDeletedPhone: Story = { render: accountDeleted, globals: PHONE }
 
+const notFound = () => (
+  <AppStory path="/nope">
+    <NotFoundPage />
+  </AppStory>
+)
+
+// 404 (27 §3.11): the mono number, what happened, why, and the way to the library.
 export const NotFound: Story = {
-  render: () => (
-    <AppStory path="/nope">
-      <NotFoundPage />
-    </AppStory>
-  ),
+  render: notFound,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByRole('heading', { level: 1, name: "We couldn't find that page." }),
+    ).toBeVisible()
+    await expect(canvas.getByText('404')).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Go to library' })).toHaveAttribute(
+      'href',
+      '/library',
+    )
+  },
 }
+export const NotFoundDaylight: Story = { render: notFound, globals: DAYLIGHT }
+export const NotFoundPhone: Story = { render: notFound, globals: PHONE }
 export const ScreenError: Story = {
   render: () => (
     <AppStory path="/library">
@@ -61,23 +78,44 @@ export const ScreenError: Story = {
     await expect(canvas.getByRole('button', { name: 'Copy error id' })).toBeVisible()
   },
 }
-export const ScreenErrorDark: Story = {
+export const ScreenErrorDaylight: Story = {
   render: () => (
     <AppStory path="/library">
       <ErrorPage error={new Error('story')} />
     </AppStory>
   ),
-  globals: { appearance: 'dark' },
+  globals: DAYLIGHT,
 }
+const unsupported = () => (
+  <AppStory path="/unsupported">
+    <BareShell>
+      <UnsupportedBrowser />
+    </BareShell>
+  </AppStory>
+)
+
+// Unsupported browser (27 §3.11): the missing feature in plain words, versions under Details.
 export const Unsupported: Story = {
-  render: () => (
-    <AppStory path="/unsupported">
-      <BareShell>
-        <UnsupportedBrowser />
-      </BareShell>
-    </AppStory>
-  ),
+  render: unsupported,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByRole('heading', { name: "Splitune can't run in this browser" }),
+    ).toBeVisible()
+    await expect(
+      canvas.getByText(/^It's missing .+. Try a recent Chrome, Edge, Firefox or Safari.$/),
+    ).toBeVisible()
+    await expect(canvas.getByText(/^It works in Chrome/)).not.toBeVisible()
+    await userEvent.click(canvas.getByText('Details'))
+    await expect(canvas.getByText(/^It works in Chrome/)).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Copy link' })).toBeVisible()
+    await expect(
+      canvas.getByRole('link', { name: 'Your library is still available' }),
+    ).toHaveAttribute('href', '/library')
+  },
 }
+export const UnsupportedDaylight: Story = { render: unsupported, globals: DAYLIGHT }
+export const UnsupportedPhone: Story = { render: unsupported, globals: PHONE }
 
 const BarePage = () => (
   <AppStory path="/auth/sign-in">
@@ -96,7 +134,11 @@ export const UpdateReady: Story = {
   render: () => <BarePage />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await waitFor(() => expect(canvas.getByText('A new version is ready.')).toBeVisible())
+    await waitFor(() =>
+      expect(
+        canvas.getByText('A new version is ready. It waits until you stop playing.'),
+      ).toBeVisible(),
+    )
     await expect(canvas.getByRole('button', { name: 'Reload' })).toBeVisible()
   },
 }
@@ -111,7 +153,7 @@ export const UpdateHeldWhilePlaying: Story = {
   },
   render: () => <BarePage />,
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).queryByText('A new version is ready.')).toBeNull()
+    await expect(within(canvasElement).queryByText(/A new version is ready/)).toBeNull()
   },
 }
 
@@ -159,7 +201,7 @@ export const Offline: Story = {
   render: libraryPage,
   play: async ({ canvasElement }) => {
     const notice = await within(canvasElement).findByText(
-      "You're offline. You can keep practising songs you've opened.",
+      "You're offline. Songs you've opened keep working.",
     )
     await waitFor(() => expect(notice).toBeVisible())
   },
@@ -184,3 +226,5 @@ export const InAppBrowser: Story = {
     await expect(canvas.getByRole('button', { name: 'Copy link' })).toBeVisible()
   },
 }
+export const OfflineDaylight: Story = { ...Offline, globals: DAYLIGHT }
+export const InAppBrowserPhone: Story = { ...InAppBrowser, globals: PHONE }

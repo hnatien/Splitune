@@ -26,7 +26,7 @@ async function importLink(type: 'Full' | 'Lite') {
   await page.getByRole('tab', { name: 'Link' }).click()
   await page.getByLabel('Link to a video or song').fill(LINK)
   await page.getByRole('radio', { name: new RegExp(`^${type}`) }).check()
-  await page.getByRole('button', { name: 'Import and analyse' }).click()
+  await page.getByRole('button', { name: 'Add and analyse' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
   const songId = new URL(page.url()).pathname.split('/')[2] as string
   songs.push(songId)
@@ -60,8 +60,12 @@ async function advanceClock(days: number) {
   expect(res.status()).toBe(200)
 }
 
+// Settings → Plan is a section of Account, beside the Profile fields: scan only the section there.
 async function checkBillingPage() {
-  await expectNoCardInputs(page)
+  await expectNoCardInputs(
+    page,
+    new URL(page.url()).pathname === '/settings/account' ? '#plan' : 'body',
+  )
   await expectAccessible(page)
   await expectNoHorizontalScroll(page)
 }
@@ -95,8 +99,11 @@ test.afterAll(async () => {
 
 test('billing: pricing shows Free and Plus without card fields or dark patterns', async () => {
   await page.goto('/pricing')
-  await expect(page.getByText('Demo mode — no real charges.')).toBeVisible()
-  await expect(page.getByRole('radio', { name: /Monthly/ })).toBeChecked()
+  await expect(page.getByText('Demo mode — no real charges. Payments are simulated.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Monthly' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await expect(page.getByText('$9.99 a month')).toBeVisible()
   await expect(page.getByText('$79.99 a year')).toBeVisible()
   await expect(page.getByText(/most popular/i)).toHaveCount(0)
@@ -105,8 +112,9 @@ test('billing: pricing shows Free and Plus without card fields or dark patterns'
 
 test('billing: the Welcome analysis is the first full one, then Full is locked', async () => {
   await page.goto('/import')
+  // Add song (27 §3.6) preselects Full while the Welcome analysis is unused and badges it.
   await expect(
-    page.getByText('Your first full analysis is free — your part isolated, plus tab.'),
+    page.getByRole('dialog', { name: 'Add a song' }).getByText('Welcome · free'),
   ).toBeVisible()
   const songId = await importLink('Full')
   expect(await prioritiesOf(songId)).toEqual([100])
@@ -118,16 +126,15 @@ test('billing: the Welcome analysis is the first full one, then Full is locked',
 test('billing: the Lite allowance runs out with its exact limit and reset date', async () => {
   for (let i = 0; i < LITE_PER_MONTH; i++) await importLink('Lite')
   await page.goto('/settings/billing')
-  await expect(
-    page.getByRole('main').getByText(/^0 of 5 Lite analyses left · resets /),
-  ).toBeVisible()
+  await expect(page.getByRole('main').getByText(/^0 of 5 left · resets /)).toBeVisible()
   await page.goto('/import')
   await expect(
     page.getByText(/You've used this month's 5 Lite analyses\. They reset on \d+ \w+/),
   ).toBeVisible()
-  // Nothing can start: Full is Plus' and Lite is used up (the page reopens on the Link tab).
+  // Nothing can start: Full is Plus' and Lite is used up (`/import` opens Add song on File).
+  await page.getByRole('tab', { name: 'Link' }).click()
   await expect(page.getByRole('radio', { name: /^Lite/ })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Import and analyse' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Add and analyse' })).toBeDisabled()
 })
 
 test('billing: a declined payment changes nothing, a successful one upgrades to Plus', async () => {
@@ -147,7 +154,8 @@ test('billing: a declined payment changes nothing, a successful one upgrades to 
   ).toBeVisible()
   await page.getByRole('button', { name: 'Simulate successful payment' }).click()
 
-  await expect(page).toHaveURL(/\/settings\/billing\?checkout=success/)
+  // The mock checkout returns to /settings/billing, which lands on Account → Plan (27 §1).
+  await expect(page).toHaveURL(/\/settings\/account\?checkout=success#plan$/)
   await expect(
     page.getByText(/^You're on Plus\. 15 full analyses a month, resets \d+ \w+/),
   ).toBeVisible()
@@ -159,7 +167,7 @@ test('billing: Plus allows a Full analysis and queues it first', async () => {
   const songId = await importLink('Full')
   expect(await prioritiesOf(songId)).toEqual([50])
   await page.goto('/settings/billing')
-  await expect(page.getByRole('main').getByText(/^14 of 15 full analyses left/)).toBeVisible()
+  await expect(page.getByRole('main').getByText(/^14 of 15 left · resets /)).toBeVisible()
 })
 
 test('billing: the portal shows the plan, and Settings cancels in one tap', async () => {
@@ -168,7 +176,7 @@ test('billing: the portal shows the plan, and Settings cancels in one tap', asyn
   await expect(page).toHaveURL(/\/billing\/mock-portal\?session=/)
   await expect(page.getByText(/^Renews on \d+ \w+/)).toBeVisible()
   await checkBillingPage()
-  await page.getByRole('link', { name: 'Back to Plan & billing' }).click()
+  await page.getByRole('link', { name: 'Back to Account' }).click()
 
   await page.getByRole('button', { name: 'Cancel Plus' }).click()
   await expect(
@@ -187,9 +195,7 @@ test('billing: Plus lasts to the period end, then the account is back on Free', 
   await expect(page.getByText('Free', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'See Plus' })).toBeVisible()
   // A new month on the billing clock: the Lite allowance is back.
-  await expect(
-    page.getByRole('main').getByText(/^5 of 5 Lite analyses left · resets /),
-  ).toBeVisible()
+  await expect(page.getByRole('main').getByText(/^5 of 5 left · resets /)).toBeVisible()
   await checkBillingPage()
 })
 
