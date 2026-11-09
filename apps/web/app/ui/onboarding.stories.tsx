@@ -52,8 +52,9 @@ export const ChoicesRaised: Story = {
   play: async ({ canvasElement }) => {
     const [available, , unavailable] =
       canvasElement.querySelectorAll<HTMLElement>('[data-slot=choice-card]')
-    // Available cards sit on elevation 1; an unavailable one is flat and sunken.
-    await expect(getComputedStyle(available as Element).boxShadow).not.toBe(
+    // Cards are bordered, not lifted (doc 26 §9: elevation 1 is no shadow), so both are flat;
+    // an unavailable one is sunken.
+    await expect(getComputedStyle(available as Element).boxShadow).toBe(
       getComputedStyle(unavailable as Element).boxShadow,
     )
     await expect(getComputedStyle(available as Element).backgroundColor).not.toBe(

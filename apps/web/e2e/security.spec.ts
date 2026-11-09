@@ -60,7 +60,7 @@ test('self-hosted fonts and icons are cached as immutable, hashed assets too', a
   const script = html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1]
   for (const path of [
     script ?? '',
-    '/fonts/InterVariable.woff2',
+    '/fonts/InstrumentSans.woff2',
     '/fonts/AtkinsonHyperlegibleNext.woff2',
     '/icons/icon-192.png',
     '/icons/apple-touch-icon.png',

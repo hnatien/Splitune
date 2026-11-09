@@ -1,4 +1,4 @@
-// Typed names and metadata for the "Music Stand" tokens (docs/specs/26-design-system.md).
+// Typed names and metadata for the "Night Rehearsal" tokens (docs/specs/26-design-system.md).
 // CSS in this package is the source of truth; JS consumers (waveform canvas, alphaTab resources,
 // meters) read live values with readToken()/readColor() and re-read them on appearance change.
 
@@ -15,7 +15,7 @@ export type Density = (typeof DENSITIES)[number]
 export const DISTANCES = ['desk', 'stand', 'floor'] as const
 export type Distance = (typeof DISTANCES)[number]
 
-/** Tier 2: shadcn roles plus Splitune roles, defined in every appearance. */
+/** Tier 2: shadcn roles plus Splitune roles (§3), defined in every appearance. */
 export const SEMANTIC_ROLES = [
   '--background',
   '--foreground',
@@ -32,12 +32,22 @@ export const SEMANTIC_ROLES = [
   '--accent',
   '--accent-foreground',
   '--destructive',
+  '--destructive-foreground',
   '--border',
   '--input',
   '--ring',
+  '--faint-foreground',
+  '--border-strong',
+  '--primary-ink',
+  '--primary-soft',
+  '--primary-line',
+  '--signal',
+  '--unsure',
+  '--unsure-surface',
   '--success',
   '--warning',
   '--info',
+  '--edited',
   '--surface-raised',
   '--surface-sunken',
   '--success-surface',
@@ -47,6 +57,7 @@ export const SEMANTIC_ROLES = [
   '--paper',
   '--ink',
   '--conf-medium',
+  '--conf-medium-edge',
   '--conf-low',
   '--stem-guitar',
   '--stem-bass',
@@ -55,11 +66,14 @@ export const SEMANTIC_ROLES = [
   '--stem-keys',
   '--stem-other',
   '--muted-foreground-more',
+  '--faint-foreground-more',
   '--border-more',
+  '--border-strong-more',
   '--input-more',
   '--elevation-1',
   '--elevation-2',
   '--elevation-3',
+  '--glow',
   '--read-scale',
 ] as const
 
@@ -82,16 +96,27 @@ export const ALIAS_ROLES = [
   '--focus-width',
 ] as const
 
-/** Tier 3: component tokens, defined in every appearance. */
+/** Tier 3: component tokens (§4.7), defined in every appearance. */
 export const COMPONENT_TOKENS = [
+  '--bar-current',
   '--loop-fill',
+  '--score-loop-fill',
   '--loop-edge',
   '--playhead',
-  '--score-loop-fill',
   '--score-loop-edge',
   '--score-playhead',
+  '--now-line',
   '--staff',
-  '--bar-current',
+  '--staff-more',
+  '--waveform-peak',
+  '--waveform-peak-more',
+  '--waveform-rms',
+  '--waveform-played',
+  '--waveform-loop',
+  '--hatch',
+  '--beat-now',
+  '--beat-done',
+  '--beat-slot',
   '--key-white',
   '--key-black',
   '--key-left',
@@ -101,9 +126,7 @@ export const COMPONENT_TOKENS = [
   '--fret-guitar',
   '--fret-bass',
   '--melody-vocals',
-  '--waveform-peak',
-  '--waveform-rms',
-  '--waveform-played',
+  '--tile-foreground',
   '--scrim',
   '--hud-bg',
   '--hud-bg-more',
@@ -113,6 +136,8 @@ export const COMPONENT_TOKENS = [
 export const READING_TOKENS = [
   '--read-tab',
   '--read-chord-current',
+  '--read-chord-next',
+  '--read-chord-sheet',
   '--read-chord',
   '--read-bar-number',
   '--read-readout',
@@ -125,6 +150,7 @@ export const TARGET_TOKENS = [
   '--target',
   '--target-practice-2',
   '--target-practice',
+  '--target-stand',
 ] as const
 
 export const MOTION_TOKENS = [
@@ -147,7 +173,9 @@ export type TokenName =
 
 /**
  * Contrast pairs checked in every appearance × contrast context (doc 26 §4.6, 28 §3):
- * [foreground, background, WCAG minimum]. The token tests enforce them; Foundations shows them live.
+ * [foreground, background, WCAG minimum]. Every background is opaque; the translucent
+ * --primary-soft is tested by compositing in contrast.test.ts. The token tests enforce them;
+ * Foundations shows them live.
  */
 export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   // §4.6 baseline
@@ -177,6 +205,7 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   // Every *-foreground on its surface, and text on the other surfaces it sits on
   ['--foreground', '--card', 7],
   ['--foreground', '--muted', 4.5],
+  ['--foreground', '--accent', 4.5],
   ['--card-foreground', '--card', 4.5],
   ['--popover-foreground', '--popover', 4.5],
   ['--secondary-foreground', '--secondary', 4.5],
@@ -186,18 +215,42 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--sidebar-accent-foreground', '--sidebar-accent', 4.5],
   ['--muted-foreground', '--background', 4.5],
   ['--muted-foreground', '--muted', 4.5],
-  ['--primary', '--background', 4.5],
-  ['--primary', '--card', 4.5],
-  ['--primary', '--accent', 4.5],
+  ['--faint-foreground', '--background', 4.5],
+  ['--faint-foreground', '--card', 4.5],
+  ['--faint-foreground', '--muted', 4.5],
+  ['--faint-foreground', '--accent', 4.5],
+  // Amber as text is --primary-ink; --primary is a fill (its text is --primary-foreground)
+  ['--primary-ink', '--background', 4.5],
+  ['--primary-ink', '--card', 4.5],
+  ['--primary-ink', '--accent', 4.5],
   ['--input', '--background', 3],
+  ['--input', '--muted', 3],
   ['--ring', '--card', 3],
+  ['--ring', '--muted', 3],
+  // Amber as a mark (playhead, loop edges, tab underline, beat dot, fills), and its hairline
+  ['--signal', '--background', 3],
+  ['--signal', '--card', 3],
+  ['--signal', '--muted', 3],
+  ['--signal', '--accent', 3],
+  ['--signal', '--bar-current', 3],
+  ['--signal', '--score-loop-fill', 3],
+  ['--primary-line', '--background', 3],
+  ['--primary-line', '--card', 3],
   ['--destructive', '--background', 4.5],
+  ['--destructive-foreground', '--destructive', 4.5],
+  ['--unsure', '--card', 4.5],
+  ['--edited', '--paper', 4.5],
+  ['--conf-medium-edge', '--paper', 3],
   // Score: digits over the loop band and the current bar, staff on the current bar
   ['--ink', '--score-loop-fill', 7],
   ['--conf-low', '--score-loop-fill', 4.5],
   ['--ink', '--bar-current', 7],
   ['--conf-low', '--bar-current', 4.5],
+  ['--conf-low', '--unsure-surface', 4.5],
   ['--staff', '--bar-current', 3],
+  ['--staff', '--card', 3],
+  ['--staff', '--unsure-surface', 3],
+  ['--foreground', '--unsure-surface', 4.5],
   // Keyboard diagram: hands against both key colours, their letters on them
   ['--key-black', '--key-white', 3],
   ['--key-left', '--key-white', 3],
@@ -219,19 +272,29 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   // outlines are --ink; their tint is tested in contrast.test.ts)
   ['--melody-vocals', '--paper', 3],
   ['--melody-vocals', '--score-loop-fill', 3],
+  // Stem tiles: their letters on every stem colour
+  ['--tile-foreground', '--stem-guitar', 4.5],
+  ['--tile-foreground', '--stem-bass', 4.5],
+  ['--tile-foreground', '--stem-drums', 4.5],
+  ['--tile-foreground', '--stem-vocals', 4.5],
+  ['--tile-foreground', '--stem-keys', 4.5],
+  ['--tile-foreground', '--stem-other', 4.5],
   // Timeline chrome
   ['--loop-edge', '--card', 3],
   ['--playhead', '--card', 3],
   ['--playhead', '--loop-fill', 3],
   ['--foreground', '--loop-fill', 4.5],
+  ['--waveform-peak', '--background', 3],
   ['--waveform-peak', '--card', 3],
   ['--waveform-rms', '--card', 3],
+  // PedalHud
+  ['--hud-fg', '--hud-bg', 4.5],
   // Surfaces and status surfaces (§4.8): text on raised and sunken, status colour on its own tint
   ['--foreground', '--surface-raised', 4.5],
   ['--foreground', '--surface-sunken', 4.5],
   ['--muted-foreground', '--surface-raised', 4.5],
   ['--muted-foreground', '--surface-sunken', 4.5],
-  ['--primary', '--surface-raised', 4.5],
+  ['--primary-ink', '--surface-raised', 4.5],
   ['--input', '--surface-raised', 3],
   ['--input', '--surface-sunken', 3],
   ['--foreground', '--success-surface', 4.5],
@@ -242,6 +305,7 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--warning', '--warning-surface', 4.5],
   ['--info', '--info-surface', 4.5],
   ['--destructive', '--destructive-surface', 4.5],
+  ['--unsure', '--unsure-surface', 4.5],
 ]
 
 /** Stems in mixer order after "Your part"; each has a fixed colour token and a second cue (§4.4). */
@@ -257,7 +321,8 @@ export const STEMS = {
 export type StemKind = keyof typeof STEMS
 
 /**
- * Confidence encoding (§5): ordinal, never hue. Ink value → dashed outline → "?" glyph.
+ * Confidence encoding (§5): never colour alone. Outline → glyph → colour: "Probably" keeps the ink
+ * and adds a dashed outline (--conf-medium-edge); "Unsure" adds the "?" and the unsure blue.
  * Bands come from docs/specs/05-analysis-schema.md.
  */
 export const CONFIDENCE = {
@@ -311,8 +376,8 @@ export function readColor(name: TokenName, element: Element = document.documentE
 }
 
 /**
- * The Light and Dark page backgrounds (--background) as sRGB hex, for what takes no CSS variable:
- * the web app manifest and `<meta name="theme-color">`. tokens.test.ts checks them against
- * primitives.css.
+ * The Daylight and Night Rehearsal page backgrounds (--background) as sRGB hex, for what takes no
+ * CSS variable: the web app manifest and `<meta name="theme-color">` (§11). Keyed by appearance id
+ * (`light` = Daylight, `dark` = Night Rehearsal); tokens.test.ts checks them against the CSS.
  */
-export const BACKGROUND_HEX = { light: '#f7f6f2', dark: '#181612' } as const
+export const BACKGROUND_HEX = { light: '#f8f5f1', dark: '#110e0b' } as const

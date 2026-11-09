@@ -107,9 +107,7 @@ export const OpenScrim: Story = {
     const dialog = await screen.findByRole('dialog', { name: 'Rename song' })
     const overlay = document.querySelector<HTMLElement>('[data-slot=dialog-overlay]')
     await expect(overlay).not.toBeNull()
-    await expect(getComputedStyle(overlay as Element).backgroundColor).toMatch(/\/ 0\.6\)$/)
-    await expect(Number.parseFloat(getComputedStyle(dialog).borderTopLeftRadius)).toBeGreaterThan(
-      16,
-    )
+    await expect(getComputedStyle(overlay as Element).backgroundColor).toMatch(/\/ 0\.62\)$/)
+    await expect(Number.parseFloat(getComputedStyle(dialog).borderTopLeftRadius)).toBe(14)
   },
 }
