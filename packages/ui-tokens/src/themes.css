@@ -11,6 +11,10 @@
  * Semantic roles point at primitives or other roles. Component tokens point at a role, or carry
  * their own tuned literal (never a primitive step, so retuning a primitive can't silently move a
  * contrast-checked score colour). Every value is contrast-tested in src/contrast.test.ts.
+ *
+ * "No shadow" (--elevation-1, and --glow where it is dropped) is a transparent zero shadow, not the
+ * keyword none: Tailwind composes shadow-* and ring-* into one box-shadow list, and a none in that
+ * list would void the whole declaration, taking a checked card's ring with it.
  */
 
 /* Night Rehearsal (dark, the default; stage shares its colours) */
@@ -72,7 +76,7 @@
   --border-more: var(--graphite-360);
   --border-strong-more: var(--graphite-450);
   --input-more: var(--graphite-620);
-  --elevation-1: none;
+  --elevation-1: 0 0 0 0 transparent;
   --elevation-2: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 12px 32px oklch(0 0 0 / 0.38);
   --elevation-3: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 12px 32px oklch(0 0 0 / 0.38);
   --glow: 0 0 0 1px var(--primary-line), 0 0 24px oklch(0.8 0.15 72 / 0.3);
@@ -175,7 +179,7 @@
   --border-more: var(--daylight-800);
   --border-strong-more: var(--daylight-720);
   --input-more: var(--daylight-520);
-  --elevation-1: none;
+  --elevation-1: 0 0 0 0 transparent;
   --elevation-2: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 10px 28px oklch(0.3 0.02 60 / 0.1);
   --elevation-3: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 10px 28px oklch(0.3 0.02 60 / 0.1);
   --glow: 0 0 0 1px var(--primary-line), 0 0 18px oklch(0.8 0.15 72 / 0.35);
@@ -251,7 +255,7 @@
   --staff: var(--staff-more);
   --waveform-peak: var(--waveform-peak-more);
   --hud-bg: var(--hud-bg-more);
-  --glow: none;
+  --glow: 0 0 0 0 transparent;
   --focus-width: 3px;
 }
 
@@ -266,7 +270,7 @@
     --staff: var(--staff-more);
     --waveform-peak: var(--waveform-peak-more);
     --hud-bg: var(--hud-bg-more);
-    --glow: none;
+    --glow: 0 0 0 0 transparent;
     --focus-width: 3px;
   }
 }
@@ -316,7 +320,7 @@
     --conf-medium: CanvasText;
     --conf-medium-edge: CanvasText;
     --conf-low: CanvasText;
-    --glow: none;
+    --glow: 0 0 0 0 transparent;
     --bar-current: Canvas;
     --loop-fill: Canvas;
     --score-loop-fill: Canvas;

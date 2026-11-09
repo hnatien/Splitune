@@ -34,6 +34,8 @@ const themeBlocks = {
   night: block('[data-appearance="dark"]'),
   daylight: block('[data-appearance="light"]'),
 }
+// "No shadow" that still composes into a box-shadow list with rings (themes.css header).
+const NO_SHADOW = '0 0 0 0 transparent'
 const references = (value: string) =>
   [...value.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1] as string)
 const at = (attrs: Record<string, string>, subtree?: Record<string, string>) =>
@@ -183,14 +185,14 @@ describe('forced colours', () => {
       expect([role, forced.get(role)]).toEqual([role, 'Canvas'])
     }
     expect(forced.get('--scrim')).toBe('transparent')
-    expect(forced.get('--glow')).toBe('none')
+    expect(forced.get('--glow')).toBe(NO_SHADOW)
   })
 })
 
 describe('elevation (§4.7, §9)', () => {
   const layers = (value: string | undefined) => (value ?? '').split(/,(?![^(]*\))/).length
   it.each(Object.entries(themeBlocks))('%s: cards are bordered, floating layers lifted', (_, d) => {
-    expect(d.get('--elevation-1')).toBe('none')
+    expect(d.get('--elevation-1')).toBe(NO_SHADOW)
     for (const level of ['--elevation-2', '--elevation-3']) {
       expect([level, layers(d.get(level))]).toEqual([level, 2])
     }
@@ -212,7 +214,7 @@ describe('elevation (§4.7, §9)', () => {
     )
     for (const appearance of ['dark', 'light', 'stage']) {
       expect(at({ 'data-appearance': appearance, 'data-contrast': 'more' }).raw('--glow')).toBe(
-        'none',
+        NO_SHADOW,
       )
     }
   })
