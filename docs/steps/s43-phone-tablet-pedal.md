@@ -32,7 +32,7 @@ Tablets open Practice in Stand view (one system that fits, page turns on the dow
 - **D4:** Stand view is the default practice layout on tablets.
 - **D1:** phone QA compares against `Phone-*` boards, tablet against `Stand`; never against 390 px renders of desktop boards.
 - **D3:** the Tools sheet's ladder switch reads "+{step} % after {n} clean passes, up to {goal} %" with 3 as the default.
-- **D6:** budget 318.7 of 320 KB gzip: Stand view, the Tools sheet and the wizard are lazy (12 §2); report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6): Stand view, the Tools sheet and the wizard are lazy (12 §2); report before/after bytes.
 - **D5:** V11 (64 px on phones, mockup 44–52) and V15 (reading sizes) are binding corrections.
 - Frozen decision 5: ↑/↓ never change speed; after the wizard they act only if it bound them.
 

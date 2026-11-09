@@ -29,7 +29,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), seventh in t
 The beat pulse shows the beat in a small dot (downbeat by shape) without ever flashing more than 3 times a second at any tempo or subdivision, with optional vibration on the same schedule; and a tap-along calibration with a range wide enough for Bluetooth headphones lines up the beat lights, playhead and sound, warning when the output looks wireless.
 
 ## Decisions that bind this step
-- **D6:** budget 318.7 of 320 KB gzip: the pulse runs on the practice route, so keep it tiny (no new dependency) and keep the tap-along card lazy; report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6): the pulse runs on the practice route, so keep it tiny (no new dependency) and keep the tap-along card lazy; report before/after bytes.
 - WCAG 2.3.1 and 26 §10 are hard limits: never more than 3 changes a second, never red, never a large area.
 
 ## Deliverables

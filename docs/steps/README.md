@@ -56,7 +56,7 @@ The agent works on a new branch `impl/NN-<name>` from the latest `dev` (the inte
 | s37 | `s37-speed-ladder-loop-tab.md` — speed ladder V1 (`v1.speed_trainer` on), clip rename/delete (contracts) | 35, and s36 merged | s34, backend lane (not another contracts step) |
 | s38 | `s38-fix-tab.md` — Fix mode: unsure-spot queue, alternatives in frequencies, audition, desktop editor | 37 | screens and backend lanes |
 | s39 | `s39-progress.md` — Progress tab and library strips from `GET /v1/progress` (contracts if needed) | 38, 34 | backend lane (not another contracts step) |
-| s40a | `s40a-all-stems-backend.md` — keep every separated stem, cache-key change (**G3**: owner approval, `eval:regression`, listening; plan dep on `impl/29-separation-improvements`, an owner action) | G1 | s32–s39 (not s41a unless their files are split; not another contracts step) |
+| s40a | `s40a-all-stems-backend.md` — keep every separated stem, cache-key change (**G3**: owner approval, `eval:regression`, listening; merges `dev` first, which now holds `impl/29-separation-improvements`) | G1 | s32–s39 (not s41a unless their files are split; not another contracts step) |
 | s40b | `s40b-multi-stem-mixer.md` — every stem in the mixer, presets, Rough, Click and "Hear the chords", phone mini-mixer | 39 (40a's stems via fixtures until it merges, D15) | backend lane |
 | s41a | `s41a-sections-backend.md` — `stage_sections` (allin1 in a `legacy` island) + `music-core` novelty fallback, pipeline scheduling (**G3**) | G1 | s32–s40b (not s40a unless their files are split; never s44) |
 | s41b | `s41b-section-chips.md` — section chips in the song map, loop a section, rename | 40b (41a's sections via fixtures until it merges, D15) | backend lane |
@@ -95,7 +95,7 @@ flowchart LR
 ### Redesign steps (s31a–s45, "Night Rehearsal")
 The redesign runs like every other step: one at a time, each on `impl/<id>-<name>` from the latest `dev`, merged into `dev` when the owner asks. Read `00-shared-context.md` first: its "Redesign steps" section holds the frozen decisions, decisions D1–D21, the owner gates (G2 foundations look; G3 separation/sections; G4 screen reviews on devices; G5 human-only checks), the PC setup and the known failures. Each prompt names its owned files, hard deps and gates. s32, s40a and s41a were started earlier: their prompts begin with "Resume here".
 
-Order: s32 (resume) → s41a (resume; merges after G3) → s33 → G2 → s34 → s36 → s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43 → s40a (resume; finishes after `impl/29-separation-improvements` is in `dev`) → s45. s44 is deferred. Only one unmerged step at a time may change `packages/contracts/**`, generated contracts, `packages/db/src/schema/**` or migrations. s37 starts after s36 has merged (it adds a Display & practice row).
+Order: s32 (resume) → s41a (resume; merges after G3) → s33 → G2 → s34 → s36 → s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43 → s40a (resume; merge `dev`, which now holds `impl/29-separation-improvements`) → s45. s44 is deferred. Only one unmerged step at a time may change `packages/contracts/**`, generated contracts, `packages/db/src/schema/**` or migrations. s37 starts after s36 has merged (it adds a Display & practice row).
 
 Shared-file rules for the redesign (D10, D13 in `00-shared-context.md`):
 - **Existing e2e specs have one owner each:** `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34. New cases go into the step's own new spec files; `en.json` keys go inside their area's group; additive `e2e/helpers.ts` and `copy-keys.test.ts` CATALOGUE changes are fine. A spec owned by a step that hasn't merged yet becomes another step's to change only after its owner has merged: merge `dev` into your branch first, then make the change. Until then record the exact edit you need in your progress-log entry.
@@ -128,7 +128,7 @@ git worktree add ../splitune-s11 -b impl/11-audio-engine dev
 - Agents must **ask before creating any billable Railway or Cloudflare resource** and never collect card data.
 - Agents verify their work (tests, builds, measurements), report exact commands and results, and never claim unverified success.
 - Agents commit on their own branch from `dev` (doc and step changes included), don't push or merge, append an entry to `docs/progress-log.md` and update `docs/status.md`.
-- The practice route's JS budget is nearly used up: new practice UI loads on demand and reports before/after bytes.
+- The practice route has a 320 KB gzip JS budget (D6): new practice UI loads on demand and reports before/after bytes.
 - The owner doesn't play an instrument: no step may depend on owner-played recordings.
 
 Letter suffixes slot a step between existing ones without renumbering: run s10a before s10 and s15a before s16; s09c (the owner's Windows PC as a second worker host) runs after s09. s21–s24 (2026-10-24) are v1 follow-ups: the guitar/bass Notes view, guitar accuracy, vocal accuracy and piano accuracy. s25 (2026-10-28) takes drums over from s19. s28 (2026-11-06) re-evaluates separation on real-upload conditions. s31a–s45 (2026-11-08) are the "Night Rehearsal" redesign (see "Redesign steps" above).

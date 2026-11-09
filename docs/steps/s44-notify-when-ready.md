@@ -32,7 +32,7 @@ On a device with Web Push, a learner presses "Notify me when it's ready" on a so
 ## Decisions that bind this step
 - Permission is requested **only** in the button's click handler, never on load, never by a timer.
 - Secrets: the VAPID private key lives only in the local `.env`, `.env.worker` and production variables; `.env.example` holds obvious placeholders; nothing logs a key or a subscription endpoint (endpoints are capability URLs).
-- **D6:** budget 318.7 of 320 KB gzip: the button is lazy and outside the practice route; report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6): the button is lazy and outside the practice route; report before/after bytes.
 - 27 §5.5: no other notifications (no reminders, no streaks).
 
 ## Deliverables

@@ -7,14 +7,14 @@ A web-first practice app for people learning an instrument. A learner brings a s
 
 ## Current mode: personal (binding)
 Source: `docs/specs/25-personal-mode.md`. It **overrides** any conflicting guidance in `docs/specs/00–24` and in the research docs.
-- **Infrastructure:** Railway project `splitune` (Hobby workspace; project id `b54dcab4-7140-43f7-a8a4-67398ebe70b7`, environment `production` id `44e23f0b-d4b3-4397-9748-54683296894a`) hosts one `app` service (web + API) and Postgres. Audio and artefacts live in a **Cloudflare R2** bucket `splitune-media` (free tier; Cloudflare account `00423f5f54075f03f785f8c7675a0a6f`). Heavy work runs on the owner's **Mac (Apple Silicon)**: a Python ML worker (PyTorch MPS) and a Node worker, connected to Railway Postgres via its TCP proxy. Local development uses Docker Compose (Postgres 18, SeaweedFS standing in for R2, Mailpit).
+- **Infrastructure:** Railway project `splitune` (Hobby workspace; project id `b54dcab4-7140-43f7-a8a4-67398ebe70b7`, environment `production` id `44e23f0b-d4b3-4397-9748-54683296894a`) hosts one `app` service (web + API) and Postgres. Audio and artefacts live in a **Cloudflare R2** bucket `splitune-media` (free tier; Cloudflare account `00423f5f54075f03f785f8c7675a0a6f`). Heavy work runs on the owner's **Mac (Apple Silicon, PyTorch MPS)** or **Windows PC (WSL2, CUDA)**: a Python ML worker and a Node worker, connected to Railway Postgres via its TCP proxy. Local development uses Docker Compose (Postgres 18, SeaweedFS standing in for R2; no mail server: sign-in is username + password).
 - **Money:** no new paid services beyond Railway Hobby and the R2 free tier. **Never create, scale or enable billable Railway or Cloudflare resources** (databases, buckets, services, replicas, volumes, containers) without asking the user first in chat. Read-only Railway and `cf` commands are fine. Use the `cf` CLI for Cloudflare (no Wrangler config in the repo). Never print API tokens or S3 secrets.
 - **Payments are mocked** (`MockBillingProvider`). Never render or collect card fields, even fake ones.
 - **Copyright and licensing are out of scope.** Any model or dataset may be used; URL import via `yt-dlp` is allowed; the licence register is a provenance record, not a gate.
 - **Free vs Plus features are real** (`docs/specs/23-plans-free-and-paid.md`); only the purchase is simulated.
 
-## Current state (2026-10-24)
-The MVP (steps s01–s17) is built and deployed; v1 work has started (piano notes and grand staff, the guitar/bass Notes view, the vocal Melody view). Before you start, read `docs/status.md` and the **latest entries of `docs/progress-log.md`**: several pieces of work were done without a step prompt, and their progress-log headings use their own numbers (log "Step 18" is piano work for s19, not s18; `docs/README.md` "Numbers and names" explains).
+## Current state
+Before you start, read `docs/status.md` and the **latest entries of `docs/progress-log.md`**: several pieces of work were done without a step prompt, and their progress-log headings use their own numbers (log "Step 18" is piano work for s19, not s18; `docs/README.md` "Numbers and names" explains).
 
 ## The owner
 The owner doesn't play an instrument. Never plan work that needs the owner to play, record a performance or transcribe by ear; use datasets, published tabs/scores, virtual MIDI, recorded reference audio through a speaker, and scripted tests instead. The owner can choose songs, look at screens and run things on their devices.
@@ -42,7 +42,7 @@ If a pinned line has moved (new major, or a package is broken), choose the lates
 - Every user-scoped query goes through repository helpers that require `userId`; Postgres RLS is defence in depth.
 - Times are seconds on the decoded-PCM timeline; quantization is a separate, re-runnable stage; corrections are overlays (`docs/specs/05-analysis-schema.md`).
 - Confidence is never shown by colour alone; every practice action must be keyboard/pedal operable; WCAG 2.2 AA.
-- The practice route JS budget (`pnpm --filter @splitune/web budget --enforce`, 320 KB gzip: `BUDGET_BYTES` in `apps/web/scripts/bundle-budget.mjs`) is at 318.7 KB of 320 KB, about 1.3 KB left (measured at `8d6a3f6`, before s32): new practice UI loads lazily outside it, frees bytes before adding any, and reports before/after bytes built the same way. Raising it needs the owner.
+- The practice route JS budget (`pnpm --filter @splitune/web budget --enforce`, 320 KB gzip: `BUDGET_BYTES` in `apps/web/scripts/bundle-budget.mjs`) measured 304.2 KB after s36 (its progress-log entry): new practice UI loads lazily outside it and reports before/after bytes built the same way. Raising it needs the owner.
 - UI follows the "Night Rehearsal" design system (`docs/specs/26-design-system.md`), in both of its themes, Night Rehearsal and Daylight: semantic tokens and `apps/web/app/ui` components only (no raw colours, ad-hoc sizes or one-off components); screens, states and copy per `docs/specs/27-screens-flows-and-content.md` (all user-facing strings from its message catalogue); every UI change gets stories for its states in both themes and passes the design QA checklist in `docs/specs/28-ui-quality-and-design-review.md` §5.
 - Must work in all Tier 1 browsers (`docs/specs/24-browser-compatibility.md`): feature-detect, never UA-sniff (except the in-app-browser banner).
 - No secrets in git. Use `.env` files listed in `.gitignore` and `.env.example` templates with fake values.
@@ -86,7 +86,7 @@ The redesign (`redesign/report.md`, specs 26–28) runs like every other step: o
 - **D3:** the speed ladder steps up after 3 clean passes by default (a setting).
 - **D4:** Stand view is the default practice layout on tablets.
 - **D5:** where a mockup value fails an existing minimum (lines, borders, amber marks, focus ring, piano keys, Night danger text, stem palette), doc 26's correction stands. Minimums are never lowered.
-- **D6:** practice-route budget: 320.0 KB gzip, measured at 318.7 KB. New panels load lazily. Every UI step reports bytes before and after. Raising the budget needs the owner.
+- **D6:** practice-route budget: 320.0 KB gzip, measured at 304.2 KB after s36 (re-measure before relying on the headroom). New panels load lazily. Every UI step reports bytes before and after. Raising the budget needs the owner.
 - **D7:** raised reading-size literals (doc 26 §6.3) are value changes by design.
 - **D8:** after s33, a step changes an existing `apps/web/app/ui/` file only if its prompt lists it (rows "Owned globs" / "Ask the owner first").
 - **D9:** s32 owns `apps/web/e2e/perf-practice.spec.ts`, `apps/web/e2e/perf-baseline.json` and the `BACKGROUND_HEX` expected values in `apps/web/app/manifest.test.ts`.
@@ -103,7 +103,7 @@ The redesign (`redesign/report.md`, specs 26–28) runs like every other step: o
   - `features/story-fixtures.ts` is s33's.
   - s32's perf baseline includes a 1180×820 tablet context.
 - **D15:** ML (s40a, s41a and their gate G3) is tested on the owner's PC. Their UI halves (s40b mixer, s41b section chips) don't wait for them: build against fixtures and story data, and show only the stems and sections an analysis has.
-- **D16:** s40a set `impl/29-separation-improvements` aside. Its PC re-measurement, G3 and merge wait until the owner has merged impl/29 into `dev`.
+- **D16:** `impl/29-separation-improvements` is in `dev` (merge `ddbdf89`, 2026-11-09). s40a merges `dev` into its branch, then does its PC re-measurement, G3 and merge.
 - **D17:** gate approvals:
   - G2–G4 are approved once their checks are green, but still show the owner the evidence;
   - the physical checks (G3's full `eval:regression` on the GPU, listening by ear, G4/G5 on devices) are the owner's.

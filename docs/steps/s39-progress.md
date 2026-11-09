@@ -31,7 +31,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), fourth in th
 The Progress tab shows a clip's last 30 days (best clean pass per session and the cold first clean pass), its stats and sessions; the library's Continue card, This week and Worth a revisit show real data; and the first clean pass of the next session is recorded as the success metric, with no streaks, guilt or missed-day wording anywhere.
 
 ## Decisions that bind this step
-- **D6:** budget 318.7 of 320 KB gzip; the Progress tab and its chart are lazy (28 §3 bundle row); report before/after bytes.
+- **D6:** budget 320 KB gzip (current size: D6); the Progress tab and its chart are lazy (28 §3 bundle row); report before/after bytes.
 - 27 §5.5: no streak counters, leaderboards, badges, confetti, loss-framed notifications or red dots; missed days are never mentioned; goals are optional and weekly, off by default.
 
 ## Deliverables
