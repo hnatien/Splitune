@@ -166,9 +166,9 @@ export const WorkerOffline: Story = {
   ),
   play: async ({ canvasElement }) => {
     const status = within(canvasElement).getByRole('status')
-    // A warning surface, not a muted well with a coloured border.
+    // A card-style banner (26 §12.2, s34): the card surface with its --border edge, not an error.
     await expect(getComputedStyle(status).backgroundColor).not.toBe(transparent())
-    await expect(getComputedStyle(status).borderTopColor).toBe(transparent())
+    await expect(getComputedStyle(status).borderTopColor).not.toBe(transparent())
   },
 }
 export const WorkerOnline: Story = {
@@ -182,14 +182,11 @@ export const Allowance: Story = {
       'aria-valuetext',
       COPY.allowance,
     )
+    // 26 §12.2 (s34): a 4 px bar under the faint text, at least 150 px wide.
     const track = canvasElement.querySelector<HTMLElement>('[data-slot=meter-track]') as HTMLElement
-    const sunken = document.createElement('div')
-    sunken.className = 'bg-surface-sunken'
-    document.body.append(sunken)
-    await expect(getComputedStyle(track).backgroundColor).toBe(
-      getComputedStyle(sunken).backgroundColor,
-    )
-    sunken.remove()
+    await expect(track.getBoundingClientRect().height).toBe(4)
+    const meter = within(canvasElement).getByRole('meter')
+    await expect(meter.getBoundingClientRect().width).toBeGreaterThanOrEqual(150)
   },
 }
 

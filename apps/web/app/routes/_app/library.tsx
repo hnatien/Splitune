@@ -7,13 +7,15 @@ import { libraryQuery } from '@/features/library/queries'
 import { m } from '@/lib/i18n'
 
 // Library (27 §3.5), the app's home. data-only SSR (10 §1): the first page of songs is loaded on
-// the server and handed to the client, which renders.
+// the server and handed to the client, which renders. `?add=` opens Add song over it (27 §1); the
+// app shell reads it.
 const Search = z.object({
   q: z.string().trim().min(1).max(200).optional().catch(undefined),
   instrument: Instrument.optional().catch(undefined),
   status: LibraryStatusFilter.optional().catch(undefined),
   sort: LibrarySort.optional().catch(undefined),
   view: z.enum(['grid', 'list']).optional().catch(undefined),
+  add: z.enum(['file', 'link', 'record']).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_app/library')({
@@ -27,6 +29,6 @@ export const Route = createFileRoute('/_app/library')({
 })
 
 function Library() {
-  const { me } = Route.useRouteContext()
-  return <LibraryPage me={me} search={Route.useSearch()} />
+  const { add: _add, ...search } = Route.useSearch()
+  return <LibraryPage search={search} />
 }

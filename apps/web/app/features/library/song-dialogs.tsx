@@ -93,7 +93,7 @@ export function RenameSongDialog({
   )
 }
 
-// Irreversible, so it asks first (26 §13); the copy names the song (27 §5.6 delete.song_confirm).
+// Irreversible, so it asks first (26 §13, 27 §3.11): the title names the song, the body says what goes.
 export function DeleteSongDialog({
   song,
   open,
@@ -112,15 +112,17 @@ export function DeleteSongDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{m['library.delete']()}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {m['delete.song_confirm']({ title: song.title })}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{m['delete.song_confirm']({ title: song.title })}</AlertDialogTitle>
+          <AlertDialogDescription>{m['delete.song_confirm_body']()}</AlertDialogDescription>
         </AlertDialogHeader>
         {remove.isError && <InlineError title={apiErrorMessage(errorCode(remove.error))} />}
         <AlertDialogFooter>
           <AlertDialogCancel>{m['common.cancel']()}</AlertDialogCancel>
-          <Button variant="destructive" loading={remove.isPending} onClick={() => remove.mutate()}>
+          <Button
+            variant="destructiveSolid"
+            loading={remove.isPending}
+            onClick={() => remove.mutate()}
+          >
             {m['library.delete']()}
           </Button>
         </AlertDialogFooter>

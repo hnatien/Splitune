@@ -30,7 +30,7 @@ export function MarketingShell({
       <SkipLink />
       <SystemBanners />
       <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background [view-transition-name:app-header]">
-        <div className="mx-auto flex min-h-16 max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-16 max-w-marketing flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 sm:px-5">
           <Link
             to="/"
             aria-label={m['nav.home']()}
@@ -121,7 +121,7 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       <nav
         aria-label={m['footer.nav']()}
-        className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 px-4 py-4 text-sm text-muted-foreground md:px-6 lg:px-8"
+        className="mx-auto flex max-w-marketing flex-wrap items-center gap-x-6 px-4 py-4 text-sm text-muted-foreground sm:px-5"
       >
         <Wordmark tone="mono" className="text-base text-muted-foreground" />
         <Link
