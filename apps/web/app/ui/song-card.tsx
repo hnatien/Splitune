@@ -69,7 +69,7 @@ function InstrumentTile({
       data-slot="instrument-tile"
       aria-hidden
       className={cn(
-        'grid shrink-0 place-items-center rounded-xl contrast-more:border contrast-more:border-current',
+        'grid shrink-0 place-items-center rounded-2xl contrast-more:border contrast-more:border-current',
         size === 'md' ? 'size-12 [&_svg]:size-6' : 'size-10 [&_svg]:size-5',
         TILE_TONE[stem],
         className,
@@ -130,7 +130,7 @@ function SongCard({
     <article
       data-slot="song-card"
       className={cn(
-        'relative flex flex-col gap-4 rounded-2xl border border-transparent bg-surface-raised p-4 shadow-1 transition-[translate,box-shadow] duration-(--duration-base) ease-standard hover:-translate-y-0.5 hover:shadow-2 has-[a:active]:translate-y-0 has-[a:active]:shadow-1 contrast-more:border-border',
+        'relative flex flex-col gap-4 rounded-3xl border border-transparent bg-surface-raised p-4 shadow-1 transition-[translate,box-shadow] duration-(--duration-base) ease-standard hover:-translate-y-0.5 hover:shadow-2 has-[a:active]:translate-y-0 has-[a:active]:shadow-1 contrast-more:border-border',
         className,
       )}
     >
@@ -142,7 +142,7 @@ function SongCard({
               href: song.href,
               title: song.title,
               className:
-                'line-clamp-2 break-words after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:outline-(length:--focus-width) focus-visible:after:outline-offset-2 focus-visible:after:outline-ring focus-visible:after:outline-solid',
+                'line-clamp-2 break-words after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none focus-visible:after:outline-(length:--focus-width) focus-visible:after:outline-offset-2 focus-visible:after:outline-ring focus-visible:after:outline-solid',
               children: song.title,
             })}
           </h3>

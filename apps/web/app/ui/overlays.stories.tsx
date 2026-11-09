@@ -21,8 +21,12 @@ import {
   PopoverTitle,
 } from './popover-content.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select.tsx'
+import { BOTH_THEMES, DAYLIGHT, expectTargets, StateGrid, themeFrames } from './story-kit.tsx'
 import { WithTooltip } from './tooltip.tsx'
 
+// Doc 26 §12.1 `.sheet`: --card, a --border edge, --elevation-2; popovers 16 px corners, menus and
+// the select list 14. Popups portal to <body>, so each open state has a Daylight story of its own
+// (the side-by-side frames theme only their subtree).
 const meta = { title: 'Base/Overlays' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -123,7 +127,82 @@ export const SelectOpen: Story = {
   },
 }
 
-export const MenuOpenDark: Story = { ...MenuOpen, globals: { appearance: 'dark' } }
+export const PopoverOpenDaylight: Story = { ...PopoverOpen, globals: DAYLIGHT }
+export const MenuOpenDaylight: Story = { ...MenuOpen, globals: DAYLIGHT }
+export const SelectOpenDaylight: Story = { ...SelectOpen, globals: DAYLIGHT }
+export const TooltipDaylight: Story = { ...TooltipWithShortcut, globals: DAYLIGHT }
 export const SelectOpenStage: Story = { ...SelectOpen, globals: { appearance: 'stage' } }
-export const PopoverOpenStage: Story = { ...PopoverOpen, globals: { appearance: 'stage' } }
-export const TooltipDark: Story = { ...TooltipWithShortcut, globals: { appearance: 'dark' } }
+
+/** Menu items and select options are 44 px rows (48 in practice density); the menu 14 px corners. */
+export const MenuTargets: Story = {
+  render: SongMenu,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Song' }))
+    const menu = await screen.findByRole('menu')
+    await waitFor(() => expect(menu).toBeVisible())
+    await expect(getComputedStyle(menu).borderTopLeftRadius).toBe('14px')
+    // Measured once the zoom-in has settled (the popup opens at 95 %).
+    await waitFor(() =>
+      expectTargets(
+        [
+          ...within(menu).getAllByRole('menuitem'),
+          ...within(menu).getAllByRole('menuitemcheckbox'),
+        ],
+        { width: 44, height: 44 },
+      ),
+    )
+  },
+}
+
+export const PopoverShape: Story = {
+  render: DisplayPopover,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Display' }))
+    const popup = await screen.findByRole('dialog')
+    await expect(getComputedStyle(popup).borderTopLeftRadius).toBe('16px')
+  },
+}
+
+function Triggers() {
+  return (
+    <StateGrid
+      states={[
+        ['Select', <InstrumentSelect key="s" />],
+        [
+          'Select disabled',
+          <Select key="d" items={{ guitar: 'Guitar' }} defaultValue="guitar" disabled>
+            <SelectTrigger aria-label="Instrument, unavailable" className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="guitar">Guitar</SelectItem>
+            </SelectContent>
+          </Select>,
+        ],
+        [
+          'Select invalid',
+          <Select key="i" items={{ guitar: 'Guitar' }}>
+            <SelectTrigger aria-label="Tuning" aria-invalid className="w-48">
+              <SelectValue placeholder="Choose a tuning" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="guitar">Standard</SelectItem>
+            </SelectContent>
+          </Select>,
+        ],
+        ['Menu trigger', <SongMenu key="m" />],
+        ['Popover trigger', <DisplayPopover key="p" />],
+      ]}
+    />
+  )
+}
+
+/** Closed triggers in both themes: the select is a `.field` (44 tall, --input edge). */
+export const AllStates: Story = {
+  render: Triggers,
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement))
+      await expectTargets(within(frame).getAllByRole('combobox'), { width: 44, height: 44 })
+  },
+}

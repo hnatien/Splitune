@@ -5,6 +5,7 @@ import { Button } from '@/ui/button'
 
 // A coach mark (27 §3.3): one short tip next to what it explains, dismissible, never modal and
 // never over the transport (onboarding shows at most two). Announced politely when it appears.
+// A `.sheet` with a --primary-line edge and an --primary-ink bulb (26 §12.2, like PedalWizard).
 
 function CoachMark({
   children,
@@ -23,11 +24,15 @@ function CoachMark({
       data-slot="coach-mark"
       role="status"
       className={cn(
-        'flex max-w-md animate-pop-in items-start gap-3 rounded-2xl border border-primary bg-popover p-4 text-popover-foreground shadow-3',
+        'flex max-w-md animate-pop-in items-start gap-3 rounded-3xl border border-primary-line bg-popover p-4 text-popover-foreground shadow-2',
         className,
       )}
     >
-      <LightbulbIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
+      <LightbulbIcon
+        aria-hidden
+        strokeWidth={1.8}
+        className="mt-0.5 size-5 shrink-0 text-primary-ink"
+      />
       <p className="min-w-0 flex-1 text-base">{children}</p>
       <Button size="sm" variant="ghost" onClick={onDismiss}>
         {dismissLabel}

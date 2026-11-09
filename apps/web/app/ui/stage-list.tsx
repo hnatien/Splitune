@@ -14,7 +14,7 @@ export type StageStatus = 'queued' | 'running' | 'done' | 'fallback' | 'failed'
 
 const STATUS: Record<StageStatus, { icon: React.ReactNode; tone: string }> = {
   queued: { icon: <CircleDashedIcon aria-hidden />, tone: 'text-muted-foreground' },
-  running: { icon: <Spinner />, tone: 'text-primary' },
+  running: { icon: <Spinner />, tone: 'text-primary-ink' },
   done: { icon: <CircleCheckDrawIcon aria-hidden />, tone: 'text-success' },
   fallback: { icon: <TriangleAlertIcon aria-hidden />, tone: 'text-warning' },
   failed: { icon: <CircleXIcon aria-hidden />, tone: 'text-destructive' },

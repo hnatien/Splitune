@@ -19,8 +19,9 @@ export type DisplayPreferences = {
   score: 'paper' | 'match'
 }
 
+/** Night Rehearsal (`dark`) on every new device (26 §2); `system` follows the OS. */
 export const DEFAULT_DISPLAY: DisplayPreferences = {
-  appearance: 'system',
+  appearance: 'dark',
   contrast: 'system',
   readingFont: 'inter',
   motion: 'system',
@@ -41,6 +42,8 @@ export type ResolvedDisplay = {
 /**
  * Resolves preferences against media queries and writes the attributes. Self-contained (no
  * references outside its body) because the head script inlines its source with toString().
+ * Nothing stored means the default, Night Rehearsal; `system` follows the OS. `stage` never reads
+ * at Desk: it raises the distance to Music stand (26 §2), then its --read-scale applies.
  */
 export function applyDisplay(
   preferences: Partial<DisplayPreferences>,
@@ -53,7 +56,7 @@ export function applyDisplay(
     preferences.appearance === 'dark' ||
     preferences.appearance === 'stage'
       ? preferences.appearance
-      : media('(prefers-color-scheme: dark)')
+      : preferences.appearance !== 'system' || media('(prefers-color-scheme: dark)')
         ? 'dark'
         : 'light'
   const contrast =
@@ -70,7 +73,7 @@ export function applyDisplay(
         : 'full'
   const coarse = media('(pointer: coarse)')
   const phone = coarse && (media('(max-width: 640px)') || media('(max-height: 640px)'))
-  const distance =
+  const chosen =
     preferences.distance === 'desk' ||
     preferences.distance === 'stand' ||
     preferences.distance === 'floor'
@@ -80,6 +83,7 @@ export function applyDisplay(
         : coarse
           ? 'stand'
           : 'desk'
+  const distance = appearance === 'stage' && chosen === 'desk' ? 'stand' : chosen
   const readingFont = preferences.readingFont === 'hyperlegible' ? 'hyperlegible' : 'inter'
   const requested = Number(preferences.calibration)
   const calibration =
@@ -88,6 +92,7 @@ export function applyDisplay(
 
   root.setAttribute('data-appearance', appearance)
   root.classList.toggle('dark', appearance !== 'light')
+  root.style.setProperty('color-scheme', appearance === 'light' ? 'light' : 'dark')
   root.setAttribute('data-contrast', contrast)
   root.setAttribute('data-motion', motion)
   root.setAttribute('data-distance', distance)
@@ -97,7 +102,7 @@ export function applyDisplay(
   return { appearance, contrast, distance, readingFont, motion, calibration, score }
 }
 
-/** Reads stored preferences; anything unreadable falls back to the defaults (System). */
+/** Reads stored preferences; anything unreadable falls back to the defaults (Night Rehearsal). */
 export function readStoredDisplay(storage: Pick<Storage, 'getItem'>): Partial<DisplayPreferences> {
   try {
     const parsed: unknown = JSON.parse(storage.getItem(DISPLAY_STORAGE_KEY) ?? '{}')
@@ -112,7 +117,7 @@ export function readStoredDisplay(storage: Pick<Storage, 'getItem'>): Partial<Di
 /**
  * Inline <head> script (before any stylesheet paints): applies the stored choice so the page never
  * flashes the wrong appearance. Storage can throw (privacy modes); the media queries still apply.
- * Without JS the prefers-* fallbacks in @splitune/ui-tokens/themes.css take over.
+ * Without JS the page is Night Rehearsal (the :root default in @splitune/ui-tokens/themes.css).
  */
 export const DISPLAY_SCRIPT = `(function(){var p={};try{p=JSON.parse(localStorage.getItem(${JSON.stringify(
   DISPLAY_STORAGE_KEY,

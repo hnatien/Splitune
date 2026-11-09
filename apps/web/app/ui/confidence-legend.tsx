@@ -40,7 +40,7 @@ function ConfidenceLegend({
     <div
       data-slot="confidence-legend"
       className={cn(
-        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground',
+        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border bg-card px-4 py-2 text-sm text-foreground',
         className,
       )}
     >

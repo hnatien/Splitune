@@ -265,7 +265,7 @@ function Typography() {
           ))}
         </dl>
       </Section>
-      <Section title="Inter features (subset keeps every layout feature)">
+      <Section title="Instrument Sans features (the subset keeps every layout feature)">
         <div className="flex flex-col gap-2 text-2xl">
           <span data-testid="tnum-ones" className="w-fit tabular-nums">
             1111111111
@@ -469,8 +469,8 @@ function Surfaces() {
   return (
     <div className="flex flex-col gap-10">
       <Section title="Raised and sunken">
-        <div className="flex flex-wrap gap-4 rounded-2xl bg-background p-6">
-          <div className="flex w-64 flex-col gap-3 rounded-2xl bg-surface-raised p-4 shadow-1">
+        <div className="flex flex-wrap gap-4 rounded-3xl bg-background p-6">
+          <div className="flex w-64 flex-col gap-3 rounded-3xl bg-surface-raised p-4 shadow-1">
             <span className="text-lg">Raised panel</span>
             <span className="text-sm text-muted-foreground">
               Cards, panels and inputs sit one step above the page.
@@ -484,7 +484,7 @@ function Surfaces() {
               </span>
             </span>
           </div>
-          <div className="flex w-64 flex-col gap-2 rounded-2xl bg-surface-sunken p-4">
+          <div className="flex w-64 flex-col gap-2 rounded-3xl bg-surface-sunken p-4">
             <span className="text-lg">Sunken well</span>
             <span className="text-sm text-muted-foreground">
               Trays, tracks and filter bars read as a recess.
@@ -498,7 +498,7 @@ function Surfaces() {
             <li
               key={tone}
               data-status={tone}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${fill}`}
+              className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ${fill}`}
             >
               <Icon aria-hidden className={`size-5 shrink-0 ${ink}`} />
               <span className={`font-semibold ${ink}`}>{tone}</span>
@@ -508,12 +508,12 @@ function Surfaces() {
         </ul>
       </Section>
       <Section title="Elevation">
-        <div className="flex flex-wrap gap-6 rounded-2xl bg-background p-6">
+        <div className="flex flex-wrap gap-6 rounded-3xl bg-background p-6">
           {ELEVATIONS.map(([shadow, use]) => (
             <figure
               key={shadow}
               data-elevation={shadow}
-              className={`m-0 flex h-28 w-48 flex-col justify-end gap-1 rounded-2xl border border-transparent bg-surface-raised p-4 contrast-more:border-border ${shadow}`}
+              className={`m-0 flex h-28 w-48 flex-col justify-end gap-1 rounded-3xl border border-transparent bg-surface-raised p-4 contrast-more:border-border ${shadow}`}
             >
               <code className="text-sm">{shadow}</code>
               <figcaption className="text-xs text-muted-foreground">{use}</figcaption>
@@ -522,7 +522,7 @@ function Surfaces() {
         </div>
       </Section>
       <Section title="Scrim">
-        <div className="relative h-24 w-72 overflow-hidden rounded-xl bg-paper p-3 text-ink">
+        <div className="relative h-24 w-72 overflow-hidden rounded-2xl bg-paper p-3 text-ink">
           Score under a dialog scrim
           <span data-testid="scrim" className="absolute inset-y-0 right-0 w-1/2 bg-scrim" />
         </div>
@@ -549,14 +549,17 @@ export const SurfacesIncreasedContrast: Story = {
   globals: { contrast: 'more' },
 }
 
+// Doc 26 §9 (the Music Stand xl 14 / 2xl 18 / 3xl 24 moved to 2xl / 3xl / 4xl in s33).
 const RADII = [
-  ['rounded-sm', '6 px'],
-  ['rounded-md', '8 px · tooltips'],
-  ['rounded-lg', '10 px · controls'],
-  ['rounded-xl', '14 px · popovers'],
-  ['rounded-2xl', '18 px · cards, dialogs'],
-  ['rounded-3xl', '24 px · hero panels'],
-  ['rounded-full', 'chips, pills'],
+  ['rounded-xs', '4 px · kbd, section chips'],
+  ['rounded-sm', '6 px · small chips'],
+  ['rounded-md', '8 px · small buttons'],
+  ['rounded-lg', '10 px · buttons, fields'],
+  ['rounded-xl', '12 px · large buttons, segments'],
+  ['rounded-2xl', '14 px · menus, toasts'],
+  ['rounded-3xl', '16 px · cards, popovers'],
+  ['rounded-4xl', '22 px · sheets, dialogs'],
+  ['rounded-full', 'Play, chips, badges'],
 ] as const
 
 function Shape() {
@@ -587,9 +590,11 @@ export const RadiusScale: Story = {
     const radius = (name: string) =>
       getComputedStyle(canvasElement.querySelector(`[data-radius="${name}"]`) as Element)
         .borderTopLeftRadius
+    await expect(radius('rounded-xs')).toBe('4px')
     await expect(radius('rounded-xl')).toBe('12px')
     await expect(radius('rounded-2xl')).toBe('14px')
     await expect(radius('rounded-3xl')).toBe('16px')
+    await expect(radius('rounded-4xl')).toBe('22px')
   },
 }
 
@@ -637,17 +642,17 @@ function MotionSamples() {
       <div key={run} className="flex flex-wrap items-start gap-6">
         <div
           data-sample="rise-in"
-          className="w-40 animate-rise-in rounded-2xl bg-surface-raised p-4 shadow-1"
+          className="w-40 animate-rise-in rounded-3xl bg-surface-raised p-4 shadow-1"
         >
           <code className="text-xs">animate-rise-in</code>
         </div>
         <div
           data-sample="pop-in"
-          className="w-40 animate-pop-in rounded-2xl bg-surface-raised p-4 shadow-1"
+          className="w-40 animate-pop-in rounded-3xl bg-surface-raised p-4 shadow-1"
         >
           <code className="text-xs">animate-pop-in</code>
         </div>
-        <div className="flex w-40 items-center gap-3 rounded-2xl bg-surface-raised p-4 shadow-1">
+        <div className="flex w-40 items-center gap-3 rounded-3xl bg-surface-raised p-4 shadow-1">
           <svg
             aria-hidden
             viewBox="0 0 24 24"
@@ -671,7 +676,7 @@ function MotionSamples() {
             <li
               key={label}
               data-sample="stagger"
-              className="animate-rise-in rounded-xl bg-surface-raised px-3 py-2 text-sm shadow-1"
+              className="animate-rise-in rounded-2xl bg-surface-raised px-3 py-2 text-sm shadow-1"
               style={{ '--i': index } as React.CSSProperties}
             >
               {label}

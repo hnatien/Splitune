@@ -11,6 +11,8 @@ const NON_COLOURS = new Set([
   '--elevation-1',
   '--elevation-2',
   '--elevation-3',
+  '--elevation-capsule',
+  '--elevation-play',
   '--glow',
   '--read-scale',
 ])

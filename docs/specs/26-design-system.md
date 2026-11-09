@@ -119,6 +119,7 @@ Elevation in Night is lightness (background → card → muted → accent rise �
 |---|---|---|---|---|
 | `--primary` | `oklch(0.80 0.150 72)` (`#f8ac3d`) | same | Fills: the primary button, Play, the sounding tab digit, a switch that is on, M/S that are on, the done rungs of the speed ladder | `--primary-foreground` text and icons |
 | `--primary-foreground` | `oklch(0.19 0.020 60)` | same | Text and icons on amber (graphite, never white: white on amber is 1.9:1) | |
+| `--primary-hover` | `oklch(0.826 0.152 75)` (`#ffb641`) | same | The amber fill on hover: the primary button and Play (the mockup's `brightness(1.06)` computed in sRGB, s33) | `--primary-foreground` (10.6:1) |
 | `--primary-ink` | `oklch(0.83 0.140 76)` | `oklch(0.50 0.119 58)` (clamped) | Amber *text and icons* on neutral or soft surfaces: chip/badge on-state text, the count-in number, the step numbers on Home | |
 | `--primary-soft` | `oklch(0.80 0.150 72 / 0.14)` | `oklch(0.80 0.150 72 / 0.20)` | Washes: chip and segment on-state, current-bar wash, song-map loop band, the "Soon" badge | `--primary-ink` or `--foreground` text |
 | `--primary-line` | `oklch(0.80 0.150 72 / 0.50)` | `oklch(0.610 0.140 62)` (opaque; mockup 60 % alpha) | Hairline around an amber wash (chip on, active loop pill, selected radio card) | |
@@ -202,6 +203,7 @@ Format: normal (increased contrast). `stage` has the Night values. Minimums are 
 | `--foreground` / `--card` · `--muted` · `--accent` | 15.7 · 14.2 · 12.2 | 17.4 · 15.3 · 13.8 | 7 · 4.5 · 4.5 |
 | `--card-`, `--popover-`, `--secondary-`, `--accent-`, `--sidebar-`, `--sidebar-accent-foreground` on their surfaces | ≥ 12.2 | ≥ 13.8 | 4.5 |
 | `--sidebar-primary-foreground` / `--sidebar-primary` | 9.7 | 9.7 | 4.5 |
+| `--primary-foreground` / `--primary-hover` | 10.6 | 10.6 | 4.5 |
 | `--muted-foreground` / `--background` · `--muted` | 10.7 · 9.0 (13.0 · 11.0) | 8.5 · 8.0 (11.3 · 10.6) | 4.5 |
 | `--faint-foreground` / `--background` · `--card` · `--muted` · `--accent` | 6.9 · 6.5 · 5.9 · 5.0 (9.6 · 8.9 · 8.1 · 6.9) | 5.8 · 6.2 · 5.4 · 4.9 (7.8 · 8.3 · 7.3 · 6.6) | 4.5 |
 | `--primary-ink` / `--background` · `--card` · `--accent` · `--surface-raised` | 11.2 · 10.4 · 8.1 · 10.4 | 5.8 · 6.1 · 4.8 · 6.1 | 4.5 |
@@ -278,6 +280,8 @@ Format: normal (increased contrast). `stage` has the Night values. Minimums are 
 | `--scrim` | `oklch(0.10 0.010 60 / 0.62)` | same | Behind dialogs and sheets (mockup `.overlay`) |
 | `--elevation-1` | `none` | `none` | Cards are bordered, not lifted |
 | `--elevation-2`, `--elevation-3` | `0 1px 0 oklch(1 0 0 / 0.04) inset, 0 12px 32px oklch(0 0 0 / 0.38)` | `0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 10px 28px oklch(0.3 0.02 60 / 0.10)` | Sheets, dialogs, popovers, toasts, the pass prompt (mockup `--shadow`) |
+| `--elevation-capsule` | `0 1px 2px oklch(0 0 0 / 0.25)` | same | The pressed segment's raised capsule (mockup `.seg > [aria-pressed=true]`, s33) |
+| `--elevation-play` | `0 6px 20px oklch(0.80 0.150 72 / 0.28)`; more: none | same | The amber haze under Play (mockup `.play`, s33); dropped under increased contrast and forced colours like `--glow` |
 | `--muted-foreground-more`, `--border-more`, `--input-more` | the "more" columns of §4.1 | same | The increased-contrast values as their own roles, as today |
 | `--focus-width` | `2px`; more `3px` | same | |
 | `--read-scale` | `1`; `stage` `1.25` | `1` | §6.3 |
@@ -380,6 +384,7 @@ Ordinal, from `05-analysis-schema.md` bands. **Marks show for every stage that p
 | `text-xs` | 12 / 16 | 650 | `.badge`, `.kbd` (mono 12), `.eyebrow` (uppercase, +0.08em, `--faint-foreground`) |
 | `text-sm` | 13 / 18 | 400–600 | `.small`, `.label` (600, `--muted-foreground`), chips (550) |
 | `text-md` | 14 / 20 | 600 | Buttons, tabs, segments, nav links, menu items, row titles |
+| `text-button-lg` | 16 / 22 | 600 | Large buttons (`.btn.lg`, `xl`; s33) |
 | `text-base` | 15 / 22 | 400 | Body, fields (`.app` 15 px / 1.45) |
 | `text-lg` | 17 / 22 | 650 | `.h3` |
 | `text-xl` | 22 / 26 | 650 · −0.01em | `.h2` |
@@ -389,7 +394,7 @@ Ordinal, from `05-analysis-schema.md` bands. **Marks show for every stage that p
 | `text-5xl` | 56 / 59 | 600 · −0.02em, display family | Pricing title |
 | `text-display` | `clamp(2.75rem, 6vw, 4.75rem)` / 1.05 | 600 · −0.02em, `text-wrap: balance` | Home headline (mockup `clamp(44px, 6vw, 76px)`) |
 
-- Buttons: default 14/600, `lg` 16/600, `sm` 13/600. Body copy on marketing pages 18–19 px (`text-lead` 1.1875rem / 1.45).
+- Buttons: default 14/600, `lg` and `xl` 16/600 (`text-button-lg`), `sm` 13/600. Body copy on marketing pages 18–19 px (`text-lead` 1.1875rem / 1.45).
 - Sentence case everywhere; uppercase only for `.eyebrow` labels. Nothing below 11 px except the "?" glyph (§4.9 V10).
 
 ### 6.3 Practice reading scale (distance presets)
@@ -461,7 +466,8 @@ A target is **the interactive element's own border box**: what `getBoundingClien
 | `rounded-xl` | 12 | `.btn.lg`, segmented tracks (items 9 = track − padding), the piano roll's top corners |
 | `rounded-2xl` | 14 | `.ib.lg`, transport pills, toasts, phone mini-cards |
 | `rounded-3xl` | 16 | `--r3`: cards, panels' inner cards |
-| `rounded-4xl` | 22 | `--r4`: sheets, dialogs (phone sheets 24 top corners) |
+| `rounded-4xl` | 22 | `--r4`: sheets, dialogs, side drawers |
+| `rounded-5xl` | 24 | Phone bottom sheets' top corners (s33) |
 | `rounded-full` | — | Play, chips, badges, toggles, beat dots, avatar |
 
   The Music Stand scale had `xl` 14, `2xl` 18, `3xl` 24: s33 moves their uses to the table above.
@@ -504,9 +510,9 @@ Every component lives in `apps/web/app/ui/` (or `packages/notation` for notation
 ### 12.1 Base (shadcn/ui CLI v4 on Base UI, rewritten to tokens)
 | Component (file) | Mockup class | Variants and notes |
 |---|---|---|
-| Button (`button.tsx`) | `.btn` | `primary` (amber fill, graphite text: `.btn.pri`), `secondary` (default; `--muted` fill, `--border-strong` edge), `ghost` (`.btn.ghost`), `quiet` (`.btn.quiet`, transparent with edge), `destructive` (`.btn.danger`: outlined in `--destructive`; `destructiveSolid` for the confirm in delete dialogs), `link`. Painted sizes `sm` 32, `md` 40, `lg` 48, `xl` 56 (Home and Library hero), `practice` 64; `block`. A painted size under its target sits inside a box padded to the target (§8: 44 browse, 48 secondary practice). Loading keeps width and shows `Spinner` after 300 ms. Hover: `--accent` fill; primary hover `brightness(1.06)` expressed as a token (`--primary-hover`, computed literal) |
+| Button (`button.tsx`) | `.btn` | `primary` (amber fill, graphite text: `.btn.pri`), `secondary` (default; `--muted` fill, `--border-strong` edge), `ghost` (`.btn.ghost`), `quiet` (`.btn.quiet`, transparent with edge), `destructive` (`.btn.danger`: outlined in `--destructive`; `destructiveSolid` for the confirm in delete dialogs), `link`. Painted sizes `sm` 32, `md` 40, `lg` 48, `xl` 56 (Home and Library hero), `practice` 64; `block`. A painted size under its target sits inside a box padded to the target (§8: 44 browse, 48 secondary practice). Loading keeps width and shows `Spinner` after 300 ms. Hover: `--accent` fill; primary hover `--primary-hover` (§4.2: the amber at `brightness(1.06)`, a computed literal) |
 | IconButton (in `button.tsx`, `size="icon"`) | `.ib`, `.ib.box`, `.ib.lg`, `.ib.on` | 40 (`.ib`, in a 44 box), 52 (`.ib.lg`, secondary practice), 64 (`practice`, main practice controls), `box` (bordered on `--card`), `on` (amber wash + `--primary-line` + `--primary-ink`; state also in the accessible name) |
-| Toggle, ToggleGroup (`toggle.tsx`, `toggle-group.tsx`) | `.seg`, `.chip` | Segmented: `--card` track, `--border` edge, 3 px padding; the pressed item is a raised `--accent` capsule with a 1 px shadow and `--foreground` text (the capsule is the non-colour cue); the capsule slides on `--ease-snappy`. Chip toggles: `.chip.on` = `--primary-soft` + `--primary-line` + `--primary-ink` |
+| Toggle, ToggleGroup (`toggle.tsx`, `toggle-group.tsx`) | `.seg`, `.chip` | Segmented: `--card` track, `--border` edge, 3 px padding; the pressed item is a raised `--accent` capsule with a 1 px shadow (`--elevation-capsule`) and `--foreground` text (the capsule is the non-colour cue); the capsule slides on `--ease-snappy`. Chip toggles: `.chip.on` = `--primary-soft` + `--primary-line` + `--primary-ink` |
 | Tabs (`tabs.tsx`) | `.tabs` | Each tab's box is 44 tall in browse screens (the mockup's 42 grows by 2) and 48 in the practice inspector (secondary practice control, §8), 14/600, selected = `--foreground` + 2 px `--signal` underline (shape cue); optional count badge (`Fix 6`) |
 | Switch (`switch.tsx`) | `.toggle` | 40 × 24; off `--accent` track + `--input` edge + `--muted-foreground` knob; on `--primary` track with a 1 px `--signal` edge + `--primary-foreground` knob (state = knob position; the edge gives Daylight a ≥ 3:1 indicator, V16). The whole row (label + hint + switch) is the 44 px target |
 | Checkbox, RadioGroup (`checkbox.tsx`, `radio-group.tsx`) | `.check` | 18 px, `--input` edge, checked `--signal` fill with `--primary-foreground` check |
@@ -529,7 +535,7 @@ Existing components are restyled with stable props (s33 unless noted); new ones 
 
 | Component | State | Purpose and states (mockup) |
 |---|---|---|
-| `TransportButton` (`transport-button.tsx`) | restyle s33 | Main practice controls at 64 × 64 painted and hit (§8; the mockup's `.ib.lg` 52 grows to 64, V11), Play `.play` 64 (72 phone, 84 `xl`); secondary transport controls (click, mix pill) 52 painted in a 52 box (≥ 48); pressed, disabled, on (`.ib.on`); label shown in Stand view |
+| `TransportButton` (`transport-button.tsx`) | restyle s33 | Main practice controls at 64 × 64 painted and hit (§8; the mockup's `.ib.lg` 52 grows to 64, V11), Play `.play` 64 (72 phone, 84 `xl`) with `--elevation-play` under it; secondary transport controls (click, mix pill) 52 painted in a 52 box (≥ 48); pressed, disabled, on (`.ib.on`); label shown in Stand view |
 | `SpeedControl`, `SpeedPanel` (`speed-control.tsx`, `speed-panel.tsx`) | restyle s33, ladder s37 | `−` [ "75 %" / "72 BPM · → 100" ] `+`: boxed −/+ at 64 (main practice controls; mockup 52, V11), a quiet 64 px tall readout (mono 22) that opens the panel (slider 25–110 %, presets 50 · 60 · 70 · 75 · 80 · 90 · 100; phone 50 · 75 · 85 · 100). `,`/`.` keys; Shift 1 % |
 | `LoopBadge` → loop pill (`loop-badge.tsx`) | restyle s35 | 64 px tall pill (main practice control; mockup 52, V11): off "No loop" / "tap two bars, or a section"; armed; active `--primary-soft` + `--primary-line` "Loop · bars 25–28" / "pass 2 · rest 1 beat"; on notation, the bracket badge "Loop · bars 25–28 · pass 2 of 2 at 75 %" |
 | `PassControl` → pass prompt (`pass-control.tsx`) | restyle s35 | Floating `.sheet` at the canvas bottom: "Pass {n} at {speed} — how was it?" + **Felt clean** (primary, check icon, `Kbd` C) + Not yet (`Kbd` N), both 64 tall (mockup 40, V11); phone: a card above the transport with two 64 px buttons (mockup 48, V11); Stand view: the dock's hold-pedal buttons |

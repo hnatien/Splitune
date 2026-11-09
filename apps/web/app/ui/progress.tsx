@@ -2,8 +2,9 @@ import { Progress as ProgressPrimitive } from '@base-ui/react/progress'
 import { cn } from '@/lib/utils'
 
 /**
- * Progress (uploads, analysis); label and value text sit above the bar. `value={null}` is
- * indeterminate: a sliding bar for waiting with no estimate.
+ * `.bar` (doc 26 §12.1): uploads and analysis, a 6 px --accent track (4 px in cards) with a
+ * --signal fill; label and value text sit above it, and callers name the stage through
+ * `getAriaValueText`. `value={null}` is indeterminate: a sliding bar for waiting with no estimate.
  */
 function Progress({ className, children, value, ...props }: ProgressPrimitive.Root.Props) {
   return (
@@ -25,7 +26,7 @@ function ProgressTrack({ className, ...props }: ProgressPrimitive.Track.Props) {
   return (
     <ProgressPrimitive.Track
       className={cn(
-        'relative flex h-2 w-full items-center overflow-hidden rounded-full border border-input bg-surface-sunken',
+        'relative flex h-1.5 w-full items-center overflow-hidden rounded-full bg-accent in-data-[slot=card]:h-1',
         className,
       )}
       data-slot="progress-track"
@@ -39,7 +40,7 @@ function ProgressIndicator({ className, ...props }: ProgressPrimitive.Indicator.
     <ProgressPrimitive.Indicator
       data-slot="progress-indicator"
       className={cn(
-        'h-full bg-primary transition-[width] duration-(--duration-base) data-indeterminate:w-2/5 data-indeterminate:animate-progress-indeterminate',
+        'h-full rounded-full bg-signal transition-[width] duration-(--duration-base) data-indeterminate:w-2/5 data-indeterminate:animate-progress-indeterminate',
         className,
       )}
       {...props}
@@ -50,7 +51,7 @@ function ProgressIndicator({ className, ...props }: ProgressPrimitive.Indicator.
 function ProgressLabel({ className, ...props }: ProgressPrimitive.Label.Props) {
   return (
     <ProgressPrimitive.Label
-      className={cn('text-sm font-medium', className)}
+      className={cn('text-sm font-semibold', className)}
       data-slot="progress-label"
       {...props}
     />
@@ -60,7 +61,7 @@ function ProgressLabel({ className, ...props }: ProgressPrimitive.Label.Props) {
 function ProgressValue({ className, ...props }: ProgressPrimitive.Value.Props) {
   return (
     <ProgressPrimitive.Value
-      className={cn('ml-auto text-sm text-muted-foreground tabular-nums', className)}
+      className={cn('ml-auto font-mono text-sm text-muted-foreground tabular-nums', className)}
       data-slot="progress-value"
       {...props}
     />

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { applyDisplay, DISPLAY_SCRIPT, DISPLAY_STORAGE_KEY, readStoredDisplay } from './display.ts'
+import {
+  applyDisplay,
+  DEFAULT_DISPLAY,
+  DISPLAY_SCRIPT,
+  DISPLAY_STORAGE_KEY,
+  readStoredDisplay,
+} from './display.ts'
 
 function fakeRoot() {
   const attributes = new Map<string, string>()
@@ -25,9 +31,9 @@ const mediaWith =
 
 describe('applyDisplay', () => {
   it('follows the OS for System choices', () => {
-    const { root, attributes, classes } = fakeRoot()
+    const { root, attributes, classes, style } = fakeRoot()
     const resolved = applyDisplay(
-      {},
+      { appearance: 'system' },
       root,
       mediaWith(
         '(prefers-color-scheme: dark)',
@@ -53,6 +59,34 @@ describe('applyDisplay', () => {
       'data-score': 'paper',
     })
     expect(classes.has('dark')).toBe(true)
+    expect(style.get('color-scheme')).toBe('dark')
+  })
+
+  it('is Night Rehearsal when nothing is stored, whatever the OS prefers (26 §2)', () => {
+    const { root, attributes, classes, style } = fakeRoot()
+    expect(applyDisplay({}, root, mediaWith()).appearance).toBe('dark')
+    expect(attributes.get('data-appearance')).toBe('dark')
+    expect(classes.has('dark')).toBe(true)
+    expect(style.get('color-scheme')).toBe('dark')
+    expect(DEFAULT_DISPLAY.appearance).toBe('dark')
+    expect(applyDisplay({ appearance: 'system' }, root, mediaWith()).appearance).toBe('light')
+    expect(style.get('color-scheme')).toBe('light')
+  })
+
+  it('raises Stage at Desk to Music stand, and leaves other distances alone (26 §2)', () => {
+    const distance = (preferences: Parameters<typeof applyDisplay>[0], ...media: string[]) => {
+      const { root, attributes } = fakeRoot()
+      const resolved = applyDisplay(preferences, root, mediaWith(...media))
+      expect(attributes.get('data-distance')).toBe(resolved.distance)
+      return resolved.distance
+    }
+    expect(distance({ appearance: 'stage' })).toBe('stand')
+    expect(distance({ appearance: 'stage', distance: 'desk' })).toBe('stand')
+    expect(distance({ appearance: 'stage', distance: 'floor' })).toBe('floor')
+    expect(distance({ appearance: 'stage' }, '(pointer: coarse)', '(max-width: 640px)')).toBe(
+      'floor',
+    )
+    expect(distance({ appearance: 'dark', distance: 'desk' })).toBe('desk')
   })
 
   it('keeps the score on paper unless the user asks it to match the appearance', () => {
@@ -78,6 +112,8 @@ describe('applyDisplay', () => {
     expect(classes.has('dark')).toBe(true)
     applyDisplay({ appearance: 'light' }, root, mediaWith('(prefers-color-scheme: dark)'))
     expect(classes.has('dark')).toBe(false)
+    applyDisplay({ appearance: 'dark' }, root, mediaWith())
+    expect(classes.has('dark')).toBe(true)
   })
 
   it('derives the distance preset from the pointer and screen', () => {
@@ -112,7 +148,7 @@ describe('readStoredDisplay', () => {
 })
 
 describe('DISPLAY_SCRIPT', () => {
-  const run = (stored: string | null, throwing = false) => {
+  const run = (stored: string | null, throwing = false, os = '(prefers-color-scheme: light)') => {
     const { root, attributes } = fakeRoot()
     const localStorage = {
       getItem: (key: string) => {
@@ -120,7 +156,7 @@ describe('DISPLAY_SCRIPT', () => {
         return key === DISPLAY_STORAGE_KEY ? stored : null
       },
     }
-    const window = { matchMedia: mediaWith('(prefers-color-scheme: dark)') }
+    const window = { matchMedia: mediaWith(os) }
     new Function('localStorage', 'document', 'window', DISPLAY_SCRIPT)(
       localStorage,
       { documentElement: root },
@@ -133,9 +169,14 @@ describe('DISPLAY_SCRIPT', () => {
     expect(run('{"appearance":"stage"}')).toBe('stage')
   })
 
-  it('falls back to the OS when storage is empty, corrupt or blocked', () => {
+  it('falls back to Night Rehearsal when storage is empty, corrupt or blocked', () => {
     expect(run(null)).toBe('dark')
     expect(run('not json')).toBe('dark')
     expect(run(null, true)).toBe('dark')
+  })
+
+  it('follows the OS only for a stored System choice', () => {
+    expect(run('{"appearance":"system"}')).toBe('light')
+    expect(run('{"appearance":"system"}', false, '(prefers-color-scheme: dark)')).toBe('dark')
   })
 })
