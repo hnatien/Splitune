@@ -154,7 +154,8 @@ const capsuleOver = (canvasElement: HTMLElement, item: HTMLElement) => {
   const capsule = canvasElement.querySelector<HTMLElement>('[data-slot="toggle-group-capsule"]')
   return (
     capsule?.style.translate === `${item.offsetLeft}px ${item.offsetTop}px` &&
-    capsule.clientHeight === item.clientHeight
+    capsule.style.height === `${item.offsetHeight}px` &&
+    getComputedStyle(capsule, '::before').height === `${item.clientHeight}px`
   )
 }
 

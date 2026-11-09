@@ -73,6 +73,10 @@
   --text-md: 0.875rem;
   --text-md--line-height: 1.25rem;
   --text-md--font-weight: 600;
+  /* Large buttons (`.btn.lg`, `xl`), §6.2. */
+  --text-button-lg: 1rem;
+  --text-button-lg--line-height: 1.375rem;
+  --text-button-lg--font-weight: 600;
   --text-base: 0.9375rem;
   --text-base--line-height: 1.375rem;
   --text-base--font-weight: 400;
@@ -115,6 +119,7 @@
   --radius-2xl: calc(var(--radius) + 4px);
   --radius-3xl: calc(var(--radius) + 6px);
   --radius-4xl: calc(var(--radius) + 12px);
+  --radius-5xl: calc(var(--radius) + 14px);
 
   /* Motion (§10) */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -283,6 +288,8 @@
   --shadow-2: var(--elevation-2);
   --shadow-3: var(--elevation-3);
   --shadow-glow: var(--glow);
+  --shadow-capsule: var(--elevation-capsule);
+  --shadow-play: var(--elevation-play);
 
   /* Semantic roles */
   --color-background: var(--background);
@@ -293,6 +300,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-ink: var(--primary-ink);
   --color-primary-soft: var(--primary-soft);
   --color-primary-line: var(--primary-line);

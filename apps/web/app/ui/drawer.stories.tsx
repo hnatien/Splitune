@@ -13,8 +13,8 @@ import {
 } from './drawer.tsx'
 import { DAYLIGHT } from './story-kit.tsx'
 
-// Doc 26 §12.1: bottom sheets with a 40 × 5 grabber and 22 px top corners (the phone sheets' 24
-// has no radius token; 22 is the sheet radius), side drawers for the inspector.
+// Doc 26 §12.1: bottom sheets with a 40 × 5 grabber and 24 px top corners (`rounded-t-5xl`), side
+// drawers for the inspector with the 22 px sheet radius.
 const meta = { title: 'Base/Drawer' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -48,14 +48,14 @@ export const SideDaylight: Story = { ...Side, globals: DAYLIGHT }
 export const BottomDaylight: Story = { ...Bottom, globals: DAYLIGHT }
 export const BottomStage: Story = { ...Bottom, globals: { appearance: 'stage' } }
 
-/** Bottom sheet: 22 px top corners and a 40 × 5 px grab handle. */
+/** Bottom sheet: 24 px top corners and a 40 × 5 px grab handle. */
 export const BottomSheetShape: Story = {
   render: () => <MixerDrawer side="down" />,
   play: async (context) => {
     await open(context)
     const popup = document.querySelector<HTMLElement>('[data-slot=drawer-popup]')
     const handle = document.querySelector<HTMLElement>('[data-slot=drawer-swipe-handle]')
-    await expect(Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius)).toBe(22)
+    await expect(Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius)).toBe(24)
     const pill = getComputedStyle(handle as Element, '::after')
     await expect(pill.width).toBe('40px')
     await expect(pill.height).toBe('5px')

@@ -14,7 +14,7 @@ const buttonStyles = cva(
     variants: {
       variant: {
         primary:
-          'bg-primary text-primary-foreground inset-ring-transparent hover:brightness-106 aria-expanded:brightness-106',
+          'bg-primary text-primary-foreground inset-ring-transparent hover:bg-primary-hover aria-expanded:bg-primary-hover',
         secondary:
           'bg-muted text-foreground inset-ring-border-strong hover:bg-accent aria-expanded:bg-accent',
         quiet: 'text-foreground inset-ring-border-strong hover:bg-accent aria-expanded:bg-accent',
@@ -31,8 +31,8 @@ const buttonStyles = cva(
       size: {
         sm: 'min-h-[max(var(--control-size),var(--face))] px-3 text-sm [--face:2rem] [--r:var(--radius-md)] [&_svg:not([class*=size-])]:size-4',
         md: 'min-h-[max(var(--control-size),var(--face))] px-4 text-md [--face:2.5rem] [--r:var(--radius-lg)]',
-        lg: 'min-h-[max(var(--control-size),var(--face))] px-5.5 text-lg [--face:3rem] [--r:var(--radius-xl)]',
-        xl: 'min-h-14 px-6.5 text-lg [--face:3.5rem] [--r:var(--radius-xl)]',
+        lg: 'min-h-[max(var(--control-size),var(--face))] px-5.5 text-button-lg [--face:3rem] [--r:var(--radius-xl)]',
+        xl: 'min-h-14 px-6.5 text-button-lg [--face:3.5rem] [--r:var(--radius-xl)]',
         'practice-2':
           'min-h-target-practice-2 px-5 text-md [--face:3rem] [--r:var(--radius-xl)] [&_svg:not([class*=size-])]:size-6',
         practice:

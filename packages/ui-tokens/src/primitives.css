@@ -45,6 +45,8 @@
   /* Amber, the one accent (§4.2): one fill for both themes; ink, marks and washes per theme.
      Daylight ink is clamped from the mockup's chroma 0.120 into sRGB. */
   --amber: oklch(0.8 0.15 72);
+  /* The amber fill at brightness(1.06) in sRGB (the mockup's `.btn.pri:hover`), 26 §12.1. */
+  --amber-hover: oklch(0.826 0.152 75);
   --amber-ink-night: oklch(0.83 0.14 76);
   --amber-ink-daylight: oklch(0.5 0.119 58);
   --amber-signal-daylight: oklch(0.61 0.14 62);

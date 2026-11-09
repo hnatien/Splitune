@@ -90,7 +90,7 @@ const ToggleGroupContext = React.createContext<GroupStyle>({
  *
  * The capsule is one element behind the items that slides (and resizes) to the pressed one on
  * --ease-snappy (26 §10), like a segmented Picker's selection. It takes the item's whole box and,
- * like the item, paints only the 34 px face inside a transparent pad. With no single pressed item
+ * like the item, paints only the 34 px face (`::before`, with its 1 px shadow) inside it. With no single pressed item
  * (none chosen, several, or before hydration) items show their own pressed style.
  * `capsuleClassName` recolours the capsule for groups whose items use another palette.
  */
@@ -124,7 +124,7 @@ function ToggleGroup({
           aria-hidden
           data-slot="toggle-group-capsule"
           className={cn(
-            'pointer-events-none absolute top-0 left-0 rounded-[var(--radius-lg)/calc(var(--radius-lg)+var(--pad))] border-y-(length:--pad) border-transparent bg-accent bg-clip-padding shadow-1 [--pad:calc((var(--box)-2.125rem)/2)] forced-colors:bg-card forced-colors:inset-ring forced-colors:inset-ring-signal',
+            'pointer-events-none absolute top-0 left-0 before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.125rem)/2)] before:rounded-lg before:bg-accent before:shadow-capsule forced-colors:before:bg-card forced-colors:before:inset-ring forced-colors:before:inset-ring-signal',
             box.slide &&
               'transition-[translate,width,height] duration-(--duration-slower) ease-snappy',
             capsuleClassName,
