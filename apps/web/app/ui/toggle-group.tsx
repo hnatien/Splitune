@@ -12,15 +12,14 @@ type CapsuleBox = {
   y: number
   width: number
   height: number
-  radius: string
   slide: boolean
 }
 
 /**
- * Tracks the one pressed item's box and corner radius inside `group` (offsets ignore transforms, so
- * a view transition or a scaled ancestor never skews it). Measured after every commit, on resize,
- * when items come and go and when an uncontrolled group presses another item. `null` while there
- * is no single visible pressed item.
+ * Tracks the box of the one pressed item inside `group` (offsets ignore transforms, so a view
+ * transition or a scaled ancestor never skews it). Measured after every commit, on resize, when items come and go and
+ * when an uncontrolled group presses another item. `null` while there is no single visible
+ * pressed item.
  */
 function usePressedBox(group: React.RefObject<HTMLDivElement | null>) {
   const [box, setBox] = React.useState<CapsuleBox | null>(null)
@@ -37,14 +36,12 @@ function usePressedBox(group: React.RefObject<HTMLDivElement | null>) {
         y: item.offsetTop,
         width: item.offsetWidth,
         height: item.offsetHeight,
-        radius: getComputedStyle(item).borderRadius,
       }
       if (
         previous?.x === next.x &&
         previous.y === next.y &&
         previous.width === next.width &&
-        previous.height === next.height &&
-        previous.radius === next.radius
+        previous.height === next.height
       )
         return previous
       // Appearing (first paint, the group shown again) places the capsule; only a move slides.
@@ -86,14 +83,16 @@ const ToggleGroupContext = React.createContext<GroupStyle>({
 })
 
 /**
- * Segmented set of toggles (view Tab/Chords, mix presets, count-in): a sunken track with the pressed
- * item raised and edged in indigo. `variant` is kept for API compatibility; the track styles every item.
+ * `.seg` (doc 26 §12.1): a --card track with a --border edge and 3 px padding, painted 42 px tall
+ * behind items whose boxes are the target (44 browse, 48 practice) and whose faces are 34. The
+ * pressed item is a raised --accent capsule with --foreground text (the capsule is the non-colour
+ * cue). `variant` is kept for API compatibility; the track styles every item.
  *
- * The raised, indigo-edged surface is one capsule behind the items that slides (and resizes) to the
- * pressed one on --ease-snappy (26 §10), like a segmented Picker's selection, taking that item's
- * corner radius. Pressed items stay bold, so the state never rests on the capsule alone; with no
- * single pressed item (none chosen, several, or before hydration) items show their own pressed
- * style. `capsuleClassName` recolours the capsule for groups whose items use another palette.
+ * The capsule is one element behind the items that slides (and resizes) to the pressed one on
+ * --ease-snappy (26 §10), like a segmented Picker's selection. It takes the item's whole box and,
+ * like the item, paints only the 34 px face inside a transparent pad. With no single pressed item
+ * (none chosen, several, or before hydration) items show their own pressed style.
+ * `capsuleClassName` recolours the capsule for groups whose items use another palette.
  */
 function ToggleGroup({
   className,
@@ -115,7 +114,7 @@ function ToggleGroup({
       data-capsule={box ? '' : undefined}
       orientation={orientation}
       className={cn(
-        'group/toggle-group relative flex w-fit flex-row items-center gap-1 rounded-full bg-surface-sunken p-1 data-vertical:flex-col data-vertical:items-stretch data-vertical:rounded-2xl',
+        'group/toggle-group relative isolate flex w-fit flex-row items-center gap-0.5 px-0.75 py-px [--box:var(--control-size)] before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.5rem)/2)] before:-z-10 before:rounded-xl before:border before:border-border before:bg-card data-[size=practice-2]:[--box:var(--target-practice-2)] data-[size=practice]:[--box:var(--target-practice)] data-vertical:flex-col data-vertical:items-stretch data-vertical:py-0.75 data-vertical:before:inset-y-0',
         className,
       )}
       {...props}
@@ -125,16 +124,15 @@ function ToggleGroup({
           aria-hidden
           data-slot="toggle-group-capsule"
           className={cn(
-            'pointer-events-none absolute top-0 left-0 border border-primary bg-surface-raised shadow-1',
+            'pointer-events-none absolute top-0 left-0 rounded-[var(--radius-lg)/calc(var(--radius-lg)+var(--pad))] border-y-(length:--pad) border-transparent bg-accent bg-clip-padding shadow-1 [--pad:calc((var(--box)-2.125rem)/2)] forced-colors:bg-card forced-colors:inset-ring forced-colors:inset-ring-signal',
             box.slide &&
-              'transition-[translate,width,height,border-radius] duration-(--duration-slower) ease-snappy',
+              'transition-[translate,width,height] duration-(--duration-slower) ease-snappy',
             capsuleClassName,
           )}
           style={{
             translate: `${box.x}px ${box.y}px`,
             width: box.width,
             height: box.height,
-            borderRadius: box.radius,
           }}
         />
       )}
@@ -158,7 +156,7 @@ function ToggleGroupItem({
       data-slot="toggle-group-item"
       className={cn(
         toggleVariants({ variant: context.variant ?? variant, size: context.size ?? size }),
-        'relative shrink-0 rounded-full border-transparent bg-transparent hover:bg-surface-raised/50 focus-visible:z-10 data-pressed:border-primary data-pressed:bg-surface-raised data-pressed:font-semibold data-pressed:text-foreground data-pressed:shadow-1 group-data-capsule/toggle-group:data-pressed:border-transparent group-data-capsule/toggle-group:data-pressed:bg-transparent group-data-capsule/toggle-group:data-pressed:shadow-none',
+        'relative rounded-[var(--radius-lg)/calc(var(--radius-lg)+var(--pad))] border-x-0 px-3.5 text-md font-semibold inset-ring-0 [--face:2.125rem] focus-visible:z-10 data-pressed:bg-accent data-pressed:text-foreground data-pressed:inset-ring-0 group-data-capsule/toggle-group:data-pressed:bg-transparent',
         className,
       )}
       {...props}

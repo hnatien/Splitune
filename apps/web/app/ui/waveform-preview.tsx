@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils'
 
-// Static waveform of a picked file (27 §3.6 file row): one bar per peak, mirrored around the
-// centre line, in the neutral waveform colour. The interactive WaveformTimeline is step 12's.
+// Static waveform of a picked file (27 §3.6 file row; the song card's 28 px preview, 26 §12.2):
+// one rounded bar per peak, mirrored around the centre line, in --waveform-peak (V7: opaque,
+// ≥ 3:1). The interactive WaveformTimeline is step 12's.
 
 type WaveformPreviewProps = {
   /** Peak |sample| per bin, 0–1. */
@@ -26,7 +27,7 @@ function WaveformPreview({ peaks, label, className }: WaveformPreviewProps) {
         const bar = Math.max(2, Math.min(1, peak) * height)
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: bins are positional and never reorder
-          <rect key={i} x={i + 0.15} y={(height - bar) / 2} width={0.7} height={bar} />
+          <rect key={i} x={i + 0.1} y={(height - bar) / 2} width={0.8} height={bar} rx={0.4} />
         )
       })}
     </svg>

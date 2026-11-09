@@ -64,7 +64,7 @@ function InlineError({
       data-slot="inline-error"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex gap-3 rounded-xl border border-transparent p-4',
+        'flex gap-3 rounded-2xl border border-transparent p-4',
         style.surface,
         style.border,
         className,
@@ -93,7 +93,7 @@ function Banner({ tone, title, description, actions, dismiss, className }: Banne
       data-slot="banner"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent px-4 py-3 sm:flex-nowrap',
+        'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-transparent px-4 py-3 sm:flex-nowrap',
         style.surface,
         style.border,
         className,

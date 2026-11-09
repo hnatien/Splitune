@@ -11,7 +11,10 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from './drawer.tsx'
+import { DAYLIGHT } from './story-kit.tsx'
 
+// Doc 26 §12.1: bottom sheets with a 40 × 5 grabber and 22 px top corners (the phone sheets' 24
+// has no radius token; 22 is the sheet radius), side drawers for the inspector.
 const meta = { title: 'Base/Drawer' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -41,19 +44,20 @@ const open = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
 export const Closed: Story = { render: () => <MixerDrawer side="down" /> }
 export const Bottom: Story = { render: () => <MixerDrawer side="down" />, play: open }
 export const Side: Story = { render: () => <MixerDrawer side="right" />, play: open }
-export const SideDark: Story = { ...Side, globals: { appearance: 'dark' } }
+export const SideDaylight: Story = { ...Side, globals: DAYLIGHT }
+export const BottomDaylight: Story = { ...Bottom, globals: DAYLIGHT }
 export const BottomStage: Story = { ...Bottom, globals: { appearance: 'stage' } }
 
-/** Bottom sheet: 3xl top corners and a 36 × 4 px grab handle. */
+/** Bottom sheet: 22 px top corners and a 40 × 5 px grab handle. */
 export const BottomSheetShape: Story = {
   render: () => <MixerDrawer side="down" />,
   play: async (context) => {
     await open(context)
     const popup = document.querySelector<HTMLElement>('[data-slot=drawer-popup]')
     const handle = document.querySelector<HTMLElement>('[data-slot=drawer-swipe-handle]')
-    await expect(Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius)).toBe(16)
+    await expect(Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius)).toBe(22)
     const pill = getComputedStyle(handle as Element, '::after')
-    await expect(pill.width).toBe('36px')
-    await expect(pill.height).toBe('4px')
+    await expect(pill.width).toBe('40px')
+    await expect(pill.height).toBe('5px')
   },
 }

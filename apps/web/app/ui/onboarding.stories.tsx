@@ -142,9 +142,9 @@ export const Coach: Story = {
     await expect(canvas.getByText('Dismissed')).toBeVisible()
   },
 }
-export const CoachDark: Story = {
+export const CoachBothThemes: Story = {
   render: () => <CoachDemo />,
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'side-by-side' },
 }
 export const CoachStage: Story = {
   render: () => <CoachDemo />,

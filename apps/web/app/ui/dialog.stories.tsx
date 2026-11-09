@@ -23,7 +23,10 @@ import {
   DialogTrigger,
 } from './dialog.tsx'
 import { COPY } from './fixtures.ts'
+import { DAYLIGHT } from './story-kit.tsx'
 
+// Doc 26 §12.1 `.sheet` + `.overlay`: 22 px corners, --elevation-3, the --scrim behind; the delete
+// confirm is the one solid destructive button (V9: graphite text on red in Night).
 const meta = { title: 'Base/Dialog' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -58,7 +61,7 @@ const DeleteDialog = () => (
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>{COPY.cancel}</AlertDialogCancel>
-        <AlertDialogAction variant="destructive">{COPY.deleteSong}</AlertDialogAction>
+        <AlertDialogAction variant="destructiveSolid">{COPY.deleteSong}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
@@ -77,9 +80,18 @@ export const Open: Story = {
   },
 }
 
-export const OpenDark: Story = {
+/** Open and left open (the visual row). */
+export const OpenNight: Story = {
   render: RenameDialog,
-  globals: { appearance: 'dark' },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Rename song' }))
+    await screen.findByRole('dialog')
+  },
+}
+
+export const OpenDaylight: Story = {
+  render: RenameDialog,
+  globals: DAYLIGHT,
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Rename song' }))
     await screen.findByRole('dialog')
@@ -97,6 +109,7 @@ export const Alert: Story = {
   },
 }
 
+export const AlertDaylight: Story = { ...Alert, globals: DAYLIGHT }
 export const AlertStage: Story = { ...Alert, globals: { appearance: 'stage' } }
 
 export const OpenScrim: Story = {
@@ -108,6 +121,6 @@ export const OpenScrim: Story = {
     const overlay = document.querySelector<HTMLElement>('[data-slot=dialog-overlay]')
     await expect(overlay).not.toBeNull()
     await expect(getComputedStyle(overlay as Element).backgroundColor).toMatch(/\/ 0\.62\)$/)
-    await expect(Number.parseFloat(getComputedStyle(dialog).borderTopLeftRadius)).toBe(14)
+    await expect(Number.parseFloat(getComputedStyle(dialog).borderTopLeftRadius)).toBe(22)
   },
 }

@@ -29,7 +29,7 @@ const Grid = () => (
 )
 
 const LIST =
-  'list-none divide-y divide-border overflow-hidden rounded-2xl bg-surface-raised p-0 shadow-1'
+  'list-none divide-y divide-border overflow-hidden rounded-3xl bg-surface-raised p-0 shadow-1'
 
 const tileFor = (instrument: string, size: 'sm' | 'md' = 'md') =>
   instrument === 'Bass' ? (
@@ -78,9 +78,9 @@ export const Loading: Story = {
       className="grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4 p-0"
     >
       {['a', 'b', 'c'].map((key) => (
-        <li key={key} className="flex flex-col gap-4 rounded-2xl bg-surface-raised p-4 shadow-1">
+        <li key={key} className="flex flex-col gap-4 rounded-3xl bg-surface-raised p-4 shadow-1">
           <div className="flex items-start gap-3">
-            <Skeleton className="size-12 shrink-0 rounded-xl" />
+            <Skeleton className="size-12 shrink-0 rounded-2xl" />
             <div className="flex flex-1 flex-col gap-2 pt-1">
               <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-1/2" />

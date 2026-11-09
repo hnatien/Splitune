@@ -29,9 +29,9 @@ function StepDots({
               key={n}
               aria-current={n === step ? 'step' : undefined}
               className={cn(
-                'size-2.5 rounded-full border border-primary transition-[width] duration-(--duration-base)',
-                n < step && 'bg-primary',
-                n === step && 'w-6 bg-primary',
+                'size-2.5 rounded-full border border-input transition-[width] duration-(--duration-base)',
+                n < step && 'border-signal bg-signal',
+                n === step && 'w-6 border-signal bg-signal',
               )}
             >
               <span className="sr-only">{n}</span>

@@ -4,25 +4,30 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { WithTooltip } from '@/ui/tooltip'
 
-// Doc 26 §8, §12.2: practice-size icon button with its label below from `md` up and at Stand/Floor
+// Doc 26 §8, §12.2: practice icon buttons with the label below from `md` up and at Stand/Floor
 // distance (the label is also the accessible name, WCAG 2.5.3) and a tooltip with the shortcut.
 // The universally known transport icons (restart, play, −/+) may drop the visible label (26 §11).
 // Pass `pressed` to make it a toggle (loop, metronome); `active` marks a running loop without
-// toggling. Neutral buttons sit raised on the sunken tray of their group.
+// toggling. Main controls are 64 painted and hit (`practice`, V11); secondary ones paint `.ib.lg`
+// at 52 (`practice-2`). `neutral` is `.ib.lg`, `box` is `.ib.lg.box`, `primary` is `.play`; on and
+// active are `.ib.on`: the --primary-soft wash, a --primary-line edge and --primary-ink.
 
 const base =
-  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-xl border font-medium transition-[color,background-color,border-color,transform] duration-(--duration-fast) ease-spring select-none active:scale-[0.97] disabled:pointer-events-none disabled:border-input disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0'
+  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-2xl font-semibold inset-ring transition-[color,background-color,box-shadow,filter,transform] duration-(--duration-fast) ease-spring select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-muted disabled:text-faint-foreground disabled:inset-ring-input [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
 
 const sizes = {
-  practice: "min-h-target-practice min-w-target-practice px-3 [&_svg:not([class*='size-'])]:size-8",
-  'practice-2':
-    "min-h-target-practice-2 min-w-target-practice-2 px-2 [&_svg:not([class*='size-'])]:size-6",
+  practice: "min-h-target-practice min-w-target-practice px-3 [&_svg:not([class*='size-'])]:size-6",
+  'practice-2': "min-h-13 min-w-13 px-2 [&_svg:not([class*='size-'])]:size-5",
 }
 
+const on =
+  'data-pressed:bg-primary-soft data-pressed:text-primary-ink data-pressed:inset-ring-primary-line data-[active]:bg-primary-soft data-[active]:text-primary-ink data-[active]:inset-ring-primary-line forced-colors:data-pressed:bg-card forced-colors:data-[active]:bg-card'
+
 const tones = {
-  primary: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
-  neutral:
-    'border-border bg-surface-raised text-foreground shadow-1 hover:bg-muted data-pressed:border-primary data-pressed:bg-accent data-pressed:text-primary data-[active]:border-primary data-[active]:bg-accent data-[active]:text-primary forced-colors:data-pressed:bg-card forced-colors:data-[active]:bg-card',
+  primary:
+    "rounded-full bg-primary text-primary-foreground inset-ring-transparent hover:brightness-106 [&_svg]:fill-current [&_svg:not([class*='size-'])]:size-7",
+  neutral: `text-muted-foreground inset-ring-transparent hover:bg-muted hover:text-foreground ${on}`,
+  box: `bg-card text-muted-foreground inset-ring-border-strong hover:bg-muted hover:text-foreground ${on}`,
 }
 
 type TransportButtonProps = {

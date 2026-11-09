@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority'
+import { CircleAlertIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -94,7 +95,7 @@ function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>)
     <Label
       data-slot="field-label"
       className={cn(
-        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:text-muted-foreground has-data-checked:border-primary has-data-checked:bg-accent forced-colors:has-data-checked:bg-card has-[>[data-slot=field]]:rounded-lg has-[>[data-slot=field]]:border has-[>[data-slot=field]]:border-input has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted *:data-[slot=field]:p-3',
+        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:text-faint-foreground has-data-checked:border-signal has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-signal forced-colors:has-data-checked:bg-card has-[>[data-slot=field]]:rounded-3xl has-[>[data-slot=field]]:border has-[>[data-slot=field]]:border-border has-[>[data-slot=field]]:bg-card has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted *:data-[slot=field]:p-3.5',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col',
         className,
       )}
@@ -108,7 +109,7 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="field-label"
       className={cn(
-        'flex w-fit items-center gap-2 text-sm font-medium group-data-[disabled=true]/field:text-muted-foreground',
+        'flex w-fit items-center gap-2 text-md group-data-[disabled=true]/field:text-faint-foreground',
         className,
       )}
       {...props}
@@ -123,7 +124,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
       className={cn(
         'text-left text-sm leading-5 font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5',
         'last:mt-0 nth-last-2:-mt-1',
-        '[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary',
+        '[&>a]:text-primary-ink [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:decoration-2',
         className,
       )}
       {...props}
@@ -201,10 +202,11 @@ function FieldError({
     <div
       role="alert"
       data-slot="field-error"
-      className={cn('text-sm font-normal text-destructive', className)}
+      className={cn('flex items-start gap-1.5 text-sm font-normal text-destructive', className)}
       {...props}
     >
-      {content}
+      <CircleAlertIcon aria-hidden strokeWidth={1.8} className="mt-px size-4 shrink-0" />
+      <div className="min-w-0">{content}</div>
     </div>
   )
 }

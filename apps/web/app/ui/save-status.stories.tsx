@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
 import { SaveStatus } from './save-status.tsx'
+import { BOTH_THEMES, StateGrid } from './story-kit.tsx'
 
 const meta = { title: 'Kit/SaveStatus', component: SaveStatus } satisfies Meta<typeof SaveStatus>
 export default meta
@@ -8,7 +9,7 @@ type Story = StoryObj<typeof meta>
 
 const labels = {
   savingLabel: 'Saving…',
-  savedLabel: 'Saved',
+  savedLabel: 'Saved on this device',
   errorLabel: "Couldn't save. Try again.",
 }
 
@@ -25,9 +26,19 @@ export const Saved: Story = {
   },
 }
 export const ErrorState: Story = { name: 'Error', args: { state: 'error', ...labels } }
-export const SavedDark: Story = {
+/** Saving, saved (the success badge, 26 §12.2) and error, in both themes. */
+export const AllStates: Story = {
   args: { state: 'saved', ...labels },
-  globals: { appearance: 'dark' },
+  globals: BOTH_THEMES,
+  render: (args) => (
+    <StateGrid
+      states={[
+        ['Saving', <SaveStatus key="s" {...args} state="saving" />],
+        ['Saved', <SaveStatus key="d" {...args} state="saved" />],
+        ['Error', <SaveStatus key="e" {...args} state="error" />],
+      ]}
+    />
+  ),
 }
 export const SavedStage: Story = {
   args: { state: 'saved', ...labels },
