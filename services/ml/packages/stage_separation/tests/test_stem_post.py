@@ -254,6 +254,26 @@ def test_energy_the_tagger_cannot_hear_is_bleed(tmp_path: Path) -> None:
     assert stems["guitar"]["quality_hint"] == "rough"
 
 
+@pytest.mark.parametrize("applied", [True, False])
+def test_a_target_the_fallback_model_replaced_is_rough_and_credited_to_it(
+    tmp_path: Path, applied: bool
+) -> None:
+    job, _, _ = scenario(tmp_path, mix_minus="subtract")
+    path = Path(job.inputs["separation"])
+    separation = load(str(path))
+    separation["fallback_when_silent"] = {"target_db": -80.0, "present_prob": 0.6, "applied": False}
+    if applied:
+        separation["fallback_when_silent"] |= {"applied": True, "provider": "bs_roformer:keys"}
+    path.write_text(json.dumps(separation))
+    out = stem_post.run(job)
+    stems = {s["stem_id"]: s for s in load(out.files["stems"])["stems"]}
+    for stem_id in ("guitar", "mix_minus_guitar"):
+        assert stems[stem_id]["provider"] == ("bs_roformer:keys" if applied else "htdemucs_6s")
+        assert stems[stem_id]["quality_hint"] == ("rough" if applied else "good")
+    assert stems["drums"]["provider"] == "htdemucs_6s"  # extras came from the chain's run
+    assert stems["drums"]["quality_hint"] == "good"
+
+
 def test_missing_or_changed_raw_stems_fail_permanently(tmp_path: Path) -> None:
     job, _, _ = scenario(tmp_path, mix_minus="subtract")
     raw = next((Path(job.cache_dir) / "separated").glob("*/drums.flac"))

@@ -1,7 +1,7 @@
 ---
 title: Automatic music transcription — landscape, models, licenses, and the path to notation
 workstream: ml
-last_researched: 2026-10-20
+last_researched: 2026-11-07
 confidence: medium
 ---
 
@@ -150,9 +150,7 @@ The evidence is thin, and no controlled study across instruments was found:
 - Piano, including hand separation and simplification: `transcription-piano.md`.
 - Drums: `transcription-drums.md`.
 - Vocals, melody and lyrics alignment: `transcription-vocals-melody.md`.
-- **Other instruments (feasibility only).**
-  - **Violin/strings and winds:** covered by MT3/YourMT3+. MusicNet/URMP results are much lower: MT3 onset+offset F1 is 0.33 on MusicNet and 0.58 on URMP ([MT3](https://arxiv.org/pdf/2111.03017)). Expect monophonic pitch tracking (see vocals doc) to work better on separated solo lines.
-  - **Ukulele:** no dedicated model or dataset was found. Basic Pitch on a stem plus a guitar-style fret assigner adapted to re-entrant tuning is a plausible path (inference).
+- **Other instruments:** see `other-instruments-feasibility.md` (2026-11-07). It covers separation and transcription for ukulele, banjo, mandolin, extended-range guitar and bass, keys, bowed strings, winds, harmonica, hand percussion, backing vocals and drum-kit pieces. It supersedes the earlier note here that MT3/YourMT3+ cover strings and winds: violin specialists now exist, and f0 tracking with note segmentation beats Basic Pitch on monophonic winds. The product ranking built on it is in `research/product/additional-instruments.md`.
 
 ## Implications for Splitune
 - **Architecture:**

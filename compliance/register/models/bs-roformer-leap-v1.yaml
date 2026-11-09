@@ -1,0 +1,38 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: bs-roformer-leap-v1
+kind: model
+name: "BS-RoFormer Leap vocals v1 (community checkpoint by unwa)"
+version: "4e47d66 bs_roformer_leap_voc"
+repo_url: https://huggingface.co/pcunwa/BS-Roformer-Leap
+code_spdx: MIT
+weights:
+  licence: "none (discussion #4 asks; no reply)"
+  url: https://huggingface.co/pcunwa/BS-Roformer-Leap/tree/4e47d6662ae82eaa8b4ac4329fe66099a843b48e
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "f222e38cb9e61e0f581945b5bde5dafaaef3c97cf959e2df82b0cb06ef5365d3"
+  files:
+    - name: bs_roformer_leap_voc.ckpt
+      sha256: "8c0e4bfff6be150a12582a7c236379aa42102b7f43831900df5b2addf924da7c"
+      bytes: 238220459
+      url: https://huggingface.co/pcunwa/BS-Roformer-Leap/resolve/4e47d6662ae82eaa8b4ac4329fe66099a843b48e/bs_roformer_leap_voc.ckpt
+    - name: bs_roformer_leap_voc.yaml
+      sha256: "fb4238cd1e0cd6e6620b3f4e70bbea0dc5b1f1bdcf51f96b5091d2ee6794b8c8"
+      bytes: 1961
+      url: https://huggingface.co/pcunwa/BS-Roformer-Leap/resolve/4e47d6662ae82eaa8b4ac4329fe66099a843b48e/bs_leap_voc_conf.yaml
+training_data:
+  - name: undisclosed
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    moisesdb_in_training: unknown
+    source: https://huggingface.co/pcunwa/BS-Roformer-Leap
+tier: red
+tier_reason: "community checkpoint, no weights licence, training data undisclosed"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Step 29 vocals-head candidate (MVSep Multisong vocals 11.72 / bleedless 38.90 / fullness 17.07,
+  tier 2). dim 256, depth 16, 59.5 M parameters. Its YAML's dim_t (1101) would chunk at 12.8 s in
+  audio-separator 0.44.5; eval/separation.eval.yaml sets MSST's ~20 s chunk (881,664).
+reviewer: owner
+reviewed: 2026-11-08

@@ -42,7 +42,7 @@ Rule: a feature that needs a new visual pattern adds it to `app/ui` with stories
 - **Screens:** `Screens/*` stories for every screen and state in `27` §3–§4 (Library with and without progress data, Add song per tab and state, Practice per layout, stage and inspector tab, Stand view, phone glance and Tools sheet, Settings sections, system states, command palette), rendered edge to edge with fixture data.
 - **Fixtures:** `packages/contracts/fixtures` (the 8-bar Am–F–C–G example) and `apps/web/app/features/story-fixtures.ts`, extended with multi-stem, sections, progress history and unsure-spot fixtures as the steps that use them land.
 - **a11y:** `parameters.a11y.test = 'error'` globally with `runOnly` tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, `best-practice` (so `target-size` runs); a story may downgrade a rule only with a comment naming the WCAG criterion and why.
-- **Commands:** `pnpm --filter @splitune/web storybook`, `storybook:build`, `test:stories` (every story in Chromium + WebKit, a11y included; run under the heavy lock in the redesign run).
+- **Commands:** `pnpm --filter @splitune/web storybook`, `storybook:build`, `test:stories` (every story in Chromium + WebKit, a11y included).
 
 ## 3. Automated design checks
 | Check | Where | Fails when |
@@ -180,7 +180,7 @@ Each item 1–3; a screen ships at ≥ 2 on every item.
 - The CVD threshold (12 ΔE2000) is met with a small margin (12.4); revisit with simulated stem lanes by eye at G2.
 
 ## Sources
-- `redesign/orchestrator/research/design_system_migration.md` (fidelity layers, token membership, WCAG 2.2 gates, LoAF perf spec, font checks), `redesign/report.md` (acceptance criteria, music-stand test), `redesign/orchestrator/prompt.md` §3 and §10 (budgets, gates) — 2026-11-08.
+- `redesign/research/design_system_migration.md` (fidelity layers, token membership, WCAG 2.2 gates, LoAF perf spec, font checks), `redesign/report.md` (acceptance criteria, music-stand test), `docs/steps/00-shared-context.md` ("Redesign steps") (budgets, gates) — 2026-11-08.
 - [Storybook accessibility testing](https://storybook.js.org/docs/writing-tests/accessibility-testing), [Playwright snapshots](https://playwright.dev/docs/test-snapshots), [Playwright ARIA snapshots](https://playwright.dev/docs/aria-snapshots), [Long Animation Frames](https://developer.chrome.com/docs/web-platform/long-animation-frames) — tier 2.
 - Machado, Oliveira & Fernandes, IEEE TVCG 2009 — tier 1. [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (1.4.1, 1.4.4, 1.4.10, 1.4.11, 2.1.4, 2.2.2, 2.3.1, 2.4.7, 2.4.11, 2.5.3, 2.5.7, 2.5.8, 4.1.3) — tier 1.
 - Cross-linked: `18-testing-strategy.md` §5, `24-browser-compatibility.md`, `research/ux/accessibility.md`, `research/ux/hands-busy-and-device-context.md`.

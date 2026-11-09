@@ -1,17 +1,21 @@
 # Step s33 — Base components restyled for Night Rehearsal
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). The orchestrator wraps this prompt in its worker brief (prompt.md §6), which gives your worktree, setup, the heavy-lock path, the generic rules and the frozen decisions. This prompt holds what is specific to s33.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates). This prompt holds what is specific to s33.
+
+## Carried over from earlier steps (2026-11-08)
+- s32 moved the Music Stand assertions in several `apps/web/app/ui/**/*.stories.tsx` files (and possibly the Foundations story) to doc 26 values, so `dev` stayed green. You restyle these components anyway, so check that each story still asserts the right thing.
+- Instrument Sans has no ⌘ ⇧ ⌥ ↵: set `Kbd` in JetBrains Mono, which has them. Its 12 missing Latin-1 glyphs fall back per glyph (D20).
+- Known `test:stories` failures: `00-shared-context.md`, "Redesign steps" (80 WebKit failures, plus Screen May Lock after 20:00).
 
 | | |
 |---|---|
-| Branch | `impl/s33-base-components` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s33-base-components` from the current `dev` |
 | Hard deps | s32 |
 | Gates | **G2** follows this step: the owner approves the foundations look from your Storybook screenshots of every base component in both themes beside the s31c mockup renders. s34–s36 wait for G2 |
-| Owned globs (plan table) | `apps/web/app/ui/**`, `apps/web/e2e/visual/**` |
-| Also yours (orchestrator decisions) | `scripts/check-ui-tokens.mjs` (Deliverable 8) and `apps/web/app/features/story-fixtures.ts` (shared story fixtures; after you it is assigned per file at dispatch) |
-| Needs the orchestrator's OK first | `apps/web/public/icons/**`, `apps/web/public/favicon.svg` and `apps/web/scripts/render-icons.mjs` if you change the brand mark's PWA icons and favicon (26 §11); otherwise leave them to s45 and say so |
+| Owned globs | `apps/web/app/ui/**`, `apps/web/e2e/visual/**` |
+| Also yours (D14) | `scripts/check-ui-tokens.mjs` (Deliverable 8) and `apps/web/app/features/story-fixtures.ts` (shared story fixtures; later steps add to it for their own stories) |
+| Ask the owner first | `apps/web/public/icons/**`, `apps/web/public/favicon.svg` and `apps/web/scripts/render-icons.mjs` if you change the brand mark's PWA icons and favicon (26 §11); otherwise leave them to s45 and say so |
 | Effort | xhigh |
-| Runs in parallel with | backend steps s40a, s41a; no shared files |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -20,7 +24,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - `redesign/mockups/splitune.css` (component classes `.btn`, `.ib`, `.seg`, `.chip`, `.tabs`, `.toggle`, `.check`, `.range`, `.stepper`, `.field`, `.sheet`, `.overlay`, `.toast`, `.badge`, `.kbd`, `.card`, `.bar`, `.spin`, `.hr`, `.vr`, `.play`) and `redesign/mockups/System.dc.html` (Foundations board).
 - `scripts/redesign/README.md`.
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`; s32 will have changed the tokens)
+## What exists (verified at `0c3d5c3`; s32 will have changed the tokens)
 - `apps/web/app/ui/` holds the shadcn/Base UI components and the Splitune kit (one file each: `button.tsx`, `toggle.tsx`, `toggle-group.tsx`, `tabs.tsx`, `switch.tsx`, `checkbox.tsx`, `radio-group.tsx`, `slider.tsx`, `number-field.tsx`, `field.tsx`, `input.tsx`, `label.tsx`, `select.tsx`, `dropdown-menu.tsx`, `popover*.tsx`, `tooltip*.tsx`, `dialog.tsx`, `alert-dialog.tsx`, `drawer.tsx`, `toast.tsx`, `badge.tsx`, `kbd.tsx`, `card.tsx`, `progress.tsx`, `meter.tsx`, `spinner.tsx`, `separator.tsx`, `scroll-area.tsx`, `skeleton.tsx`, and the kit files `transport-button.tsx`, `speed-control.tsx`, `speed-panel.tsx` (lazy), `loop-badge.tsx`, `pass-control.tsx`, `chord-chip.tsx`, `confidence-legend*.tsx`, `stem-row.tsx`, `mix-preset-group.tsx`, `waveform-timeline.tsx`, `waveform-preview.tsx`, `pedal-hud.tsx`, `stage-list.tsx`, `song-card.tsx`, `allowance-meter.tsx`, `empty-state.tsx`, `status-message.tsx`, `worker-status.tsx`, `choice-card.tsx`, `radio-card.tsx`, `step-dots.tsx`, `coach-mark.tsx`, `drop-zone.tsx`, `save-status.tsx`, `brand.tsx`) plus `display.ts` (`DEFAULT_DISPLAY.appearance` is `'system'`, `applyDisplay`), `icons/` (`bass.tsx`, `check-draw.tsx`, `index.tsx`) and story files (`button`, `dialog`, `drawer`, `feedback`, `form`, `foundations`, `import`, `library`, `mixer`, `music`, `notation`, `number-field`, `onboarding`, `overlays`, `save-status`, `slider`, `toast`, `toggle`, `transport`, `waveform-timeline`, `brand`, `display`).
 - `button.tsx` sizes: `sm` (`min-h-target-sm`, 32), `md`, `lg`, `practice-2`, `practice`, `icon-sm`, `icon`, `icon-practice-2`, `icon-practice`. `transport.stories.tsx` (around line 186) asserts practice targets ≥ 64 × 64 and practice-2 ≥ 48.
 - `apps/web/e2e/visual/screens.spec.ts` captures only `Screens/*` stories: 10 rows (home, library, import-file, practice, practice-tab-pending, practice-stems-expired, mock-checkout, settings-display, settings-privacy, account-deleted) → 36 PNGs per engine, 72 committed baselines in `__screenshots__/{chromium,webkit}/`, named `<row>--<viewport>--<appearance>.png`. There is no component row. `focus.spec.ts` checks the sticky bar never hides focus. All 72 baselines are invalidated by the redesign (28 §4).
@@ -41,7 +45,7 @@ Every component in `apps/web/app/ui/` looks like the `splitune.css` component cl
 4. **Display defaults (26 §2):** `DEFAULT_DISPLAY.appearance` `system` → `dark`; `applyDisplay` raises `data-distance` to `stand` when `stage` resolves at `desk`; `.dark` set for `dark` and `stage`; `color-scheme` written. Update `display.test.ts` expectations that encode the old default (expected-value change by design; list each).
 5. **Icons (26 §11):** lucide at `strokeWidth={1.8}` with the §11 sizes; the custom set in `ui/icons/` (pedal, two pedals, capo, tab staff, chord box, count-in, minus-one, your part, desk/stand/floor distance illustrations; `bass` exists) on the same grid. `Brand`: lowercase wordmark + 28 px amber disc crossed by a graphite wave.
 6. **Visual baselines:** add a component row set to `apps/web/e2e/visual/` (a new spec file beside `screens.spec.ts`, or rows in it) for the restyled base components in Night Rehearsal and Daylight at one viewport, generate them with `e2e:visual:update`, and list what each shows. Leave the 72 screen baselines stale (each screen step regenerates its own); say so in the report.
-7. **G2 evidence:** Storybook screenshots of every base component in both themes next to the matching crops of `System` and the boards that use them, saved to your report folder (`<run>/reports/s33/`), with a one-page index (component → story id → mockup crop).
+7. **G2 evidence:** Storybook screenshots of every base component in both themes next to the matching crops of `System` and the boards that use them, saved to `redesign/.renders/<id>/` (ignored) (`<run>/reports/s33/`), with a one-page index (component → story id → mockup crop).
 8. **`check-ui-tokens` rules (28 §3 "Raw values"):** add to `scripts/check-ui-tokens.mjs` the rules 28 §3 requires — arbitrary colour, radius, font-size and shadow values (Tailwind `[…]` arbitrary values and CSS literals), and style-prop colour literals — **scoped to `apps/web/app/ui/**`** (screens are restyled later; s45 widens the scope to all of `apps/web/app`). Add a repeatable `--path <dir>` option that runs the extended rules on the given paths, so every screen step can check its own area (`node scripts/check-ui-tokens.mjs --path apps/web/app/features/library`); document it in the script header. Unit-test each rule with a passing and a failing sample. Keep the existing rules and their scope unchanged.
 
 ## Out of scope
@@ -61,13 +65,13 @@ pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget         
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
 node scripts/check-ui-tokens.mjs --path apps/web/app/ui   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                          # heavy lock; rerun once on Vite optimisation failure
+pnpm --filter @splitune/web test:stories                                          # rerun once on Vite optimisation failure
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
-pnpm --filter @splitune/web storybook                                             # heavy lock, port 6006, for the probes
+pnpm --filter @splitune/web storybook                                             # port 6006, for the probes
 node scripts/redesign/render-mockups.mjs --file System --file Main --file AddSong --file Settings-Display
 node scripts/redesign/probe.mjs 'http://localhost:6006/iframe.html?id=<story-id>&viewMode=story' --look night --width 1440 --select '#storybook-root <anchor>'
 node scripts/redesign/probe.mjs System --look fixed --select '<anchor>'
-pnpm --filter @splitune/web e2e:visual:update -g "<your component rows>"          # heavy lock, Docker image mcr.microsoft.com/playwright:v1.64.1-noble
+pnpm --filter @splitune/web e2e:visual:update -g "<your component rows>"          # Docker image mcr.microsoft.com/playwright:v1.64.1-noble
 pnpm --filter @splitune/web e2e:visual -g "<your component rows>"
 ```
 Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; first `test:stories` run in a fresh worktree failing in Vite dependency optimisation (rerun once). Screen baselines (`screens.spec.ts`) fail after this step by design until their screen step regenerates them; don't regenerate them here.
@@ -81,4 +85,4 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 
 ## Git
 - Branch `impl/s33-base-components`; subject-only Conventional Commits (for example `feat(ui): restyle base components on night rehearsal tokens so screens compose a finished kit`); stage exact paths; gitleaks before each commit; commit baselines in the same commit as the change they show.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").
