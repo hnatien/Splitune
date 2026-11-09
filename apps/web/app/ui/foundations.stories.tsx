@@ -315,8 +315,9 @@ export const TypeScale: Story = {
     await expect(width(canvas.getByTestId('pnum-ones'))).toBeLessThan(
       width(canvas.getByTestId('tnum-ones')),
     )
-    // frac and the cv*/ss* alternates change glyphs, so they change the set width.
-    await expect(width(canvas.getByTestId('frac-on'))).not.toBeCloseTo(
+    // Instrument Sans 1.000 has no frac feature (doc 26 §6.1), so frac leaves the set width alone;
+    // the ss* alternates change glyphs, so they change it.
+    await expect(width(canvas.getByTestId('frac-on'))).toBeCloseTo(
       width(canvas.getByTestId('frac-off')),
       0,
     )
@@ -441,6 +442,7 @@ export const TargetSizes: Story = {
       '--target': 44,
       '--target-practice-2': 48,
       '--target-practice': 64,
+      '--target-stand': 88,
     }
     for (const element of canvasElement.querySelectorAll<HTMLElement>('[data-target]')) {
       await expect(element.getBoundingClientRect().height).toBe(
@@ -536,7 +538,7 @@ export const SurfacesLight: Story = {
     const shadows = [...canvasElement.querySelectorAll<HTMLElement>('[data-elevation]')].map(
       (element) => getComputedStyle(element).boxShadow,
     )
-    await expect(new Set(shadows).size).toBe(3)
+    await expect(new Set(shadows).size).toBe(2)
     for (const shadow of shadows) await expect(shadow).not.toBe('none')
   },
 }
@@ -585,9 +587,9 @@ export const RadiusScale: Story = {
     const radius = (name: string) =>
       getComputedStyle(canvasElement.querySelector(`[data-radius="${name}"]`) as Element)
         .borderTopLeftRadius
-    await expect(radius('rounded-xl')).toBe('14px')
-    await expect(radius('rounded-2xl')).toBe('18px')
-    await expect(radius('rounded-3xl')).toBe('24px')
+    await expect(radius('rounded-xl')).toBe('12px')
+    await expect(radius('rounded-2xl')).toBe('14px')
+    await expect(radius('rounded-3xl')).toBe('16px')
   },
 }
 

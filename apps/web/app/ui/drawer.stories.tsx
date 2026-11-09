@@ -51,9 +51,7 @@ export const BottomSheetShape: Story = {
     await open(context)
     const popup = document.querySelector<HTMLElement>('[data-slot=drawer-popup]')
     const handle = document.querySelector<HTMLElement>('[data-slot=drawer-swipe-handle]')
-    await expect(
-      Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius),
-    ).toBeGreaterThan(20)
+    await expect(Number.parseFloat(getComputedStyle(popup as Element).borderTopLeftRadius)).toBe(16)
     const pill = getComputedStyle(handle as Element, '::after')
     await expect(pill.width).toBe('36px')
     await expect(pill.height).toBe('4px')
