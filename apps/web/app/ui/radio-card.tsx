@@ -22,30 +22,39 @@ type RadioCardProps = RadioPrimitive.Root.Props & {
   title: string
   description: string
   meta?: React.ReactNode
+  /** A picture above the choice (onboarding's distance drawings); decorative. */
+  media?: React.ReactNode
 }
 
-function RadioCard({ title, description, meta, className, ...props }: RadioCardProps) {
+function RadioCard({ title, description, meta, media, className, ...props }: RadioCardProps) {
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: Base UI's Radio renders the control inside
     <label
       data-slot="radio-card"
       className={cn(
-        'flex cursor-pointer gap-3 rounded-3xl border border-border bg-surface-raised p-4 shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input has-data-checked:border-signal has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-signal forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-signal forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:bg-surface-sunken has-data-disabled:shadow-none',
+        'flex cursor-pointer flex-col gap-3.5 rounded-3xl border border-border bg-surface-raised p-4 shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input has-data-checked:border-signal has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-signal forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-signal forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:bg-surface-sunken has-data-disabled:shadow-none',
         className,
       )}
     >
-      <RadioPrimitive.Root
-        className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-card data-checked:border-2 data-checked:border-signal"
-        {...props}
-      >
-        <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-signal text-primary-foreground">
-          <CheckDrawIcon strokeWidth={3} className="size-3.5" />
-        </RadioPrimitive.Indicator>
-      </RadioPrimitive.Root>
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className="text-base font-semibold">{title}</span>
-        <span className="text-sm text-muted-foreground">{description}</span>
-        {meta && <span className="text-sm text-foreground">{meta}</span>}
+      {media && (
+        <span aria-hidden className="w-full">
+          {media}
+        </span>
+      )}
+      <span className="flex min-w-0 gap-3">
+        <RadioPrimitive.Root
+          className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-card data-checked:border-2 data-checked:border-signal"
+          {...props}
+        >
+          <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-signal text-primary-foreground">
+            <CheckDrawIcon strokeWidth={3} className="size-3.5" />
+          </RadioPrimitive.Indicator>
+        </RadioPrimitive.Root>
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="text-base font-semibold">{title}</span>
+          <span className="text-sm text-muted-foreground">{description}</span>
+          {meta && <span className="text-sm text-foreground">{meta}</span>}
+        </span>
       </span>
     </label>
   )

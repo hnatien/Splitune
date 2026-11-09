@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 const SAVED_VISIBLE_MS = 3_000
 

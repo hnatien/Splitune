@@ -1,12 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PrivacySettings } from '@/features/settings/privacy-settings'
+import { toAccount } from '@/features/settings/account-redirect'
 
-// Privacy (27 §3.9); `?confirm=delete` is where Google re-authentication for account deletion
-// returns, with the confirmation open.
-export const Route = createFileRoute('/_app/settings/privacy')({ component: Privacy })
-
-function Privacy() {
-  const { me } = Route.useRouteContext()
-  const { confirm }: { confirm?: unknown } = Route.useSearch()
-  return <PrivacySettings me={me} deleteDialog={confirm === 'delete' ? 'confirm' : undefined} />
-}
+// Privacy moved into Account; `?confirm=delete` (Google re-authentication) is kept (27 §1).
+export const Route = createFileRoute('/_app/settings/privacy')({
+  beforeLoad: ({ search }) => toAccount('privacy', search),
+})

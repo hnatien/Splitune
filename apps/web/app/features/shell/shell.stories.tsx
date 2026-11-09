@@ -73,7 +73,10 @@ const playDesktop: Story['play'] = async ({ canvasElement }) => {
   ).toBeVisible()
   await expect(header.getByText('4 of 5 Lite left · resets 1 Dec')).toBeVisible()
   await expect(header.getByRole('button', { name: 'Add song' })).toBeVisible()
-  await expect(header.getByRole('button', { name: 'Account' })).toHaveTextContent('A')
+  // The initials are painted from data-initials, so the button's only text is "Account" (2.5.3).
+  const account = header.getByRole('button', { name: 'Account' })
+  await expect(account.querySelector('[data-initials]')).toHaveAttribute('data-initials', 'A')
+  await expect(account).toHaveTextContent(/^$/)
   await expect(canvasElement.querySelector('[data-slot="bottom-tabs"]')).not.toBeVisible()
 }
 
@@ -84,9 +87,9 @@ export const AppDesktopDaylight: Story = {
   globals: DAYLIGHT,
 }
 
-// Any settings section keeps Settings current, though the link leads to Profile.
+// Any settings section keeps Settings current, though the link leads to Account.
 export const AppDesktopSettingsCurrent: Story = {
-  render: appShell('/settings/billing'),
+  render: appShell('/settings/about'),
   play: async ({ canvasElement }) => {
     const nav = await within(canvasElement).findByRole('navigation', { name: 'Main' })
     await expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute(
@@ -188,12 +191,16 @@ export const DropOverlayDaylight: Story = {
   globals: DAYLIGHT,
 }
 
+// The dialog is a lazy chunk: on a cold dev server Vite compiles it on first request, which can
+// take longer than Testing Library's 1 s default when many stories run at once.
+const LAZY = { timeout: 10_000 }
+
 // The command palette (27 §3.12): Ctrl K opens it; songs, then actions; ↑/↓ move and the selected
 // row shows Enter.
 async function openPalette(canvasElement: HTMLElement) {
   await within(canvasElement).findByRole('banner')
   await userEvent.keyboard('{Control>}k{/Control}')
-  const dialog = await within(document.body).findByRole('dialog')
+  const dialog = await within(document.body).findByRole('dialog', undefined, LAZY)
   // The dialog fades and zooms in (26 §10); wait until it has.
   await waitFor(() => expect(dialog).toBeVisible())
   return within(dialog)
@@ -384,7 +391,7 @@ export const FocusPalette: Story = {
     await userEvent.click(
       await canvas.findByRole('button', { name: 'Search songs, clips and actions' }),
     )
-    const dialog = await within(document.body).findByRole('dialog')
+    const dialog = await within(document.body).findByRole('dialog', undefined, LAZY)
     await waitFor(() => expect(dialog).toBeVisible())
   },
 }

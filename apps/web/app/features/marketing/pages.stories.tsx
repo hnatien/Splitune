@@ -5,10 +5,18 @@ import { MarketingShell } from '../shell/marketing-shell'
 import { HowItWorks } from './how-it-works'
 import { LegalPage } from './legal-page'
 
-// How it works and the legal pages (27 §3.2) in the marketing shell.
+// How it works and the legal pages (27 §3.2) in the marketing shell, in Night Rehearsal and
+// Daylight, on desktop and phone.
 const meta = { title: 'Screens/Marketing', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
+
+const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+
+const noSidewaysScroll = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const root = canvasElement.ownerDocument.documentElement
+  await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth)
+}
 
 const howItWorks = () => (
   <AppStory path="/how-it-works">
@@ -30,12 +38,16 @@ export const HowItWorksPage: Story = {
     await expect(canvasElement.querySelector('#how-step-2 h2')).toHaveTextContent(
       'We isolate your part',
     )
+    // Uncertainty in frequencies, never a percentage (27 §5.3).
+    await expect(canvas.getByText(/about 1 in 8 is marked unsure/)).toBeVisible()
   },
 }
-export const HowItWorksDark: Story = { render: howItWorks, globals: { appearance: 'dark' } }
-export const HowItWorksPhone: Story = {
+export const HowItWorksDaylight: Story = { render: howItWorks, globals: { appearance: 'light' } }
+export const HowItWorksPhone: Story = { render: howItWorks, globals: PHONE, play: noSidewaysScroll }
+export const HowItWorksPhoneDaylight: Story = {
   render: howItWorks,
-  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  globals: { appearance: 'light', ...PHONE },
+  play: noSidewaysScroll,
 }
 
 const legal = (page: 'terms' | 'privacy') => () => (
@@ -55,4 +67,5 @@ export const Terms: Story = {
   },
 }
 export const Privacy: Story = { render: legal('privacy') }
-export const PrivacyDark: Story = { render: legal('privacy'), globals: { appearance: 'dark' } }
+export const PrivacyDaylight: Story = { render: legal('privacy'), globals: { appearance: 'light' } }
+export const TermsPhone: Story = { render: legal('terms'), globals: PHONE, play: noSidewaysScroll }

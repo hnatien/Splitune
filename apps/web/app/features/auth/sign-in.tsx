@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowRightIcon } from 'lucide-react'
 import type * as React from 'react'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { z } from 'zod'
 import { authClient, PASSWORD_MIN, USERNAME_MAX, USERNAME_MIN } from '@/lib/auth-client'
 import { m } from '@/lib/i18n'
@@ -64,9 +63,18 @@ function check(mode: AuthMode, username: string, password: string): Problems {
   }
 }
 
+/** Which field a server answer belongs under (27 §3.4: errors under the field, with an icon). */
+function fieldFor(problem: string): keyof Problems | undefined {
+  if (problem === m['auth.wrong_credentials']()) return 'password'
+  if (problem === m['auth.username_taken']()) return 'username'
+  return undefined
+}
+
 /**
  * Username and password, then a full load of `next` signed in (every cached query starts over).
- * `idPrefix` keeps the ids unique when two forms could share a page.
+ * `idPrefix` keeps the ids unique when two forms could share a page. The fields are uncontrolled
+ * and read on submit: text typed before hydration stays in the field and is what gets sent (a
+ * controlled field would be reset to its empty state on the first render after hydration).
  */
 export function CredentialsForm({
   mode,
@@ -77,8 +85,8 @@ export function CredentialsForm({
   next: string
   idPrefix?: string
 }) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const usernameField = useRef<HTMLInputElement>(null)
+  const passwordField = useRef<HTMLInputElement>(null)
   const [problems, setProblems] = useState<Problems>({})
   const [failure, setFailure] = useState<string | undefined>()
   const [sending, setSending] = useState(false)
@@ -89,39 +97,39 @@ export function CredentialsForm({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const name = username.trim()
+    const name = usernameField.current?.value.trim() ?? ''
+    const password = passwordField.current?.value ?? ''
     const found = check(mode, name, password)
     setProblems(found)
+    setFailure(undefined)
     if (found.username || found.password) return
     setSending(true)
-    setFailure(undefined)
     const problem = await authenticate(mode, name, password)
     if (problem) {
       setSending(false)
-      setFailure(problem)
+      const field = fieldFor(problem)
+      if (field) setProblems({ [field]: problem })
+      else setFailure(problem)
       return
     }
     window.location.assign(next)
   }
 
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-4">
+    <form noValidate onSubmit={submit} className="flex flex-col gap-4.5">
       <Field data-invalid={problems.username ? true : undefined}>
         <FieldLabel htmlFor={usernameId}>{m['auth.username_label']()}</FieldLabel>
         <Input
+          ref={usernameField}
           id={usernameId}
           autoComplete="username"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           maxLength={USERNAME_MAX}
-          value={username}
           aria-invalid={problems.username ? true : undefined}
           aria-describedby={problems.username ? `${errorId}-username` : undefined}
-          onChange={(event) => {
-            setUsername(event.target.value)
-            setProblems((p) => ({ ...p, username: undefined }))
-          }}
+          onChange={() => setProblems((p) => ({ ...p, username: undefined }))}
         />
         {signUp && !problems.username && (
           <FieldDescription>{m['auth.username_hint']()}</FieldDescription>
@@ -133,17 +141,14 @@ export function CredentialsForm({
       <Field data-invalid={problems.password ? true : undefined}>
         <FieldLabel htmlFor={passwordId}>{m['auth.password_label']()}</FieldLabel>
         <Input
+          ref={passwordField}
           id={passwordId}
           type="password"
           autoComplete={signUp ? 'new-password' : 'current-password'}
           maxLength={PASSWORD_MAX}
-          value={password}
           aria-invalid={problems.password ? true : undefined}
           aria-describedby={problems.password ? `${errorId}-password` : undefined}
-          onChange={(event) => {
-            setPassword(event.target.value)
-            setProblems((p) => ({ ...p, password: undefined }))
-          }}
+          onChange={() => setProblems((p) => ({ ...p, password: undefined }))}
         />
         {signUp && !problems.password && (
           <FieldDescription>{m['auth.password_hint']()}</FieldDescription>
@@ -153,15 +158,19 @@ export function CredentialsForm({
         )}
       </Field>
       {failure && <InlineError title={failure} />}
-      <Button type="submit" variant="primary" size="practice-2" loading={sending}>
+      <Button type="submit" variant="primary" size="lg" block loading={sending}>
         {signUp ? m['auth.submit_sign_up']() : m['auth.submit_sign_in']()}
-        <ArrowRightIcon aria-hidden />
       </Button>
     </form>
   )
 }
 
-/** The sign-in or sign-up page: heading, the form, Google when configured, and the other mode. */
+const LINK = 'text-primary-ink underline underline-offset-4 hover:decoration-2'
+
+/**
+ * The sign-in or sign-up page (27 §3.4, `SignIn.dc.html`): heading and lead, the form, Google
+ * when configured, the way to the other mode, and the terms.
+ */
 export function AuthScreen({
   mode,
   next,
@@ -174,8 +183,8 @@ export function AuthScreen({
   const signUp = mode === 'sign-up'
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl text-balance">
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-2xl text-balance">
           {signUp ? m['auth.sign_up_title']() : m['auth.sign_in_title']()}
         </h1>
         <p className="text-base text-muted-foreground">
@@ -183,47 +192,36 @@ export function AuthScreen({
         </p>
       </div>
       <CredentialsForm mode={mode} next={next} />
-      <p className="text-sm text-muted-foreground">
-        {signUp ? m['auth.have_account']() : m['auth.new_here']()}{' '}
-        <Link
-          to={signUp ? '/auth/sign-in' : '/auth/sign-up'}
-          search={{ next }}
-          className="text-primary underline underline-offset-4"
-        >
-          {signUp ? m['auth.sign_in_title']() : m['auth.sign_up_title']()}
-        </Link>
-      </p>
       {google && (
-        <div className="flex flex-col gap-4">
-          <p className="flex items-center gap-3 text-sm text-muted-foreground">
+        <>
+          <p className="flex items-center gap-3 text-sm text-faint-foreground">
             <span aria-hidden className="h-px flex-1 bg-border" />
             {m['auth.or']()}
             <span aria-hidden className="h-px flex-1 bg-border" />
           </p>
           <Button
-            variant="outline"
-            size="practice-2"
+            size="lg"
+            block
             onClick={() => authClient.signIn.social({ provider: 'google', callbackURL: next })}
           >
             {m['auth.google']()}
           </Button>
-        </div>
+        </>
       )}
-      <p className="border-t border-border pt-6 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
+        {signUp ? m['auth.have_account']() : m['auth.new_here']()}{' '}
+        <Link to={signUp ? '/auth/sign-in' : '/auth/sign-up'} search={{ next }} className={LINK}>
+          {signUp ? m['auth.sign_in_title']() : m['auth.sign_up_title']()}
+        </Link>
+        {signUp ? null : m['auth.no_email']()}
+      </p>
+      <p className="text-sm text-faint-foreground">
         {m['auth.small_print']()}{' '}
-        <Link
-          to="/legal/$page"
-          params={{ page: 'terms' }}
-          className="text-primary underline underline-offset-4"
-        >
+        <Link to="/legal/$page" params={{ page: 'terms' }} className={LINK}>
           {m['legal.terms_title']()}
         </Link>{' '}
         {m['auth.and']()}{' '}
-        <Link
-          to="/legal/$page"
-          params={{ page: 'privacy' }}
-          className="text-primary underline underline-offset-4"
-        >
+        <Link to="/legal/$page" params={{ page: 'privacy' }} className={LINK}>
           {m['legal.privacy_title']()}
         </Link>{' '}
         {m['auth.small_print_end']()}
