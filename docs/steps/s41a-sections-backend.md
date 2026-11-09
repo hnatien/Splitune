@@ -44,7 +44,7 @@ Built on `impl/s41a-sections` at `d944b61`, in the clean worktree `D:/Projects/S
 
 | | |
 |---|---|
-| Branch | `impl/s41a-sections` from the current `dev`; it merges only after **G3** |
+| Branch | `impl/s41a-sections` from the latest `dev`; it merges only after **G3** |
 | Hard deps | G1 |
 | Gates | **G3** (blocks the merge, not the work): the owner approves the new stage, its config and cache key and the analysis-time cost, runs (or approves running) `pnpm eval:regression` on the GPU machine (it must still pass: sections must not change separation), and checks section boundaries by ear on a few songs |
 | Owned globs | `services/ml/packages/stage_sections/**`, `services/ml/islands/**`, `packages/music-core/src/**` sections, `apps/api/src/pipeline.ts` |

@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/s
 
 | | |
 |---|---|
-| Branch | `impl/s36-outside-app` from the current `dev` |
+| Branch | `impl/s36-outside-app` from the latest `dev` |
 | Hard deps | G2 |
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the screens lane) reviews these screens |
 | Owned globs | `apps/web/app/features/{marketing,auth,onboarding,billing,settings,system,common}/**`, `routes/{_marketing,_auth,_bare}/**`, `routes/_app/settings*`, their `en.json` keys |

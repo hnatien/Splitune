@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), fourth in th
 
 | | |
 |---|---|
-| Branch | `impl/s39-progress` from the current `dev` |
+| Branch | `impl/s39-progress` from the latest `dev` |
 | Hard deps | s38, s34 |
 | Gates | G4 (batched; places "Warm up with yesterday's hard bars", which has no mockup) |
 | Owned globs | practice progress files, `apps/web/app/features/library/**` progress parts, `packages/contracts/src/api/practice.ts` if needed |

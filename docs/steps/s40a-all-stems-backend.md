@@ -27,7 +27,7 @@ Built and tested on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/
 
 | | |
 |---|---|
-| Branch | `impl/s40a-all-stems` from the current `dev`; it merges only after **G3** |
+| Branch | `impl/s40a-all-stems` from the latest `dev`; it merges only after **G3** |
 | Hard deps | G1. The merge also waits for `impl/29-separation-improvements` to be in `dev` (D16): it changes the same separation code and contracts, so merge `dev` into this branch once the owner has merged it |
 | Gates | **G3** (blocks the merge, not the work): the owner approves the separation-config and cache-key change, runs (or approves running) `pnpm eval:regression` on the GPU machine, and listens to the separated stems by ear |
 | Owned globs | `services/ml/**` (separation, stem_post, config), `packages/contracts/src/analysis/**`, generated contracts |

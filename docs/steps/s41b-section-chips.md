@@ -12,7 +12,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), sixth in the
 
 | | |
 |---|---|
-| Branch | `impl/s41b-section-chips` from the current `dev` |
+| Branch | `impl/s41b-section-chips` from the latest `dev` |
 | Hard deps | s40b, s41a (merged, so after G3) |
 | Gates | G4 (practice-lane review, batched) |
 | Owned globs | practice song-map files |

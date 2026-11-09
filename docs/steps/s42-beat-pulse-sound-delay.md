@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), seventh in t
 
 | | |
 |---|---|
-| Branch | `impl/s42-beat-pulse` from the current `dev` |
+| Branch | `impl/s42-beat-pulse` from the latest `dev` |
 | Hard deps | s41b, s36 |
 | Gates | G4 (practice-lane review); **G5** (owner, before the final merge) checks audio sync by ear with wired and Bluetooth headphones after calibration (offset ≤ 25 ms, 28 §6) |
 | Owned globs | practice beat-pulse files, `features/settings/**` sound-delay parts, `packages/audio-engine/**` if needed |

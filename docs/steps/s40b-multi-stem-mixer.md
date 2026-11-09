@@ -8,7 +8,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), fifth in the
 
 | | |
 |---|---|
-| Branch | `impl/s40b-mixer` from the current `dev` |
+| Branch | `impl/s40b-mixer` from the latest `dev` |
 | Hard deps | s39, s40a (merged, so after G3) |
 | Gates | G4 (practice-lane review, batched) |
 | Owned globs | practice mixer files, `packages/audio-engine/**` if a channel needs it |

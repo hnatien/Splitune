@@ -9,7 +9,7 @@ Start a new Claude Code session in the repo root and send:
 Read docs/steps/sNN-<name>.md and carry out that step end to end.
 ```
 
-The agent works on a branch `impl/NN-<name>` from the current `dev` (the integration branch; there is no `main`). When it finishes, read its summary and its entry at the end of `docs/progress-log.md`, review the branch, merge it into `dev` yourself, and update `docs/status.md`.
+The agent works on a new branch `impl/NN-<name>` from the latest `dev` (the integration branch; there is no `main`), never from another `impl/*` branch such as `impl/29-separation-improvements`. When it finishes, read its summary and its entry at the end of `docs/progress-log.md`, review the branch, merge it into `dev` yourself, and update `docs/status.md`.
 
 ## Order and dependencies
 | Step | Prompt | Depends on (steps) | Can run in parallel with |
@@ -93,7 +93,7 @@ flowchart LR
 ```
 
 ### Redesign steps (s31a–s45, "Night Rehearsal")
-The redesign runs like every other step: one at a time, each on `impl/<id>-<name>` from the current `dev`, merged into `dev` when the owner asks. Read `00-shared-context.md` first: its "Redesign steps" section holds the frozen decisions, decisions D1–D21, the owner gates (G2 foundations look; G3 separation/sections; G4 screen reviews on devices; G5 human-only checks), the PC setup and the known failures. Each prompt names its owned files, hard deps and gates. s32, s40a and s41a were started earlier: their prompts begin with "Resume here".
+The redesign runs like every other step: one at a time, each on `impl/<id>-<name>` from the latest `dev`, merged into `dev` when the owner asks. Read `00-shared-context.md` first: its "Redesign steps" section holds the frozen decisions, decisions D1–D21, the owner gates (G2 foundations look; G3 separation/sections; G4 screen reviews on devices; G5 human-only checks), the PC setup and the known failures. Each prompt names its owned files, hard deps and gates. s32, s40a and s41a were started earlier: their prompts begin with "Resume here".
 
 Order: s32 (resume) → s41a (resume; merges after G3) → s33 → G2 → s34 → s36 → s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43 → s40a (resume; finishes after `impl/29-separation-improvements` is in `dev`) → s45. s44 is deferred. Only one unmerged step at a time may change `packages/contracts/**`, generated contracts, `packages/db/src/schema/**` or migrations. s37 starts after s36 has merged (it adds a Display & practice row).
 

@@ -7,7 +7,7 @@ Done on `impl/s32-tokens-fonts` (not merged into `dev`). The progress-log entry 
 
 | | |
 |---|---|
-| Branch | `impl/s32-tokens-fonts` from the current `dev` |
+| Branch | `impl/s32-tokens-fonts` from the latest `dev` |
 | Hard deps | G1 |
 | Gates | G1 must be approved before you start. The Instrument Sans / JetBrains Mono / Inter legibility check is a human check: you add it to the owner's queue (Owner actions) and implement the primary choice. G2 (after s33) reviews the look |
 | Owned globs | `packages/ui-tokens/**`, `scripts/fonts/**`, `apps/web/public/fonts/**`, `apps/web/public/manifest.webmanifest`, `apps/web/app/styles.css`, `apps/web/.storybook/**`, font-preload/theme-color lines in `apps/web/app/routes/__root.tsx`, `pnpm-lock.yaml` |

@@ -8,7 +8,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/s
 
 | | |
 |---|---|
-| Branch | `impl/s35-practice-core` from the current `dev` |
+| Branch | `impl/s35-practice-core` from the latest `dev` |
 | Hard deps | G2 |
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the practice lane) reviews Practice. Perf must not regress the s32 baseline (28 §3.1) |
 | Owned globs | `apps/web/app/features/practice/**`, `packages/notation/**`, `apps/web/app/routes/_focus/songs/**`, their `en.json` keys |

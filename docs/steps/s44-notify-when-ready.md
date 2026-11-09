@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), backend lane
 
 | | |
 |---|---|
-| Branch | `impl/s44-notify` from the current `dev` |
+| Branch | `impl/s44-notify` from the latest `dev` |
 | Hard deps | s34, G1 |
 | Gates | **G5** (owner, before the final merge): Web Push on iPad Safari as an installed PWA and on desktop Chrome/Firefox. The real VAPID keys are an owner action (below), never committed |
 | Owned globs | `apps/web/app/sw.ts`, `apps/web/app/lib/pwa.ts`, `packages/contracts/src/api/notifications.ts` + router, `apps/api/src/routes/**` (new file), `packages/db/src/schema/**` + migration, `apps/node-worker/**`, `.env.example` |

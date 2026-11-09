@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/s
 
 | | |
 |---|---|
-| Branch | `impl/s34-shell-library` from the current `dev` |
+| Branch | `impl/s34-shell-library` from the latest `dev` |
 | Hard deps | G2 |
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the screens lane) reviews these screens and places "Works best with" (27 §3.6) |
 | Owned globs | `apps/web/app/features/{shell,library,import}/**`, `apps/web/app/routes/_app.tsx`, `routes/_app/{library,import}.tsx`, their `en.json` keys |
