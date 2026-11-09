@@ -366,6 +366,10 @@ Schema `1.6.0` (additive; `pnpm contracts:gen` regenerated the JSON Schemas and 
 `SCHEMA_VERSION` is now **1.8.0** (a widened pattern only; 1.x documents stay valid; music-core goldens restamped):
 - **`SeparatedStem.file`** may end in `.flac` or `.wav`: `separate` caches a raw stem that peaks above full scale as float32 WAV so loud masters keep `mixture − stem` exact (06, step 28 notes).
 
+## Implementation notes (step 29, 2026-11-08)
+`SCHEMA_VERSION` is now **1.9.0** (an addition only; music-core goldens restamped):
+- **`Separation.fallback_when_silent`** (optional; piano): `target_db` (the chain's target stem energy vs the mixture, dB), `present_prob` (the tagger's, absent without usable tags), `applied`, and `provider` when applied. Applied, the fallback model's outputs for the target (Mega-53 keys + synth) replaced the target stem; `stem_post` then credits the target and mix-minus stems to that provider (`Stem.provider`) and marks them `rough` (06, step 29 notes).
+
 ## Implications for other docs
 - `03-data-model-and-storage.md`: `analyses`, `artefacts`, `correction_ops` tables and the storage layout.
 - `06-ml-pipeline-service.md`: every stage writes its artefact atomically (temp key, then rename via copy) and updates `manifest`.

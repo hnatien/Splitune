@@ -1,17 +1,20 @@
 # Step s35 — Practice core: five regions, notation restyle, progressive state, new keymap
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5). The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s35. It opens the **practice lane**, which is strictly sequential: s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s35. It opens the **practice lane**, which is strictly sequential: s35 → s37 → s38 → s39 → s40b → s41b → s42 → s43.
+
+## Carried over from earlier steps (2026-11-08)
+- The "Screen May Lock" and "Screen May Lock No Storage" stories fail after 20:00 in Chromium and WebKit: the evening "Try Stage" hint adds a second Close button. `banners.tsx` is yours (D13): pin the stories' clock, or make the hint testable, so they pass at any hour.
+- Compare against s32's perf baseline (`apps/web/e2e/perf-baseline.json`). It already shows about 60 forced layouts per second during steady playback, coming from the alphaTab view chunk.
 
 | | |
 |---|---|
-| Branch | `impl/s35-practice-core` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s35-practice-core` from the current `dev` |
 | Hard deps | G2 |
 | Gates | G2 approved before you start. **G4** (owner, on devices, batched after the practice lane) reviews Practice. Perf must not regress the s32 baseline (28 §3.1) |
-| Owned globs (plan table) | `apps/web/app/features/practice/**`, `packages/notation/**`, `apps/web/app/routes/_focus/songs/**`, their `en.json` keys |
-| Also yours by the plan's rules | `en.json` keys in `practice.*`, `mixer.*`, `stage.*` (detail lines), `analysis.wrong_instrument`, `analysis.heard`, and `shortcuts.slower` / `shortcuts.faster` / `shortcuts.palette` / `shortcuts.next_unsure` / `shortcuts.previous_unsure` (inside their groups, never at the end); the `copy-keys.test.ts` `CATALOGUE` entries for `practice.pass_prompt` (changed), `analysis.wrong_instrument`, `analysis.heard`, `practice.pedal_detected` (new); the hot practice files `practice-context.tsx`, `practice.stories.tsx`, `practice-story-data.ts`; **`apps/web/app/lib/display-store.ts`** (orchestrator decision: follow mode Off, Playhead style, piano Hands Left, and the `stage` → `dark` rewrite; s36 doesn't edit it); `apps/web/e2e/practice.spec.ts` (the one existing spec you own); the visual baselines `practice--*`, `practice-tab-pending--*`, `practice-stems-expired--*` |
-| Needs the orchestrator's OK first | Existing `apps/web/app/ui/` practice-kit files whose layout 26 §12.2 gives to s35: `loop-badge.tsx`, `pass-control.tsx`, `chord-chip.tsx`, `confidence-legend.tsx`, `confidence-legend-panel.tsx`, `stem-row.tsx`, `mix-preset-group.tsx`, `waveform-timeline.tsx` (+ `.stories.tsx`), `pedal-hud.tsx`, `stage-list.tsx`, `speed-control.tsx`, `speed-panel.tsx`, `transport-button.tsx`, `ui/{mixer,music,notation,transport}.stories.tsx`; new `ui/beat-pulse.tsx`; `apps/web/app/copy-keys.test.ts` (entries above); the selector table in `apps/web/e2e/perf-practice.spec.ts` (s32) if a control it drives is renamed; additive changes to `apps/web/e2e/helpers.ts` (union-merged). `practice.spec.ts:93` presses ↓ for speed (yours to fix); `a11y.spec.ts:239` presses ↑ (s36's: Stop point 6) |
+| Owned globs | `apps/web/app/features/practice/**`, `packages/notation/**`, `apps/web/app/routes/_focus/songs/**`, their `en.json` keys |
+| Also yours | `en.json` keys in `practice.*`, `mixer.*`, `stage.*` (detail lines), `analysis.wrong_instrument`, `analysis.heard`, and `shortcuts.slower` / `shortcuts.faster` / `shortcuts.palette` / `shortcuts.next_unsure` / `shortcuts.previous_unsure` (inside their groups, never at the end); the `copy-keys.test.ts` `CATALOGUE` entries for `practice.pass_prompt` (changed), `analysis.wrong_instrument`, `analysis.heard`, `practice.pedal_detected` (new); the hot practice files `practice-context.tsx`, `practice.stories.tsx`, `practice-story-data.ts`; **`apps/web/app/lib/display-store.ts`** (decision D13: follow mode Off, Playhead style, piano Hands Left, and the `stage` → `dark` rewrite; s36 doesn't edit it); `apps/web/e2e/practice.spec.ts` (the one existing spec you own); the visual baselines `practice--*`, `practice-tab-pending--*`, `practice-stems-expired--*` |
+| Ask the owner first | Existing `apps/web/app/ui/` practice-kit files whose layout 26 §12.2 gives to s35: `loop-badge.tsx`, `pass-control.tsx`, `chord-chip.tsx`, `confidence-legend.tsx`, `confidence-legend-panel.tsx`, `stem-row.tsx`, `mix-preset-group.tsx`, `waveform-timeline.tsx` (+ `.stories.tsx`), `pedal-hud.tsx`, `stage-list.tsx`, `speed-control.tsx`, `speed-panel.tsx`, `transport-button.tsx`, `ui/{mixer,music,notation,transport}.stories.tsx`; new `ui/beat-pulse.tsx`; `apps/web/app/copy-keys.test.ts` (entries above); the selector table in `apps/web/e2e/perf-practice.spec.ts` (s32) if a control it drives is renamed; additive changes to `apps/web/e2e/helpers.ts` (union-merged). `practice.spec.ts:93` presses ↓ for speed (yours to fix); `a11y.spec.ts:239` presses ↑ (s36's: Stop point 6) |
 | Effort | xhigh |
-| Runs in parallel with | s34 and s36 (screens lane), backend steps |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -22,7 +25,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - Mockups: `Main.dc.html`, `Practice-Ready.dc.html`, `Practice-Mix.dc.html` (Chords view; today's channels only), `Practice-Piano.dc.html` and `Practice-Drums.dc.html` (instrument views and their Now areas), `States.dc.html`.
 - `redesign/report.md` "The Practice screen: five regions serving one loop" through "The new key and pedal map"; `redesign/research/product_inventory.md` §3 (practice in depth).
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`)
+## What exists (verified at `0c3d5c3`)
 - **Practice** `apps/web/app/features/practice/`: `practice-page.tsx` (lazy `MixerDrawer`, `EditorSheet`, `GlanceView`, `VideoPane`, `PracticeBanners`, `ShortcutsOverlay`), `status-bar.tsx` (lazy `StatusControls`, `MorePanel`, `DisplayPanel`), `transport-bar.tsx` (lazy `LoopPanel`), `practice-timeline.tsx` (lazy `WaveformTimeline`), `notation-pane.tsx` (lazy `ChordSheet`, `AlphaTabView`), `chord-strip.tsx`, `analysis-status.tsx`, `practice-loading.tsx`, `layout.ts` (`usePracticeLayout`: `desktop`, `tablet-landscape`, `tablet-portrait`, `phone-landscape`, `phone-portrait`, by feature queries), `display-popover.tsx`, `level-toggle.tsx`, `glance-view.tsx`, `mixer-drawer.tsx`, `loop-panel.tsx`, `score-theme.ts` (reads tokens through `readColor`, tab digits never below 18 px), `keys-store.ts`, `input-mapper.ts`, `key-bindings.tsx`, `shortcuts-overlay.tsx`, `model/` (`keymap.ts`, `player-machine.ts`, `loops.ts`, `mixer.ts`, `transport.ts`, `view-model.ts`, …), `practice-context.tsx`, `practice.stories.tsx` (`Screens/Practice`: `Loading`, `Analysing`, `BeatsFound`, `Chords`, `Ready`, `LoopActive`, `ChordsView`, `Editor`, `Mixer`, `Glance`, `Piano*`, `StemsExpired`, `ReadyStage`, …), `practice-story-data.ts`.
 - **Keymap** (`model/keymap.ts`): `slower: ['ArrowDown']`, `faster: ['ArrowUp']`; no `,`/`.`, no Shift step, no single-key switch, no ⌘K.
 - **Mixer** (`model/mixer.ts`): two channels, "Your part" and the mix-minus ("Backing"); presets `part-loud`, `minus-one`, `original`.
@@ -42,8 +45,8 @@ On desktop the practice screen has the five regions of `Main.dc.html` (song map,
 - **D3:** the speed ladder steps up after 3 clean passes by default (built in s37; don't hard-code anything that contradicts it).
 - **D4:** Stand view is the default practice layout on tablets (s43 builds it; until then tablets use the full layout with the inspector in a drawer).
 - **D6:** budget 318.7 of 320 KB gzip (about 1.3 KB headroom). Every new panel (inspector tab bodies, Getting ready, What works now, Display popover body) is lazy-loaded; free bytes before adding any; report before/after bytes built the same way; raising the budget needs the owner.
-- Frozen decisions 3–5 (prompt.md §1): the practice layout; confidence never by colour alone ("about 1 in 3" wording); speed is `,` / `.` (Shift = 1 %), ↑/↓ never change speed silently and show "Pedal detected? Set it up" until a pedal is set up, single-key shortcuts can be switched off (WCAG 2.1.4).
-- **Wave contracts (put in the orchestrator's decisions register):** the ⌘K registration hook from s34 (Practice registers "Loop bars a–b", view switches, "Display and reading"); `keys-store.ts` gains `singleKeys: boolean` (default `true`), which you implement and gate the keymap on, and s36's Keyboard & pedal switch binds to; `appearance.*` copy is s36's (you use the keys); `lib/display-store.ts` is yours and exports the option constants s36's settings controls map over.
+- Frozen decisions 3–5: the practice layout; confidence never by colour alone ("about 1 in 3" wording); speed is `,` / `.` (Shift = 1 %), ↑/↓ never change speed silently and show "Pedal detected? Set it up" until a pedal is set up, single-key shortcuts can be switched off (WCAG 2.1.4).
+- **Contracts with other steps (record them in your progress-log entry):** the ⌘K registration hook from s34 (Practice registers "Loop bars a–b", view switches, "Display and reading"); `keys-store.ts` gains `singleKeys: boolean` (default `true`), which you implement and gate the keymap on, and s36's Keyboard & pedal switch binds to; `appearance.*` copy is s36's (you use the keys); `lib/display-store.ts` is yours and exports the option constants s36's settings controls map over.
 
 ## Deliverables
 1. **Layout** (27 §3.7.1, 26 §7): top bar 60 (back, title + part line with key and BPM, view switch, legend chip "? Auto-transcribed · {n} unsure", Display, Keyboard & pedal, More), song map (waveform, unsure hatch, loop band beneath the bars with 2 px edges and keyboard-nudgeable handles, now-line, ruler; no section chips: absent until s41b), Now column 264 (eyebrow "Now · bar 26 · beat 3", current chord at `--read-chord-current` + shape, static `BeatPulse`, next chord + "in n beats" + bar, Then chips, Level / Capo card), notation canvas, inspector 380 (V14) with tabs Loop · Mix · Progress · Fix (unsure-count badge; `?tab=`; last tab remembered per device), transport dock 96 with 64 px main controls (V11), the loop pill, the speed group "75 %" / "72 BPM", count-in, click, mix pill, volume. Region behaviour below 1180 and 1024 per 27 §3.7.1. Tablets and phones keep today's arrangements, restyled.
@@ -71,7 +74,7 @@ Speed ladder and clip rename/delete (s37), Fix mode and the queue (s38), Progres
 - Keyboard: ↑/↓ never change speed (story `play` + unit test in `keymap.test.ts`); `,`/`.` and Shift work; single keys inert when `singleKeys` is off; ⌘K opens the palette; PedalHud ≤ 100 ms (E2E timing).
 - Reduced motion: page turns, stepped playhead, no fades; pausing stops scrolling.
 - Stories for every state in both themes and `stage`; axe clean in Chromium and WebKit; copy-keys test green.
-- E2E smoke green for the specs you own, with every changed selector listed against its 12 §8 or 27 §5.7 reason; edits needed in specs you don't own recorded in your report (Stop point 6).
+- E2E smoke green for the specs you own, with every changed selector listed against its 12 §8 or 27 §5.7 reason; edits needed in specs you don't own recorded in your progress-log entry (Stop point 6).
 
 - Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
@@ -81,24 +84,24 @@ pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/chec
 node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path packages/notation/src   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/notation typecheck && pnpm --filter @splitune/notation test
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                                 # heavy lock
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
 node scripts/redesign/render-mockups.mjs --file Main --file Practice-Ready --file Practice-Mix --file Practice-Piano --file Practice-Drums
 node scripts/redesign/probe.mjs Main --look night --width 1440 --select '<anchor>'        # and the story URL, same anchors
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # heavy lock, ×3
-cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test          # heavy lock
-pnpm --filter @splitune/web e2e:visual:update -g "practice @|practice-tab-pending @|practice-stems-expired @"                         # heavy lock, Docker
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # ×3
+cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test
+pnpm --filter @splitune/web e2e:visual:update -g "practice @|practice-tab-pending @|practice-stems-expired @"                         # Docker
 ```
 Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; first `test:stories` run failing in Vite optimisation (rerun once).
 
 ## Stop points (stop, report with 2–3 options and a recommendation, wait)
 1. 27 §3.7, 12, a mockup and the code disagree (for example a region the mockup draws that the spec gives to a later step).
 2. The budget can't stay under 320 KB with every new panel lazy, or the perf gate regresses and you can't find the cause in your code.
-3. You need a file outside the owned globs and the OK'd extras (`features/shell`, `features/settings`, `lib/**` other than `display-store.ts`, `packages/audio-engine`, another step's `ui/` file, `features/story-fixtures.ts` unless assigned to you at dispatch).
+3. You need a file outside the owned globs and the OK'd extras (`features/shell`, `features/settings`, `lib/**` other than `display-store.ts`, `packages/audio-engine`, another step's `ui/` file, `features/story-fixtures.ts` beyond additive fixtures for your own stories).
 4. A contract or API change (for example Pick another needing a "re-run from separation" endpoint).
 5. A story or E2E assertion fails for a reason other than a by-design copy, keymap or structure change.
-6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
+6. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an unmerged step becomes yours to change only after its owner has merged: then merge `dev` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your progress-log entry. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s35-practice-core`; subject-only Conventional Commits (for example `feat(practice): split practice into five regions so the loop, the notation and the transport each have one place`); stage exact paths; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").

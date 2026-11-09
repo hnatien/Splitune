@@ -1,17 +1,24 @@
 # Step s41b — Section chips in the song map
 
-Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` §5), sixth in the practice lane (s35 → s37 → s38 → s39 → s40b → **s41b** → s42 → s43). The orchestrator's worker brief (prompt.md §6) gives your worktree, setup, heavy-lock path, generic rules and the frozen decisions; this prompt holds what is specific to s41b.
+Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), sixth in the practice lane (s35 → s37 → s38 → s39 → s40b → **s41b** → s42 → s43). Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s41b.
+
+## Carried over from earlier steps (2026-11-08)
+- s41a's merge waits for the owner's G3. If it isn't merged yet, build against `packages/contracts/fixtures/sections.json` and story data (D15).
+- **Fallback ids (D19):** fallback segments have `label: "unknown"` and ids `part-<letter><n>` (`part-a1`, `part-b1`, `part-a2`…). Show "Part A" for an unknown segment whose id matches `^part-([a-z])\d+$`. `set_section` renames by id.
+- **From s41a's review, yours to fix:**
+  - **M1:** a failed `sections` job (fallback `sections_novelty`) makes the practice banner say "We couldn't analyse this song" on an analysis that finished `done` (`features/practice/banners.tsx:102`; `reasons.ts` has no copy for it). Suppress it or give it the right copy. `banners.tsx` is free once s35 has merged (D13).
+  - **L5:** `remainingSeconds()` in `apps/web/app/lib/stages.ts` returns no ETA while `sections` has no successful timing, so the ETA vanishes.
+  - `stages.ts` labels `sections` as "Other".
 
 | | |
 |---|---|
-| Branch | `impl/s41b-section-chips` from the current `impl/redesign` tip (not `dev`); the orchestrator merges it |
+| Branch | `impl/s41b-section-chips` from the current `dev` |
 | Hard deps | s40b, s41a (merged, so after G3) |
 | Gates | G4 (practice-lane review, batched) |
-| Owned globs (plan table) | practice song-map files |
+| Owned globs | practice song-map files |
 | "Practice song-map files", concretely | `apps/web/app/features/practice/practice-timeline.tsx`, the `SongMap` files s35 created, `model/data.ts` (loading `sections` with the other artefacts), new section files under `features/practice/` (chip row, section loop presets, rename), the Loop tab heading's section badge, the palette registration s35 wrote for practice actions (to add "Loop the next {section}"), the hot practice files, and `en.json` keys for sections in `practice.*` |
-| Needs the orchestrator's OK first | `apps/web/app/ui/waveform-timeline.tsx` and `ui/waveform-timeline.stories.tsx` (the "sections s41b" row of 26 §12.2) |
+| Ask the owner first | `apps/web/app/ui/waveform-timeline.tsx` and `ui/waveform-timeline.stories.tsx` (the "sections s41b" row of 26 §12.2) |
 | Effort | high |
-| Runs in parallel with | backend steps (s44) only |
 
 ## Before you start
 - `docs/steps/00-shared-context.md`, `CLAUDE.md`, `docs/specs/25-personal-mode.md`.
@@ -21,7 +28,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/orchestrator/prompt.md` �
 - `docs/specs/28-ui-quality-and-design-review.md` §3 (target-size exception), §5, §5.1; s41a's report (where the fallback runs and how `set_section` targets it).
 - Mockups: `Main.dc.html` (section chips row), `Practice-Mix.dc.html` (chord sheet with section names).
 
-## What exists (verified on `impl/redesign` at `0c3d5c3`; s35 and s41a will have changed it)
+## What exists (verified at `0c3d5c3`; s35 and s41a will have changed it)
 - `ArtefactKind` includes `sections` (`packages/contracts/src/analysis/common.ts` line 60); `features/practice/model/data.ts` loads the latest artefact of each kind (for example `latestOf(entries, 'chords')`, line 86) but not `sections`.
 - `music-core/src/corrections/apply.ts` applies `set_section`; `en.json` has `history.set_section` "Renamed a section".
 - After s41a, analyses schedule `sections` (soft) and produce `sections.json` (allin1 or the novelty fallback, "Part A/B/C"), boundaries on downbeats; s35's song map has no chip row.
@@ -51,7 +58,7 @@ The sections stage itself (s41a), section-aware ladder or progress, the chord sh
 - Keyboard: every section reachable by Tab/arrows on the chip row, by ⌘K and from the Loop tab (E2E or story `play`).
 - Fidelity: the chip row against `Main` at 1440 and 1180, both themes; remaining differences in tolerance or 26 §4.9 (V13); at most 6 iterations without improvement.
 - Stories for every state in both themes; axe clean in Chromium and WebKit; perf spec shows no song-map LoAF vs the s32 baseline; budget before/after reported, `budget --enforce` green.
-- Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (heavy lock, Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
+- Visual baselines: if your change shows in a story the visual matrix captures (the `practice`, `practice-tab-pending` and `practice-stems-expired` rows of `apps/web/e2e/visual/screens.spec.ts`), regenerate those rows with `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (Docker) and list each intended difference; their PNGs are yours by the plan's rule for visual steps. Don't add rows (s45 owns the full matrix).
 
 - Your area passes s33's extended `check-ui-tokens` rules (28 §3: no arbitrary colour, radius, font-size or shadow values, no style-prop colour literals), run on your paths with `--path`, even though the default scope stays `apps/web/app/ui/**` until s45.
 ### Commands (prefix each with `cd "<worktree>" &&`)
@@ -60,11 +67,11 @@ pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget         
 pnpm exec biome check . && node scripts/check-db-access.mjs && node scripts/check-ui-tokens.mjs
 node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice   # s33's extended 28 §3 rules (arbitrary colour, radius, font-size, shadow, style-prop colours) on your area
 pnpm --filter @splitune/web typecheck && pnpm --filter @splitune/web test
-pnpm --filter @splitune/web test:stories                                                  # heavy lock
+pnpm --filter @splitune/web test:stories
 pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor
 node scripts/redesign/probe.mjs Main --look night --width 1440 --select '<chip anchors>'
-cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium   # heavy lock
-cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv from your brief> UV_NO_SYNC=1 pnpm exec playwright test        # heavy lock
+cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium
+cd apps/web && E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test
 ```
 Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; first `test:stories` run failing in Vite optimisation (rerun once).
 
@@ -73,8 +80,8 @@ Known pre-existing failures: WebKit practice/audio stories timing out at 15 s; f
 2. The chip row doesn't fit the budget even after freeing bytes.
 3. A file outside the owned globs and the OK'd extras (contracts, `music-core`, the shell's palette code).
 4. `set_section` can't target the sections the user sees (for example browser-side fallback sections with no artefact) without a contract change.
-5. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an in-flight step becomes yours to change only after its owner has merged: then merge `impl/redesign` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your report. New cases go into your own new spec files.
+5. An existing e2e spec you don't own would break. One owner per existing spec file: `practice.spec.ts` → s35; `onboarding`, `account`, `billing`, `fallbacks`, `a11y` → s36; `journey` → s34; additive `helpers.ts` changes union-merge. A spec owned by an unmerged step becomes yours to change only after its owner has merged: then merge `dev` into your branch first and make the change. Until then don't edit it; record the exact edit you need (file, line, old → new, and the 27 §5.7 or 12 §8 reason) in your progress-log entry. New cases go into your own new spec files.
 
 ## Git
 - Branch `impl/s41b-section-chips`; subject-only Conventional Commits (for example `feat(practice): add section chips to the song map so a chorus loops in one tap`); stage exact paths; gitleaks before each commit.
-- Never push, merge, rebase onto `dev` or open a PR. No edits to `docs/status.md`, `docs/progress-log.md`, `docs/steps/README.md`; progress-log entry in your report.
+- Don't push, merge or open a PR unless the owner asks. Append your progress-log entry and update your row in `docs/status.md` (`00-shared-context.md`, "Git and progress").

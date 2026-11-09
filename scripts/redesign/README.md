@@ -17,8 +17,8 @@ Measurements are the check; a pixel diff is a smoke signal only. Nothing here wr
 
 Playwright and Chromium come from `apps/web` (`playwright` 1.64.1 and its installed Chromium); there
 is no root dependency and no root `pnpm` script. Run everything from the repo root with Node 24.
-The scripts launch Chromium, so on a shared machine hold the redesign run's heavy lock around them
-(one heavy browser run per machine).
+The scripts launch Chromium on fixed ports, so don't run them alongside another browser test run
+on the same machine.
 
 ## Commands
 

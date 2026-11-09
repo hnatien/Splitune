@@ -2,3 +2,5 @@
 # checkout (Windows core.autocrlf) must not rewrite them.
 packages/contracts/schema/** text eol=lf
 services/ml/packages/splitune_ml_core/src/splitune_ml_core/contracts/_generated.py text eol=lf
+# Derived separation configs: compliance/register pins their sha256, so no checkout may rewrite them.
+services/ml/eval/model-configs/** text eol=lf

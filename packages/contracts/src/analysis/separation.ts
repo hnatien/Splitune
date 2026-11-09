@@ -35,4 +35,16 @@ export const Separation = ArtefactHeader.extend({
   // instrument alone, that model's run is this separation (the chain was skipped) and notes are
   // transcribed from the mixture.
   solo_bypass: z.object({ rhythm_db: z.number(), applied: z.boolean() }).optional(),
+  // Fallback when silent (step 29, piano): the chain's target stem energy relative to the mixture
+  // (dB) and the tagger's present_prob for the target (absent without usable tags). `applied` =
+  // below the configured threshold while the tagger heard the target: the outputs `provider` maps
+  // to the target (keys + synth) replaced the target stem, which stem_post marks rough.
+  fallback_when_silent: z
+    .object({
+      target_db: z.number(),
+      present_prob: z.number().min(0).max(1).optional(),
+      applied: z.boolean(),
+      provider: z.string().min(1).optional(),
+    })
+    .optional(),
 }).register(contracts, { id: 'Separation' })

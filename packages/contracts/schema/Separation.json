@@ -104,6 +104,30 @@
             "rhythm_db",
             "applied"
           ]
+        },
+        "fallback_when_silent": {
+          "type": "object",
+          "properties": {
+            "target_db": {
+              "type": "number"
+            },
+            "present_prob": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "applied": {
+              "type": "boolean"
+            },
+            "provider": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "target_db",
+            "applied"
+          ]
         }
       },
       "required": [

@@ -323,6 +323,13 @@ class SoloBypass(BaseModel):
     applied: StrictBool
 
 
+class FallbackWhenSilent(BaseModel):
+    target_db: StrictFloat
+    present_prob: Annotated[StrictFloat | None, Field(ge=0.0, le=1.0)] = None
+    applied: StrictBool
+    provider: Annotated[StrictStr | None, Field(min_length=1)] = None
+
+
 class SeparationAttempt(BaseModel):
     model: Annotated[StrictStr, Field(min_length=1)]
     error_code: MachineCode
@@ -667,6 +674,7 @@ class Separation(BaseModel):
     stems: Annotated[list[SeparatedStem], Field(min_length=1)]
     failed_attempts: list[SeparationAttempt]
     solo_bypass: SoloBypass | None = None
+    fallback_when_silent: FallbackWhenSilent | None = None
 
 
 class StageCompletedEvent(BaseModel):
@@ -1008,4 +1016,4 @@ class Notes(BaseModel):
     tuning: RecordingTuning | None = None
 
 
-SCHEMA_VERSION = "1.8.0"
+SCHEMA_VERSION = "1.9.0"

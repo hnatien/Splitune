@@ -1,0 +1,51 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: bs-roformer-mega53-keys5
+kind: model
+name: "MVSep Mega-53 BS-RoFormer cut to its organ / keys / synth / piano / digital-piano heads"
+version: "v1.0.21 heads 31,25,38,33,12"
+repo_url: https://github.com/ZFTurbo/Music-Source-Separation-Training
+code_spdx: MIT
+weights:
+  licence: "not stated"
+  url: https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/tag/v1.0.21
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "971cb1e7f236216af2cde7507fab683f41baab43758b3ec4cdffbd62ca3b9d28"
+  files:
+    - name: bs_roformer_mega53_keys5.ckpt
+      sha256: "8adee9f3b93723a991cbf779c3c4ea8ebd2b492335d3991e84764356120a59c4"
+      bytes: 176833020
+    - name: bs_roformer_mega53_keys5.yaml
+      sha256: "76858bd694f4ac44108db8b01cbc18a123225fd83eae456ea688c86d490e64f1"
+      bytes: 2632
+training_data:
+  - name: undisclosed (MVSep)
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    moisesdb_in_training: unknown
+    source: https://mvsep.com/algorithms/135
+source_files:
+  - name: mvsep_mega_model_bs_roformer_53_stems_v1.ckpt
+    sha256: "c62820893bbf86d4e734f966bd142d9157cfc8bb8e79e9d8f9ea553f3ff3519f"
+    bytes: 1368919887
+    url: https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.21/mvsep_mega_model_bs_roformer_53_stems_v1.ckpt
+  - name: mvsep_mega_model_bs_roformer_53_stems.yaml
+    sha256: "7e198062a251587088adb91215a4f44ab59e67bd62fcc805cf54d6e7dfc51103"
+    bytes: 4184
+    url: https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.21/mvsep_mega_model_bs_roformer_53_stems.yaml
+tier: red
+tier_reason: "weights licence and training data undisclosed"
+used_in: [separate, eval]
+profiles: [personal]
+notes: >-
+  Piano's fallback when BS-Roformer-SW hears no piano (step 29: its keys + synth heads; map entry
+  mega53_keys, eval/results/sep-improve/2026-11-08-keys.md). Research section 5: organ 10.37, keys
+  9.30, synth 2.05, digital piano 7.96 SDR on MVSep's unnamed validation set, tier 2. The upstream
+  53-stem fp16 checkpoint (source_files; MVSep recommends at least 16 GB of VRAM) is cut by
+  scripts/fetch_models.py mega53-keys to its backbone and mask estimators 31, 25, 38, 33, 12,
+  renumbered 0-4, saved through a buffer so every cut has the same bytes (the step 29 runs used an
+  earlier cut, e6db84e8..., whose archive was named after its file: the same tensors, other bytes).
+  Each head equals the noblebarkrr mirror's single-head file tensor for tensor
+  (eval/weights_check.py). mlp_expansion_factor 2; MSST chunk 882,000 with num_overlap 2.
+reviewer: owner
+reviewed: 2026-11-08

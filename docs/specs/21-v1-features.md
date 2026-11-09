@@ -9,7 +9,7 @@ confidence: medium
 
 Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to-intermediate.md` (V1–V13). Native apps (V14) are in `22-native-apps.md`. Each entry lists the start gate, the components it touches and the acceptance check. Sequencing is in `20-delivery-plan.md` Phase 3.
 
-**Redesign (step s31a, 2026-11-08).** The "Night Rehearsal" redesign (`redesign/report.md`, steps s32–s45 in `redesign/orchestrator/prompt.md` §5) builds V1, V3 and V9 and gives V5, V10, V11 and V12 their place in the new screens. Each entry below has a **UI (redesign)** line naming the screen (`27-screens-flows-and-content.md`), the components (`26-design-system.md` §12.2) and the step. New scope that is not a V-feature is listed at the end.
+**Redesign (step s31a, 2026-11-08).** The "Night Rehearsal" redesign (`redesign/report.md`, steps s32–s45 in `docs/steps/`) builds V1, V3 and V9 and gives V5, V10, V11 and V12 their place in the new screens. Each entry below has a **UI (redesign)** line naming the screen (`27-screens-flows-and-content.md`), the components (`26-design-system.md` §12.2) and the step. New scope that is not a V-feature is listed at the end.
 
 > **Personal mode is current (`25-personal-mode.md`).** Gates tied to counsel or licences disappear: V3 sections, V4 piano (Transkun or Aria-AMT), V10 offline and V11 export start whenever the code is ready. **V6 drums uses pretrained ADTOF** instead of training an in-house CRNN. V7 mic scoring still waits for P5 (it's a quality gate, not a legal one). V14 native = PWA plus optional free sideloaded Capacitor builds (`22-native-apps.md`).
 

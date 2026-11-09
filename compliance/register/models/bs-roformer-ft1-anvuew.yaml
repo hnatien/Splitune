@@ -1,0 +1,39 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: bs-roformer-ft1-anvuew
+kind: model
+name: "BS-RoFormer ft1 vocals (community checkpoint by anvuew)"
+version: "24988f4 bs_roformer_ft1_anvuew_sdr_12.55"
+repo_url: https://huggingface.co/anvuew/BS-RoFormer
+code_spdx: MIT
+weights:
+  licence: "GPL-3.0 (model card)"
+  url: https://huggingface.co/anvuew/BS-RoFormer/tree/24988f47270cb3529b62c4f3bbb8234f4586de9b
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "67c4b80d589388e2c9b32b9e951d5b24491d4ce4d2b178f8f5466a20f0c14f4b"
+  files:
+    - name: bs_roformer_ft1_anvuew.ckpt
+      sha256: "60347271e8493fdff28ef558c3b2297afb869a1f4462594ed548038264bec395"
+      bytes: 204493312
+      url: https://huggingface.co/anvuew/BS-RoFormer/resolve/24988f47270cb3529b62c4f3bbb8234f4586de9b/bs_roformer_ft1_anvuew_sdr_12.55.ckpt
+    - name: bs_roformer_ft1_anvuew.yaml
+      sha256: "033e57abee226a480ef410e0631b9fe00e8b7bc9a3bb5fe55659d0b43a238701"
+      bytes: 1969
+      url: https://huggingface.co/anvuew/BS-RoFormer/resolve/24988f47270cb3529b62c4f3bbb8234f4586de9b/config.yaml
+training_data:
+  - name: "dataset by bascurtiz (model card), contents undisclosed"
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    moisesdb_in_training: unknown
+    source: https://huggingface.co/anvuew/BS-RoFormer
+tier: red
+tier_reason: "community checkpoint, GPL-3.0 weights, training data undisclosed"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Step 29 vocals-head candidate (MVSep Multisong vocals 11.54 / bleedless 35.20 / fullness 19.85,
+  tier 2). dim 256, depth 12, 51.0 M parameters. The config keys use_torch_checkpoint (an inference
+  no-op) and audio.min_mean_abs (training only) don't change inference. Chunk 960,000 (21.8 s) in
+  both MSST and audio-separator.
+reviewer: owner
+reviewed: 2026-11-08
