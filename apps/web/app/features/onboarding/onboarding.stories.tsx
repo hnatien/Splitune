@@ -209,7 +209,7 @@ export const Saved: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('heading', { name: 'Your progress is saved' })).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Import a song' })).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Add song' })).toBeVisible()
     await expect(canvas.getByRole('link', { name: 'Keep practising' })).toBeVisible()
   },
 }

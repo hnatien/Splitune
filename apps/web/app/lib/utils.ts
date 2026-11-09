@@ -16,8 +16,13 @@ const twMerge = extendTailwindMerge({
       ],
       shadow: ['1', '2', '3'],
       text: [
+        'button-lg',
+        'lead',
+        'display',
         'read-tab',
         'read-chord-current',
+        'read-chord-next',
+        'read-chord-sheet',
         'read-chord',
         'read-bar-number',
         'read-readout',

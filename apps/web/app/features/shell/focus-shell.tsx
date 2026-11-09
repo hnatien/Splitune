@@ -1,14 +1,17 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronLeftIcon } from 'lucide-react'
+import { ChevronLeftIcon, SearchIcon } from 'lucide-react'
 import type * as React from 'react'
 import { m } from '@/lib/i18n'
-import { buttonVariants } from '@/ui/button'
+import { Button, buttonVariants } from '@/ui/button'
 import { UploadPill } from '../import/upload-pill'
 import { SystemBanners } from '../system/system-banners'
+import { PaletteLauncher } from './palette-launcher'
+import { usePalette } from './palette-store'
 import { SkipLink } from './skip-link'
 
-// Focus shell (27 §1): onboarding and practice. A slim status bar with "Back to library" and the
-// page's own status; no navigation chrome. Practice density (64/48 px targets).
+// Focus shell (27 §1): onboarding and practice. A slim status bar (60 px) with "Back to library" and
+// the page's own status; no navigation chrome. Practice density (64/48 px targets). Signed in, ⌘K /
+// Ctrl K opens the palette, and touch screens get its button (27 §3.12).
 export function FocusShell({
   status,
   exit = false,
@@ -29,7 +32,7 @@ export function FocusShell({
     >
       <SkipLink />
       <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)] [view-transition-name:app-header]">
-        <div className="flex min-h-14 items-center gap-3 px-4 in-data-[appearance=stage]:min-h-12">
+        <div className="flex min-h-15 items-center gap-3 px-4 in-data-[appearance=stage]:min-h-12">
           <Link
             to={exit ? '/' : '/library'}
             className={buttonVariants({ variant: 'ghost', className: 'max-sm:min-w-target' })}
@@ -42,6 +45,17 @@ export function FocusShell({
           </Link>
           <div className="flex min-w-0 flex-1 items-center gap-3">{status}</div>
           <UploadPill />
+          {!exit && (
+            <Button
+              variant="ghost"
+              size="icon-practice-2"
+              aria-label={m['nav.search']()}
+              onClick={() => usePalette.getState().setOpen(true)}
+              className="pointer-fine:hidden"
+            >
+              <SearchIcon aria-hidden />
+            </Button>
+          )}
         </div>
       </header>
       <SystemBanners />
@@ -56,6 +70,7 @@ export function FocusShell({
       >
         {children}
       </main>
+      {!exit && <PaletteLauncher />}
     </div>
   )
 }

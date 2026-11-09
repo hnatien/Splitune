@@ -35,6 +35,7 @@ What is built, as of **2026-10-29**. Details, verification and open items for ea
 | s31c | Redesign: mockup harness (reference renders and fidelity probe) | Done | — | Step s31c |
 | s32 | Redesign: tokens, fonts, practice perf baseline | Done (not merged) | On `impl/s32-tokens-fonts`; perf baseline `8bd9050` from the unchanged screen. Owner: legibility check (Foundations/Fonts › Legibility) | Step s32 |
 | s33 | Redesign: base components on Night Rehearsal | Done (not merged) | On `impl/s33-base-components`. G2 next: the owner reviews `redesign/.renders/s33/index.html`. Five tokens added at the owner's request (`--primary-hover`, `text-button-lg`, `shadow-capsule`, `rounded-5xl`, `shadow-play`) | Step s33 |
+| s34 | Redesign: app shell, ⌘K palette, Library and Add song | Done (not merged) | On `impl/s34-shell-library`. G4 next (devices, both themes; place of "What works best?"). Fidelity 0 unexplained; budget 304.8 KB with the entry-chunk setting. E2E smoke blocked by a sign-up reset that predates s34 | Step s34 |
 | s40a | Redesign: keep all separated stems (backend) | In progress | Built on `impl/s40a-all-stems` with the review's cache-key fix; re-verification left, then the PC re-measurement, G3 and merge after `impl/29-separation-improvements` is in `dev` (D16) | Step s40a (in progress) |
 | s41a | Redesign: sections backend (allin1 stage + part fallback) | In progress | Built on `impl/s41a-sections` (`d944b61`); review fixes left, then G3 (island install, weights, timing, 3 songs by ear, `eval:regression`) before merge | Step s41a (in progress) |
 

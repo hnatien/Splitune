@@ -15,11 +15,11 @@ html {
 }
 
 /* Phone bottom tab bar (app shell): focused content scrolls clear of it (WCAG 2.4.11) and toasts
-   sit above it (--bottom-bar). The bar is under 4 rem tall; :has is used here only, and engines
+   sit above it (--bottom-bar). The bar is 76 px tall; :has is used here only, and engines
    without it just keep the default. */
 @media (width < 40rem) {
   html:has([data-slot="bottom-tabs"]) {
-    --bottom-bar: calc(var(--spacing) * 16 + env(safe-area-inset-bottom));
+    --bottom-bar: calc(var(--spacing) * 21 + env(safe-area-inset-bottom));
     scroll-padding-bottom: var(--bottom-bar);
   }
 }

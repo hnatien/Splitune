@@ -1,21 +1,14 @@
 import type { LibrarySong } from '@splitune/contracts'
-import type { StemKind } from '@splitune/ui-tokens'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
 import {
-  AudioWaveformIcon,
   CircleCheckIcon,
   CircleDashedIcon,
   CircleXIcon,
-  DrumIcon,
-  EllipsisVerticalIcon,
-  GuitarIcon,
+  EllipsisIcon,
   ListMusicIcon,
   LoaderIcon,
   LockIcon,
-  type LucideIcon,
-  MicIcon,
-  PianoIcon,
   TimerOffIcon,
   TriangleAlertIcon,
   UploadIcon,
@@ -23,13 +16,13 @@ import {
 import { useState } from 'react'
 import type { z } from 'zod'
 import { client, errorCode, errorData, orpc } from '@/lib/api'
-import { barNumber, formatPercent, formatRelativeDate } from '@/lib/format'
+import { barNumber, formatDuration, formatPercent, formatRelativeDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { type InstrumentName, instrumentLabel } from '@/lib/instruments'
+import { instrumentLabel } from '@/lib/instruments'
 import { apiErrorMessage, stageFailureMessage } from '@/lib/reasons'
 import { reloadMe } from '@/lib/reload-me'
 import { meQuery } from '@/lib/session'
-import { currentStage, etaText, remainingSeconds, stageLabel } from '@/lib/stages'
+import { currentStage, remainingSeconds, stageLabel } from '@/lib/stages'
 import { Button } from '@/ui/button'
 import {
   DropdownMenu,
@@ -38,9 +31,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
-import { BassIcon } from '@/ui/icons/bass'
 import { Progress, ProgressLabel } from '@/ui/progress'
-import { InstrumentTile, SongCard, SongRow, type SongSummary } from '@/ui/song-card'
+import { SongCard, SongRow, type SongSummary } from '@/ui/song-card'
 import { toast } from '@/ui/toast'
 import { UpgradeSheet } from '../billing/upgrade-sheet'
 import { analysisAvailability } from '../import/analysis-choice'
@@ -48,18 +40,9 @@ import { uploadPercent, useUploads } from '../import/upload-store'
 import { statsQuery } from './queries'
 import { DeleteSongDialog, RenameSongDialog } from './song-dialogs'
 import { type CardStatus, cardStatus, isInProgress } from './song-status'
+import { SongTile } from './song-tile'
 
 type Song = z.infer<typeof LibrarySong>
-
-// The stem colour and icon the mixer uses for the same part (26 §4.4).
-const INSTRUMENT_TILE: Record<InstrumentName, { stem: StemKind; Icon: LucideIcon }> = {
-  guitar: { stem: 'guitar', Icon: GuitarIcon },
-  bass: { stem: 'bass', Icon: BassIcon },
-  piano: { stem: 'keys', Icon: PianoIcon },
-  drums: { stem: 'drums', Icon: DrumIcon },
-  vocals: { stem: 'vocals', Icon: MicIcon },
-  other: { stem: 'other', Icon: AudioWaveformIcon },
-}
 
 const spinning = 'animate-spin motion-reduce:animate-none'
 
@@ -68,7 +51,7 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
     case 'uploading':
       return {
         label: m['upload.uploading']({ pct: formatPercent(uploadPct ?? 0) }),
-        variant: 'info',
+        variant: 'primary',
         icon: <UploadIcon aria-hidden />,
       }
     case 'upload_unfinished':
@@ -80,7 +63,7 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
     case 'downloading':
       return {
         label: m['library.status.downloading'](),
-        variant: 'info',
+        variant: 'primary',
         icon: <LoaderIcon aria-hidden className={spinning} />,
       }
     case 'queued':
@@ -95,7 +78,7 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
           done: String(status.done),
           total: String(status.total),
         }),
-        variant: 'info',
+        variant: 'primary',
         icon: <LoaderIcon aria-hidden className={spinning} />,
       }
     case 'failed':
@@ -119,7 +102,7 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
     case 'partial':
       return {
         label: m['library.status.partial'](),
-        variant: 'warning',
+        variant: 'neutral',
         icon: <TriangleAlertIcon aria-hidden />,
       }
     default:
@@ -131,22 +114,51 @@ function badge(status: CardStatus, uploadPct: number | undefined): SongSummary['
   }
 }
 
-function summary(song: Song, status: CardStatus, uploadPct: number | undefined): SongSummary {
+/** The line after the badge (27 §3.5), by state. */
+function metaLine(song: Song, status: CardStatus, workerOffline: boolean): string | undefined {
+  switch (status.kind) {
+    case 'analysing':
+    case 'downloading':
+      return m['library.can_loop']()
+    case 'queued':
+      return workerOffline ? m['library.queued_offline']() : undefined
+    case 'chords_only':
+      return m['library.add_stems']()
+    case 'ready':
+    case 'partial': {
+      const when = song.last_opened_at
+        ? m['library.last_practised']({ when: formatRelativeDate(new Date(song.last_opened_at)) })
+        : undefined
+      const best = song.best_clean && {
+        pct: formatPercent(song.best_clean.tempo_pct),
+        start: String(barNumber(song.best_clean.start_bar)),
+        end: String(barNumber(song.best_clean.end_bar)),
+      }
+      if (when && best) return `${when} · ${m['library.best_on_bars_inline'](best)}`
+      return when ?? (best ? m['library.best_on_bars'](best) : undefined)
+    }
+    default:
+      return undefined
+  }
+}
+
+function summary(
+  song: Song,
+  status: CardStatus,
+  uploadPct: number | undefined,
+  workerOffline: boolean,
+): SongSummary {
   return {
     title: song.title,
-    artist: song.artist ?? undefined,
-    instrument: instrumentLabel(song.instrument),
+    subtitle: [
+      song.artist,
+      instrumentLabel(song.instrument),
+      song.duration_s === null ? undefined : formatDuration(song.duration_s),
+    ]
+      .filter(Boolean)
+      .join(' · '),
     status: badge(status, uploadPct),
-    lastPractised: song.last_opened_at
-      ? m['library.last_practised']({ when: formatRelativeDate(new Date(song.last_opened_at)) })
-      : undefined,
-    bestTempo: song.best_clean
-      ? m['library.best_on_bars']({
-          pct: formatPercent(song.best_clean.tempo_pct),
-          start: String(barNumber(song.best_clean.start_bar)),
-          end: String(barNumber(song.best_clean.end_bar)),
-        })
-      : undefined,
+    meta: metaLine(song, status, workerOffline),
     href: `/songs/${song.id}/practice`,
   }
 }
@@ -174,7 +186,11 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
     )
   }
   const stage = analysis && currentStage(analysis)
-  const eta = analysis && etaText(remainingSeconds(analysis, stats.data?.stages ?? []))
+  const left = analysis && remainingSeconds(analysis, stats.data?.stages ?? [])
+  const eta =
+    left === undefined
+      ? undefined
+      : m['analysis.eta_inline']({ minutes: String(Math.max(1, Math.ceil(left / 60))) })
   const line = stage
     ? eta
       ? m['library.stage_eta']({ stage: stageLabel(stage), eta })
@@ -188,7 +204,7 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
         aria-label={line ? undefined : badge(status, undefined).label}
       >
         {line && (
-          <ProgressLabel className="font-normal text-muted-foreground tabular-nums">
+          <ProgressLabel className="font-normal text-faint-foreground tabular-nums">
             {line}
           </ProgressLabel>
         )}
@@ -199,7 +215,19 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
   return <p className="text-sm text-muted-foreground tabular-nums">{line}</p>
 }
 
-export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list' }) {
+export function SongEntry({
+  song,
+  layout,
+  workerOffline = false,
+  unavailable = false,
+}: {
+  song: Song
+  layout: 'grid' | 'list'
+  /** The processing machine is offline: queued cards say they start on their own. */
+  workerOffline?: boolean
+  /** Offline and needing the server (27 §4): dimmed, "Needs connection". */
+  unavailable?: boolean
+}) {
   const upload = useUploads((s) => s.items[song.id])
   const uploading = upload !== undefined && !['done', 'failed', 'needs_file'].includes(upload.phase)
   const status = cardStatus(song, uploading)
@@ -252,12 +280,12 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
         render={
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             aria-label={m['library.song_menu']({ title: song.title })}
           />
         }
       >
-        <EllipsisVerticalIcon aria-hidden />
+        <EllipsisIcon aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem onClick={() => setRenaming(true)}>
@@ -313,21 +341,15 @@ export function SongEntry({ song, layout }: { song: Song; layout: 'grid' | 'list
       />
     ) : undefined
 
-  const tile = INSTRUMENT_TILE[song.instrument]
   const Entry = layout === 'grid' ? SongCard : SongRow
   return (
     <>
       <Entry
-        song={summary(song, status, upload ? uploadPercent(upload) : undefined)}
+        song={summary(song, status, upload ? uploadPercent(upload) : undefined, workerOffline)}
         actions={actions}
         progress={followUp}
-        leading={
-          <InstrumentTile
-            stem={tile.stem}
-            icon={<tile.Icon />}
-            size={layout === 'grid' ? 'md' : 'sm'}
-          />
-        }
+        unavailable={unavailable ? m['library.needs_connection']() : undefined}
+        leading={<SongTile instrument={song.instrument} />}
         renderLink={({ children, className, title }) => (
           <Link
             to="/songs/$songId/practice"

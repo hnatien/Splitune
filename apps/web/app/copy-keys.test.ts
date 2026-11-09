@@ -19,8 +19,7 @@ const CATALOGUE: Record<string, string> = {
   'import.too_long': 'Songs up to 20 minutes are supported. This one is {duration}.',
   'import.too_large': 'Files up to 500\u00a0MB are supported.',
   'import.speech': 'This sounds like speech, so results may be poor.',
-  'import.live':
-    "This sounds like a live recording. Parts may separate less cleanly — we'll mark rough results.",
+  'import.live': 'Sounds like a live recording. Separation may be rougher.',
   'import.duplicate': 'You already have this song.',
   'import.offline': "You're offline. We'll start the upload when you're back.",
   'import.url_unsupported': "We can't import from this link. Try uploading the audio file instead.",
@@ -30,7 +29,7 @@ const CATALOGUE: Record<string, string> = {
   'record.permission_denied':
     "Splitune needs your microphone to record. You can allow it in your browser's site settings.",
   'analysis.queued_offline':
-    'Processing machine offline — your song is queued and will start automatically.',
+    'Processing machine offline. Your song is queued and starts automatically.',
   'analysis.eta': 'About {minutes}\u00a0min left',
   'analysis.stems_unavailable':
     "Stems are unavailable right now; chords and beat are ready. This didn't use an analysis.",
@@ -49,7 +48,7 @@ const CATALOGUE: Record<string, string> = {
     "You've used this month's {limit} Lite analyses. They reset on {date}. You can keep practising every song you already have.",
   'plan.welcome_available': 'Your first full analysis is free — your part isolated, plus tab.',
   'plan.cap_full': "Full analyses are part of Plus. You've used your free Welcome analysis.",
-  'plan.allowance': '{left} of {limit} Lite analyses left · resets {date}',
+  'plan.allowance': '{left} of {limit} Lite left · resets {date}',
   'billing.demo': 'Demo mode — no real charges.',
   'billing.declined': 'The (simulated) payment was declined. Nothing was charged.',
   'billing.cancelled_at_period_end':
@@ -60,10 +59,11 @@ const CATALOGUE: Record<string, string> = {
   'system.unsupported': "Your browser can't run Splitune's audio engine ({missing}).",
   'system.in_app_browser': 'Open in your browser for audio and uploads.',
   'system.error': 'Something went wrong on this screen.',
-  'library.empty':
-    'Your library is empty. Import a song you want to learn, or start with an example.',
-  'delete.song_confirm':
-    "Delete “{title}”? Its stems, loops and edits will be removed. This can't be undone.",
+  'library.empty': 'Bring the first song you want to learn',
+  'library.empty_body': 'Drop a file anywhere on this page, paste a link, or record it.',
+  'delete.song_confirm': 'Delete “{title}”?',
+  'delete.song_confirm_body':
+    "Its stems, loops, passes and edits will be removed. This can't be undone.",
   'delete.account_confirm': "Delete your account and everything in it? This can't be undone.",
   'practice.reason.notes_unavailable':
     "Note-level tab isn't available for this song — showing chords.",
