@@ -69,6 +69,9 @@ export async function signIn(page: Page, label: string): Promise<string> {
   await expect(page).toHaveURL(/\/auth\/sign-in/)
   await page.getByRole('link', { name: 'Create an account' }).click()
   await expect(page).toHaveURL(/\/auth\/sign-up/)
+  // The URL changes before the sign-up form replaces the sign-in one: typing earlier fills the
+  // old form, and the username is gone when the new one mounts.
+  await expect(page.getByRole('heading', { level: 1, name: 'Create an account' })).toBeVisible()
   await page.getByLabel('Username').fill(username)
   await page.getByLabel('Password').fill(E2E_PASSWORD)
   await submitPastRateLimit(page, page.getByRole('button', { name: 'Create account' }))

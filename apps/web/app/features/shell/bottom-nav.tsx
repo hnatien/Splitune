@@ -30,7 +30,7 @@ export function BottomNav({ pathname, onAddSong }: { pathname: string; onAddSong
         <PlusIcon aria-hidden className="size-4" />
         {m['nav.add_song']()}
       </Button>
-      <Link to="/settings/profile" aria-current={settings ? 'page' : undefined} className={TAB}>
+      <Link to="/settings/account" aria-current={settings ? 'page' : undefined} className={TAB}>
         <SlidersHorizontalIcon aria-hidden />
         {m['nav.settings']()}
       </Link>

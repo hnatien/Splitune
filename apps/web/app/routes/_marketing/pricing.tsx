@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_marketing/pricing')({
     const billing = await import('@/features/billing/plans')
     await context.queryClient.prefetchQuery(billing.plansQuery)
   },
-  head: () => ({ meta: [{ title: m['meta.page']({ page: m['pricing.title']() }) }] }),
+  head: () => ({ meta: [{ title: m['meta.page']({ page: m['nav.pricing']() }) }] }),
   component: Pricing,
 })
 
@@ -21,7 +21,7 @@ function Pricing() {
   const plans = useQuery(plansQuery)
   if (!plans.data) {
     return (
-      <div className="mx-auto w-full max-w-reading px-4 py-12">
+      <div className="mx-auto w-full max-w-pricing px-4 py-12 sm:px-6">
         {plans.isError && <InlineError title={m['plan.prices_failed']()} />}
       </div>
     )

@@ -1,22 +1,19 @@
-import { InfoIcon, PlayIcon } from 'lucide-react'
+import { PauseIcon } from 'lucide-react'
 import type * as React from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
 import { ChordChip } from '@/ui/chord-chip'
-import { ConfidenceLegend } from '@/ui/confidence-legend'
 import { LoopBadge } from '@/ui/loop-badge'
-import { type MixPreset, MixPresetGroup } from '@/ui/mix-preset-group'
-import { PassControl } from '@/ui/pass-control'
 import { SpeedControl } from '@/ui/speed-control'
-import { StemRow } from '@/ui/stem-row'
-import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
-import { TransportButton } from '@/ui/transport-button'
 
-// The Home page's product stills (27 §3.1): real kit components and token-drawn tab and timeline
-// with the 8-bar Am–F–C–G example, paused, on paper. Inert: they are pictures of the app, described
-// by the text beside them, not controls. Desk reading sizes on every device (a phone's Floor sizes
-// overflowed), cropped rather than widening the page at 320 px.
+// Product stills (27 §3.1, §3.2, §3.4): real kit components and token-drawn tab and timeline with
+// fixture data. Inert: they are pictures of the app, described by the text beside them (or by their
+// own `role="img"` label), not controls. Desk reading sizes on every device (a phone's Floor sizes
+// overflowed), cropped rather than widening the page at 320 px. Home's pictures show only what is
+// built (27 §3.1 honesty gates): your part and the band in the mixer until every stem has a fader
+// (s40b), the loop and speed until the speed ladder ships (s37).
 
 const noop = () => undefined
 
@@ -75,89 +72,6 @@ export function LoopStill() {
         }}
       />
     </div>
-  )
-}
-
-const STEM_ROWS = [
-  { stem: 'guitar', name: () => m['instrument.guitar'](), yourPart: true, muted: false },
-  { stem: 'bass', name: () => m['instrument.bass'](), yourPart: false, muted: false },
-  { stem: 'drums', name: () => m['instrument.drums'](), yourPart: false, muted: false },
-  { stem: 'vocals', name: () => m['instrument.vocals'](), yourPart: false, muted: true },
-] as const
-
-function StemRows() {
-  return (
-    <div className="flex flex-col gap-2">
-      {STEM_ROWS.map((row) => (
-        <StemRow
-          key={row.stem}
-          stem={row.stem}
-          name={row.name()}
-          yourPart={row.yourPart ? m['home.still_your_part']() : undefined}
-          muted={row.muted}
-          soloed={false}
-          gainDb={row.yourPart ? 4 : -6}
-          onMutedChange={noop}
-          onSoloedChange={noop}
-          onGainChange={noop}
-          labels={{
-            mute: m['home.still_mute'](),
-            solo: m['home.still_solo'](),
-            volume: m['home.still_volume'](),
-            decrease: m['home.still_volume'](),
-            increase: m['home.still_volume'](),
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-const MIX_OPTIONS: { value: MixPreset; label: () => string; gloss: () => string }[] = [
-  {
-    value: 'part-loud',
-    label: () => m['mixer.preset_part_loud'](),
-    gloss: () => m['practice.preset_gloss_part_loud'](),
-  },
-  {
-    value: 'minus-one',
-    label: () => m['mixer.preset_minus_one'](),
-    gloss: () => m['practice.preset_gloss_minus_one'](),
-  },
-  {
-    value: 'original',
-    label: () => m['mixer.preset_original'](),
-    gloss: () => m['practice.preset_gloss_original'](),
-  },
-]
-
-/** The mixer: a preset row over the stems, your part first and turned up. */
-export function MixerStill() {
-  return (
-    <Still className="flex flex-col gap-4">
-      <MixPresetGroup
-        label={m['practice.mix']()}
-        value="part-loud"
-        onValueChange={noop}
-        options={MIX_OPTIONS.map((o) => ({ value: o.value, label: o.label(), gloss: o.gloss() }))}
-      />
-      <StemRows />
-    </Still>
-  )
-}
-
-export function LegendStill() {
-  return (
-    <ConfidenceLegend
-      text={m['practice.legend']({ model: '1' })}
-      labels={{
-        showUncertainty: m['home.still_show_uncertainty'](),
-        medium: m['home.still_medium'](),
-        low: m['home.still_low'](),
-      }}
-      showUncertainty
-      onShowUncertaintyChange={noop}
-    />
   )
 }
 
@@ -339,7 +253,7 @@ export function TabStill({
           ))}
           <line x1={TAB.width - 2} x2={TAB.width - 2} y1={TAB.top} y2={STAFF_BOTTOM} />
         </g>
-        <text className="fill-ink text-[13px] font-bold" textAnchor="middle">
+        <text className="fill-ink text-sm font-bold" textAnchor="middle">
           {[...m['home.still_tab_clef']()].map((letter, i) => (
             <tspan key={letter} x={22} y={TAB.top + 14 + i * 20}>
               {letter}
@@ -348,17 +262,17 @@ export function TabStill({
         </text>
         {TAB_BARS.map((b, i) => (
           <g key={b.bar}>
-            <text x={barX(i) + 4} y={TAB.top - 8} className="fill-muted-foreground text-[10px]">
+            <text x={barX(i) + 4} y={TAB.top - 8} className="fill-muted-foreground text-2xs">
               {b.bar}
             </text>
             <text
               x={barX(i) + 18}
               y={TAB.top - 8}
-              className={cn('text-[15px] font-bold', INK[b.chordLevel ?? 'high'])}
+              className={cn('text-base font-bold', INK[b.chordLevel ?? 'high'])}
             >
               {b.chord}
               {b.chordLevel === 'low' && (
-                <tspan dy={-6} className="text-[10px]">
+                <tspan dy={-6} className="text-2xs">
                   ?
                 </tspan>
               )}
@@ -386,12 +300,12 @@ export function TabStill({
                     y={y}
                     dy="0.36em"
                     textAnchor="middle"
-                    className={cn('text-[12px]', INK[level])}
+                    className={cn('text-xs', INK[level])}
                   >
                     {fret}
                   </text>
                   {level === 'low' && (
-                    <text x={x + 8} y={y - 6} className="fill-conf-low text-[9px] font-bold">
+                    <text x={x + 8} y={y - 6} className="fill-conf-low text-2xs font-bold">
                       ?
                     </text>
                   )}
@@ -499,99 +413,238 @@ export function TimelineStill({ className }: { className?: string }) {
   )
 }
 
-/** "Felt clean" / "Not yet" with the best clean tempo so far. */
-export function PassStill() {
+// Home's hero: two bars of tab, F then C, with the sounding digit, one unsure digit and the
+// playhead in the current bar. Strings are 1 (high e, top line) to 6; each note is [x in the bar
+// (0–1), string, fret, state].
+type HeroNote = readonly [number, number, number, 'past' | 'now' | 'unsure' | 'next']
+const HERO_BARS: { chord: string; current: boolean; notes: HeroNote[] }[] = [
+  {
+    chord: 'F',
+    current: false,
+    notes: [
+      [0.1, 4, 3, 'past'],
+      [0.3, 3, 2, 'past'],
+      [0.5, 2, 1, 'past'],
+      [0.7, 1, 1, 'past'],
+      [0.9, 2, 1, 'past'],
+    ],
+  },
+  {
+    chord: 'C',
+    current: true,
+    notes: [
+      [0.1, 5, 3, 'past'],
+      [0.3, 4, 2, 'past'],
+      [0.5, 3, 0, 'now'],
+      [0.7, 2, 1, 'unsure'],
+      [0.9, 1, 0, 'next'],
+    ],
+  },
+]
+const HERO_TAB = { bar: 200, top: 36, gap: 20 } as const
+const HERO_NOTE_INK = {
+  past: 'fill-faint-foreground',
+  now: 'fill-primary-foreground',
+  unsure: 'fill-unsure',
+  next: 'fill-foreground',
+} as const
+
+function HeroTab() {
+  const stringY = (string: number) => HERO_TAB.top + HERO_TAB.gap * (string - 1)
+  const bottom = stringY(6)
+  const playhead = 1 + 1.55 * HERO_TAB.bar
   return (
-    <PassControl
-      labels={{
-        prompt: m['practice.pass_prompt'](),
-        clean: m['practice.felt_clean'](),
-        notYet: m['practice.not_yet'](),
-      }}
-      best={m['practice.best_tempo']({ pct: '65' })}
-      onClean={noop}
-      onNotYet={noop}
-    />
+    <svg
+      aria-hidden
+      viewBox={`0 0 ${HERO_TAB.bar * 2 + 2} ${bottom + 12}`}
+      className="block w-full font-mono font-semibold tabular-nums"
+    >
+      {HERO_BARS.map((bar, i) => {
+        const x0 = 1 + i * HERO_TAB.bar
+        return (
+          <g key={bar.chord}>
+            <rect
+              x={x0}
+              y={HERO_TAB.top - 6}
+              width={HERO_TAB.bar}
+              height={bottom - HERO_TAB.top + 12}
+              className={bar.current ? 'fill-bar-current' : 'fill-score-loop-fill'}
+            />
+            <text x={x0 + 8} y={HERO_TAB.top - 16} className="fill-foreground font-sans text-lg">
+              {bar.chord}
+            </text>
+          </g>
+        )
+      })}
+      <g className="stroke-staff" strokeWidth={1}>
+        {[1, 2, 3, 4, 5, 6].map((s) => (
+          <line key={s} x1={1} x2={HERO_TAB.bar * 2 + 1} y1={stringY(s)} y2={stringY(s)} />
+        ))}
+        {[0, 1, 2].map((i) => (
+          <line
+            key={i}
+            x1={1 + i * HERO_TAB.bar}
+            x2={1 + i * HERO_TAB.bar}
+            y1={HERO_TAB.top}
+            y2={bottom}
+          />
+        ))}
+      </g>
+      {HERO_BARS.map((bar, i) =>
+        bar.notes.map(([at, string, fret, state]) => {
+          const x = 1 + (i + at) * HERO_TAB.bar
+          const y = stringY(string)
+          return (
+            <g key={`${bar.chord}-${string}-${at}`}>
+              <rect
+                x={x - 9}
+                y={y - 9}
+                width={18}
+                height={18}
+                rx={4}
+                strokeWidth={1.5}
+                strokeDasharray={state === 'unsure' ? '3 2' : undefined}
+                className={cn(
+                  state === 'now' ? 'fill-primary' : bar.current ? 'fill-bar-current' : 'fill-card',
+                  state === 'unsure' && 'stroke-unsure',
+                )}
+              />
+              <text
+                x={x}
+                y={y}
+                dy="0.36em"
+                textAnchor="middle"
+                className={cn('text-base', HERO_NOTE_INK[state])}
+              >
+                {fret}
+              </text>
+              {state === 'unsure' && (
+                <text x={x + 10} y={y - 9} className="fill-unsure font-sans text-2xs font-bold">
+                  ?
+                </text>
+              )}
+            </g>
+          )
+        }),
+      )}
+      <line
+        x1={playhead}
+        x2={playhead}
+        y1={HERO_TAB.top - 14}
+        y2={bottom + 10}
+        strokeWidth={2}
+        className="stroke-playhead"
+      />
+    </svg>
   )
 }
 
-/** Other likely chords for the unsure bar, framed as frequency (26 §5). */
-export function AlternativesStill() {
-  const options = [
-    { label: 'G', n: 2 },
-    { label: 'Em7', n: 4 },
-  ] as const
+const BEATS = ['done', 'done', 'now', 'slot'] as const
+
+/**
+ * Home's hero (27 §3.1): the practice screen looping bars 25–28 at 75 %, with the Now column (C,
+ * the beat, next G), two bars of tab and the pass prompt. `label` is its text alternative.
+ */
+export function HeroStill({ label }: { label: string }) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-raised p-3 shadow-1">
-      <p className="text-sm font-medium text-muted-foreground">{m['editor.alternatives']()}</p>
-      <div className="flex flex-wrap items-center gap-3 rounded-lg bg-paper p-2 text-ink">
-        {options.map((option) => (
-          <span key={option.label} className="flex items-center gap-2">
-            <ChordChip label={option.label} confidence="high" />
-            <span className="text-sm text-conf-medium">{m['editor.one_in']({ n: option.n })}</span>
+    <div role="img" aria-label={label} className="min-w-0">
+      <Still className="flex flex-col gap-3.5 rounded-4xl border border-border bg-card p-4.5 shadow-3">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span className="font-semibold">{m['home.still_hero_song']()}</span>
+          <span className="text-sm text-faint-foreground">{m['instrument.guitar']()}</span>
+          <Badge variant="primary" className="ml-auto">
+            {m['home.still_hero_loop']()}
+          </Badge>
+        </div>
+        <div className="flex items-stretch gap-4.5">
+          <div className="flex w-24 flex-none flex-col gap-2.5 border-r border-border pr-4 sm:w-32.5">
+            <span className="text-xs text-faint-foreground uppercase">{m['home.still_now']()}</span>
+            <span className="font-display text-display leading-none">C</span>
+            <span className="flex items-center gap-2.5">
+              {BEATS.map((beat, i) => (
+                <span
+                  // biome-ignore lint/suspicious/noArrayIndexKey: beats are positional and never reorder
+                  key={i}
+                  className={cn(
+                    'size-3.5 border-2',
+                    i === 0 ? 'rounded-xs' : 'rounded-full',
+                    beat === 'done' && 'border-beat-done bg-beat-done',
+                    beat === 'now' && 'border-beat-now bg-beat-now shadow-glow',
+                    beat === 'slot' && 'border-beat-slot',
+                  )}
+                />
+              ))}
+            </span>
+            <span className="mt-1.5 text-xs text-faint-foreground uppercase">
+              {m['home.still_next']()}
+            </span>
+            <span className="text-read-chord-sheet leading-none font-semibold">G</span>
+          </div>
+          <div className="min-w-0 flex-1 pt-2">
+            <HeroTab />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5 border-t border-border pt-3">
+          <span className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground shadow-play">
+            <PauseIcon aria-hidden className="size-5 fill-current" />
           </span>
-        ))}
-      </div>
+          <span className="min-w-0 flex-1 text-sm text-muted-foreground">
+            {m['home.still_hero_pass']()}
+          </span>
+          <Button variant="primary" size="sm">
+            {m['practice.felt_clean']()}
+          </Button>
+          <Button size="sm">{m['practice.not_yet']()}</Button>
+        </div>
+      </Still>
     </div>
   )
 }
 
-/**
- * The practice screen, as it looks with bars 5–8 looping at 70 %: song bar, chord strip, tab,
- * timeline and transport. `caption` is its text alternative, shown under it.
- */
-export function ProductStill({ caption }: { caption: string }) {
+const LEVELS = [
+  { id: 'part', name: () => m['instrument.guitar'](), level: 'w-[86%]', colour: 'bg-stem-guitar' },
+  { id: 'band', name: () => m['home.still_band'](), level: 'w-[48%]', colour: 'bg-stem-mix' },
+] as const
+
+/** "Hear your part on its own": your part turned up over the band. */
+export function StemLevelsStill() {
   return (
-    <figure className="flex min-w-0 flex-col gap-3">
-      <Still className="rounded-3xl border border-border bg-card shadow-3">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <span className="size-2.5 rounded-full bg-border" />
-          <span className="size-2.5 rounded-full bg-border" />
-          <span className="size-2.5 rounded-full bg-border" />
+    <Still className="flex flex-col gap-2.5 rounded-3xl border border-border bg-background p-3.5">
+      {LEVELS.map((row) => (
+        <div key={row.id} className="flex items-center gap-2.5">
+          <span className={cn('h-5.5 w-1.25 rounded-xs', row.colour)} />
+          <span className="w-16 text-sm font-semibold">{row.name()}</span>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-accent">
+            <span className={cn('block h-full rounded-full', row.level, row.colour)} />
+          </span>
         </div>
-        <div className="flex flex-col gap-4 p-4 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate text-lg font-semibold">{m['home.still_song']()}</span>
-              <span className="text-sm text-muted-foreground">{m['home.still_song_meta']()}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="max-sm:hidden">
-                <InfoIcon aria-hidden />
-                {m['practice.legend_short']({ model: '0.4' })}
-              </Badge>
-              <ToggleGroup value={['tab']} size="sm">
-                <ToggleGroupItem value="tab">{m['practice.notation']()}</ToggleGroupItem>
-                <ToggleGroupItem value="chords">{m['practice.chords']()}</ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-          </div>
-          <ChordStill />
-          <TabStill />
-          <TimelineStill />
-          <div className="flex flex-wrap items-center gap-3">
-            <TransportButton
-              tone="primary"
-              className="min-h-16 min-w-16 rounded-full"
-              icon={<PlayIcon aria-hidden />}
-              label={m['practice.play']()}
-              showLabel={false}
-            />
-            <LoopStill />
-            <PassControl
-              className="ml-auto max-lg:hidden"
-              labels={{
-                prompt: m['practice.pass_prompt'](),
-                clean: m['practice.felt_clean'](),
-                notYet: m['practice.not_yet'](),
-              }}
-              onClean={noop}
-              onNotYet={noop}
-            />
-          </div>
-        </div>
-      </Still>
-      <figcaption className="text-center text-sm text-muted-foreground">{caption}</figcaption>
-    </figure>
+      ))}
+    </Still>
+  )
+}
+
+/** "Tab that admits when it's unsure": a sure and an unsure digit, and the likely alternatives. */
+export function UnsureStill() {
+  const options = [
+    { label: 'Am7', n: 3 },
+    { label: 'C/A', n: 5 },
+  ] as const
+  return (
+    <Still className="flex flex-wrap items-center justify-around gap-4 rounded-3xl border border-border bg-background px-3.5 py-5.5">
+      <span className="font-mono text-read-tab font-semibold tabular-nums">5</span>
+      <span className="relative rounded-sm px-1 font-mono text-read-tab font-semibold text-unsure tabular-nums outline-[1.5px] outline-offset-1 outline-unsure outline-dashed">
+        7<span className="absolute -top-3 -right-3 font-sans text-2xs">?</span>
+      </span>
+      <span className="flex flex-col gap-1.5">
+        {options.map((option) => (
+          <span
+            key={option.label}
+            className="inline-flex h-7.5 items-center rounded-full border border-border px-3 text-sm font-medium text-muted-foreground"
+          >
+            {m['home.still_alternative']({ chord: option.label, n: String(option.n) })}
+          </span>
+        ))}
+      </span>
+    </Still>
   )
 }

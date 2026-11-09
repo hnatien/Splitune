@@ -40,7 +40,7 @@ export function PlusBenefits({ fullPerPeriod }: { fullPerPeriod: number }) {
     <ul className="flex list-none flex-col gap-2 p-0">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2 text-base">
-          <CheckIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
+          <CheckIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-primary-ink" />
           <span>{item}</span>
         </li>
       ))}

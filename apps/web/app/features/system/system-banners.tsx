@@ -1,4 +1,4 @@
-import { CopyIcon } from 'lucide-react'
+import { CopyIcon, WifiOffIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { canAddToHomeScreen, usePlaybackActive, usePwa } from '@/lib/app-state'
 import { isInAppBrowser } from '@/lib/capabilities'
@@ -40,13 +40,15 @@ export function SystemBanners({ installHint = false }: { installHint?: boolean }
 
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-2 px-4 pt-3 empty:hidden md:px-6 lg:px-8">
-      {!online && <Banner tone="warning" title={m['system.offline']()} />}
+      {!online && (
+        <Banner tone="warning" icon={<WifiOffIcon aria-hidden />} title={m['system.offline']()} />
+      )}
       {updateReady && !playing && (
         <Banner
           tone="info"
           title={m['system.update_ready']()}
           actions={
-            <Button variant="primary" onClick={applyUpdate}>
+            <Button size="sm" onClick={applyUpdate}>
               {m['system.reload']()}
             </Button>
           }
@@ -71,7 +73,7 @@ export function SystemBanners({ installHint = false }: { installHint?: boolean }
           title={m['system.in_app_browser']()}
           description={m['system.in_app_browser_hint']()}
           actions={
-            <Button variant="outline" onClick={copyLink}>
+            <Button variant="outline" size="sm" onClick={copyLink}>
               <CopyIcon aria-hidden />
               {copied ? m['system.link_copied']() : m['system.copy_link']()}
             </Button>

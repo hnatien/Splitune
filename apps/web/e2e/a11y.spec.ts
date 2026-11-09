@@ -35,11 +35,12 @@ const MODES: Mode[] = [
 const PAGES = [
   { path: '/', heading: /./ },
   { path: '/pricing', heading: /./ },
-  { path: '/library', heading: 'Library' },
+  { path: '/library', heading: /./ },
   { path: '/import', heading: /./ },
   { path: '/settings/display', heading: /./ },
-  { path: '/settings/privacy', heading: /./ },
-  { path: '/settings/billing', heading: /./ },
+  { path: '/settings/account', heading: 'Account' },
+  { path: '/settings/keyboard', heading: /./ },
+  { path: '/settings/about', heading: 'About' },
 ]
 
 const PHONE_WIDTH = 640
@@ -223,7 +224,7 @@ test.describe('keyboard and pedal only', () => {
     await expect(page.getByRole('heading', { name: /level|How long/i }).first()).toBeVisible()
     await (await tabTo(page, /^Just started/)).press('Enter')
     await expect(page.getByRole('heading', { name: "Where's your screen?" })).toBeVisible()
-    await (await tabTo(page, /^Skip$/)).press('Enter')
+    await (await tabTo(page, /^Skip for now$/)).press('Enter')
     const card = page.getByRole('dialog', { name: 'Your first song' })
     await expect(card.getByRole('button', { name: 'Play your part' })).toBeEnabled({
       timeout: 90_000,
@@ -330,7 +331,7 @@ test.describe('200 % text', () => {
     await page.addInitScript(doubleText)
     await page.goto('/library')
     await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible()
-    await expect(page.getByRole('link', { name: /Import/ }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add song' }).first()).toBeVisible()
     await expectNoHorizontalScroll(page)
     await info.attach('library at 200 % text', {
       body: await page.screenshot({ fullPage: true }),
