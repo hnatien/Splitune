@@ -59,10 +59,20 @@ function models(): { name: string; version: string }[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export const buildDefines = () => ({
+// A dev server dates itself by its commit: Vite hashes `define` into the dependency optimizer's
+// cache key, so a start time would re-bundle every dependency on each `vite dev`.
+function commitDate(): string {
+  try {
+    return execFileSync('git', ['log', '-1', '--format=%cI'], { encoding: 'utf8' }).trim()
+  } catch {
+    return new Date(0).toISOString()
+  }
+}
+
+export const buildDefines = ({ build = false } = {}) => ({
   __SPLITUNE_BUILD__: JSON.stringify({
     commit: commit(),
-    builtAt: new Date().toISOString(),
+    builtAt: build ? new Date().toISOString() : commitDate(),
     models: models(),
   }),
 })
