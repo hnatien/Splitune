@@ -64,15 +64,16 @@ export function SavedPage() {
           <p className="text-base text-muted-foreground">{m['start.next_body']()}</p>
           <div className="flex flex-wrap gap-3">
             <Link
-              to="/import"
+              to="/library"
+              search={{ add: 'file' }}
               className={buttonVariants({ variant: 'primary', size: 'practice-2' })}
             >
               <UploadIcon aria-hidden />
-              {m['library.import_song']()}
+              {m['nav.add_song']()}
             </Link>
             <Link
-              to="/import"
-              search={{ tab: 'record' }}
+              to="/library"
+              search={{ add: 'record' }}
               className={buttonVariants({ variant: 'outline', size: 'practice-2' })}
             >
               <MicIcon aria-hidden />

@@ -213,7 +213,7 @@ export const SettingsFree: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText('Your Welcome analysis is still unused.')).toBeVisible()
-    await expect(canvas.getAllByText('4 of 5 Lite analyses left · resets 1 Dec')[0]).toBeVisible()
+    await expect(canvas.getAllByText('4 of 5 Lite left · resets 1 Dec')[0]).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'See Plus' })).toBeVisible()
   },
 }

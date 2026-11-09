@@ -1,9 +1,10 @@
 import { expect, type Page, test } from '@playwright/test'
 import { collectErrors, expectAccessible, expectNoHorizontalScroll, signIn, wav } from './helpers'
 
-// Step 10 acceptance (prompt 10): sign up with a username and a password → upload a short audio
-// file → stages progress → ready in the library; URL import shows progress; delete works; an upload survives a
-// reload mid-transfer; no console (CORS) errors; axe on landing, library and import.
+// Step 10 acceptance (prompt 10), with Add song as a dialog over the library (s34, 27 §3.6): sign
+// up with a username and a password → add a short audio file → stages progress → ready in the
+// library; a link shows its progress; delete works; an upload survives a reload mid-transfer; no
+// console (CORS) errors; axe on landing, library and Add song.
 
 test.describe.configure({ mode: 'serial' })
 
@@ -71,14 +72,19 @@ test('landing page is accessible and leads to the example', async () => {
 
 test('the empty library is accessible', async () => {
   await page.goto('/library')
-  await expect(page.getByText('Your library is empty.')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Bring the first song you want to learn' }),
+  ).toBeVisible()
   await expectAccessible(page)
 })
 
+// `/import` redirects to `/library?add=file`, which opens Add song (27 §1 route map).
 async function pickFile(name: string, buffer: Buffer) {
   await page.goto('/import')
-  await page.getByRole('tab', { name: 'File' }).click()
-  await page.locator('input[type=file]').setInputFiles({ name, mimeType: 'audio/wav', buffer })
+  await expect(page).toHaveURL(/\/library\?add=file/)
+  const dialog = page.getByRole('dialog', { name: 'Add a song' })
+  await dialog.getByRole('tab', { name: 'File' }).click()
+  await dialog.locator('input[type=file]').setInputFiles({ name, mimeType: 'audio/wav', buffer })
   await expect(page.getByRole('img', { name: new RegExp(`Waveform of ${name}`) })).toBeVisible()
 }
 
@@ -104,12 +110,12 @@ test('a short file uploads, analyses and shows as ready', async () => {
 })
 
 test('a link import shows its download and analysis progress', async () => {
-  await page.goto('/import')
+  await page.goto('/library?add=link')
   await page.getByRole('tab', { name: 'Link' }).click()
   await page
     .getByLabel('Link to a video or song')
     .fill('https://www.youtube.com/watch?v=h_N0-H49R6I')
-  await page.getByRole('button', { name: 'Import and analyse' }).click()
+  await page.getByRole('button', { name: 'Add and analyse' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
   await expect(page.locator('li', { hasText: 'Downloading' })).toBeVisible()
   await expect(finished()).toBeVisible({ timeout: 90_000 })

@@ -29,6 +29,19 @@ export default defineConfig(({ command, mode }) => {
   return {
     server: { port: 3000, strictPort: true },
     resolve: { alias },
+    // Every module the entry loads statically goes into the entry chunk. Left to automatic splitting,
+    // each change to which lazy chunks share a module splits that set off into another small file,
+    // and the practice route paid gzip per file (D6: 327.5 KB before, 311 KB with this, for the same
+    // code). Lazy chunks are split as before.
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [{ name: 'index', tags: ['$initial'] }],
+          },
+        },
+      },
+    },
     plugins: [
       tanstackStart({ srcDirectory: 'app' }),
       // Railway's edge doesn't compress, so static assets ship pre-gzipped and pre-brotlied.

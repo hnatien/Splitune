@@ -20,10 +20,12 @@ export type ImportRequest = {
   file: File
   fileSha256: string
   title: string
+  /** "Artist (optional)" in Add song. */
+  artist?: string | undefined
   sourceKind: 'upload' | 'recording'
   instrument: z.infer<typeof Instrument>
   type: z.infer<typeof AnalysisType>
-  /** "Import anyway" after the duplicate notice. */
+  /** "Add anyway" after the duplicate notice. */
   allowDuplicate?: boolean
 }
 
@@ -149,6 +151,7 @@ export async function startImport(request: ImportRequest): Promise<string> {
   const { file } = request
   const { song_id: songId } = await client.songs.create({
     title: request.title,
+    ...(request.artist ? { artist: request.artist } : {}),
     instrument: request.instrument,
     source_kind: request.sourceKind,
   })
