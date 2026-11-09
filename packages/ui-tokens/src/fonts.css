@@ -1,22 +1,22 @@
 /*
  * Self-hosted fonts (docs/specs/26-design-system.md §6.1). Files live in
  * apps/web/public/fonts/, made by scripts/fonts/subset.sh (SIL OFL 1.1; licences beside them).
- * Only the Inter roman file is preloaded; italic and Atkinson Hyperlegible Next load on first use.
+ * Only Instrument Sans is preloaded; JetBrains Mono and Atkinson Hyperlegible Next load on first use.
  */
 @font-face {
-  font-family: Inter;
+  font-family: "Instrument Sans";
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/fonts/InterVariable.woff2") format("woff2");
+  src: url("/fonts/InstrumentSans.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: Inter;
-  font-style: italic;
+  font-family: "JetBrains Mono";
+  font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+  src: url("/fonts/JetBrainsMono.woff2") format("woff2");
 }
 
 @font-face {
@@ -27,12 +27,26 @@
   src: url("/fonts/AtkinsonHyperlegibleNext.woff2") format("woff2");
 }
 
-/* Metric-matched fallback so the swap to Inter barely shifts layout (Inter 4.1 vs Arial). */
+/*
+ * Metric-matched fallbacks, so the swap to the real font can't reflow the transport or a readout:
+ * the local face is scaled to the web font's average letter width and takes its line metrics
+ * (scripts/fonts/fallback-metrics.py; Instrument Sans 1.000 over Arial 7.06, JetBrains Mono 2.304
+ * over Courier New 6.95). The other local faces listed have the same metrics as the first.
+ */
 @font-face {
-  font-family: "Inter Fallback";
+  font-family: "Instrument Sans Fallback";
   src: local("Arial"), local("Helvetica"), local("Liberation Sans");
-  size-adjust: 106.5%;
-  ascent-override: 90.97%;
-  descent-override: 22.65%;
+  size-adjust: 102.55%;
+  ascent-override: 94.59%;
+  descent-override: 24.38%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Fallback";
+  src: local("Courier New"), local("Liberation Mono");
+  size-adjust: 99.98%;
+  ascent-override: 102.02%;
+  descent-override: 30%;
   line-gap-override: 0%;
 }
