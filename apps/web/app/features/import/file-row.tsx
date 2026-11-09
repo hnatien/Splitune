@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { FileAudioIcon, TriangleAlertIcon, XIcon } from 'lucide-react'
+import { MusicIcon, TriangleAlertIcon, XIcon } from 'lucide-react'
 import { formatBytes, formatDuration } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { Badge } from '@/ui/badge'
@@ -25,8 +25,9 @@ function issueText(issue: PreflightIssue): string {
   }
 }
 
-// The picked file (27 §3.6): name, size, duration and waveform from the local decode, pre-flight
-// chips and the duplicate notice.
+// The picked file (27 §3.6, AddSong): a --muted card with the file tile, name, size and duration
+// (mono), Remove, the 44 px waveform from the local decode, the warning badges that don't block,
+// blocking errors inline and the duplicate notice (Open it / Add anyway).
 export function FileRow({
   picked,
   onRemove,
@@ -48,15 +49,21 @@ export function FileRow({
   return (
     <section
       aria-label={file.name}
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4"
+      data-slot="file-card"
+      className="flex flex-col gap-3 rounded-3xl border border-border bg-muted p-3.5"
     >
-      <div className="flex items-start gap-3">
-        <FileAudioIcon aria-hidden className="mt-0.5 size-6 shrink-0 text-muted-foreground" />
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden
+          className="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-muted-foreground"
+        >
+          <MusicIcon className="size-5" />
+        </span>
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="truncate text-base font-medium" title={file.name}>
+          <p className="truncate text-base font-[650]" title={file.name}>
             {file.name}
           </p>
-          <p className="text-sm text-muted-foreground tabular-nums">
+          <p className="font-mono text-sm text-faint-foreground tabular-nums">
             {[formatBytes(file.size), duration === undefined ? undefined : formatDuration(duration)]
               .filter(Boolean)
               .join(' · ')}
@@ -79,6 +86,7 @@ export function FileRow({
         </p>
       ) : audio?.kind === 'decoded' ? (
         <WaveformPreview
+          className="h-11"
           peaks={audio.stats.peaks}
           label={m['import.waveform_label']({
             name: file.name,
@@ -93,7 +101,7 @@ export function FileRow({
         <ul className="flex flex-wrap gap-2" aria-label={m['import.checks_label']()}>
           {warnings.map((issue) => (
             <li key={issue.kind}>
-              <Badge variant="warning" className="h-auto min-h-6 py-0.5 whitespace-normal">
+              <Badge className="h-auto min-h-5.5 py-0.5 whitespace-normal">
                 <TriangleAlertIcon aria-hidden />
                 {issueText(issue)}
               </Badge>
@@ -119,9 +127,7 @@ export function FileRow({
               >
                 {m['import.open_it']()}
               </Link>
-              <Button variant="outline" onClick={onImportAnyway}>
-                {m['import.import_anyway']()}
-              </Button>
+              <Button onClick={onImportAnyway}>{m['import.import_anyway']()}</Button>
             </>
           }
         />

@@ -7,7 +7,9 @@ import { Button } from '@/ui/button'
 // 22 px corners; dragging turns the edge solid --signal over a --primary-soft wash (shape and
 // colour). "Drop an audio or video file, or choose a file" plus the formats line. The page can accept drops anywhere; it passes `dragging` so the zone shows the drop state.
 // Picking with the button is the non-drag alternative (WCAG 2.5.7); a click anywhere else on the
-// zone opens the picker too (a pointer shortcut, so the zone is not a second tab stop).
+// zone opens the picker too (a pointer shortcut, so the zone is not a second tab stop). `row` is the
+// one-line zone under a picked file in Add song (27 §3.6): "Drop another file here, or [choose a
+// file]" and the formats.
 
 type DropZoneProps = {
   prompt: string
@@ -19,6 +21,7 @@ type DropZoneProps = {
   accept?: string
   disabled?: boolean
   onFiles: (files: File[]) => void
+  variant?: 'panel' | 'row'
   className?: string
 }
 
@@ -31,6 +34,7 @@ function DropZone({
   accept,
   disabled = false,
   onFiles,
+  variant = 'panel',
   className,
 }: DropZoneProps) {
   const input = useRef<HTMLInputElement>(null)
@@ -47,17 +51,24 @@ function DropZone({
         input.current?.click()
       }}
       className={cn(
-        'flex min-h-56 flex-col items-center justify-center gap-4 rounded-4xl border-2 border-dashed border-border-strong bg-card px-6 py-10 text-center transition-[scale,background-color,border-color] duration-(--duration-base) ease-spring data-dragging:scale-[1.01] data-dragging:border-solid data-dragging:border-signal data-dragging:bg-primary-soft forced-colors:data-dragging:bg-card',
+        'border-2 border-dashed border-border-strong bg-card text-center transition-[scale,background-color,border-color] duration-(--duration-base) ease-spring data-dragging:border-solid data-dragging:border-signal data-dragging:bg-primary-soft forced-colors:data-dragging:bg-card',
+        variant === 'panel'
+          ? 'flex min-h-56 flex-col items-center justify-center gap-4 rounded-4xl px-6 py-10 data-dragging:scale-[1.01]'
+          : 'flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-4xl p-3',
         !disabled && 'cursor-pointer',
         className,
       )}
     >
-      <span className="grid size-16 place-items-center rounded-full bg-muted text-muted-foreground [&_svg]:size-7">
-        <FileAudioIcon aria-hidden strokeWidth={1.8} />
-      </span>
+      {variant === 'panel' && (
+        <span className="grid size-16 place-items-center rounded-full bg-muted text-muted-foreground [&_svg]:size-7">
+          <FileAudioIcon aria-hidden strokeWidth={1.8} />
+        </span>
+      )}
       {dragging ? (
-        <p className="text-lg text-foreground">{dropLabel}</p>
-      ) : (
+        <p className={variant === 'panel' ? 'text-lg text-foreground' : 'text-sm text-foreground'}>
+          {dropLabel}
+        </p>
+      ) : variant === 'panel' ? (
         <p className="text-lg">
           {prompt}{' '}
           <Button
@@ -71,6 +82,18 @@ function DropZone({
             {chooseLabel}
           </Button>
         </p>
+      ) : (
+        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+          {prompt}
+          <Button
+            size="sm"
+            aria-describedby={hintId}
+            disabled={disabled}
+            onClick={() => input.current?.click()}
+          >
+            {chooseLabel}
+          </Button>
+        </span>
       )}
       <p id={hintId} className="text-sm text-faint-foreground">
         {hint}

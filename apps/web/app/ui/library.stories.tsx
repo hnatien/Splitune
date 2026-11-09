@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { EllipsisVerticalIcon, GuitarIcon } from 'lucide-react'
+import { EllipsisIcon } from 'lucide-react'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
 import {
@@ -9,54 +9,82 @@ import {
   DropdownMenuTrigger,
 } from './dropdown-menu.tsx'
 import { LONG_TITLE, SONGS } from './fixtures.ts'
-import { BassIcon } from './icons/bass.tsx'
 import { Progress as ProgressBar, ProgressLabel } from './progress.tsx'
 import { Skeleton } from './skeleton.tsx'
-import { InstrumentTile, SongCard, SongRow } from './song-card.tsx'
+import { InstrumentTile, SongCard, SongRow, type SongSummary } from './song-card.tsx'
+import { WaveformPreview } from './waveform-preview.tsx'
 
+// Library entries (26 §12.2 SongCard / SongRow): the card for the grid, the row for phones and the
+// list view, in both themes, with the stem tile, the More menu, the 28 px preview and progress.
 const meta = { title: 'Kit/Library' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
+const ENTRIES: SongSummary[] = SONGS.map((song) => ({
+  title: song.title,
+  subtitle: ['artist' in song ? song.artist : undefined, song.instrument]
+    .filter(Boolean)
+    .join(' · '),
+  status: song.status,
+  meta: ['lastPractised' in song ? song.lastPractised : undefined]
+    .concat('bestTempo' in song ? song.bestTempo : undefined)
+    .filter(Boolean)
+    .join(' · '),
+  href: song.href,
+}))
+
+const PEAKS = Array.from({ length: 48 }, (_, n) =>
+  Math.abs(0.3 + 0.7 * Math.sin(n * 0.9) * Math.cos(n * 0.23)),
+)
+
+const tileFor = (instrument: string, size: 'sm' | 'md' = 'md') =>
+  instrument === 'Bass' ? (
+    <InstrumentTile stem="bass" label="Bs" size={size} />
+  ) : (
+    <InstrumentTile stem="guitar" label="Gt" size={size} />
+  )
+
+const GRID = 'grid list-none grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3.5 p-0'
+
 const Grid = () => (
-  <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4 p-0">
-    {SONGS.map((song) => (
+  <ul className={GRID}>
+    {ENTRIES.map((song, i) => (
       <li key={song.href}>
-        <SongCard song={song} className="h-full" />
+        <SongCard
+          song={song}
+          leading={tileFor(SONGS[i]?.instrument ?? '')}
+          preview={
+            <WaveformPreview peaks={PEAKS} label={`Waveform of ${song.title}`} className="h-7" />
+          }
+          className="h-full"
+        />
       </li>
     ))}
   </ul>
 )
 
-const LIST =
-  'list-none divide-y divide-border overflow-hidden rounded-3xl bg-surface-raised p-0 shadow-1'
-
-const tileFor = (instrument: string, size: 'sm' | 'md' = 'md') =>
-  instrument === 'Bass' ? (
-    <InstrumentTile stem="bass" icon={<BassIcon />} size={size} />
-  ) : (
-    <InstrumentTile stem="guitar" icon={<GuitarIcon />} size={size} />
-  )
-
 const List = () => (
-  <ul className={`max-w-md ${LIST}`}>
-    {SONGS.map((song) => (
+  <ul className="flex max-w-md list-none flex-col gap-0.5 p-0">
+    {ENTRIES.map((song, i) => (
       <li key={song.href}>
-        <SongRow song={song} />
+        <SongRow song={song} leading={tileFor(SONGS[i]?.instrument ?? '')} />
       </li>
     ))}
   </ul>
 )
 
 export const Cards: Story = { render: Grid }
+export const CardsDaylight: Story = { render: Grid, globals: { appearance: 'light' } }
 export const Rows: Story = { render: List }
+export const RowsDaylight: Story = { render: List, globals: { appearance: 'light' } }
+export const IncreasedContrast: Story = { render: Grid, globals: { contrast: 'more' } }
 
 export const LongTitle: Story = {
   render: Grid,
   play: async ({ canvasElement }) => {
-    const link = within(canvasElement).getByRole('link', { name: LONG_TITLE })
-    await expect(link).toHaveAttribute('title', LONG_TITLE)
-    await expect(link.scrollHeight).toBeGreaterThan(link.clientHeight - 1)
+    const link = within(canvasElement).getByTitle(LONG_TITLE)
+    const title = link.querySelector('h3') as HTMLElement
+    await expect(title.scrollHeight).toBeGreaterThan(title.clientHeight - 1)
   },
 }
 
@@ -71,124 +99,93 @@ export const FocusCard: Story = {
   },
 }
 
-export const Loading: Story = {
-  render: () => (
-    <ul
-      aria-busy="true"
-      className="grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4 p-0"
-    >
-      {['a', 'b', 'c'].map((key) => (
-        <li key={key} className="flex flex-col gap-4 rounded-3xl bg-surface-raised p-4 shadow-1">
-          <div className="flex items-start gap-3">
-            <Skeleton className="size-12 shrink-0 rounded-2xl" />
-            <div className="flex flex-1 flex-col gap-2 pt-1">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          </div>
-          <Skeleton className="h-6 w-28 rounded-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </li>
-      ))}
-    </ul>
-  ),
-}
-
-const WithLeading = () => (
-  <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4 p-0">
-    {SONGS.map((song) => (
-      <li key={song.href}>
-        <SongCard song={song} className="h-full" leading={tileFor(song.instrument)} />
-      </li>
-    ))}
-  </ul>
-)
-
-export const CardsWithLeading: Story = {
-  render: WithLeading,
+// The tile is decorative and sits before the title; parts take their own stem colours (26 §4.4).
+export const Tiles: Story = {
+  render: Grid,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const tiles = canvasElement.querySelectorAll<HTMLElement>('[data-slot=instrument-tile]')
-    await expect(tiles).toHaveLength(SONGS.length)
-    // The tile is decorative: the instrument is named in text beside it.
+    await expect(tiles).toHaveLength(ENTRIES.length)
     for (const tile of tiles) await expect(tile).toHaveAttribute('aria-hidden', 'true')
-    // The title is still the one link, and the tile sits before the text.
-    const link = canvas.getByRole('link', { name: 'Wish You Were Here' })
+    const link = canvas.getByTitle('Wish You Were Here')
     const card = link.closest<HTMLElement>('[data-slot=song-card]') as HTMLElement
     const tile = card.querySelector('[data-slot=instrument-tile]') as HTMLElement
+    await expect(tile.getBoundingClientRect().width).toBe(40)
     await expect(tile.getBoundingClientRect().right).toBeLessThanOrEqual(
       link.getBoundingClientRect().left,
     )
-    // Bass and guitar take their own stem colours (26 §4.4).
-    const colours = new Set([...tiles].map((t) => getComputedStyle(t).color))
-    await expect(colours.size).toBeGreaterThan(1)
+    const fills = new Set([...tiles].map((t) => getComputedStyle(t).backgroundColor))
+    await expect(fills.size).toBeGreaterThan(1)
   },
 }
-export const CardsWithLeadingDark: Story = { render: WithLeading, globals: { appearance: 'dark' } }
-export const CardsWithLeadingStage: Story = {
-  render: WithLeading,
-  globals: { appearance: 'stage' },
-}
 
-export const CardRaised: Story = {
+// Cards are bordered, not lifted (26 §9), with 16 px corners.
+export const CardBordered: Story = {
   render: Grid,
   play: async ({ canvasElement }) => {
     const card = canvasElement.querySelector<HTMLElement>('[data-slot=song-card]') as HTMLElement
-    // Without a leading slot the title column starts the card's header row.
-    await expect(card.querySelector('[data-slot=instrument-tile]')).toBeNull()
-    await expect(card.firstElementChild?.firstElementChild?.querySelector('a')).not.toBeNull()
-    await expect(getComputedStyle(card).boxShadow).not.toBe('none')
-    await expect(parseFloat(getComputedStyle(card).borderTopLeftRadius)).toBeGreaterThan(12)
+    await expect(getComputedStyle(card).boxShadow).toBe('none')
+    await expect(getComputedStyle(card).borderTopWidth).toBe('1px')
+    await expect(parseFloat(getComputedStyle(card).borderTopLeftRadius)).toBe(16)
   },
 }
 
-export const Dark: Story = { render: Grid, globals: { appearance: 'dark' } }
-export const Stage: Story = { render: Grid, globals: { appearance: 'stage' } }
-export const RowsDark: Story = { render: List, globals: { appearance: 'dark' } }
-export const IncreasedContrast: Story = { render: Grid, globals: { contrast: 'more' } }
+// Phone rows are at least 60 px tall (27 §3.5).
+export const RowHeight: Story = {
+  render: List,
+  play: async ({ canvasElement }) => {
+    for (const row of canvasElement.querySelectorAll<HTMLElement>('[data-slot=song-row]')) {
+      await expect(row.getBoundingClientRect().height).toBeGreaterThanOrEqual(60)
+    }
+  },
+}
 
-const RowsLeading = () => (
-  <ul className={LIST}>
-    {SONGS.map((song) => (
-      <li key={song.href}>
-        <SongRow song={song} leading={tileFor(song.instrument, 'sm')} />
-      </li>
-    ))}
-  </ul>
-)
-
-export const RowsWithLeading: Story = { render: RowsLeading }
-export const RowsWithLeadingDark: Story = { render: RowsLeading, globals: { appearance: 'dark' } }
-
-// Practice stats sit on the card's bottom edge, so cards of different heights in a grid row line up.
-export const StatsAtBottom: Story = {
+export const Unavailable: Story = {
   render: () => (
-    <ul className="grid list-none grid-cols-2 gap-4 p-0">
-      {SONGS.slice(0, 2).map((song, i) => (
+    <ul className={GRID}>
+      {ENTRIES.slice(0, 2).map((song, i) => (
         <li key={song.href}>
           <SongCard
-            song={{ ...song, lastPractised: 'Practised today' }}
-            progress={i === 0 ? <Progress /> : undefined}
-            className="h-full"
+            song={song}
+            leading={tileFor(SONGS[i]?.instrument ?? '')}
+            unavailable={i === 1 ? 'Needs connection' : undefined}
           />
         </li>
       ))}
     </ul>
   ),
   play: async ({ canvasElement }) => {
-    const stats = within(canvasElement).getAllByText('Practised today')
-    const [a, b] = stats.map((el) => el.getBoundingClientRect().bottom)
-    await expect(Math.abs((a ?? 0) - (b ?? 0))).toBeLessThan(1)
+    await expect(within(canvasElement).getByText('Needs connection')).toBeVisible()
   },
+}
+
+export const Loading: Story = {
+  render: () => (
+    <ul aria-busy="true" className={GRID}>
+      {['a', 'b', 'c'].map((key) => (
+        <li key={key} className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <Skeleton className="size-10 shrink-0 rounded-lg" />
+            <div className="flex flex-1 flex-col gap-2 pt-0.5">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3.5 w-1/2" />
+            </div>
+          </div>
+          <Skeleton className="h-7 w-full" />
+          <Skeleton className="h-5.5 w-2/3 rounded-full" />
+        </li>
+      ))}
+    </ul>
+  ),
 }
 
 function Menu({ title }: { title: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" aria-label={`More for ${title}`} />}
+        render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${title}`} />}
       >
-        <EllipsisVerticalIcon aria-hidden />
+        <EllipsisIcon aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem>Rename</DropdownMenuItem>
@@ -201,26 +198,21 @@ function Menu({ title }: { title: string }) {
 
 const Progress = () => (
   <ProgressBar value={38}>
-    <ProgressLabel className="font-normal text-muted-foreground tabular-nums">
-      Isolating your part · About 2 min left
+    <ProgressLabel className="font-normal text-faint-foreground tabular-nums">
+      Isolating your part · about 2 min left
     </ProgressLabel>
   </ProgressBar>
 )
 
 const WithActions = ({ rows = false }: { rows?: boolean }) => (
-  <ul
-    className={
-      rows
-        ? `max-w-md ${LIST}`
-        : 'grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4 p-0'
-    }
-  >
-    {SONGS.map((song, i) => {
+  <ul className={rows ? 'flex max-w-md list-none flex-col gap-0.5 p-0' : GRID}>
+    {ENTRIES.map((song, i) => {
       const Entry = rows ? SongRow : SongCard
       return (
         <li key={song.href}>
           <Entry
             song={song}
+            leading={tileFor(SONGS[i]?.instrument ?? '', 'md')}
             actions={<Menu title={song.title} />}
             progress={i === 1 ? <Progress /> : undefined}
             className={rows ? undefined : 'h-full'}
@@ -235,7 +227,7 @@ export const CardsWithMenu: Story = {
   render: () => <WithActions />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const [first] = SONGS
+    const [first] = ENTRIES
     const trigger = canvas.getByRole('button', { name: `More for ${first?.title}` })
     await userEvent.click(trigger)
     const menu = await within(document.body).findByRole('menu')
@@ -247,7 +239,7 @@ export const CardsWithMenu: Story = {
   },
 }
 export const RowsWithMenu: Story = { render: () => <WithActions rows /> }
-export const CardsWithMenuDark: Story = {
+export const CardsWithMenuDaylight: Story = {
   render: () => <WithActions />,
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
 }

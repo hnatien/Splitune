@@ -1,8 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { Link, useRouter } from '@tanstack/react-router'
-import { CircleUserIcon } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { appearanceLabel } from '@/lib/appearance'
-import { authClient } from '@/lib/auth-client'
 import { useDisplay } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
@@ -18,39 +15,50 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
+import { useSignOut } from './use-sign-out'
 
-const APPEARANCES: DisplayPreferences['appearance'][] = ['system', 'light', 'dark', 'stage']
+/** The three appearance choices (D2): `stage` stays a valid id but isn't offered here. */
+export const APPEARANCES: DisplayPreferences['appearance'][] = ['dark', 'light', 'system']
 
-// Account menu (27 §1): the username (the email for a Google-only account), then Settings · Plan &
-// billing · Keyboard & pedal · Appearance · Help · Sign out.
+/** "Tien Hoang" → "TH", "Ana" → "A". */
+export function initials(name: string): string {
+  const words = name
+    .trim()
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+  const letters = words.length > 1 ? [words[0], words[1]] : [words[0]]
+  return letters
+    .map((word) => (word ? Array.from(word)[0] : ''))
+    .join('')
+    .toLocaleUpperCase()
+}
+
+// Account menu (27 §1): a 40 px avatar with the initials; the username (the email for a Google-only
+// account), then Settings · Keyboard & pedal · Appearance · Help · Sign out.
 export function AccountMenu({ name }: { name: string }) {
   const appearance = useDisplay((s) => s.appearance)
   const update = useDisplay((s) => s.update)
-  const router = useRouter()
-  const queryClient = useQueryClient()
-
-  const signOut = async () => {
-    await authClient.signOut()
-    queryClient.clear()
-    await router.navigate({ to: '/' })
-    await router.invalidate()
-  }
+  const signOut = useSignOut()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" aria-label={m['nav.account']()} />}
+        render={
+          <Button
+            variant="box"
+            size="icon"
+            aria-label={m['nav.account']()}
+            className="font-bold text-foreground [--r:var(--radius-5xl)]"
+          />
+        }
       >
-        <CircleUserIcon aria-hidden />
+        <span aria-hidden>{initials(name)}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="truncate">{name}</DropdownMenuLabel>
           <DropdownMenuItem render={<Link to="/settings/profile" />}>
             {m['nav.settings']()}
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link to="/settings/billing" />}>
-            {m['nav.plan']()}
           </DropdownMenuItem>
           <DropdownMenuItem render={<Link to="/settings/keyboard" />}>
             {m['nav.keyboard']()}
@@ -60,7 +68,7 @@ export function AccountMenu({ name }: { name: string }) {
         <DropdownMenuGroup>
           <DropdownMenuLabel>{m['nav.appearance']()}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={appearance}
+            value={appearance === 'stage' ? 'dark' : appearance}
             onValueChange={(value) =>
               update({ appearance: value as DisplayPreferences['appearance'] })
             }
