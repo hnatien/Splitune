@@ -3,8 +3,8 @@ import { Slider } from '@/ui/slider'
 import { SPEED_FINE_STEP } from '@/ui/speed-control'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
-// SpeedControl's popover (doc 26 §12.2): the slider and the 50/70/85/100 presets. The presets
-// alone are also set inline in the transport bar from `lg`.
+// SpeedControl's popover (doc 26 §12.2): the slider and the 50/70/85/100 presets as a segmented
+// group (`.seg`). The presets alone are also set inline in the transport bar from `2xl`.
 
 export const SPEED_PRESETS = [50, 70, 85, 100] as const
 
@@ -36,7 +36,7 @@ export function SpeedPresets({
         <ToggleGroupItem
           key={preset}
           value={String(preset)}
-          className="min-w-18 flex-1 px-2 tabular-nums"
+          className="min-w-18 flex-1 px-2 font-mono tabular-nums"
         >
           {preset}
           {NBSP}%

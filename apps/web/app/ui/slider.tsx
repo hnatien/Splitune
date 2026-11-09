@@ -2,9 +2,10 @@ import { Slider as SliderPrimitive } from '@base-ui/react/slider'
 import { cn } from '@/lib/utils'
 
 /**
- * Base UI Slider (doc 26 §12.1): horizontal, vertical (faders) and range (loop A/B). Always paired
- * with a NumberField or steppers (WCAG 2.5.7). Thumbs have a control-size hit area (44 px browse,
- * 48 px practice); Page Up/Down move by `largeStep` (10).
+ * `.range` (doc 26 §12.1): horizontal, vertical (faders) and range (loop A/B) on Base UI Slider.
+ * Always paired with a NumberField or steppers (WCAG 2.5.7). A 6 px --accent track with an --input
+ * edge and a --signal fill; each thumb is a control-size box (44 browse, 48 practice: the target,
+ * §8) painting a 20 px --signal knob. Page Up/Down move by `largeStep` (10).
  */
 function Slider({
   className,
@@ -36,11 +37,11 @@ function Slider({
       <SliderPrimitive.Control className="relative flex min-h-control w-full touch-none items-center select-none data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:min-w-control data-vertical:flex-col">
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="relative grow rounded-full border border-input bg-surface-sunken select-none data-horizontal:h-2 data-horizontal:w-full data-vertical:h-full data-vertical:w-2"
+          className="relative grow rounded-full bg-accent inset-ring inset-ring-input select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
-            className="rounded-full bg-primary select-none data-horizontal:h-full data-vertical:w-full data-disabled:bg-input"
+            className="rounded-full bg-signal select-none data-horizontal:h-full data-vertical:w-full data-disabled:bg-input"
           />
         </SliderPrimitive.Track>
         {values.map((_, index) => (
@@ -50,7 +51,7 @@ function Slider({
             // biome-ignore lint/suspicious/noArrayIndexKey: one thumb per value index
             key={index}
             aria-label={thumbLabels[index] ?? thumbLabels[0]}
-            className="relative block size-5 shrink-0 rounded-full border-2 border-primary bg-card select-none after:absolute after:top-1/2 after:left-1/2 after:size-control after:-translate-1/2 after:rounded-full data-disabled:border-input data-disabled:bg-muted data-dragging:scale-110"
+            className="block size-control shrink-0 rounded-full border-[calc((var(--control-size)-1.25rem)/2)] border-transparent bg-signal bg-clip-padding select-none focus-visible:outline-offset-[calc(2px-(var(--control-size)-1.25rem)/2)] data-disabled:bg-faint-foreground data-dragging:scale-110"
           />
         ))}
       </SliderPrimitive.Control>

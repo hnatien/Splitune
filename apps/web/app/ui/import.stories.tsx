@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { DropZone } from './drop-zone.tsx'
 import { RadioCard, RadioCardGroup } from './radio-card.tsx'
+import { BOTH_THEMES, DAYLIGHT, StateGrid } from './story-kit.tsx'
 import { WaveformPreview } from './waveform-preview.tsx'
 
 const meta = { title: 'Kit/Import' } satisfies Meta
@@ -32,9 +33,10 @@ export const DropZoneDragging: Story = {
     const zone = canvasElement.querySelector<HTMLElement>('[data-slot=drop-zone]') as HTMLElement
     await expect(zone).toHaveAttribute('data-dragging')
     await expect(within(zone).getByText(ZONE.dropLabel)).toBeVisible()
-    // The zone lifts by 1 % on the spring ease once the transition has run, and rings in primary.
+    // The zone lifts by 1 % on the spring ease once the transition has run, and its dashed edge
+    // turns solid (the shape cue, besides the --signal colour and the wash).
     await waitFor(() => expect(getComputedStyle(zone).scale).toBe('1.01'))
-    await expect(getComputedStyle(zone).boxShadow).not.toBe('none')
+    await expect(getComputedStyle(zone).borderTopStyle).toBe('solid')
     await expect(getComputedStyle(zone).transitionTimingFunction).toContain(
       'cubic-bezier(0.34, 1.3',
     )
@@ -88,9 +90,24 @@ export const DropZoneDisabledClick: Story = {
   },
 }
 
-export const DropZoneDark: Story = {
+export const DropZoneDaylight: Story = {
   render: () => <DropZone {...ZONE} onFiles={() => undefined} />,
-  globals: { appearance: 'dark' },
+  globals: DAYLIGHT,
+}
+
+/** `.drop`: rest (2 px dashed --border-strong), dragging and disabled, in both themes. */
+export const DropZoneStates: Story = {
+  globals: BOTH_THEMES,
+  render: () => (
+    <StateGrid
+      className="flex flex-col gap-6"
+      states={[
+        ['Rest', <DropZone key="r" {...ZONE} onFiles={() => undefined} />],
+        ['Dragging', <DropZone key="d" {...ZONE} dragging onFiles={() => undefined} />],
+        ['Disabled', <DropZone key="x" {...ZONE} disabled onFiles={() => undefined} />],
+      ]}
+    />
+  ),
 }
 export const DropZoneDraggingStage: Story = {
   render: () => <DropZone {...ZONE} dragging onFiles={() => undefined} />,
@@ -106,7 +123,7 @@ const PEAKS = Array.from({ length: 400 }, (_, i) => {
 
 export const Waveform: Story = {
   render: () => (
-    <div className="max-w-xl rounded-xl border border-border bg-card p-4">
+    <div className="max-w-xl rounded-2xl border border-border bg-card p-4">
       <WaveformPreview peaks={PEAKS} label="Waveform of Riff in A minor.mp3, 3:42" />
     </div>
   ),
@@ -118,6 +135,14 @@ export const Waveform: Story = {
 }
 
 export const WaveformStage: Story = { ...Waveform, globals: { appearance: 'stage' } }
+export const WaveformBothThemes: Story = {
+  globals: BOTH_THEMES,
+  render: () => (
+    <div className="max-w-xl rounded-2xl border border-border bg-card p-4">
+      <WaveformPreview peaks={PEAKS} label="Waveform of Riff in A minor.mp3, 3:42" />
+    </div>
+  ),
+}
 
 function AnalysisChoice({ disabled = false }: { disabled?: boolean }) {
   const [value, setValue] = useState('full')

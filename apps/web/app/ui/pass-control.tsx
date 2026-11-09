@@ -58,8 +58,8 @@ function PassControl({
       data-slot="pass-control"
       inert={inert}
       className={cn(
-        'm-0 flex flex-wrap items-center gap-2 rounded-2xl border-0 p-1',
-        prompting && 'ring-2 ring-primary',
+        'm-0 flex flex-wrap items-center gap-2 rounded-3xl border-0 p-1',
+        prompting && 'ring-2 ring-signal',
         className,
       )}
     >
@@ -89,7 +89,7 @@ function PassControl({
           disabled={disabled}
           onClick={onClean}
           aria-label={compact ? labels.clean : undefined}
-          className="rounded-2xl border-2 border-success bg-surface-raised px-3 text-success shadow-1 hover:bg-muted"
+          className="rounded-3xl border-2 border-success bg-surface-raised px-3 text-success shadow-1 hover:bg-muted"
         >
           <CheckIcon aria-hidden />
           {!compact && labels.clean}
@@ -102,7 +102,7 @@ function PassControl({
           disabled={disabled}
           onClick={onNotYet}
           aria-label={compact ? labels.notYet : undefined}
-          className="rounded-2xl bg-surface-raised px-3 shadow-1"
+          className="rounded-3xl bg-surface-raised px-3 shadow-1"
         >
           <RotateCcwIcon aria-hidden />
           {!compact && labels.notYet}

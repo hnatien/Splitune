@@ -34,6 +34,7 @@ What is built, as of **2026-10-29**. Details, verification and open items for ea
 | s31b | Redesign: step prompts s32–s45 | Done | — | Step s31b |
 | s31c | Redesign: mockup harness (reference renders and fidelity probe) | Done | — | Step s31c |
 | s32 | Redesign: tokens, fonts, practice perf baseline | Done (not merged) | On `impl/s32-tokens-fonts`; perf baseline `8bd9050` from the unchanged screen. Owner: legibility check (Foundations/Fonts › Legibility) | Step s32 |
+| s33 | Redesign: base components on Night Rehearsal | Done (not merged) | On `impl/s33-base-components`. G2 next: the owner reviews `redesign/.renders/s33/index.html` and decides the six token gaps in the progress log | Step s33 |
 | s40a | Redesign: keep all separated stems (backend) | In progress | Built on `impl/s40a-all-stems` with the review's cache-key fix; re-verification left, then the PC re-measurement, G3 and merge after `impl/29-separation-improvements` is in `dev` (D16) | Step s40a (in progress) |
 | s41a | Redesign: sections backend (allin1 stage + part fallback) | In progress | Built on `impl/s41a-sections` (`d944b61`); review fixes left, then G3 (island install, weights, timing, 3 songs by ear, `eval:regression`) before merge | Step s41a (in progress) |
 

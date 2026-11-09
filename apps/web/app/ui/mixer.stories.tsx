@@ -48,7 +48,7 @@ function Mixer({ loading = false }: { loading?: boolean }) {
     }))
   }
   return (
-    <div className="flex max-w-3xl flex-col gap-4 rounded-xl border border-border bg-card p-4">
+    <div className="flex max-w-3xl flex-col gap-4 rounded-2xl border border-border bg-card p-4">
       <MixPresetGroup
         label="Mix"
         value={preset}
@@ -100,7 +100,7 @@ function PanelTiles() {
   const [rest, setRest] = useState('beat')
   const [appearance, setAppearance] = useState('system')
   return (
-    <div className="flex w-88 max-w-full flex-col gap-3 rounded-xl border border-border bg-popover p-4 text-popover-foreground">
+    <div className="flex w-88 max-w-full flex-col gap-3 rounded-2xl border border-border bg-popover p-4 text-popover-foreground">
       <PanelSection title="Between repeats">
         <OptionSegments
           label="Rest between repeats"

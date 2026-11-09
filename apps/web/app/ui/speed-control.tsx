@@ -6,7 +6,8 @@ import { TransportButton } from '@/ui/transport-button'
 
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
 // (50–100 %, 25–200 % advanced) and presets 50/70/85/100, which also sit inline from `2xl`;
-// readout "70 % · 84 BPM". A sunken capsule: raised −/+ (icons only, 26 §11) around a plain readout.
+// readout "70 %" over "84 BPM". Boxed −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet
+// readout button; all three are main practice controls, 64 px in every layout (§8, V11).
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
@@ -30,7 +31,7 @@ type SpeedControlProps = {
     presets: string
   }
   shortcuts?: { decrease?: string; increase?: string }
-  /** Phones: secondary-size steppers (48 px) so the transport fits two rows. */
+  /** Phones: a narrower readout so the transport fits two rows (the steppers stay 64 px, V11). */
   compact?: boolean
   className?: string
 }
@@ -89,15 +90,12 @@ function SpeedControl({
     set(value + direction * (event.shiftKey ? SPEED_FINE_STEP : SPEED_STEP))
 
   return (
-    <div
-      data-slot="speed-control"
-      className={cn('inline-flex items-center gap-1 rounded-2xl bg-surface-sunken p-1', className)}
-    >
+    <div data-slot="speed-control" className={cn('inline-flex items-center gap-1', className)}>
       <TransportButton
         icon={<MinusIcon aria-hidden />}
         label={labels.decrease}
         showLabel={false}
-        size={compact ? 'practice-2' : 'practice'}
+        tone="box"
         shortcut={shortcuts?.decrease}
         disabled={value <= min}
         onClick={step(-1)}
@@ -106,16 +104,16 @@ function SpeedControl({
         <PopoverTrigger
           aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}`}
           className={cn(
-            'flex flex-col items-center justify-center rounded-xl px-3 text-center hover:bg-muted',
-            compact ? 'min-h-target-practice-2 min-w-20' : 'min-h-target-practice min-w-24',
+            'flex min-h-target-practice flex-col items-center justify-center rounded-2xl px-3 text-center transition-colors hover:bg-accent aria-expanded:bg-accent',
+            compact ? 'min-w-20' : 'min-w-26',
           )}
         >
-          <span className="font-reading text-read-readout tabular-nums">
+          <span className="font-reading-mono text-read-readout tracking-[-0.01em] tabular-nums">
             {shown}
             {NBSP}%
           </span>
           {bpm !== undefined && (
-            <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="font-mono text-sm font-medium text-faint-foreground tabular-nums">
               {Math.round((bpm * shown) / 100)}
               {NBSP}BPM
             </span>
@@ -135,7 +133,7 @@ function SpeedControl({
         icon={<PlusIcon aria-hidden />}
         label={labels.increase}
         showLabel={false}
-        size={compact ? 'practice-2' : 'practice'}
+        tone="box"
         shortcut={shortcuts?.increase}
         disabled={value >= max}
         onClick={step(1)}

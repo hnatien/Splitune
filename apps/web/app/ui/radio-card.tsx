@@ -30,15 +30,15 @@ function RadioCard({ title, description, meta, className, ...props }: RadioCardP
     <label
       data-slot="radio-card"
       className={cn(
-        'flex cursor-pointer gap-3 rounded-2xl border border-transparent bg-surface-raised p-4 shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input has-data-checked:ring-2 has-data-checked:ring-primary forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-primary forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:bg-surface-sunken has-data-disabled:shadow-none',
+        'flex cursor-pointer gap-3 rounded-3xl border border-border bg-surface-raised p-4 shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input has-data-checked:border-signal has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-signal forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-signal forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:bg-surface-sunken has-data-disabled:shadow-none',
         className,
       )}
     >
       <RadioPrimitive.Root
-        className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-card data-checked:border-2 data-checked:border-primary"
+        className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-card data-checked:border-2 data-checked:border-signal"
         {...props}
       >
-        <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-signal text-primary-foreground">
           <CheckDrawIcon strokeWidth={3} className="size-3.5" />
         </RadioPrimitive.Indicator>
       </RadioPrimitive.Root>

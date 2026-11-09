@@ -35,7 +35,7 @@ function PedalHud({ message, sequence, icon, className }: PedalHudProps) {
         data-slot="pedal-hud"
         data-visible={visible || undefined}
         className={cn(
-          'pointer-events-none fixed top-[40%] left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 animate-pop-in rounded-2xl bg-hud-bg px-7 py-4 shadow-3 font-reading text-read-readout font-semibold whitespace-nowrap text-hud-fg tabular-nums opacity-0 transition-opacity duration-(--duration-base) data-visible:opacity-100 [&_svg]:size-[1em]',
+          'pointer-events-none fixed top-[40%] left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 animate-pop-in rounded-3xl bg-hud-bg px-7 py-4 shadow-3 font-reading text-read-readout font-semibold whitespace-nowrap text-hud-fg tabular-nums opacity-0 transition-opacity duration-(--duration-base) data-visible:opacity-100 [&_svg]:size-[1em]',
           className,
         )}
       >

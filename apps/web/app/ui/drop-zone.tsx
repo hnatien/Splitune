@@ -3,8 +3,9 @@ import { useId, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
-// Large file target (27 §3.6): "Drop an audio or video file, or choose a file" plus the formats
-// line. The page can accept drops anywhere; it passes `dragging` so the zone shows the drop state.
+// Large file target (27 §3.6, `.drop`): a --card panel with a 2 px dashed --border-strong edge and
+// 22 px corners; dragging turns the edge solid --signal over a --primary-soft wash (shape and
+// colour). "Drop an audio or video file, or choose a file" plus the formats line. The page can accept drops anywhere; it passes `dragging` so the zone shows the drop state.
 // Picking with the button is the non-drag alternative (WCAG 2.5.7); a click anywhere else on the
 // zone opens the picker too (a pointer shortcut, so the zone is not a second tab stop).
 
@@ -46,16 +47,16 @@ function DropZone({
         input.current?.click()
       }}
       className={cn(
-        'flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-input bg-surface-raised px-6 py-10 text-center transition-[scale,background-color,border-color,box-shadow] duration-(--duration-base) ease-spring data-dragging:scale-[1.01] data-dragging:border-primary data-dragging:bg-accent data-dragging:ring-2 data-dragging:ring-primary forced-colors:data-dragging:bg-card',
+        'flex min-h-56 flex-col items-center justify-center gap-4 rounded-4xl border-2 border-dashed border-border-strong bg-card px-6 py-10 text-center transition-[scale,background-color,border-color] duration-(--duration-base) ease-spring data-dragging:scale-[1.01] data-dragging:border-solid data-dragging:border-signal data-dragging:bg-primary-soft forced-colors:data-dragging:bg-card',
         !disabled && 'cursor-pointer',
         className,
       )}
     >
-      <span className="grid size-16 place-items-center rounded-full bg-muted text-muted-foreground [&_svg]:size-8">
-        <FileAudioIcon aria-hidden />
+      <span className="grid size-16 place-items-center rounded-full bg-muted text-muted-foreground [&_svg]:size-7">
+        <FileAudioIcon aria-hidden strokeWidth={1.8} />
       </span>
       {dragging ? (
-        <p className="text-lg font-medium text-accent-foreground">{dropLabel}</p>
+        <p className="text-lg text-foreground">{dropLabel}</p>
       ) : (
         <p className="text-lg">
           {prompt}{' '}
@@ -71,7 +72,7 @@ function DropZone({
           </Button>
         </p>
       )}
-      <p id={hintId} className="text-sm text-muted-foreground">
+      <p id={hintId} className="text-sm text-faint-foreground">
         {hint}
       </p>
       <input

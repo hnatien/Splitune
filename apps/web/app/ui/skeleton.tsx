@@ -8,7 +8,7 @@ function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="skeleton"
       aria-hidden
       className={cn(
-        'animate-shimmer rounded-md bg-linear-to-r from-muted via-surface-raised to-muted bg-size-[200%_100%]',
+        'animate-shimmer rounded-lg bg-linear-to-r from-muted via-accent to-muted bg-size-[200%_100%]',
         className,
       )}
       {...props}

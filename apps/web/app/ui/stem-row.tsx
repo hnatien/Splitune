@@ -96,7 +96,7 @@ function StemRow({
         data-stem={stem}
         className={cn(
           GRID,
-          'rounded-xl border-l-2 bg-surface-raised p-3 shadow-1',
+          'rounded-2xl border-l-2 bg-surface-raised p-3 shadow-1',
           yourPart ? 'border-foreground' : 'border-transparent',
         )}
       >
@@ -168,7 +168,7 @@ function StemRowSkeleton({ className }: { className?: string }) {
         data-slot="stem-row-skeleton"
         className={cn(
           GRID,
-          'rounded-xl border-l-2 border-transparent bg-surface-raised p-3 shadow-1',
+          'rounded-2xl border-l-2 border-transparent bg-surface-raised p-3 shadow-1',
         )}
       >
         <Skeleton className={cn(NAME, 'h-8 w-40')} />

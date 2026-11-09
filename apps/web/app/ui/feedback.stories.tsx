@@ -354,7 +354,9 @@ export const StatusBadgeStates: Story = {
       await expect(getComputedStyle(badge).backgroundColor).not.toBe(
         getComputedStyle(document.body).backgroundColor,
       )
-      await expect(getComputedStyle(badge).borderTopWidth).toBe('1px')
+      // `.badge` (26 §12.1): the status surface and an icon carry the tone; no outline.
+      await expect(getComputedStyle(badge).borderTopWidth).toBe('0px')
+      await expect(badge.querySelector('svg')).not.toBeNull()
     }
   },
 }

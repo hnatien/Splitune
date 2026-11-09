@@ -3,6 +3,13 @@ import { useState } from 'react'
 import { expect, userEvent, within } from 'storybook/test'
 import { NumberField } from './number-field.tsx'
 import { Slider } from './slider.tsx'
+import {
+  BOTH_THEMES,
+  BOTH_THEMES_MORE_CONTRAST,
+  DAYLIGHT,
+  expectTargets,
+  StateGrid,
+} from './story-kit.tsx'
 
 const meta = {
   title: 'Base/Slider',
@@ -85,14 +92,16 @@ export const Range: Story = {
 }
 
 export const Disabled: Story = {
+  globals: BOTH_THEMES,
   render: () => (
     <div className="max-w-md">
-      <Slider defaultValue={70} min={50} max={100} disabled thumbLabels={['Speed']} />
+      <Slider defaultValue={70} min={50} max={100} disabled thumbLabels={['Speed, unavailable']} />
     </div>
   ),
 }
 
-export const ThumbHitArea: Story = {
+/** The thumb's own box is the target (44 browse, 48 practice); it paints a 20 px knob. */
+export const Targets: Story = {
   render: () => (
     <div className="max-w-md">
       <Slider defaultValue={70} min={50} max={100} thumbLabels={['Speed']} />
@@ -100,31 +109,82 @@ export const ThumbHitArea: Story = {
   ),
   play: async ({ canvasElement }) => {
     const thumb = canvasElement.querySelector<HTMLElement>('[data-slot=slider-thumb]')
-    const hit = thumb && getComputedStyle(thumb, '::after')
-    await expect(Number.parseFloat(hit?.width ?? '0')).toBeGreaterThanOrEqual(44)
+    await expectTargets(thumb ? [thumb] : [], 44)
+    await expect(thumb?.clientWidth).toBe(20)
+    await expect(getComputedStyle(thumb as HTMLElement, '::after').content).toBe('none')
+  },
+}
+export const TargetsPracticeDensity: Story = {
+  ...Targets,
+  globals: { density: 'practice' },
+  play: async ({ canvasElement }) => {
+    const thumb = canvasElement.querySelector<HTMLElement>('[data-slot=slider-thumb]')
+    await expectTargets(thumb ? [thumb] : [], 48)
   },
 }
 
-const Gallery = () => (
-  <div className="flex flex-col gap-6">
-    <SpeedSlider />
+export const Focus: Story = {
+  render: () => (
     <div className="max-w-md">
-      <Slider defaultValue={[17, 20]} min={1} max={64} thumbLabels={['Loop start', 'Loop end']} />
+      <Slider defaultValue={70} min={50} max={100} thumbLabels={['Speed']} />
     </div>
-    <div className="h-40">
-      <Slider
-        orientation="vertical"
-        defaultValue={-6}
-        min={-30}
-        max={6}
-        thumbLabels={['Bass volume']}
-      />
-    </div>
-  </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.tab()
+    await expect(within(canvasElement).getByRole('slider', { name: 'Speed' })).toHaveFocus()
+  },
+}
+export const FocusDaylight: Story = { ...Focus, globals: DAYLIGHT }
+
+const Gallery = () => (
+  <StateGrid
+    className="flex flex-col gap-6"
+    states={[
+      ['Slider with steppers', <SpeedSlider key="s" />],
+      [
+        'Range',
+        <div key="r" className="w-md">
+          <Slider
+            defaultValue={[17, 20]}
+            min={1}
+            max={64}
+            thumbLabels={['Loop start', 'Loop end']}
+          />
+        </div>,
+      ],
+      [
+        'Disabled',
+        <div key="d" className="w-md">
+          <Slider
+            defaultValue={70}
+            min={50}
+            max={100}
+            disabled
+            thumbLabels={['Speed, unavailable']}
+          />
+        </div>,
+      ],
+      [
+        'Vertical',
+        <div key="v" className="h-40">
+          <Slider
+            orientation="vertical"
+            defaultValue={-6}
+            min={-30}
+            max={6}
+            thumbLabels={['Bass volume']}
+          />
+        </div>,
+      ],
+    ]}
+  />
 )
-export const Dark: Story = { render: Gallery, globals: { appearance: 'dark' } }
+export const AllStates: Story = { render: Gallery, globals: BOTH_THEMES }
+export const AllStatesIncreasedContrast: Story = {
+  render: Gallery,
+  globals: BOTH_THEMES_MORE_CONTRAST,
+}
 export const Stage: Story = {
   render: Gallery,
   globals: { appearance: 'stage', density: 'practice' },
 }
-export const IncreasedContrast: Story = { render: Gallery, globals: { contrast: 'more' } }
