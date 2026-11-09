@@ -2202,7 +2202,7 @@ Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), 
     - "Screen May Lock" and "Screen May Lock No Storage" in both browsers (run after 20:00).
     - That is 78 WebKit failures against the 80-failure baseline.
   - 4 were new (`foundations` TypeScale and `onboarding` ChoicesRaised, × 2 browsers). After `0e765b5`, the `foundations`, `onboarding`, `dialog`, `drawer` and `.storybook/fonts` stories pass 90 / 90 in Chromium and WebKit.
-- **e2e:** `playwright test e2e/security.spec.ts --project chromium` passed (`test-results/.last-run.json`). Global teardown then hung on Windows (gaps below).
+- **e2e:** `playwright test e2e/security.spec.ts --project chromium` 4 / 4. The first run's teardown left the mock ML worker running (fixed below); after the fix the same piped run returns in 14 s and leaves no `uv` or python process.
 - **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`: practice route 318.7 KB gzip of 320.0 KB. That is unchanged from before the step (326,389 → 326,398 B measured mid-step); CSS −341 B gzip; css-floor clean.
 - **Fidelity smoke.** `probe.mjs System --look fixed` at 1440 against the Foundations stories at 1440 in both looks (results in `redesign/.renders/s32/`, ignored).
   - `--bg`, `--s1`, `--s2` and `--s3` match `--background`, `--card`, `--muted` and `--accent` exactly.
@@ -2216,10 +2216,10 @@ Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), 
   - Run `pnpm --filter @splitune/web storybook` and open `http://localhost:6006/?path=/story/foundations-fonts--legibility`.
   - Read JetBrains Mono tab digits against Instrument Sans and Inter 4 tabular digits on 1/7, 3/8 and 6/0, at 0.5, 0.75 and 1.5 m.
   - The outcome decides whether Inter 4 replaces a family in a later step.
-- **e2e teardown hang (pre-existing, `e2e/global-setup.ts`).**
-  - The teardown waits for each child's `exit` event unless `exitCode !== null`. A child that already died from a signal has a null `exitCode` and its event has already fired, so the teardown waits forever.
-  - On Windows this left the run hanging for hours after the tests passed, and earlier left an orphaned mock ML worker.
-  - Fix: also check `signalCode`, and use a timeout.
+- **Fixed: the e2e teardown left the mock ML worker running on Windows (pre-existing, `e2e/global-setup.ts`).**
+  - `child.kill()` ends only `uv.exe`. Its python worker kept running, retrying the dropped database and writing to the inherited stderr, so a piped run never returned (9 hours here). An earlier run left one too.
+  - Teardown and the example-build error path now end the whole tree with `taskkill /t /f` on Windows (elsewhere `uv` forwards SIGTERM). A child that already died by a signal (null `exitCode`, `signalCode` set) counts as exited.
+  - Two python processes (PIDs 7144 and 9604) from before this run are probably last night's orphan; left for the owner to check.
 - **`display.ts` still writes `data-score`.** Nothing reads it; s35 owns the display store.
 - **s33:** the Foundations story is still Music Stand-labelled ("Inter features", radius labels); `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans; set `DEFAULT_DISPLAY` to `dark`.
 - **s35:** move tab digits and readouts to `font-reading-mono`, chart chord names to `text-read-chord-sheet`, and the waveform ruler off Inter.
