@@ -25,26 +25,61 @@ import type { PracticeLayout } from './layout'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// The loop's options load on first open (12 §10 route budget).
+// The loop's options and the narrow dock's volume load on first open (12 §10 route budget).
 const LoopPanel = lazy(() =>
   import('./loop-panel').then((module) => ({ default: module.LoopPanel })),
 )
+const VolumePanel = lazy(() =>
+  import('./volume-panel').then((module) => ({ default: module.VolumePanel })),
+)
 
-// TransportBar (12 §2, 27 §3.7.1): at the bottom edge on every layout (closest to the hands at a
-// stand), safe-area aware: restart and a large round play; the loop (its on/off toggle joined to
-// the "Loop · bars 17–20 · pass 3" badge, which opens the loop's options); speed −/+ around
-// "70 % · 84 BPM"; count-in, metronome and the mixer; master volume; and at the right edge "How was pass 3?" with
-// "Felt clean / Not yet". The controls wrap among themselves when the bar is narrow, the pass pair
-// keeps its edge (on phones it wraps with them, beside speed). Count-in and metronome wait for the
-// beat grid. Mix and the pass pair keep their place before stems and a loop exist, so nothing
-// moves when they arrive.
+// TransportBar (12 §2, 27 §3.7.2): tablets and phones keep today's arrangement until s43, on the
+// Night Rehearsal tokens: restart and a large round play; the loop toggle joined to the loop pill
+// (which opens the loop's options); speed −/+ around "70 % · 84 BPM"; count-in, metronome and the
+// mixer; master volume; and at the right edge the pass pair (Felt clean / Not yet, 64 px) with the
+// question after each pass. The controls wrap among themselves when the bar is narrow. Desktop has
+// the transport dock (transport-dock.tsx).
 
 const PLAYING = new Set(['countIn', 'playing', 'loopRest', 'assess', 'audition'])
 
-// The two icons of play and pause sit on top of each other and cross-fade.
-const FADE = 'col-start-1 row-start-1 size-9 transition-[opacity,scale] duration-(--duration-fast)'
-const SHOWN = 'opacity-100 scale-100'
-const HIDDEN = 'opacity-0 scale-75'
+/** The loop pill's state and words (27 §3.7.1): "Loop · bars 25–28" / "pass 2 · rest 1 beat"; off
+ * "No loop" / "tap two bars, or a section"; armed "Loop · from bar 17, tap the last bar". */
+export function useLoopPill(): { state: LoopState; text: string; detail?: string } {
+  const { player, state, layers } = usePractice()
+  const selection = usePracticeUi((s) => s.selection)
+  const loop = player.loop
+  if (selection.kind === 'armed') {
+    return { state: 'armed', text: m['practice.loop_armed']({ bar: String(selection.bar + 1) }) }
+  }
+  if (!loop) {
+    return { state: 'off', text: m['practice.loop_off'](), detail: m['practice.loop_off_hint']() }
+  }
+  const text = m['practice.loop_badge']({ bars: `${loop.startBar + 1}–${loop.endBar + 1}` })
+  const detail = !player.loopOn
+    ? m['practice.hud_loop_off']()
+    : [
+        player.pass > 0 ? m['practice.loop_pass']({ pass: String(player.pass) }) : '',
+        player.rest === 'beat'
+          ? m['practice.loop_rest_beat']()
+          : player.rest === 'bar'
+            ? m['practice.loop_rest_bar']()
+            : '',
+        !layers.stems && player.pass === 0 && player.rest === 'none'
+          ? m['practice.loop_original']()
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+  return {
+    state: !player.loopOn
+      ? 'off'
+      : state === 'loopRest' || state === 'assess'
+        ? 'resting'
+        : 'active',
+    text,
+    ...(detail ? { detail } : {}),
+  }
+}
 
 export function TransportBar({ layout }: { layout: PracticeLayout }) {
   const practice = usePractice()
@@ -55,8 +90,6 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
   const loopActive = player.loop !== null
   const compact = layout === 'phone-portrait' || layout === 'phone-landscape'
   const ready = audioStatus === 'ready' && state !== 'loading'
-  // Phones take the secondary size for everything but play, so the bar fits two rows.
-  const secondary = compact ? 'practice-2' : 'practice'
 
   const pass = (loopActive || !compact) && (
     <PassControl
@@ -64,9 +97,12 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
       inert={!loopActive}
       compact={compact}
       prompting={promptPass > 0}
-      question={m['practice.pass_question']({ pass: String(promptPass) })}
+      question={m['practice.pass_prompt']({
+        pass: String(promptPass),
+        speed: formatPercent(player.speedPct),
+      })}
       labels={{
-        prompt: m['practice.pass_prompt'](),
+        prompt: m['practice.pass_rate'](),
         clean: m['practice.felt_clean'](),
         notYet: m['practice.not_yet'](),
       }}
@@ -86,7 +122,7 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
       role="toolbar"
       aria-label={m['practice.transport']()}
       data-slot="transport-bar"
-      className="flex shrink-0 items-center gap-3 border-t border-border bg-background px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-6"
+      className="flex shrink-0 items-center gap-3 border-t border-border bg-card px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-6"
     >
       <div
         className={cn(
@@ -102,20 +138,14 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
             icon={<SkipBackIcon aria-hidden />}
             label={loopActive ? m['practice.restart_loop']() : m['practice.previous_bar']()}
             showLabel={false}
-            size={secondary}
             shortcut="←"
             disabled={!ready}
             onClick={() => practice.restart()}
           />
           <TransportButton
             tone="primary"
-            className={cn('rounded-full', compact ? 'min-h-16 min-w-16' : 'min-h-18 min-w-18')}
-            icon={
-              <span className="grid place-items-center">
-                <PauseIcon aria-hidden className={cn(FADE, playing ? SHOWN : HIDDEN)} />
-                <PlayIcon aria-hidden className={cn(FADE, playing ? HIDDEN : SHOWN)} />
-              </span>
-            }
+            className={cn(compact ? 'min-h-18 min-w-18' : '')}
+            icon={playing ? <PauseIcon aria-hidden /> : <PlayIcon aria-hidden />}
             label={playing ? m['practice.pause']() : m['practice.play']()}
             showLabel={false}
             shortcut={m['practice.key_space']()}
@@ -125,30 +155,21 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
         </fieldset>
         <fieldset
           aria-label={m['practice.group_loop']()}
-          className="m-0 flex min-w-0 flex-1 items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1 sm:flex-none"
+          className="m-0 flex min-w-0 flex-1 items-center gap-1 border-0 p-0 sm:flex-none"
         >
-          {loopActive ? (
-            <TransportButton
-              icon={<RepeatIcon aria-hidden />}
-              label={m['practice.loop']()}
-              showLabel={false}
-              size={secondary}
-              shortcut="L"
-              pressed={player.loopOn}
-              disabled={!ready}
-              onPressedChange={(on) => send({ type: 'SET_LOOP_ON', on })}
-            />
-          ) : (
-            <TransportButton
-              icon={<RepeatIcon aria-hidden />}
-              label={m['practice.loop']()}
-              showLabel={false}
-              size={secondary}
-              shortcut="L"
-              disabled={!ready}
-              onClick={() => usePracticeUi.setState({ loopHint: true })}
-            />
-          )}
+          <TransportButton
+            icon={<RepeatIcon aria-hidden />}
+            label={m['practice.loop']()}
+            showLabel={false}
+            shortcut="L"
+            {...(loopActive
+              ? {
+                  pressed: player.loopOn,
+                  onPressedChange: (on: boolean) => send({ type: 'SET_LOOP_ON', on }),
+                }
+              : { onClick: () => usePracticeUi.setState({ loopHint: true }) })}
+            disabled={!ready}
+          />
           <LoopControl compact={compact} />
         </fieldset>
         <SpeedControl
@@ -158,11 +179,11 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
           bpm={grid?.bpm}
           labels={{
             speed: m['practice.speed'](),
-            decrease: m['practice.slower'](),
-            increase: m['practice.faster'](),
+            decrease: m['shortcuts.slower'](),
+            increase: m['shortcuts.faster'](),
             presets: m['practice.speed_presets'](),
           }}
-          shortcuts={{ decrease: '↓', increase: '↑' }}
+          shortcuts={{ decrease: ',', increase: '.' }}
         />
         {!compact && (
           <fieldset
@@ -170,7 +191,6 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
             className="m-0 flex items-center gap-2 border-0 p-0"
           >
             <TransportButton
-              size="practice-2"
               icon={<CountInIcon aria-hidden />}
               label={m['practice.count_in']()}
               showLabel={false}
@@ -214,21 +234,19 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
   )
 }
 
-// Master volume (per device), a sunken capsule like speed: mute, a fader and its "80 %" readout.
-// A tap on the track or on mute works without dragging (WCAG 2.5.7); unmute returns to the level
-// before muting. Phones keep their hardware keys. The fader gives up length before the capsule
-// wraps to a row of its own.
-function VolumeControl() {
+const volumeIcon = (volume: number) =>
+  volume === 0 ? VolumeXIcon : volume < 50 ? Volume1Icon : Volume2Icon
+
+// Master volume (per device): mute and a fader. A tap on the track or on mute works without
+// dragging (WCAG 2.5.7); unmute returns to the level before muting.
+export function VolumeFields() {
   const volume = usePracticeDefaults((s) => s.volumePct)
   const update = usePracticeDefaults((s) => s.update)
   const restore = useRef(volume > 0 ? volume : 100)
   const label = m['practice.volume']()
-  const Icon = volume === 0 ? VolumeXIcon : volume < 50 ? Volume1Icon : Volume2Icon
+  const Icon = volumeIcon(volume)
   return (
-    <fieldset
-      aria-label={label}
-      className="m-0 flex min-w-0 max-w-fit grow basis-48 items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
-    >
+    <>
       <TransportButton
         size="practice-2"
         icon={<Icon aria-hidden />}
@@ -240,7 +258,7 @@ function VolumeControl() {
           update({ volumePct: muted ? 0 : restore.current })
         }}
       />
-      <div className="w-36 min-w-0 px-3">
+      <div className="w-37.5 shrink-0">
         <Slider
           value={volume}
           step={1}
@@ -251,50 +269,51 @@ function VolumeControl() {
           thumbLabels={[label]}
         />
       </div>
-      <span aria-hidden className="min-w-14 pr-2 text-right text-base tabular-nums">
-        {formatPercent(volume)}
-      </span>
+    </>
+  )
+}
+
+/** The volume: its fields in a group, or (a narrow dock, 26 §7) a popover behind its icon. */
+export function VolumeControl({ popover = false }: { popover?: boolean }) {
+  const volume = usePracticeDefaults((s) => s.volumePct)
+  const label = m['practice.volume']()
+  if (popover) {
+    const Icon = volumeIcon(volume)
+    return (
+      <Popover>
+        <PopoverTrigger
+          aria-label={`${label}: ${formatPercent(volume)}`}
+          className="inline-grid size-13 shrink-0 place-items-center rounded-2xl text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-5"
+        >
+          <Icon aria-hidden strokeWidth={1.8} />
+        </PopoverTrigger>
+        <Suspense fallback={null}>
+          <VolumePanel />
+        </Suspense>
+      </Popover>
+    )
+  }
+  return (
+    <fieldset aria-label={label} className="m-0 flex items-center gap-1 border-0 p-0">
+      <VolumeFields />
     </fieldset>
   )
 }
 
-// The loop badge ("Loop · bars 17–20 · pass 3") names the loop for distance reading and opens
-// the loop's options. On phones the joined toggle already shows the loop icon, so the badge is
-// text only.
+// The loop pill opens the loop's options; on phones the joined toggle already shows the loop
+// icon, so the pill is text only.
 function LoopControl({ compact }: { compact: boolean }) {
-  const { player, state } = usePractice()
-  const selection = usePracticeUi((s) => s.selection)
-  const loop = player.loop
-  const badge: LoopState =
-    selection.kind === 'armed'
-      ? 'armed'
-      : !loop || !player.loopOn
-        ? 'off'
-        : state === 'loopRest' || state === 'assess'
-          ? 'resting'
-          : 'active'
-  const bars = loop ? `${loop.startBar + 1}–${loop.endBar + 1}` : ''
-  const text = loop
-    ? player.pass > 0
-      ? m['practice.loop_badge_pass']({ bars, pass: String(player.pass) })
-      : m['practice.loop_badge']({ bars })
-    : selection.kind === 'armed'
-      ? m['practice.loop_armed']({ bar: String(selection.bar + 1) })
-      : m['practice.loop_off']()
+  const pill = useLoopPill()
   return (
     <Popover>
       <PopoverTrigger
         render={
           <LoopBadge
-            state={badge}
-            className={cn(
-              'min-w-0 flex-1 rounded-xl',
-              compact
-                ? 'min-h-target-practice-2 px-3 text-sm [&>svg]:hidden'
-                : 'min-h-target-practice text-read-label',
-            )}
+            state={pill.state}
+            detail={compact ? undefined : pill.detail}
+            className={cn('min-w-0 flex-1', compact && 'px-3 [&>svg]:hidden')}
           >
-            {text}
+            {pill.text}
           </LoopBadge>
         }
       />

@@ -2,7 +2,7 @@ import beats from '@splitune/contracts/fixtures/beats.json'
 import type { Beats } from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
 import { practiceGrid } from './grid'
-import { barRange, clipBeats, nudge, restSeconds, tapBar } from './loops'
+import { barRange, clipBeats, moveLoop, nudge, restSeconds, tapBar } from './loops'
 
 const grid = practiceGrid(beats as Beats)
 
@@ -53,5 +53,24 @@ describe('bar-tap loops', () => {
     expect(restSeconds(grid, range, 'none')).toBe(0)
     expect(restSeconds(grid, range, 'beat')).toBeCloseTo(0.6)
     expect(restSeconds(grid, range, 'bar')).toBeCloseTo(2.4)
+  })
+
+  it('moves on by a phrase, doubles and halves (27 §3.7.4), within the song', () => {
+    const loop = barRange(grid, 2, 3)
+    expect(moveLoop(grid, loop, 'next')).toMatchObject({ startBar: 4, endBar: 5 })
+    expect(moveLoop(grid, loop, 'double')).toMatchObject({ startBar: 2, endBar: 5 })
+    expect(moveLoop(grid, loop, 'half')).toMatchObject({ startBar: 2, endBar: 2 })
+    // One bar halves to itself.
+    const one = barRange(grid, 2, 2)
+    expect(moveLoop(grid, one, 'half')).toBe(one)
+    // At the song's end the next phrase is cut short, then can't move on.
+    const last = barRange(grid, grid.lastBar - 2, grid.lastBar - 1)
+    expect(moveLoop(grid, last, 'next')).toMatchObject({
+      startBar: grid.lastBar,
+      endBar: grid.lastBar,
+    })
+    const end = barRange(grid, grid.lastBar, grid.lastBar)
+    expect(moveLoop(grid, end, 'next')).toBe(end)
+    expect(moveLoop(grid, end, 'double')).toBe(end)
   })
 })

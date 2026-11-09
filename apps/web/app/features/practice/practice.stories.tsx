@@ -2,14 +2,16 @@ import chords from '@splitune/contracts/fixtures/chords.json'
 import summary from '@splitune/contracts/fixtures/summary.json'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-import { usePracticeDefaults } from '@/lib/display-store'
+import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { EditPage } from './edit-page'
 import { GlanceView } from './glance-view'
+import { useKeys } from './keys-store'
 import { PracticeProvider, type PracticeSearch } from './practice-context'
 import { PracticeLoading } from './practice-loading'
 import { PracticePage } from './practice-page'
+import { usePracticeUi } from './practice-store'
 import {
   ALL,
   ALL_BASS,
@@ -33,10 +35,38 @@ import {
   VOCAL_SUMMARY,
 } from './practice-story-data'
 
-// The practice screen (27 §3.7) on the contracts' 8-bar Am–F–C–G fixture: the progressive states
-// as artefacts land (§3.7.3), the chords-only fallback, the editor and mixer overlays, Dark and
-// Stage, and the phone glance view. Audio is a generated tone; nothing reaches the network.
-const meta = { title: 'Screens/Practice', parameters: { layout: 'fullscreen' } } satisfies Meta
+// The practice screen (27 §3.7) on the contracts' 8-bar Am–F–C–G fixture: the desktop regions at
+// 1200 px (the story runner's default) and at 1440 / 1180 / below 1180 / below 1024 (Main.dc.html),
+// the inspector's tabs, the progressive states as artefacts land (§3.7.3), failures, follow modes,
+// playhead styles, reduced motion, the keymap, the chords-only fallback, Daylight and Stage, the
+// tablet and phone arrangements and every instrument's views. Audio is a generated tone; nothing
+// reaches the network.
+const VIEWPORTS = {
+  desktop1440: {
+    name: 'Desktop 1440',
+    styles: { width: '1440px', height: '900px' },
+    type: 'desktop',
+  },
+  desktop1180: {
+    name: 'Desktop 1180',
+    styles: { width: '1180px', height: '820px' },
+    type: 'desktop',
+  },
+  desktop1100: {
+    name: 'Desktop 1100',
+    styles: { width: '1100px', height: '820px' },
+    type: 'desktop',
+  },
+  desktop1000: {
+    name: 'Desktop 1000',
+    styles: { width: '1000px', height: '760px' },
+    type: 'desktop',
+  },
+}
+const meta = {
+  title: 'Screens/Practice',
+  parameters: { layout: 'fullscreen', viewport: { options: VIEWPORTS } },
+} satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -72,26 +102,68 @@ export const Loading: Story = {
   },
 }
 
-/** Local audio only (27 §3.7.3): the paper placeholder with the analysis stages. */
+/** Local audio only (27 §3.7.3): Getting ready over a faint staff, the stages with what each
+ * leaves, What works now, and the analysing badge in the top bar. */
 export const Analysing: Story = {
   render: screen([], { running: true }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    await expect(canvas.getByText("Tab will appear here as soon as it's ready")).toBeVisible()
-    await expect(canvas.getByRole('progressbar')).toBeVisible()
+    const card = await canvas.findByRole('region', { name: m['practice.getting_ready']() })
+    await expect(card).toBeVisible()
+    await expect(within(card).getByRole('progressbar')).toBeVisible()
+    await expect(canvas.getByRole('region', { name: m['practice.what_works_now']() })).toBeVisible()
+    await expect(await canvas.findByText(/^Analysing 4 of 8/)).toBeVisible()
+    // The mix pill says why it waits (27 §3.7.1).
+    await expect(canvas.getByRole('button', { name: /^Mix/ })).toBeDisabled()
   },
 }
 
-/** + beats: bar-snapped loops on the timeline, count-in available; the paper keeps the status. */
+/** + beats: bar loops, count-in and the click work on the original; the card says so. */
 export const BeatsFound: Story = {
   render: screen(['beats'], { running: true }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    await expect(
-      await canvas.findByText('You can already loop and slow the original'),
-    ).toBeVisible()
-    await expect(canvas.queryByRole('list', { name: 'Bars' })).toBeNull()
+    await expect(await canvas.findByText(m['practice.practise_already_beats']())).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Count-in' })).toBeEnabled()
+  },
+}
+
+/** After tagging and before separation: "We hear guitar, bass, drums and vocals." with the part
+ * question, Yes, guitar and Pick another (27 §3.7.3). */
+export const PartQuestion: Story = {
+  beforeEach: () => localStorage.removeItem('splitune.part-confirmed'),
+  render: screen(['beats'], { running: true, heard: ['guitar', 'bass', 'drums', 'vocals'] }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByText('We hear guitar, bass, drums and vocals.', undefined, {
+        timeout: 10_000,
+      }),
+    ).toBeVisible()
+    await expect(canvas.getByText('Is guitar the part you play?')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Pick another' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Yes, guitar' }))
+    await expect(canvas.queryByText('Is guitar the part you play?')).toBeNull()
+  },
+}
+
+/** The processing machine is offline: said once, with what happens next, never a stalled bar. */
+export const WorkerOffline: Story = {
+  render: screen(['beats'], { workerOffline: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(await canvas.findByText(m['analysis.queued_offline']())).toBeVisible()
+  },
+}
+
+/** A failed analysis: the failure card with Try again (27 §3.11). */
+export const AnalysisFailed: Story = {
+  render: screen([], { analysisFailed: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const card = await canvas.findByRole('alert', undefined, { timeout: 20_000 })
+    await expect(within(card).getByText(m['analysis.failed']())).toBeVisible()
+    await expect(within(card).getByRole('button', { name: m['common.try_again']() })).toBeVisible()
   },
 }
 
@@ -117,7 +189,7 @@ export const Chords: Story = {
     const sheet = await canvas.findByRole('region', { name: 'Chord sheet' }, { timeout: 10_000 })
     // Layers fade in (200 ms, 27 §3.7.3).
     await waitFor(() => expect(sheet).toBeVisible())
-    await expect(await canvas.findByRole('button', { name: 'Mix' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Mix/ })).toBeVisible()
   },
 }
 
@@ -146,6 +218,8 @@ export const Ready: Story = {
 /** Master volume on the transport: the fader by keyboard, mute, and unmute back to that level. */
 export const Volume: Story = {
   render: screen(ALL),
+  // From 1280 px the dock has room for the fader (26 §7).
+  globals: { viewport: { value: 'desktop1440' } },
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
     const group = canvas.getByRole('group', { name: 'Volume' })
@@ -166,23 +240,85 @@ export const Volume: Story = {
   },
 }
 
-/** A loop on bars 5–6 from the URL (`?loop=5-6`): band, rail and A/B flags on the score, band on
- * the overview, badge, pass pair. */
-export const LoopActive: Story = {
+/** A loop on bars 5–6 from the URL (`?loop=5-6`): the wash beneath the looped bars, the bracket
+ * with its badge on the score, the band on the song map, the loop pill. */
+const loopActive: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  const canvas = await playable(canvasElement)
+  // Every layout: the transport's pill (the glance view repeats it on phones).
+  await expect((await canvas.findAllByText(/Loop · bars 5–6/))[0]).toBeVisible()
+  await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+  // One bracket over the looped bars of their system, its badge on the first — not a rule round
+  // each bar; the washes sit beneath the score.
+  await waitFor(() =>
+    expect(canvasElement.querySelectorAll('[data-slot=loop-bracket]')).toHaveLength(1),
+  )
+  await expect(canvasElement.querySelector('[data-slot=loop-badge]')).toHaveTextContent(
+    'Loop · bars 5–6',
+  )
+  const shade = canvasElement.querySelector<HTMLElement>('[data-slot=loop-shade]')
+  await expect(shade && getComputedStyle(shade).borderTopWidth).toBe('0px')
+}
+
+export const LoopActive: Story = { render: screen(ALL, {}, { loop: '5-6' }), play: loopActive }
+
+/** Main.dc.html at 1440: all five regions. */
+export const LoopActiveWide: Story = {
   render: screen(ALL, {}, { loop: '5-6' }),
+  globals: { viewport: { value: 'desktop1440' } },
+  play: loopActive,
+}
+
+/** At 1180 the inspector is still docked (27 §3.7.1). */
+export const LoopActive1180: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  globals: { viewport: { value: 'desktop1180' } },
+  play: async (context) => {
+    await loopActive(context)
+    await expect(
+      within(context.canvasElement).getByRole('complementary', { name: 'Practice tools' }),
+    ).toBeVisible()
+  },
+}
+
+export const LoopActiveDaylight: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
+  play: loopActive,
+}
+
+export const LoopActiveStage: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  globals: { appearance: 'stage', viewport: { value: 'desktop1440' } },
+  play: loopActive,
+}
+
+/** Below 1180 the inspector is a drawer that "Tools" opens, above the dock (27 §3.7.1). */
+export const InspectorDrawer: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  globals: { viewport: { value: 'desktop1100' } },
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    // Every layout: the transport's badge (the glance view repeats it on phones).
-    await expect((await canvas.findAllByText(/Loop · bars 5–6/))[0]).toBeVisible()
-    await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
-    // One rail per looped bar, with A on the first and B on the last — not a rule round each bar.
+    await expect(canvas.queryByRole('complementary', { name: 'Practice tools' })).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Tools' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const drawer = await body.findByRole('dialog', { name: 'Practice tools' }, { timeout: 10_000 })
+    await waitFor(() => expect(drawer).toBeVisible())
+    // It never covers the dock (2.4.11).
+    const dock = canvas.getByRole('toolbar', { name: 'Playback' }).getBoundingClientRect()
+    await expect(drawer.getBoundingClientRect().bottom).toBeLessThanOrEqual(dock.top + 1)
+  },
+}
+
+/** Below 1024 the Now column is a strip above the notation (27 §3.7.1). */
+export const NowStrip: Story = {
+  render: screen(ALL),
+  globals: { viewport: { value: 'desktop1000' } },
+  play: async ({ canvasElement }) => {
+    await playable(canvasElement)
     await waitFor(() =>
-      expect(canvasElement.querySelectorAll('[data-slot=loop-rail]')).toHaveLength(2),
+      expect(canvasElement.querySelector('[data-slot=now-strip]')).toBeInTheDocument(),
     )
-    const flags = [...canvasElement.querySelectorAll('[data-slot=loop-flag]')]
-    await expect(flags.map((flag) => flag.textContent)).toEqual(['A', 'B'])
-    const shade = canvasElement.querySelector<HTMLElement>('[data-slot=loop-shade]')
-    await expect(shade && getComputedStyle(shade).borderTopWidth).toBe('0px')
+    await expect(canvasElement.querySelector('[data-slot=now-column]')).toBeNull()
   },
 }
 
@@ -205,15 +341,18 @@ export const ChordsView: Story = {
   },
 }
 
-/** A URL import's video: closed by default, a floating player from the status bar's toggle that
- * grows, shrinks and closes. */
+/** A URL import's video: closed by default, a floating player opened from ⋯ that grows, shrinks
+ * and closes (27 §3.7.2). */
 export const WithVideo: Story = {
   render: screen(ALL, { video: true }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
     const pane = () => canvasElement.querySelector<HTMLElement>('[data-slot=video-pane]')
     await expect(pane()).toBeNull()
-    await userEvent.click(await canvas.findByRole('button', { name: 'Video' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: 'More' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Video' }, { timeout: 10_000 }))
+    await userEvent.keyboard('{Escape}')
     // The player's code loads on first open.
     await waitFor(() => expect(pane()).toBeVisible(), { timeout: 10_000 })
     const small = pane()?.getBoundingClientRect().width ?? 0
@@ -221,14 +360,10 @@ export const WithVideo: Story = {
     await waitFor(() => expect(pane()?.getBoundingClientRect().width ?? 0).toBeGreaterThan(small))
     await userEvent.click(canvas.getByRole('button', { name: 'Hide video' }))
     await waitFor(() => expect(pane()).toBeNull())
-    await expect(canvas.getByRole('button', { name: 'Video' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
   },
 }
 
-export const ReadyDark: Story = { render: screen(ALL), globals: { appearance: 'dark' } }
+export const ReadyDaylight: Story = { render: screen(ALL), globals: { appearance: 'light' } }
 
 /** Stems removed after 180 days unused: the song's own audio plays, "Re-create stems" (27 §5.6). */
 export const StemsExpired: Story = {
@@ -317,7 +452,7 @@ export const NotSavedOffline: Story = {
   },
 }
 
-/** Stage: chrome reduced to the transport, the overview and ⚙; reading sizes +1 step. */
+/** A stored `stage` (26 §2): Night Rehearsal at no less than Music-stand sizes, × 1.25. */
 export const ReadyStage: Story = { render: screen(ALL), globals: { appearance: 'stage' } }
 
 export const ReadyAtTheStand: Story = {
@@ -358,21 +493,20 @@ const MANY_CHORDS = {
   }),
 }
 
-/** Many chords: the names clip inside their own area and level/capo keep their space. */
+/** Many chords: the Now column shows the next one large and up to five "Then" chips, which wrap
+ * inside the column (27 §3.7.1). */
 export const ManyChords: Story = {
   render: screen(ALL, { chords: MANY_CHORDS }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    const list = await canvas.findByRole('list', { name: 'Chords' })
-    // At the start: the first chord and the five after it.
-    await waitFor(() => expect(within(list).getAllByRole('button')).toHaveLength(6))
-    // Nothing of a chip paints past the list's own edge.
-    const box = list.getBoundingClientRect()
-    const past = canvasElement.ownerDocument.elementFromPoint(
-      box.right + 1,
-      box.top + box.height / 2,
-    )
-    await expect(past?.closest('[data-slot=chord-chip]')).toBeNull()
+    const column = await canvas.findByRole('complementary', { name: 'Current chord' })
+    const list = await within(column).findByRole('list', { name: 'Chords' })
+    await waitFor(() => expect(within(list).getAllByRole('button')).toHaveLength(5))
+    // No chip paints past the column's own edge.
+    const edge = column.getBoundingClientRect().right
+    for (const chip of within(list).getAllByRole('button')) {
+      await expect(chip.getBoundingClientRect().right).toBeLessThanOrEqual(edge)
+    }
   },
 }
 
@@ -445,18 +579,19 @@ export const ResumeShowTabAnyway: Story = {
   },
 }
 
-// Phone landscape as the layout's feature queries report it (26 §7): the story runner has no touch
-// emulation, so the three queries are answered as a phone held sideways would.
-const phoneLandscape = () => {
+// A coarse-pointer layout as its feature queries report it (26 §7): the story runner has no touch
+// emulation, so the queries are answered as that device would. Tablet landscape by default.
+const coarse = (answers: Record<string, boolean> = {}) => {
   const matchMedia = window.matchMedia
-  const phone: Record<string, boolean> = {
+  const device: Record<string, boolean> = {
     '(pointer: coarse)': true,
     '(max-width: 640px)': false,
-    '(max-height: 640px)': true,
+    '(max-height: 640px)': false,
     '(orientation: landscape)': true,
+    ...answers,
   }
   window.matchMedia = (query) => {
-    const matches = phone[query]
+    const matches = device[query]
     if (matches === undefined) return matchMedia.call(window, query)
     return {
       matches,
@@ -477,7 +612,7 @@ const phoneLandscape = () => {
 /** A tab without chords on a phone: phones leave the level out, so no strip is left over the tab
  * (on larger screens the strip holds the level). */
 export const TabWithoutChordsPhone: Story = {
-  beforeEach: phoneLandscape,
+  beforeEach: () => coarse({ '(max-height: 640px)': true }),
   render: screen(['beats', 'stems', 'notes.guitar', 'tab.guitar', 'summary']),
   globals: { viewport: { value: 'mobile2', isRotated: true } },
   play: async ({ canvasElement }) => {
@@ -489,21 +624,63 @@ export const TabWithoutChordsPhone: Story = {
   },
 }
 
-/** Tap a chord chip: the editor with the top-k alternatives as frequencies (27 §3.7.4). */
+/** Tap a "Then" chip: the Fix tab opens on its bar with the alternatives as frequencies (27 §3.7.4;
+ * Fix mode itself is s38's). */
 export const Editor: Story = {
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const column = await canvas.findByRole('complementary', { name: 'Current chord' })
+    const chips = await within(column).findByRole('list', { name: 'Chords' })
+    await userEvent.click(within(chips).getAllByRole('button')[0] as HTMLElement)
+    const fix = await canvas.findByRole('tab', { name: /^Fix/ })
+    await waitFor(() => expect(fix).toHaveAttribute('aria-selected', 'true'))
+    const panel = await canvas.findByRole('tabpanel')
+    await expect(
+      (await within(panel).findAllByText(/about 1 in \d+/i, undefined, { timeout: 10_000 }))[0],
+    ).toBeVisible()
+  },
+}
+
+/** On a tablet the editor is still the sheet (until s43). */
+export const EditorTablet: Story = {
+  beforeEach: () => coarse(),
   render: screen(ALL),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
     const strip = await canvas.findByRole('list', { name: 'Chords' })
     await userEvent.click(await within(strip).findByRole('button', { name: /^G/ }))
     const body = within(canvasElement.ownerDocument.body)
-    // The sheet's code loads on first open.
     const editor = await body.findByRole('dialog', { name: 'Edit this bar' }, { timeout: 10_000 })
     await expect(within(editor).getAllByText(/about 1 in \d+/i)[0]).toBeVisible()
   },
 }
 
+/** The mix pill opens the Mix tab: presets as radio cards, your part and the Band (27 §3.7.4). */
 export const Mixer: Story = {
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: /^Mix/ }))
+    const panel = await canvas.findByRole('tabpanel')
+    await expect(
+      await within(panel).findByRole('radiogroup', { name: 'Mix' }, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(
+      within(panel).getByText('Your part', { selector: '[data-slot=badge]' }),
+    ).toBeVisible()
+    await expect(within(panel).getByText('Band')).toBeVisible()
+    await userEvent.click(within(panel).getByRole('radio', { name: /^Minus-one/ }))
+    await expect(within(panel).getByRole('radio', { name: /^Minus-one/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+  },
+}
+
+/** The mixer on a tablet: the Mix tab's body in the drawer. */
+export const MixerTablet: Story = {
+  beforeEach: () => coarse(),
   render: screen(ALL),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
@@ -512,7 +689,6 @@ export const Mixer: Story = {
     await expect(
       await body.findByRole('dialog', { name: 'Mix' }, { timeout: 10_000 }),
     ).toBeVisible()
-    await expect(body.getByText('Your part', { selector: '[data-slot=badge]' })).toBeVisible()
   },
 }
 
@@ -550,6 +726,8 @@ const pianoChart = async (canvasElement: HTMLElement) => {
  * D#), four bars to a line, each chord once where it changes; the strip's keyboard voicing. */
 export const Piano: Story = {
   render: screen(PIANO_KINDS, PIANO),
+  // The strip's keyboards show once it's wide enough (beside the docked inspector).
+  globals: { viewport: { value: 'desktop1440' } },
   play: async ({ canvasElement }) => {
     const { canvas, chart, element } = await pianoChart(canvasElement)
     await expect(chart.getByRole('button', { name: /^Bar 1\s*,\s*No chord$/ })).toBeVisible()
@@ -605,11 +783,11 @@ export const PianoAwaitingNotes: Story = {
       await canvas.findByText(m['practice.placeholder_piano'](), undefined, { timeout: 10_000 }),
     ).toBeVisible()
     await expect(canvas.getByRole('progressbar')).toBeVisible()
-    await expect(canvas.queryByText(m['practice.can_loop_now']())).toBeNull()
+    await expect(canvas.queryByText(m['practice.practise_already_beats']())).toBeNull()
     await expect(canvas.queryByRole('region', { name: 'Chord chart' })).toBeNull()
     await expect(canvas.getByRole('button', { name: 'Play' })).toBeDisabled()
     await expect(canvas.getByRole('button', { name: 'Count-in' })).toBeDisabled()
-    await expect(canvas.getByRole('button', { name: 'Mix' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: /^Mix/ })).toBeDisabled()
   },
 }
 
@@ -629,6 +807,7 @@ export const PianoLoop: Story = {
 /** Piano options: chords as played or as triads, the voicing and the hands. */
 export const PianoOptions: Story = {
   render: screen(PIANO_KINDS, PIANO),
+  globals: { viewport: { value: 'desktop1440' } },
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
     await userEvent.click(
@@ -644,7 +823,7 @@ export const PianoOptions: Story = {
         .map((b) => b.textContent),
     ).toEqual(['Simple (triads)', 'As played'])
     await userEvent.click(within(popup).getByRole('button', { name: 'Root position' }))
-    await userEvent.click(within(popup).getByRole('button', { name: 'Right only' }))
+    await userEvent.click(within(popup).getByRole('button', { name: 'Right' }))
     await expect(
       await canvas.findByRole('img', { name: 'E♭maj7: right hand G B♭ D', hidden: true }),
     ).toBeInTheDocument()
@@ -657,9 +836,9 @@ export const PianoOptions: Story = {
   },
 }
 
-export const PianoDark: Story = {
+export const PianoDaylight: Story = {
   render: screen(PIANO_KINDS, PIANO, { loop: '3-4' }),
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
 }
 
 export const PianoStage: Story = {
@@ -712,9 +891,9 @@ export const PianoNotes: Story = {
     await expect(canvas.queryByRole('region', { name: 'Notes' })).toBeNull()
     await expect(strip.querySelector('[data-slot=keyboard-diagram]')).toBeVisible()
     await userEvent.click(within(view).getByRole('button', { name: 'Notes' }))
-    await expect(
-      await canvas.findByRole('region', { name: 'Notes' }, { timeout: 10_000 }),
-    ).toBeVisible()
+    // It fades in (26 §10).
+    const region = await canvas.findByRole('region', { name: 'Notes' }, { timeout: 10_000 })
+    await waitFor(() => expect(region).toBeVisible())
   },
 }
 
@@ -752,10 +931,10 @@ export const PianoNotesWithoutChords: Story = {
     const popup = await body.findByRole('dialog', { name: 'Piano options' }, { timeout: 10_000 })
     await expect(within(popup).queryByRole('button', { name: 'Root position' })).toBeNull()
     await expect(within(popup).queryByRole('button', { name: 'Simple (triads)' })).toBeNull()
-    await userEvent.click(within(popup).getByRole('button', { name: 'Right only' }))
+    await userEvent.click(within(popup).getByRole('button', { name: 'Right' }))
     await waitFor(() =>
       expect(
-        canvas.getByRole('button', { name: 'Piano options: Show hands: Right only' }),
+        canvas.getByRole('button', { name: 'Piano options: Show hands: Right' }),
       ).toBeVisible(),
     )
   },
@@ -769,9 +948,9 @@ export const PianoNotesLoop: Story = {
   },
 }
 
-export const PianoNotesDark: Story = {
+export const PianoNotesDaylight: Story = {
   render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     await pianoNotes(canvasElement)
   },
@@ -854,7 +1033,7 @@ export const PianoStaffLoop: Story = {
       (bar) => bar.getAttribute('data-bar'),
     )
     await expect(pressed).toEqual(['2', '3'])
-    await waitFor(() => expect(region.querySelectorAll('[data-slot=loop-rail]')).toHaveLength(2))
+    await waitFor(() => expect(region.querySelectorAll('[data-slot=loop-bracket]')).toHaveLength(1))
   },
 }
 
@@ -871,9 +1050,9 @@ export const PianoStaffBelowGate: Story = {
   },
 }
 
-export const PianoStaffDark: Story = {
+export const PianoStaffDaylight: Story = {
   render: screen(PIANO_NOTES_KINDS, PIANO_NOTES, { loop: '3-4' }),
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     await pianoStaff(canvasElement)
   },
@@ -919,22 +1098,24 @@ const opens =
     await waitFor(() => expect(shown).toBeVisible())
   }
 
-/** ⚙ Display: appearance, score, distance and calibration, font, uncertainty (27 §3.7.4). */
+/** Aa Display and reading: appearance (three choices), distance and reading size, font,
+ * uncertainty, notation follows the music, playhead, reduce motion (27 §3.7.4). */
 export const DisplayPopover: Story = {
   render: screen(ALL),
-  play: opens(/^Display$/, m['nav.appearance']()),
+  play: opens(/^Display and reading$/, m['practice.follow']()),
 }
 
-/** The transcription chip in the status bar: the legend and the "Show uncertainty" switch. */
+/** The legend chip in the top bar: "Auto-transcribed · n unsure", the key, how often notes are
+ * unsure in words, and the "Show uncertainty" switch (26 §5). */
 export const LegendChip: Story = {
   render: screen(ALL),
-  play: opens(/^Auto-transcribed · v/, /^Auto-transcribed — may contain errors/),
+  play: opens(/^Auto-transcribed/, /^Auto-transcribed — may contain errors/),
 }
 
-/** Level and capo from the chord strip's end (12 §2). */
+/** Level and capo from the Now column's card (27 §3.7.1). */
 export const LevelAndCapo: Story = {
   render: screen(ALL),
-  play: opens(/^Level and capo: As played/, m['practice.level_and_capo']()),
+  play: opens(/^Level and capo:\s*Level\s+As played/, m['practice.level_and_capo']()),
 }
 
 /** Bass: the level popover is titled "Level" and has no capo, like the drums'. */
@@ -942,7 +1123,7 @@ export const BassLevel: Story = {
   render: screen(ALL_BASS, { instrument: 'bass', notes: BASS_LINE }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    await userEvent.click(await canvas.findByRole('button', { name: 'Level: As played' }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Level\s+As played/ }))
     const body = within(canvasElement.ownerDocument.body)
     const popup = await body.findByRole(
       'dialog',
@@ -956,8 +1137,25 @@ export const BassLevel: Story = {
   },
 }
 
-/** The loop's options from the transport's badge: from/to bars, clear, saved clips (12 §5). */
+/** The loop pill opens the Loop tab: bars, the quick moves, fine-tune, between repeats, clear
+ * (27 §3.7.4; the ladder is s37's). */
 export const LoopOptions: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: /^Loop · bars 5–6/ }))
+    const panel = await canvas.findByRole('tabpanel')
+    await expect(
+      await within(panel).findByRole('heading', { name: 'Bars 5–6' }, { timeout: 10_000 }),
+    ).toBeVisible()
+    await userEvent.click(within(panel).getByRole('button', { name: m['practice.next_phrase']() }))
+    await expect(await within(panel).findByRole('heading', { name: 'Bars 7–8' })).toBeVisible()
+  },
+}
+
+/** The loop's options on a tablet: the Loop tab's body in the pill's popover. */
+export const LoopOptionsTablet: Story = {
+  beforeEach: () => coarse(),
   render: screen(ALL, {}, { loop: '5-6' }),
   play: opens(/^Loop · bars 5–6/, m['practice.loop_options']()),
 }
@@ -1152,9 +1350,9 @@ export const GuitarNotesLeftHanded: Story = {
   },
 }
 
-export const GuitarNotesDark: Story = {
+export const GuitarNotesDaylight: Story = {
   render: screen(ALL, { notes: GUITAR_STRUMS }, { loop: '3-4' }),
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     await guitarNotes(canvasElement)
   },
@@ -1201,7 +1399,7 @@ export const GuitarNotesCapo: Story = {
   render: screen(ALL, { notes: GUITAR_STRUMS }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
-    await userEvent.click(await canvas.findByRole('button', { name: /^Level and capo/ }))
+    await userEvent.click(await canvas.findByRole('button', { name: /^Level and capo: Capo/ }))
     const body = within(canvasElement.ownerDocument.body)
     const up = await body.findByRole('button', { name: m['practice.capo_up']() })
     await userEvent.click(up)
@@ -1332,6 +1530,8 @@ export const VocalMelodyLoop: Story = {
 /** The guide vocal: the vocal stem on, quiet or off, from the strip; M (mute part) turns it off. */
 export const VocalMelodyGuide: Story = {
   render: screen(VOCAL_KINDS, VOCALS),
+  // The strip shows the guide's levels once it's wide enough (beside the docked inspector).
+  globals: { viewport: { value: 'desktop1440' } },
   play: async ({ canvasElement }) => {
     const { strip } = await vocalMelody(canvasElement)
     const guide = await within(strip).findByRole('group', { name: 'Guide vocal' })
@@ -1428,9 +1628,9 @@ export const VocalMelodyWithoutChords: Story = {
   },
 }
 
-export const VocalMelodyDark: Story = {
+export const VocalMelodyDaylight: Story = {
   render: screen(VOCAL_KINDS, VOCALS, { loop: '3-4' }),
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     await vocalMelody(canvasElement)
   },
@@ -1599,9 +1799,9 @@ export const DrumsLoop: Story = {
   },
 }
 
-export const DrumsDark: Story = {
+export const DrumsDaylight: Story = {
   render: screen(DRUM_KINDS, DRUMS, { loop: '3-4' }),
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     await drumGrid(canvasElement)
   },
@@ -1649,5 +1849,374 @@ export const DrumsPhone: Story = {
     const view = await canvas.findByRole('group', { name: 'View' }, { timeout: 10_000 })
     await userEvent.click(within(view).getByRole('button', { name: 'Grid' }))
     await drumGrid(canvasElement)
+  },
+}
+
+// --- s35: the inspector's tabs, the pass prompt, the keymap, follow modes and playhead styles ---
+
+/** ?tab=mix opens the Mix tab (27 §1); the tab is remembered on this device. */
+export const InspectorMix: Story = {
+  render: screen(ALL, {}, { tab: 'mix' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(canvas.getByRole('tab', { name: 'Mix' })).toHaveAttribute('aria-selected', 'true')
+    await expect(
+      await within(canvas.getByRole('tabpanel')).findByRole('radiogroup', { name: 'Mix' }),
+    ).toBeVisible()
+  },
+}
+
+/** Mix before the stems: "The mixer opens once your part is isolated." (27 §4). */
+export const InspectorMixBeforeStems: Story = {
+  render: screen(['beats', 'chords'], { running: true }, { tab: 'mix' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(await canvas.findByText(m['practice.mix_wait']())).toBeVisible()
+  },
+}
+
+/** Progress until s39: its empty state (27 §4). */
+export const InspectorProgress: Story = {
+  render: screen(ALL, {}, { tab: 'progress' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(await canvas.findByText(m['practice.progress_empty']())).toBeVisible()
+  },
+}
+
+/** Fix with no bar chosen: how to pick one; the tab carries the unsure count. */
+export const InspectorFix: Story = {
+  render: screen(ALL, {}, { tab: 'fix' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(await canvas.findByText(m['practice.fix_select']())).toBeVisible()
+    await expect(canvas.getByRole('tab', { name: /^Fix/ })).toBeVisible()
+  },
+}
+
+/** Loop tab with no loop yet: "No loop yet — tap two bars, or a section" (27 §4). */
+export const InspectorLoopEmpty: Story = {
+  render: screen(ALL, {}, { tab: 'loop' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(await canvas.findByText(m['practice.loop_empty']())).toBeVisible()
+  },
+}
+
+/** Loop tab before the beat is found (27 §3.7.4): while Getting ready takes the width the
+ * inspector waits in its drawer, opened by Tools. */
+export const InspectorLoopBeforeBeats: Story = {
+  render: screen([], { running: true }, { tab: 'loop' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Tools' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(
+      await body.findByText(m['practice.loop_needs_beats'](), undefined, { timeout: 10_000 }),
+    ).toBeVisible()
+  },
+}
+
+// Every control of the dock and the pass prompt at its target (26 §8, 28 §3): main practice
+// controls 64 × 64, secondary 48, nothing under 44.
+const atLeast = async (element: Element, size: number) => {
+  const box = element.getBoundingClientRect()
+  await expect(
+    Math.round(box.width),
+    element.getAttribute('aria-label') ?? '',
+  ).toBeGreaterThanOrEqual(size)
+  await expect(
+    Math.round(box.height),
+    element.getAttribute('aria-label') ?? '',
+  ).toBeGreaterThanOrEqual(size)
+}
+
+/** The pass prompt open after pass 2 at 70 % (Main.dc.html), left open for review. */
+export const PassPromptOpen: Story = {
+  beforeEach: () => () => usePracticeUi.setState({ promptPass: 0 }),
+  render: screen(ALL, {}, { loop: '5-6', speed: 70 }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    usePracticeUi.setState({ promptPass: 2 })
+    const prompt = await canvas.findByRole('group', { name: m['practice.pass_rate']() })
+    await waitFor(() =>
+      expect(within(prompt).getByText(/^Pass 2 at 70\s% — how was it\?$/)).toBeVisible(),
+    )
+  },
+}
+
+/** The pass prompt over the notation after a pass (27 §3.7.1): "Pass 2 at 70 % — how was it?",
+ * Felt clean and Not yet at 64 px; it never covers the focused control (2.4.11). */
+export const PassPrompt: Story = {
+  render: screen(ALL, {}, { loop: '5-6', speed: 70 }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    usePracticeUi.setState({ promptPass: 2 })
+    const prompt = await canvas.findByRole('group', { name: m['practice.pass_rate']() })
+    // It fades in (26 §10).
+    await waitFor(() =>
+      expect(within(prompt).getByText(/^Pass 2 at 70\s% — how was it\?$/)).toBeVisible(),
+    )
+    const clean = within(prompt).getByRole('button', { name: /^Felt clean/ })
+    await atLeast(clean, 64)
+    await atLeast(within(prompt).getByRole('button', { name: /^Not yet/ }), 64)
+    // Focus not obscured: tab through the dock; no focused control is fully under the prompt.
+    const doc = canvasElement.ownerDocument
+    const dock = canvas.getByRole('toolbar', { name: 'Playback' })
+    for (const control of within(dock).getAllByRole('button')) {
+      control.focus()
+      const box = control.getBoundingClientRect()
+      const points = [
+        [box.left + 2, box.top + 2],
+        [box.right - 2, box.top + 2],
+        [box.left + 2, box.bottom - 2],
+        [box.right - 2, box.bottom - 2],
+        [box.left + box.width / 2, box.top + box.height / 2],
+      ]
+      const visible = points.some(([x, y]) => {
+        const hit = doc.elementFromPoint(x as number, y as number)
+        return hit !== null && (hit === control || control.contains(hit))
+      })
+      await expect(visible, control.getAttribute('aria-label') ?? control.textContent ?? '').toBe(
+        true,
+      )
+    }
+    await userEvent.click(clean)
+    await waitFor(() =>
+      expect(canvas.queryByRole('group', { name: m['practice.pass_rate']() })).toBeNull(),
+    )
+  },
+}
+
+/** The dock's targets (26 §8): Restart, Play, Next bar, the loop pill, speed −/readout/+ and
+ * Count-in at 64; Click, the mix pill and volume at 48 or more. */
+export const DockTargets: Story = {
+  render: screen(ALL, {}, { loop: '5-6' }),
+  globals: { viewport: { value: 'desktop1440' } },
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const dock = within(canvas.getByRole('toolbar', { name: 'Playback' }))
+    for (const name of [
+      /^Restart loop$/,
+      /^Play$/,
+      /^Next bar$/,
+      /^Loop · bars 5–6/,
+      /^Slower by 5/,
+      /^Speed:/,
+      /^Faster by 5/,
+      /^Count-in$/,
+    ]) {
+      await atLeast(dock.getByRole('button', { name }), 64)
+    }
+    for (const name of [/^Metronome$/, /^Mix|^Your part loud|^Minus-one|^Original/, /^Mute$/]) {
+      await atLeast(dock.getByRole('button', { name }), 48)
+    }
+    // The top bar's icon buttons and the inspector's tabs are secondary practice controls.
+    await atLeast(canvas.getByRole('button', { name: 'Display and reading' }), 48)
+    for (const tab of canvas.getAllByRole('tab')) await atLeast(tab, 48)
+  },
+}
+
+/** ↑ and ↓ never change speed (12 §8): before any pedal is set up they say "Pedal detected? Set
+ * it up"; , and . step 5 %, with Shift 1 %. */
+export const SpeedKeys: Story = {
+  beforeEach: () => {
+    useKeys.setState({ learned: {}, singleKeys: true })
+  },
+  render: screen(ALL, {}, { speed: 70 }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const readout = () => canvas.getByRole('button', { name: /^Speed:/ })
+    const hud = () => canvasElement.ownerDocument.querySelector('[data-slot=pedal-hud]')
+    ;(canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur()
+    await userEvent.keyboard('{ArrowUp}')
+    await waitFor(() => expect(hud()).toHaveTextContent('Pedal detected? Set it up'))
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(readout()).toHaveAccessibleName(/^Speed: 70\s%/)
+    await userEvent.keyboard('.')
+    await waitFor(() => expect(readout()).toHaveAccessibleName(/^Speed: 75\s%/))
+    await waitFor(() => expect(hud()).toHaveTextContent('Key . · Speed 75'))
+    await userEvent.keyboard(',,')
+    await waitFor(() => expect(readout()).toHaveAccessibleName(/^Speed: 65\s%/))
+    await userEvent.keyboard('{Shift>}>{/Shift}')
+    await waitFor(() => expect(readout()).toHaveAccessibleName(/^Speed: 66\s%/))
+    // The readout counts to the new speed (26 §10) before its label and text agree again.
+    await waitFor(() => expect(readout()).toHaveTextContent(/^66/))
+  },
+}
+
+/** Single-key shortcuts off (WCAG 2.1.4): C, L, , and . are inert; Space still plays. */
+export const SingleKeysOff: Story = {
+  beforeEach: () => {
+    useKeys.setState({ learned: {}, singleKeys: false })
+    return () => useKeys.setState({ singleKeys: true })
+  },
+  render: screen(ALL, {}, { speed: 70 }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    ;(canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur()
+    await userEvent.keyboard('..')
+    await expect(canvas.getByRole('button', { name: /^Speed:/ })).toHaveAccessibleName(
+      /^Speed: 70\s%/,
+    )
+    await userEvent.keyboard(' ')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Pause' })).toBeVisible())
+    await userEvent.keyboard(' ')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeVisible())
+  },
+}
+
+/** Notation follows the music: Scrolling — one line under a fixed now-line (12 §3). */
+export const FollowScroll: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ notationLayout: 'scroll' })
+    return () => usePracticeDefaults.getState().update({ notationLayout: 'page' })
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await expect(tab).toHaveAttribute('data-layout', 'scroll')
+  },
+}
+
+/** Off: the notation stays where the learner put it (reading and fixing). */
+export const FollowOff: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ notationLayout: 'off' })
+    return () => usePracticeDefaults.getState().update({ notationLayout: 'page' })
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await expect(tab).toHaveAttribute('data-layout', 'off')
+  },
+}
+
+/** Reduced motion (26 §10): Scrolling falls back to page turns and the playhead steps by beat. */
+export const ReducedMotion: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ notationLayout: 'scroll' })
+    useDisplay.getState().update({ motion: 'reduce' })
+    return () => {
+      usePracticeDefaults.getState().update({ notationLayout: 'page' })
+      useDisplay.getState().update({ motion: 'system' })
+    }
+  },
+  globals: { motion: 'reduce' },
+  render: screen(ALL, {}, { loop: '5-6' }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await expect(tab).toHaveAttribute('data-layout', 'page')
+  },
+}
+
+/** Playhead style Block: a small block on the beat, for anyone who finds the line glaring. */
+export const PlayheadBlock: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ playhead: 'block' })
+    return () => usePracticeDefaults.getState().update({ playhead: 'line' })
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await expect(tab).toHaveAttribute('data-playhead', 'block')
+  },
+}
+
+/** Playhead style Bar: only the current bar is shaded. */
+export const PlayheadBar: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ playhead: 'bar' })
+    return () => usePracticeDefaults.getState().update({ playhead: 'line' })
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await expect(tab).toHaveAttribute('data-playhead', 'bar')
+    await expect(tab.querySelector('[data-slot=notation-cursor]')).not.toBeVisible()
+  },
+}
+
+/** Show uncertainty off (26 §5): no outlines or "?" on the tab, the legend chip stays. */
+export const UncertaintyOff: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ showUncertainty: false })
+    return () => usePracticeDefaults.getState().update({ showUncertainty: true })
+  },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    await waitFor(
+      () => expect(tab.querySelectorAll('[data-slot=bar-target]').length).toBeGreaterThan(0),
+      { timeout: 20_000 },
+    )
+    await expect(tab.querySelectorAll('[data-slot=note-mark]')).toHaveLength(0)
+    await expect(canvas.getByRole('button', { name: /^Auto-transcribed/ })).toBeVisible()
+  },
+}
+
+/** A stored `stage` in the Display popover: Night Rehearsal is chosen and the distance it resolved
+ * to; the next change stores `dark` (26 §2). */
+export const DisplayFromStage: Story = {
+  beforeEach: () => {
+    useDisplay.setState({ appearance: 'stage' })
+    return () => useDisplay.setState({ appearance: 'dark', distance: undefined })
+  },
+  globals: { appearance: 'stage' },
+  render: screen(ALL),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Display and reading' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const popup = await body.findByRole('dialog', undefined, { timeout: 10_000 })
+    const night = await within(popup).findByRole('button', { name: 'Night Rehearsal' })
+    await expect(night).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(within(popup).getByRole('button', { name: 'Floor' }))
+    await waitFor(() => expect(useDisplay.getState().appearance).toBe('dark'))
+  },
+}
+
+/** Piano Hands from the top bar (27 §3.7.5): Left draws the right hand at 45 %, audio unchanged. */
+export const PianoHandsLeft: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ pianoHands: 'both' })
+    return () => usePracticeDefaults.getState().update({ pianoHands: 'both' })
+  },
+  render: screen(PIANO_NOTES_KINDS, PIANO_NOTES),
+  play: async ({ canvasElement }) => {
+    const { canvas } = await pianoNotes(canvasElement)
+    const hands = await canvas.findByRole('group', { name: m['practice.hands']() })
+    await userEvent.click(within(hands).getByRole('button', { name: 'Left' }))
+    await waitFor(() => expect(usePracticeDefaults.getState().pianoHands).toBe('left'))
+  },
+}
+
+/** Getting ready in Daylight at 1440 (Practice-Ready.dc.html). */
+export const GettingReadyDaylight: Story = {
+  render: screen(['beats'], { running: true }),
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByRole('region', { name: m['practice.getting_ready']() }),
+    ).toBeVisible()
+  },
+}
+
+/** Getting ready at 1180 (27 §3.7.1 region behaviour, Practice-Ready.dc.html). */
+export const GettingReady1180: Story = {
+  render: screen(['beats'], { running: true }),
+  globals: { viewport: { value: 'desktop1180' } },
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await expect(
+      await canvas.findByRole('region', { name: m['practice.getting_ready']() }),
+    ).toBeVisible()
   },
 }

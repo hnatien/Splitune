@@ -24,6 +24,8 @@ export interface PracticeSearch {
   mix?: 'your-part' | 'minus-one' | 'original' | undefined
   /** The level toggle's start (07 §6); ignored if the song's instrument has no such level. */
   level?: Level | undefined
+  /** The inspector tab to open (27 §1); the device's last tab otherwise. */
+  tab?: 'loop' | 'mix' | 'progress' | 'fix' | undefined
 }
 
 export interface ResumeInput {

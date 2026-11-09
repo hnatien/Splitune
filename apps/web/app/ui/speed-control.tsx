@@ -5,9 +5,9 @@ import { Popover, PopoverTrigger } from '@/ui/popover'
 import { TransportButton } from '@/ui/transport-button'
 
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
-// (50–100 %, 25–200 % advanced) and presets 50/70/85/100, which also sit inline from `2xl`;
-// readout "70 %" over "84 BPM". Boxed −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet
-// readout button; all three are main practice controls, 64 px in every layout (§8, V11).
+// (50–100 %, 25–200 % advanced) and the presets, which may also sit inline from `2xl`; readout
+// "70 %" over "84 BPM". Boxed −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet readout
+// button; all three are main practice controls, 64 px in every layout (§8, V11).
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
@@ -33,6 +33,8 @@ type SpeedControlProps = {
   shortcuts?: { decrease?: string; increase?: string }
   /** Phones: a narrower readout so the transport fits two rows (the steppers stay 64 px, V11). */
   compact?: boolean
+  /** The presets inline from `2xl` too (tablet transport); the desktop dock leaves them out. */
+  inlinePresets?: boolean
   className?: string
 }
 
@@ -81,6 +83,7 @@ function SpeedControl({
   labels,
   shortcuts,
   compact = false,
+  inlinePresets = true,
   className,
 }: SpeedControlProps) {
   const [min, max] = advanced ? [25, 200] : [50, 100]
@@ -138,16 +141,18 @@ function SpeedControl({
         disabled={value >= max}
         onClick={step(1)}
       />
-      <div className="hidden 2xl:block">
-        <Suspense fallback={<div aria-hidden className="h-target-practice-2 w-75" />}>
-          <SpeedPresets
-            value={value}
-            onValueChange={set}
-            label={labels.presets}
-            className="bg-transparent p-0"
-          />
-        </Suspense>
-      </div>
+      {inlinePresets && (
+        <div className="hidden 2xl:block">
+          <Suspense fallback={<div aria-hidden className="h-target-practice-2 w-75" />}>
+            <SpeedPresets
+              value={value}
+              onValueChange={set}
+              label={labels.presets}
+              className="bg-transparent p-0"
+            />
+          </Suspense>
+        </div>
+      )}
     </div>
   )
 }

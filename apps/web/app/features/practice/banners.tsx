@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { client } from '@/lib/api'
-import { useDisplay } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { isFallback, stageFailureMessage } from '@/lib/reasons'
 import { track } from '@/lib/track'
+import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
 import { Banner } from '@/ui/status-message'
 import { analysisFailures } from './analysis-status'
@@ -11,13 +11,17 @@ import { useRecommendedView, useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// Practice banners (27 §3.7.3, §5.6): the chords-only fallback with "Show tab anyway", stage
-// fallbacks ("Stems are unavailable right now…"), stems removed after 180 days unused with
-// "Re-create stems", the evening "Practising in the dark? Try Stage" hint (26 §2), and once per device, where the screen
-// can't be kept on, the "Keep screen on" tip from the first play (24 §3).
+// Practice banners (27 §3.7.3, §3.11, §5.6), card-style StatusMessage banners: the chords-only
+// fallback with "Show tab anyway", the rough-part banner ("Your part didn't separate cleanly, so
+// the tab may be rougher." · Show chords instead), stage fallbacks ("Stems are unavailable right
+// now…"), stems removed after 180 days unused with "Re-create stems", "Playback paused by another
+// app or a call." with Tap to resume, the audio that couldn't load, and once per device, where the
+// screen can't be kept on, the screen tip from the first play (24 §3). The evening "Try Stage" hint
+// is retired (26 §2): Night Rehearsal is already the default.
 
-const STAGE_HINT_KEY = 'splitune.stage-hint'
 const SCREEN_TIP_KEY = 'splitune.screen-tip'
+// Closed for this page only: it comes back with the next visit while the part is still rough.
+const ROUGH_KEY = 'rough-part'
 
 function storedOnce(key: string, id: string): boolean {
   try {
@@ -45,27 +49,27 @@ const VIEW_REASON: Record<string, () => string> = {
 }
 
 export function PracticeBanners() {
-  const { data, state } = usePractice()
+  const { data, state, player, togglePlay, audioStatus, channels, layers } = usePractice()
   // The banner's rules don't depend on the layout.
-  const { banner, notationEvent } = useScreen('desktop')
+  const { banner, notationEvent, shown } = useScreen('desktop')
   const screenMayLock = usePracticeUi((s) => s.screenMayLock)
   const recommended = useRecommendedView()
-  const appearance = useDisplay((s) => s.appearance)
-  const update = useDisplay((s) => s.update)
+  const online = useOnline()
   // Closed on this page even where storage is blocked; storage only remembers it for next time.
   const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set())
   const close = (key: string) => {
-    rememberOnce(key, 'shown')
+    if (key === SCREEN_TIP_KEY) rememberOnce(key, 'shown')
     setClosed((current) => new Set(current).add(key))
   }
   const failures = analysisFailures(data).filter(isFallback)
   const reason = recommended.reasons.find((r) => r in VIEW_REASON)
-  const evening = new Date().getHours() >= 20
-  const stageHint =
-    evening &&
-    appearance !== 'stage' &&
-    !closed.has(STAGE_HINT_KEY) &&
-    !storedOnce(STAGE_HINT_KEY, 'shown')
+  // The part came out rough but the tab still shows: say so, with the chords one tap away.
+  const roughPart =
+    channels.some((c) => c.role === 'part' && c.rough) &&
+    layers.tab &&
+    shown === 'tab' &&
+    banner === null &&
+    !closed.has(ROUGH_KEY)
   const played = state !== 'loading' && state !== 'ready'
   const screenTip =
     screenMayLock && played && !closed.has(SCREEN_TIP_KEY) && !storedOnce(SCREEN_TIP_KEY, 'shown')
@@ -87,7 +91,8 @@ export function PracticeBanners() {
           }
           actions={
             <Button
-              variant="outline"
+              variant="secondary"
+              size="sm"
               onClick={() => {
                 usePracticeUi.setState({ forceTab: true })
                 track('view_changed', { view: notationEvent })
@@ -102,22 +107,40 @@ export function PracticeBanners() {
         <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
       ))}
       {data.stemsExpired && <StemsExpired />}
-      {stageHint && (
+      {roughPart && (
         <Banner
-          tone="info"
-          title={m['practice.stage_hint']()}
+          tone="warning"
+          title={m['practice.rough_part']()}
           actions={
             <Button
-              variant="outline"
+              variant="secondary"
+              size="sm"
               onClick={() => {
-                close(STAGE_HINT_KEY)
-                update({ appearance: 'stage' })
+                usePracticeUi.setState({ view: 'chords', forceTab: false })
+                track('view_changed', { view: 'chords' })
               }}
             >
-              {m['practice.try_stage']()}
+              {m['practice.show_chords_instead']()}
             </Button>
           }
-          dismiss={{ label: m['system.close'](), onDismiss: () => close(STAGE_HINT_KEY) }}
+          dismiss={{ label: m['system.close'](), onDismiss: () => close(ROUGH_KEY) }}
+        />
+      )}
+      {player.interrupted && (
+        <Banner
+          tone="info"
+          title={m['practice.interrupted']()}
+          actions={
+            <Button variant="primary" size="sm" onClick={() => togglePlay()}>
+              {m['practice.tap_to_resume']()}
+            </Button>
+          }
+        />
+      )}
+      {audioStatus === 'failed' && (
+        <Banner
+          tone="warning"
+          title={online ? m['practice.audio_failed']() : m['practice.not_offline']()}
         />
       )}
       {screenTip && (
@@ -143,7 +166,8 @@ function StemsExpired() {
       actions={
         analysisId && (
           <Button
-            variant="outline"
+            variant="secondary"
+            size="sm"
             loading={busy}
             onClick={async () => {
               setBusy(true)

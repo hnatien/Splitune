@@ -180,3 +180,19 @@ export function staffMarks(
     }),
   )
 }
+
+/**
+ * Unsure spots (26 §5, the Fix tab's badge and the legend chip): each unsure chord, each unsure
+ * note outside a shaky bar, and each shaky bar once. `noteShare` is the share of notes marked
+ * unsure, for the legend's frequency line.
+ */
+export function unsureSpots(view: ViewModel | undefined): { count: number; noteShare: number } {
+  if (!view) return { count: 0, noteShare: 0 }
+  const lowNotes = view.notes.filter((n) => n.confidence === 'low')
+  const spread = lowNotes.filter((n) => !view.unsureBars.has(n.bar)).length
+  const chords = view.chords.filter((c) => c.confidence === 'low').length
+  return {
+    count: chords + spread + view.unsureBars.size,
+    noteShare: view.notes.length > 0 ? lowNotes.length / view.notes.length : 0,
+  }
+}

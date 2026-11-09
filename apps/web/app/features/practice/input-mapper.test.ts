@@ -21,23 +21,25 @@ const practice = {
   music: { melody: { phrases: [] } },
   audio: { position: () => 12 },
   loopPhrase: vi.fn(),
+  setSpeed: vi.fn(),
 }
+const keys = { learned: {} as Record<string, string>, singleKeys: true, learning: null }
 vi.mock('./practice-context', () => ({ usePractice: () => practice }))
-vi.mock('./keys-store', () => ({ useKeys: { getState: () => ({ learned: {} }) } }))
+vi.mock('./keys-store', () => ({ useKeys: { getState: () => keys } }))
 vi.mock('./model/practice-sync', () => ({ noteInput: () => {} }))
 // The phrase being sung at 12 s (step 18c).
 vi.mock('./model/phrases', () => ({ phraseAtTime: () => 2 }))
 
 const { useInputMapper } = await import('./input-mapper')
 
-const press = (key: string) => {
+const press = (key: string, shiftKey = false) => {
   const event = {
     key,
     target: null,
     altKey: false,
     ctrlKey: false,
     metaKey: false,
-    shiftKey: false,
+    shiftKey,
     preventDefault: vi.fn(),
   }
   keydown?.(event as unknown as KeyboardEvent)
@@ -59,7 +61,11 @@ describe('input mapper: toggle loop', () => {
     const event = press('l')
     expect(event.preventDefault).toHaveBeenCalled()
     expect(usePracticeUi.getState().loopHint).toBe(true)
-    expect(usePracticeUi.getState().hud.message).toBe('No loop — tap two bars')
+    // "{source} · {action}" (27 §3.7.4).
+    expect(usePracticeUi.getState().hud).toMatchObject({
+      message: 'No loop — tap two bars',
+      source: 'Key L',
+    })
     expect(practice.send).not.toHaveBeenCalled()
   })
 
@@ -77,5 +83,49 @@ describe('input mapper: toggle loop', () => {
     expect(practice.send).toHaveBeenCalledWith({ type: 'SET_LOOP_ON', on: false })
     expect(usePracticeUi.getState().loopHint).toBe(false)
     expect(usePracticeUi.getState().hud.message).toBe('Loop off')
+  })
+})
+
+describe('input mapper: speed and the pedal hint (12 §8)', () => {
+  beforeEach(() => {
+    usePracticeUi.setState(INITIAL_UI)
+    practice.setSpeed.mockClear()
+    keys.learned = {}
+    keys.singleKeys = true
+    useInputMapper({ desktop: true })
+  })
+
+  it('steps speed with , and . (Shift: 1 %), named in the HUD by the key', () => {
+    press(',')
+    expect(practice.setSpeed).toHaveBeenLastCalledWith(65)
+    press('.')
+    expect(practice.setSpeed).toHaveBeenLastCalledWith(75)
+    press('<', true)
+    expect(practice.setSpeed).toHaveBeenLastCalledWith(69)
+    press('>', true)
+    expect(practice.setSpeed).toHaveBeenLastCalledWith(71)
+  })
+
+  it('never changes speed with ↑ or ↓: the HUD asks to set up the pedal', () => {
+    for (const key of ['ArrowUp', 'ArrowDown']) {
+      const event = press(key)
+      // Handled, so the page doesn't scroll.
+      expect(event.preventDefault).toHaveBeenCalled()
+      expect(usePracticeUi.getState().hud).toMatchObject({
+        message: 'Pedal detected? Set it up',
+        setUp: true,
+      })
+    }
+    expect(practice.setSpeed).not.toHaveBeenCalled()
+  })
+
+  it('leaves single keys inert when they are off, and pedal keys working', () => {
+    keys.singleKeys = false
+    const event = press(',')
+    expect(event.preventDefault).not.toHaveBeenCalled()
+    expect(practice.setSpeed).not.toHaveBeenCalled()
+    keys.learned = { faster: 'PageDown' }
+    press('PageDown')
+    expect(practice.setSpeed).toHaveBeenLastCalledWith(75)
   })
 })

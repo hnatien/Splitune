@@ -11,7 +11,7 @@ import {
 } from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
 import { externalMediaHandler } from '../src/external-media.ts'
-import { barBoxes, barFraction, cursorAt, noteBoxes } from '../src/geometry.ts'
+import { barBoxes, barFraction, cursorAt, loopSpans, noteBoxes } from '../src/geometry.ts'
 import { applyTheme, tabLineSpacing } from '../src/resources.ts'
 import { applyInk, applySyncPoints, loadScore, noteOf, resolveTimeline } from '../src/score.ts'
 import type { BarTimes, NoteMark } from '../src/types.ts'
@@ -175,6 +175,26 @@ describe('timeline geometry', () => {
     expect(barFraction(timeline, 0.5 + 0.9)?.fraction).toBeCloseTo(0.375)
     expect(barFraction(timeline, 0.5 + 3 * BAR_S + 0.3)).toEqual({ index: 3, fraction: 0.125 })
     expect(barFraction(timeline, 100)).toEqual({ index: BARS - 1, fraction: 1 })
+  })
+
+  it('holds the fraction at the beat start when stepped (reduced motion)', () => {
+    expect(barFraction(timeline, 0.5 + 0.9, true)?.fraction).toBe(0.25)
+    expect(barFraction(timeline, 0.5 + 0.59, true)?.fraction).toBe(0)
+    const s = score()
+    const l = lookup(s)
+    // Between two beats the stepped playhead stays where the beat started.
+    expect(cursorAt(l, s, timeline, 0.5 + 0.61, true)?.x).toBe(
+      cursorAt(l, s, timeline, 0.5 + 1.15, true)?.x,
+    )
+  })
+
+  it('spans a loop with one bracket per system, the first carrying the badge', () => {
+    const boxes = barBoxes(lookup(score()))
+    expect(loopSpans(boxes, 2, 5)).toEqual([
+      { x: 200, y: 0, w: 200, h: 150, system: 0, first: true },
+      { x: 0, y: 200, w: 200, h: 150, system: 1, first: false },
+    ])
+    expect(loopSpans(boxes, 9, 9)).toEqual([])
   })
 
   it('boxes every bar at its system height', () => {

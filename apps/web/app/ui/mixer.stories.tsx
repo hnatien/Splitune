@@ -182,21 +182,24 @@ export const PanelSections: Story = {
 }
 export const Loading: Story = { render: () => <Mixer loading /> }
 
+/** The presets as radio cards (26 §12.2): each names what it does; checked = wash + 2 px edge. */
 export const PresetGloss: Story = {
   render: () => <Mixer />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const group = canvas.getByRole('group', { name: 'Mix' })
-    await expect(canvas.getByText(GLOSS['part-loud'])).toBeVisible()
-    await expect(group).toHaveAccessibleDescription(GLOSS['part-loud'])
-    await userEvent.click(canvas.getByRole('button', { name: 'Minus-one' }))
-    await expect(canvas.getByRole('button', { name: 'Minus-one' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
+    const group = canvas.getByRole('radiogroup', { name: 'Mix' })
+    for (const gloss of Object.values(GLOSS))
+      await expect(within(group).getByText(gloss)).toBeVisible()
+    const minusOne = canvas.getByRole('radio', { name: /^Minus-one/ })
+    await userEvent.click(minusOne)
+    await expect(minusOne).toHaveAttribute('aria-checked', 'true')
+    await expect(canvas.getByRole('radio', { name: /^Your part loud/ })).toHaveAttribute(
+      'aria-checked',
+      'false',
     )
-    await expect(canvas.getByText(GLOSS['minus-one'])).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Original' }))
-    await expect(canvas.getByText(GLOSS.original)).toBeVisible()
+    // A checked card's edge is 2 px (1 px border + 1 px inset ring), never colour alone.
+    await expect(getComputedStyle(minusOne).borderTopWidth).toBe('1px')
+    await expect(getComputedStyle(minusOne).boxShadow).not.toBe('none')
   },
 }
 
@@ -207,8 +210,8 @@ export const MuteAndSolo: Story = {
     const mute = canvas.getByRole('button', { name: 'Mute Drums' })
     await userEvent.click(mute)
     await expect(mute).toHaveAttribute('aria-pressed', 'true')
-    await expect(canvas.getByRole('button', { name: /Your part loud/ })).toHaveAttribute(
-      'aria-pressed',
+    await expect(canvas.getByRole('radio', { name: /^Your part loud/ })).toHaveAttribute(
+      'aria-checked',
       'false',
     )
     const box = mute.getBoundingClientRect()
@@ -223,11 +226,15 @@ export const GainByKeyboard: Story = {
     const canvas = within(canvasElement)
     canvas.getByRole('slider', { name: 'Volume Bass' }).focus()
     await userEvent.keyboard('{ArrowLeft}')
-    await expect(canvas.getByRole('textbox', { name: 'Volume Bass' })).toHaveValue('-7')
+    // The readout says it, and opens a stepper for setting it without a drag (WCAG 2.5.7).
+    const readout = canvas.getByRole('button', { name: /^Volume Bass: −7\sdB$/ })
+    await userEvent.click(readout)
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('textbox', { name: 'Volume Bass' })).toHaveValue('-7')
   },
 }
 
-export const Dark: Story = { render: Gallery, globals: { appearance: 'dark' } }
+export const Daylight: Story = { render: Gallery, globals: { appearance: 'light' } }
 export const Stage: Story = {
   render: Gallery,
   globals: { appearance: 'stage', density: 'practice' },

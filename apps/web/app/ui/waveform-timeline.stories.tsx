@@ -4,8 +4,10 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
 import { type TimelineBar, type TimelineLane, WaveformTimeline } from './waveform-timeline.tsx'
 
-// Doc 26 §12.2 WaveformTimeline: lanes per stem, bar ruler (or seconds before the beat grid),
-// loop band with handles (easing in and out), unsure-bar hatching, compact ruler (phone landscape).
+// Doc 26 §12.2 WaveformTimeline → the song map: waveform bars (unplayed, played, in the loop), the
+// loop band beneath them with its edges and ≥ 44 px handles (easing in and out), the unsure hatch
+// above, the now-line, the ruler (or seconds before the beat grid), and the compact ruler (phone
+// landscape).
 const meta = { title: 'Kit/WaveformTimeline' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -35,8 +37,6 @@ const BARS: TimelineBar[] = Array.from({ length: 8 }, (_, bar) => ({
   label: String(bar + 1),
 }))
 const LABELS = {
-  zoomIn: 'Zoom in',
-  zoomOut: 'Zoom out',
   loopStart: 'Loop start, bar 3',
   loopEnd: 'Loop end, bar 4',
 }
@@ -46,7 +46,6 @@ function Timeline(props: Partial<React.ComponentProps<typeof WaveformTimeline>>)
   return (
     <WaveformTimeline
       lanes={LANES}
-      blockSeconds={BLOCK}
       duration={DURATION}
       bars={BARS}
       position={() => 6.1}
@@ -102,9 +101,9 @@ export const Compact: Story = {
   render: () => <Timeline compact loop={{ start: 5.3, end: 10.1 }} />,
 }
 
-export const Dark: Story = {
+export const Daylight: Story = {
   render: () => <Timeline loop={{ start: 5.3, end: 10.1 }} />,
-  globals: { appearance: 'dark' },
+  globals: { appearance: 'light' },
 }
 
 export const Stage: Story = {
@@ -124,7 +123,6 @@ function LoopSwitch() {
       </Button>
       <WaveformTimeline
         lanes={LANES}
-        blockSeconds={BLOCK}
         duration={DURATION}
         bars={BARS}
         loop={on ? LOOP : null}
@@ -136,13 +134,13 @@ function LoopSwitch() {
   )
 }
 
-/** The loop edge's opacity at the bottom row of the canvas, where no waveform reaches. */
+/** The loop edge's opacity just above the waveform, where only the band and its edges reach. */
 function edgeAlpha(canvasElement: HTMLElement) {
   const canvas = canvasElement.querySelector('canvas')
   const context = canvas?.getContext('2d')
   if (!canvas || !context) throw new Error('no timeline canvas')
-  const x = Math.round((LOOP.start / DURATION) * canvas.width)
-  return context.getImageData(x, canvas.height - 1, 1, 1).data[3] ?? 0
+  const x = Math.round((LOOP.start / DURATION) * canvas.width) + 1
+  return context.getImageData(x, Math.round((canvas.height * 7) / 54), 1, 1).data[3] ?? 0
 }
 
 const toggle = async (canvasElement: HTMLElement) => {
