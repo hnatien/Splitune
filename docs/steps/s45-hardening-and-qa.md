@@ -9,7 +9,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), the last one
 
 | | |
 |---|---|
-| Branch | `impl/s45-hardening-qa` from the current `dev` |
+| Branch | `impl/s45-hardening-qa` from the latest `dev` |
 | Hard deps | all above (s32–s44 merged, G3 passed for s40a and s41a) |
 | Gates | **G4** (owner, screen-wave reviews on devices; the full visual baselines are regenerated only after it), **G5** (owner, human-only checks) |
 | Owned globs | cross-cutting: the files in the next row; anything else needs the owner's OK |

@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), last in the 
 
 | | |
 |---|---|
-| Branch | `impl/s43-phone-tablet` from the current `dev` |
+| Branch | `impl/s43-phone-tablet` from the latest `dev` |
 | Hard deps | s42 |
 | Gates | G4 (owner on real devices after the practice lane: phone, tablet on a stand); **G5** (owner, before the final merge): pedal hardware through the wizard (AirTurn modes 2/3/5, iRig BlueTurn), iPad Safari and the installed PWA (wake lock for 15 minutes) |
 | Owned globs | practice layout files, `features/settings/**` keyboard parts |

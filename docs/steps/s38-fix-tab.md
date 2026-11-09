@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), third in the
 
 | | |
 |---|---|
-| Branch | `impl/s38-fix-tab` from the current `dev` |
+| Branch | `impl/s38-fix-tab` from the latest `dev` |
 | Hard deps | s37 |
 | Gates | G4 (practice-lane review, batched; places "Replace all in this song" and "Show original", which have no mockup) |
 | Owned globs | practice editor/fix files |

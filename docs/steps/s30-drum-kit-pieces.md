@@ -42,7 +42,7 @@ Read `docs/steps/00-shared-context.md`, then:
     - `packages/audio-engine/src/dsp.ts`: `MAX_STEMS = 8`.
     - `apps/web/messages/en.json`.
 
-**Prerequisites:** step 25's work on `dev` (it is), and step 29 on `dev`, or at least its DrumSep loadability check and Phase 7 verdict. If step 29 hasn't run or skipped Phase 7, this step's Phase 0 and Phase 1 make that comparison. Branch `impl/30-drum-kit-pieces` from the current `dev`. If the step is large, split it into `impl/30a-…` (ML and eval), `30b` (contracts and orchestration) and `30c` (web), each shippable behind the flag.
+**Prerequisites:** step 25's work on `dev` (it is), and step 29 on `dev`, or at least its DrumSep loadability check and Phase 7 verdict. If step 29 hasn't run or skipped Phase 7, this step's Phase 0 and Phase 1 make that comparison. Branch `impl/30-drum-kit-pieces` from the latest `dev`. If the step is large, split it into `impl/30a-…` (ML and eval), `30b` (contracts and orchestration) and `30c` (web), each shippable behind the flag.
 
 **The owner doesn't play an instrument.** No deliverable may depend on owner-played recordings or owner transcriptions. Use datasets, rendered MIDI, published scores and scripted tests. The owner can choose songs, listen, look at screens and run things on their devices.
 

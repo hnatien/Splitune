@@ -55,7 +55,7 @@ If a pinned line has moved (new major, or a package is broken), choose the lates
 
 ## Git and progress
 - **`docs/` is tracked.** Commit spec, step-prompt, `docs/status.md` and `docs/progress-log.md` changes together with the step they describe. If git ignores a new file under `docs/` (an old `.git/info/exclude` rule on the owner's machine), add it with `git add -f`.
-- The integration branch is **`dev`** (there is no `main`). Work on a branch named `impl/<NN>-<short-name>` created from the current `dev`. Commit when verification passes, using Conventional Commits that explain *why*. Don't push, open PRs or merge unless the user asks.
+- The integration branch is **`dev`** (there is no `main`). Work on a new branch named `impl/<NN>-<short-name>` created from the latest `dev`, never from another `impl/*` branch (in particular not `impl/29-separation-improvements`) or from whatever the main checkout happens to have checked out. Commit when verification passes, using Conventional Commits that explain *why*. Don't push, open PRs or merge unless the user asks.
 - Stage files explicitly (no blind `git add -A`); never commit generated artefacts, model weights, audio files or secrets.
 - Append an entry to the end of `docs/progress-log.md` with: date, step number and name, what was built, deviations from the docs and why, verification commands and results, known gaps, and what the next step needs to know. Then update the step's row in `docs/status.md`.
 
@@ -63,7 +63,7 @@ If a pinned line has moved (new major, or a package is broken), choose the lates
 Ask the user only for decisions that are genuinely theirs: spending money, creating Railway or Cloudflare resources, choosing between product options the docs leave open. Otherwise pick the most reasonable default, record it in `docs/progress-log.md`, and continue.
 
 ## Redesign steps (s32–s45, "Night Rehearsal")
-The redesign (`redesign/report.md`, specs 26–28) runs like every other step: one step at a time, each on `impl/<id>-<name>` from the current `dev`, merged into `dev` when the owner asks. The order is in `docs/steps/README.md` ("Redesign steps"). s32, s40a and s41a were started earlier: their prompts begin with a "Resume here" section and their progress-log entries (2026-11-08) say what's done.
+The redesign (`redesign/report.md`, specs 26–28) runs like every other step: one step at a time, each on a new `impl/<id>-<name>` from the latest `dev`, merged into `dev` when the owner asks. The order is in `docs/steps/README.md` ("Redesign steps"). s32, s40a and s41a were started earlier: their prompts begin with a "Resume here" section and their progress-log entries (2026-11-08) say what's done.
 
 **Frozen decisions (change only with the owner's OK):**
 1. **Direction A, "Night Rehearsal".** Dark warm graphite, notation in light ink on dark, ONE amber accent reserved for now/playhead/loop/the single primary action per view, stems colour-coded but always labelled. Instrument Sans for UI and JetBrains Mono for numbers and tab digits (Inter 4 is the fallback family). OKLCH tokens.
@@ -131,9 +131,11 @@ The redesign (`redesign/report.md`, specs 26–28) runs like every other step: o
   - audio latency by ear on wired and Bluetooth headphones.
 
 **On the owner's Windows PC:**
-- **The main checkout `D:/Projects/Splitune` holds the owner's uncommitted step-29 work.** Work in a worktree under `D:/Projects/Splitune/.claude/worktrees/`. In the main checkout, never check out, switch, stash, reset, clean, add or commit.
+- **Branch from the latest `dev`, never from `impl/29-separation-improvements`.** The main checkout `D:/Projects/Splitune` stays on `dev`. Work in a worktree under `D:/Projects/Splitune/.claude/worktrees/`. In the main checkout, never switch branches, stash, reset, clean, add or commit; fast-forwarding `dev` (below) is the only change allowed there. If `dev` and `origin/dev` have diverged, stop and ask the owner.
 - **Worktree setup:**
   ```bash
+  git -C D:/Projects/Splitune fetch origin
+  git -C D:/Projects/Splitune merge --ff-only origin/dev   # the main checkout is on dev; brings it up to date
   git -C D:/Projects/Splitune worktree add -b impl/<id>-<name> D:/Projects/Splitune/.claude/worktrees/<id>-<name> dev
   cd D:/Projects/Splitune/.claude/worktrees/<id>-<name> && pnpm install --frozen-lockfile
   mkdir -p packages/audio-dsp/dist && cp D:/Projects/Splitune/packages/audio-dsp/dist/dsp.wasm packages/audio-dsp/dist/   # check it against dsp.wasm.sha256

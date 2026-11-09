@@ -9,7 +9,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`). Read `docs/s
 
 | | |
 |---|---|
-| Branch | `impl/s33-base-components` from the current `dev` |
+| Branch | `impl/s33-base-components` from the latest `dev` |
 | Hard deps | s32 |
 | Gates | **G2** follows this step: the owner approves the foundations look from your Storybook screenshots of every base component in both themes beside the s31c mockup renders. s34–s36 wait for G2 |
 | Owned globs | `apps/web/app/ui/**`, `apps/web/e2e/visual/**` |

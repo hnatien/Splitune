@@ -9,7 +9,7 @@ Read `docs/steps/00-shared-context.md`, then:
   - Stage: `services/ml/packages/stage_separation/src/stage_separation/{separate,models,stem_post,dsp,encode,config}.py` and its tests; `services/ml/config/separation.personal.yaml`.
   - Harness: `services/ml/eval/src/splitune_eval/{scoring,codec,registry,report,cli,local}.py`, `eval/p1.py`, `eval/p1_musdb.py`, `eval/p2g.py` (bands, `separate --separator`), `eval/sets/musdb18hq-p1.yaml`, `eval/results/p1/`, `eval/results/p2g/2026-10-29-separation.md`; `scripts/bench_separation.py`; `apps/listening`.
 
-Prerequisites: steps 01–27 on `dev`. Branch `impl/28-separation-eval` from the current `dev`. The owner doesn't play an instrument and has not supplied songs: no deliverable may depend on owner ratings, owner-played audio or owner songs. Build the tooling those need and leave them as clearly listed owner actions.
+Prerequisites: steps 01–27 on `dev`. Branch `impl/28-separation-eval` from the latest `dev`. The owner doesn't play an instrument and has not supplied songs: no deliverable may depend on owner ratings, owner-played audio or owner songs. Build the tooling those need and leave them as clearly listed owner actions.
 
 This is a measurement step first. **Every change to production behaviour is decided by numbers**, and changes to `separation.personal.yaml` (which change stage cache keys) or to contracts need the owner's OK (Stop point 2).
 

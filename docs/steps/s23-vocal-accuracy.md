@@ -8,7 +8,7 @@ Read `docs/steps/00-shared-context.md`, then:
 - Current results: `services/ml/eval/results/p1/2026-10-21-overlap.md` (Kim Mel-Band RoFormer 11.70 dB median vocal uSDR at `overlap: 11`, viperx 12.23, BS-Roformer-SW 12.04; Kim 136 s per full song), `p2/2026-10-21.md` and `p2/2026-10-23.md` (**vocals never evaluated**: `basic_pitch {min_freq_hz: 65, max_freq_hz: 1400}`, `quality_gate: none`).
 - Code: `services/ml/config/{separation,notes}.personal.yaml`, `views.yaml`, `config/calibration/` (no vocals table: confidence is identity-calibrated); `services/ml/packages/stage_separation` (`separate.py`, `models.py`, `stem_post.py`, `dsp.py`); `services/ml/packages/stage_notes` (`stage.py`, `transcribers.py`, `basic_pitch.py`, `vocals.py`); `services/ml/eval/` (`p1.py`, `p2.py`, `splitune_eval`); `scripts/fetch_models.py`; `compliance/register/models/*.yaml`; `packages/contracts/src/analysis/notes.ts` (`F0Track` exists, **nothing writes or reads it yet**); `packages/music-core/src/melody/build-melody.ts`; `packages/notation/src/{melody.ts,melody-roll.tsx}`; `apps/web/app/features/practice/{vocal-melody.tsx,phrase-strip.tsx}`; `apps/node-worker/src/finalize.ts`.
 
-Prerequisites: MVP (steps 01–17) and the vocal Melody view (18c) on `dev`. Branch `impl/23-vocal-accuracy` from the current `dev`. This is an ML step: **every production change is decided by numbers on the test set**, never by a paper's claim.
+Prerequisites: MVP (steps 01–17) and the vocal Melody view (18c) on `dev`. Branch `impl/23-vocal-accuracy` from the latest `dev`. This is an ML step: **every production change is decided by numbers on the test set**, never by a paper's claim.
 
 ## Why this step exists (review of 2026-10-24)
 Separation is good enough; transcription is the weak link:

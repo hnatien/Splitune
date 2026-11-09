@@ -4,7 +4,7 @@ Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), second in th
 
 | | |
 |---|---|
-| Branch | `impl/s37-speed-ladder` from the current `dev` |
+| Branch | `impl/s37-speed-ladder` from the latest `dev` |
 | Hard deps | s35 (plan table); decision D12: also **s36 merged** before you start (you add a row to its Display & practice section) |
 | Gates | G4 (practice-lane review, batched) |
 | Owned globs | practice loop files, `packages/contracts/src/api/{loops,flags}.ts`, `apps/api/src/routes/loops.ts`, `packages/db/src/repo/loops.ts` |
