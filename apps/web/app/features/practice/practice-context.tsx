@@ -105,8 +105,9 @@ export interface PracticeValue {
   clips: Clip[]
   clip: Clip | undefined
   best: number | null
-  /** Loops a saved clip as it was left: its bars, rest, count-in and speed ladder. */
-  selectClip: (clip: Clip) => void
+  /** Loops a saved clip as it was left: its bars, rest, count-in and speed ladder. `method`: the
+   * learner picked it (16 §2 loop_created); none when it comes back on resume. */
+  selectClip: (clip: Clip, method?: 'clip') => void
   /** The speed ladder is available (`v1.speed_trainer`, 16 §5). */
   ladderEnabled: boolean
   /** Where the loop's ladder stands (a move waiting for the seam already counts); null when off. */
@@ -548,7 +549,8 @@ export function PracticeProvider({
     }
   }
 
-  const selectClip = (saved: Clip) => {
+  const selectClip = (saved: Clip, method?: 'clip') => {
+    if (method) track('loop_created', { method, bars: saved.end_bar - saved.start_bar + 1 })
     clearTimeout(saveTimer.current)
     setClipId(saved.id)
     const range = {

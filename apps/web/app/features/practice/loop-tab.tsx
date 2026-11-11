@@ -397,7 +397,7 @@ function ClipRow({
         type="button"
         aria-current={active ? 'true' : undefined}
         className="flex min-h-target-practice-2 min-w-0 flex-1 items-center gap-3 rounded-lg px-1.5 py-2 text-left hover:bg-muted"
-        onClick={() => practice.selectClip(clip)}
+        onClick={() => practice.selectClip(clip, 'clip')}
       >
         <span
           aria-hidden

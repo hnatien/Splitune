@@ -325,7 +325,7 @@ function CountInCounter() {
 function usePracticePalette(layout: PracticeLayout) {
   const practice = usePractice()
   const screen = useScreen(layout)
-  const { grid, clips, setLoop } = practice
+  const { grid, clips, setLoop, selectClip } = practice
   const actions = useMemo<PaletteAction[]>(
     () => [
       {
@@ -369,18 +369,10 @@ function usePracticePalette(layout: PracticeLayout) {
           id: `clip-${clip.id}`,
           label: clip.name ?? '',
           context: m['practice.clip_bars']({ bars: `${clip.start_bar + 1}–${clip.end_bar + 1}` }),
-          run: () =>
-            setLoop(
-              {
-                startBar: clip.start_bar,
-                endBar: clip.end_bar,
-                start: clip.start_s,
-                end: clip.end_s,
-              },
-              'clip',
-            ),
+          // The clip as it was left: its bars, rest, count-in and speed ladder (12 §5).
+          run: () => selectClip(clip, 'clip'),
         })),
-    [clips, setLoop],
+    [clips, selectClip],
   )
   usePaletteActions('clips', clipActions)
 }

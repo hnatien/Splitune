@@ -2614,11 +2614,13 @@ Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) f
 
 **Known gaps**
 - G4 (owner, devices, both themes): the ladder card and its steppers by touch, the count-in at the upcoming tempo by ear, the step at the seam by ear (the restart after the stop at the loop end is a few milliseconds of silence, not a seamless wrap).
-- A clip chosen from ⌘K still copies its range into a new loop without its ladder: the palette's clip actions are in `practice-page.tsx`, outside this step's files (one call to `selectClip` would do it).
 - `L` with no loop shows "No loop — tap two bars" instead of looping the current bar (12 §5 / §8 say it should); older than s37, noticed while writing the e2e.
 - Deleting a clip and closing the tab before its Undo toast closes relies on the request sent at `pagehide`; if the browser drops it the clip is back on the next visit.
 - The phone Tools sheet's ladder card is s43's; Progress (s39) will read the same clips. The home / pricing honesty-gate flip for the ladder is s45's.
 - WebKit practice stories (the known timeout) and e2e outside Chromium weren't exercised here.
+
+**Follow-up (owner's OK, same day)**
+- A clip chosen from ⌘K now loads through `selectClip` too (`practice-page.tsx`, outside the step's files), so it comes back with its rest, count-in, ladder and speed instead of as a new unnamed loop. `selectClip(clip, 'clip')` also sends `loop_created` with method `clip` for the palette and the saved-clip rows (the rows had stopped sending it when they moved to `selectClip`). `speed-ladder.spec.ts` gained a fourth case: save the loop as "Chorus climb", clear it, speed back to 100 %, pick the clip from the palette → ladder on, 80 %, "pass 1 of 3 at 80 %". Chromium: `speed-ladder` 4 / 4 and `practice-keys` 4 / 4; web typecheck clean, unit 265 / 265, budget still 311.4 KB.
 
 **Owner actions**
 - Production data check before deploy: `SELECT count(*) FROM loop_clips WHERE trainer IS NOT NULL;` must be 0.
