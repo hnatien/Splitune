@@ -119,3 +119,28 @@ test('the ladder and the place on it come back after a reload', async () => {
   await expect(page.getByRole('img', { name: /80 percent now, 85 percent next$/ })).toBeVisible()
   expect(errors).toEqual([])
 })
+
+test('a saved clip chosen from the palette comes back with its ladder', async () => {
+  const panel = page.getByRole('tabpanel', { name: 'Loop' })
+  await panel.getByRole('button', { name: 'Save this loop' }).click()
+  await panel.getByLabel('Clip name').fill('Chorus climb')
+  await panel.getByRole('button', { name: 'Save clip' }).click()
+  await expect(panel.getByRole('button', { name: /^Chorus climb/ })).toBeVisible()
+  // Leave the clip: no loop, and the speed back at 100 %.
+  await panel.getByRole('button', { name: 'Clear loop' }).click()
+  await expect(ladderSwitch()).toBeHidden()
+  await page.locator('#main').focus()
+  for (let i = 0; i < 4; i++) await page.keyboard.press('.')
+  await expect(speedReadout()).toHaveAccessibleName(/^Speed: 100\s%/)
+
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog')
+  await palette.getByRole('combobox').or(palette.getByRole('textbox')).first().fill('Chorus climb')
+  await expect(palette.getByText('Chorus climb')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(palette).toBeHidden()
+  await expect(ladderSwitch()).toBeChecked()
+  await expect(speedReadout()).toHaveAccessibleName(/^Speed: 80\s%.*→ 100/)
+  await expect(loopPill()).toHaveAccessibleName(/^Loop · bars 3–4, pass 1 of 3 at 80\s%/)
+  expect(errors).toEqual([])
+})
