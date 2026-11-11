@@ -6,8 +6,9 @@ import { TransportButton } from '@/ui/transport-button'
 
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
 // (50–100 %, 25–200 % advanced) and the presets, which may also sit inline from `2xl`; readout
-// "70 %" over "84 BPM". Boxed −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet readout
-// button; all three are main practice controls, 64 px in every layout (§8, V11).
+// "70 %" over "84 BPM", and with the speed ladder on its goal after the BPM ("72 BPM · → 100").
+// Boxed −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet readout button; all three are main
+// practice controls, 64 px in every layout (§8, V11).
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
@@ -22,6 +23,8 @@ type SpeedControlProps = {
   onValueChange: (value: number) => void
   /** Original tempo; omit when the beat grid is unknown (the readout shows % only). */
   bpm?: number | undefined
+  /** The speed ladder's goal: `text` after the BPM ("→ 100"), `label` in the readout's name. */
+  goal?: { text: string; label: string } | undefined
   advanced?: boolean
   labels: {
     /** Accessible name of the readout button and slider, e.g. "Speed". */
@@ -79,6 +82,7 @@ function SpeedControl({
   value,
   onValueChange,
   bpm,
+  goal,
   advanced = false,
   labels,
   shortcuts,
@@ -105,7 +109,7 @@ function SpeedControl({
       />
       <Popover>
         <PopoverTrigger
-          aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}`}
+          aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}${goal ? ` · ${goal.text}, ${goal.label}` : ''}`}
           className={cn(
             'flex min-h-target-practice flex-col items-center justify-center rounded-2xl px-3 text-center transition-colors hover:bg-accent aria-expanded:bg-accent',
             compact ? 'min-w-20' : 'min-w-26',
@@ -115,10 +119,11 @@ function SpeedControl({
             {shown}
             {NBSP}%
           </span>
-          {bpm !== undefined && (
-            <span className="font-mono text-sm font-medium text-faint-foreground tabular-nums">
-              {Math.round((bpm * shown) / 100)}
-              {NBSP}BPM
+          {(bpm !== undefined || goal) && (
+            <span className="font-mono text-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
+              {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
+              {bpm !== undefined && goal && ' · '}
+              {goal?.text}
             </span>
           )}
         </PopoverTrigger>
@@ -129,6 +134,7 @@ function SpeedControl({
             max={max}
             onValueChange={set}
             labels={{ speed: labels.speed, presets: labels.presets }}
+            goal={goal?.label}
           />
         </Suspense>
       </Popover>

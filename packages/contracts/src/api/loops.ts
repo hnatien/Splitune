@@ -1,12 +1,22 @@
 import { z } from 'zod'
 
-// V1 speed trainer settings (21-v1-features.md), stored on the loop clip.
+// The speed ladder (21 V1, 12 §5), stored on the loop clip: the speed climbs from start_pct to
+// end_pct in step_pct steps. `plays_per_step` counts clean passes ("Felt clean") per step, not
+// plays: the trainer was behind `v1.speed_trainer` until the ladder shipped, so no stored clip
+// carries the old meaning. `drop_after_misses` "Not yet" in a row go back one step (0 = never);
+// `on_goal` says what a finished ladder does. The last three fields are where the learner is on
+// the ladder, written as passes are rated so a reload picks up on the same rung.
 export const SpeedTrainer = z.object({
   start_pct: z.number().int().min(25).max(200),
   end_pct: z.number().int().min(25).max(200),
   step_pct: z.number().int().min(1).max(50),
   plays_per_step: z.number().int().min(1).max(20),
   count_in_each_pass: z.boolean(),
+  drop_after_misses: z.number().int().min(0).max(5),
+  on_goal: z.enum(['keep', 'stop']),
+  current_pct: z.number().int().min(25).max(200).optional(),
+  clean_count: z.number().int().min(0).max(20).optional(),
+  miss_count: z.number().int().min(0).max(5).optional(),
 })
 
 export const RestBetween = z.enum(['none', 'beat', 'bar'])

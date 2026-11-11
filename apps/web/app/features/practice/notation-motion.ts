@@ -20,12 +20,21 @@ export function useNotationMotion() {
   return { layout, playhead, stepped: reduced, smoothScroll: !reduced }
 }
 
-/** The loop bracket's badge (27 §3.7.1): "Loop · bars 25–28 · pass 2 at 75 %". */
+/** The loop bracket's badge (27 §3.7.1): "Loop · bars 25–28 · pass 2 at 75 %", or with the speed
+ * ladder on the clean pass being played for, "pass 2 of 3 at 75 %". */
 export function useLoopLabel(): string | undefined {
-  const { player } = usePractice()
+  const { player, ladder } = usePractice()
   const loop = player.loop
   if (!loop) return undefined
   const bars = `${loop.startBar + 1}–${loop.endBar + 1}`
+  if (ladder) {
+    return m['practice.loop_bracket_ladder']({
+      bars,
+      pass: String(ladder.pass),
+      of: String(ladder.of),
+      speed: formatPercent(ladder.speedPct),
+    })
+  }
   return player.pass > 0
     ? m['practice.loop_bracket']({
         bars,

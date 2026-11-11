@@ -1,27 +1,40 @@
+import type { LoopClip } from '@splitune/contracts'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react'
-import { useId, useState } from 'react'
+import { ChevronLeftIcon, ChevronRightIcon, EllipsisIcon, XIcon } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
+import type { z } from 'zod'
 import { client, orpc } from '@/lib/api'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/dropdown-menu'
 import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
 import { Switch } from '@/ui/switch'
 import { OptionSegments } from '../common/option-segments'
+import { deleteClip, renameClip, useHiddenClips } from './clip-actions'
+import { LadderCard } from './ladder-card'
 import { barRange, type LoopRange, moveLoop, nudge, restSeconds } from './model/loops'
 import type { RestBetween } from './model/player-machine'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// The Loop tab (27 §3.7.4, Main.dc.html without the speed ladder, which is s37's): "Bars 25–28"
-// with the best clean pass, From bar / To bar steppers (one bar per step), Next phrase · ×2 · ÷2,
-// "Fine-tune edges" with the sixteenth-note nudges, Between repeats (rest, count-in, "Ask how each
-// pass went before the next"), Saved clips (a row per named clip; Rename and Delete are s37's),
-// and Clear loop. Before the beat is found: "Bar loops are ready once the beat is found." The same
-// body opens from the loop badge's popover on tablets and phones.
+// The Loop tab (27 §3.7.4, Main.dc.html): "Bars 25–28" with the best clean pass, From bar / To bar
+// steppers (one bar per step), Next phrase · ×2 · ÷2, "Fine-tune edges" with the sixteenth-note
+// nudges, the Speed ladder card (ladder-card.tsx; only with `v1.speed_trainer` on), Between repeats
+// (rest, count-in, "Ask how each pass went before the next"), Saved clips (a row per named clip
+// with Rename and Delete in its More menu), and Clear loop. Before the beat is found: "Bar loops
+// are ready once the beat is found." The same body opens from the loop badge's popover on tablets
+// and phones.
+
+type Clip = z.infer<typeof LoopClip>
 
 const eyebrow = 'text-xs font-semibold tracking-wider text-faint-foreground uppercase'
 
@@ -53,6 +66,7 @@ export function LoopTab() {
         {loop && <QuickMoves loop={loop} />}
         {loop && <FineTune loop={loop} />}
       </div>
+      {loop && practice.ladderEnabled && <LadderCard />}
       {loop && <BetweenRepeats loop={loop} />}
       <SavedClips />
       {loop && (
@@ -281,27 +295,31 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
 }
 
 // Saved clips (27 §3.7.4): "Save this loop" names the loop being played; each named clip is a
-// row (dot, name, "bars 25–28 · best 80 %") that loops it. Rename and Delete are s37's.
+// row (the amber dot on the one playing, name, "bars 25–28 · best 80 %") that loops it as it was
+// left, with Rename and Delete in its More menu.
 function SavedClips() {
   const practice = usePractice()
   const queryClient = useQueryClient()
   const clip = practice.clip
+  const hidden = useHiddenClips((s) => s.ids)
   const [naming, setNaming] = useState(false)
-  const [name, setName] = useState(clip?.name ?? '')
+  const [name, setName] = useState('')
+  const [renaming, setRenaming] = useState<string | null>(null)
   const id = useId()
-  const named = practice.clips.filter((c) => c.name !== null)
-  if (!clip && named.length === 0) return null
+  const named = practice.clips.filter((c) => c.name !== null && !hidden.includes(c.id))
+  const unsaved = clip !== undefined && clip.name === null
+  if (!unsaved && named.length === 0) return null
   return (
     <section className="flex flex-col gap-1">
       <div className="flex min-h-target-practice-2 items-center justify-between gap-2">
         <h3 className={eyebrow}>{m['practice.clips']()}</h3>
-        {clip && !naming && (
+        {unsaved && !naming && (
           <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>
-            {m['practice.save_clip']()}
+            {m['practice.save_this_loop']()}
           </Button>
         )}
       </div>
-      {clip && naming && (
+      {unsaved && naming && (
         <form
           className="flex items-end gap-2 pb-2"
           onSubmit={(event) => {
@@ -312,6 +330,7 @@ function SavedClips() {
               .update({ id: practice.songId, loop_id: clip.id, name: trimmed })
               .then(() => {
                 setNaming(false)
+                setName('')
                 return queryClient.invalidateQueries({
                   queryKey: orpc.loops.list.queryKey({ input: { id: practice.songId } }),
                 })
@@ -320,7 +339,13 @@ function SavedClips() {
         >
           <div className="flex flex-1 flex-col gap-1.5">
             <Label htmlFor={id}>{m['practice.clip_name']()}</Label>
-            <Input id={id} value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
+            <Input
+              id={id}
+              autoFocus
+              value={name}
+              maxLength={100}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <Button type="submit" variant="secondary" disabled={name.trim() === ''}>
             {m['practice.save_clip']()}
@@ -329,40 +354,126 @@ function SavedClips() {
       )}
       <ul className="flex flex-col">
         {named.map((c) => (
-          <li key={c.id}>
-            <button
-              type="button"
-              aria-current={c.id === clip?.id ? 'true' : undefined}
-              className="flex min-h-target-practice-2 w-full items-center gap-3 rounded-lg px-1.5 py-2 text-left hover:bg-muted"
-              onClick={() =>
-                practice.setLoop(
-                  { startBar: c.start_bar, endBar: c.end_bar, start: c.start_s, end: c.end_s },
-                  'clip',
-                )
-              }
-            >
-              <span
-                aria-hidden
-                className={cn(
-                  'size-2 shrink-0 rounded-full',
-                  c.id === clip?.id ? 'bg-signal' : 'bg-faint-foreground',
-                )}
+          <li key={c.id} className="flex items-center gap-1">
+            {renaming === c.id ? (
+              <RenameClip
+                clip={c}
+                onDone={(next) => {
+                  setRenaming(null)
+                  if (next) renameClip(queryClient, c, next)
+                }}
               />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-md font-semibold">{c.name}</span>
-                <span className="font-mono text-sm text-faint-foreground tabular-nums">
-                  {c.best_clean_tempo_pct === null
-                    ? m['practice.clip_bars']({ bars: `${c.start_bar + 1}–${c.end_bar + 1}` })
-                    : m['practice.clip_bars_best']({
-                        bars: `${c.start_bar + 1}–${c.end_bar + 1}`,
-                        pct: String(c.best_clean_tempo_pct),
-                      })}
-                </span>
-              </span>
-            </button>
+            ) : (
+              <ClipRow
+                clip={c}
+                active={c.id === clip?.id}
+                onRename={() => setRenaming(c.id)}
+                onDelete={() => deleteClip(queryClient, c)}
+              />
+            )}
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+function ClipRow({
+  clip,
+  active,
+  onRename,
+  onDelete,
+}: {
+  clip: Clip
+  active: boolean
+  onRename: () => void
+  onDelete: () => void
+}) {
+  const practice = usePractice()
+  const bars = `${clip.start_bar + 1}–${clip.end_bar + 1}`
+  return (
+    <>
+      <button
+        type="button"
+        aria-current={active ? 'true' : undefined}
+        className="flex min-h-target-practice-2 min-w-0 flex-1 items-center gap-3 rounded-lg px-1.5 py-2 text-left hover:bg-muted"
+        onClick={() => practice.selectClip(clip)}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            'size-2 shrink-0 rounded-full',
+            active ? 'bg-signal' : 'bg-faint-foreground',
+          )}
+        />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-md font-semibold">{clip.name}</span>
+          <span className="font-mono text-sm text-faint-foreground tabular-nums">
+            {clip.best_clean_tempo_pct === null
+              ? m['practice.clip_bars']({ bars })
+              : m['practice.clip_bars_best']({ bars, pct: String(clip.best_clean_tempo_pct) })}
+          </span>
+        </span>
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={m['practice.clip_more']({ name: clip.name ?? '' })}
+            />
+          }
+        >
+          <EllipsisIcon aria-hidden />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={onRename}>{m['practice.clip_rename']()}</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            {m['practice.clip_delete']()}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  )
+}
+
+// The row's name as a field: Enter or "Save name" renames, Escape or leaving it empty keeps the
+// old name.
+function RenameClip({ clip, onDone }: { clip: Clip; onDone: (name: string | null) => void }) {
+  const [name, setName] = useState(clip.name ?? '')
+  const field = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    field.current?.focus()
+    field.current?.select()
+  }, [])
+  return (
+    <form
+      className="flex min-w-0 flex-1 items-center gap-2 py-1"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onDone(name.trim() || null)
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return
+        event.stopPropagation()
+        onDone(null)
+      }}
+    >
+      <Input
+        ref={field}
+        aria-label={m['practice.clip_rename_label']({ name: clip.name ?? '' })}
+        className="min-w-0 flex-1"
+        value={name}
+        maxLength={100}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <Button type="submit" variant="secondary" size="sm" disabled={name.trim() === ''}>
+        {m['practice.clip_rename_save']()}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => onDone(null)}>
+        {m['common.cancel']()}
+      </Button>
+    </form>
   )
 }

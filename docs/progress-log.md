@@ -2547,3 +2547,82 @@ Branch `impl/s35-practice-core` (worktree `.claude/worktrees/s35-practice-core`)
 **Next**
 - s37: the speed ladder in the Loop tab (`loop-tab.tsx` leaves the slot), clip rename / delete in the saved-clip rows.
 - s38: Fix mode and the queue replace today's editor in the Fix tab.
+
+## 2026-11-11 — Step s37: speed ladder (V1) and the finished Loop tab (done, not merged; G4 next)
+Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) from `dev` at `cf76235` (s35 and s36 merged). Not merged into `dev`.
+
+**Data check (deliverable 1)**
+- Local compose database (`splitune`): `SELECT count(*) FROM loop_clips WHERE trainer IS NOT NULL;` → **0** (the table has 0 rows). No stored trainer anywhere I can see, so `plays_per_step` now means clean passes per step.
+- **Owner action:** run the same query against production before deploying. If it returns anything but 0, tell me before the deploy: those clips would change meaning.
+
+**Built**
+- **Contract** (`packages/contracts/src/api/loops.ts`): `SpeedTrainer` gains `drop_after_misses` (0 = off, 1–5) and `on_goal` (`keep` / `stop`), both required; the comment says `plays_per_step` counts clean passes. It also gains the learner's place, optional: `current_pct` (25–200), `clean_count` (0–20), `miss_count` (0–5) (deviation 1). `SpeedTrainer` isn't registered for JSON Schema, so nothing is generated; `loop_clips.trainer` is typed from the contract, so no migration.
+- **Flag:** `v1.speed_trainer` defaults **on** ("Speed ladder on loop clips (kill switch)"). The web reads `me.flags` for it (guests: the declared default).
+- **API** (`apps/api/src/routes/loops.ts`): `checkTrainer` keeps the flag gate and refuses a goal below the start (`trainer.end_pct` / `empty_range`).
+- **Ladder rules** (`features/practice/model/ladder.ts`, pure): defaults (12 §5), rungs, the rung a speed stands on, `ratePass` (up on the nth clean pass, down one rung on the nth miss in a row, never below the start, Off; at the goal keep or stop), the view the UI reads, and the trainer round-trip.
+- **Machine** (`model/player-machine.ts`): `ladder`, `pendingSpeed`, `finishing` in the context; `SET_LADDER`; `PASS_RATED` replaces `ASSESSED` and is sent for every answer. **Seam rule:** a move decided while a pass plays makes that one wrap a stop at the loop end (`setStopAt`); the rate is set while the engine is stopped there, then the pass (and its count-in, asked for after the rate) starts. With a rest, the pass prompt or the ladder's count-in before each pass it changes in the same place; during the count-in between passes the count-in starts again at the new tempo; while stopped the rate is set at once. No engine change. A no-rest gap now lasts 0 ms (it used `restSeconds` whatever the rest was).
+- **Provider** (`practice-context.tsx`): `ladderEnabled`, `ladder` (the view), `setLadder`, `selectClip`. The trainer is saved on the clip after every rating, move and setting (300 ms debounce; a new loop's create carries it). `selectClip` (the saved-clip rows and resume) loads the clip's bars, rest, count-in, ladder and speed instead of copying its range into a new unnamed clip. PedalHud: "Speed 80 % · ladder" on every move, "Goal reached · 100 %" when a ladder set to Stop ends the loop.
+- **UI:** `ui/speed-ladder.tsx` (new: `SpeedLadder` rungs, `LadderIcon`, `LadderChip`), `features/practice/ladder-card.tsx` (the card: switch, rungs, summary, chips Start / Goal / Step / clean passes / More, each opening a stepper with 48 px halves), `loop-tab.tsx` (card between Fine-tune and Between repeats; clip rows with a More menu), `clip-actions.ts` (rename, delete), `ui/speed-control.tsx` + `speed-panel.tsx` (goal: "72 BPM · → 100", in the readout's name and the panel), the loop pill and the notation bracket ("pass 2 of 3 at 75 %").
+- **Saved clips:** Rename inline (Enter or "Save name", Escape or Cancel keeps the name), optimistic, toast "Renamed to {name}" + Undo, rollback + error toast on refusal. Delete hides the row at once; the DELETE is sent when the Undo toast closes or the page hides, so Undo restores the same clip with its best clean pass. "Save this loop" (was "Save clip") opens the name field for the unnamed loop being played.
+- **Settings** (owner's OK): Display & practice → Practice defaults → Speed ladder: "+5 % after {n} clean passes" with a stepper (1–20, default 3) and the switch "On for new loops" / "Up to 100 %"; stored as `ladderCleanPasses` and `ladderNewLoops` in `lib/display-store.ts`.
+- **Copy:** 50 `ladder.*` keys (new group between `instrument` and `legal`), `practice.clip_*` (9), `practice.loop_pass_ladder`, `practice.loop_bracket_ladder`, `practice.save_this_loop`; 62 new keys; `en.json` has 1121.
+
+**Decisions (owner, 2026-11-11, at the stop points)**
+- **Stop point 6:** unmerged `impl/s40a-all-stems` changes `packages/contracts` (a comment in `src/analysis/stems.ts` and `fixtures/stems.json`). No overlap with `api/loops.ts` / `api/flags.ts`: proceed.
+- **Owner files:** `ui/speed-control.tsx`, `ui/speed-panel.tsx`, the new `ui/speed-ladder.tsx` (+ stories), the Speed ladder row in `settings/display-settings.tsx` and its values in `lib/display-store.ts`: all OK'd.
+- **Ladder for new loops: off by default.** 27 §3.9 read "Up to 100 %, on for new loops". On by default would have slowed every new loop to at most 70 % with a count-in before each pass (the onboarding loop included) and changed the loop assertions of journey, onboarding, practice and a11y and the perf-practice scenario. The owner chose off; the switch is in Settings, and 27 §3.9 and 12 §5 say so now.
+
+**Deviations (mine, for G4)**
+1. **The place on the ladder is stored in the trainer** (`current_pct`, `clean_count`, `miss_count`): the step asks that state and position survive a reload "saved on the clip", and the song's `player_state.speed_pct` can't hold it per clip. Optional fields, so a settings-only trainer stays valid.
+2. **Turning the ladder on never speeds the learner up:** Start is the lower of the current speed and "best clean tempo, else 70 %" (12 §5 gives only the latter).
+3. **The rung is the speed.** A speed set by hand (`,` / `.`, the panel) stands on the highest rung at or below it and starts the counts over; the next step up is the next rung above it.
+4. **Clean passes at a rung add up** (a miss doesn't undo them); misses count in a row.
+5. **Summary wording:** 27's sample "Clean pass 2 of 3 at 75 % moves you to 80 %." is only true on the last pass, so the card says "Clean pass 2 of 3 at 75 %. Pass 3 moves you to 80 %." and the sample's sentence on the last one. 27 §3.7.4 updated.
+6. **`aria-label`:** "70 percent done, 75 percent now, 80 percent next" (26's "70 and 75 percent done, 80 percent next" counts the current rung as done). 26 §12.2 updated.
+7. **The readout's name carries the visible goal** ("Speed: 75 % · 72 BPM · → 100, ladder goal 100 %"): axe's label-content-name-mismatch wants the visible "→ 100" in the name.
+8. **Ladder range in the steppers:** Start and Goal 50–110 %, Step 1–50 %, clean passes 1–20, misses 0–5. The speed control itself still stops at 100 % (s35's range).
+9. **`apps/api/test/privacy.test.ts`:** its trainer body gained the two required fields (the test still checks the flag gate).
+10. **`apps/web/app/lib/display-store.test.ts`** and **`features/settings/settings.stories.tsx`:** the migration test expects the two new defaults; one new story for the settings row.
+
+**Fidelity (28 §5.1)**
+- `node <scratchpad>/fidelity.mjs` (probe of `Main` against the `Ladder1180` story, Storybook dev on :6006), 11 anchors (ladder box, done / current / upcoming / goal rung, first and last chip, summary, title, card, clip name) at 1440 and 1180 in Night Rehearsal and Daylight: 44 comparisons.
+- Iteration 1: 4 unexplained (the card title was 14 / 600 instead of the h3's 17 / 650, at each width and look). Iteration 2: **0 unexplained.** Explained: the inspector is 380 wide where the mockup draws 360 (27 §3.7.1; ladder, rungs, summary and card 20 px wider); rung labels 11 px / 650 (V10, `text-2xs`); rung corners 4 px (`rounded-xs`, 26 §9); the done rung's 1 px `--signal` edge (V16) and its height (the mockup's first rung has no height; 26 says rising to the goal); Daylight's ring in the Daylight `--signal` (V3 / V5); chips 13 / 500 in `--muted-foreground` where the mockup's `.app button` cascade draws 15 / 400 in `--foreground` (s35's finding; `.chip` itself is 13 / 550); line heights (the mockup's 1.45); the card 36 px taller for the switch's 44 px box and the chips' 48 px boxes (V12, 26 §8).
+
+**Budget (12 §10, D6)**
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **311.4 KB** gzip of 320 KB, before 309.1 KB (`dev` at `cf76235`, built the same way). The ladder card, its steppers and the clip actions load with the Loop tab (already lazy); the 2.3 KB are the ladder rules, the machine, the provider's wiring and the pill / bracket / readout strings. `css-floor` clean.
+
+**E2E**
+- New `apps/web/e2e/speed-ladder.spec.ts` (Chromium, built app, keys only): a loop of bars 3–4 from the palette at 70 %, the ladder switched on with Space, three `C` → 75 % with "Speed 75 % · ladder"; while the loop plays, three `C` put the ladder on 80 % at once and the readout stays at 75 % until the seam; after a reload the clip's trainer (`current_pct` 80), the switch and "pass 1 of 3 at 80 %" are back. 3 / 3.
+- `cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts e2e/practice.spec.ts e2e/onboarding.spec.ts e2e/account.spec.ts e2e/practice-keys.spec.ts e2e/a11y.spec.ts e2e/settings.spec.ts e2e/speed-ladder.spec.ts --project chromium`: 36 passed, 1 skipped by design (the phone case), **1 failed: a11y "core pages: forced colours"**, the s34 song-card tile s35 and s36 recorded, and the 8 serial cases behind it did not run. Run on their own (`-g "practice \(example song"`), the practice screen's axe cases pass in all 7 appearances, forced colours included. No existing spec needed an edit (stop point 7 not hit). Firefox and WebKit e2e not run here (Firefox isn't installed on this PC).
+
+**Stories**
+- New: `ui/speed-ladder.stories.tsx` (Kit/SpeedLadder: LadderClimbing, EachRung, AtStart, AtGoal, LongValues, LongValuesAtGoal, Daylight, IncreasedContrast, Chips, SpeedReadoutWithGoal); in `practice.stories.tsx`: LadderOff, LadderOnForNewLoops, LadderOffForNewLoops, LadderAtStart, LadderClimbing, LadderDroppingBack, LadderAtGoalKeep, LadderAtGoalStop, LadderLongValues (Goal 110 %, Step 1 %, 12 clean passes), LadderChips, LadderMore, LadderDaylight, Ladder1180, LadderIncreasedContrast, LadderReducedMotion, LadderFlagOff, SavedClips, ClipRename, ClipDeleteUndo; in `settings.stories.tsx`: DisplayLadderDefault. `practice-story-data.ts` seeds saved clips (`clips`, the first one selected) and the flag (`ladderFlagOff`).
+- Chromium (`vitest run --project="storybook (chromium)"`): **40 files, 667 / 667**, axe included. Two earlier runs lost stories to Vite re-optimising dependencies mid-run ("reading 'useId'" / "'useContext'", the known first-run failure); the run after each passed.
+- WebKit (`--project="storybook-webkit"`): `ui/speed-ladder`, `ui/transport`, `ui/transport-button` and `settings` stories 78 / 78. The 19 new practice stories time out at 15 s there, like the other playable practice stories on this PC (the known failure); not run further.
+
+**Visual baselines**
+- `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (Docker): 22 rows ran, **6 images changed**: `practice--desktop--{light,dark,stage}.png` in Chromium and WebKit. Intended difference: the Loop tab now shows the Speed ladder card (off, with its one-line description) between Fine-tune edges and Between repeats, so Between repeats sits lower and Clear loop is below the fold. Tablet and phone rows, `practice-tab-pending` and `practice-stems-expired` are unchanged.
+
+**Verification (PC, 2026-11-11)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`, `node scripts/check-ui-tokens.mjs` and `node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path apps/web/app/features/settings` (124 files): clean.
+- `pnpm --filter @splitune/contracts typecheck && pnpm --filter @splitune/contracts test`: clean, 61 / 61. `UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm contracts:check`: "Generated contracts are up to date."
+- `pnpm --filter @splitune/api typecheck && pnpm --filter @splitune/api test`: clean, **215 / 215** (new: the ladder's fields stored and patched, 13 out-of-range trainers refused, a trainer without `drop_after_misses` refused, the limits' edges accepted, rename / delete by another user 404, a blank name refused). `pnpm --filter @splitune/api openapi:check`: valid (33 paths). `pnpm --filter @splitune/node-worker typecheck`: clean.
+- `pnpm --filter @splitune/db typecheck && pnpm --filter @splitune/db test && pnpm db:check`: clean, 161 / 161 (the lifecycle test passed this time), "Migrations match the schema." (drizzle-kit prints an ENOENT for a Windows temp path before that line; it does so on `dev` too).
+- `pnpm --filter @splitune/web typecheck`: clean. `pnpm --filter @splitune/web test`: **265 / 265** (new: `model/ladder.test.ts` 11, 9 ladder cases in `player-machine.test.ts`, the store's two defaults).
+- `pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor`: 311.4 KB of 320 KB; css-floor clean.
+- `pnpm secrets:scan` reports 2 findings in history, both test passwords that predate s37 (`apps/api/test/helpers.ts:49`, `apps/web/e2e/helpers.ts:45`); nothing in this step's files.
+
+**Known gaps**
+- G4 (owner, devices, both themes): the ladder card and its steppers by touch, the count-in at the upcoming tempo by ear, the step at the seam by ear (the restart after the stop at the loop end is a few milliseconds of silence, not a seamless wrap).
+- A clip chosen from ⌘K still copies its range into a new loop without its ladder: the palette's clip actions are in `practice-page.tsx`, outside this step's files (one call to `selectClip` would do it).
+- `L` with no loop shows "No loop — tap two bars" instead of looping the current bar (12 §5 / §8 say it should); older than s37, noticed while writing the e2e.
+- Deleting a clip and closing the tab before its Undo toast closes relies on the request sent at `pagehide`; if the browser drops it the clip is back on the next visit.
+- The phone Tools sheet's ladder card is s43's; Progress (s39) will read the same clips. The home / pricing honesty-gate flip for the ladder is s45's.
+- WebKit practice stories (the known timeout) and e2e outside Chromium weren't exercised here.
+
+**Owner actions**
+- Production data check before deploy: `SELECT count(*) FROM loop_clips WHERE trainer IS NOT NULL;` must be 0.
+- If production has a `feature_flags` row for `v1.speed_trainer`, it overrides the new default: `SELECT key, enabled FROM feature_flags WHERE key = 'v1.speed_trainer';` and set it to `true` (or delete the row) to turn the ladder on there.
+
+**Next**
+- s38: Fix mode and the queue replace today's editor in the Fix tab. `PASS_RATED` (not `ASSESSED`) is the machine's event for a rated pass; `practice.selectClip(clip)` loads a saved clip with its ladder; `practice.ladder` is the ladder's view (rungs, current, pass, of, nextPct, speedPct) for anything that shows it (s39's "Ladder at 75 % → 100 %", s43's Tools sheet).

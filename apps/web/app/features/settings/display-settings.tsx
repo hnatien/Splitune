@@ -278,6 +278,8 @@ function PracticeDefaultsSection() {
   const defaults = usePracticeDefaults()
   const speed = useSaveState()
   const speedId = useId()
+  const ladder = useSaveState()
+  const ladderId = useId()
   const set = (patch: Partial<PracticeDefaults>) => defaults.update(patch)
   const rests: Record<z.infer<typeof RestBetween>, string> = {
     none: m['settings.rest_none'](),
@@ -301,6 +303,37 @@ function PracticeDefaultsSection() {
               onValueChange={(value) => value !== null && speed.run(() => set({ speedPct: value }))}
             />
           </SettingRow>
+        </Card>
+        <Card className="gap-2 p-3.5">
+          <SettingRow
+            label={m['ladder.title']()}
+            hint={
+              defaults.ladderCleanPasses === 1
+                ? m['ladder.setting_value_one']()
+                : m['ladder.setting_value']({ passes: String(defaults.ladderCleanPasses) })
+            }
+            htmlFor={ladderId}
+            state={ladder.state}
+          >
+            <NumberField
+              id={ladderId}
+              min={1}
+              max={20}
+              step={1}
+              value={defaults.ladderCleanPasses}
+              decrementLabel={m['ladder.fewer_passes']()}
+              incrementLabel={m['ladder.more_passes']()}
+              onValueChange={(value) =>
+                value !== null && ladder.run(() => set({ ladderCleanPasses: Math.round(value) }))
+              }
+            />
+          </SettingRow>
+          <SwitchSetting
+            label={m['ladder.setting_new_loops']()}
+            hint={m['ladder.setting_goal']()}
+            checked={defaults.ladderNewLoops}
+            onChange={(on) => set({ ladderNewLoops: on })}
+          />
         </Card>
         <Card className="gap-2 p-3.5">
           <SegmentSetting

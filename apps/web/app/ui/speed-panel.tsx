@@ -4,8 +4,9 @@ import { SPEED_FINE_STEP } from '@/ui/speed-control'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
 // SpeedControl's popover (doc 26 §12.2): the slider and the presets 50 · 60 · 70 · 75 · 80 · 90 · 100
-// as a segmented group (`.seg`). The presets alone may also sit inline in the transport bar from
-// `2xl` (tablets until s43; the desktop dock has no room for them).
+// as a segmented group (`.seg`), and the speed ladder's goal in words while it is on. The presets
+// alone may also sit inline in the transport bar from `2xl` (tablets until s43; the desktop dock
+// has no room for them).
 
 export const SPEED_PRESETS = [50, 60, 70, 75, 80, 90, 100] as const
 
@@ -53,12 +54,15 @@ export function SpeedPanel({
   max,
   onValueChange,
   labels,
+  goal,
 }: {
   value: number
   min: number
   max: number
   onValueChange: (value: number) => void
   labels: { speed: string; presets: string }
+  /** "ladder goal 100 %" while the speed ladder is on. */
+  goal?: string | undefined
 }) {
   return (
     <PopoverContent
@@ -80,6 +84,9 @@ export function SpeedPanel({
         label={labels.presets}
         className="w-full justify-between"
       />
+      {goal && (
+        <p className="text-sm text-muted-foreground first-letter:uppercase tabular-nums">{goal}</p>
+      )}
     </PopoverContent>
   )
 }

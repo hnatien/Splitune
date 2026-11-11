@@ -106,6 +106,16 @@ const LOOP = {
   end_s: 10.1,
 }
 
+const LADDER = {
+  start_pct: 70,
+  end_pct: 100,
+  step_pct: 5,
+  plays_per_step: 3,
+  count_in_each_pass: true,
+  drop_after_misses: 2,
+  on_goal: 'keep',
+}
+
 describe('loop clips', () => {
   let loopId: string
 
@@ -147,6 +157,88 @@ describe('loop clips', () => {
       start_s: 20,
     })
     expect(patched.status).toBe(400)
+  })
+
+  it('stores the speed ladder with its miss rule, end action and position', async () => {
+    const created = await alice.request('POST', `/v1/songs/${songId}/loops`, {
+      ...LOOP,
+      trainer: LADDER,
+    })
+    expect(created.status).toBe(201)
+    const clip = await json<{ id: string; trainer: unknown }>(created)
+    expect(clip.trainer).toEqual(LADDER)
+    const climbed = { ...LADDER, on_goal: 'stop', current_pct: 75, clean_count: 2, miss_count: 1 }
+    const patched = await alice.request('PATCH', `/v1/songs/${songId}/loops/${clip.id}`, {
+      trainer: climbed,
+    })
+    expect(patched.status).toBe(200)
+    const list = await json<{ items: { id: string; trainer: unknown }[] }>(
+      await alice.request('GET', `/v1/songs/${songId}/loops`),
+    )
+    expect(list.items.find((item) => item.id === clip.id)?.trainer).toEqual(climbed)
+    const off = await alice.request('PATCH', `/v1/songs/${songId}/loops/${clip.id}`, {
+      trainer: null,
+    })
+    expect((await json<{ trainer: unknown }>(off)).trainer).toBeNull()
+    expect((await alice.request('DELETE', `/v1/songs/${songId}/loops/${clip.id}`)).status).toBe(204)
+  })
+
+  it('refuses a ladder outside its limits', async () => {
+    const refused: Record<string, unknown>[] = [
+      { start_pct: 24 },
+      { end_pct: 201 },
+      { step_pct: 0 },
+      { step_pct: 51 },
+      { plays_per_step: 0 },
+      { plays_per_step: 21 },
+      { drop_after_misses: -1 },
+      { drop_after_misses: 6 },
+      { on_goal: 'restart' },
+      { current_pct: 20 },
+      { clean_count: 21 },
+      { miss_count: 6 },
+      { start_pct: 90, end_pct: 80 },
+    ]
+    for (const patch of refused) {
+      const res = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+        trainer: { ...LADDER, ...patch },
+      })
+      expect(res.status, JSON.stringify(patch)).toBe(400)
+    }
+    const { drop_after_misses: _misses, ...old } = LADDER
+    const missing = await alice.request('POST', `/v1/songs/${songId}/loops`, {
+      ...LOOP,
+      trainer: old,
+    })
+    expect(missing.status).toBe(400)
+    const edges = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      trainer: { ...LADDER, start_pct: 25, end_pct: 200, step_pct: 50, plays_per_step: 20 },
+    })
+    expect(edges.status).toBe(200)
+    const cleared = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      trainer: null,
+    })
+    expect(cleared.status).toBe(200)
+  })
+
+  it('lets only the owner rename or delete a clip', async () => {
+    const renamed = await bob.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      name: 'Mine now',
+    })
+    expect(renamed.status).toBe(404)
+    expect((await bob.request('DELETE', `/v1/songs/${songId}/loops/${loopId}`)).status).toBe(404)
+    const mine = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      name: '  Bridge bends ',
+    })
+    expect((await json<{ name: string }>(mine)).name).toBe('Bridge bends')
+    const blank = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      name: '   ',
+    })
+    expect(blank.status).toBe(400)
+    const list = await json<{ items: { id: string; name: string }[] }>(
+      await alice.request('GET', `/v1/songs/${songId}/loops`),
+    )
+    expect(list.items).toMatchObject([{ id: loopId, name: 'Bridge bends' }])
   })
 
   it('keeps clips of other songs and users out of reach', async () => {

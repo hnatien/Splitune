@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
+import { Toaster } from '@/ui/toast'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { EditPage } from './edit-page'
 import { GlanceView } from './glance-view'
@@ -28,7 +29,10 @@ import {
   PIANO_SUMMARY,
   PIANO_SUMMARY_BELOW_GATE,
   SONG_ID,
+  type StoryClip,
   seed,
+  storyClip,
+  storyLadder,
   tone,
   VOCAL_LINE,
   VOCAL_STEMS,
@@ -1137,8 +1141,8 @@ export const BassLevel: Story = {
   },
 }
 
-/** The loop pill opens the Loop tab: bars, the quick moves, fine-tune, between repeats, clear
- * (27 §3.7.4; the ladder is s37's). */
+/** The loop pill opens the Loop tab: bars, the quick moves, fine-tune, the speed ladder, between
+ * repeats, clear (27 §3.7.4). */
 export const LoopOptions: Story = {
   render: screen(ALL, {}, { loop: '5-6' }),
   play: async ({ canvasElement }) => {
@@ -2218,5 +2222,403 @@ export const GettingReady1180: Story = {
     await expect(
       await canvas.findByRole('region', { name: m['practice.getting_ready']() }),
     ).toBeVisible()
+  },
+}
+
+// ── The speed ladder and saved clips (27 §3.7.4, 12 §5, Main.dc.html; s37) ──────────────────────
+// The song opens on its saved clip "Chorus riff" (bars 5–6) with the Loop tab showing; the clip's
+// stored trainer puts the ladder where each story needs it.
+type Trainer = NonNullable<StoryClip['trainer']>
+const BRIDGE = storyClip(2, 'Bridge bends', 3, 4, { best_clean_tempo_pct: 65 })
+const ladderScreen = (trainer: Trainer | null, patch: Patch = {}) =>
+  screen(
+    ALL,
+    {
+      clips: [storyClip(1, 'Chorus riff', 5, 6, { trainer, best_clean_tempo_pct: 80 }), BRIDGE],
+      ...patch,
+    },
+    { tab: 'loop' },
+  )
+
+const ladderCard = async (canvasElement: HTMLElement) => {
+  const canvas = await playable(canvasElement)
+  const panel = await canvas.findByRole('tabpanel')
+  const card = await within(panel).findByRole(
+    'region',
+    { name: m['ladder.title']() },
+    { timeout: 10_000 },
+  )
+  const hud = () => canvasElement.ownerDocument.querySelector('[data-slot=pedal-hud]')
+  /** The dock's readout once its number has counted to the new speed (26 §10). */
+  const speedIs = (pct: number) =>
+    waitFor(() =>
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(
+        new RegExp(`^${pct}\\s%`),
+      ),
+    )
+  return { canvas, panel, card: within(card), hud, speedIs }
+}
+
+/** Ladder off: the card keeps its switch and says what the ladder does. Switching it on starts
+ * from the clip's best clean pass (80 %) and says so in the PedalHud. */
+export const LadderOff: Story = {
+  render: ladderScreen(null),
+  play: async ({ canvasElement }) => {
+    const { canvas, card, hud, speedIs } = await ladderCard(canvasElement)
+    const toggle = card.getByRole('switch', { name: m['ladder.title']() })
+    await expect(toggle).not.toBeChecked()
+    await expect(card.getByText(m['ladder.off_hint']())).toBeVisible()
+    await expect(card.queryByRole('img')).toBeNull()
+    await userEvent.click(toggle)
+    await expect(
+      await card.findByRole('img', { name: '80 percent now, 85 percent next' }),
+    ).toBeVisible()
+    await waitFor(() => expect(hud()).toHaveTextContent(/Speed 80\s% · ladder/))
+    await expect(await canvas.findByRole('button', { name: /^Speed: 80\s%.*→ 100/ })).toBeVisible()
+    await speedIs(80)
+  },
+}
+
+/** 'On for new loops' in Settings (off by default): a new loop starts on the ladder at 70 %, and
+ * a learner already slower than that keeps their speed as the first rung. */
+export const LadderOnForNewLoops: Story = {
+  beforeEach: () => {
+    usePracticeDefaults.getState().update({ ladderNewLoops: true })
+    return () => usePracticeDefaults.getState().update({ ladderNewLoops: false })
+  },
+  render: screen(ALL, {}, { loop: '5-6', tab: 'loop' }),
+  play: async ({ canvasElement }) => {
+    const { canvas, card, hud, speedIs } = await ladderCard(canvasElement)
+    await expect(
+      await card.findByRole('img', { name: '70 percent now, 75 percent next' }),
+    ).toBeVisible()
+    await waitFor(() => expect(hud()).toHaveTextContent(/Speed 70\s% · ladder/))
+    await expect(await canvas.findByRole('button', { name: /^Speed: 70\s%.*→ 100/ })).toBeVisible()
+    await speedIs(70)
+  },
+}
+
+/** A new loop with the setting off (the default): the card is there, the ladder is off and the
+ * speed stays where it was. */
+export const LadderOffForNewLoops: Story = {
+  render: screen(ALL, {}, { loop: '5-6', tab: 'loop' }),
+  play: async ({ canvasElement }) => {
+    const { canvas, card } = await ladderCard(canvasElement)
+    await expect(card.getByRole('switch', { name: m['ladder.title']() })).not.toBeChecked()
+    await expect(canvas.getByRole('button', { name: /^Speed: 100\s%/ })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /→ 100/ })).toBeNull()
+  },
+}
+
+/** On, at the first rung: nothing done yet, the summary names the pass that moves up. */
+export const LadderAtStart: Story = {
+  render: ladderScreen(storyLadder()),
+  play: async ({ canvasElement }) => {
+    const { canvas, card, speedIs } = await ladderCard(canvasElement)
+    await expect(card.getByRole('switch', { name: m['ladder.title']() })).toBeChecked()
+    await expect(card.getByRole('img', { name: '70 percent now, 75 percent next' })).toBeVisible()
+    await expect(
+      card.getByText(
+        /^Up 5\s% after 3 clean passes\. Clean pass 1 of 3 at 70\s%\. Pass 3 moves you to 75\s%\.$/,
+      ),
+    ).toBeVisible()
+    // The dock: the loop pill names the pass and the readout the goal (27 §3.7.1).
+    await expect(
+      canvas.getByRole('button', { name: /^Loop · bars 5–6, pass 1 of 3 at 70\s%/ }),
+    ).toBeVisible()
+    await expect(
+      await canvas.findByRole('button', {
+        name: /^Speed: 70\s% · 70\sBPM · → 100, ladder goal 100\s%$/,
+      }),
+    ).toBeVisible()
+    await speedIs(70)
+  },
+}
+
+/** Climbing (Main.dc.html): 70 done, 75 current. Two more clean passes (C) move it to 80 %: the
+ * rungs, the summary, the loop bracket and the PedalHud all say so. */
+export const LadderClimbing: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 75, clean_count: 1 })),
+  play: async ({ canvasElement }) => {
+    const { canvas, card, hud, speedIs } = await ladderCard(canvasElement)
+    await expect(
+      card.getByRole('img', { name: '70 percent done, 75 percent now, 80 percent next' }),
+    ).toBeVisible()
+    await expect(
+      card.getByText(/Clean pass 2 of 3 at 75\s%\. Pass 3 moves you to 80\s%\.$/),
+    ).toBeVisible()
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-slot=loop-badge]')).toHaveTextContent(
+        /Loop · bars 5–6 · pass 2 of 3 at 75\s%/,
+      ),
+    )
+    await userEvent.keyboard('c')
+    await expect(
+      await card.findByText(/Clean pass 3 of 3 at 75\s% moves you to 80\s%\.$/),
+    ).toBeVisible()
+    await userEvent.keyboard('c')
+    await expect(
+      await card.findByRole('img', {
+        name: '70 and 75 percent done, 80 percent now, 85 percent next',
+      }),
+    ).toBeVisible()
+    await waitFor(() => expect(hud()).toHaveTextContent(/Speed 80\s% · ladder/))
+    await expect(await canvas.findByRole('button', { name: /^Speed: 80\s%/ })).toBeVisible()
+    await speedIs(80)
+  },
+}
+
+/** Dropping back: two "Not yet" in a row (N) at 80 % go down one rung to 75 %. */
+export const LadderDroppingBack: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 80, clean_count: 1 })),
+  play: async ({ canvasElement }) => {
+    const { card, hud, speedIs } = await ladderCard(canvasElement)
+    await expect(
+      card.getByRole('img', { name: '70 and 75 percent done, 80 percent now, 85 percent next' }),
+    ).toBeVisible()
+    await userEvent.keyboard('n')
+    await expect(card.getByRole('img', { name: /80 percent now/ })).toBeVisible()
+    await userEvent.keyboard('n')
+    await expect(
+      await card.findByRole('img', { name: '70 percent done, 75 percent now, 80 percent next' }),
+    ).toBeVisible()
+    await waitFor(() => expect(hud()).toHaveTextContent(/Speed 75\s% · ladder/))
+    await expect(card.getByText(/Clean pass 1 of 3 at 75\s%/)).toBeVisible()
+    await speedIs(75)
+  },
+}
+
+/** At the goal, keep looping: every rung before it done, and the summary says it keeps going. */
+export const LadderAtGoalKeep: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 100, clean_count: 3 })),
+  play: async ({ canvasElement }) => {
+    const { canvas, card, speedIs } = await ladderCard(canvasElement)
+    await expect(
+      card.getByRole('img', { name: '70 to 95 percent done, at the goal of 100 percent' }),
+    ).toBeVisible()
+    await expect(
+      card.getByText(/You're at the goal: the loop keeps going at 100\s%\.$/),
+    ).toBeVisible()
+    await userEvent.keyboard('c')
+    await expect(await canvas.findByRole('button', { name: /^Speed: 100\s%/ })).toBeVisible()
+    await speedIs(100)
+  },
+}
+
+/** At the goal with Stop chosen: the last clean pass ends the loop. */
+export const LadderAtGoalStop: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 100, clean_count: 2, on_goal: 'stop' })),
+  play: async ({ canvasElement }) => {
+    const { card, speedIs } = await ladderCard(canvasElement)
+    await expect(card.getByText(/Clean pass 3 of 3 at 100\s% ends the loop\.$/)).toBeVisible()
+    await speedIs(100)
+  },
+}
+
+/** Long values: Goal 110 %, Step 1 %, 12 clean passes. 61 rungs show as the nine around the
+ * current one, the chips wrap, and nothing spills out of the card. */
+export const LadderLongValues: Story = {
+  render: ladderScreen(
+    storyLadder({
+      start_pct: 50,
+      end_pct: 110,
+      step_pct: 1,
+      plays_per_step: 12,
+      current_pct: 78,
+      clean_count: 11,
+    }),
+  ),
+  play: async ({ canvasElement }) => {
+    const { canvas, panel, card, speedIs } = await ladderCard(canvasElement)
+    await expect(
+      card.getByRole('img', { name: '50 to 77 percent done, 78 percent now, 79 percent next' }),
+    ).toBeVisible()
+    await expect(card.getByRole('button', { name: /^Goal 110\s%$/ })).toBeVisible()
+    await expect(card.getByRole('button', { name: /^Step 1\s%$/ })).toBeVisible()
+    await expect(card.getByRole('button', { name: '12 clean passes' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /→ 110/ })).toBeVisible()
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth)
+    await speedIs(78)
+  },
+}
+
+/** Each chip opens its stepper (48 px halves, 26 §8); a step changes the ladder at once. */
+export const LadderChips: Story = {
+  render: ladderScreen(storyLadder()),
+  play: async ({ canvasElement }) => {
+    const { card, speedIs } = await ladderCard(canvasElement)
+    const chips = card.getAllByRole('button')
+    await expect(chips.map((chip) => chip.textContent?.replace(/\s/g, ' '))).toEqual([
+      'Start 70 %',
+      'Goal 100 %',
+      'Step 5 %',
+      '3 clean passes',
+      'More',
+    ])
+    for (const chip of chips) await atLeast(chip, 48)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(card.getByRole('button', { name: '3 clean passes' }))
+    const fewer = await body.findByRole('button', { name: m['ladder.fewer_passes']() })
+    // Popups zoom in (26 §10): measured once they have settled.
+    await waitFor(() => atLeast(fewer, 48))
+    await atLeast(body.getByRole('button', { name: m['ladder.more_passes']() }), 48)
+    await userEvent.click(fewer)
+    await expect(await card.findByRole('button', { name: '2 clean passes' })).toBeVisible()
+    await expect(card.getByText(/^Up 5\s% after 2 clean passes\./)).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    // Raising the start past the speed moves the loop onto the new first rung.
+    await userEvent.click(card.getByRole('button', { name: /^Start 70\s%$/ }))
+    await userEvent.click(await body.findByRole('button', { name: m['ladder.start_raise']() }))
+    await expect(
+      await card.findByRole('img', { name: '75 percent now, 80 percent next' }),
+    ).toBeVisible()
+    await speedIs(75)
+  },
+}
+
+/** More: back down after misses (0 turns it off), count-in before each pass, at the goal. */
+export const LadderMore: Story = {
+  render: ladderScreen(storyLadder()),
+  play: async ({ canvasElement }) => {
+    const { card, speedIs } = await ladderCard(canvasElement)
+    await userEvent.click(card.getByRole('button', { name: m['ladder.chip_more']() }))
+    const body = within(canvasElement.ownerDocument.body)
+    const fewer = await body.findByRole('button', { name: m['ladder.fewer_misses']() })
+    await waitFor(() =>
+      expect(body.getByText('After 2 misses in a row, one step down.')).toBeVisible(),
+    )
+    await userEvent.click(fewer)
+    await userEvent.click(fewer)
+    await waitFor(() => expect(body.getByText(m['ladder.back_down_off']())).toBeVisible())
+    await expect(body.getByRole('switch', { name: m['ladder.count_in_each']() })).toBeChecked()
+    await userEvent.click(body.getByRole('button', { name: m['ladder.on_goal_stop']() }))
+    await waitFor(() =>
+      expect(body.getByRole('button', { name: m['ladder.on_goal_stop']() })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    )
+    await speedIs(70)
+  },
+}
+
+/** The ladder in Daylight at 1440: done rungs carry the 1 px edge (V16). */
+export const LadderDaylight: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 80 })),
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
+  play: async ({ canvasElement }) => {
+    const { card, speedIs } = await ladderCard(canvasElement)
+    const ladder = card.getByRole('img', { name: /80 percent now/ })
+    const done = ladder.querySelector('[data-state=done]') as HTMLElement
+    const upcoming = ladder.querySelector('[data-state=upcoming]') as HTMLElement
+    await expect(getComputedStyle(done).boxShadow).not.toBe('none')
+    await expect(getComputedStyle(upcoming).boxShadow).toBe('none')
+    await speedIs(80)
+  },
+}
+
+/** The ladder at 1180 (Main.dc.html's narrower frame). */
+export const Ladder1180: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 75, clean_count: 1 })),
+  globals: { viewport: { value: 'desktop1180' } },
+  play: async ({ canvasElement }) => {
+    const { panel, card, speedIs } = await ladderCard(canvasElement)
+    await expect(card.getByRole('img', { name: /75 percent now/ })).toBeVisible()
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth)
+    await speedIs(75)
+  },
+}
+
+export const LadderIncreasedContrast: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 80 })),
+  globals: { contrast: 'more' },
+  play: async ({ canvasElement }) => {
+    const { card, speedIs } = await ladderCard(canvasElement)
+    await expect(card.getByRole('img', { name: /80 percent now/ })).toBeVisible()
+    await speedIs(80)
+  },
+}
+
+/** Reduced motion: a step still shows at once (the rungs change state, nothing slides). */
+export const LadderReducedMotion: Story = {
+  render: ladderScreen(storyLadder({ current_pct: 75, clean_count: 2 })),
+  globals: { motion: 'reduce' },
+  play: async ({ canvasElement }) => {
+    const { card, speedIs } = await ladderCard(canvasElement)
+    await userEvent.keyboard('c')
+    await expect(await card.findByRole('img', { name: /80 percent now/ })).toBeVisible()
+    await speedIs(80)
+  },
+}
+
+/** `v1.speed_trainer` off: no ladder card, no goal in the readout; the rest of the tab stays. */
+export const LadderFlagOff: Story = {
+  render: ladderScreen(storyLadder(), { ladderFlagOff: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const panel = await canvas.findByRole('tabpanel')
+    await expect(
+      await within(panel).findByRole('heading', { name: 'Bars 5–6' }, { timeout: 10_000 }),
+    ).toBeVisible()
+    await expect(within(panel).queryByRole('region', { name: m['ladder.title']() })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /→ 100/ })).toBeNull()
+    await expect(within(panel).getByText('Chorus riff')).toBeVisible()
+  },
+}
+
+/** Saved clips: the amber dot on the one playing, "bars 5–6 · best 80 %", and a More menu per
+ * row. Another clip's row loops it as it was left (no ladder on that one). */
+export const SavedClips: Story = {
+  render: ladderScreen(storyLadder()),
+  play: async ({ canvasElement }) => {
+    const { panel } = await ladderCard(canvasElement)
+    const chorus = within(panel).getByRole('button', { name: /^Chorus riff/ })
+    await expect(chorus).toHaveAttribute('aria-current', 'true')
+    await expect(chorus).toHaveTextContent(/bars 5–6 · best 80\s%/)
+    await atLeast(within(panel).getByRole('button', { name: 'More for Chorus riff' }), 48)
+    await userEvent.click(within(panel).getByRole('button', { name: /^Bridge bends/ }))
+    await expect(await within(panel).findByRole('heading', { name: 'Bars 3–4' })).toBeVisible()
+    await expect(within(panel).getByRole('switch', { name: m['ladder.title']() })).not.toBeChecked()
+  },
+}
+
+/** Rename in progress: the row's name becomes a field holding the old name, selected. Escape
+ * keeps the name. */
+export const ClipRename: Story = {
+  render: ladderScreen(storyLadder()),
+  play: async ({ canvasElement }) => {
+    const { panel } = await ladderCard(canvasElement)
+    await userEvent.click(within(panel).getByRole('button', { name: 'More for Bridge bends' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: m['practice.clip_rename']() }))
+    const field = await within(panel).findByRole('textbox', { name: 'New name for Bridge bends' })
+    await waitFor(() => expect(field).toHaveFocus())
+    await expect(field).toHaveValue('Bridge bends')
+    await userEvent.keyboard('Bridge, slower')
+    await expect(field).toHaveValue('Bridge, slower')
+    await expect(
+      within(panel).getByRole('button', { name: m['practice.clip_rename_save']() }),
+    ).toBeEnabled()
+  },
+}
+
+/** Delete with Undo (26 §8: undoable, no confirm): the row goes at once, the toast offers Undo,
+ * and Undo brings the same clip back. */
+export const ClipDeleteUndo: Story = {
+  render: () => <Toaster closeLabel={m['system.close']()}>{ladderScreen(storyLadder())()}</Toaster>,
+  play: async ({ canvasElement }) => {
+    const { panel } = await ladderCard(canvasElement)
+    await userEvent.click(within(panel).getByRole('button', { name: 'More for Bridge bends' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: m['practice.clip_delete']() }))
+    await waitFor(() =>
+      expect(within(panel).queryByRole('button', { name: /^Bridge bends/ })).toBeNull(),
+    )
+    await expect(await body.findByText('Deleted Bridge bends')).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: m['practice.clip_undo']() }))
+    await expect(await within(panel).findByRole('button', { name: /^Bridge bends/ })).toBeVisible()
+    await expect(within(panel).getByRole('button', { name: /^Bridge bends/ })).toHaveTextContent(
+      /bars 3–4 · best 65\s%/,
+    )
   },
 }

@@ -322,6 +322,8 @@ describe('feature flags', () => {
           step_pct: 5,
           plays_per_step: 2,
           count_in_each_pass: false,
+          drop_after_misses: 2,
+          on_goal: 'keep',
         },
       }
       const refused = await user.request('POST', `/v1/songs/${song.song_id}/loops`, loop)

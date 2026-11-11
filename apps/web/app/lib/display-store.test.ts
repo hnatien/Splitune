@@ -90,9 +90,16 @@ describe('stored practice defaults from earlier shapes', () => {
       melodyLabels: 'degrees',
       melodyWindow: 'whole',
     }
+    // What that shape never stored takes today's defaults: Line, and the speed ladder's (s37).
     expect({ ...DEFAULT_PRACTICE, ...sanitizePractice(before) }).toEqual({
       ...before,
       playhead: 'line',
+      ladderNewLoops: false,
+      ladderCleanPasses: 3,
+    })
+    expect(sanitizePractice({ ladderNewLoops: true, ladderCleanPasses: 40 })).toEqual({
+      ladderNewLoops: true,
+      ladderCleanPasses: 20,
     })
   })
 

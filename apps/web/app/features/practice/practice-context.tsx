@@ -1,4 +1,4 @@
-import { instrumentProfile, type LoopClip } from '@splitune/contracts'
+import { FLAGS, instrumentProfile, type LoopClip } from '@splitune/contracts'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActorRef, useSelector } from '@xstate/react'
 import type * as React from 'react'
@@ -9,6 +9,7 @@ import { usePlaybackActive } from '@/lib/app-state'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
+import { meQuery } from '@/lib/session'
 import { track, trackCorrection } from '@/lib/track'
 import { toast } from '@/ui/toast'
 import { localFile } from '../import/local-files'
@@ -31,6 +32,15 @@ import {
 } from './model/data'
 import type { Edit } from './model/edits'
 import { type PracticeGrid, practiceGrid } from './model/grid'
+import {
+  defaultLadder,
+  fromTrainer,
+  type Ladder,
+  type LadderSettings,
+  type LadderView,
+  ladderView,
+  toTrainer,
+} from './model/ladder'
 import { clipBeats, type LoopRange, restSeconds, tapBar } from './model/loops'
 import {
   limitToUnity,
@@ -95,6 +105,14 @@ export interface PracticeValue {
   clips: Clip[]
   clip: Clip | undefined
   best: number | null
+  /** Loops a saved clip as it was left: its bars, rest, count-in and speed ladder. */
+  selectClip: (clip: Clip) => void
+  /** The speed ladder is available (`v1.speed_trainer`, 16 §5). */
+  ladderEnabled: boolean
+  /** Where the loop's ladder stands (a move waiting for the seam already counts); null when off. */
+  ladder: (LadderView & { speedPct: number }) | null
+  /** Turns the loop's speed ladder on with these settings, changes them, or (null) turns it off. */
+  setLadder: (settings: LadderSettings | null) => void
   tapBar: (bar: number) => void
   /** `method`: how the learner made a new loop (16 §2 loop_created); none for adjustments. */
   setLoop: (range: LoopRange | null, method?: 'tap' | 'numeric' | 'clip') => void
@@ -407,12 +425,55 @@ export function PracticeProvider({
   const clip = clips.find((c) => c.id === clipId)
   const [best, setBest] = useState<number | null>(null)
   useEffect(() => setBest(clip?.best_clean_tempo_pct ?? null), [clip?.best_clean_tempo_pct])
+
+  // The speed ladder (12 §5, 21 V1): the machine holds it; the clip keeps it, place included, so
+  // a reload picks up on the same rung. Guests have no account flags: the declared default counts.
+  const me = useQuery(meQuery).data
+  const ladderEnabled = me?.flags['v1.speed_trainer'] ?? FLAGS['v1.speed_trainer'].default
+  /** The trainer to store now: a move waiting for the seam is already where the learner is. */
+  const trainerNow = () => {
+    const { ladder, speedPct, pendingSpeed } = actor.getSnapshot().context
+    return ladder ? toTrainer(ladder, pendingSpeed ?? speedPct) : null
+  }
+  const clipIdRef = useRef(clipId)
+  clipIdRef.current = clipId
+  const ladderTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // The loop's clip may still be on its way to the server: the ladder is saved once it has an id.
+  const ladderUnsaved = useRef(false)
+  const saveLadder = () => {
+    clearTimeout(ladderTimer.current)
+    ladderTimer.current = setTimeout(() => {
+      const loopId = clipIdRef.current
+      ladderUnsaved.current = !loopId
+      if (!loopId) return
+      void client.loops
+        .update({ id: songId, loop_id: loopId, trainer: trainerNow() })
+        .then((saved) =>
+          queryClient.setQueryData(
+            orpc.loops.list.queryKey({ input: { id: songId } }),
+            (list: { items: Clip[] } | undefined) =>
+              list && { items: list.items.map((c) => (c.id === saved.id ? saved : c)) },
+          ),
+        )
+        .catch(() => undefined)
+    }, 300)
+  }
+
+  useEffect(() => {
+    if (clipId && ladderUnsaved.current) saveLadder()
+  })
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const persistLoop = (range: LoopRange) => {
     if (!grid) return
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      const fields = { ...clipBeats(grid, range), start_s: range.start, end_s: range.end }
+      const fields = {
+        ...clipBeats(grid, range),
+        start_s: range.start,
+        end_s: range.end,
+        ...(ladderEnabled ? { trainer: trainerNow() } : {}),
+      }
       const reuse = clip && clip.name === null ? clip.id : null
       const request = reuse
         ? client.loops.update({ id: songId, loop_id: reuse, ...fields })
@@ -433,7 +494,35 @@ export function PracticeProvider({
     }, 500)
   }
 
+  /** Puts the ladder on the loop and the speed on its rung (never above the goal). */
+  const applyLadder = (ladder: Ladder, speedPct: number) => {
+    const pct = Math.min(ladder.settings.end_pct, speedPct)
+    if (pct !== actor.getSnapshot().context.speedPct) {
+      actor.send({ type: 'SET_SPEED', pct })
+      showHud(m['ladder.hud_speed']({ speed: formatPercent(pct) }))
+    }
+    actor.send({ type: 'SET_LADDER', ladder })
+  }
+
+  const setLadder = (settings: LadderSettings | null) => {
+    const { ladder, speedPct } = actor.getSnapshot().context
+    if (!settings) {
+      actor.send({ type: 'SET_LADDER', ladder: null })
+    } else if (!ladder) {
+      // Turned on: the loop starts on the ladder's first rung.
+      applyLadder({ settings, clean: 0, misses: 0 }, settings.start_pct)
+    } else {
+      // Settings changed: the counts stay; the speed only moves when it falls off the ladder.
+      applyLadder(
+        { ...ladder, settings, clean: Math.min(ladder.clean, settings.plays_per_step) },
+        Math.max(settings.start_pct, speedPct),
+      )
+    }
+    saveLadder()
+  }
+
   const setLoop = (range: LoopRange | null, method?: 'tap' | 'numeric' | 'clip') => {
+    const { loop: previous, speedPct } = actor.getSnapshot().context
     actor.send({ type: 'SET_LOOP', loop: range })
     if (range && method) {
       track('loop_created', { method, bars: range.endBar - range.startBar + 1 })
@@ -445,12 +534,63 @@ export function PracticeProvider({
         rest: player.rest,
         restSeconds: restSeconds(grid ?? null, range, player.rest),
       })
+      // A new loop gets the ladder when Settings say so (27 §3.9); it never speeds the learner
+      // up. A loop that is only moved or resized keeps what it had.
+      if (!previous && ladderEnabled && defaults.ladderNewLoops) {
+        const settings = defaultLadder(null, defaults.ladderCleanPasses, speedPct)
+        applyLadder({ settings, clean: 0, misses: 0 }, settings.start_pct)
+      }
       persistLoop(range)
       setBest(null)
     } else {
+      actor.send({ type: 'SET_LADDER', ladder: null })
       setClipId(null)
     }
   }
+
+  const selectClip = (saved: Clip) => {
+    clearTimeout(saveTimer.current)
+    setClipId(saved.id)
+    const range = {
+      startBar: saved.start_bar,
+      endBar: saved.end_bar,
+      start: saved.start_s,
+      end: saved.end_s,
+    }
+    actor.send({ type: 'SET_LOOP', loop: range })
+    actor.send({
+      type: 'SET_REST',
+      rest: saved.rest_between,
+      restSeconds: restSeconds(grid ?? null, range, saved.rest_between),
+    })
+    actor.send({
+      type: 'SET_COUNT_IN',
+      on: saved.count_in_bars > 0,
+      bars: Math.max(1, saved.count_in_bars),
+    })
+    usePracticeUi.setState({ promptPass: 0 })
+    if (saved.trainer && ladderEnabled) {
+      const { ladder, speedPct } = fromTrainer(saved.trainer)
+      applyLadder(ladder, speedPct)
+    } else {
+      actor.send({ type: 'SET_LADDER', ladder: null })
+    }
+  }
+
+  // The ladder moved the speed at a seam, or ended the loop at its goal: say so, keep the place.
+  const ladderMoves = player.ladderMoves.count
+  const ladderFinishes = player.ladderFinishes
+  const announced = useRef({ moves: 0, finishes: 0 })
+  useEffect(() => {
+    const context = actor.getSnapshot().context
+    if (ladderMoves > announced.current.moves) {
+      showHud(m['ladder.hud_speed']({ speed: formatPercent(context.speedPct) }))
+    }
+    if (ladderFinishes > announced.current.finishes) {
+      showHud(m['ladder.hud_goal']({ speed: formatPercent(context.speedPct) }))
+    }
+    announced.current = { moves: ladderMoves, finishes: ladderFinishes }
+  }, [ladderMoves, ladderFinishes, actor])
 
   // Resume (13 §5): search params first (bookmarkable), then the song's player_state.
   const resumed = useRef(false)
@@ -478,22 +618,7 @@ export function PracticeProvider({
     if (plan.loop && 'range' in plan.loop) {
       setLoop(plan.loop.range)
     } else if (plan.loop) {
-      const { clip: saved } = plan.loop
-      setClipId(saved.id)
-      actor.send({
-        type: 'SET_LOOP',
-        loop: {
-          startBar: saved.start_bar,
-          endBar: saved.end_bar,
-          start: saved.start_s,
-          end: saved.end_s,
-        },
-      })
-      actor.send({
-        type: 'SET_COUNT_IN',
-        on: saved.count_in_bars > 0,
-        bars: Math.max(1, saved.count_in_bars),
-      })
+      selectClip(plan.loop.clip)
     }
     if (plan.seek !== undefined) actor.send({ type: 'SEEK', seconds: plan.seek })
   })
@@ -597,6 +722,7 @@ export function PracticeProvider({
     actor.send({ type: 'SET_SPEED', pct: clamped })
     track('speed_changed', { speed_pct: clamped, input_mode: lastInput() })
     showHud(m['practice.hud_speed']({ speed: formatPercent(clamped) }))
+    if (player.ladder) saveLadder()
   }
 
   const togglePlay = () => {
@@ -619,8 +745,10 @@ export function PracticeProvider({
     track('loop_pass_completed', { tempo_pct: player.speedPct, outcome, input_mode: lastInput() })
     if (outcome === 'clean') setBest((previous) => Math.max(previous ?? 0, player.speedPct))
     usePracticeUi.setState({ promptPass: 0 })
-    if (state === 'assess') actor.send({ type: 'ASSESSED' })
     showHud(outcome === 'clean' ? m['practice.felt_clean']() : m['practice.not_yet']())
+    // The ladder counts the pass (and may move at the seam); a loop waiting for the answer goes on.
+    actor.send({ type: 'PASS_RATED', outcome })
+    if (player.ladder) saveLadder()
   }
 
   const artefactFor = (kind: Edit['kind']) =>
@@ -685,6 +813,16 @@ export function PracticeProvider({
     clips,
     clip,
     best,
+    selectClip,
+    ladderEnabled,
+    ladder:
+      player.ladder && player.loop
+        ? {
+            ...ladderView(player.ladder, player.pendingSpeed ?? player.speedPct),
+            speedPct: player.pendingSpeed ?? player.speedPct,
+          }
+        : null,
+    setLadder,
     tapBar: (bar) => {
       if (!grid) return
       noteInput('touch')
