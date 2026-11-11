@@ -1,4 +1,4 @@
-import type { Analysis, SongDetail } from '@splitune/contracts'
+import type { Analysis, LoopClip, SongDetail } from '@splitune/contracts'
 import beats from '@splitune/contracts/fixtures/beats.json'
 import chords from '@splitune/contracts/fixtures/chords.json'
 import notes from '@splitune/contracts/fixtures/notes.guitar.json'
@@ -71,6 +71,55 @@ export type Patch = {
   analysisFailed?: boolean
   /** The processing machine is offline while the analysis waits (27 §3.7.3). */
   workerOffline?: boolean
+  /** The song's saved clips; the first is the one left selected (resume, 13 §5). */
+  clips?: StoryClip[]
+  /** `v1.speed_trainer` switched off for this account (16 §5). */
+  ladderFlagOff?: boolean
+}
+
+export type StoryClip = z.infer<typeof LoopClip>
+
+/** A saved clip on the fixture's grid (4/4, bar n from 0.5 + 2.4 n s; bars are 1-based here). */
+export function storyClip(
+  n: number,
+  name: string | null,
+  from: number,
+  to: number,
+  patch: Partial<StoryClip> = {},
+): StoryClip {
+  return {
+    id: `00000000-0000-4000-a000-${String(n).padStart(12, '0')}`,
+    song_id: SONG_ID,
+    name,
+    start_bar: from - 1,
+    start_beat: 1,
+    end_bar: to - 1,
+    end_beat: 4,
+    start_s: 0.5 + 2.4 * (from - 1),
+    end_s: 0.5 + 2.4 * to,
+    rest_between: 'none',
+    count_in_bars: 1,
+    trainer: null,
+    best_clean_tempo_pct: null,
+    created_at: '2026-10-22T10:00:00Z',
+    ...patch,
+  }
+}
+
+/** The ladder's defaults (12 §5) as a stored trainer, at a place on it. */
+export function storyLadder(
+  patch: Partial<NonNullable<StoryClip['trainer']>> = {},
+): NonNullable<StoryClip['trainer']> {
+  return {
+    start_pct: 70,
+    end_pct: 100,
+    step_pct: 5,
+    plays_per_step: 3,
+    count_in_each_pass: true,
+    drop_after_misses: 2,
+    on_goal: 'keep',
+    ...patch,
+  }
 }
 
 // A piano song on the same 8 bars (4/4, bar n from 0.5 + 2.4 n s): E♭ major as the chord model
@@ -464,6 +513,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
       ...(patch.video ? { source_kind: 'url' as const } : {}),
       ...(patch.instrument ? { instrument: patch.instrument } : {}),
       ...(patch.savedView ? { player_state: { view: patch.savedView } } : {}),
+      ...(patch.clips?.[0] ? { player_state: { selected_loop_id: patch.clips[0].id } } : {}),
       duration_s: 20.5,
       artefacts: entries,
     }
@@ -475,7 +525,9 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     }
     client.setQueryData(orpc.songs.get.queryKey({ input: { id: song.id } }), song)
     client.setQueryData(orpc.analyses.get.queryKey({ input: { id: run.id } }), withArtefacts)
-    client.setQueryData(orpc.loops.list.queryKey({ input: { id: song.id } }), { items: [] })
+    client.setQueryData(orpc.loops.list.queryKey({ input: { id: song.id } }), {
+      items: patch.clips ?? [],
+    })
     client.setQueryData(statsQuery.queryKey, STATS)
     client.setQueryData(
       workerStatusQuery.queryKey,
@@ -486,7 +538,11 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
         instruments: patch.heard.map((instrument) => ({ instrument, present_prob: 0.9 })),
       })
     }
-    client.setQueryData(meQuery.queryKey, patch.leftHanded ? { ...ME, handedness: 'left' } : ME)
+    client.setQueryData(meQuery.queryKey, {
+      ...ME,
+      ...(patch.leftHanded ? { handedness: 'left' as const } : {}),
+      ...(patch.ladderFlagOff ? { flags: { 'v1.speed_trainer': false } } : {}),
+    })
     for (const kind of kinds) {
       client.setQueryData(
         orpc.artefacts.listCorrections.queryKey({ input: { id: artefactId(kind) } }),

@@ -22,7 +22,8 @@ import { useLoopPill, VolumeControl } from './transport-bar'
 // The transport dock (27 §3.7.1, 26 §7, §8, Main.dc.html; desktop): 96 px on --card holding the
 // main practice controls at 64 × 64 (V11) — Restart ("Restart loop" while looping, else "Back a
 // bar"), Play/Pause (amber), Next bar — the position (mono 22 "26.3" / 92 over "1:04 / 3:50"; a tap
-// switches bar.beat ↔ time), the loop pill (opens Loop), speed − / "75 %" "72 BPM" / +, then
+// switches bar.beat ↔ time), the loop pill (opens Loop), speed − / "75 %" "72 BPM · → 100" (the
+// ladder's goal while it is on) / +, then
 // Count-in (64), Click (52), the mix pill (52; "Your part loud" / "2 stems · click on", opens Mix;
 // "Mix" / "after your part is isolated" before the stems) and the volume (a slider; below 1440 px
 // the mix pill keeps its icon and the volume moves into a popover, so nothing wraps). Nothing here
@@ -138,7 +139,7 @@ function MixPill({ iconOnly }: { iconOnly: boolean }) {
 
 export function TransportDock({ roomy }: { roomy: boolean }) {
   const practice = usePractice()
-  const { player, state, layers, grid, audioStatus, send } = practice
+  const { player, state, layers, grid, audioStatus, send, ladder } = practice
   const promptPass = usePracticeUi((s) => s.promptPass)
   const playing = PLAYING.has(state)
   const loopActive = player.loop !== null
@@ -192,6 +193,14 @@ export function TransportDock({ roomy }: { roomy: boolean }) {
         value={player.speedPct}
         onValueChange={(value) => practice.setSpeed(value)}
         bpm={grid?.bpm}
+        goal={
+          ladder
+            ? {
+                text: m['ladder.goal_readout']({ goal: String(ladder.rungs.at(-1)) }),
+                label: m['ladder.goal_label']({ speed: formatPercent(ladder.rungs.at(-1) ?? 100) }),
+              }
+            : undefined
+        }
         inlinePresets={false}
         labels={{
           speed: m['practice.speed'](),

@@ -38,6 +38,11 @@ export type PracticeDefaults = {
   showUncertainty: boolean
   /** Stop after each pass until "Felt clean" / "Not yet" is chosen (12 §6 Assess). */
   passPrompt: boolean
+  /** A new loop starts with the speed ladder on (27 §3.9, 12 §5). Off until the learner asks
+   * for it (owner, s37): the ladder slows a loop down and counts in before each pass. */
+  ladderNewLoops: boolean
+  /** Clean passes before the ladder moves up a step (D3: 3; the contract allows 1–20). */
+  ladderCleanPasses: number
   /** Notation follows the music (12 §3): page turns, continuous scroll under a fixed now-line,
    * or not at all (reading and fixing). Reduced motion allows Page only. */
   notationLayout: FollowMode
@@ -66,6 +71,8 @@ export const DEFAULT_PRACTICE: PracticeDefaults = {
   restBetween: 'none',
   showUncertainty: true,
   passPrompt: false,
+  ladderNewLoops: false,
+  ladderCleanPasses: 3,
   notationLayout: 'page',
   playhead: 'line',
   soundDelayMs: 0,
@@ -105,6 +112,8 @@ export function sanitizePractice(stored: unknown): Partial<PracticeDefaults> {
   choice('restBetween', ['none', 'beat', 'bar'] as const)
   flag('showUncertainty')
   flag('passPrompt')
+  flag('ladderNewLoops')
+  number('ladderCleanPasses', 1, 20)
   choice('notationLayout', FOLLOW_MODES)
   choice('playhead', PLAYHEAD_STYLES)
   number('soundDelayMs', -MAX_SOUND_DELAY_MS, MAX_SOUND_DELAY_MS)

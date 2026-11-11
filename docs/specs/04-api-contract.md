@@ -81,7 +81,7 @@ Codes and statuses live in `packages/contracts/src/api/errors.ts` (`ERROR_STATUS
 |---|---|---|
 | `GET /v1/artefacts/{id}/corrections?after_rev=` | Ops since rev | |
 | `POST /v1/artefacts/{id}/corrections` | Batch `{ ops: [{ client_op_id, op }] }` → `{ applied: [{client_op_id, rev}] }` | Ops validated with `CorrectionOp` |
-| `GET/POST/PATCH/DELETE /v1/songs/{id}/loops` | Loop clips CRUD | |
+| `GET/POST/PATCH/DELETE /v1/songs/{id}/loops` | Loop clips CRUD | `trainer` is the speed ladder (`21` V1): `start_pct`, `end_pct`, `step_pct`, `plays_per_step` (clean passes per step), `count_in_each_pass`, `drop_after_misses` (0–5), `on_goal` (`keep` / `stop`) and the optional place `current_pct`, `clean_count`, `miss_count`; refused with `trainer` / `feature_disabled` while `v1.speed_trainer` is off and with `trainer.end_pct` / `empty_range` when the goal is below the start (s37) |
 | `POST /v1/practice/sync` | Batch `{ sessions[], attempts[] }` with client ids | Offline-safe; server dedupes |
 | `GET /v1/progress?song_id=` | Per-clip best clean tempo, attempts over time | |
 

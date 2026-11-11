@@ -45,7 +45,7 @@ const PLAYING = new Set(['countIn', 'playing', 'loopRest', 'assess', 'audition']
 /** The loop pill's state and words (27 §3.7.1): "Loop · bars 25–28" / "pass 2 · rest 1 beat"; off
  * "No loop" / "tap two bars, or a section"; armed "Loop · from bar 17, tap the last bar". */
 export function useLoopPill(): { state: LoopState; text: string; detail?: string } {
-  const { player, state, layers } = usePractice()
+  const { player, state, layers, ladder } = usePractice()
   const selection = usePracticeUi((s) => s.selection)
   const loop = player.loop
   if (selection.kind === 'armed') {
@@ -58,13 +58,21 @@ export function useLoopPill(): { state: LoopState; text: string; detail?: string
   const detail = !player.loopOn
     ? m['practice.hud_loop_off']()
     : [
-        player.pass > 0 ? m['practice.loop_pass']({ pass: String(player.pass) }) : '',
+        ladder
+          ? m['practice.loop_pass_ladder']({
+              pass: String(ladder.pass),
+              of: String(ladder.of),
+              speed: formatPercent(ladder.speedPct),
+            })
+          : player.pass > 0
+            ? m['practice.loop_pass']({ pass: String(player.pass) })
+            : '',
         player.rest === 'beat'
           ? m['practice.loop_rest_beat']()
           : player.rest === 'bar'
             ? m['practice.loop_rest_bar']()
             : '',
-        !layers.stems && player.pass === 0 && player.rest === 'none'
+        !layers.stems && !ladder && player.pass === 0 && player.rest === 'none'
           ? m['practice.loop_original']()
           : '',
       ]

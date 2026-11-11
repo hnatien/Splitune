@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { QueryClient } from '@tanstack/react-query'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import type { z } from 'zod'
-import { useDisplay } from '@/lib/display-store'
+import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
 import { meQuery } from '@/lib/session'
 import { DEFAULT_DISPLAY } from '@/ui/display'
 import { AppStory } from '../../../.storybook/app.tsx'
@@ -65,6 +65,25 @@ export const Display: Story = {
 export const DisplayDaylight: Story = {
   render: () => shell('display', <DisplaySettings me={ME} />),
   globals: DAYLIGHT,
+}
+/** Practice defaults → Speed ladder (27 §3.9, D3): '+5 % after 3 clean passes', a stepper for the
+ * passes, and 'On for new loops' (off until the learner turns it on). */
+export const DisplayLadderDefault: Story = {
+  render: () => shell('display', <DisplaySettings me={ME} />),
+  beforeEach: () => () =>
+    usePracticeDefaults.getState().update({ ladderCleanPasses: 3, ladderNewLoops: false }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(/^\+5\s% after 3 clean passes$/)).toBeVisible()
+    await expect(canvas.getByText(/^Up to 100\s%$/)).toBeVisible()
+    const newLoops = canvas.getByRole('switch', { name: 'On for new loops' })
+    await expect(newLoops).not.toBeChecked()
+    await userEvent.click(canvas.getByRole('button', { name: 'Fewer clean passes' }))
+    await expect(await canvas.findByText(/^\+5\s% after 2 clean passes$/)).toBeVisible()
+    await userEvent.click(newLoops)
+    await waitFor(() => expect(usePracticeDefaults.getState().ladderNewLoops).toBe(true))
+    await expect(usePracticeDefaults.getState().ladderCleanPasses).toBe(2)
+  },
 }
 export const DisplayPhone: Story = {
   render: () => shell('display', <DisplaySettings me={ME} />),
