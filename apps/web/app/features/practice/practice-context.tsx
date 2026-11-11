@@ -33,6 +33,7 @@ import type { Edit } from './model/edits'
 import { type PracticeGrid, practiceGrid } from './model/grid'
 import { clipBeats, type LoopRange, restSeconds, tapBar } from './model/loops'
 import {
+  limitToUnity,
   type Mix,
   type MixChannel,
   type MixPreset,
@@ -57,7 +58,7 @@ import type { Layers } from './model/screen'
 import { createTransport, type Hud } from './model/transport'
 import { type MusicState, useMusic } from './model/use-music'
 import { buildViewModel, type ViewModel } from './model/view-model'
-import { INITIAL_UI, showHud, usePracticeUi } from './practice-store'
+import { INITIAL_UI, rememberedTab, showHud, usePracticeUi } from './practice-store'
 
 // PracticeProvider (12 §2): the player machine, the audio adapter, the effective music from the
 // Worker and everything that persists (resume state, clips, passes, corrections). Components read
@@ -194,9 +195,11 @@ export function PracticeProvider({
     fingeringMode: 'easiest',
   }))
 
-  // One practice screen at a time: fresh UI state, the stored edits, a session and the wake lock.
+  // One practice screen at a time: fresh UI state (the inspector on ?tab= or this device's last
+  // tab), the stored edits, a session and the wake lock.
+  const searchTab = useRef(search.tab)
   useEffect(() => {
-    usePracticeUi.setState(INITIAL_UI)
+    usePracticeUi.setState({ ...INITIAL_UI, tab: searchTab.current ?? rememberedTab() })
     configureCorrections({ queryClient })
     void hydrateCorrections()
     startSession(songId)
@@ -380,11 +383,17 @@ export function PracticeProvider({
   // "Hear this bar" plays the original mix (27 §3.7.4), then the learner's mix comes back.
   const heard = state === 'audition' ? presetMix(channels, 'original') : mix
   useEffect(() => {
+    const states = channels.map((c) => heard[c.stemId] ?? { gain_db: 0, muted: false, solo: false })
+    // The limiter rule (12 §7): the loudest audible stem plays at unity, the balance kept.
+    const limited = limitToUnity(
+      states.map((s) => (s.muted ? Number.NEGATIVE_INFINITY : s.gain_db)),
+    )
     audio.setMixer(
       stemsLoaded
-        ? channels.map((c) => {
-            const s = heard[c.stemId] ?? { gain_db: 0, muted: false, solo: false }
-            return { gainDb: s.gain_db, muted: s.muted, soloed: s.solo, soloGainDb: c.soloGainDb }
+        ? channels.map((c, i) => {
+            const s = states[i] ?? { gain_db: 0, muted: false, solo: false }
+            const gainDb = s.muted ? s.gain_db : (limited[i] ?? s.gain_db)
+            return { gainDb, muted: s.muted, soloed: s.solo, soloGainDb: c.soloGainDb }
           })
         : [{ gainDb: 0, muted: false, soloed: false }],
     )

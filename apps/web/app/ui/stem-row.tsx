@@ -1,42 +1,20 @@
-import { STEMS, type StemKind } from '@splitune/ui-tokens'
-import {
-  AudioWaveformIcon,
-  DrumIcon,
-  GuitarIcon,
-  type LucideIcon,
-  MicIcon,
-  PianoIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+import { Toggle as TogglePrimitive } from '@base-ui/react/toggle'
+import type { StemKind } from '@splitune/ui-tokens'
+import { TriangleAlertIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/ui/badge'
 import { NumberField } from '@/ui/number-field'
+import { Popover, PopoverTrigger } from '@/ui/popover'
+import { PopoverContent } from '@/ui/popover-content'
 import { Skeleton } from '@/ui/skeleton'
 import { Slider } from '@/ui/slider'
-import { Toggle } from '@/ui/toggle'
 import { WithTooltip } from '@/ui/tooltip'
 
-// Doc 26 §4.4, §12.2: a raised card per stem with label + icon + colour rule (colour is never the
-// only cue), M/S toggles, fader paired with a dB field (WCAG 2.5.7), "Your part" tag with a 2 px
-// left rule, rough-stem warning with its reason, and a loading skeleton with the same layout. The
-// card lays out by its own width (a container query, since the mixer drawer is narrow on any
-// screen): stacked — name, fader, then M/S and the dB field — and one row from 42 rem.
-
-// Narrow: name and fader span both columns, M/S and the dB field share the last row. Wide: one row.
-const GRID =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 @2xl:grid-cols-[14rem_auto_minmax(0,1fr)_auto] @2xl:gap-y-0'
-const NAME = 'col-span-2 @2xl:col-span-1'
-const FADER = 'col-span-2 @2xl:col-span-1 @2xl:col-start-3 @2xl:row-start-1'
-const TOGGLES = '@2xl:col-start-2 @2xl:row-start-1'
-const FIELD = 'justify-self-end @2xl:col-start-4 @2xl:row-start-1'
-
-const ICONS: Record<(typeof STEMS)[StemKind]['icon'], LucideIcon> = {
-  guitar: GuitarIcon,
-  drum: DrumIcon,
-  mic: MicIcon,
-  piano: PianoIcon,
-  'audio-waveform': AudioWaveformIcon,
-}
+// Doc 26 §4.4, §12.2 (Practice-Mix.dc.html): one row per stem — a 6 × 34 colour rule (colour is
+// never the only cue: the name is always there), the name with "Your part" and "Rough" badges, M/S
+// painted 32 inside 48 × 48 boxes (on = amber fill, off = outlined), and the fader in the stem's
+// colour with its dB readout (mono 13; "muted" while muted). A tap on the fader's track sets it
+// and the readout opens a stepper, so nothing needs a drag (WCAG 2.5.7).
 
 const RULE: Record<StemKind, string> = {
   guitar: 'bg-stem-guitar',
@@ -48,11 +26,29 @@ const RULE: Record<StemKind, string> = {
   mix: 'bg-stem-mix',
 }
 
+const FILL: Record<StemKind, string> = {
+  guitar: '[&_[data-slot=slider-range]]:bg-stem-guitar',
+  bass: '[&_[data-slot=slider-range]]:bg-stem-bass',
+  drums: '[&_[data-slot=slider-range]]:bg-stem-drums',
+  vocals: '[&_[data-slot=slider-range]]:bg-stem-vocals',
+  keys: '[&_[data-slot=slider-range]]:bg-stem-keys',
+  other: '[&_[data-slot=slider-range]]:bg-stem-other',
+  mix: '[&_[data-slot=slider-range]]:bg-stem-mix',
+}
+
 export const GAIN_RANGE = { min: -30, max: 6 } as const
+
+const NBSP = ' '
+
+/** "−6 dB", "0 dB", "+3 dB" (U+2212 minus, a no-break space before the unit, 27 §5.3). */
+export function formatDb(db: number): string {
+  const sign = db < 0 ? '−' : db > 0 ? '+' : ''
+  return `${sign}${Math.abs(Math.round(db))}${NBSP}dB`
+}
 
 type StemRowProps = {
   stem: StemKind
-  /** Instrument name shown in the row, e.g. "Guitar". */
+  /** Instrument name shown in the row, e.g. "Guitar"; "Band" for the mix-minus. */
   name: string
   muted: boolean
   soloed: boolean
@@ -70,8 +66,36 @@ type StemRowProps = {
     volume: string
     decrease: string
     increase: string
+    /** The readout while muted. */
+    muted?: string
   }
   className?: string
+}
+
+function MsToggle({
+  pressed,
+  onPressedChange,
+  label,
+  children,
+}: {
+  pressed: boolean
+  onPressedChange: (pressed: boolean) => void
+  label: string
+  children: string
+}) {
+  return (
+    <TogglePrimitive
+      pressed={pressed}
+      onPressedChange={onPressedChange}
+      aria-label={label}
+      data-slot="stem-ms"
+      className="group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-lg focus-visible:outline-offset-[-6px]"
+    >
+      <span className="grid size-8 place-items-center rounded-md border border-border-strong text-xs font-[750] text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal">
+        {children}
+      </span>
+    </TogglePrimitive>
+  )
 }
 
 function StemRow({
@@ -88,35 +112,44 @@ function StemRow({
   labels,
   className,
 }: StemRowProps) {
-  const Icon = ICONS[STEMS[stem].icon]
   return (
-    <div className={cn('@container', className)}>
-      <div
-        data-slot="stem-row"
-        data-stem={stem}
-        className={cn(
-          GRID,
-          'rounded-2xl border-l-2 bg-surface-raised p-3 shadow-1',
-          yourPart ? 'border-foreground' : 'border-transparent',
+    <div
+      data-slot="stem-row"
+      data-stem={stem}
+      className={cn(
+        'grid grid-cols-[0.375rem_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 px-1 py-1.5',
+        className,
+      )}
+    >
+      <span aria-hidden className={cn('row-span-2 h-8.5 w-1.5 rounded-full', RULE[stem])} />
+      <span className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="truncate text-md font-semibold">{name}</span>
+        {yourPart && <Badge variant="primary">{yourPart}</Badge>}
+        {rough && (
+          <WithTooltip label={rough.reason}>
+            <Badge variant="neutral" tabIndex={0} render={<span />}>
+              <TriangleAlertIcon aria-hidden />
+              {rough.label}
+              <span className="sr-only">: {rough.reason}</span>
+            </Badge>
+          </WithTooltip>
         )}
-      >
-        <div className={cn(NAME, 'flex min-w-0 flex-wrap items-center gap-2')}>
-          <span aria-hidden className={cn('h-8 w-1.5 shrink-0 rounded-full', RULE[stem])} />
-          <Icon aria-hidden className="size-6 shrink-0" />
-          <span className="truncate text-base font-semibold">{name}</span>
-          {yourPart && <Badge variant="primary">{yourPart}</Badge>}
-          {rough && (
-            <WithTooltip label={rough.reason}>
-              <Badge variant="warning" tabIndex={0} render={<span />}>
-                <TriangleAlertIcon aria-hidden />
-                {rough.label}
-                <span className="sr-only">: {rough.reason}</span>
-              </Badge>
-            </WithTooltip>
-          )}
-        </div>
+      </span>
+      <span className="row-span-2 flex gap-1">
+        <MsToggle pressed={muted} onPressedChange={onMutedChange} label={`${labels.mute} ${name}`}>
+          M
+        </MsToggle>
+        <MsToggle
+          pressed={soloed}
+          onPressedChange={onSoloedChange}
+          label={`${labels.solo} ${name}`}
+        >
+          S
+        </MsToggle>
+      </span>
+      <span className="flex min-w-0 items-center gap-2.5">
         <Slider
-          className={FADER}
+          className={cn('min-w-0 flex-1', FILL[stem])}
           value={gainDb}
           min={GAIN_RANGE.min}
           max={GAIN_RANGE.max}
@@ -125,37 +158,28 @@ function StemRow({
           onValueChange={(next) => onGainChange(Array.isArray(next) ? (next[0] ?? gainDb) : next)}
           thumbLabels={[`${labels.volume} ${name}`]}
         />
-        <div className={cn(TOGGLES, 'flex gap-2')}>
-          <Toggle
-            size="practice-2"
-            pressed={muted}
-            onPressedChange={onMutedChange}
-            aria-label={`${labels.mute} ${name}`}
+        <Popover>
+          <PopoverTrigger
+            aria-label={`${labels.volume} ${name}: ${muted && labels.muted ? labels.muted : formatDb(gainDb)}`}
+            className="inline-flex min-h-target-practice-2 w-16 shrink-0 items-center justify-end rounded-lg px-1 font-mono text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground"
           >
-            M
-          </Toggle>
-          <Toggle
-            size="practice-2"
-            pressed={soloed}
-            onPressedChange={onSoloedChange}
-            aria-label={`${labels.solo} ${name}`}
-          >
-            S
-          </Toggle>
-        </div>
-        <NumberField
-          className={FIELD}
-          value={gainDb}
-          min={GAIN_RANGE.min}
-          max={GAIN_RANGE.max}
-          step={1}
-          onValueChange={(next) => next !== null && onGainChange(next)}
-          unit="dB"
-          inputLabel={`${labels.volume} ${name}`}
-          decrementLabel={`${labels.decrease} ${name}`}
-          incrementLabel={`${labels.increase} ${name}`}
-        />
-      </div>
+            {muted && labels.muted ? labels.muted : formatDb(gainDb)}
+          </PopoverTrigger>
+          <PopoverContent side="top" aria-label={`${labels.volume} ${name}`} className="w-auto">
+            <NumberField
+              value={gainDb}
+              min={GAIN_RANGE.min}
+              max={GAIN_RANGE.max}
+              step={1}
+              onValueChange={(next) => next !== null && onGainChange(next)}
+              unit="dB"
+              inputLabel={`${labels.volume} ${name}`}
+              decrementLabel={`${labels.decrease} ${name}`}
+              incrementLabel={`${labels.increase} ${name}`}
+            />
+          </PopoverContent>
+        </Popover>
+      </span>
     </div>
   )
 }
@@ -163,22 +187,20 @@ function StemRow({
 /** Placeholder with the row's layout while stems load (no layout shift when they arrive). */
 function StemRowSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('@container', className)}>
-      <div
-        data-slot="stem-row-skeleton"
-        className={cn(
-          GRID,
-          'rounded-2xl border-l-2 border-transparent bg-surface-raised p-3 shadow-1',
-        )}
-      >
-        <Skeleton className={cn(NAME, 'h-8 w-40')} />
-        <Skeleton className={cn(FADER, 'h-2')} />
-        <div className={cn(TOGGLES, 'flex gap-2')}>
-          <Skeleton className="size-target-practice-2" />
-          <Skeleton className="size-target-practice-2" />
-        </div>
-        <Skeleton className={cn(FIELD, 'h-11 w-44')} />
-      </div>
+    <div
+      data-slot="stem-row-skeleton"
+      className={cn(
+        'grid grid-cols-[0.375rem_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 px-1 py-1.5',
+        className,
+      )}
+    >
+      <Skeleton className="row-span-2 h-8.5 w-1.5" />
+      <Skeleton className="h-5 w-32" />
+      <span className="row-span-2 flex gap-1">
+        <Skeleton className="size-target-practice-2" />
+        <Skeleton className="size-target-practice-2" />
+      </span>
+      <Skeleton className="h-2" />
     </div>
   )
 }

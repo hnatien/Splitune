@@ -480,7 +480,7 @@ Current = `apps/web/messages/en.json` at `8d6a3f6`. Keys in §5.6 marked **chang
 ## Open questions
 - G5: the default theme for Practice and Stand view after the music-stand test.
 - G4 (owner, on devices): the placement of "Works best with", "Replace all in this song", "Show original" and "Warm up with yesterday's hard bars", which have no mockup.
-- Whether "Pick another" (part change after tagging) can re-run from separation with today's analysis API.
+- "Pick another" (part change after tagging): s35 built it on today's routes (`songs.update` for the part, then `analyses.create`), a whole new analysis that costs an allowance and leaves the running one going. Whether it can re-run from separation (and cancel the old run) needs an API change; open.
 
 ## Sources
 `redesign/report.md` (IA, practice regions, keymap, progressive processing, settings, system states, acceptance criteria), `redesign/research/product_inventory.md` (every current screen, state and string), `redesign/research/stem_practice_players.md`, `redesign/research/notation_learning_apps.md`, `redesign/research/practice_science_ergonomics.md`, `redesign/research/ai_confidence_processing_ux.md`; the 25 mockups in `redesign/mockups/` (2026-11-08). Earlier sources stay valid: `research/users/user-journeys-and-flows.md`, `research/ux/onboarding-retention-motivation.md`, `research/ux/learning-science-principles.md`, [Atlassian voice and tone](https://atlassian.design/foundations/content/voice-tone), [GOV.UK error messages](https://design-system.service.gov.uk/components/error-message/), [Apple HIG: Playing audio](https://developer.apple.com/design/human-interface-guidelines/playing-audio).

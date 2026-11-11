@@ -34,7 +34,12 @@ export function PianoOptions({
   const hands = usePracticeDefaults((s) => s.pianoHands)
   const update = usePracticeDefaults((s) => s.update)
   const level = PIANO.levels.includes(options.level) ? options.level : PIANO.defaultLevel
-  const handsLabel = hands === 'right' ? m['practice.hands_right']() : m['practice.hands_both']()
+  const handsLabel =
+    hands === 'right'
+      ? m['practice.hands_right']()
+      : hands === 'left'
+        ? m['practice.hands_left']()
+        : m['practice.hands_both']()
   const summary = handsOnly
     ? `${m['practice.hands']()}: ${handsLabel}`
     : [
@@ -92,6 +97,7 @@ export function PianoOptions({
           value={hands}
           options={[
             { value: 'both', label: m['practice.hands_both']() },
+            { value: 'left', label: m['practice.hands_left']() },
             { value: 'right', label: m['practice.hands_right']() },
           ]}
           onChange={(pianoHands) => update({ pianoHands })}

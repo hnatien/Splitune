@@ -107,12 +107,14 @@ export default function CommandPalette() {
   const songs = useMemo(() => {
     // Results only ever show songs whose title holds the text typed, also while the next search
     // loads; offline, or when the search fails, they come from the cache (27 §4).
-    const q = debounced.toLocaleLowerCase()
+    // The text as typed, not the debounced search's: Enter right after "loop 3-4" must not pick
+    // a song the previous search listed.
+    const q = query.toLocaleLowerCase()
     const source = online && search.data ? search.data.items : cachedSongs(queryClient)
     return source
       .filter((song) => !q || song.title.toLocaleLowerCase().includes(q))
       .slice(0, SONG_LIMIT)
-  }, [online, search.data, debounced, queryClient])
+  }, [online, search.data, query, queryClient])
 
   const close = () => setOpen(false)
   const go = (to: SettingsPath) => () => void navigate({ to })
@@ -180,10 +182,13 @@ export default function CommandPalette() {
     })
   }
   const screen = Object.values(registered)
+  // A screen's action replaces the built-in one with its id (Practice's Display and reading opens
+  // its popover instead of the settings page).
+  const screenIds = new Set(screen.flatMap((r) => r.actions.map((action) => action.id)))
   for (const group of ['clips', 'actions'] as const) {
     const actions = [
       ...screen.filter((r) => r.group === group).flatMap((r) => r.actions),
-      ...(group === 'actions' ? builtIn : []),
+      ...(group === 'actions' ? builtIn.filter((action) => !screenIds.has(action.id)) : []),
     ]
     for (const action of actions) {
       const parsed = action.parse?.(query)

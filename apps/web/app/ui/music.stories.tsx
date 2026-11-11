@@ -59,7 +59,7 @@ function ChordStrip({
         <ConfidenceLegendPopover
           {...legend}
           className="self-start"
-          buttonLabel={m['practice.legend_short']({ model: '0.1.0' })}
+          buttonLabel={m['practice.legend_short']({ count: '6' })}
         />
       ) : (
         <ConfidenceLegend {...legend} />
@@ -155,7 +155,7 @@ export const LegendButton: Story = {
     const canvas = within(canvasElement)
     await expect(canvasElement.querySelector('[data-slot=confidence-legend]')).toBeNull()
     await userEvent.click(
-      canvas.getByRole('button', { name: m['practice.legend_short']({ model: '0.1.0' }) }),
+      canvas.getByRole('button', { name: m['practice.legend_short']({ count: '6' }) }),
     )
     // The popover's contents load on first open.
     const popup = await within(canvasElement.ownerDocument.body).findByRole('dialog')

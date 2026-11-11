@@ -29,19 +29,22 @@ export function usePianoVoicings(): (ShownVoicing | null)[] {
       notes.map((n) => chordText(names?.[n % 12] ?? '')).join(' ')
     return voiceChords(chords, style).map((voicing, i) => {
       if (!voicing) return null
-      const left = hands === 'both' ? voicing.left : []
+      const left = hands === 'right' ? [] : voicing.left
+      const right = hands === 'left' ? [] : voicing.right
       const chord = chordText((chords[i] as ChordModel).name)
       const leftText = text(left)
-      const rightText = text(voicing.right)
+      const rightText = text(right)
       return {
         left,
-        right: voicing.right,
+        right,
         leftText,
         rightText,
         label:
-          left.length > 0
-            ? m['practice.voicing_label']({ chord, left: leftText, right: rightText })
-            : m['practice.voicing_label_right']({ chord, right: rightText }),
+          right.length === 0
+            ? m['practice.voicing_label_left']({ chord, left: leftText })
+            : left.length > 0
+              ? m['practice.voicing_label']({ chord, left: leftText, right: rightText })
+              : m['practice.voicing_label_right']({ chord, right: rightText }),
       }
     })
   }, [view, names, style, hands])

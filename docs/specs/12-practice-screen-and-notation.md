@@ -192,6 +192,15 @@ All in `model/screen.ts` (`resolveScreen`, table-tested in `screen.test.ts`) and
 - **Chords-only without chords:** the recommendation holds the notation back only while there are chords to show instead; otherwise the notation shows (vocals with the phrase strip) under `practice.notes_unsure`.
 - **Saved view (13 §5):** `player_state.view` is `chords_only` once the learner chooses Chords and `tab` once they choose a notation or "Show tab anyway"; nothing until they choose. Resume (and `?view=tab|chords`) restores it: `tab` as "Show tab anyway", `chords` as the Chords view. Notes and Staff stay session-only and open as the first notation next time.
 
+## Implementation notes (step s35, 2026-11-10)
+- **Regions:** fine pointers get the five regions (`practice-page.tsx` `DesktopRegions`; `layout.ts` `useDesktopRegions`: inspector docked at ≥ 1180, the Now column at ≥ 1024, else a strip; the volume and the Mix pill's words in the dock at ≥ 1440, the width `Main.dc.html` is drawn at; below, an icon and a popover, so the loop pill keeps its words). Coarse pointers keep the earlier arrangement (`CompactRegions`, `transport-bar.tsx`) until s43. While Getting ready shows, the inspector is a drawer at every width.
+- **Inspector:** `practice-store.ts` holds `tab` (`loop` · `mix` · `progress` · `fix`, remembered in `localStorage` `splitune.inspector-tab`; `?tab=` on the route wins), `inspectorOpen` and `openTab(tab)`; J / K / E and the editor open Fix.
+- **Keymap (§8):** `model/keymap.ts` `resolveKey(event, learned, singleKeys)` → an action (with `fine` for Shift), the pedal hint, or nothing. ↑/↓ map to no action; until a pedal key is learned they return the hint. `singleKeys` off leaves Space, Enter, arrows, PageUp / PageDown, learned keys and modifier chords working.
+- **Follow (§3):** page turns are decided once per bar from scroller geometry cached by a ResizeObserver and scroll events; the scroll is applied in a task after the frame (`scrollAfterFrame`). The perf record shows no forced layout on desktop and 6 small ones (6.8 ms in the window, against 606 / 73 ms before) on the tablet context, at the loop's page turn. Reduced motion: page turns, a stepped playhead, no smooth scroll; pausing stops scrolling.
+- **Pass prompt:** shown after every pass while a loop is active (`promptPass` > 0), lazy-loaded with its sheet.
+- **Mixer (§7):** presets and faders go through `limitToUnity`: the loudest audible stem plays at 0 dB.
+- **Route budget (§10):** 309.2 KB gzip after vs 304.2 KB before (`dev` at `b61d0f7`), of 320 KB. The inspector and its tabs, the Now column, Getting ready, the Display popover body, the pass prompt and the narrow dock's volume popover load lazily.
+
 ## Open questions
 - Page vs Scroll as the default follow mode at different tempos (QX13); Page is the default until tested.
 - Whether one sync point per downbeat is precise enough for live takes with strong drift, or per-beat sync points are needed (measure cursor error on the owned live-take set).

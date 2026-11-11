@@ -28,11 +28,20 @@ export type Kind =
   | 'tab.bass'
   | 'notes.vocals'
   | 'notes.drums'
+  | 'tags'
 /** Every artefact of the guitar song. */
 export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', 'summary']
 /** Every artefact of the song as a bass part. */
 export const ALL_BASS: Kind[] = ['beats', 'stems', 'chords', 'notes.bass', 'tab.bass', 'summary']
-const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass', 'notes.vocals', 'notes.drums']
+const IDS: Kind[] = [
+  ...ALL,
+  'notes.piano',
+  'notes.bass',
+  'tab.bass',
+  'notes.vocals',
+  'notes.drums',
+  'tags',
+]
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(IDS.indexOf(kind) + 1).padStart(12, '0')}`
 
@@ -56,6 +65,12 @@ export type Patch = {
   leftHanded?: boolean
   /** The view saved on the last visit (resume, 13 §5). */
   savedView?: 'tab' | 'chords_only'
+  /** What the tagger heard (27 §3.7.3 part question): seeds the `tags` artefact. */
+  heard?: string[]
+  /** The whole analysis failed (27 §3.11 failure card). */
+  analysisFailed?: boolean
+  /** The processing machine is offline while the analysis waits (27 §3.7.3). */
+  workerOffline?: boolean
 }
 
 // A piano song on the same 8 bars (4/4, bar n from 0.5 + 2.4 n s): E♭ major as the chord model
@@ -410,7 +425,10 @@ export const PIANO_CHORDS = {
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
-    const base = analysis(1, patch.running ? 'running' : 'done')
+    const base = analysis(
+      1,
+      patch.analysisFailed ? 'failed' : patch.running || patch.workerOffline ? 'running' : 'done',
+    )
     // The fixture's stages are the guitar song's: another part has its own notes stage.
     const done = patch.instrument
       ? {
@@ -430,7 +448,8 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     const run = patch.video
       ? { ...failed, stages: { ...failed.stages, url_import: { status: 'done' as const } } }
       : failed
-    const entries = kinds.map((kind) => ({
+    const seeded: Kind[] = patch.heard ? [...kinds, 'tags'] : kinds
+    const entries = seeded.map((kind) => ({
       id: artefactId(kind),
       kind,
       version: 1,
@@ -458,7 +477,15 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     client.setQueryData(orpc.analyses.get.queryKey({ input: { id: run.id } }), withArtefacts)
     client.setQueryData(orpc.loops.list.queryKey({ input: { id: song.id } }), { items: [] })
     client.setQueryData(statsQuery.queryKey, STATS)
-    client.setQueryData(workerStatusQuery.queryKey, WORKER_ONLINE)
+    client.setQueryData(
+      workerStatusQuery.queryKey,
+      patch.workerOffline ? { ...WORKER_ONLINE, online: false } : WORKER_ONLINE,
+    )
+    if (patch.heard) {
+      client.setQueryData(['artefact-doc', artefactId('tags')], {
+        instruments: patch.heard.map((instrument) => ({ instrument, present_prob: 0.9 })),
+      })
+    }
     client.setQueryData(meQuery.queryKey, patch.leftHanded ? { ...ME, handedness: 'left' } : ME)
     for (const kind of kinds) {
       client.setQueryData(
