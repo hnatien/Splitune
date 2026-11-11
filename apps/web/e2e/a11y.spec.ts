@@ -87,6 +87,9 @@ async function tabTo(page: Page, name: RegExp, limit = 60) {
   throw new Error(`Tab never reached ${name}`)
 }
 
+// The dock's Mix pill is named by its preset (27 §3.7.1), "Mix" before the stems.
+const MIX_PILL = /^(Your part loud|Minus-one|Original|Mix)\b/
+
 test.describe('axe in every appearance', () => {
   test.describe.configure({ mode: 'serial' })
 
@@ -237,7 +240,8 @@ test.describe('keyboard and pedal only', () => {
     await page.keyboard.press('c')
     await expect(page.getByText(/Best clean pass: 70\s%/).first()).toBeVisible()
     await page.keyboard.press('n')
-    await page.keyboard.press('ArrowUp')
+    // Faster is '.' (12 §8): ↑/↓ are the pedal's keys and never change speed.
+    await page.keyboard.press('.')
     await expect(page.getByRole('button', { name: /^Speed: / })).toHaveAccessibleName(/75\s%/)
     await page.keyboard.press('m')
     await expect(page.getByText('Your part muted').first()).toBeVisible()
@@ -267,12 +271,11 @@ test.describe('keyboard and pedal only', () => {
     await page.keyboard.press('l')
     await expect(page.getByText('Loop on').first()).toBeVisible()
 
-    // The mixer opens and closes from the keyboard.
-    await (await tabTo(page, /^Mix$/, 120)).press('Enter')
-    const mixer = page.getByRole('dialog', { name: /Mix/ })
-    await expect(mixer).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(mixer).toBeHidden()
+    // The mixer opens from the keyboard: on desktop it is the inspector's Mix tab, which the
+    // dock's Mix pill (named by its preset) opens (27 §3.7.1).
+    await (await tabTo(page, MIX_PILL, 120)).press('Enter')
+    await expect(page.getByRole('tab', { name: /^Mix/ })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     expect(errors).toEqual([])
     await context.close()
   })
@@ -296,8 +299,8 @@ test.describe('reduced motion', () => {
     ).toEqual([0, 0, 0])
     await play.click()
     await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Mix', exact: true }).click()
-    await expect(page.getByRole('dialog', { name: /Mix/ })).toBeVisible()
+    await page.getByRole('button', { name: MIX_PILL }).click()
+    await expect(page.getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     // CSS animations and transitions all end at once (26 §10); the score cursor moves by script.
     const running = await page.evaluate(() =>
       document

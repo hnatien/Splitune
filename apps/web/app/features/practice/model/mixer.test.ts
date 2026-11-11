@@ -5,6 +5,7 @@ import type { z } from 'zod'
 import {
   defaultMix,
   guideLevel,
+  limitToUnity,
   mixChannels,
   presetMix,
   presetOf,
@@ -69,5 +70,14 @@ describe('guide vocal', () => {
     expect(guideLevel(channels, withGuide(channels, quiet, 'off'))).toBe('off')
     expect(guideLevel(channels, withGuide(channels, quiet, 'on'))).toBe('on')
     expect(guideLevel([], start)).toBeNull()
+  })
+})
+
+describe('the limiter rule (12 §7)', () => {
+  it('keeps the master at or below unity and the balance as set', () => {
+    expect(limitToUnity([6, -6])).toEqual([0, -12])
+    expect(limitToUnity([0, -6])).toEqual([0, -6])
+    expect(limitToUnity([-3, -9])).toEqual([-3, -9])
+    expect(limitToUnity([])).toEqual([])
   })
 })

@@ -26,6 +26,7 @@ import { barAt } from './model/grid'
 import { chordsAround } from './model/view-model'
 import { usePractice } from './practice-context'
 import { readScoreTheme, useTokens } from './score-theme'
+import { useSpokenLabel } from './spoken-label'
 
 // Guitar and bass Notes (step 18b, direction A chosen by the owner 2026-10-24): the part in tab
 // order on lanes that run on into the strings of a neck at the left, moving right to left onto
@@ -242,15 +243,7 @@ export function GuitarNotes({
       notes: notesText,
     })
   }, [now])
-  const [label, setLabel] = useState('')
-  useEffect(() => {
-    if (!audio.playing()) {
-      setLabel(description)
-      return
-    }
-    const timer = setTimeout(() => setLabel(description), LABEL_EVERY_MS)
-    return () => clearTimeout(timer)
-  }, [description, audio])
+  const label = useSpokenLabel(description, audio, LABEL_EVERY_MS)
 
   if (!grid || !timing || !tab || !music) return null
   const names = stringNames(tab.tuningMidi, music.noteNames).map(chordText)

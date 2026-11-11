@@ -43,11 +43,13 @@ import { openExample } from './helpers'
 const SELECTORS = {
   playPause: { role: 'button', name: /^(Play|Pause)$/ },
   pause: { role: 'button', name: /^Pause$/ },
-  slower: { role: 'button', name: /^Slower$/ },
-  faster: { role: 'button', name: /^Faster$/ },
+  // s35 renamed them "Slower by 5 %" / "Faster by 5 %" (27 §5.7 shortcuts.slower/faster).
+  slower: { role: 'button', name: /^Slower( by 5\s%)?$/ },
+  faster: { role: 'button', name: /^Faster( by 5\s%)?$/ },
   loopStartEdge: { role: 'button', name: /^Loop start, bar \d+$/ },
-  mixer: { role: 'button', name: /^Mix$/ },
-  // The stem faders ("Volume Guitar", "Volume Backing"), not the master "Volume".
+  // Desktop's dock has the mix pill since s35, named by its preset (27 §3.7.1); touch keeps "Mix".
+  mixer: { role: 'button', name: /^(Mix|Your part loud|Minus-one|Original)\b/ },
+  // The stem faders ("Volume Guitar", "Volume Band"), not the master "Volume".
   fader: { role: 'slider', name: /^Volume / },
   countIn: { css: '[data-slot=count-in]' },
   // The visitor's example offers to save progress the first time playback stops after a pass.

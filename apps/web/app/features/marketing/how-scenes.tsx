@@ -289,7 +289,7 @@ function PractiseScene() {
       </div>
       <PassControl
         labels={{
-          prompt: m['practice.pass_prompt'](),
+          prompt: m['practice.pass_rate'](),
           clean: m['practice.felt_clean'](),
           notYet: m['practice.not_yet'](),
         }}

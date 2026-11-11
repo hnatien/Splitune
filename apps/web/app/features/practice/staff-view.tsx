@@ -1,12 +1,12 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
-import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
+import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
-import { useMediaQuery } from '@/lib/use-media-query'
 import { cn } from '@/lib/utils'
 import { chordText } from '@/ui/chord-chip'
 import { barText } from './bar-text'
 import { barAt } from './model/grid'
 import { chordsInBar, staffMarks } from './model/view-model'
+import { useLoopLabel, useNotationMotion } from './notation-motion'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 import { useScoreTheme } from './score-theme'
@@ -33,10 +33,8 @@ export function StaffView({
 }) {
   const { music, grid, view, audio, player } = usePractice()
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
-  const notationLayout = usePracticeDefaults((s) => s.notationLayout)
-  const motion = useDisplay((s) => s.motion)
-  const systemReduce = useMediaQuery('(prefers-reduced-motion: reduce)', false)
-  const reduced = motion === 'reduce' || (motion === 'system' && systemReduce)
+  const motion = useNotationMotion()
+  const loopLabel = useLoopLabel()
   const selection = usePracticeUi((s) => s.selection)
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const theme = useScoreTheme(host)
@@ -89,7 +87,10 @@ export function StaffView({
           marks={marks}
           times={grid.times}
           theme={theme}
-          layout={reduced ? 'page' : notationLayout}
+          layout={motion.layout}
+          playhead={motion.playhead}
+          stepped={motion.stepped}
+          loopLabel={loopLabel}
           clock={{ position: () => audio.position(), playing: () => audio.playing() }}
           media={{ duration: () => audio.duration }}
           showUncertainty={showUncertainty}
@@ -103,7 +104,7 @@ export function StaffView({
             region: m['practice.view_staff'](),
           }}
           onBarActivate={onBarActivate}
-          smoothScroll={!reduced}
+          smoothScroll={motion.smoothScroll}
         />
       </Suspense>
     </div>

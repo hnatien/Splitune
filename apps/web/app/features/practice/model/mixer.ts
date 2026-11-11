@@ -134,3 +134,13 @@ export function withGuide(channels: readonly MixChannel[], mix: Mix, level: Guid
     },
   }
 }
+
+/**
+ * The limiter rule (12 §7, WHO H.870 safe listening): no mix pushes the master above unity. Gains
+ * above 0 dB lower every stem by the same amount, so the balance stays and the loudest stem plays
+ * at unity ("Your part loud" plays your part at 0 dB and the band at −12 dB).
+ */
+export function limitToUnity(gainsDb: readonly number[]): number[] {
+  const loudest = Math.max(0, ...gainsDb)
+  return gainsDb.map((gain) => gain - loudest)
+}

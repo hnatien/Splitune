@@ -5,7 +5,9 @@ import { useId } from 'react'
 import type { z } from 'zod'
 import { appearanceLabel } from '@/lib/appearance'
 import {
+  FOLLOW_MODES,
   MAX_SOUND_DELAY_MS,
+  PLAYHEAD_STYLES,
   type PracticeDefaults,
   useDisplay,
   usePracticeDefaults,
@@ -21,6 +23,7 @@ import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
 import { SaveStatus } from '@/ui/save-status'
 import { Slider } from '@/ui/slider'
+import { followLabel, playheadLabel } from '../practice/display-options'
 import { useUpdateMe } from './account-settings'
 import { AppearanceCards } from './appearance-cards'
 import {
@@ -48,11 +51,6 @@ const DISTANCES: Record<DistanceChoice, () => string> = {
   desk: () => m['settings.distance_desk'](),
   stand: () => m['settings.distance_stand'](),
   floor: () => m['settings.distance_floor'](),
-}
-
-const FOLLOW: Record<PracticeDefaults['notationLayout'], () => string> = {
-  page: () => m['practice.tab_layout_page'](),
-  scroll: () => m['practice.tab_layout_scroll'](),
 }
 
 const choices = <T extends string>(labels: Record<T, () => string>) =>
@@ -245,14 +243,21 @@ function ReadingSize() {
 function Motion() {
   const display = useDisplay()
   const layout = usePracticeDefaults((s) => s.notationLayout)
+  const playhead = usePracticeDefaults((s) => s.playhead)
   const updateDefaults = usePracticeDefaults((s) => s.update)
   return (
     <SettingSection id="motion" title={m['settings.motion']()}>
       <SegmentSetting
         label={m['settings.follow']()}
         value={layout}
-        options={choices(FOLLOW)}
+        options={FOLLOW_MODES.map((value) => ({ value, label: followLabel(value) }))}
         onChange={(notationLayout) => updateDefaults({ notationLayout })}
+      />
+      <SegmentSetting
+        label={m['practice.playhead']()}
+        value={playhead}
+        options={PLAYHEAD_STYLES.map((value) => ({ value, label: playheadLabel(value) }))}
+        onChange={(style) => updateDefaults({ playhead: style })}
       />
       <SegmentSetting
         label={m['settings.reduced_motion']()}

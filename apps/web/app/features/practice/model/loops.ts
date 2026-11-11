@@ -67,3 +67,28 @@ export function restSeconds(
   const barLength = grid.barEnd(range.endBar) - grid.barStart(range.endBar)
   return rest === 'bar' ? barLength : barLength / Math.max(1, beats.length)
 }
+
+/** The loop's length in bars. */
+const lengthOf = (range: LoopRange) => range.endBar - range.startBar + 1
+
+/**
+ * The Loop tab's quick moves (27 §3.7.4): Next phrase shifts the loop by its own length; ×2 and ÷2
+ * keep its start and double or halve it (never below one bar). Clamped to the song's bars; a move
+ * that can't fit returns the loop unchanged.
+ */
+export function moveLoop(
+  grid: PracticeGrid,
+  range: LoopRange,
+  move: 'next' | 'double' | 'half',
+): LoopRange {
+  const length = lengthOf(range)
+  if (move === 'next') {
+    if (range.endBar + 1 > grid.lastBar) return range
+    return barRange(grid, range.endBar + 1, Math.min(grid.lastBar, range.endBar + length))
+  }
+  const to =
+    move === 'double'
+      ? Math.min(grid.lastBar, range.startBar + length * 2 - 1)
+      : range.startBar + Math.max(1, Math.ceil(length / 2)) - 1
+  return to === range.endBar ? range : barRange(grid, range.startBar, to)
+}

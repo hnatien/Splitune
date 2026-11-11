@@ -276,12 +276,12 @@ export const InlinePresets: Story = {
       'aria-pressed',
       'true',
     )
-    await userEvent.click(within(presets).getByRole('button', { name: /^85/ }))
-    await expect(canvas.getByRole('button', { name: /^Speed: 85/ })).toBeInTheDocument()
+    await userEvent.click(within(presets).getByRole('button', { name: /^80/ }))
+    await expect(canvas.getByRole('button', { name: /^Speed: 80/ })).toBeInTheDocument()
     await waitFor(() =>
-      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^85/),
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^80/),
     )
-    await expect(within(presets).getByRole('button', { name: /^85/ })).toHaveAttribute(
+    await expect(within(presets).getByRole('button', { name: /^80/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )

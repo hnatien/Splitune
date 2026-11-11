@@ -1,7 +1,11 @@
 // Hands-busy input (12 §8): the default keys page-turner pedals send, plus keys learned per
 // device ("Learn this pedal"). Matching is on KeyboardEvent.key, which pedals report as the key
-// they emulate (PageDown, ArrowRight, …).
+// they emulate (PageDown, ArrowRight, …). Speed is `,` / `.` (Shift: 1 %); ↑ and ↓, which most
+// pedals send out of the box, never change speed: until a pedal is set up they only say "Pedal
+// detected? Set it up". Character keys can be switched off (WCAG 2.1.4); modifier chords, the
+// non-character keys pedals send and learned keys keep working.
 
+// In 12 §8's order (Settings → Keyboard & pedal lists them as they come here).
 export const ACTIONS = [
   'playPause',
   'restart',
@@ -12,6 +16,9 @@ export const ACTIONS = [
   'notYet',
   'toggleLoop',
   'mutePart',
+  'nextUnsure',
+  'previousUnsure',
+  'fixBar',
   'previousPhrase',
   'nextPhrase',
   'cueNote',
@@ -23,12 +30,16 @@ export const DEFAULT_KEYS: Record<Action, string[]> = {
   playPause: [' ', 'Enter'],
   restart: ['ArrowLeft', 'PageUp'],
   next: ['ArrowRight', 'PageDown'],
-  slower: ['ArrowDown'],
-  faster: ['ArrowUp'],
+  slower: [','],
+  faster: ['.'],
   clean: ['c'],
   notYet: ['n'],
   toggleLoop: ['l'],
   mutePart: ['m'],
+  // The Fix tab (12 §4): through the unsure spots, and the bar that's playing.
+  nextUnsure: ['j'],
+  previousUnsure: ['k'],
+  fixBar: ['e'],
   // Vocals (step 18c): phrase by phrase, and the note a phrase starts on.
   previousPhrase: ['['],
   nextPhrase: [']'],
@@ -54,6 +65,52 @@ export function actionFor(key: string, learned: LearnedKeys): Action | undefined
     (action) => learned[action] !== undefined && normal(learned[action]) === k,
   )
   return own ?? ACTIONS.find((action) => DEFAULT_KEYS[action].some((d) => normal(d) === k))
+}
+
+/** Keys most pedals send out of the box (AirTurn mode 2, iRig BlueTurn), never speed (12 §8). */
+export const PEDAL_ARROWS = new Set(['ArrowUp', 'ArrowDown'])
+
+/**
+ * A character key shortcut (WCAG 2.1.4): one letter, digit, punctuation or symbol. Space, Enter,
+ * the arrows and Page Up/Down aren't: pedals send them, and they stay on with single keys off.
+ */
+export const isCharacterKey = (key: string) => key.length === 1 && key !== ' '
+
+type KeyInput = Pick<KeyboardEvent, 'key' | 'shiftKey'> & { code?: string }
+
+/** The key as the map knows it: Shift turns `,` and `.` into `<` and `>` on most layouts. */
+export function keyOf(event: KeyInput): string {
+  if (event.shiftKey && (event.key === '<' || event.code === 'Comma')) return ','
+  if (event.shiftKey && (event.key === '>' || event.code === 'Period')) return '.'
+  return event.key
+}
+
+export type KeyResult =
+  | { kind: 'action'; action: Action; fine: boolean; learned: boolean }
+  /** ↑ / ↓ before any pedal is set up: "Pedal detected? Set it up". */
+  | { kind: 'pedal-hint' }
+  | { kind: 'none' }
+
+/**
+ * What a key press does on the practice screen. Learned keys always act (they are a pedal); with
+ * single keys off, character keys are inert; ↑/↓ act only when learned, and before any key is
+ * learned they ask for the pedal to be set up. `fine`: Shift with speed, a 1 % step.
+ */
+export function resolveKey(event: KeyInput, learned: LearnedKeys, singleKeys: boolean): KeyResult {
+  const key = keyOf(event)
+  const k = normal(key)
+  const own = ACTIONS.find(
+    (action) => learned[action] !== undefined && normal(learned[action]) === k,
+  )
+  if (own) return { kind: 'action', action: own, fine: event.shiftKey, learned: true }
+  if (PEDAL_ARROWS.has(key)) {
+    return Object.keys(learned).length === 0 ? { kind: 'pedal-hint' } : { kind: 'none' }
+  }
+  if (!singleKeys && isCharacterKey(key)) return { kind: 'none' }
+  const action = ACTIONS.find((a) => DEFAULT_KEYS[a].some((d) => normal(d) === k))
+  return action
+    ? { kind: 'action', action, fine: event.shiftKey, learned: false }
+    : { kind: 'none' }
 }
 
 /** Learning a key takes it away from any other action that had learned it. */

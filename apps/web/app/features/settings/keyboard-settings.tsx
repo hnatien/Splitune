@@ -7,12 +7,13 @@ import { PedalIcon } from '@/ui/icons'
 import { Kbd, KbdGroup } from '@/ui/kbd'
 import { actionLabel, keyLabel } from '../practice/input-mapper'
 import { useKeys } from '../practice/keys-store'
-import { ACTIONS, actionFor, DEFAULT_KEYS } from '../practice/model/keymap'
-import { SettingSection, SettingsPage } from './setting-row'
+import { ACTIONS, DEFAULT_KEYS, keyOf, resolveKey } from '../practice/model/keymap'
+import { SettingSection, SettingsPage, SwitchSetting } from './setting-row'
 
 // Settings → Keyboard & pedal (27 §3.9, Settings-Pedal's Keys part, 12 §8): the intro, the pedal
-// setup card (its wizard is s43's), the Keys table (Action · Keys · Pedal · learn, in 12 §8 order),
-// a test area that names the action a key or pedal triggers, and Reset to the defaults.
+// setup card (its wizard is s43's), the Single-key shortcuts switch (WCAG 2.1.4; s35's keys store),
+// the Keys table (Action · Keys · Pedal · learn, in 12 §8 order), a test area that names the action
+// a key or pedal triggers, and Reset to the defaults.
 
 export function KeyboardSettings() {
   return (
@@ -25,10 +26,26 @@ export function KeyboardSettings() {
         </div>
       </Card>
       <SettingSection id="keys" title={m['shortcuts.keys']()}>
+        <SingleKeys />
         <KeysTable />
       </SettingSection>
       <KeyTestArea />
     </SettingsPage>
+  )
+}
+
+// Off, character keys are inert on the practice screen; Ctrl/⌘ shortcuts, the keys pedals send
+// and learned keys keep working (12 §8).
+function SingleKeys() {
+  const singleKeys = useKeys((s) => s.singleKeys)
+  const setSingleKeys = useKeys((s) => s.setSingleKeys)
+  return (
+    <SwitchSetting
+      label={m['shortcuts.single_keys']()}
+      hint={m['shortcuts.single_keys_hint']()}
+      checked={singleKeys}
+      onChange={setSingleKeys}
+    />
   )
 }
 
@@ -113,6 +130,7 @@ function KeysTable() {
 
 function KeyTestArea() {
   const learned = useKeys((s) => s.learned)
+  const singleKeys = useKeys((s) => s.singleKeys)
   const reset = useKeys((s) => s.reset)
   const [last, setLast] = useState<string | null>(null)
   const resultId = useId()
@@ -124,14 +142,15 @@ function KeyTestArea() {
         onKeyDown={(event) => {
           if (event.key === 'Tab') return
           event.preventDefault()
-          const action = actionFor(event.key, learned)
+          // What the practice screen would do with it (12 §8): ↑/↓ ask for the pedal setup.
+          const result = resolveKey(event, learned, singleKeys)
+          const key = keyLabel(keyOf(event))
           setLast(
-            action
-              ? m['shortcuts.test_result']({
-                  key: keyLabel(event.key),
-                  action: actionLabel(action),
-                })
-              : m['shortcuts.test_none']({ key: keyLabel(event.key) }),
+            result.kind === 'action'
+              ? m['shortcuts.test_result']({ key, action: actionLabel(result.action) })
+              : result.kind === 'pedal-hint'
+                ? m['shortcuts.test_result']({ key, action: m['practice.pedal_detected']() })
+                : m['shortcuts.test_none']({ key }),
           )
         }}
         className="flex min-h-target min-w-0 grow basis-75 items-center gap-4 rounded-2xl text-left"

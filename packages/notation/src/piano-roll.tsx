@@ -182,7 +182,7 @@ function draw(
     const bottom = Math.min(h + 4, y(note.t0))
     const nh = Math.max(3, bottom - top)
     const left = note.hand === 'left'
-    context.globalAlpha = dim === note.hand ? 0.3 : 1
+    context.globalAlpha = dim === note.hand ? 0.45 : 1
     context.fillStyle = left ? theme.left : theme.right
     context.beginPath()
     context.roundRect(x, bottom - nh, nw, nh, left ? 0 : Math.min(4, nw / 3))
