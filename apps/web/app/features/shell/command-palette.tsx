@@ -251,7 +251,7 @@ export default function CommandPalette() {
               setActive(0)
             }}
             onKeyDown={onKeyDown}
-            className="min-w-0 flex-1 self-stretch bg-transparent text-lg font-normal text-foreground focus-visible:outline-offset-2 placeholder:text-faint-foreground"
+            className="min-w-0 flex-1 self-stretch bg-transparent text-lg font-normal text-foreground focus-visible:outline-none placeholder:text-faint-foreground"
           />
           <Kbd aria-hidden>{m['nav.key_escape']()}</Kbd>
         </div>
