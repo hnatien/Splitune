@@ -2628,3 +2628,72 @@ Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) f
 
 **Next**
 - s38: Fix mode and the queue replace today's editor in the Fix tab. `PASS_RATED` (not `ASSESSED`) is the machine's event for a rated pass; `practice.selectClip(clip)` loads a saved clip with its ladder; `practice.ladder` is the ladder's view (rungs, current, pass, of, nextPct, speedPct) for anything that shows it (s39's "Ladder at 75 % → 100 %", s43's Tools sheet).
+
+## 2026-11-17 — Step s38: Fix mode, the unsure-spot queue, alternatives in frequencies, audition over the loop (done, not merged; G4 next)
+Branch `impl/s38-fix-tab` (worktree `.claude/worktrees/s38-fix-tab`) from `dev` at `92c0d38` (s37 merged). Not merged into `dev`.
+
+**Built**
+- **Queue and ranking** (`features/practice/model/fix-queue.ts`, pure): a spot per unsure chord, per unsure note outside a shaky bar and per shaky bar; ranked by consequence (`pitch` → `octave` → `chord-root` → `chord-quality`), then by how likely the guess is wrong (1 − calibrated confidence), then song order. `stepSpot` (J / K, wrapping) and `spotFor` (the spot a selection sits on).
+- **Frequency wording** (`model/frequency.ts`): `oneIn` and `wrongOneIn` over s35's `oneInBand` (nearest of 1 in 2 / 3 / 4 / 5 / 10 / 20); `chord-input.ts`'s unbounded `oneIn` is gone.
+- **Fix mode** (`fix-mode.tsx`, lazy): the controller (takes the player over and hands it back, J / K / E, the first spot on entry, Esc), the top bar's pill "Fixing · every change saves as you go" + Undo + Done, the key line under the notation, the Fix dock (80: Play 64 "Play bars 7 to 8", "Bars 7–8", the hint, Listen to Original · Your part · Tab synth · Both at 48, speed − / + at 64). In Fix mode a tap on the notation selects the bar or the note, the song map's edges move the selection, and the pass prompt, the legend chip and the loop badge stay away.
+- **Audition** (`fix-synth.ts` over `model/synth-schedule.ts`): a pluck and a soft held tone on the engine's `AudioContext`, scheduled from the engine's heard position, rate and loop (150 ms look-ahead, 30 ms ticks). No engine change was needed (stop point 5 not reached). `tab-preview.ts` is replaced by its `playOnce`.
+- **Cards** (`fix-cards.tsx`): `SpotHeader` (FixQueue), `ChordCard` with `AlternativeRow`s, Type a chord (Enter uses it), Split at beat n, It's right, Report wrong, Replace all in this song; `NoteCard` (the bar's notes as chips, "or play it as" from `alt_fingerings`, String / Fret steppers, Length, It's right, Delete note, Report wrong; a shaky bar is confirmed whole); `BeatFixes` with "Re-barred {n} bars" + Undo. `fix-history.tsx`: Your edits ("Changed a chord · bar 7 · G → Em", when, Revert), Show original, "Your fixes are saved for this song."
+- **Persistence:** the toast names the change ("Edit saved · bar 4, string 5 → fret 4") with Undo; offline it reads "Saved on this device · …" and the edit's row carries "Saved on this device" until it is sent (`corrections.ts` `offline`); refusals still roll back with the error toast.
+- **Desktop editor** (`edit-page.tsx`): Fix mode on its own page from the same components; touch devices go to Practice with `?tab=fix`.
+- **Copy:** 47 `fix.*` keys (new group between `error` and `footer`), `practice.fix_saved_note` (+ its `copy-keys.test.ts` CATALOGUE entry, additive per D10); removed, now unused: `edit.select`, `edit.select_bars`, `edit.select_notes`, `editor.chord`, `editor.hear_bar`, `editor.notes`, `editor.one_in`, `editor.position`, `editor.second_guess`, `editor.split`, `editor.type_chord_hint`, `editor.use_chord`, `practice.fix_select`.
+
+**Deviations and decisions (mine; for G4)**
+1. **Files outside the step's list, all in `features/practice`:** `practice-store.ts`, `practice-page.tsx`, `status-bar.tsx`, `notation-pane.tsx`, `practice-timeline.tsx`, `input-mapper.ts`, `model/view-model.ts`: Fix mode can't be entered, drawn or keyed without them. No contract, `music-core`, `audio-engine`, `packages/notation` or `ui/` file changed.
+2. **What a spot is:** the mockup's "Spot 2 of 6 · bar 27–28" holds a chord card and a note card. Here a spot is one unsure thing, its bars are what loops, and the tab shows the chord card and the note card of those bars. The mockup doesn't show its ranking, so stop point 1 wasn't reached.
+3. **It's right** uses `mark_correct`, which music-core ignores; the mark is taken off in the view model, and Undo / Revert append `report_wrong` with the comment `undo:mark_correct` (no contract change). The chord card has It's right too.
+4. **Revert / Undo of a sent op** bring the label or fret back but not the unsure mark (music-core gives edited entities confidence 1; the overlay is append-only).
+5. **The guess is 44 px** (`text-3xl`); the scale has no 40.
+6. **The pill is the opaque `--unsure-surface`** (27 §3.7.4; the top bar is `--background`, the ground it was composited on), not the mockup's translucent wash.
+7. **Fix speed** is its own for the session and starts at the practice speed; the practice speed, loop, rest, pass prompt and ladder (with its counts) come back on Done.
+8. **Octave consequence** is read from the tab's "moved by octaves" fact: notes carry no alternative pitch (stop point 4 not reached: no card needs one).
+9. **E before the first downbeat** takes the first bar.
+10. **Existing spec** `e2e/practice.spec.ts` (s35's, merged): "Use this chord" click → Enter in "Type a chord", twice.
+
+**G4 list (owner)**
+- Placement of **Replace all in this song** (chord card, after a change) and **Show original** (switch in Your edits).
+- The song map's band and the notation's wash for the selection are the loop's amber, not `--unsure-surface`: that needs a prop in `ui/waveform-timeline.tsx` and `packages/notation` (both outside this step).
+- Tapping a "?" on a **note** in the notation outside Fix mode doesn't enter Fix (the notation has note targets only in Fix mode and the editor); chord "?" chips, J / K, E and the tab do.
+- By ear on real audio: the synth against the loop at 50–100 %, wired and Bluetooth.
+
+**Fidelity (28 §5.1)**
+`node <scratchpad>/fidelity.mjs` (probe of `Practice-Fix` against the `Wide` / `At1180` stories, Storybook dev on :6006): 24 anchors (pill, Done, spot title, progress, previous, chord card, eyebrow, guess, its line, alternative row, name, frequency, Use, Type a chord, dock, Play, bars, hint, Listen to, slower, readout, key line) at 1440 and 1180 in Night Rehearsal and Daylight, 96 comparisons. Iteration 1: 268 differing fields; fixed: progress 6 px, row radius 10, pill 44 tall, dock label 15, readout weight 400. Iteration 2: 240, all explained: targets (48 boxes for 32 / 40 px faces, Play and speed 64: 26 §8, V11); the inspector is 380 where the mockup draws 400 (27 §3.7.1), so cards and rows are 24 px narrower; kit type and radii (17 for 18, 16 for 15, button weight 600, button radii); the guess at 44; the opaque pill; the key line as a row under the notation; Listen to's track painted on `::before`; story data (spot 2 of 3, G not Am).
+
+**Budget (12 §10, D6)**
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.2 KB** gzip of 320 KB, before 311.4 KB (`dev` at `92c0d38`, built the same way). Fix mode, cards, history, synth, queue and frequency wording are lazy chunks (`fix-mode`, `fix-cards`, `fix-history`). `css-floor` clean.
+
+**Perf (12 §10)**
+Asserted in stories (Chromium): re-quantize after Half tempo with its consequence line ≤ 300 ms (`BeatFix`, `data-requantize-ms`); the tab redrawn after a fret edit ≤ 150 ms (`OfflineQueued`, `data-update-ms`).
+
+**Stories**
+New `features/practice/fix.stories.tsx` (Screens/Practice Fix, 25): Empty, FirstSpot, NoteSpot, ChordSpot, KeysOnly, EnterByKey, ShakyBar, BeatFix, AfterUse (edited mark, Revert), OfflineQueued, SavedEdits (Show original), ReplaceAll, ManySpots (128; badge 99+), LongChordNames (F♯m7♭5), ListenTo, Targets, Done, Wide (1440), At1180, Daylight, Daylight1440, IncreasedContrast, DaylightIncreasedContrast, Editor, EditorDaylight. `practice.stories.tsx`: InspectorFix now expects Fix mode on the first spot.
+- Chromium (`vitest run --project=storybook`): first run lost 96 stories to Vite re-optimising dependencies mid-run (the known first-run failure); the rerun: **41 files, 691 / 692**, axe included; the one failure, `ui/music.stories.tsx > Legend Button`, passes on its own (22 / 22 for its file).
+- WebKit: (`--project=storybook-webkit app/features/practice/fix.stories.tsx`): Editor and EditorDaylight pass; the other 23 time out at 15 s, like the other playable practice stories on this PC (the known failure). Not run further.
+
+**E2E** (built app, mock workers)
+- New `apps/web/e2e/fix.spec.ts` (desktop): J enters Fix mode on the fixture's unsure note with focus on It's right, Enter confirms it, and after a reload nothing is marked unsure and Your edits lists it; an edit made offline says "Saved on this device", is sent when the connection is back, and is there after a reload; Done hands the screen back. Chromium 3 / 3.
+- `E2E_SMOKE=1 … pnpm exec playwright test` (journey, practice, onboarding, account): Chromium 21 passed, 1 skipped by design. `practice-keys` and `speed-ladder` in Chromium: 8 / 8.
+- Firefox isn't installed on this PC ("Executable doesn't exist"); WebKit fails at sign-in / first navigation in `account`, `journey`, `onboarding`, `practice` and `fix` alike (URL never reached), before any Fix code runs. Not exercised further here.
+
+**Visual baselines**
+`pnpm --filter @splitune/web e2e:visual -g "practice"` (Docker, no update): 22 rows, 22 passed, no image changed. The default practice screen opens on the Loop tab, so nothing of Fix shows in the matrix; no baseline regenerated.
+
+**Verification (PC, 2026-11-17)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`, `node scripts/check-ui-tokens.mjs`, `node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice` (124 files): clean.
+- `pnpm --filter @splitune/web typecheck`: clean. `pnpm --filter @splitune/web test`: **44 files, 301 / 301** (new: `fix-queue` 9, `frequency` 9, `synth-schedule` 13, 5 in `edits`, 1 in `corrections`).
+- `pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor`: 312.2 KB of 320 KB; css-floor clean.
+- `pnpm secrets:scan`: 3 findings in history, none in this step's files.
+
+**Known gaps**
+- G4 items above; the synth and the offline queue haven't been heard or tried on a device.
+- Tablets and phones keep the editor sheet (the cards without the queue, the loop or Listen to) until s43.
+- `mark_correct` isn't read by the node worker's finalize, so a stored tab artefact still carries the confidence; the browser's own recompute is what the learner sees.
+- Chord names over the notation aren't underlined when edited (alphaTex text; the chord card and Your edits say so); edited notes are.
+
+**Next**
+- s39 (Progress): Fix mode records no passes; `practice.resumed` says when the saved loop and speed are back.
+- s40b ("Hear the chords"): `FixSynth` + `chordEvents` / `chordVoicing` (`fix-synth.ts`, `model/synth-schedule.ts`) schedule any events against the engine clock; give it the song's chords instead of one alternative.

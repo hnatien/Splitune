@@ -6,6 +6,7 @@ import {
   type Note,
   type Notes,
 } from '@splitune/music-core'
+import { confirmedEntities, UNCONFIRM } from './confirmed'
 import type { Op } from './corrections'
 
 // Editor operations (27 §3.7.4) as correction ops with their inverses, computed from the effective
@@ -92,8 +93,36 @@ export function deleteNote(note: Note): Edit {
   }
 }
 
+export { confirmedEntities, UNCONFIRM }
+
 export function reportWrong(kind: Edit['kind'], entityId: string): Edit {
   return { kind, op: { op: 'report_wrong', entity_id: entityId }, inverse: null }
+}
+
+export function markCorrect(kind: Edit['kind'], entityId: string): Edit {
+  return {
+    kind,
+    op: { op: 'mark_correct', entity_id: entityId },
+    inverse: { op: 'report_wrong', entity_id: entityId, comment: UNCONFIRM },
+  }
+}
+
+/**
+ * "Replace all in this song" (12 §4): the same change for every other chord that had the label
+ * (and bass) `from` had before it was changed, one op each so each can be reverted on its own.
+ */
+export function replaceAll(
+  segments: readonly Segment[],
+  from: Pick<Segment, 'id' | 'label' | 'bass'>,
+  to: { label: string; bass?: string | undefined },
+): Edit[] {
+  return segments
+    .filter((s) => s.id !== from.id && s.label === from.label && s.bass === from.bass)
+    .map((segment) => {
+      const edit = setChord(segment, to.label)
+      if (to.bass !== undefined && edit.op.op === 'set_chord') edit.op.bass = to.bass
+      return edit
+    })
 }
 
 /** One-tap metronome fixes (12 §5, `practice.beat_off`). */
@@ -168,6 +197,10 @@ export function revertOp(
       return { op: 'tempo_octave', factor: op.factor === 'double' ? 'half' : 'double' }
     case 'nudge_beat':
       return { op: 'nudge_beat', beat_id: op.beat_id, delta_s: -op.delta_s }
+    case 'mark_correct':
+      return confirmedEntities(ops).has(op.entity_id)
+        ? markCorrect(kind, op.entity_id).inverse
+        : null
     default:
       return null
   }

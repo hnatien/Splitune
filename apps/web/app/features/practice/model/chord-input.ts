@@ -50,8 +50,3 @@ export function parseChordInput(text: string): { label: string; bass?: string } 
   if (parseChord(label)?.kind !== 'chord') return null
   return bass ? { label, bass } : { label }
 }
-
-/** "about 1 in 3" style frequency for a top-k probability (26 §5). */
-export function oneIn(prob: number): number {
-  return Math.max(1, Math.round(1 / Math.max(prob, 1e-3)))
-}

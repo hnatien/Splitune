@@ -14,6 +14,7 @@ import { track, trackCorrection } from '@/lib/track'
 import { toast } from '@/ui/toast'
 import { localFile } from '../import/local-files'
 import { audioSourceKey } from './model/audio-source'
+import { confirmedEntities } from './model/confirmed'
 import {
   applyCorrection,
   configureCorrections,
@@ -31,6 +32,7 @@ import {
   usePracticeData,
 } from './model/data'
 import type { Edit } from './model/edits'
+import { listenMix } from './model/fix-listen'
 import { type PracticeGrid, practiceGrid } from './model/grid'
 import {
   defaultLadder,
@@ -87,6 +89,8 @@ export interface PracticeValue {
   data: PracticeData
   audio: PracticeAudio
   audioStatus: AudioStatus
+  /** The saved loop, speed and mix are back (13 §5): from here the player is the learner's. */
+  resumed: boolean
   lanes: Lane[]
   state: PlayerState
   player: PlayerContext
@@ -122,7 +126,11 @@ export interface PracticeValue {
   stepBar: (direction: 1 | -1) => void
   setSpeed: (pct: number) => void
   markPass: (outcome: 'clean' | 'not_yet') => void
-  edit: (edit: Edit) => void
+  /** Applies an edit at once and says so with Undo; `detail` names what changed ("bar 31,
+   * string 3 → fret 2"). */
+  edit: (edit: Edit, detail?: string) => void
+  /** Several edits as one change (Replace all in this song): one toast, one Undo for all. */
+  editAll: (edits: Edit[], detail?: string) => void
   undo: () => void
   redo: () => void
   hearBar: (bar: number) => void
@@ -218,7 +226,8 @@ export function PracticeProvider({
   // tab), the stored edits, a session and the wake lock.
   const searchTab = useRef(search.tab)
   useEffect(() => {
-    usePracticeUi.setState({ ...INITIAL_UI, tab: searchTab.current ?? rememberedTab() })
+    const tab = searchTab.current ?? rememberedTab()
+    usePracticeUi.setState({ ...INITIAL_UI, tab, fixing: tab === 'fix' })
     configureCorrections({ queryClient })
     void hydrateCorrections()
     startSession(songId)
@@ -240,12 +249,16 @@ export function PracticeProvider({
 
   // Effective music: recomputed in the Worker when an input it depends on changes.
   const beatsDoc = data.beats.data
+  // "Show original" (12 §4): the transcription as it came, without the learner's edits.
+  const showOriginal = usePracticeUi((s) => s.showOriginal)
   const input: MusicInput | undefined = beatsDoc
     ? {
         beats: beatsDoc,
         chords: data.chords.data,
         notes: data.notes.data,
-        ops: { beats: data.ops.beats.ops, chords: data.ops.chords.ops, notes: data.ops.notes.ops },
+        ops: showOriginal
+          ? { beats: [], chords: [], notes: [] }
+          : { beats: data.ops.beats.ops, chords: data.ops.chords.ops, notes: data.ops.notes.ops },
         beatsRev: data.ops.beats.rev,
         options,
       }
@@ -270,9 +283,19 @@ export function PracticeProvider({
     () => (effectiveBeats ? practiceGrid(effectiveBeats) : undefined),
     [effectiveBeats],
   )
+  // "It's right" (12 §4): a confirmed chord or note keeps its place and loses its unsure mark.
+  const chordOps = data.ops.chords.ops
+  const noteOps = data.ops.notes.ops
+  const confirmed = useMemo(
+    () =>
+      showOriginal
+        ? undefined
+        : { chords: confirmedEntities(chordOps), notes: confirmedEntities(noteOps) },
+    [chordOps, noteOps, showOriginal],
+  )
   const view = useMemo(
-    () => (music && grid ? buildViewModel(music, grid) : undefined),
-    [music, grid],
+    () => (music && grid ? buildViewModel(music, grid, confirmed) : undefined),
+    [music, grid, confirmed],
   )
   const channels = useMemo(
     () => (data.stems.data ? mixChannels(data.stems.data, instrument) : []),
@@ -399,8 +422,21 @@ export function PracticeProvider({
   const [savedMix, setSavedMix] = useState<Mix | undefined>(undefined)
   const mix = useMemo(() => resolveMix(channels, savedMix), [channels, savedMix])
   const stemsLoaded = lanes.length > 1
-  // "Hear this bar" plays the original mix (27 §3.7.4), then the learner's mix comes back.
-  const heard = state === 'audition' ? presetMix(channels, 'original') : mix
+  // "Hear this bar" plays the original mix (27 §3.7.4) and Fix mode what its dock's "Listen to"
+  // says; then the learner's mix comes back.
+  const fixing = usePracticeUi((s) => s.fixing)
+  const fixListen = usePracticeUi((s) => s.fixListen)
+  const heard = useMemo(
+    () =>
+      state === 'audition'
+        ? presetMix(channels, 'original')
+        : fixing
+          ? listenMix(channels, fixListen)
+          : mix,
+    [state, channels, fixing, fixListen, mix],
+  )
+  // Before the stems exist the one lane is the song: only "Tab synth" silences it.
+  const songMuted = fixing && state !== 'audition' && fixListen === 'synth'
   useEffect(() => {
     const states = channels.map((c) => heard[c.stemId] ?? { gain_db: 0, muted: false, solo: false })
     // The limiter rule (12 §7): the loudest audible stem plays at unity, the balance kept.
@@ -414,9 +450,9 @@ export function PracticeProvider({
             const gainDb = s.muted ? s.gain_db : (limited[i] ?? s.gain_db)
             return { gainDb, muted: s.muted, soloed: s.solo, soloGainDb: c.soloGainDb }
           })
-        : [{ gainDb: 0, muted: false, soloed: false }],
+        : [{ gainDb: 0, muted: songMuted, soloed: false }],
     )
-  }, [audio, channels, heard, stemsLoaded])
+  }, [audio, channels, heard, stemsLoaded, songMuted])
 
   // Loop clips (12 §5): the active loop is a clip so it survives a reload; an unnamed clip is
   // reused for the next loop instead of piling up.
@@ -596,12 +632,14 @@ export function PracticeProvider({
 
   // Resume (13 §5): search params first (bookmarkable), then the song's player_state.
   const resumed = useRef(false)
+  const [isResumed, setIsResumed] = useState(false)
   useEffect(() => {
     const song = data.song.data
     if (resumed.current || !song || !clipsQuery.isFetched) return
     // A saved clip or a ?loop= needs the bars, so wait for the beat grid when the song has one.
     if ((song.player_state.selected_loop_id || search.loop) && !grid && data.entry.beats) return
     resumed.current = true
+    setIsResumed(true)
     const plan = planResume({
       search,
       saved: song.player_state,
@@ -669,7 +707,9 @@ export function PracticeProvider({
             type: event.type === 'loopWrap' ? 'ENGINE.LOOP_WRAP' : 'ENGINE.STOP_REACHED',
           })
           const snapshot = actor.getSnapshot()
-          if (snapshot.value !== 'audition' && snapshot.context.loop) {
+          // Fix mode loops the selected bars to listen, not to be rated.
+          const fixingNow = usePracticeUi.getState().fixing
+          if (snapshot.value !== 'audition' && snapshot.context.loop && !fixingNow) {
             usePracticeUi.setState({ promptPass: snapshot.context.pass })
           }
           return
@@ -756,9 +796,9 @@ export function PracticeProvider({
   const artefactFor = (kind: Edit['kind']) =>
     kind === 'chords' ? data.entry.chords : kind === 'notes' ? data.entry.notes : data.entry.beats
 
-  const edit = (change: Edit) => {
+  const apply = (change: Edit): boolean => {
     const target = artefactFor(change.kind)
-    if (!target) return
+    if (!target) return false
     applyCorrection(target.id, change.op, change.inverse)
     const doc =
       change.kind === 'chords'
@@ -768,14 +808,39 @@ export function PracticeProvider({
           : data.beats.data
     const model = doc?.models[0]
     trackCorrection(change.kind, change.op.op, model)
-    if (change.inverse === null) {
-      toast.add({ title: m['editor.reported']() })
-      return
-    }
+    return true
+  }
+
+  // Optimistic (26 §13): the edit shows at once, the toast names it and undoes it. With no
+  // connection it says the edit waits on this device (27 §4).
+  const saved = (detail: string | undefined, undo: number) => {
+    const waiting = useCorrections.getState().offline || navigator.onLine === false
     toast.add({
-      title: m['editor.saved'](),
-      actionProps: { children: m['editor.undo'](), onClick: () => undoCorrection() },
+      title: waiting
+        ? detail
+          ? m['fix.saved_device_detail']({ detail })
+          : m['fix.saved_device']()
+        : detail
+          ? m['fix.saved_detail']({ detail })
+          : m['editor.saved'](),
+      actionProps: {
+        children: m['editor.undo'](),
+        onClick: () => {
+          for (let i = 0; i < undo; i++) undoCorrection()
+        },
+      },
     })
+  }
+
+  const edit = (change: Edit, detail?: string) => {
+    if (!apply(change)) return
+    if (change.inverse === null) toast.add({ title: m['editor.reported']() })
+    else saved(detail, 1)
+  }
+
+  const editAll = (changes: Edit[], detail?: string) => {
+    const applied = changes.filter((change) => apply(change)).length
+    if (applied > 0) saved(detail, applied)
   }
 
   // Refused ops roll back with a notice (26 §13).
@@ -797,6 +862,7 @@ export function PracticeProvider({
     data,
     audio,
     audioStatus,
+    resumed: isResumed,
     lanes,
     state,
     player,
@@ -842,6 +908,7 @@ export function PracticeProvider({
     setSpeed,
     markPass,
     edit,
+    editAll,
     undo: () => {
       if (undoCorrection()) showHud(m['editor.undone']())
     },

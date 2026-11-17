@@ -139,19 +139,24 @@ function TabView({
   const motion = useNotationMotion()
   const loopLabel = useLoopLabel()
   const selection = usePracticeUi((s) => s.selection)
+  // Fix mode washes the selected bars without the loop's badge, and has its own key line.
+  const fixing = usePracticeUi((s) => s.fixing)
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const theme = useScoreTheme(host)
   const ref = useRef<AlphaTabViewHandle>(null)
   const tab = music?.tab
-  // Notes the learner edited carry the edited mark (26 §5).
+  // Notes the learner edited carry the edited mark (26 §5); "Show original" shows none.
+  const showOriginal = usePracticeUi((s) => s.showOriginal)
   const noteOps = data.ops.notes.ops
   const marks = useMemo(() => {
-    const edited = new Set(noteOps.flatMap((op) => (op.op === 'set_note' ? [op.note_id] : [])))
+    const edited = new Set(
+      showOriginal ? [] : noteOps.flatMap((op) => (op.op === 'set_note' ? [op.note_id] : [])),
+    )
     if (!view || edited.size === 0) return view?.marks
     return new Map<string, NoteMark>(
       [...view.marks].map(([id, mark]) => [id, edited.has(id) ? { ...mark, edited: true } : mark]),
     )
-  }, [view, noteOps])
+  }, [view, noteOps, showOriginal])
 
   const labels = useMemo(() => {
     if (!grid || !view) return new Map<number, string>()
@@ -205,7 +210,7 @@ function TabView({
           playhead={motion.playhead}
           stepped={motion.stepped}
           shakyBars={view.unsureBars}
-          loopLabel={loopLabel}
+          loopLabel={fixing ? undefined : loopLabel}
           clock={{ position: () => audio.position(), playing: () => audio.playing() }}
           media={{ duration: () => audio.duration }}
           showUncertainty={showUncertainty}
@@ -235,7 +240,7 @@ function TabView({
           smoothScroll={motion.smoothScroll}
         />
       </Suspense>
-      {showUncertainty && <MarksKey />}
+      {showUncertainty && !fixing && <MarksKey />}
     </div>
   )
 }

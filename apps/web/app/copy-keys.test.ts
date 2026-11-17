@@ -43,6 +43,7 @@ const CATALOGUE: Record<string, string> = {
     'The stems for this song were removed after 180 days unused. Your loops and edits are safe.',
   'practice.not_offline': "This song isn't saved for offline yet.",
   'practice.beat_off': 'Metronome off the beat?',
+  'practice.fix_saved_note': 'Your fixes are saved for this song.',
   'practice.pass_prompt': 'Pass {pass} at {speed} — how was it?',
   'practice.best_tempo': 'Best clean pass: {pct}\u00a0%',
   'plan.cap_lite':

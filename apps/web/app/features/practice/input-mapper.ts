@@ -6,7 +6,7 @@ import { toggleMutePart } from './model/mixer'
 import { phraseAtTime } from './model/phrases'
 import { noteInput } from './model/practice-sync'
 import { usePractice } from './practice-context'
-import { pressedWith, showHud, usePracticeUi } from './practice-store'
+import { fixCommand, pressedWith, showHud, usePracticeUi } from './practice-store'
 
 // InputMapper (12 §8): keyboard and page-turner pedals drive every practice action. Handled keys
 // never scroll the page (preventDefault), focus stays where it is, and each action is confirmed
@@ -57,6 +57,10 @@ export function useInputMapper({ desktop }: { desktop: boolean }) {
 
     const run = (action: Action, fine: boolean) => {
       const { player, state } = practice
+      // Fix mode loops bars to listen to, not to practise: nothing is rated, and the learner's
+      // mix isn't what is playing (27 §3.7.4).
+      const fixing = usePracticeUi.getState().fixing
+      if (fixing && (action === 'clean' || action === 'notYet' || action === 'mutePart')) return
       switch (action) {
         case 'playPause': {
           const playing = state === 'playing' || state === 'countIn' || state === 'loopRest'
@@ -112,13 +116,23 @@ export function useInputMapper({ desktop }: { desktop: boolean }) {
           )
           return
         }
-        // The Fix tab (12 §4): the bar that's playing, or the next / previous unsure bar.
+        // Fix (12 §4, §8): J / K step through the unsure spots and E takes the bar that's
+        // playing. With an inspector that is Fix mode, which holds the queue; tablets and phones
+        // open the bar in the editor sheet (until s43).
         case 'nextUnsure':
         case 'previousUnsure':
         case 'fixBar': {
           const { grid, view } = practice
           if (!grid) return
           const now = grid.positionAt(practice.audio.position()).bar
+          if (desktop) {
+            fixCommand(
+              action === 'fixBar'
+                ? { kind: 'bar', bar: now }
+                : { kind: action === 'nextUnsure' ? 'next' : 'previous' },
+            )
+            return
+          }
           const bar =
             action === 'fixBar'
               ? now

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { FixListen } from './model/fix-listen'
 import type { LoopSelection } from './model/loops'
 
 // Practice screen UI state that isn't the player's (12 §2): loop selection in progress, which
@@ -23,7 +24,10 @@ export function rememberedTab(): InspectorTab {
   }
 }
 
+// Fix is a mode with its own dock and loop (27 §3.7.4): it is entered, never resumed, so a new
+// visit opens on the tab used before it.
 function rememberTab(tab: InspectorTab) {
+  if (tab === 'fix') return
   try {
     localStorage.setItem(TAB_STORAGE_KEY, tab)
   } catch {
@@ -34,13 +38,27 @@ function rememberTab(tab: InspectorTab) {
 export type EditorTarget = {
   kind: 'bar'
   bar: number
+  /** The last bar when the selection spans several (a chord held over bars). */
+  endBar?: number | undefined
   chordId?: string | undefined
   noteId?: string | undefined
 } | null
 
+/** J / K (the next or previous unsure spot) or E (a bar), for Fix mode to act on. */
+export type FixCommand = { kind: 'next' | 'previous' } | { kind: 'bar'; bar: number }
+
 export interface PracticeUi {
   selection: LoopSelection
+  /** What is selected in Fix: a bar with, when chosen, one of its chords or notes. */
   editor: EditorTarget
+  /** Fix mode (27 §3.7.4): on while Fix is the inspector's tab. */
+  fixing: boolean
+  /** What the Fix dock plays over the selected bars. */
+  fixListen: FixListen
+  /** The last J / K / E, kept until Fix mode (loaded on demand) has taken it. */
+  fixCommand: (FixCommand & { sequence: number }) | null
+  /** "Show original": the transcription without the learner's edits (12 §4). */
+  showOriginal: boolean
   mixerOpen: boolean
   shortcutsOpen: boolean
   /** The inspector's open tab (desktop), and whether its drawer is open below 1180 px. */
@@ -80,6 +98,10 @@ export interface Hud {
 export const INITIAL_UI: PracticeUi = {
   selection: { kind: 'none' },
   editor: null,
+  fixing: false,
+  fixListen: 'original',
+  fixCommand: null,
+  showOriginal: false,
   mixerOpen: false,
   shortcutsOpen: false,
   tab: 'loop',
@@ -122,8 +144,28 @@ export function pressedWith(source: string, run: () => void) {
   }
 }
 
-/** Opens an inspector tab (and its drawer where the inspector is one), remembered per device. */
+/** Opens an inspector tab (and its drawer where the inspector is one), remembered per device.
+ * Fix is a mode: choosing it enters Fix mode, choosing another tab leaves it. */
 export function openTab(tab: InspectorTab) {
   rememberTab(tab)
-  usePracticeUi.setState({ tab, inspectorOpen: true })
+  usePracticeUi.setState(
+    tab === 'fix'
+      ? { tab, inspectorOpen: true, fixing: true }
+      : { tab, inspectorOpen: true, fixing: false, editor: null, showOriginal: false },
+  )
+}
+
+/** Enters Fix mode (if it isn't on) with a J / K / E for it to act on. */
+export function fixCommand(command: FixCommand) {
+  usePracticeUi.setState((state) => ({
+    tab: 'fix',
+    inspectorOpen: true,
+    fixing: true,
+    fixCommand: { ...command, sequence: (state.fixCommand?.sequence ?? 0) + 1 },
+  }))
+}
+
+/** Done or Esc: back to the tab used before Fix. */
+export function leaveFix() {
+  openTab(rememberedTab())
 }

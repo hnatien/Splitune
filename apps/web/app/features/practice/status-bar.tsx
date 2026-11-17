@@ -24,6 +24,7 @@ const MorePanel = lazy(() =>
 const DisplayPanel = lazy(() =>
   import('./display-popover').then((module) => ({ default: module.DisplayPanel })),
 )
+const FixPill = lazy(() => import('./fix-mode').then((module) => ({ default: module.FixPill })))
 
 const CHORDS_STAGE: string = 'chords'
 
@@ -32,7 +33,9 @@ const CHORDS_STAGE: string = 'chords'
 // (the key spelled in the song's own key; "key after chords" while the chords are on the way), the
 // centred view switch — or, while the analysis runs, the analysing badge — then the legend chip,
 // Display and reading (Aa), Keyboard & pedal, Tools (the inspector's drawer below 1180 px) and More
-// (⋯). Stage keeps the controls and drops the title for screen readers, as phones do.
+// (⋯). Stage keeps the controls and drops the title for screen readers, as phones do. In Fix mode
+// (§3.7.4, Practice-Fix.dc.html) the centre is the "Fixing" pill with Undo and Done, and the bar
+// keeps only Display and More beside it.
 
 export function PracticeStatus({
   layout,
@@ -75,6 +78,7 @@ export function PracticeStatus({
   const phone = isPhone(layout)
   const inspectorOpen = usePracticeUi((s) => s.inspectorOpen)
   const displayOpen = usePracticeUi((s) => s.displayOpen)
+  const fixing = usePracticeUi((s) => s.fixing) && layout === 'desktop'
   return (
     <>
       <span aria-hidden className="h-8 w-px shrink-0 bg-border max-sm:hidden" />
@@ -88,13 +92,15 @@ export function PracticeStatus({
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-center gap-2 max-lg:justify-end">
         <Suspense fallback={null}>
-          <StatusControls layout={layout} />
+          {fixing ? <FixPill /> : <StatusControls layout={layout} />}
         </Suspense>
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <Suspense fallback={null}>
-          <StatusLegend />
-        </Suspense>
+        {!fixing && (
+          <Suspense fallback={null}>
+            <StatusLegend />
+          </Suspense>
+        )}
         <Popover
           open={displayOpen}
           onOpenChange={(open) => usePracticeUi.setState({ displayOpen: open })}
@@ -108,7 +114,7 @@ export function PracticeStatus({
             <DisplayPanel />
           </Suspense>
         </Popover>
-        {!phone && (
+        {!phone && !fixing && (
           <Link
             to="/settings/keyboard"
             aria-label={m['nav.keyboard']()}

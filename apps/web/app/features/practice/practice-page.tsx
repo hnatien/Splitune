@@ -58,6 +58,10 @@ const Inspector = lazy(() =>
 const PassPromptSheet = lazy(() =>
   import('./pass-prompt').then((module) => ({ default: module.PassPromptSheet })),
 )
+// Fix mode (27 §3.7.4): its controller, key line and dock load when Fix is entered.
+const FixMode = lazy(() => import('./fix-mode').then((module) => ({ default: module.FixMode })))
+const FixKey = lazy(() => import('./fix-mode').then((module) => ({ default: module.FixKey })))
+const FixDock = lazy(() => import('./fix-mode').then((module) => ({ default: module.FixDock })))
 
 /** True from the first time `open` is true, so an overlay keeps its closing animation. */
 function useOpened(open: boolean): boolean {
@@ -113,6 +117,7 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
   useInputMapper({ desktop })
   usePracticePalette(layout)
   useArrivals()
+  useSheetFix(!desktop)
 
   // The focus sink (12 §8): pedal keys reach the page, never a scroll container's defaults.
   useEffect(() => {
@@ -167,9 +172,10 @@ function DesktopRegions({
   nowColumn: boolean
   roomy: boolean
 }) {
-  const { layers, data } = usePractice()
+  const { layers, data, view } = usePractice()
   const screen = useScreen('desktop')
   const editing = usePracticeUi((s) => s.editor)
+  const fixing = usePracticeUi((s) => s.fixing)
   // Guitar, bass and other parts read their chords from the Now column over the tab or Notes;
   // piano, drums and vocals keep their strip, and the chord sheet shows its own current chord.
   const now =
@@ -198,8 +204,27 @@ function DesktopRegions({
             </Suspense>
           )}
           {!now && screen.strip && <ChordStrip />}
-          <NotationPane />
-          <Floating />
+          {fixing ? (
+            // Fix mode: a tap selects the bar or the note instead of looping (27 §3.7.4).
+            <NotationPane
+              interaction="notes"
+              selectedNoteId={editing?.noteId ?? null}
+              onBarActivate={(bar) => usePracticeUi.setState({ editor: { kind: 'bar', bar } })}
+              onNoteActivate={(noteId) => {
+                const note = view?.notes.find((n) => n.id === noteId)
+                if (note) usePracticeUi.setState({ editor: { kind: 'bar', bar: note.bar, noteId } })
+              }}
+            />
+          ) : (
+            <NotationPane />
+          )}
+          {fixing && (
+            <Suspense fallback={null}>
+              <FixKey />
+              <FixMode />
+            </Suspense>
+          )}
+          <Floating fixing={fixing} />
         </div>
         <Suspense
           fallback={
@@ -209,7 +234,13 @@ function DesktopRegions({
           <Inspector docked={docked} />
         </Suspense>
       </div>
-      <TransportDock roomy={roomy} />
+      {fixing && editing ? (
+        <Suspense fallback={<div className="h-20 shrink-0 border-t border-border bg-card" />}>
+          <FixDock />
+        </Suspense>
+      ) : (
+        <TransportDock roomy={roomy} />
+      )}
     </>
   )
 }
@@ -238,13 +269,13 @@ function CompactRegions({ layout }: { layout: PracticeLayout }) {
 
 // What floats over the notation: the pass prompt (desktop), the HUD at the top right, the
 // count-in in the middle and a URL import's video at the bottom right.
-function Floating({ compact = false }: { compact?: boolean }) {
+function Floating({ compact = false, fixing = false }: { compact?: boolean; fixing?: boolean }) {
   const hud = usePracticeUi((s) => s.hud)
   const videoOpen = usePracticeUi((s) => s.videoOpen)
   const video = useVideoUrl()
   return (
     <>
-      {!compact && <PassPrompt />}
+      {!compact && !fixing && <PassPrompt />}
       <CountInCounter />
       <PedalHud
         message={hud.message}
@@ -293,6 +324,25 @@ function Overlays({ layout }: { layout: PracticeLayout }) {
       {shortcuts && desktop && <ShortcutsOverlay />}
     </Suspense>
   )
+}
+
+// Tablets and phones have no inspector yet (s43): `?tab=fix` (the desktop editor's way back for a
+// touch device, 27 §3.8) opens the first unsure bar in the editor sheet instead.
+function useSheetFix(compact: boolean) {
+  const { view } = usePractice()
+  const wanted = usePracticeUi((s) => s.fixing)
+  useEffect(() => {
+    if (!compact || !wanted || !view) return
+    const chord = view.chords.find((c) => c.confidence === 'low')
+    const note = view.notes.find((n) => n.confidence === 'low')
+    const first =
+      chord && (!note || chord.t0 <= note.onset)
+        ? { bar: chord.bar, chordId: chord.id }
+        : note
+          ? { bar: note.bar, noteId: note.id }
+          : undefined
+    usePracticeUi.setState({ fixing: false, editor: first ? { kind: 'bar', ...first } : null })
+  }, [compact, wanted, view])
 }
 
 // The visual count-in (27 §3.7.4, 26 §10): the beat number at display size in --primary-ink in the

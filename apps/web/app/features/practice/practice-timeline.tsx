@@ -3,8 +3,9 @@ import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { TimelineLane } from '@/ui/waveform-timeline'
 import { barAt } from './model/grid'
-import { barRange, nudge } from './model/loops'
+import { barRange, type LoopRange, nudge } from './model/loops'
 import { usePractice } from './practice-context'
+import { usePracticeUi } from './practice-store'
 
 // The canvas loads with the first waveform (after the audio is decoded), at the same height.
 const WaveformTimeline = lazy(() =>
@@ -59,6 +60,15 @@ export function PracticeTimeline({
     [grid, view],
   )
   const loop = player.loop
+  // Fix mode (27 §3.7.4): the band is the selected bars, and its edges move the selection.
+  const fixing = usePracticeUi((s) => s.fixing)
+  const moveLoop = (range: LoopRange) => {
+    if (fixing) {
+      usePracticeUi.setState({
+        editor: { kind: 'bar', bar: range.startBar, endBar: range.endBar },
+      })
+    } else practice.setLoop(range)
+  }
   const height = compact ? 'h-8' : 'h-17.5'
   return (
     <section
@@ -85,12 +95,12 @@ export function PracticeTimeline({
             })
           }
           onNudgeLoop={(edge, direction) => {
-            if (grid && loop) practice.setLoop(nudge(grid, loop, edge, direction))
+            if (grid && loop) moveLoop(nudge(grid, loop, edge, direction))
           }}
           onDragLoop={(edge, seconds) => {
             if (!grid || !loop) return
             const bar = barAt(grid, seconds)
-            practice.setLoop(
+            moveLoop(
               edge === 'start'
                 ? barRange(grid, bar, loop.endBar)
                 : barRange(grid, loop.startBar, bar),

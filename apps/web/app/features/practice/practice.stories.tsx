@@ -628,8 +628,8 @@ export const TabWithoutChordsPhone: Story = {
   },
 }
 
-/** Tap a "Then" chip: the Fix tab opens on its bar with the alternatives as frequencies (27 §3.7.4;
- * Fix mode itself is s38's). */
+/** Tap a "Then" chip: Fix mode opens on its bar with the alternatives as frequencies
+ * (27 §3.7.4). */
 export const Editor: Story = {
   render: screen(ALL),
   play: async ({ canvasElement }) => {
@@ -1888,13 +1888,21 @@ export const InspectorProgress: Story = {
   },
 }
 
-/** Fix with no bar chosen: how to pick one; the tab carries the unsure count. */
+/** `?tab=fix` enters Fix mode on the first unsure spot; the tab carries the unsure count (the
+ * Fix stories are in fix.stories.tsx). */
 export const InspectorFix: Story = {
   render: screen(ALL, {}, { tab: 'fix' }),
   play: async ({ canvasElement }) => {
-    const canvas = await playable(canvasElement)
-    await expect(await canvas.findByText(m['practice.fix_select']())).toBeVisible()
-    await expect(canvas.getByRole('tab', { name: /^Fix/ })).toBeVisible()
+    const canvas = within(canvasElement)
+    const panel = await canvas.findByRole('tabpanel', undefined, { timeout: 20_000 })
+    await expect(
+      await within(panel).findByRole(
+        'heading',
+        { name: 'Spot 1 of 1 · bar 4' },
+        { timeout: 20_000 },
+      ),
+    ).toBeVisible()
+    await expect(canvas.getByRole('tab', { name: /^Fix/ })).toHaveTextContent('1')
   },
 }
 

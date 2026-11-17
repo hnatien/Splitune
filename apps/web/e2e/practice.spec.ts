@@ -20,7 +20,7 @@ const speedReadout = () => page.getByRole('button', { name: /^Speed: / })
 // transport's Mix button opens the mixer drawer.
 const mixControl = () =>
   transport().getByRole('button', { name: /^(Mix|Your part loud|Minus-one|Original)\b/ })
-// Desktop edits in the inspector's Fix tab; touch in the editor sheet.
+// Desktop edits in Fix mode (the inspector's Fix tab); touch in the editor sheet.
 const editorScope = () =>
   desktop ? page.getByRole('tabpanel') : page.getByRole('dialog', { name: 'Edit this bar' })
 // Desktop opens the loop's first bar from the keyboard (restart, then E edits the playing bar,
@@ -159,7 +159,7 @@ test('play, loop bars 3–4 with a count-in, 70 %, felt clean by keyboard, mix a
   const editor = editorScope()
   await expect(editor.getByLabel('Type a chord')).toBeVisible()
   await editor.getByLabel('Type a chord').fill('Dm')
-  await editor.getByRole('button', { name: 'Use this chord' }).click()
+  await editor.getByLabel('Type a chord').press('Enter')
   await expect(page.getByText('Edit saved').first()).toBeVisible()
   expect((await corrections).ok()).toBe(true)
   await editor.getByRole('button', { name: NOTE }).first().click()
@@ -341,7 +341,7 @@ test('on the desktop editor, a chord and a note edit persist', async () => {
   const saved = page.waitForResponse(
     (r) => /\/corrections$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST',
   )
-  await inspector.getByRole('button', { name: 'Use this chord' }).click()
+  await inspector.getByLabel('Type a chord').press('Enter')
   await saved
   await expect(inspector.getByRole('heading', { name: 'Your edits' })).toBeVisible()
   await expectAccessible(page)
