@@ -306,7 +306,7 @@ const Gallery = () => (
   />
 )
 
-/** Every state in Night Rehearsal and Daylight (the G2 board and visual baseline). */
+/** Every state in Dark and Light (the G2 board and visual baseline). */
 export const AllStates: Story = { render: Gallery, globals: BOTH_THEMES }
 export const AllStatesIncreasedContrast: Story = {
   render: Gallery,

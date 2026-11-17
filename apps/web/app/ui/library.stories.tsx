@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { EllipsisIcon } from 'lucide-react'
+import { EllipsisIcon, GuitarIcon } from 'lucide-react'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from './dropdown-menu.tsx'
 import { LONG_TITLE, SONGS } from './fixtures.ts'
+import { BassIcon } from './icons/bass.tsx'
 import { Progress as ProgressBar, ProgressLabel } from './progress.tsx'
 import { Skeleton } from './skeleton.tsx'
 import { InstrumentTile, SongCard, SongRow, type SongSummary } from './song-card.tsx'
@@ -39,9 +40,9 @@ const PEAKS = Array.from({ length: 48 }, (_, n) =>
 
 const tileFor = (instrument: string, size: 'sm' | 'md' = 'md') =>
   instrument === 'Bass' ? (
-    <InstrumentTile stem="bass" label="Bs" size={size} />
+    <InstrumentTile stem="bass" icon={BassIcon} size={size} />
   ) : (
-    <InstrumentTile stem="guitar" label="Gt" size={size} />
+    <InstrumentTile stem="guitar" icon={GuitarIcon} size={size} />
   )
 
 const GRID = 'grid list-none grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3.5 p-0'
@@ -64,7 +65,7 @@ const Grid = () => (
 )
 
 const List = () => (
-  <ul className="flex max-w-md list-none flex-col gap-0.5 p-0">
+  <ul className="flex max-w-md list-none flex-col divide-y divide-border p-0">
     {ENTRIES.map((song, i) => (
       <li key={song.href}>
         <SongRow song={song} leading={tileFor(SONGS[i]?.instrument ?? '')} />
@@ -119,14 +120,14 @@ export const Tiles: Story = {
   },
 }
 
-// Cards are bordered, not lifted (26 §9), with 16 px corners.
+// Cards are a hairline outline, not lifted (26 §9), with 12 px corners.
 export const CardBordered: Story = {
   render: Grid,
   play: async ({ canvasElement }) => {
     const card = canvasElement.querySelector<HTMLElement>('[data-slot=song-card]') as HTMLElement
     await expect(getComputedStyle(card).boxShadow).toBe('none')
     await expect(getComputedStyle(card).borderTopWidth).toBe('1px')
-    await expect(parseFloat(getComputedStyle(card).borderTopLeftRadius)).toBe(16)
+    await expect(parseFloat(getComputedStyle(card).borderTopLeftRadius)).toBe(12)
   },
 }
 
@@ -163,9 +164,9 @@ export const Loading: Story = {
   render: () => (
     <ul aria-busy="true" className={GRID}>
       {['a', 'b', 'c'].map((key) => (
-        <li key={key} className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-4">
+        <li key={key} className="flex flex-col gap-3.5 rounded-xl border border-border p-4">
           <div className="flex items-start gap-3">
-            <Skeleton className="size-10 shrink-0 rounded-lg" />
+            <Skeleton className="size-10 shrink-0 rounded-md" />
             <div className="flex flex-1 flex-col gap-2 pt-0.5">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3.5 w-1/2" />
@@ -205,7 +206,7 @@ const Progress = () => (
 )
 
 const WithActions = ({ rows = false }: { rows?: boolean }) => (
-  <ul className={rows ? 'flex max-w-md list-none flex-col gap-0.5 p-0' : GRID}>
+  <ul className={rows ? 'flex max-w-md list-none flex-col divide-y divide-border p-0' : GRID}>
     {ENTRIES.map((song, i) => {
       const Entry = rows ? SongRow : SongCard
       return (

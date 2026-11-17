@@ -2,7 +2,7 @@ import * as alphaTab from '@coderline/alphatab'
 import type { InkColors } from './score.ts'
 import type { ConfidenceLevel } from './types.ts'
 
-// Fonts and colours of the rendered score from the Night Rehearsal tokens (12 §3, 26 §4.7, §6): the
+// Fonts and colours of the rendered score from the theme's tokens (12 §3, 26 §4.7, §6): the
 // tab digits in the reading mono family at the distance preset's size, chord names over the bars at
 // `--read-chord`, bar numbers in mono, light ink on the page in both themes, staff lines and bar
 // lines in `--staff`, rhythm stems and beams (stamped per beat, score.ts) in `--faint-foreground`.

@@ -228,7 +228,7 @@ export function GettingReady() {
           <section
             aria-labelledby="getting-ready"
             data-slot="getting-ready"
-            className="flex flex-col gap-4.5 rounded-4xl border border-border bg-card p-6 shadow-2"
+            className="flex flex-col gap-4.5 rounded-xl border border-border bg-card p-6"
           >
             <div className="flex flex-col gap-1.5">
               <h2 id="getting-ready" className="text-xl">
@@ -314,9 +314,9 @@ function PartQuestion({ heard, onConfirm }: { heard: InstrumentName[]; onConfirm
   }
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-muted px-3.5 py-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted px-3.5 py-3">
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-semibold">
+          <span className="font-medium">
             {m['analysis.heard']({ instruments: list(heard.map(lower)) })}
           </span>
           <span className="text-sm text-muted-foreground">
@@ -358,7 +358,7 @@ function FailureCard({ retrying, onRetry }: { retrying: boolean; onRetry: () => 
   return (
     <section
       role="alert"
-      className="flex flex-col gap-3 rounded-4xl border border-border bg-card p-6 shadow-2"
+      className="flex flex-col gap-3 rounded-xl border border-border bg-card p-6"
     >
       <CircleAlertIcon aria-hidden className="size-7 text-destructive" />
       <h2 className="text-lg">{m['analysis.failed']()}</h2>
@@ -405,12 +405,9 @@ function WhatWorksNow() {
   return (
     <section
       aria-labelledby="works-now"
-      className="relative flex w-full max-w-75 flex-col gap-3 rounded-3xl border border-border bg-card p-4.5"
+      className="relative flex w-full max-w-75 flex-col gap-3 rounded-xl border border-border bg-card p-4.5"
     >
-      <h2
-        id="works-now"
-        className="text-xs font-semibold tracking-wider text-faint-foreground uppercase"
-      >
+      <h2 id="works-now" className="text-sm font-medium text-muted-foreground">
         {m['practice.what_works_now']()}
       </h2>
       <ul className="flex flex-col gap-3">
@@ -429,7 +426,7 @@ function WhatWorksNow() {
                   : m['practice.unlock_later']()}
             </Badge>
             <span className="flex min-w-0 flex-col">
-              <span className="text-md font-semibold">
+              <span className="text-md font-medium">
                 {row.id === 'notation' && data.instrument !== 'guitar' && data.instrument !== 'bass'
                   ? m['practice.view_notes']()
                   : UNLOCK_NAME[row.id]()}

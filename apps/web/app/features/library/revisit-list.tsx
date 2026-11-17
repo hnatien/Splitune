@@ -28,7 +28,7 @@ export function RevisitList({
   return (
     <section aria-labelledby="revisit-title" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        <h2 id="revisit-title" className="text-lg">
+        <h2 id="revisit-title" className="text-xl">
           {m['library.revisit']()}
         </h2>
         <p className="text-sm text-faint-foreground">{m['library.revisit_hint']()}</p>
@@ -39,13 +39,13 @@ export function RevisitList({
             {renderLink({
               clip,
               className:
-                'flex min-h-target items-center gap-3 rounded-3xl border border-border bg-card p-3.5 hover:bg-muted focus-visible:outline-offset-2',
+                'flex min-h-target items-center gap-3 rounded-xl border border-border p-3.5 transition-colors duration-(--duration-fast) hover:bg-muted focus-visible:outline-offset-2',
               children: (
                 <>
                   <SongTile instrument={clip.instrument} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-[650]">{clip.clip}</span>
-                    <span className="block truncate text-sm text-faint-foreground">
+                    <span className="block truncate font-medium">{clip.clip}</span>
+                    <span className="block truncate text-sm text-muted-foreground">
                       {clip.meta}
                     </span>
                   </span>

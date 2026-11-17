@@ -6,6 +6,7 @@ import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { ChordTiming } from '@/ui/chord-chip'
 import { ChordSymbol } from '@/ui/chord-chip'
+import { nextInBeats } from './bar-text'
 import { type ChordModel, chordsAround, noteName } from './model/view-model'
 import { useScreen } from './notation-pane'
 import { PianoOptions } from './piano-options'
@@ -54,7 +55,7 @@ function beatsBetween(times: readonly number[], from: number, to: number) {
   return Math.max(0, after(to + EPS) - after(from))
 }
 
-const label = 'text-xs font-semibold tracking-wide text-conf-medium uppercase'
+const label = 'text-xs font-medium text-conf-medium'
 
 export function PianoStrip({
   chip,
@@ -119,7 +120,7 @@ export function PianoStrip({
     : now.beats <= 1
       ? m['practice.next_on_beat']()
       : now.beats <= COUNT_BEATS
-        ? m['practice.next_in_beats']({ count: String(now.beats) })
+        ? nextInBeats(now.beats)
         : m['practice.next_at_bar']({ bar: String(next.bar + 1) })
 
   return (
@@ -211,7 +212,7 @@ function Hand({ hand, notes }: { hand: 'left' | 'right'; notes: string }) {
     <span className="flex items-center gap-1.5">
       <span
         className={cn(
-          'grid size-[1.4em] place-items-center rounded-md text-[0.8em] font-bold',
+          'grid size-[1.4em] place-items-center rounded-md text-[0.8em] font-semibold',
           hand === 'left' ? 'bg-key-left text-key-left-fg' : 'bg-key-right text-key-right-fg',
         )}
       >

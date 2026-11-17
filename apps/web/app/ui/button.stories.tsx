@@ -12,7 +12,7 @@ import {
   themeFrames,
 } from './story-kit.tsx'
 
-// Doc 26 §12.1 `.btn` / `.ib`, §12.3 states. One amber (primary) button per view (§4.5): every
+// Doc 26 §12.1, §12.3 states. One ink (primary) button per view (§4.5): every
 // story shows at most one.
 const meta = {
   title: 'Base/Button',
@@ -103,7 +103,7 @@ export const Hover: Story = {
 }
 export const HoverDaylight: Story = { ...Hover, globals: DAYLIGHT }
 
-/** The primary hover is --primary-hover: the amber at brightness(1.06), the mockup's `.btn.pri:hover`. */
+/** The primary hover is --primary-hover: the ink one step toward the page. */
 export const HoverPrimary: Story = {
   args: { variant: 'primary' },
   play: async ({ canvasElement }) => {
@@ -314,7 +314,7 @@ const Gallery = () => (
   />
 )
 
-/** Every variant and state in Night Rehearsal and Daylight (the G2 board and visual baseline). */
+/** Every variant and state in Dark and Light (the G2 board and visual baseline). */
 export const AllStates: Story = { render: Gallery, globals: BOTH_THEMES }
 export const AllStatesIncreasedContrast: Story = {
   render: Gallery,

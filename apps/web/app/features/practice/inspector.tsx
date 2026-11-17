@@ -41,7 +41,7 @@ function InspectorTabs() {
     >
       <TabsList className="shrink-0 px-3">
         {INSPECTOR_TABS.map((value) => (
-          <TabsTrigger key={value} value={value} className="min-h-target-practice-2 font-semibold">
+          <TabsTrigger key={value} value={value} className="min-h-target-practice-2 font-medium">
             {LABEL[value]()}
             {value === 'fix' && unsure > 0 && (
               <Badge

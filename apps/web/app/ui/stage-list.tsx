@@ -67,7 +67,7 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
         <ProgressLabel className="text-sm font-normal text-muted-foreground">
           {progressLabel}
         </ProgressLabel>
-        {eta && <span className="ml-auto font-mono text-sm tabular-nums">{eta}</span>}
+        {eta && <span className="ml-auto text-sm tabular-nums">{eta}</span>}
       </Progress>
       <ol className="flex flex-col">
         {stages.map((stage) => (
@@ -87,7 +87,7 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
             <span className="flex min-w-0 flex-col gap-0.5">
               <span
                 className={cn(
-                  'text-base font-semibold',
+                  'text-base font-medium',
                   stage.status === 'queued' && 'text-faint-foreground',
                 )}
               >
@@ -97,9 +97,7 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
                 <span className="text-sm text-faint-foreground">{stage.detail}</span>
               )}
             </span>
-            <span className="font-mono text-sm text-muted-foreground tabular-nums">
-              {stage.statusText}
-            </span>
+            <span className="text-sm text-muted-foreground tabular-nums">{stage.statusText}</span>
           </li>
         ))}
       </ol>

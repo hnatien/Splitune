@@ -13,9 +13,9 @@ import { BillingSettings } from '../billing/billing-settings'
 import { useSignOut } from '../shell/use-sign-out'
 import { type DeleteStep, PrivacySettings } from './privacy-settings'
 import {
-  SectionRule,
   SegmentSetting,
   SettingRow,
+  SettingRows,
   SettingSection,
   SettingsPage,
 } from './setting-row'
@@ -55,11 +55,8 @@ export function AccountSettings({
   return (
     <SettingsPage title={m['settings.account']()}>
       <Profile me={me} />
-      <SectionRule />
       <BillingSettings me={me} checkout={checkout} />
-      <SectionRule />
       <PrivacySettings me={me} deleteDialog={deleteDialog} />
-      <SectionRule />
       <Button variant="ghost" className="self-start" onClick={signOut}>
         <LogOutIcon aria-hidden />
         {m['nav.sign_out']()}
@@ -77,10 +74,11 @@ function Profile({ me }: { me: MeData }) {
   const usernameId = useId()
   return (
     <SettingSection id="profile" title={m['settings.profile']()}>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(16.25rem,100%),1fr))] gap-3.5">
+      <SettingRows>
         <SettingRow label={m['settings.name']()} htmlFor={nameId} state={name.state}>
           <Input
             id={nameId}
+            className="sm:w-80"
             value={displayName}
             maxLength={100}
             autoComplete="name"
@@ -98,23 +96,23 @@ function Profile({ me }: { me: MeData }) {
               id={usernameId}
               value={current.username}
               readOnly
-              className="text-muted-foreground"
+              className="text-muted-foreground sm:w-80"
             />
           </SettingRow>
         )}
-      </div>
-      <SegmentSetting
-        label={m['settings.instrument']()}
-        value={current.primary_instrument ?? 'guitar'}
-        options={INSTRUMENTS.map((value) => ({ value, label: instrumentLabel(value) }))}
-        onChange={(value) => update({ primary_instrument: value })}
-      />
-      <SegmentSetting
-        label={m['settings.level']()}
-        value={current.level ?? 'just_started'}
-        options={LEVELS.map((value) => ({ value, label: levelLabel(value) }))}
-        onChange={(value) => update({ level: value })}
-      />
+        <SegmentSetting
+          label={m['settings.instrument']()}
+          value={current.primary_instrument ?? 'guitar'}
+          options={INSTRUMENTS.map((value) => ({ value, label: instrumentLabel(value) }))}
+          onChange={(value) => update({ primary_instrument: value })}
+        />
+        <SegmentSetting
+          label={m['settings.level']()}
+          value={current.level ?? 'just_started'}
+          options={LEVELS.map((value) => ({ value, label: levelLabel(value) }))}
+          onChange={(value) => update({ level: value })}
+        />
+      </SettingRows>
     </SettingSection>
   )
 }

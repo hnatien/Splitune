@@ -37,10 +37,10 @@ export function PlusBenefits({ fullPerPeriod }: { fullPerPeriod: number }) {
     m['plan.plus_depth'](),
   ]
   return (
-    <ul className="flex list-none flex-col gap-2 p-0">
+    <ul className="flex list-none flex-col gap-3 p-0">
       {items.map((item) => (
-        <li key={item} className="flex items-start gap-2 text-base">
-          <CheckIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-primary-ink" />
+        <li key={item} className="flex items-start gap-3 text-md">
+          <CheckIcon aria-hidden strokeWidth={1.5} className="size-5 shrink-0 text-foreground" />
           <span>{item}</span>
         </li>
       ))}
@@ -90,17 +90,19 @@ export function UpgradeSheet({
             <DrawerTitle>{m['plan.plus_gives']()}</DrawerTitle>
             <DrawerDescription>{m['plan.free_stays']()}</DrawerDescription>
           </DrawerHeader>
-          <div className="flex flex-col gap-5 px-6 pt-4 pb-2">
+          <div className="flex flex-col gap-6 px-6 pt-4 pb-2">
             {plans.data ? (
               <>
                 <PlusBenefits fullPerPeriod={plans.data.allowances.plus_full_per_period} />
-                <PlanChoice
-                  plans={plans.data.plans}
-                  value={plan}
-                  onChange={setPlan}
-                  className="grid-cols-2"
-                />
-                <p className="text-sm text-muted-foreground">{m['plan.cancel_anytime']()}</p>
+                <div className="flex flex-col gap-3 border-t border-border pt-6">
+                  <PlanChoice
+                    plans={plans.data.plans}
+                    value={plan}
+                    onChange={setPlan}
+                    className="grid-cols-2"
+                  />
+                  <p className="text-sm text-muted-foreground">{m['plan.cancel_anytime']()}</p>
+                </div>
               </>
             ) : plans.isError ? (
               <InlineError

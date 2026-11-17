@@ -12,7 +12,7 @@ import { WithTooltip } from '@/ui/tooltip'
 
 // Doc 26 §4.4, §12.2 (Practice-Mix.dc.html): one row per stem — a 6 × 34 colour rule (colour is
 // never the only cue: the name is always there), the name with "Your part" and "Rough" badges, M/S
-// painted 32 inside 48 × 48 boxes (on = amber fill, off = outlined), and the fader in the stem's
+// painted as 32 px circles inside 48 × 48 boxes (on = ink fill, off = outlined), and the fader in the stem's
 // colour with its dB readout (mono 13; "muted" while muted). A tap on the fader's track sets it
 // and the readout opens a stepper, so nothing needs a drag (WCAG 2.5.7).
 
@@ -89,9 +89,9 @@ function MsToggle({
       onPressedChange={onPressedChange}
       aria-label={label}
       data-slot="stem-ms"
-      className="group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-lg focus-visible:outline-offset-[-6px]"
+      className="group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-full focus-visible:outline-offset-[-6px]"
     >
-      <span className="grid size-8 place-items-center rounded-md border border-border-strong text-xs font-[750] text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal">
+      <span className="grid size-8 place-items-center rounded-full border border-border-strong text-xs font-semibold text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal">
         {children}
       </span>
     </TogglePrimitive>
@@ -123,7 +123,7 @@ function StemRow({
     >
       <span aria-hidden className={cn('row-span-2 h-8.5 w-1.5 rounded-full', RULE[stem])} />
       <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="truncate text-md font-semibold">{name}</span>
+        <span className="truncate text-md font-medium">{name}</span>
         {yourPart && <Badge variant="primary">{yourPart}</Badge>}
         {rough && (
           <WithTooltip label={rough.reason}>
@@ -161,7 +161,7 @@ function StemRow({
         <Popover>
           <PopoverTrigger
             aria-label={`${labels.volume} ${name}: ${muted && labels.muted ? labels.muted : formatDb(gainDb)}`}
-            className="inline-flex min-h-target-practice-2 w-16 shrink-0 items-center justify-end rounded-lg px-1 font-mono text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground"
+            className="inline-flex min-h-target-practice-2 w-16 shrink-0 items-center justify-end rounded-lg px-1 text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground"
           >
             {muted && labels.muted ? labels.muted : formatDb(gainDb)}
           </PopoverTrigger>

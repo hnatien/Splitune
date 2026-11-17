@@ -9,11 +9,12 @@ import { WithTooltip } from '@/ui/tooltip'
 // The universally known transport icons (restart, play, −/+) may drop the visible label (26 §11).
 // Pass `pressed` to make it a toggle (loop, metronome); `active` marks a running loop without
 // toggling. Main controls are 64 painted and hit (`practice`, V11); secondary ones paint `.ib.lg`
-// at 52 (`practice-2`). `neutral` is `.ib.lg`, `box` is `.ib.lg.box`, `primary` is `.play`; on and
-// active are `.ib.on`: the --primary-soft wash, a --primary-line edge and --primary-ink.
+// at 52 (`practice-2`). Every one is a circle (a pill once a label widens it). `neutral` is
+// `.ib.lg`, `box` is `.ib.lg.box`, `primary` is `.play`, the filled ink circle; on and active are
+// `.ib.on`: the --primary-soft wash, a --primary-line edge and --primary-ink.
 
 const base =
-  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-2xl font-semibold inset-ring transition-[color,background-color,box-shadow,filter,transform] duration-(--duration-fast) ease-spring select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-muted disabled:text-faint-foreground disabled:inset-ring-input [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
+  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-full font-medium inset-ring transition-[color,background-color,box-shadow,filter,transform] duration-(--duration-fast) ease-spring select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-muted disabled:text-faint-foreground disabled:inset-ring-input [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
 
 const sizes = {
   practice: "min-h-target-practice min-w-target-practice px-3 [&_svg:not([class*='size-'])]:size-6",
@@ -25,7 +26,7 @@ const on =
 
 const tones = {
   primary:
-    "rounded-full bg-primary text-primary-foreground shadow-play inset-ring-transparent hover:bg-primary-hover disabled:shadow-none [&_svg]:fill-current [&_svg:not([class*='size-'])]:size-7",
+    "bg-primary text-primary-foreground inset-ring-transparent hover:bg-primary-hover [&_svg]:fill-current [&_svg:not([class*='size-'])]:size-7",
   neutral: `text-muted-foreground inset-ring-transparent hover:bg-muted hover:text-foreground ${on}`,
   box: `bg-card text-muted-foreground inset-ring-border-strong hover:bg-muted hover:text-foreground ${on}`,
 }

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 // Distance illustrations (26 §11, `Onboarding.dc.html`): a seated player, the floor and the
 // screen at Desk, Music stand or Floor distance, joined by a dashed line of sight. Line drawings
-// in token colours (never amber: 26 §4.5), decorative: the card's title names the choice.
+// in token colours, decorative: the card's title names the choice.
 
 export type DistanceDrawing = 'desk' | 'stand' | 'floor'
 

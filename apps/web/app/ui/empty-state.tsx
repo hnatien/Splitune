@@ -1,8 +1,8 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §12.2, 27 §4: a dashed drop-style panel (`.drop`) with an icon, an h2 in the h3 size, one
-// sentence, the primary action and an optional secondary one.
+// Doc 26 §12.2, 27 §4: no box, just space. An icon in a quiet circle, an h2, one sentence, the
+// primary action and an optional secondary one, centred.
 
 type EmptyStateProps = {
   icon: React.ReactNode
@@ -26,15 +26,14 @@ function EmptyState({
   return (
     <section
       data-slot="empty-state"
-      className={cn(
-        'flex flex-col items-center gap-3.5 rounded-4xl border-2 border-dashed border-border-strong bg-card px-6 py-8 text-center',
-        className,
-      )}
+      className={cn('flex flex-col items-center gap-3 px-6 py-16 text-center', className)}
     >
-      <span className="text-faint-foreground [&_svg]:size-7">{icon}</span>
-      {title && <h2 className="text-lg">{title}</h2>}
-      <p className="text-sm text-muted-foreground">{description}</p>
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground [&_svg]:size-6">
+        {icon}
+      </span>
+      {title && <h2 className="text-xl text-balance">{title}</h2>}
+      <p className="max-w-sm text-base text-pretty text-muted-foreground">{description}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         {action}
         {secondaryAction}
       </div>

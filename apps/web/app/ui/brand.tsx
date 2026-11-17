@@ -2,8 +2,8 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 // Wordmark and mark (doc 26 §11): a 28 px --primary disc crossed by a 2.4 px --primary-foreground
-// wave (the mockups' header mark), and "splitune" in lowercase. The PWA icons and favicon in
-// public/ still draw the earlier mark until s45 redraws them.
+// wave, and "splitune" in lowercase. The disc is the ink (white on black, black on white), and the
+// PWA icons and favicon in public/ draw the same mark.
 
 export const MARK_PATHS = {
   disc: { cx: 14, cy: 14, r: 13 },
@@ -38,7 +38,7 @@ function BrandMark({ tone = 'colour', className, ...props }: MarkProps) {
   )
 }
 
-/** "splitune" in Instrument Sans 700, −0.02em, with the mark. The name is real text, so it is the label. */
+/** "splitune" in Figtree 600, −0.02em, with the mark. The name is real text, so it is the label. */
 function Wordmark({
   tone = 'colour',
   className,
@@ -47,7 +47,7 @@ function Wordmark({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-2.5 font-sans text-lead leading-none font-bold tracking-[-0.02em] text-foreground',
+        'inline-flex items-center gap-2.5 font-sans text-lead leading-none font-semibold tracking-[-0.02em] text-foreground',
         className,
       )}
       {...props}

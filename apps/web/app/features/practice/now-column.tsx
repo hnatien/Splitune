@@ -7,6 +7,7 @@ import { BeatPulse } from '@/ui/beat-pulse'
 import { ChordChip, ChordSymbol } from '@/ui/chord-chip'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
+import { nextInBeats } from './bar-text'
 import { LevelToggle, levelLabel } from './level-toggle'
 import { type ChordModel, chordsAround } from './model/view-model'
 import { usePractice } from './practice-context'
@@ -120,7 +121,7 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
         className="flex h-18 shrink-0 items-center gap-6 border-b border-border px-5"
       >
         <span className="flex items-baseline gap-3">
-          <span className="text-read-label font-[650] tracking-wider text-faint-foreground uppercase">
+          <span className="text-read-label font-medium text-faint-foreground">
             {now.bar < 0
               ? m['practice.now_pickup']()
               : m['practice.now_bar']({ bar: String(now.bar + 1) })}
@@ -132,8 +133,8 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
         {pulse}
         {next && (
           <span className="flex items-baseline gap-3">
-            <span className="text-read-label font-[650] tracking-wider text-faint-foreground uppercase">
-              {m['practice.next_in_beats']({ count: String(inBeats ?? 1) })}
+            <span className="text-read-label font-medium text-faint-foreground">
+              {nextInBeats(inBeats ?? 1)}
             </span>
             <span className="text-read-chord font-semibold text-ink">
               <ChordSymbol name={next.name} />
@@ -150,7 +151,7 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
       data-slot="now-column"
       className="flex w-66 shrink-0 flex-col gap-4 overflow-y-auto border-r border-border px-5 pt-5 pb-4"
     >
-      <p className="text-read-label font-[650] tracking-wider text-faint-foreground uppercase">
+      <p className="text-read-label font-medium text-faint-foreground">
         {now.bar < 0
           ? m['practice.now_pickup_beat']({ beat: String(now.beat) })
           : m['practice.now_bar_beat']({ bar: String(now.bar + 1), beat: String(now.beat) })}
@@ -172,14 +173,14 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
       <hr className="border-border" />
       {next && (
         <div className="flex flex-col gap-1">
-          <p className="text-read-label font-[650] tracking-wider text-faint-foreground uppercase">
-            {m['practice.next_in_beats']({ count: String(inBeats ?? 1) })}
+          <p className="text-read-label font-medium text-faint-foreground">
+            {nextInBeats(inBeats ?? 1)}
           </p>
           <p className="flex items-baseline gap-2.5">
             <span className="text-read-chord-next leading-none font-semibold tracking-tight text-ink">
               <ChordSymbol name={next.name} />
             </span>
-            <span className="font-mono text-sm text-faint-foreground">
+            <span className="text-sm text-faint-foreground tabular-nums">
               {m['practice.now_at_bar']({ bar: String(next.bar + 1) })}
             </span>
           </p>
@@ -187,7 +188,7 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
       )}
       {then.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-read-label font-[650] tracking-wider text-faint-foreground uppercase">
+          <p className="text-read-label font-medium text-faint-foreground">
             {m['practice.then']()}
           </p>
           <ol aria-label={m['practice.chords']()} className="flex flex-wrap gap-x-1.5">
@@ -218,8 +219,8 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
   )
 }
 
-// Level and Capo as two rows of a card (27 §3.7.1): each names its value and opens the level and
-// capo popover.
+// Level and Capo as two rows under a hairline (27 §3.7.1): each names its value and opens the level
+// and capo popover.
 function LevelCard({ capo }: { capo: boolean }) {
   const { options } = usePractice()
   const title = capo ? m['practice.level_and_capo']() : m['practice.level']()
@@ -238,13 +239,13 @@ function LevelCard({ capo }: { capo: boolean }) {
       : []),
   ]
   return (
-    <div className="flex flex-col rounded-3xl border border-border bg-card p-1">
+    <div className="flex flex-col border-t border-border pt-2">
       {rows.map((row) => (
         <Popover key={row.label}>
-          <PopoverTrigger className="flex min-h-target-practice-2 w-full items-center gap-3 rounded-lg px-3 text-left hover:bg-muted">
+          <PopoverTrigger className="-mx-2 flex min-h-target-practice-2 items-center gap-3 rounded-lg px-2 text-left hover:bg-muted">
             {capo && <span className="sr-only">{title}: </span>}
             <span className="w-11 shrink-0 text-sm text-faint-foreground">{row.label}</span>{' '}
-            <span className="min-w-0 flex-1 py-2 text-md leading-tight font-semibold">
+            <span className="min-w-0 flex-1 py-2 text-md leading-tight font-medium">
               {row.value}
             </span>
             <ChevronDownIcon aria-hidden className="size-4 shrink-0 text-faint-foreground" />

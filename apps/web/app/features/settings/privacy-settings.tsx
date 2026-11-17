@@ -20,18 +20,17 @@ import {
   AlertDialogTitle,
 } from '@/ui/alert-dialog'
 import { Button, buttonVariants } from '@/ui/button'
-import { Card } from '@/ui/card'
 import { Field, FieldLabel } from '@/ui/field'
 import { Input } from '@/ui/input'
 import { InlineError } from '@/ui/status-message'
 import { WorkerStatus } from '@/ui/worker-status'
 import { authenticate } from '../auth/sign-in'
 import { workerStatusQuery } from '../library/queries'
-import { SettingSection, SwitchSetting } from './setting-row'
+import { SettingRows, SettingSection, SwitchSetting } from './setting-row'
 
 // Settings → Account → Privacy (27 §3.9, 15 §4, Settings-Account): the training opt-in (stored
-// only; nothing trains on it yet), the "Download my data" card (the node worker prepares a file kept
-// for 24 h) and the "Delete my account" card (27 §5.6 `delete.account_confirm`; a sign-in within 10
+// only; nothing trains on it yet), the "Download my data" row (the node worker prepares a file kept
+// for 24 h) and the "Delete my account" row (27 §5.6 `delete.account_confirm`; a sign-in within 10
 // minutes is required, so a stale session asks for the password again, or for Google again on an
 // account without one). The page's one primary is See Plus (26 §4.5), so these actions aren't.
 
@@ -63,9 +62,11 @@ export function PrivacySettings({
   return (
     <SettingSection id="privacy" title={m['settings.privacy']()}>
       {!online && <InlineError tone="info" title={m['privacy.offline']()} />}
-      <TrainingOptIn me={me} disabled={!online} />
-      <DataExport disabled={!online} />
-      <DeleteAccount me={me} disabled={!online} initial={deleteDialog} />
+      <SettingRows>
+        <TrainingOptIn me={me} disabled={!online} />
+        <DataExport disabled={!online} />
+        <DeleteAccount me={me} disabled={!online} initial={deleteDialog} />
+      </SettingRows>
     </SettingSection>
   )
 }
@@ -111,14 +112,14 @@ function DataExport({ disabled }: { disabled: boolean }) {
   )
   const ready = status === 'ready' && state.data?.url ? state.data : undefined
   return (
-    <Card className="flex-row flex-wrap items-center gap-4 p-4.5">
+    <div className="flex flex-wrap items-center gap-4">
       <DownloadIcon
         aria-hidden
         strokeWidth={1.8}
         className={cn('size-6 shrink-0', ready ? 'text-success' : 'text-muted-foreground')}
       />
       <div className="flex min-w-0 grow basis-75 flex-col gap-0.5">
-        <h3 className="text-base font-semibold">{m['privacy.export_title']()}</h3>
+        <h3 className="text-base font-medium">{m['privacy.export_title']()}</h3>
         <p role="status" className="text-sm text-muted-foreground">
           {status === 'pending'
             ? m['privacy.export_pending']()
@@ -153,7 +154,7 @@ function DataExport({ disabled }: { disabled: boolean }) {
       {(status === 'failed' || request.isError) && (
         <InlineError className="basis-full" title={m['privacy.export_failed']()} />
       )}
-    </Card>
+    </div>
   )
 }
 
@@ -202,9 +203,9 @@ function DeleteAccount({
     }
   }
   return (
-    <Card className="flex-row flex-wrap items-center gap-4 border-destructive-surface p-4.5 contrast-more:border-destructive">
+    <div className="flex flex-wrap items-center gap-4">
       <div className="flex min-w-0 grow basis-75 flex-col gap-0.5">
-        <h3 className="text-base font-semibold">{m['privacy.delete_title']()}</h3>
+        <h3 className="text-base font-medium">{m['privacy.delete_title']()}</h3>
         <p className="text-sm text-muted-foreground">{m['privacy.delete_body']()}</p>
       </div>
       <Button variant="destructive" disabled={disabled} onClick={() => setOpen(true)}>
@@ -295,6 +296,6 @@ function DeleteAccount({
           )}
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   )
 }

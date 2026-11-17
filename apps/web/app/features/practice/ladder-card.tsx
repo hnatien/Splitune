@@ -19,7 +19,8 @@ import {
 } from './model/ladder'
 import { usePractice } from './practice-context'
 
-// The Speed ladder card of the Loop tab (27 §3.7.4, Main.dc.html; 12 §5): the switch, the rungs
+// The Speed ladder section of the Loop tab (27 §3.7.4, Main.dc.html; 12 §5), set off by a hairline
+// rather than a card: the switch, the rungs
 // from start to goal, what the next clean pass does, and a chip per setting that opens its
 // stepper (Start, Goal, Step, clean passes; More: back down after misses, count-in before each
 // pass, at the goal). Every number is the learner's to change: the ladder is a default, not a
@@ -193,7 +194,7 @@ export function LadderCard() {
     <section
       aria-labelledby={titleId}
       data-slot="ladder-card"
-      className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-3.5"
+      className="flex flex-col gap-3 border-t border-border pt-3"
     >
       <div className="flex min-h-target-practice-2 items-center gap-2.5">
         <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-primary-ink" />

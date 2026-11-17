@@ -62,7 +62,7 @@ describe('applyDisplay', () => {
     expect(style.get('color-scheme')).toBe('dark')
   })
 
-  it('is Night Rehearsal when nothing is stored, whatever the OS prefers (26 §2)', () => {
+  it('is Dark when nothing is stored, whatever the OS prefers (26 §2)', () => {
     const { root, attributes, classes, style } = fakeRoot()
     expect(applyDisplay({}, root, mediaWith()).appearance).toBe('dark')
     expect(attributes.get('data-appearance')).toBe('dark')
@@ -169,7 +169,7 @@ describe('DISPLAY_SCRIPT', () => {
     expect(run('{"appearance":"stage"}')).toBe('stage')
   })
 
-  it('falls back to Night Rehearsal when storage is empty, corrupt or blocked', () => {
+  it('falls back to Dark when storage is empty, corrupt or blocked', () => {
     expect(run(null)).toBe('dark')
     expect(run('not json')).toBe('dark')
     expect(run(null, true)).toBe('dark')

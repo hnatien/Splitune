@@ -16,10 +16,10 @@ import { Switch } from '@/ui/switch'
 import { OptionSegments } from '../common/option-segments'
 import { followLabel, playheadLabel } from './display-options'
 
-// The Display popover's body (Aa, 27 §3.7.4): Appearance (Night Rehearsal · Daylight · Follow my
+// The Display popover's body (Aa, 27 §3.7.4): Appearance (Dark · Light · Follow my
 // device), Where is your screen? + Reading size, Hyperlegible font, Show uncertainty, Notation
 // follows the music, Playhead and Reduce motion — the same controls as Settings → Display &
-// practice, per device and applied at once (26 §2). A stored `stage` shows Night Rehearsal and the
+// practice, per device and applied at once (26 §2). A stored `stage` shows Dark and the
 // distance it resolved to; the store turns it into `dark` on the next change to either (26 §2).
 
 function SwitchRow({
@@ -80,7 +80,7 @@ export function DisplayPanel() {
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-3">
           <Label id={calibrationId}>{m['settings.calibration']()}</Label>
-          <span className="font-mono text-sm font-medium tabular-nums">
+          <span className="text-sm font-medium tabular-nums">
             {formatPercent(display.calibration * 100)}
           </span>
         </div>

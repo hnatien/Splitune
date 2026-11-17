@@ -15,7 +15,7 @@ import { WeekStrip, WeekStripCompact } from './week-strip'
 
 // Library screen states (27 §3.5, §4; Library, Phone-Library, States): the Continue card and every
 // card status, phone rows, empty, no results, loading, load error, offline and the worker-offline
-// banner, in Night Rehearsal and Daylight; This week and Worth a revisit with fixture data (s39).
+// banner, in Dark and Light; This week and Worth a revisit with fixture data (s39).
 const meta = { title: 'Screens/Library', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -88,10 +88,13 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
   await expect(entries[3]?.style.getPropertyValue('--i')).toBe('3')
   await expect(canvasElement.querySelectorAll('[data-slot=instrument-tile]')).toHaveLength(8)
   await settled(await canvas.findByText("This didn't use an analysis."))
-  // One primary per view (26 §4.5): Add song in the bar has the amber fill Resume practice lacks.
-  const fill = (el: HTMLElement) => getComputedStyle(el).backgroundColor
-  const addSong = canvas.getByRole('button', { name: 'Add song' })
-  await expect(fill(canvas.getByRole('link', { name: 'Resume practice' }))).not.toBe(fill(addSong))
+  // Resume practice is the page's lead action: the ink pill (--primary fill), not a quiet fill.
+  const fill = (el: Element) => getComputedStyle(el).backgroundColor
+  const ink = document.createElement('span')
+  ink.className = 'bg-primary'
+  canvasElement.append(ink)
+  await expect(fill(canvas.getByRole('link', { name: 'Resume practice' }))).toBe(fill(ink))
+  ink.remove()
 }
 
 export const Populated: Story = { render: populated, play: playPopulated }

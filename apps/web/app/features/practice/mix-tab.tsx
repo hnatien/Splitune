@@ -25,7 +25,7 @@ const STEM_KIND: Record<string, StemKind> = {
   piano: 'keys',
 }
 
-const eyebrow = 'text-xs font-semibold tracking-wider text-faint-foreground uppercase'
+const heading = 'text-sm font-medium text-muted-foreground'
 
 export function MixTab({
   orientation = 'horizontal',
@@ -102,9 +102,9 @@ export function MixTab({
       </div>
       <hr className="border-border" />
       <section className="flex flex-col gap-2">
-        <h3 className={eyebrow}>{m['mixer.helpers']()}</h3>
+        <h3 className={heading}>{m['mixer.helpers']()}</h3>
         <div className="flex min-h-target-practice-2 items-center gap-3">
-          <Label htmlFor={clickId} className="flex-1 text-md font-semibold">
+          <Label htmlFor={clickId} className="flex-1 text-md font-medium">
             {m['practice.metronome']()}
           </Label>
           <Switch

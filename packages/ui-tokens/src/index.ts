@@ -1,4 +1,4 @@
-// Typed names and metadata for the "Night Rehearsal" tokens (docs/specs/26-design-system.md).
+// Typed names and metadata for the design tokens (docs/specs/26-design-system.md).
 // CSS in this package is the source of truth; JS consumers (waveform canvas, alphaTab resources,
 // meters) read live values with readToken()/readColor() and re-read them on appearance change.
 
@@ -131,6 +131,7 @@ export const COMPONENT_TOKENS = [
   '--melody-vocals',
   '--tile-foreground',
   '--scrim',
+  '--capsule',
   '--hud-bg',
   '--hud-bg-more',
   '--hud-fg',
@@ -223,7 +224,7 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--faint-foreground', '--card', 4.5],
   ['--faint-foreground', '--muted', 4.5],
   ['--faint-foreground', '--accent', 4.5],
-  // Amber as text is --primary-ink; --primary is a fill (its text is --primary-foreground)
+  // The ink as accent text is --primary-ink; --primary is a fill (its text is --primary-foreground)
   ['--primary-ink', '--background', 4.5],
   ['--primary-ink', '--card', 4.5],
   ['--primary-ink', '--accent', 4.5],
@@ -231,7 +232,7 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--input', '--muted', 3],
   ['--ring', '--card', 3],
   ['--ring', '--muted', 3],
-  // Amber as a mark (playhead, loop edges, tab underline, beat dot, fills), and its hairline
+  // "Now" as a mark (playhead, loop edges, tab underline, beat dot, fills), and its hairline
   ['--signal', '--background', 3],
   ['--signal', '--card', 3],
   ['--signal', '--muted', 3],
@@ -293,6 +294,8 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--waveform-rms', '--card', 3],
   // PedalHud
   ['--hud-fg', '--hud-bg', 4.5],
+  // Segmented control: the pressed item's label on its capsule
+  ['--foreground', '--capsule', 4.5],
   // Surfaces and status surfaces (§4.8): text on raised and sunken, status colour on its own tint
   ['--foreground', '--surface-raised', 4.5],
   ['--foreground', '--surface-sunken', 4.5],
@@ -380,8 +383,8 @@ export function readColor(name: TokenName, element: Element = document.documentE
 }
 
 /**
- * The Daylight and Night Rehearsal page backgrounds (--background) as sRGB hex, for what takes no
- * CSS variable: the web app manifest and `<meta name="theme-color">` (§11). Keyed by appearance id
- * (`light` = Daylight, `dark` = Night Rehearsal); tokens.test.ts checks them against the CSS.
+ * The Light and Dark page backgrounds (--background) as sRGB hex, for what takes no CSS variable:
+ * the web app manifest and `<meta name="theme-color">` (§11). Keyed by appearance id;
+ * tokens.test.ts checks them against the CSS.
  */
-export const BACKGROUND_HEX = { light: '#f8f5f1', dark: '#110e0b' } as const
+export const BACKGROUND_HEX = { light: '#fff', dark: '#000' } as const

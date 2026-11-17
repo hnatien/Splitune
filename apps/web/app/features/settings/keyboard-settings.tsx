@@ -2,13 +2,12 @@ import { KeyboardIcon, RotateCcwIcon } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
-import { Card } from '@/ui/card'
 import { PedalIcon } from '@/ui/icons'
 import { Kbd, KbdGroup } from '@/ui/kbd'
 import { actionLabel, keyLabel } from '../practice/input-mapper'
 import { useKeys } from '../practice/keys-store'
 import { ACTIONS, DEFAULT_KEYS, keyOf, resolveKey } from '../practice/model/keymap'
-import { SettingSection, SettingsPage, SwitchSetting } from './setting-row'
+import { SettingRows, SettingSection, SettingsPage, SwitchSetting } from './setting-row'
 
 // Settings → Keyboard & pedal (27 §3.9, Settings-Pedal's Keys part, 12 §8): the intro, the pedal
 // setup card (its wizard is s43's), the Single-key shortcuts switch (WCAG 2.1.4; s35's keys store),
@@ -18,15 +17,17 @@ import { SettingSection, SettingsPage, SwitchSetting } from './setting-row'
 export function KeyboardSettings() {
   return (
     <SettingsPage title={m['settings.keyboard']()} intro={m['shortcuts.settings_intro']()}>
-      <Card className="flex-row items-center gap-4 border-primary-line p-6">
+      <div className="flex items-center gap-4 rounded-xl bg-muted p-6">
         <PedalIcon aria-hidden className="size-8 shrink-0 text-muted-foreground" />
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="text-xl">{m['settings.pedal_setup']()}</h2>
+          <h2 className="text-lg">{m['settings.pedal_setup']()}</h2>
           <p className="text-sm text-muted-foreground">{m['shortcuts.description']()}</p>
         </div>
-      </Card>
+      </div>
       <SettingSection id="keys" title={m['shortcuts.keys']()}>
-        <SingleKeys />
+        <SettingRows>
+          <SingleKeys />
+        </SettingRows>
         <KeysTable />
       </SettingSection>
       <KeyTestArea />
@@ -66,17 +67,17 @@ function KeysTable() {
   }, [learning, bind, cancel])
   return (
     <>
-      <Card className="overflow-x-auto px-4 py-1">
+      <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-border text-sm text-muted-foreground">
-              <th scope="col" className="py-2 pr-3 font-semibold">
+              <th scope="col" className="py-2 pr-3 font-medium">
                 {m['shortcuts.action']()}
               </th>
-              <th scope="col" className="py-2 pr-3 font-semibold">
+              <th scope="col" className="py-2 pr-3 font-medium">
                 {m['shortcuts.keys']()}
               </th>
-              <th scope="col" className="py-2 pr-3 font-semibold">
+              <th scope="col" className="py-2 pr-3 font-medium">
                 {m['shortcuts.pedal']()}
               </th>
               <th scope="col" className="py-2">
@@ -89,7 +90,7 @@ function KeysTable() {
               const pedal = learned[action]
               return (
                 <tr key={action} className="border-b border-border last:border-b-0">
-                  <th scope="row" className="py-1 pr-3 text-md font-semibold">
+                  <th scope="row" className="py-1 pr-3 text-md font-medium">
                     {actionLabel(action)}
                   </th>
                   <td className="py-1 pr-3">
@@ -120,7 +121,7 @@ function KeysTable() {
             })}
           </tbody>
         </table>
-      </Card>
+      </div>
       <p aria-live="polite" className="text-sm text-muted-foreground empty:hidden">
         {learning ? m['shortcuts.learning']({ action: actionLabel(learning) }) : ''}
       </p>
@@ -135,7 +136,7 @@ function KeyTestArea() {
   const [last, setLast] = useState<string | null>(null)
   const resultId = useId()
   return (
-    <section className="flex flex-wrap items-center gap-4 rounded-4xl border-2 border-dashed border-border-strong bg-card p-5">
+    <section className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-border-strong p-5">
       <button
         type="button"
         aria-describedby={resultId}
@@ -153,7 +154,7 @@ function KeyTestArea() {
                 : m['shortcuts.test_none']({ key }),
           )
         }}
-        className="flex min-h-target min-w-0 grow basis-75 items-center gap-4 rounded-2xl text-left"
+        className="flex min-h-target min-w-0 grow basis-75 items-center gap-4 rounded-lg text-left"
       >
         <KeyboardIcon
           aria-hidden

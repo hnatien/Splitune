@@ -108,10 +108,10 @@ function ContrastTable() {
       </caption>
       <thead>
         <tr className="border-b border-border text-left">
-          <th className="py-2 pr-3 font-semibold">Sample</th>
-          <th className="py-2 pr-3 font-semibold">Foreground on background</th>
-          <th className="py-2 pr-3 text-right font-semibold">Ratio</th>
-          <th className="py-2 text-right font-semibold">Minimum</th>
+          <th className="py-2 pr-3 font-medium">Sample</th>
+          <th className="py-2 pr-3 font-medium">Foreground on background</th>
+          <th className="py-2 pr-3 text-right font-medium">Ratio</th>
+          <th className="py-2 text-right font-medium">Minimum</th>
         </tr>
       </thead>
       <tbody>
@@ -122,7 +122,7 @@ function ContrastTable() {
               <td className="py-1.5 pr-3">
                 {row.min >= 4.5 ? (
                   <span
-                    className="inline-flex h-8 w-16 items-center justify-center rounded-md border border-border font-semibold"
+                    className="inline-flex h-8 w-16 items-center justify-center rounded-md border border-border font-medium"
                     style={{ color: `var(${row.fg})`, background: `var(${row.bg})` }}
                   >
                     Aa 7
@@ -152,7 +152,7 @@ function ContrastTable() {
                     {row.min}:1 met
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 font-semibold text-destructive">
+                  <span className="inline-flex items-center gap-1 font-medium text-destructive">
                     <XIcon aria-hidden className="size-4" />
                     below {row.min}:1
                   </span>
@@ -195,7 +195,7 @@ function Colours() {
             </div>
           ))}
           <div className="flex flex-col gap-2">
-            <span className="flex h-16 w-48 items-center gap-3 rounded-lg border border-border bg-paper px-3 font-reading text-xl font-semibold">
+            <span className="flex h-16 w-48 items-center gap-3 rounded-lg border border-border bg-paper px-3 font-reading text-xl font-medium">
               <span className="text-ink">3</span>
               <span className="rounded-sm border-[1.5px] border-dashed border-conf-medium px-1 text-conf-medium">
                 5
@@ -265,7 +265,7 @@ function Typography() {
           ))}
         </dl>
       </Section>
-      <Section title="Instrument Sans features (the subset keeps every layout feature)">
+      <Section title="Figtree features (the subset keeps every layout feature)">
         <div className="flex flex-col gap-2 text-2xl">
           <span data-testid="tnum-ones" className="w-fit tabular-nums">
             1111111111
@@ -315,11 +315,10 @@ export const TypeScale: Story = {
     await expect(width(canvas.getByTestId('pnum-ones'))).toBeLessThan(
       width(canvas.getByTestId('tnum-ones')),
     )
-    // Instrument Sans 1.000 has no frac feature (doc 26 §6.1), so frac leaves the set width alone;
-    // the ss* alternates change glyphs, so they change it.
-    await expect(width(canvas.getByTestId('frac-on'))).toBeCloseTo(
+    // Figtree keeps its frac feature (doc 26 §6.1), so built fractions set narrower; the ss*
+    // alternates change glyphs, so they change the width too.
+    await expect(width(canvas.getByTestId('frac-on'))).toBeLessThan(
       width(canvas.getByTestId('frac-off')),
-      0,
     )
     await expect(width(canvas.getByTestId('cv-on'))).not.toBeCloseTo(
       width(canvas.getByTestId('cv-off')),
@@ -479,7 +478,7 @@ function Surfaces() {
               <span className="rounded-full border border-transparent px-3 py-1 text-sm text-muted-foreground">
                 Slower
               </span>
-              <span className="rounded-full border border-primary bg-surface-raised px-3 py-1 text-sm font-semibold shadow-1">
+              <span className="rounded-full border border-primary bg-surface-raised px-3 py-1 text-sm font-medium shadow-1">
                 Original
               </span>
             </span>
@@ -501,7 +500,7 @@ function Surfaces() {
               className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ${fill}`}
             >
               <Icon aria-hidden className={`size-5 shrink-0 ${ink}`} />
-              <span className={`font-semibold ${ink}`}>{tone}</span>
+              <span className={`font-medium ${ink}`}>{tone}</span>
               <span>{text}</span>
             </li>
           ))}
@@ -538,7 +537,8 @@ export const SurfacesLight: Story = {
     const shadows = [...canvasElement.querySelectorAll<HTMLElement>('[data-elevation]')].map(
       (element) => getComputedStyle(element).boxShadow,
     )
-    await expect(new Set(shadows).size).toBe(2)
+    // Cards are flat (a transparent zero shadow); popovers and dialogs are lifted by two depths.
+    await expect(new Set(shadows).size).toBe(3)
     for (const shadow of shadows) await expect(shadow).not.toBe('none')
   },
 }

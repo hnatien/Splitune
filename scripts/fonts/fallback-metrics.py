@@ -6,7 +6,7 @@ real font in can't reflow anything (docs/specs/26-design-system.md §6.1, 28 §3
 packages/ui-tokens/src/fonts.css come from this script:
 
     uvx --from "fonttools[woff]==4.67.0" python -I scripts/fonts/fallback-metrics.py \
-        apps/web/public/fonts/InstrumentSans.woff2 /path/to/Arial.ttf
+        apps/web/public/fonts/Figtree.woff2 /path/to/Arial.ttf
 """
 
 import sys

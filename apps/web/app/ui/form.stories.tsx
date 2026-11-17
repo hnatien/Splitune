@@ -67,7 +67,7 @@ export const InputDefault: Story = {
       const input = within(frame).getByRole('textbox', { name: 'Email' })
       await expect(input.getBoundingClientRect().height).toBe(44)
       const label = getComputedStyle(within(frame).getByText('Email'))
-      await expect([label.fontSize, label.fontWeight]).toEqual(['13px', '600'])
+      await expect([label.fontSize, label.fontWeight]).toEqual(['13px', '500'])
     }
   },
 }
@@ -94,7 +94,7 @@ export const InputHover: Story = {
   },
 }
 
-/** Focus: the 2 px ring 1 px off the field's edge (mockup `.field:focus`). */
+/** Focus: the 2 px ring laid over the field's edge, so the edge and the ring read as one line. */
 export const InputFocus: Story = {
   render: () => <Email />,
   play: async ({ canvasElement }) => {
@@ -102,7 +102,7 @@ export const InputFocus: Story = {
     const input = within(canvasElement).getByRole('textbox', { name: 'Email' })
     await expect(input).toHaveFocus()
     const style = getComputedStyle(input)
-    await expect([style.outlineWidth, style.outlineOffset]).toEqual(['2px', '1px'])
+    await expect([style.outlineWidth, style.outlineOffset]).toEqual(['2px', '-1px'])
   },
 }
 export const InputFocusDaylight: Story = { ...InputFocus, globals: DAYLIGHT }

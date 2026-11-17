@@ -38,7 +38,7 @@ export function SpeedPresets({
         <ToggleGroupItem
           key={preset}
           value={String(preset)}
-          className="min-w-12 flex-1 px-1.5 font-mono tabular-nums"
+          className="min-w-12 flex-1 px-1.5 tabular-nums"
         >
           {preset}
           {NBSP}%

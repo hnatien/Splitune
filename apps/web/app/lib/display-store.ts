@@ -128,7 +128,7 @@ export function sanitizePractice(stored: unknown): Partial<PracticeDefaults> {
 type Distance = NonNullable<DisplayPreferences['distance']>
 
 /**
- * The `stage` → `dark` rewrite (26 §2): a device with `stage` stored shows Night Rehearsal and the
+ * The `stage` → `dark` rewrite (26 §2): a device with `stage` stored shows Dark and the
  * distance it resolved to; the next change to the appearance or the distance stores `dark` (unless
  * that change picks another appearance) and the distance shown (unless it picks one). Other
  * changes leave `stage` as it is.

@@ -40,12 +40,9 @@ export function WeekStrip({
     <section
       data-slot="week-strip"
       aria-labelledby="this-week"
-      className={cn(
-        'flex min-w-0 flex-col gap-3.5 rounded-3xl border border-border bg-card p-5',
-        className,
-      )}
+      className={cn('flex min-w-0 flex-col gap-4 rounded-xl border border-border p-5', className)}
     >
-      <h2 id="this-week" className="text-xs tracking-[0.08em] text-faint-foreground uppercase">
+      <h2 id="this-week" className="text-sm text-muted-foreground">
         {m['library.this_week']()}
       </h2>
       <div
@@ -65,7 +62,7 @@ export function WeekStrip({
         {stats.map((stat) => (
           <div key={stat.label} className="flex flex-col-reverse">
             <dt className="text-sm text-faint-foreground">{stat.label}</dt>
-            <dd className="font-mono text-xl font-semibold tabular-nums">{stat.value}</dd>
+            <dd className="text-xl font-medium tabular-nums">{stat.value}</dd>
           </div>
         ))}
       </dl>
@@ -77,14 +74,14 @@ export function WeekStrip({
 export function WeekStripCompact({ days, total }: { days: WeekDay[]; total: string }) {
   return (
     <div data-slot="week-strip" className="flex items-center gap-3">
-      <span className="w-18.5 text-sm text-faint-foreground">{m['library.this_week']()}</span>
+      <span className="w-18.5 text-sm text-muted-foreground">{m['library.this_week']()}</span>
       <span role="img" aria-label={practisedOn(days)} className="flex flex-1 gap-2">
         {days.map((day, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: the seven days are positional
           <Dot key={index} day={day} size="sm" />
         ))}
       </span>
-      <span className="font-mono text-sm text-muted-foreground tabular-nums">{total}</span>
+      <span className="text-sm text-muted-foreground tabular-nums">{total}</span>
     </div>
   )
 }

@@ -19,7 +19,7 @@ export function OptionSegments<T extends string>({
   const id = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={id} className="text-sm font-medium">
+      <span id={id} className="text-sm">
         {label}
       </span>
       <ToggleGroup

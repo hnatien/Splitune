@@ -53,7 +53,7 @@ export function PianoOptions({
           <Button
             variant="outline"
             className={cn(
-              'shrink-0 border-staff bg-paper text-ink hover:bg-bar-current in-data-[appearance=stage]:hidden',
+              'shrink-0 bg-paper text-ink inset-ring-staff hover:bg-bar-current in-data-[appearance=stage]:hidden',
               className,
             )}
             aria-label={`${m['practice.piano_options']()}: ${summary}`}

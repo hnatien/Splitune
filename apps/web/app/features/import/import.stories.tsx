@@ -12,10 +12,10 @@ import { LIBRARY, ME, ME_CAPPED, ME_PLUS_CAPPED, STATS, WORKER_ONLINE } from '..
 import { FileRow } from './file-row'
 import type { PickedFile } from './use-picked-file'
 
-// Add song states (27 §3.6, §4; AddSong and Phone-Add): the dialog over the library (a full-screen
-// sheet on phones) on each tab, a picked file with its card, Title and Artist, Welcome, cap reached,
-// and the file card's own states (reading, warnings, preview after upload, duplicate, too long,
-// unreadable), in Night Rehearsal and Daylight.
+// Add song states (27 §3.6, §4; AddSong and Phone-Add): the one-column dialog over the library (a
+// full-screen sheet on phones) on each tab, a picked file with its card, Title and Artist, the part
+// chips with Hand for fretted parts, Welcome, cap reached, and the file card's own states (reading,
+// warnings, preview after upload, duplicate, too long, unreadable), in Dark and Light.
 const meta = { title: 'Screens/Import', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -88,11 +88,11 @@ export const DropZoneDaylight: Story = { render: page(), play: playDropZone, glo
 const playSheet: Story['play'] = async () => {
   const add = await dialog()
   const sheet = document.querySelector<HTMLElement>('[data-slot=add-song]') as HTMLElement
-  // Phone-Add: a full-screen sheet with 48 px tabs, part chips and the Full · Lite segments.
+  // Phone-Add: a full-screen sheet with the same column; the segmented tabs keep 44 px targets.
   await waitFor(() => expect(sheet.getBoundingClientRect().width).toBe(window.innerWidth))
-  await expect(add.getByRole('tab', { name: 'Record' }).getBoundingClientRect().height).toBe(48)
-  await expect(add.getByRole('button', { name: 'Full · free once' })).toBeVisible()
-  await expect(add.getByRole('button', { name: 'Lite · 4 left' })).toBeVisible()
+  await expect(add.getByRole('tab', { name: 'Record' }).getBoundingClientRect().height).toBe(44)
+  await expect(add.getByRole('radio', { name: /^Full/ })).toBeVisible()
+  await expect(add.getByRole('radio', { name: /^Lite/ })).toBeVisible()
   await expect(add.queryByRole('button', { name: 'Cancel' })).toBeNull()
 }
 export const Sheet: Story = { render: page(ME, 'record'), play: playSheet, globals: PHONE }
@@ -122,6 +122,23 @@ export const PlusCapReached: Story = {
   },
 }
 
+/** Hand is the profile's handedness and only applies to fretted parts (guitar and bass). */
+const playHand: Story['play'] = async () => {
+  const add = await dialog()
+  const hand = add.getByRole('group', { name: 'Hand' })
+  await expect(within(hand).getByRole('button', { name: 'Right' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await userEvent.click(add.getByRole('radio', { name: 'Piano' }))
+  await expect(add.getByRole('radio', { name: 'Piano' })).toBeChecked()
+  await expect(add.queryByRole('group', { name: 'Hand' })).toBeNull()
+  await userEvent.click(add.getByRole('radio', { name: 'Bass' }))
+  await expect(add.getByRole('group', { name: 'Hand' })).toBeVisible()
+}
+export const PartAndHand: Story = { render: page(), play: playHand }
+export const PartAndHandDaylight: Story = { render: page(), play: playHand, globals: DAYLIGHT }
+
 const playLink: Story['play'] = async () => {
   const add = await dialog()
   await userEvent.type(add.getByLabelText('Link to a video or song'), 'not a link')
@@ -150,7 +167,7 @@ const playFileSelected: Story['play'] = async () => {
   await expect(add.getByText('Riff in A minor.wav')).toBeVisible()
   await expect(add.getByLabelText('Title')).toHaveValue('Riff in A minor')
   await expect(add.getByPlaceholderText('Who plays it')).toBeVisible()
-  await expect(add.getByText('Drop another file here, or')).toBeVisible()
+  await expect(add.getByRole('button', { name: 'Remove file' })).toBeVisible()
 }
 export const FileSelected: Story = { render: page(), play: playFileSelected }
 export const FileSelectedDaylight: Story = {
@@ -159,13 +176,24 @@ export const FileSelectedDaylight: Story = {
   globals: DAYLIGHT,
 }
 
-export const RecordTab: Story = {
+// Browsers without MediaRecorder (Playwright's WebKit) get the unsupported note instead.
+const canRecord = () =>
+  typeof MediaRecorder === 'function' && typeof navigator.mediaDevices?.getUserMedia === 'function'
+
+const playRecord: Story['play'] = async () => {
+  const add = await dialog()
+  await expect(
+    canRecord()
+      ? add.getByRole('button', { name: 'Allow microphone' })
+      : add.getByText(/Recording isn't available in this browser/),
+  ).toBeVisible()
+  await expect(add.getByRole('button', { name: 'Use this recording' })).toBeDisabled()
+}
+export const RecordTab: Story = { render: page(ME, 'record'), play: playRecord }
+export const RecordTabDaylight: Story = {
   render: page(ME, 'record'),
-  play: async () => {
-    const add = await dialog()
-    await expect(add.getByRole('button', { name: 'Allow microphone' })).toBeVisible()
-    await expect(add.getByRole('button', { name: 'Use this recording' })).toBeDisabled()
-  },
+  play: playRecord,
+  globals: DAYLIGHT,
 }
 
 // "Works best with" (27 §3.6): a disclosure in the footer; G4 checks its place with the owner.

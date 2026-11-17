@@ -1,9 +1,10 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Big tap-to-choose cards (27 §3.3: onboarding's instrument and level): an icon, a title and one
-// line. Choosing acts at once, so these are buttons, not radios. Unavailable choices stay
-// focusable and say why in their description (26 §12.3 disabled state).
+// Big tap-to-choose rows (27 §3.3: onboarding's instrument and level): an icon, a title and one
+// line on the page, with a hairline edge that fills on hover. Choosing acts at once, so these are
+// buttons, not radios. Unavailable choices stay focusable, sit on the quiet fill and say why in
+// their description (26 §12.3 disabled state).
 
 type ChoiceCardProps = Omit<React.ComponentProps<'button'>, 'title'> & {
   icon?: React.ReactNode
@@ -28,7 +29,7 @@ function ChoiceCard({
       aria-disabled={unavailable || undefined}
       onClick={unavailable ? undefined : onClick}
       className={cn(
-        'flex min-h-target-practice w-full items-center gap-4 rounded-3xl border border-border bg-surface-raised p-4 text-left shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input aria-disabled:cursor-not-allowed aria-disabled:border-input aria-disabled:bg-surface-sunken aria-disabled:shadow-none aria-disabled:hover:shadow-none [&_svg]:size-8 [&_svg]:shrink-0',
+        'flex min-h-target-practice w-full items-center gap-4 rounded-xl border border-border bg-background px-5 py-4 text-left transition-colors duration-(--duration-base) ease-standard hover:border-border-strong hover:bg-muted contrast-more:border-input aria-disabled:cursor-not-allowed aria-disabled:border-transparent aria-disabled:bg-muted aria-disabled:hover:border-transparent [&_svg]:size-6 [&_svg]:shrink-0',
         className,
       )}
       {...props}
@@ -39,7 +40,7 @@ function ChoiceCard({
         </span>
       )}
       <span className="flex min-w-0 flex-col gap-1">
-        <span className="text-lg font-semibold">{title}</span>
+        <span className="text-lg in-aria-disabled:text-muted-foreground">{title}</span>
         {description && <span className="text-sm text-muted-foreground">{description}</span>}
       </span>
     </button>

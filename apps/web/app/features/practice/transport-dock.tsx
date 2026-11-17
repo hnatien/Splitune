@@ -21,7 +21,7 @@ import { useLoopPill, VolumeControl } from './transport-bar'
 
 // The transport dock (27 §3.7.1, 26 §7, §8, Main.dc.html; desktop): 96 px on --card holding the
 // main practice controls at 64 × 64 (V11) — Restart ("Restart loop" while looping, else "Back a
-// bar"), Play/Pause (amber), Next bar — the position (mono 22 "26.3" / 92 over "1:04 / 3:50"; a tap
+// bar"), Play/Pause (the filled ink circle), Next bar — the position (mono 22 "26.3" / 92 over "1:04 / 3:50"; a tap
 // switches bar.beat ↔ time), the loop pill (opens Loop), speed − / "75 %" "72 BPM · → 100" (the
 // ladder's goal while it is on) / +, then
 // Count-in (64), Click (52), the mix pill (52; "Your part loud" / "2 stems · click on", opens Mix;
@@ -83,11 +83,11 @@ function Position() {
       onClick={() => setAsTime(!asTime)}
       className="flex min-h-target-practice-2 w-29 shrink-0 flex-col items-start justify-center rounded-lg px-1 text-left hover:bg-muted max-lg:hidden"
     >
-      <span className="font-mono text-read-readout leading-tight font-semibold tabular-nums">
+      <span className="font-reading text-read-readout leading-tight tabular-nums">
         <span ref={main} />
         <span ref={total} className="text-sm text-faint-foreground" />
       </span>
-      <span ref={sub} className="font-mono text-sm text-faint-foreground tabular-nums" />
+      <span ref={sub} className="text-sm text-faint-foreground tabular-nums" />
       <span id={hintId} className="sr-only">
         {m['practice.position']()}
       </span>
@@ -122,7 +122,7 @@ function MixPill({ iconOnly }: { iconOnly: boolean }) {
       aria-label={iconOnly ? `${layers.stems ? name : m['practice.mix']()}, ${detail}` : undefined}
       onClick={() => openTab('mix')}
       className={cn(
-        'inline-flex min-h-13 shrink-0 items-center gap-2.5 rounded-2xl bg-muted px-3.5 text-left text-md font-semibold whitespace-nowrap inset-ring inset-ring-border-strong hover:bg-accent disabled:pointer-events-none disabled:text-faint-foreground disabled:inset-ring-input [&_svg]:size-5 [&_svg]:shrink-0',
+        'inline-flex min-h-13 shrink-0 items-center gap-2.5 rounded-full bg-muted px-4.5 text-left text-md font-medium whitespace-nowrap inset-ring inset-ring-border-strong hover:bg-accent disabled:pointer-events-none disabled:text-faint-foreground disabled:inset-ring-input [&_svg]:size-5 [&_svg]:shrink-0',
         iconOnly && 'min-w-13 justify-center px-0',
       )}
     >

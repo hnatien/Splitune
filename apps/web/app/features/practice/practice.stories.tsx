@@ -42,7 +42,7 @@ import {
 // The practice screen (27 §3.7) on the contracts' 8-bar Am–F–C–G fixture: the desktop regions at
 // 1200 px (the story runner's default) and at 1440 / 1180 / below 1180 / below 1024 (Main.dc.html),
 // the inspector's tabs, the progressive states as artefacts land (§3.7.3), failures, follow modes,
-// playhead styles, reduced motion, the keymap, the chords-only fallback, Daylight and Stage, the
+// playhead styles, reduced motion, the keymap, the chords-only fallback, Light and Stage, the
 // tablet and phone arrangements and every instrument's views. Audio is a generated tone; nothing
 // reaches the network.
 const VIEWPORTS = {
@@ -456,7 +456,7 @@ export const NotSavedOffline: Story = {
   },
 }
 
-/** A stored `stage` (26 §2): Night Rehearsal at no less than Music-stand sizes, × 1.25. */
+/** A stored `stage` (26 §2): Dark at no less than Music-stand sizes, × 1.25. */
 export const ReadyStage: Story = { render: screen(ALL), globals: { appearance: 'stage' } }
 
 export const ReadyAtTheStand: Story = {
@@ -2173,7 +2173,7 @@ export const UncertaintyOff: Story = {
   },
 }
 
-/** A stored `stage` in the Display popover: Night Rehearsal is chosen and the distance it resolved
+/** A stored `stage` in the Display popover: Dark is chosen and the distance it resolved
  * to; the next change stores `dark` (26 §2). */
 export const DisplayFromStage: Story = {
   beforeEach: () => {
@@ -2187,7 +2187,7 @@ export const DisplayFromStage: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Display and reading' }))
     const body = within(canvasElement.ownerDocument.body)
     const popup = await body.findByRole('dialog', undefined, { timeout: 10_000 })
-    const night = await within(popup).findByRole('button', { name: 'Night Rehearsal' })
+    const night = await within(popup).findByRole('button', { name: 'Dark' })
     await expect(night).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(within(popup).getByRole('button', { name: 'Floor' }))
     await waitFor(() => expect(useDisplay.getState().appearance).toBe('dark'))
@@ -2209,7 +2209,7 @@ export const PianoHandsLeft: Story = {
   },
 }
 
-/** Getting ready in Daylight at 1440 (Practice-Ready.dc.html). */
+/** Getting ready in Light at 1440 (Practice-Ready.dc.html). */
 export const GettingReadyDaylight: Story = {
   render: screen(['beats'], { running: true }),
   globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
@@ -2510,7 +2510,7 @@ export const LadderMore: Story = {
   },
 }
 
-/** The ladder in Daylight at 1440: done rungs carry the 1 px edge (V16). */
+/** The ladder in Light at 1440: done rungs carry the 1 px edge (V16). */
 export const LadderDaylight: Story = {
   render: ladderScreen(storyLadder({ current_pct: 80 })),
   globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
@@ -2574,7 +2574,7 @@ export const LadderFlagOff: Story = {
   },
 }
 
-/** Saved clips: the amber dot on the one playing, "bars 5–6 · best 80 %", and a More menu per
+/** Saved clips: the ink dot on the one playing, "bars 5–6 · best 80 %", and a More menu per
  * row. Another clip's row loops it as it was left (no ladder on that one). */
 export const SavedClips: Story = {
   render: ladderScreen(storyLadder()),

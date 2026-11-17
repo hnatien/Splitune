@@ -48,7 +48,7 @@ export function AccountMenu({ name }: { name: string }) {
             variant="box"
             size="icon"
             aria-label={m['nav.account']()}
-            className="font-bold text-foreground [--r:var(--radius-5xl)]"
+            className="font-medium text-foreground"
           />
         }
       >

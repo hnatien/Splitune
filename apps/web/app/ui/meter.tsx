@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * A measurement within a known range (allowance used, stem level), drawn like `.bar` (doc 26
- * §12.1) with a --muted-foreground fill: it is not task progress, so it isn't amber (§4.5).
+ * §12.1) with a --muted-foreground fill: it is not task progress, so it isn't the ink (§4.5).
  */
 function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
   return (
@@ -30,17 +30,18 @@ function MeterLabel({ className, ...props }: MeterPrimitive.Label.Props) {
   return (
     <MeterPrimitive.Label
       data-slot="meter-label"
-      className={cn('text-sm font-semibold', className)}
+      className={cn('text-sm font-medium', className)}
       {...props}
     />
   )
 }
 
+/** The value in the text face ("12 of 15 left · resets 22 Nov" reads as a sentence); tabular figures. */
 function MeterValue({ className, ...props }: MeterPrimitive.Value.Props) {
   return (
     <MeterPrimitive.Value
       data-slot="meter-value"
-      className={cn('ml-auto font-mono text-sm text-muted-foreground tabular-nums', className)}
+      className={cn('ml-auto text-sm text-muted-foreground tabular-nums', className)}
       {...props}
     />
   )

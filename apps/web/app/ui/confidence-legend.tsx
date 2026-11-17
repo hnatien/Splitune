@@ -48,11 +48,11 @@ function ConfidenceLegend({
     <div
       data-slot="confidence-legend"
       className={cn(
-        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border bg-card px-4 py-2 text-sm text-foreground',
+        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground',
         className,
       )}
     >
-      <span className="font-semibold">{text}</span>
+      <span className="font-medium">{text}</span>
       {showUncertainty && (
         <span className="inline-flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground">
           {labels.high && (
@@ -85,7 +85,7 @@ function ConfidenceLegend({
                 'border-[1.5px] border-dashed border-conf-low text-conf-low',
               )}
             >
-              3<sup className="absolute -top-2 -right-2 font-sans text-2xs font-bold">?</sup>
+              3<sup className="absolute -top-2 -right-2 font-sans text-2xs font-semibold">?</sup>
             </span>
             {labels.low}
           </span>
@@ -137,7 +137,7 @@ function ConfidenceLegendPopover({
         }
       >
         <span className="inline-flex h-7.5 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors duration-(--duration-fast) group-hover/legend:bg-muted group-hover/legend:text-foreground group-aria-expanded/legend:bg-muted">
-          <span aria-hidden className="font-mono font-bold text-unsure">
+          <span aria-hidden className="font-mono font-semibold text-unsure">
             ?
           </span>
           <span className="max-md:sr-only">{buttonLabel}</span>

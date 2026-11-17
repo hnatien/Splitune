@@ -1,5 +1,5 @@
 // Token structure (docs/specs/28-ui-quality-and-design-review.md §3): every role exists in
-// every appearance, tiers only point downwards, Night is the page without an appearance, subtrees
+// every appearance, tiers only point downwards, Dark is the page without an appearance, subtrees
 // theme themselves, and the static scales are doc 26's.
 
 import Color from 'colorjs.io'
@@ -31,8 +31,8 @@ const block = (selector: string, media: string | null = null) => {
   return new Map(rule.decls)
 }
 const themeBlocks = {
-  night: block('[data-appearance="dark"]'),
-  daylight: block('[data-appearance="light"]'),
+  dark: block('[data-appearance="dark"]'),
+  light: block('[data-appearance="light"]'),
 }
 // "No shadow" that still composes into a box-shadow list with rings (themes.css header).
 const NO_SHADOW = '0 0 0 0 transparent'
@@ -132,15 +132,60 @@ describe.each(Object.entries(themeBlocks))('%s block', (_, decls) => {
     })
   })
 
-  it('--scrim is the translucent graphite of the mockup overlay (§4.7)', () => {
-    expect(decls.get('--scrim')).toBe('oklch(0.1 0.01 60 / 0.62)')
+  it('--scrim is translucent black (§4.7)', () => {
+    expect(decls.get('--scrim')).toMatch(/^oklch\(0 0 0 \/ 0\.[57]\)$/)
+  })
+
+  it('the accent is the ink: primary text, the "now" signal and the focus ring (§4.2)', () => {
+    for (const role of ['--primary-ink', '--signal', '--ring', '--ink']) {
+      expect([role, decls.get(role)]).toEqual([role, 'var(--foreground)'])
+    }
+  })
+})
+
+describe('neutral interface (§4.1)', () => {
+  it('every surface, text and line role is achromatic in every context', () => {
+    const NEUTRAL = [
+      '--background',
+      '--foreground',
+      '--card',
+      '--popover',
+      '--primary',
+      '--primary-foreground',
+      '--primary-hover',
+      '--secondary',
+      '--muted',
+      '--muted-foreground',
+      '--faint-foreground',
+      '--accent',
+      '--border',
+      '--border-strong',
+      '--input',
+      '--ring',
+      '--primary-ink',
+      '--primary-soft',
+      '--primary-line',
+      '--signal',
+      '--bar-current',
+      '--loop-fill',
+      '--score-loop-fill',
+      '--staff',
+      '--waveform-peak',
+      '--scrim',
+    ]
+    for (const { context } of CONTEXTS) {
+      const tokens = tokensFor(rules, context)
+      for (const name of NEUTRAL) {
+        expect([name, tokens.color(name).to('oklch').coords[1] ?? 0]).toEqual([name, 0])
+      }
+    }
   })
 })
 
 describe('appearance blocks (§2)', () => {
-  it('Night is :root, dark and stage; stage only raises the reading scale', () => {
-    const night = themes.find((rule) => rule.selectors.includes('[data-appearance="dark"]'))
-    expect(night?.selectors).toEqual([
+  it('Dark is :root, dark and stage; stage only raises the reading scale', () => {
+    const dark = themes.find((rule) => rule.selectors.includes('[data-appearance="dark"]'))
+    expect(dark?.selectors).toEqual([
       ':root',
       '[data-appearance="dark"]',
       '[data-appearance="stage"]',
@@ -181,6 +226,7 @@ describe('forced colours', () => {
       '--bar-current',
       '--loop-fill',
       '--score-loop-fill',
+      '--capsule',
     ]) {
       expect([role, forced.get(role)]).toEqual([role, 'Canvas'])
     }
@@ -198,19 +244,20 @@ describe('elevation (§4.7, §9)', () => {
     }
   })
 
-  it('Night adds a 1 px inset top highlight; Daylight has none', () => {
-    for (const level of ['--elevation-2', '--elevation-3']) {
-      expect(themeBlocks.night.get(level)).toMatch(/^0 1px 0 oklch\(1 0 0 \/ 0\.04\) inset, /)
-      expect(themeBlocks.daylight.get(level)).not.toContain('inset')
+  it('floating layers are a close shadow under a wide one, in black only', () => {
+    for (const d of Object.values(themeBlocks)) {
+      for (const level of ['--elevation-2', '--elevation-3']) {
+        expect(d.get(level)).toMatch(
+          /^0 2px 6px oklch\(0 0 0 \/ 0\.\d+\), 0 \d+px \d+px oklch\(0 0 0 \/ 0\.\d+\)$/,
+        )
+      }
     }
   })
 
-  it('--glow is the amber halo of §4.2, dropped under increased contrast', () => {
-    expect(at({ 'data-appearance': 'dark' }).raw('--glow')).toBe(
-      '0 0 0 1px oklch(0.8 0.15 72 / 0.5), 0 0 24px oklch(0.8 0.15 72 / 0.3)',
-    )
+  it('--glow is a 1 px ring of the ink (§4.2), dropped under increased contrast', () => {
+    expect(at({ 'data-appearance': 'dark' }).raw('--glow')).toBe('0 0 0 1px oklch(1 0 0 / 0.5)')
     expect(at({ 'data-appearance': 'light' }).raw('--glow')).toBe(
-      '0 0 0 1px oklch(0.61 0.14 62), 0 0 18px oklch(0.8 0.15 72 / 0.35)',
+      '0 0 0 1px oklch(0.159 0 0 / 0.5)',
     )
     for (const appearance of ['dark', 'light', 'stage']) {
       expect(at({ 'data-appearance': appearance, 'data-contrast': 'more' }).raw('--glow')).toBe(
@@ -219,17 +266,18 @@ describe('elevation (§4.7, §9)', () => {
     }
   })
 
-  it('the segmented capsule and Play have their own shadows; Play drops its haze under increased contrast', () => {
+  it('the segmented capsule has its own shadow; Play has none', () => {
     for (const appearance of ['dark', 'light', 'stage']) {
       expect(at({ 'data-appearance': appearance }).raw('--elevation-capsule')).toBe(
-        '0 1px 2px oklch(0 0 0 / 0.25)',
+        '0 1px 2px oklch(0 0 0 / 0.12)',
       )
-      expect(at({ 'data-appearance': appearance }).raw('--elevation-play')).toBe(
-        '0 6px 20px oklch(0.8 0.15 72 / 0.28)',
-      )
-      expect(
-        at({ 'data-appearance': appearance, 'data-contrast': 'more' }).raw('--elevation-play'),
-      ).toBe(NO_SHADOW)
+      for (const contrastMode of ['normal', 'more']) {
+        expect(
+          at({ 'data-appearance': appearance, 'data-contrast': contrastMode }).raw(
+            '--elevation-play',
+          ),
+        ).toBe(NO_SHADOW)
+      }
     }
   })
 })
@@ -283,7 +331,7 @@ describe('motion (§10)', () => {
 })
 
 describe('fallbacks without JS (§2)', () => {
-  it('no attributes resolve to Night Rehearsal', () => {
+  it('no attributes resolve to Dark', () => {
     same(at({}), at({ 'data-appearance': 'dark' }))
   })
 
@@ -465,18 +513,18 @@ describe('static scales', () => {
   it('browse type scale (§6.2), px at 16 / line height px / weight', () => {
     const rem = (value: string | undefined) => Number.parseFloat(value ?? 'NaN') * 16
     const STEPS: [string, number, number, number | undefined][] = [
-      ['2xs', 11, 14, 650],
-      ['xs', 12, 16, 650],
+      ['2xs', 11, 14, 600],
+      ['xs', 12, 16, 500],
       ['sm', 13, 18, undefined],
-      ['md', 14, 20, 600],
-      ['button-lg', 16, 22, 600],
+      ['md', 14, 20, 500],
+      ['button-lg', 16, 22, 500],
       ['base', 15, 22, 400],
-      ['lg', 17, 22, 650],
-      ['xl', 22, 26, 650],
-      ['2xl', 32, 37, 650],
-      ['3xl', 44, 46, 600],
-      ['4xl', 48, 50, 600],
-      ['5xl', 56, 59, 600],
+      ['lg', 17, 24, 500],
+      ['xl', 22, 28, 500],
+      ['2xl', 32, 38, 500],
+      ['3xl', 44, 48, 500],
+      ['4xl', 48, 52, 500],
+      ['5xl', 56, 60, 500],
     ]
     for (const [step, px, line, weight] of STEPS) {
       const weightValue = theme(`--text-${step}--font-weight`)
@@ -487,13 +535,28 @@ describe('static scales', () => {
         weightValue === undefined ? undefined : Number(weightValue),
       ]).toEqual([step, px, line, weight])
     }
-    expect(theme('--text-display')).toBe('clamp(2.75rem, 6vw, 4.75rem)')
+    expect(theme('--text-display')).toBe('clamp(2.5rem, 5.6vw, 4rem)')
+    // Tracking tightens with size and never passes −0.03em.
+    expect(
+      ['base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', 'display'].map((step) =>
+        theme(`--text-${step}--letter-spacing`),
+      ),
+    ).toEqual([
+      '-0.01em',
+      '-0.01em',
+      '-0.01em',
+      '-0.02em',
+      '-0.03em',
+      '-0.03em',
+      '-0.03em',
+      '-0.03em',
+    ])
   })
 
   it('families (§6.1)', () => {
     const family = (name: string) => theme(`--font-${name}`)?.replace(/\s+/g, ' ')
     expect(family('sans')).toBe(
-      '"Instrument Sans", "Instrument Sans Fallback", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif',
+      '"Figtree", "Figtree Fallback", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif',
     )
     expect(family('display')).toBe(family('sans'))
     expect(family('mono')).toBe(

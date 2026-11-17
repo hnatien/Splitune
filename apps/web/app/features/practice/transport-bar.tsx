@@ -33,8 +33,8 @@ const VolumePanel = lazy(() =>
   import('./volume-panel').then((module) => ({ default: module.VolumePanel })),
 )
 
-// TransportBar (12 §2, 27 §3.7.2): tablets and phones keep today's arrangement until s43, on the
-// Night Rehearsal tokens: restart and a large round play; the loop toggle joined to the loop pill
+// TransportBar (12 §2, 27 §3.7.2): tablets and phones keep today's arrangement until s43, with
+// round icon buttons: restart and a large round play; the loop toggle joined to the loop pill
 // (which opens the loop's options); speed −/+ around "70 % · 84 BPM"; count-in, metronome and the
 // mixer; master volume; and at the right edge the pass pair (Felt clean / Not yet, 64 px) with the
 // question after each pass. The controls wrap among themselves when the bar is narrow. Desktop has
@@ -291,7 +291,7 @@ export function VolumeControl({ popover = false }: { popover?: boolean }) {
       <Popover>
         <PopoverTrigger
           aria-label={`${label}: ${formatPercent(volume)}`}
-          className="inline-grid size-13 shrink-0 place-items-center rounded-2xl text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-5"
+          className="inline-grid size-13 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-5"
         >
           <Icon aria-hidden strokeWidth={1.8} />
         </PopoverTrigger>

@@ -40,7 +40,7 @@ function NumberField({
       <div className="flex items-center gap-2">
         <NumberFieldPrimitive.Group
           className={cn(
-            'flex h-10 items-stretch rounded-lg bg-background inset-ring inset-ring-input',
+            'flex h-10 items-stretch rounded-xl bg-background inset-ring inset-ring-input',
             fill && 'min-w-0 flex-1',
           )}
         >
@@ -51,7 +51,7 @@ function NumberField({
             aria-label={inputLabel}
             aria-describedby={unit ? unitId : undefined}
             className={cn(
-              'bg-transparent text-center font-mono text-base font-semibold tabular-nums focus-visible:-outline-offset-2 disabled:text-faint-foreground',
+              'bg-transparent text-center text-base font-medium tabular-nums focus-visible:-outline-offset-2 disabled:text-faint-foreground',
               fill ? 'w-12 min-w-0 flex-1' : 'w-16',
             )}
           />

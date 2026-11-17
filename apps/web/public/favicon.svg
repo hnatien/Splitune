@@ -1,16 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
   <title>Splitune</title>
   <style>
-    .rest { stroke: #14110d }
-    .part { stroke: #4943c1 }
+    .disc { fill: #0d0d0d }
+    .wave { stroke: #fff }
     @media (prefers-color-scheme: dark) {
-      .rest { stroke: #edebe7 }
-      .part { stroke: #98a2fc }
+      .disc { fill: #fff }
+      .wave { stroke: #0d0d0d }
     }
   </style>
-  <g fill="none" stroke-linecap="round" stroke-width="4">
-    <path class="rest" d="M3 16h9"/>
-    <path class="part" d="M12 16c4-5 8-8 17-8"/>
-    <path class="rest" d="M12 16c4 5 8 8 17 8"/>
-  </g>
+  <circle class="disc" cx="14" cy="14" r="13"/>
+  <path class="wave" d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" fill="none" stroke-linecap="round" stroke-width="2.4"/>
 </svg>

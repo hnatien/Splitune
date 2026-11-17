@@ -4,9 +4,9 @@ import { AppStory } from '../../../.storybook/app.tsx'
 import { AuthShell } from './auth-shell'
 import { AuthScreen } from './sign-in'
 
-// Auth screens (27 §3.4, `SignIn.dc.html`) in the auth shell, in both themes: sign in and create an
-// account with a username and a password, the field errors, Google when configured, the showcase
-// from `lg`, and the phone layout without it.
+// Auth screens (27 §3.4) in the auth shell, in both themes: sign in and create an account with a
+// username and a password, the field errors, Google when configured, and the phone layout. One
+// centred column on every screen size.
 const meta = { title: 'Screens/Auth', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -38,13 +38,9 @@ export const SignIn: Story = {
       '/auth/sign-up?next=%2Flibrary',
     )
     await expect(canvas.getByText(/No email needed\./)).toBeVisible()
-    // The showcase (27 §3.4), shown from lg: what an account keeps, beside the form.
-    await expect(
-      canvas.getByRole('heading', {
-        name: 'Your loops, speeds and fixes stay with every song.',
-        hidden: true,
-      }),
-    ).toBeInTheDocument()
+    // One heading and the form alone: no panel beside it, even on a wide screen.
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible()
+    await expect(canvas.queryByRole('complementary', { hidden: true })).toBeNull()
     // No Google button unless it is configured.
     await expect(canvas.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
   },
@@ -55,7 +51,7 @@ export const SignInPhone: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    // Phones get the form alone.
+    // Phones get the same single column.
     await expect(await canvas.findByLabelText('Username')).toBeVisible()
     await expect(canvas.queryByRole('heading', { level: 2 })).toBeNull()
   },

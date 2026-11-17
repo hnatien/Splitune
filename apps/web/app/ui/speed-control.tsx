@@ -7,8 +7,8 @@ import { TransportButton } from '@/ui/transport-button'
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
 // (50–100 %, 25–200 % advanced) and the presets, which may also sit inline from `2xl`; readout
 // "70 %" over "84 BPM", and with the speed ladder on its goal after the BPM ("72 BPM · → 100").
-// Boxed −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet readout button; all three are main
-// practice controls, 64 px in every layout (§8, V11).
+// Round −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet pill readout button; all three are
+// main practice controls, 64 px in every layout (§8, V11).
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
@@ -111,16 +111,16 @@ function SpeedControl({
         <PopoverTrigger
           aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}${goal ? ` · ${goal.text}, ${goal.label}` : ''}`}
           className={cn(
-            'flex min-h-target-practice flex-col items-center justify-center rounded-2xl px-3 text-center transition-colors hover:bg-accent aria-expanded:bg-accent',
+            'flex min-h-target-practice flex-col items-center justify-center rounded-full px-3 text-center transition-colors hover:bg-accent aria-expanded:bg-accent',
             compact ? 'min-w-20' : 'min-w-26',
           )}
         >
-          <span className="font-reading-mono text-read-readout tracking-[-0.01em] tabular-nums">
+          <span className="font-reading text-read-readout tabular-nums">
             {shown}
             {NBSP}%
           </span>
           {(bpm !== undefined || goal) && (
-            <span className="font-mono text-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
+            <span className="text-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
               {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
               {bpm !== undefined && goal && ' · '}
               {goal?.text}

@@ -21,7 +21,7 @@ const meta = {
   args: { rungs: RUNGS, current: 1, label: '70 percent done, 75 percent now, 80 percent next' },
   decorators: [
     (Story) => (
-      <div className="w-81 rounded-3xl border border-border bg-card p-3.5">
+      <div className="w-81 rounded-xl border border-border bg-card p-3.5">
         <Story />
       </div>
     ),
@@ -36,7 +36,7 @@ const rung = (frame: HTMLElement, text: string) =>
   ) as HTMLElement
 
 /** Doc 26 §12.2 `.ladder` (Main.dc.html): 70 done, 75 current, the rest upcoming, rising to the
- * goal. Done has the amber fill and a 1 px --signal edge, current the soft wash and a 2 px ring. */
+ * goal. Done has the ink fill and a 1 px --signal edge, current the soft wash and a 2 px ring. */
 export const LadderClimbing: Story = {
   globals: BOTH_THEMES,
   play: async ({ canvasElement }) => {
@@ -52,10 +52,11 @@ export const LadderClimbing: Story = {
       const heights = RUNGS.map((pct) => rung(frame, String(pct)).getBoundingClientRect().height)
       await expect(Math.round(heights.at(-1) ?? 0)).toBe(70)
       await expect(heights.every((h, i) => i === 0 || h > (heights[i - 1] ?? 0))).toBe(true)
-      // Labels: mono, 11 px, never smaller (V10).
+      // Labels: tabular figures, 11 px, never smaller (V10).
       const style = getComputedStyle(rung(frame, '80'))
       await expect(style.fontSize).toBe('11px')
-      await expect(style.fontFamily).toMatch(/^"?JetBrains Mono/)
+      await expect(style.fontFamily).toMatch(/^"?Figtree/)
+      await expect(style.fontVariantNumeric).toContain('tabular-nums')
       // Done differs from upcoming by its edge as well as its fill (V16): an inset ring.
       await expect(getComputedStyle(rung(frame, '70')).boxShadow).not.toBe('none')
       await expect(getComputedStyle(rung(frame, '80')).boxShadow).toBe('none')
@@ -71,7 +72,7 @@ export const EachRung: Story = {
     <StateGrid
       states={RUNGS.map((pct, current) => [
         `At ${pct} %`,
-        <div key={pct} className="w-81 rounded-3xl border border-border bg-card p-3.5">
+        <div key={pct} className="w-81 rounded-xl border border-border bg-card p-3.5">
           <SpeedLadder rungs={RUNGS} current={current} label={`Now at ${pct} percent`} />
         </div>,
       ])}
@@ -133,7 +134,7 @@ export const Chips: Story = {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
         <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-primary-ink" />
-        <span className="text-md font-semibold">Speed ladder</span>
+        <span className="text-md font-medium">Speed ladder</span>
       </div>
       <div className="flex flex-wrap gap-x-1.5">
         {['Start 70 %', 'Goal 100 %', 'Step 5 %', '3 clean passes', 'More'].map((chip) => (

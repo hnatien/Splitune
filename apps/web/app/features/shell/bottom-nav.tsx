@@ -15,18 +15,13 @@ export function BottomNav({ pathname, onAddSong }: { pathname: string; onAddSong
     <nav
       data-slot="bottom-tabs"
       aria-label={m['nav.main']()}
-      className="fixed inset-x-0 bottom-0 z-(--z-sticky) grid h-[calc(var(--spacing)*19+env(safe-area-inset-bottom))] grid-cols-3 items-center border-t border-border bg-card px-3 pb-[calc(var(--spacing)*2.5+env(safe-area-inset-bottom))] sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-(--z-sticky) grid h-[calc(var(--spacing)*19+env(safe-area-inset-bottom))] grid-cols-3 items-center border-t border-border bg-background px-3 pb-[calc(var(--spacing)*2.5+env(safe-area-inset-bottom))] sm:hidden"
     >
       <Link to="/library" aria-current={library ? 'page' : undefined} className={TAB}>
         <LayoutGridIcon aria-hidden />
         {m['nav.library']()}
       </Link>
-      <Button
-        variant="primary"
-        size="lg"
-        onClick={onAddSong}
-        className="justify-self-center px-5 [--r:var(--radius-5xl)]"
-      >
+      <Button variant="primary" size="lg" onClick={onAddSong} className="justify-self-center px-5">
         <PlusIcon aria-hidden className="size-4" />
         {m['nav.add_song']()}
       </Button>

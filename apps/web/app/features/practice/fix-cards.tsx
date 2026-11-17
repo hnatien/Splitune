@@ -45,8 +45,8 @@ import { usePracticeUi } from './practice-store'
 // line. The Fix tab, the tablet's editor sheet and the desktop editor are built from them. Every
 // change is a correction op, applied at once, named in the toast with Undo.
 
-export const eyebrow = 'text-xs font-semibold tracking-wider text-faint-foreground uppercase'
-const card = 'flex flex-col gap-2.5 rounded-3xl border border-border bg-card p-3.5'
+export const eyebrow = 'text-sm text-muted-foreground'
+const card = 'flex flex-col gap-2.5 rounded-xl border border-border bg-card p-3.5'
 
 /** The bar as the UI names it (1-based; the pickup by name). */
 export const barLabel = (bar: number) => (bar < 0 ? m['practice.pickup']() : String(bar + 1))
@@ -142,11 +142,8 @@ function AlternativeRow({
 }) {
   const spoken = chordText(name)
   return (
-    <li
-      data-slot="alternative-row"
-      className="flex items-center gap-2.5 rounded-lg border border-border-strong py-0.5 pr-1 pl-3"
-    >
-      <span className="min-w-14 shrink-0 text-lg font-[650]">
+    <li data-slot="alternative-row" className="flex items-center gap-2.5 py-1.5">
+      <span className="min-w-14 shrink-0 text-lg font-medium">
         <ChordSymbol name={name} />
       </span>
       <span className="min-w-0 flex-1 text-sm text-muted-foreground tabular-nums">
@@ -277,7 +274,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
       {chord.alternatives.length > 0 && (
         <>
           <p className="mt-1 text-sm text-faint-foreground">{m['editor.alternatives']()}</p>
-          <ul className="flex flex-col gap-1.5">
+          <ul className="-mt-1 flex flex-col divide-y divide-border">
             {chord.alternatives.slice(0, 4).map((alt, index) => {
               const hearing = audition?.chordId === chord.id && audition.label === alt.label
               const hear = () => {
@@ -376,7 +373,7 @@ function Guess({ chord, edited }: { chord: ChordModel; edited: boolean }) {
       data-slot="chord-guess"
       data-confidence={chord.confidence}
       className={cn(
-        'shrink-0 rounded-sm px-1 text-3xl leading-none font-[650] whitespace-nowrap',
+        'shrink-0 rounded-sm px-1 text-3xl leading-none font-medium whitespace-nowrap',
         low && 'text-unsure outline-[1.5px] outline-offset-4 outline-unsure outline-dashed',
         medium && 'outline-[1.5px] outline-offset-4 outline-conf-medium-edge outline-dashed',
         edited && 'text-edited underline decoration-2 underline-offset-[3px]',
@@ -384,7 +381,7 @@ function Guess({ chord, edited }: { chord: ChordModel; edited: boolean }) {
     >
       <ChordSymbol name={chord.name} />
       {low && (
-        <sup aria-hidden className="ml-0.5 text-xs font-bold">
+        <sup aria-hidden className="ml-0.5 text-xs font-semibold">
           ?
         </sup>
       )}
@@ -417,7 +414,7 @@ function Chip({
     >
       <span
         className={cn(
-          'inline-flex h-7.5 items-center gap-1 rounded-full border border-border-strong px-3 text-sm font-semibold whitespace-nowrap tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-accent group-aria-pressed/chip:border-primary-line group-aria-pressed/chip:bg-primary-soft group-aria-pressed/chip:text-primary-ink',
+          'inline-flex h-7.5 items-center gap-1 rounded-full border border-border-strong px-3 text-sm font-medium whitespace-nowrap tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-accent group-aria-pressed/chip:border-primary-line group-aria-pressed/chip:bg-primary-soft group-aria-pressed/chip:text-primary-ink',
           dashed && 'border-[1.5px] border-dashed',
           unsure && 'border-unsure text-unsure',
         )}
@@ -618,7 +615,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
             />
           </div>
           <div className="-my-1 flex items-center gap-2">
-            <span className="flex-1 text-sm font-semibold text-muted-foreground">
+            <span className="flex-1 text-sm font-medium text-muted-foreground">
               {m['editor.length']()}
             </span>
             {([-1, 1] as const).map((direction) => (
@@ -719,7 +716,7 @@ function Stepper({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span aria-hidden className="text-sm font-semibold text-muted-foreground">
+      <span aria-hidden className="text-sm font-medium text-muted-foreground">
         {label}
       </span>
       <NumberField

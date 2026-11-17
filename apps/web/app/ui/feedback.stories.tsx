@@ -307,16 +307,19 @@ export const StatusTonesLight: Story = {
     await expect(boxes).toHaveLength(8)
     for (const box of boxes) {
       const style = getComputedStyle(box)
-      // A surface off the page and an icon carry the tone. Inline messages wait for increased
-      // contrast for their hairline; banners are cards and always have their edge (26 §12.2).
+      await expect(box.querySelector('svg')).not.toBeNull()
+      // Banners are one quiet line: no surface, the tone in the icon, a hairline below.
+      if (box.getAttribute('data-slot') === 'banner') {
+        await expect(style.backgroundColor).toBe(transparent())
+        await expect(style.borderTopWidth).toBe('0px')
+        await expect(style.borderBottomColor).not.toBe(transparent())
+        continue
+      }
+      // Inline messages: a surface off the page and an icon carry the tone; they wait for
+      // increased contrast for their hairline.
       await expect(style.backgroundColor).not.toBe(page)
       await expect(style.backgroundColor).not.toBe(transparent())
-      if (box.getAttribute('data-slot') === 'banner') {
-        await expect(style.borderTopColor).not.toBe(transparent())
-      } else {
-        await expect(style.borderTopColor).toBe(transparent())
-      }
-      await expect(box.querySelector('svg')).not.toBeNull()
+      await expect(style.borderTopColor).toBe(transparent())
     }
     await expect(
       canvas.getByText(TONE_COPY.error, { selector: 'p' }).closest('[role=alert]'),
@@ -336,8 +339,11 @@ export const StatusTonesIncreasedContrast: Story = {
       '[data-slot=inline-error], [data-slot=banner]',
     )
     for (const box of boxes) {
-      await expect(getComputedStyle(box).borderTopColor).not.toBe(transparent())
-      await expect(getComputedStyle(box).borderTopWidth).toBe('1px')
+      // Inline messages get their hairline back; a banner's is the rule below it.
+      const side = box.getAttribute('data-slot') === 'banner' ? 'Bottom' : 'Top'
+      const style = getComputedStyle(box)
+      await expect(style[`border${side}Color`]).not.toBe(transparent())
+      await expect(style[`border${side}Width`]).toBe('1px')
     }
   },
 }

@@ -5,12 +5,12 @@ import { expect } from 'storybook/test'
 // §3): both themes side by side, a labelled grid of states, and the target-size probe. Stories
 // only; nothing in the app imports this.
 
-/** Story globals: the story twice, in Night Rehearsal and Daylight subtrees (preview.tsx). */
+/** Story globals: the story twice, in Dark and Light subtrees (preview.tsx). */
 export const BOTH_THEMES = { appearance: 'side-by-side' } as const
 export const BOTH_THEMES_MORE_CONTRAST = { appearance: 'side-by-side', contrast: 'more' } as const
 export const DAYLIGHT = { appearance: 'light' } as const
 
-/** The Night Rehearsal and Daylight frames of a side-by-side story (or the one frame otherwise). */
+/** The Dark and Light frames of a side-by-side story (or the one frame otherwise). */
 export function themeFrames(canvasElement: HTMLElement): HTMLElement[] {
   const frames = [
     ...canvasElement.querySelectorAll<HTMLElement>(':scope > div > [data-appearance]'),
@@ -30,9 +30,7 @@ export function StateGrid({
     <div className={className ?? 'flex flex-wrap items-start gap-x-6 gap-y-5'}>
       {states.map(([label, node]) => (
         <figure key={label} className="m-0 flex flex-col items-start gap-2">
-          <figcaption className="text-xs tracking-[0.08em] text-faint-foreground uppercase">
-            {label}
-          </figcaption>
+          <figcaption className="text-xs text-faint-foreground">{label}</figcaption>
           {node}
         </figure>
       ))}

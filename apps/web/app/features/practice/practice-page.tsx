@@ -75,7 +75,7 @@ function useOpened(open: boolean): boolean {
 // artefacts land (27 §3.7.3), so nothing arriving ever moves the transport. Desktop has the five
 // regions of Main.dc.html — the song map, the Now column, the notation, the inspector and the
 // transport dock, with the pass prompt over the notation; tablets and phones keep today's
-// arrangement on the Night Rehearsal tokens until s43.
+// arrangement until s43.
 
 export function PracticePage({
   songId,
@@ -358,7 +358,7 @@ function CountInCounter() {
     <div
       aria-hidden
       data-slot="count-in"
-      className="pointer-events-none absolute top-1/2 left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-4xl border border-border bg-card px-10 py-5 shadow-2"
+      className="pointer-events-none absolute top-1/2 left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-3xl border border-border bg-card px-10 py-5 shadow-2"
     >
       <span className="font-display text-read-chord-current leading-none font-semibold text-primary-ink tabular-nums">
         {number}

@@ -2,11 +2,11 @@ import { PauseIcon, RepeatIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §12.2 (the loop pill, Main.dc.html): a main practice control, 64 px tall (V11), with the
+// Doc 26 §12.2 (the loop pill, Main.dc.html): a main practice control, a pill 64 px tall (V11), with the
 // loop on its first line and the pass and rest under it ("Loop · bars 25–28" / "pass 2 · rest 1
 // beat"; off "No loop" / "tap two bars, or a section"). States differ by icon, text, edge and
 // fill, never by colour alone: off (quiet, solid edge), armed (dashed loop edge: A tapped,
-// waiting for B), active (amber wash, amber line, amber ink), resting (active with a pause icon).
+// waiting for B), active (ink wash, ink line, ink text), resting (active with a pause icon).
 
 export type LoopState = 'off' | 'armed' | 'active' | 'resting'
 
@@ -40,7 +40,7 @@ function LoopBadge({
       data-slot="loop-badge"
       data-state={state}
       className={cn(
-        'inline-flex min-h-target-practice min-w-0 items-center gap-2.5 rounded-2xl px-4 text-left text-md font-semibold whitespace-nowrap inset-ring transition-colors duration-(--duration-fast) [&_svg]:size-5 [&_svg]:shrink-0',
+        'inline-flex min-h-target-practice min-w-0 items-center gap-2.5 rounded-full px-5 text-left text-md font-medium whitespace-nowrap inset-ring transition-colors duration-(--duration-fast) [&_svg]:size-5 [&_svg]:shrink-0',
         styles[state],
         className,
       )}

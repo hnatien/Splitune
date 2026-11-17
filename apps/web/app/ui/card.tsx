@@ -2,8 +2,8 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * `.card` (doc 26 §4.8, §9, §12.1): --card with a 1 px --border edge, 16 px corners and no shadow
- * (cards are bordered, not lifted). `emphasis` sits one step up on --muted.
+ * Card (doc 26 §4.8, §9, §12.1): --card with a 1 px --border edge, 12 px corners and no shadow
+ * (cards are bordered, not lifted). `emphasis` is a borderless panel one step up on --muted.
  */
 function Card({
   className,
@@ -15,7 +15,7 @@ function Card({
       data-slot="card"
       data-variant={variant}
       className={cn(
-        'group/card flex flex-col gap-4 overflow-hidden rounded-3xl border border-border bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0 data-[variant=emphasis]:bg-muted',
+        'group/card flex flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0 data-[variant=emphasis]:border-transparent data-[variant=emphasis]:bg-muted',
         className,
       )}
       {...props}

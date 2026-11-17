@@ -5,14 +5,14 @@ import { Wordmark } from '@/ui/brand'
 import { SystemBanners } from '../system/system-banners'
 import { SkipLink } from './skip-link'
 
-// Bare shell (27 §1): auth landing, mock checkout and system pages. Wordmark only, one centred
-// column of at most 480 px.
+// Bare shell (27 §1): mock checkout and system pages. The wordmark top left on the plain page, then
+// one centred column of at most 480 px; a system page centres itself in it (SystemCard).
 export function BareShell({ children }: { children: React.ReactNode }) {
   return (
-    <div data-density="browse" className="flex min-h-dvh flex-col bg-surface-sunken">
+    <div data-density="browse" className="flex min-h-dvh flex-col bg-background">
       <SkipLink />
       <SystemBanners />
-      <header className="sticky top-0 z-(--z-sticky) flex min-h-16 items-center justify-center bg-surface-sunken px-4">
+      <header className="sticky top-0 z-(--z-sticky) flex min-h-16 items-center bg-background px-4 sm:px-6 lg:px-8">
         <Link
           to="/"
           aria-label={m['nav.home']()}

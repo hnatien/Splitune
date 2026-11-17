@@ -28,15 +28,16 @@ import { usePracticeUi } from './practice-store'
 
 // The Loop tab (27 §3.7.4, Main.dc.html): "Bars 25–28" with the best clean pass, From bar / To bar
 // steppers (one bar per step), Next phrase · ×2 · ÷2, "Fine-tune edges" with the sixteenth-note
-// nudges, the Speed ladder card (ladder-card.tsx; only with `v1.speed_trainer` on), Between repeats
+// nudges, the Speed ladder (ladder-card.tsx; only with `v1.speed_trainer` on), Between repeats
 // (rest, count-in, "Ask how each pass went before the next"), Saved clips (a row per named clip
-// with Rename and Delete in its More menu), and Clear loop. Before the beat is found: "Bar loops
+// with Rename and Delete in its More menu), and Clear loop: sections under a heading, set apart by
+// hairlines, never a card per setting. Before the beat is found: "Bar loops
 // are ready once the beat is found." The same body opens from the loop badge's popover on tablets
 // and phones.
 
 type Clip = z.infer<typeof LoopClip>
 
-const eyebrow = 'text-xs font-semibold tracking-wider text-faint-foreground uppercase'
+const heading = 'text-sm font-medium text-muted-foreground'
 
 export function LoopTab() {
   const practice = usePractice()
@@ -119,7 +120,7 @@ function LoopBars() {
     <div className="grid grid-cols-2 gap-2.5">
       {edges.map(({ edge, label, earlier, later, value, set }) => (
         <div key={edge} className="flex min-w-0 flex-col gap-1.5">
-          <span aria-hidden className="text-sm font-semibold text-muted-foreground">
+          <span aria-hidden className="text-sm font-medium text-muted-foreground">
             {label}
           </span>
           <NumberField
@@ -159,7 +160,7 @@ function QuickMoves({ loop }: { loop: LoopRange }) {
             variant="secondary"
             size="sm"
             disabled={next === loop}
-            className={cn(move !== 'next' && 'font-mono')}
+            className={cn(move !== 'next' && 'tabular-nums')}
             onClick={() => practice.setLoop(next, 'numeric')}
           >
             {label ? (
@@ -188,7 +189,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
   ]
   return (
     <details className="group/fine flex flex-col gap-2">
-      <summary className="flex min-h-target-practice-2 cursor-pointer items-center gap-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground">
+      <summary className="flex min-h-target-practice-2 cursor-pointer items-center gap-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground">
         <ChevronRightIcon
           aria-hidden
           className="size-4 transition-transform duration-(--duration-fast) group-open/fine:rotate-90"
@@ -235,8 +236,10 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
     bar: m['settings.rest_bar'](),
   }
   return (
-    <section className="flex flex-col gap-2.5">
-      <h3 className={eyebrow}>{m['practice.loop_section_repeats']()}</h3>
+    <section
+      aria-label={m['practice.loop_section_repeats']()}
+      className="flex flex-col gap-3 border-t border-border pt-4"
+    >
       <OptionSegments
         label={m['settings.rest']()}
         value={player.rest}
@@ -295,7 +298,7 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
 }
 
 // Saved clips (27 §3.7.4): "Save this loop" names the loop being played; each named clip is a
-// row (the amber dot on the one playing, name, "bars 25–28 · best 80 %") that loops it as it was
+// row (the ink dot on the one playing, name, "bars 25–28 · best 80 %") that loops it as it was
 // left, with Rename and Delete in its More menu.
 function SavedClips() {
   const practice = usePractice()
@@ -310,9 +313,9 @@ function SavedClips() {
   const unsaved = clip !== undefined && clip.name === null
   if (!unsaved && named.length === 0) return null
   return (
-    <section className="flex flex-col gap-1">
+    <section className="flex flex-col gap-1 border-t border-border pt-2">
       <div className="flex min-h-target-practice-2 items-center justify-between gap-2">
-        <h3 className={eyebrow}>{m['practice.clips']()}</h3>
+        <h3 className={heading}>{m['practice.clips']()}</h3>
         {unsaved && !naming && (
           <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>
             {m['practice.save_this_loop']()}
@@ -407,8 +410,8 @@ function ClipRow({
           )}
         />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-md font-semibold">{clip.name}</span>
-          <span className="font-mono text-sm text-faint-foreground tabular-nums">
+          <span className="truncate text-md font-medium">{clip.name}</span>
+          <span className="text-sm text-faint-foreground tabular-nums">
             {clip.best_clean_tempo_pct === null
               ? m['practice.clip_bars']({ bars })
               : m['practice.clip_bars_best']({ bars, pct: String(clip.best_clean_tempo_pct) })}

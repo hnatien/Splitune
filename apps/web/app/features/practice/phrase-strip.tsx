@@ -16,6 +16,7 @@ import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
 import { Toggle } from '@/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { OptionSegments } from '../common/option-segments'
+import { nextInBeats } from './bar-text'
 import { type GuideLevel, guideLevel, withGuide } from './model/mixer'
 import { loopedPhrase, phraseAtTime } from './model/phrases'
 import { spelledNote } from './model/view-model'
@@ -41,7 +42,7 @@ interface Now {
   entered: number
 }
 
-const label = 'text-xs font-semibold tracking-wide text-conf-medium uppercase'
+const label = 'text-xs font-medium text-conf-medium'
 
 /** "bars 10–13", or "bar 4" for a phrase inside one bar (1-based, as the UI shows bars). */
 export function phraseBars(startBar: number, endBar: number): string {
@@ -99,7 +100,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
     : now.beats <= 1
       ? m['practice.next_on_beat']()
       : now.beats <= COUNT_BEATS
-        ? m['practice.next_in_beats']({ count: String(now.beats) })
+        ? nextInBeats(now.beats)
         : m['practice.next_at_bar']({ bar: String(next.startBar + 1) })
   const nextFirst = next ? melody.notes[next.first] : undefined
   const looped = loopedPhrase(phrases, player.loopOn ? player.loop : null)
@@ -151,7 +152,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
           <Button
             variant="outline"
             size={compact ? 'icon-practice-2' : 'practice-2'}
-            className="border-staff bg-paper text-ink hover:bg-bar-current"
+            className="bg-paper text-ink inset-ring-staff hover:bg-bar-current"
             aria-label={m['practice.first_note_label']({ note: name(startNote.pitch) })}
             onClick={cueNote}
           >
@@ -180,7 +181,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
         {melody.range && !compact && (
           <span
             data-slot="vocal-range"
-            className="hidden items-baseline gap-2 rounded-lg border border-staff px-3 py-2 font-reading text-read-label @5xl:flex"
+            className="hidden items-baseline gap-2 rounded-full border border-staff px-3.5 py-2 font-reading text-read-label @5xl:flex"
           >
             <span className="sr-only">
               {m['practice.range_label']({
@@ -200,7 +201,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
           <Toggle
             variant="outline"
             size="practice-2"
-            className="border-staff bg-paper px-0 text-ink hover:bg-bar-current data-pressed:border-score-loop-edge data-pressed:bg-score-loop-fill data-pressed:text-ink"
+            className="rounded-full bg-paper px-0 text-ink inset-ring-staff hover:bg-bar-current data-pressed:bg-score-loop-fill data-pressed:text-ink data-pressed:inset-ring-score-loop-edge"
             pressed={looped >= 0}
             onPressedChange={() => loopPhrase(looped >= 0 ? looped : loopTarget)}
             aria-label={m['practice.loop_phrase']()}
@@ -216,15 +217,10 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
               const level = value[0] as GuideLevel | undefined
               if (level) setMix(withGuide(channels, mix, level))
             }}
-            className="hidden border border-staff bg-paper @4xl:flex"
-            capsuleClassName="border-ink bg-bar-current"
+            className="hidden @4xl:flex"
           >
             {(['on', 'quiet', 'off'] as const).map((level) => (
-              <ToggleGroupItem
-                key={level}
-                value={level}
-                className="px-3 text-sm text-ink hover:bg-bar-current data-pressed:border-ink data-pressed:bg-bar-current data-pressed:text-ink"
-              >
+              <ToggleGroupItem key={level} value={level} className="px-3 text-sm">
                 {level === 'on'
                   ? m['practice.guide_on']()
                   : level === 'quiet'
@@ -255,7 +251,7 @@ function MelodyOptions({ guide }: { guide: GuideLevel | null }) {
           <Button
             variant="outline"
             size="practice-2"
-            className="shrink-0 border-staff bg-paper text-ink hover:bg-bar-current in-data-[appearance=stage]:hidden"
+            className="shrink-0 bg-paper text-ink inset-ring-staff hover:bg-bar-current in-data-[appearance=stage]:hidden"
             aria-label={m['practice.melody_options']()}
           />
         }

@@ -49,9 +49,10 @@ export const Steppers: Story = {
     await expectTargets(canvas.getAllByRole('button'), 44)
     const well = canvasElement.querySelector('[data-slot=number-field] > div > div') as HTMLElement
     await expect(well.getBoundingClientRect().height).toBe(40)
-    await expect(getComputedStyle(canvas.getByRole('textbox')).fontFamily).toMatch(
-      /^"?JetBrains Mono/,
-    )
+    // The value is set in the interface face with tabular figures, so it never shifts as it changes.
+    const value = getComputedStyle(canvas.getByRole('textbox'))
+    await expect(value.fontFamily).toMatch(/^"?Figtree/)
+    await expect(value.fontVariantNumeric).toContain('tabular-nums')
   },
 }
 

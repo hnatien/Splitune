@@ -6,7 +6,7 @@ import '../app/styles.css'
 
 // Toolbar globals set the same data-* attributes as the app (doc 26 §2, 28 §2), so every story is
 // rendered through the real theming path. Density is per shell, so it goes on the story wrapper.
-// "Side by side" renders the story twice, in Night Rehearsal and Daylight subtrees (subtree theming,
+// "Side by side" renders the story twice, in Dark and Light subtrees (subtree theming,
 // 26 §2), with the page itself in Night. Pointer sets data-pointer, which the pointer-coarse and
 // pointer-fine variants honour in place of the media query (the app never sets it).
 // Screens render edge to edge like the app (their shells bring the gutters); components get a margin.
@@ -62,8 +62,8 @@ const preview: Preview = {
   loaders: [
     async () => {
       await Promise.all([
-        document.fonts.load('400 1em "Instrument Sans"'),
-        document.fonts.load('600 1em "Instrument Sans"'),
+        document.fonts.load('400 1em "Figtree"'),
+        document.fonts.load('600 1em "Figtree"'),
         document.fonts.load('400 1em "JetBrains Mono"'),
         document.fonts.load('600 1em "JetBrains Mono"'),
         document.fonts.load('400 1em "Atkinson Hyperlegible Next"'),
@@ -73,8 +73,8 @@ const preview: Preview = {
   ],
   globalTypes: {
     appearance: toolbar('Appearance', 'mirror', [
-      { value: 'dark', title: 'Night Rehearsal' },
-      { value: 'light', title: 'Daylight' },
+      { value: 'dark', title: 'Dark' },
+      { value: 'light', title: 'Light' },
       { value: 'stage', title: 'Stage' },
       { value: SIDE_BY_SIDE, title: 'Side by side' },
     ]),

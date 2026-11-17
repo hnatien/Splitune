@@ -5,12 +5,12 @@
 # feature (Fontsource subsets strip tnum/cv*/ss*), and writes WOFF2 plus the OFL licences to
 # apps/web/public/fonts/. Run from anywhere: scripts/fonts/subset.sh
 #
-# - Instrument Sans: words and chord names. Roman only, wght 400–700 at wdth 100; preloaded, so it
-#   stays under the 80 KB preload budget (fonts.test.mjs checks it).
+# - Figtree: words and chord names. wght 400–700; preloaded, so it stays under the 80 KB preload
+#   budget (fonts.test.mjs checks it).
 # - JetBrains Mono: every number that changes and the tab digits. wght 400–700. Monospaced, so its
 #   digits are tabular without a tnum feature (it has none).
 # - Atkinson Hyperlegible Next: the opt-in reading font, its whole wght axis.
-# Neither Instrument Sans nor JetBrains Mono maps U+202F (narrow no-break space, Intl's space before
+# Neither Figtree nor JetBrains Mono maps U+202F (narrow no-break space, Intl's space before
 # "%" and between digit groups in some locales); nnbsp() maps it to the font's own no-break space
 # glyph before subsetting, so it never falls back to another font.
 set -euo pipefail
@@ -23,8 +23,8 @@ export SOURCE_DATE_EPOCH=1731628800
 
 GF_COMMIT="95f4904fc8bcf26d3420fe315560c96417c6dec7"
 GF_BASE="https://raw.githubusercontent.com/google/fonts/$GF_COMMIT/ofl"
-# Instrument Sans 1.000 (upstream github.com/Instrument/instrument-sans 7fa2230; no later release).
-IS_SHA256="b24f1812584816958afcf22e22d08e44318c5e51651e25d2438efdde389b33b1"
+# Figtree 2.002 (upstream github.com/erikdkennedy/figtree).
+FIG_SHA256="26ad3db9b31ff7dde67a91ff515d022d2f495cd506590699cf264f0bfe6fb714"
 JBM_URL="https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip"
 JBM_SHA256="6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf"
 AHN_SHA256="5a455d1cfa099b601ab70751bb9673e8fe1854dc4500c80e1a220d0d75e31745"
@@ -74,9 +74,9 @@ subset() { # source.ttf output.woff2
     --output-file="$2"
 }
 
-curl -fsSL "$GF_BASE/instrumentsans/InstrumentSans%5Bwdth%2Cwght%5D.ttf" -o "$WORK/is.ttf"
-check "$WORK/is.ttf" "$IS_SHA256"
-curl -fsSL "$GF_BASE/instrumentsans/OFL.txt" -o "$WORK/is-OFL.txt"
+curl -fsSL "$GF_BASE/figtree/Figtree%5Bwght%5D.ttf" -o "$WORK/fig.ttf"
+check "$WORK/fig.ttf" "$FIG_SHA256"
+curl -fsSL "$GF_BASE/figtree/OFL.txt" -o "$WORK/fig-OFL.txt"
 
 curl -fsSL "$JBM_URL" -o "$WORK/jbm.zip"
 check "$WORK/jbm.zip" "$JBM_SHA256"
@@ -88,14 +88,14 @@ check "$WORK/ahn.ttf" "$AHN_SHA256"
 curl -fsSL "$GF_BASE/atkinsonhyperlegiblenext/OFL.txt" -o "$WORK/ahn-OFL.txt"
 
 mkdir -p "$OUT"
-instance "$WORK/is.ttf" "$WORK/is-roman.ttf" wght=400:700 wdth=100
+instance "$WORK/fig.ttf" "$WORK/fig-roman.ttf" wght=400:700
 instance "$WORK/jbm.ttf" "$WORK/jbm-roman.ttf" wght=400:700
-nnbsp "$WORK/is-roman.ttf"
+nnbsp "$WORK/fig-roman.ttf"
 nnbsp "$WORK/jbm-roman.ttf"
-subset "$WORK/is-roman.ttf" "$OUT/InstrumentSans.woff2"
+subset "$WORK/fig-roman.ttf" "$OUT/Figtree.woff2"
 subset "$WORK/jbm-roman.ttf" "$OUT/JetBrainsMono.woff2"
 subset "$WORK/ahn.ttf" "$OUT/AtkinsonHyperlegibleNext.woff2"
-cp "$WORK/is-OFL.txt" "$OUT/InstrumentSans-OFL.txt"
+cp "$WORK/fig-OFL.txt" "$OUT/Figtree-OFL.txt"
 cp "$WORK/jbm/OFL.txt" "$OUT/JetBrainsMono-OFL.txt"
 cp "$WORK/ahn-OFL.txt" "$OUT/AtkinsonHyperlegibleNext-OFL.txt"
 

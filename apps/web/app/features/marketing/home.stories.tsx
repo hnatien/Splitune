@@ -4,8 +4,8 @@ import { AppStory } from '../../../.storybook/app.tsx'
 import { MarketingShell } from '../shell/marketing-shell'
 import { Home } from './home'
 
-// Home (27 §3.1, `Home.dc.html`) in the marketing shell, signed out and signed in, in Night
-// Rehearsal and Daylight, and on a phone, where the hero still and the sections stack.
+// Home (27 §3.1) in the marketing shell, signed out and signed in, in Dark and Light, and on a
+// phone, where the featured art and the sections stack.
 const meta = { title: 'Screens/Home', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -38,11 +38,16 @@ export const SignedOut: Story = {
     await expect(
       within(canvas.getByRole('banner')).getByRole('link', { name: 'Try an example song' }),
     ).toBeVisible()
-    // The hero still is one picture with a text alternative, never a set of controls.
-    const still = canvas.getByRole('img', {
-      name: 'The practice screen, looping bars 25 to 28 at 75 percent',
-    })
-    await expect(within(still).queryAllByRole('button')).toHaveLength(0)
+    // The art is decorative: every picture sits beside the words that carry its point, so none
+    // is announced.
+    await expect(canvas.queryAllByRole('img')).toHaveLength(0)
+    for (const name of [
+      'Hear your part on its own',
+      'Loop it slow, then climb',
+      "Tab that admits when it's unsure",
+    ]) {
+      await expect(canvas.getByRole('heading', { level: 2, name })).toBeVisible()
+    }
     await expect(
       canvas.getByRole('heading', { level: 2, name: 'Made for the music stand' }),
     ).toBeVisible()

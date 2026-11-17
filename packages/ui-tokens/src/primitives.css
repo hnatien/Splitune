@@ -6,81 +6,67 @@
  * Neutrals are named by lightness × 1000.
  */
 :root {
-  /* Night Rehearsal: warm graphite (hue 60 surfaces and lines, 70–80 text) */
-  --graphite-165: oklch(0.165 0.008 60);
-  --graphite-190: oklch(0.19 0.02 60);
-  --graphite-205: oklch(0.205 0.008 60);
-  --graphite-245: oklch(0.245 0.009 60);
-  --graphite-270: oklch(0.27 0.009 60);
-  --graphite-295: oklch(0.295 0.01 60);
-  --graphite-345: oklch(0.345 0.01 60);
-  --graphite-360: oklch(0.36 0.009 60);
-  --graphite-450: oklch(0.45 0.01 60);
-  --graphite-530: oklch(0.53 0.01 60);
-  --graphite-620: oklch(0.62 0.01 60);
-  --graphite-690: oklch(0.69 0.01 70);
-  --graphite-780: oklch(0.78 0.01 70);
-  --graphite-810: oklch(0.81 0.01 75);
-  --graphite-870: oklch(0.87 0.01 75);
-  --graphite-955: oklch(0.955 0.008 80);
+  /* Neutrals: pure black and white with achromatic steps between them (§4.1). The interface has no
+     brand hue; everything that is not a status, a stem or a hand is one of these. */
+  --black: oklch(0 0 0);
+  --gray-159: oklch(0.159 0 0);
+  --gray-182: oklch(0.182 0 0);
+  --gray-218: oklch(0.218 0 0);
+  --gray-239: oklch(0.239 0 0);
+  --gray-269: oklch(0.269 0 0);
+  --gray-285: oklch(0.285 0 0);
+  --gray-321: oklch(0.321 0 0);
+  --gray-360: oklch(0.36 0 0);
+  --gray-420: oklch(0.42 0 0);
+  --gray-478: oklch(0.478 0 0);
+  --gray-510: oklch(0.51 0 0);
+  --gray-520: oklch(0.52 0 0);
+  --gray-545: oklch(0.545 0 0);
+  --gray-625: oklch(0.625 0 0);
+  --gray-650: oklch(0.65 0 0);
+  --gray-670: oklch(0.67 0 0);
+  --gray-715: oklch(0.715 0 0);
+  --gray-770: oklch(0.77 0 0);
+  --gray-845: oklch(0.845 0 0);
+  --gray-885: oklch(0.885 0 0);
+  --gray-922: oklch(0.922 0 0);
+  --gray-943: oklch(0.943 0 0);
+  --gray-970: oklch(0.97 0 0);
+  --white: oklch(1 0 0);
 
-  /* Daylight: warm off-white (hue 85 surfaces, 80 lines, 60 text) */
-  --daylight-210: oklch(0.21 0.012 60);
-  --daylight-330: oklch(0.33 0.012 60);
-  --daylight-400: oklch(0.4 0.012 60);
-  --daylight-420: oklch(0.42 0.012 60);
-  --daylight-490: oklch(0.49 0.012 60);
-  --daylight-520: oklch(0.52 0.012 80);
-  --daylight-625: oklch(0.625 0.012 80);
-  --daylight-720: oklch(0.72 0.012 80);
-  --daylight-800: oklch(0.8 0.01 80);
-  --daylight-840: oklch(0.84 0.012 80);
-  --daylight-900: oklch(0.9 0.01 80);
-  --daylight-915: oklch(0.915 0.01 85);
-  --daylight-950: oklch(0.95 0.008 85);
-  --daylight-972: oklch(0.972 0.007 85);
-  --daylight-993: oklch(0.993 0.003 85);
-  --white: oklch(0.99 0 0);
+  /* Washes and hairlines of the ink itself (§4.2): a selected or "on" surface is the ink at low
+     opacity, its edge the ink at half. */
+  --white-soft: oklch(1 0 0 / 0.12);
+  --white-line: oklch(1 0 0 / 0.5);
+  --ink-soft: oklch(0.159 0 0 / 0.08);
+  --ink-line: oklch(0.159 0 0 / 0.5);
 
-  /* Amber, the one accent (§4.2): one fill for both themes; ink, marks and washes per theme.
-     Daylight ink is clamped from the mockup's chroma 0.120 into sRGB. */
-  --amber: oklch(0.8 0.15 72);
-  /* The amber fill at brightness(1.06) in sRGB (the mockup's `.btn.pri:hover`), 26 §12.1. */
-  --amber-hover: oklch(0.826 0.152 75);
-  --amber-ink-night: oklch(0.83 0.14 76);
-  --amber-ink-daylight: oklch(0.5 0.119 58);
-  --amber-signal-daylight: oklch(0.61 0.14 62);
-  --amber-soft-night: oklch(0.8 0.15 72 / 0.14);
-  --amber-soft-daylight: oklch(0.8 0.15 72 / 0.2);
-  --amber-line-night: oklch(0.8 0.15 72 / 0.5);
+  /* Status (§4.3): unsure blue, ok green, bad red, each with its opaque surface. */
+  --unsure-dark: oklch(0.72 0.137 255);
+  --unsure-light: oklch(0.5 0.16 259);
+  --unsure-surface-dark: oklch(0.255 0.045 258);
+  --unsure-surface-light: oklch(0.955 0.02 252);
+  --ok-dark: oklch(0.752 0.134 149);
+  --ok-light: oklch(0.48 0.125 148);
+  --ok-surface-dark: oklch(0.262 0.045 150);
+  --ok-surface-light: oklch(0.955 0.025 155);
+  --bad-dark: oklch(0.705 0.186 24);
+  --bad-light: oklch(0.545 0.205 26);
+  --bad-surface-dark: oklch(0.262 0.06 28);
+  --bad-surface-light: oklch(0.955 0.022 28);
 
-  /* Status (§4.3): unsure blue, ok green, bad red, each with its opaque surface (the mockup's
-     translucent tint composited over --card; unsure over --background). */
-  --unsure-night: oklch(0.78 0.105 255);
-  --unsure-daylight: oklch(0.5 0.14 260);
-  --unsure-surface-night: oklch(0.28 0.016 259);
-  --unsure-surface-daylight: oklch(0.926 0.006 256);
-  --ok-night: oklch(0.79 0.13 155);
-  --ok-daylight: oklch(0.5 0.12 155);
-  --ok-surface-night: oklch(0.298 0.025 145);
-  --ok-surface-daylight: oklch(0.933 0.017 157);
-  --bad-night: oklch(0.72 0.16 28);
-  --bad-daylight: oklch(0.52 0.17 28);
-  --bad-surface-night: oklch(0.285 0.034 32);
-  --bad-surface-daylight: oklch(0.943 0.016 30);
-
-  /* Stems (§4.4): the mockups' hue families, moved the least that passes the CVD separation test
-     (palette.test.ts) in both themes and contrast levels. */
-  --teal-night: oklch(0.605 0.103 193);
-  --teal-daylight: oklch(0.51 0.087 195);
-  --violet-night: oklch(0.756 0.145 307);
-  --violet-daylight: oklch(0.546 0.181 303);
-  --sky-night: oklch(0.85 0.077 216);
-  --sky-daylight: oklch(0.364 0.052 223);
-  --pink-night: oklch(0.712 0.186 350);
-  --pink-daylight: oklch(0.583 0.205 354);
-  --lime-night: oklch(0.835 0.13 125);
-  --lime-daylight: oklch(0.546 0.126 128);
-  --stone-night: oklch(0.677 0.027 87);
-  --stone-daylight: oklch(0.528 0.028 87);
+  /* Stems (§4.4): hue families that pass the CVD separation test (palette.test.ts) in both themes
+     and contrast levels. */
+  --teal-dark: oklch(0.605 0.103 193);
+  --teal-light: oklch(0.51 0.087 195);
+  --violet-dark: oklch(0.756 0.145 307);
+  --violet-light: oklch(0.546 0.181 303);
+  --sky-dark: oklch(0.85 0.077 216);
+  --sky-light: oklch(0.364 0.052 223);
+  --pink-dark: oklch(0.712 0.186 350);
+  --pink-light: oklch(0.583 0.205 354);
+  --lime-dark: oklch(0.835 0.13 125);
+  --lime-light: oklch(0.546 0.126 128);
+  --stone-dark: oklch(0.677 0.027 87);
+  --stone-light: oklch(0.528 0.028 87);
 }

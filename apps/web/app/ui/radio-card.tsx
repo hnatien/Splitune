@@ -4,9 +4,10 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { CheckDrawIcon } from '@/ui/icons/check-draw'
 
-// Choice cards (27 §3.6 Full / Lite): a radio with a title, one line of description and optional
-// meta (the allowance). Selected = 2 px indigo ring + a check badge, never colour alone; forced
-// colours drop shadows, so the ring is repeated as an outline.
+// Choice cards (27 §3.6 Full / Lite, onboarding's distances): a radio with a title, one line of
+// description and optional meta (the allowance), on a hairline edge. Selected = the quiet ink wash,
+// a 2 px ink edge and a check badge, never colour alone; forced colours drop the inset ring, so
+// the edge is repeated as an outline.
 
 function RadioCardGroup({ className, ...props }: RadioGroupPrimitive.Props) {
   return (
@@ -32,7 +33,7 @@ function RadioCard({ title, description, meta, media, className, ...props }: Rad
     <label
       data-slot="radio-card"
       className={cn(
-        'flex cursor-pointer flex-col gap-3.5 rounded-3xl border border-border bg-surface-raised p-4 shadow-1 transition-shadow hover:shadow-2 contrast-more:border-input has-data-checked:border-signal has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-signal forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-signal forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:bg-surface-sunken has-data-disabled:shadow-none',
+        'flex cursor-pointer flex-col gap-3.5 rounded-xl border border-border bg-background p-4 transition-colors duration-(--duration-base) ease-standard hover:border-border-strong hover:bg-muted contrast-more:border-input has-data-checked:border-foreground has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-foreground forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-foreground forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:border-transparent has-data-disabled:bg-muted',
         className,
       )}
     >
@@ -43,15 +44,15 @@ function RadioCard({ title, description, meta, media, className, ...props }: Rad
       )}
       <span className="flex min-w-0 gap-3">
         <RadioPrimitive.Root
-          className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-card data-checked:border-2 data-checked:border-signal"
+          className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-background data-checked:border-2 data-checked:border-primary"
           {...props}
         >
-          <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-signal text-primary-foreground">
+          <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-primary text-primary-foreground">
             <CheckDrawIcon strokeWidth={3} className="size-3.5" />
           </RadioPrimitive.Indicator>
         </RadioPrimitive.Root>
         <span className="flex min-w-0 flex-col gap-1">
-          <span className="text-base font-semibold">{title}</span>
+          <span className="text-base font-medium">{title}</span>
           <span className="text-sm text-muted-foreground">{description}</span>
           {meta && <span className="text-sm text-foreground">{meta}</span>}
         </span>

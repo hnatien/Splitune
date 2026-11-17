@@ -1,10 +1,13 @@
 import type { StemKind } from '@splitune/ui-tokens'
+import type { LucideIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/ui/badge'
+import { ICON_STROKE } from '@/ui/icons/create'
 
-// Doc 26 §12.2, 27 §3.5: library entries. `SongCard` for the grid (tablet, desktop), `SongRow` for
-// phones and the list view. The title and its meta line are the link (named by that visible text,
+// Doc 26 §12.2, 27 §3.5: library entries. `SongCard` for the grid (tablet, desktop): a hairline
+// outline with 12 px corners and no fill; `SongRow` for phones and the list view, divided by the
+// list's hairlines. The title and its meta line are the link (named by that visible text,
 // WCAG 2.5.3; at least 44 px tall, 26 §8); its ::after covers the rest of the entry, so the whole
 // card opens Practice and the focus ring outlines it. Long titles clamp with the full text in `title`.
 // `actions` (the More menu) sits above the link's hit area; `preview` is the 28 px waveform when the
@@ -54,15 +57,15 @@ const TILE_FILL: Record<StemKind, string> = {
   mix: 'bg-stem-mix',
 }
 
-/** `.tile`: the part's letters ("Gt") on its stem colour, 40 px (32 in lists of results). */
+/** `.tile`: the part's instrument icon on its stem colour, 40 px (32 in lists of results), 8 px corners. */
 function InstrumentTile({
   stem,
-  label,
+  icon: Icon,
   size = 'md',
   className,
 }: {
   stem: StemKind
-  label: string
+  icon: LucideIcon
   size?: 'sm' | 'md'
   className?: string
 }) {
@@ -71,13 +74,13 @@ function InstrumentTile({
       data-slot="instrument-tile"
       aria-hidden
       className={cn(
-        'grid shrink-0 place-items-center rounded-lg font-[750] text-tile-foreground contrast-more:border contrast-more:border-current forced-colors:border forced-colors:border-current in-data-unavailable:bg-accent in-data-unavailable:text-muted-foreground',
-        size === 'md' ? 'size-10 text-md' : 'size-8 text-xs',
+        'grid shrink-0 place-items-center rounded-md text-tile-foreground contrast-more:border contrast-more:border-current forced-colors:border forced-colors:border-current in-data-unavailable:bg-accent in-data-unavailable:text-muted-foreground',
+        size === 'md' ? 'size-10' : 'size-8',
         TILE_FILL[stem],
         className,
       )}
     >
-      {label}
+      <Icon className={size === 'md' ? 'size-5' : 'size-4'} strokeWidth={ICON_STROKE} />
     </span>
   )
 }
@@ -113,7 +116,7 @@ function SongCard({
       data-slot="song-card"
       data-unavailable={unavailable ? '' : undefined}
       className={cn(
-        'relative flex flex-col gap-3 rounded-3xl border border-border bg-card p-4 transition-colors duration-(--duration-fast) hover:border-border-strong data-unavailable:text-muted-foreground',
+        'relative flex flex-col gap-3.5 rounded-xl border border-border p-4 transition-colors duration-(--duration-fast) hover:border-border-strong data-unavailable:text-muted-foreground',
         className,
       )}
     >
@@ -123,15 +126,13 @@ function SongCard({
           href: song.href,
           title: song.title,
           className: cn(
-            'flex min-h-11 min-w-0 flex-1 flex-col gap-0.5 after:rounded-3xl focus-visible:after:outline-offset-2',
+            'flex min-h-11 min-w-0 flex-1 flex-col gap-0.5 after:rounded-xl focus-visible:after:outline-offset-2',
             LINK_FOCUS,
           ),
           children: (
             <>
-              <h3 className="line-clamp-2 text-button-lg font-[650] leading-tight break-words">
-                {song.title}
-              </h3>
-              <span className="truncate text-sm text-faint-foreground">{song.subtitle}</span>
+              <h3 className="line-clamp-2 text-base font-medium break-words">{song.title}</h3>
+              <span className="truncate text-sm text-muted-foreground">{song.subtitle}</span>
             </>
           ),
         })}
@@ -160,7 +161,7 @@ function SongRow({
       data-slot="song-row"
       data-unavailable={unavailable ? '' : undefined}
       className={cn(
-        'relative flex min-h-15 items-center gap-3 rounded-lg px-1 py-2 has-data-[slot=song-progress]:items-start transition-colors duration-(--duration-fast) hover:bg-muted data-unavailable:text-muted-foreground',
+        'relative flex min-h-15 items-center gap-3 rounded-xl px-2 py-2.5 has-data-[slot=song-progress]:items-start transition-colors duration-(--duration-fast) hover:bg-muted data-unavailable:text-muted-foreground',
         className,
       )}
     >
@@ -170,13 +171,13 @@ function SongRow({
           href: song.href,
           title: song.title,
           className: cn(
-            'flex min-h-11 min-w-0 flex-col justify-center after:rounded-lg focus-visible:after:-outline-offset-2',
+            'flex min-h-11 min-w-0 flex-col justify-center after:rounded-xl focus-visible:after:-outline-offset-2',
             LINK_FOCUS,
           ),
           children: (
             <>
-              <h3 className="truncate text-base font-[650]">{song.title}</h3>
-              <span className="truncate text-sm text-faint-foreground">{meta}</span>
+              <h3 className="truncate text-base font-medium">{song.title}</h3>
+              <span className="truncate text-sm text-muted-foreground">{meta}</span>
             </>
           ),
         })}

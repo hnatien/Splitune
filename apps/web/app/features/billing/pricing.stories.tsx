@@ -8,7 +8,7 @@ import { ME, ME_PLUS, PLANS } from '../story-fixtures'
 import { plansQuery } from './plans'
 import { PricingPage } from './pricing-page'
 
-// Pricing (27 §3.2, `Pricing.dc.html`; 23 §5): signed out (Night Rehearsal, Daylight, phone), on
+// Pricing (27 §3.2, `Pricing.dc.html`; 23 §5): signed out (dark, light, phone), on
 // Free and on Plus. No card fields anywhere (25 §2).
 const meta = { title: 'Screens/Pricing', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta

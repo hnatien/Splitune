@@ -218,12 +218,13 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
     </DropdownMenu>
   )
 
+  // Outline pills; the chosen one is a filled ink pill (the fill is the cue, not a hue).
   const chips = (
     // biome-ignore lint/a11y/useSemanticElements: a toolbar group of toggles, not a form fieldset
     <div
       role="group"
       aria-label={m['library.filter_instrument']()}
-      className="flex gap-1.5 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 sm:flex-wrap"
+      className="flex gap-1.5 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 sm:basis-full sm:flex-wrap"
     >
       {[undefined, ...INSTRUMENTS].map((instrument) => (
         <Toggle
@@ -240,7 +241,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
   )
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-7">
+    <div className="flex flex-col gap-5 sm:gap-10">
       {!last && <h1 className="sr-only">{m['library.title']()}</h1>}
 
       {workerOffline && <WorkerStatus online={false} text={m['analysis.queued_offline']()} />}
@@ -279,13 +280,13 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
           }
         />
       ) : (
-        <section aria-labelledby="songs-title" className="flex flex-col gap-3.5">
+        <section aria-labelledby="songs-title" className="flex flex-col gap-4">
           {/* biome-ignore lint/a11y/useSemanticElements: <search> is newer than the Safari 16.4 floor (24 §2) */}
           <div role="search" className="flex flex-wrap items-center gap-2.5">
-            <h2 id="songs-title" className={cn('text-lg', !wide && 'sr-only')}>
+            <h2 id="songs-title" className={cn('text-xl', !wide && 'sr-only')}>
               {m['library.songs_heading']()}
               {songs.isSuccess && (
-                <span className="font-medium text-faint-foreground tabular-nums">
+                <span className="text-faint-foreground tabular-nums">
                   {' '}
                   · {count}
                   {songs.hasNextPage && '+'}
@@ -293,7 +294,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
               )}
             </h2>
             <div className="flex-1 max-sm:hidden" />
-            <div className="relative w-55 max-sm:hidden">
+            <div className="relative w-60 max-sm:hidden">
               <SearchIcon
                 aria-hidden
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint-foreground"
@@ -302,12 +303,11 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
                 type="search"
                 aria-label={m['library.filter_title']()}
                 placeholder={m['library.filter_title']()}
-                className="pl-9 text-md"
+                className="rounded-full pl-9 text-md"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </div>
-            {wide && chips}
             {sortMenu}
             {filtered && (
               <Button variant="ghost" size="sm" className="animate-pop-in" onClick={clearFilters}>
@@ -332,6 +332,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
                 <ListIcon aria-hidden />
               </ToggleGroupItem>
             </ToggleGroup>
+            {wide && chips}
           </div>
           {!wide && chips}
 
@@ -360,7 +361,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
               className={
                 view === 'grid'
                   ? 'stagger-children grid list-none grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3.5 p-0'
-                  : 'stagger-children flex list-none flex-col gap-0.5 p-0'
+                  : 'stagger-children flex list-none flex-col divide-y divide-border p-0'
               }
             >
               {entries.map(({ song, index }) => (

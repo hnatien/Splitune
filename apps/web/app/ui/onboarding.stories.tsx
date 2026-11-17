@@ -54,8 +54,8 @@ export const ChoicesRaised: Story = {
   play: async ({ canvasElement }) => {
     const [available, , unavailable] =
       canvasElement.querySelectorAll<HTMLElement>('[data-slot=choice-card]')
-    // Cards are bordered, not lifted (doc 26 §9: elevation 1 is no shadow), so both are flat;
-    // an unavailable one is sunken.
+    // Rows are drawn by a hairline, never lifted, so both are flat; an unavailable one sits on the
+    // quiet fill.
     await expect(getComputedStyle(available as Element).boxShadow).toBe(
       getComputedStyle(unavailable as Element).boxShadow,
     )
