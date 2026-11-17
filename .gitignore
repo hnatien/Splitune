@@ -39,3 +39,8 @@ __pycache__/
 apps/web/app/paraglide/
 apps/web/app/routeTree.gen.ts
 .lighthouseci/
+
+# Local agent and design-tool state
+.claude/
+.playwright-mcp/
+.impeccable/
