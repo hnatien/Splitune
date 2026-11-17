@@ -6,7 +6,6 @@ import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
 import { useHydrated } from '@/lib/use-hydrated'
 import { Button, buttonVariants } from '@/ui/button'
-import { Card } from '@/ui/card'
 import { Skeleton } from '@/ui/skeleton'
 import { Banner, InlineError } from '@/ui/status-message'
 import { BillingCard } from './billing-card'
@@ -20,8 +19,8 @@ import {
   useRefreshMe,
 } from './plans'
 
-// Mock portal (27 §3.10, 25 §2), on the Pricing card style: the plan and its renewal date; cancel at period end in one tap
-// with a confirmation line (no "are you sure" loop), resume, switch monthly ↔ yearly, and the
+// Mock portal (27 §3.10, 25 §2), laid out like mock checkout: the plan and its renewal date; cancel at
+// period end in one tap with a confirmation line (no "are you sure" loop), resume, switch monthly ↔ yearly, and the
 // simulated payment failure and refund. Every button goes through the provider's webhook.
 
 function confirmation(action: PortalAction, me: MeData): string {
@@ -91,7 +90,7 @@ export function MockPortal({ session }: { session: string }) {
         <SessionExpired />
       ) : !details.data || !me ? (
         <div className="flex flex-col gap-3" aria-hidden>
-          <Skeleton className="h-40 rounded-3xl" />
+          <Skeleton className="h-40 rounded-xl" />
           <Skeleton className="h-12" />
         </div>
       ) : (
@@ -121,13 +120,18 @@ export function MockPortal({ session }: { session: string }) {
             )}
           </BillingCard>
           {plus && (
-            <Card className="gap-3 p-5.5">
-              <h2 className="text-lg">{m['billing.simulations']()}</h2>
+            <section
+              aria-labelledby="simulations"
+              className="flex flex-col gap-4 border-t border-border pt-6"
+            >
+              <h2 id="simulations" className="text-lg">
+                {m['billing.simulations']()}
+              </h2>
               <div className="flex flex-col gap-2">
                 {button('payment_failed', m['billing.simulate_payment_failure'](), 'secondary')}
                 {button('refund', m['billing.simulate_refund'](), 'secondary')}
               </div>
-            </Card>
+            </section>
           )}
           <Link
             to={details.data.return_url}

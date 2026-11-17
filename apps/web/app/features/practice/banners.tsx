@@ -17,7 +17,7 @@ import { usePracticeUi } from './practice-store'
 // now…"), stems removed after 180 days unused with "Re-create stems", "Playback paused by another
 // app or a call." with Tap to resume, the audio that couldn't load, and once per device, where the
 // screen can't be kept on, the screen tip from the first play (24 §3). The evening "Try Stage" hint
-// is retired (26 §2): Night Rehearsal is already the default.
+// is retired (26 §2): Dark is already the default.
 
 const SCREEN_TIP_KEY = 'splitune.screen-tip'
 // Closed for this page only: it comes back with the next visit while the part is still rough.

@@ -202,9 +202,10 @@ export const SpeedKeyboard: Story = {
     const readout = canvas.getByRole('button', { name: /^Speed: / })
     // The number counts up to the new speed; the accessibility check waits for it to settle.
     await waitFor(() => expect(readout).toHaveTextContent(/^80/))
-    await expect(getComputedStyle(readout.firstElementChild as Element).fontFamily).toMatch(
-      /^"?JetBrains Mono/,
-    )
+    // The readout is set in the reading face with tabular figures.
+    const number = getComputedStyle(readout.firstElementChild as Element)
+    await expect(number.fontFamily).toMatch(/^"?Figtree/)
+    await expect(number.fontVariantNumeric).toContain('tabular-nums')
   },
 }
 

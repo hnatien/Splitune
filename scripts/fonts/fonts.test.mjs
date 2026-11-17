@@ -52,15 +52,13 @@ const UI = [
 const READING = [...range(0x20, 0x7e), ...range(0xa0, 0xff), 0x2013, 0x2014, 0x2212]
 // Upstream gaps, checked against the pinned sources in subset.sh: none is in NAMED or in the copy
 // (U+00AD, the soft hyphen, is never drawn).
-const INSTRUMENT_SANS_GAPS = [
-  0xa4, 0xa6, 0xac, 0xad, 0xb1, 0xb2, 0xb3, 0xb5, 0xb9, 0xbc, 0xbd, 0xbe,
-]
+const FIGTREE_GAPS = [0xad]
 const ATKINSON_GAPS = [0xad, 0xb5]
 
 const SHIPPED = {
-  'InstrumentSans.woff2': {
+  'Figtree.woff2': {
     codePoints: UI,
-    gaps: INSTRUMENT_SANS_GAPS,
+    gaps: FIGTREE_GAPS,
     tabular: 'tnum',
     features: ['tnum', 'case', 'ss01'],
     wght: [400, 700],
@@ -102,14 +100,12 @@ describe('shipped fonts', () => {
     expect(urls).toEqual(Object.keys(SHIPPED).sort())
   })
 
-  it('preload only Instrument Sans, within the 80 KB preload budget', () => {
+  it('preload only Figtree, within the 80 KB preload budget', () => {
     const preloads = ['apps/web/app/routes/__root.tsx', 'apps/web/.storybook/main.ts'].flatMap(
       (path) => [...read(path).matchAll(/\/fonts\/[\w-]+\.woff2/g)].map((m) => m[0]),
     )
-    expect([...new Set(preloads)]).toEqual(['/fonts/InstrumentSans.woff2'])
-    expect(statSync(new URL('InstrumentSans.woff2', FONTS)).size).toBeLessThanOrEqual(
-      PRELOAD_BUDGET,
-    )
+    expect([...new Set(preloads)]).toEqual(['/fonts/Figtree.woff2'])
+    expect(statSync(new URL('Figtree.woff2', FONTS)).size).toBeLessThanOrEqual(PRELOAD_BUDGET)
   })
 })
 

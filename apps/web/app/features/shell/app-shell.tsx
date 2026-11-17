@@ -36,9 +36,9 @@ function paletteKey() {
 
 const openPalette = () => usePalette.getState().setOpen(true)
 
-// App shell (27 §1, 26 §7, §12.2 AppBar): a sticky 64 px bar with the wordmark (→ Library), Library
-// and Settings, the search button that opens the ⌘K palette, the allowance (from lg), Add song (the
-// view's one primary) and the account menu. Phones get a 56 px header with the page title, search
+// App shell (27 §1, 26 §7, §12.2 AppBar): a sticky 64 px bar with no rule under it: the wordmark (→ Library), Library
+// and Settings, the search button that opens the ⌘K palette, the allowance (from lg), Add song (a
+// quiet pill: the bar is chrome, and each page keeps its one primary) and the account menu. Phones get a 56 px header with the page title, search
 // and the account menu, and the 76 px bottom bar. A file dropped anywhere opens Add song with it.
 export function AppShell({ me, children }: { me: MeData; children: React.ReactNode }) {
   useClaimOnSignIn()
@@ -52,7 +52,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
   return (
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
-      <header className="sticky top-0 z-(--z-sticky) border-border bg-background pt-[env(safe-area-inset-top)] sm:border-b [view-transition-name:app-header]">
+      <header className="sticky top-0 z-(--z-sticky) bg-background pt-[env(safe-area-inset-top)] [view-transition-name:app-header]">
         <div className="flex min-h-14 flex-wrap items-center gap-2 pr-2 pl-4 sm:min-h-16 sm:gap-3.5 sm:px-5">
           <Link
             to="/library"
@@ -62,7 +62,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
             <Wordmark />
           </Link>
           <BrandMark className="size-6.5 sm:hidden" />
-          <p className="flex-1 truncate text-lg font-bold sm:hidden">
+          <p className="flex-1 truncate text-lg sm:hidden">
             {isCurrent(pathname, '/settings') ? m['settings.title']() : m['library.title']()}
           </p>
           <nav aria-label={m['nav.main']()} className="ml-3 flex gap-1 max-sm:hidden">
@@ -87,9 +87,9 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
           </nav>
           <div className="flex-1 max-sm:hidden" />
           <Button
-            variant="quiet"
+            variant="secondary"
             onClick={openPalette}
-            className="w-81 min-w-0 shrink justify-start px-3 font-medium text-faint-foreground max-lg:hidden [&>span]:w-full [&>span]:min-w-0"
+            className="w-81 min-w-0 shrink justify-start px-4 font-normal text-muted-foreground max-lg:hidden [&>span]:w-full [&>span]:min-w-0"
           >
             <SearchIcon aria-hidden className="size-4" />
             <span className="min-w-0 flex-1 truncate text-left">{m['nav.search']()}</span>
@@ -107,7 +107,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
           <div className="flex-1 max-lg:hidden" />
           <UsageMeter me={me} className="max-lg:hidden" />
           <UploadPill />
-          <Button variant="primary" onClick={() => openAddSong()} className="max-sm:hidden">
+          <Button variant="secondary" onClick={() => openAddSong()} className="max-sm:hidden">
             <PlusIcon aria-hidden className="size-4" />
             {m['nav.add_song']()}
           </Button>

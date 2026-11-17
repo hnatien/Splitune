@@ -38,7 +38,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex min-h-control w-fit items-center justify-between gap-2 rounded-lg border border-input bg-background py-2 pr-3 pl-3.5 text-base whitespace-nowrap transition-colors select-none focus-visible:outline-offset-1 disabled:cursor-not-allowed disabled:bg-muted disabled:text-faint-foreground aria-invalid:border-destructive data-placeholder:text-faint-foreground data-[size=sm]:text-sm *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
+        "flex min-h-control w-fit items-center justify-between gap-2 rounded-xl border border-input bg-background py-2 pr-3 pl-4 text-base whitespace-nowrap transition-colors select-none focus-visible:-outline-offset-1 disabled:cursor-not-allowed disabled:bg-muted disabled:text-faint-foreground aria-invalid:border-destructive data-placeholder:text-faint-foreground data-[size=sm]:text-sm *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
         className,
       )}
       {...props}
@@ -97,10 +97,7 @@ function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) 
   return (
     <SelectPrimitive.GroupLabel
       data-slot="select-label"
-      className={cn(
-        'px-3 py-2 text-xs tracking-[0.08em] text-faint-foreground uppercase',
-        className,
-      )}
+      className={cn('px-3 py-2 text-xs text-faint-foreground', className)}
       {...props}
     />
   )

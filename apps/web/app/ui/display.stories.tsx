@@ -13,7 +13,7 @@ import { Spinner } from './spinner.tsx'
 import { BOTH_THEMES, BOTH_THEMES_MORE_CONTRAST, StateGrid, themeFrames } from './story-kit.tsx'
 
 // Doc 26 §12.1 `.badge`, `.kbd`, `.card`, `.bar`, `.spin`, `.hr`/`.vr`: always text with status
-// colour on its own surface (§4.3), one amber mark per view at most (§4.5).
+// colour on its own surface (§4.3), one ink-filled mark per view at most (§4.5).
 const BARS = Array.from({ length: 40 }, (_, index) => index + 1)
 
 const meta = { title: 'Base/Display' } satisfies Meta
@@ -56,8 +56,8 @@ export const Badges: Story = {
     for (const frame of themeFrames(canvasElement)) {
       const ready = within(frame).getByText('Ready')
       const style = getComputedStyle(ready)
-      await expect(ready.getBoundingClientRect().height).toBe(22)
-      await expect([style.fontSize, style.fontWeight]).toEqual(['12px', '650'])
+      await expect(ready.getBoundingClientRect().height).toBe(24)
+      await expect([style.fontSize, style.fontWeight]).toEqual(['12px', '500'])
     }
   },
 }
@@ -86,7 +86,7 @@ export const Keys: Story = {
       const style = getComputedStyle(key)
       await expect(style.fontFamily).toMatch(/^"?JetBrains Mono/)
       await expect(key.getBoundingClientRect().height).toBe(22)
-      await expect(style.borderBottomWidth).toBe('2px')
+      await expect(style.borderBottomWidth).toBe('1px')
     }
   },
 }
@@ -188,7 +188,7 @@ export const Cards: Story = {
     for (const frame of themeFrames(canvasElement)) {
       const card = frame.querySelector('[data-slot="card"]') as HTMLElement
       const style = getComputedStyle(card)
-      await expect(style.borderTopLeftRadius).toBe('16px')
+      await expect(style.borderTopLeftRadius).toBe('12px')
       await expect(style.borderTopWidth).toBe('1px')
       await expect(style.boxShadow).not.toMatch(/\d+px \d+px/)
     }

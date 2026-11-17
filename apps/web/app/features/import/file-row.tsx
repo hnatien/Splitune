@@ -50,20 +50,20 @@ export function FileRow({
     <section
       aria-label={file.name}
       data-slot="file-card"
-      className="flex flex-col gap-3 rounded-3xl border border-border bg-muted p-3.5"
+      className="flex flex-col gap-3 rounded-xl bg-muted p-4"
     >
       <div className="flex items-center gap-3">
         <span
           aria-hidden
-          className="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-muted-foreground"
+          className="grid size-10 shrink-0 place-items-center rounded-md bg-background text-muted-foreground"
         >
           <MusicIcon className="size-5" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="truncate text-base font-[650]" title={file.name}>
+          <p className="truncate text-base font-medium" title={file.name}>
             {file.name}
           </p>
-          <p className="font-mono text-sm text-faint-foreground tabular-nums">
+          <p className="text-sm text-faint-foreground tabular-nums">
             {[formatBytes(file.size), duration === undefined ? undefined : formatDuration(duration)]
               .filter(Boolean)
               .join(' · ')}
@@ -101,7 +101,7 @@ export function FileRow({
         <ul className="flex flex-wrap gap-2" aria-label={m['import.checks_label']()}>
           {warnings.map((issue) => (
             <li key={issue.kind}>
-              <Badge className="h-auto min-h-5.5 py-0.5 whitespace-normal">
+              <Badge variant="outline" className="h-auto min-h-5.5 py-0.5 whitespace-normal">
                 <TriangleAlertIcon aria-hidden />
                 {issueText(issue)}
               </Badge>

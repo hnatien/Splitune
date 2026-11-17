@@ -5,8 +5,8 @@ import { MarketingShell } from '../shell/marketing-shell'
 import { HowItWorks } from './how-it-works'
 import { LegalPage } from './legal-page'
 
-// How it works and the legal pages (27 §3.2) in the marketing shell, in Night Rehearsal and
-// Daylight, on desktop and phone.
+// How it works and the legal pages (27 §3.2) in the marketing shell, in the dark and light
+// themes, on desktop and phone.
 const meta = { title: 'Screens/Marketing', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>

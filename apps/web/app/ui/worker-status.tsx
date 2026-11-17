@@ -2,7 +2,7 @@ import { ClockIcon, CpuIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Doc 26 §12.2, 25 §5, 27 §3.11: the machine that runs analyses can be offline; queued songs start
-// automatically when it's back. A card-style banner, not an error.
+// automatically when it's back. A quiet --muted banner, not an error.
 
 type WorkerStatusProps = {
   online: boolean
@@ -19,7 +19,7 @@ function WorkerStatus({ online, text, className }: WorkerStatusProps) {
       data-online={online}
       role="status"
       className={cn(
-        'flex items-center gap-2.5 rounded-3xl border border-border bg-card px-3.5 py-3 text-sm',
+        'flex items-center gap-2.5 rounded-xl bg-muted px-4 py-3 text-sm',
         online && 'text-muted-foreground',
         className,
       )}

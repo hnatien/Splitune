@@ -66,12 +66,12 @@ function PassControl({
         data-slot="pass-prompt"
         inert={inert}
         className={cn(
-          'm-0 flex items-center gap-3 rounded-4xl border border-border bg-card py-2.5 pr-2.5 pl-5 whitespace-nowrap shadow-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-(--duration-base) motion-safe:ease-enter',
+          'm-0 flex items-center gap-3 rounded-full border border-border bg-card py-2.5 pr-2.5 pl-5 whitespace-nowrap shadow-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-(--duration-base) motion-safe:ease-enter',
           className,
         )}
       >
         <legend className="sr-only">{labels.prompt}</legend>
-        {question && <span className="text-base font-semibold">{question}</span>}
+        {question && <span className="text-base font-medium">{question}</span>}
         <Button
           size="practice"
           variant="primary"
@@ -105,7 +105,7 @@ function PassControl({
       data-slot="pass-control"
       inert={inert}
       className={cn(
-        'm-0 flex flex-wrap items-center gap-2 rounded-3xl border-0 p-1',
+        'm-0 flex flex-wrap items-center gap-2 rounded-full border-0 p-1',
         prompting && 'ring-2 ring-signal',
         className,
       )}

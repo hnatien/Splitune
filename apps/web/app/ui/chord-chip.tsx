@@ -78,7 +78,7 @@ function ChordChip({
         >
           <ChordSymbol name={label} />
           {uncertain && confidence === 'low' && (
-            <span aria-hidden className="text-[0.55em] font-bold">
+            <span aria-hidden className="text-[0.55em] font-semibold">
               ?
             </span>
           )}
@@ -111,7 +111,7 @@ function ChordChip({
     >
       <ChordSymbol name={label} />
       {uncertain && confidence === 'low' && (
-        <sup aria-hidden className="ml-0.5 text-[0.55em] font-bold">
+        <sup aria-hidden className="ml-0.5 text-[0.55em] font-semibold">
           ?
         </sup>
       )}

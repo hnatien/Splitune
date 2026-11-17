@@ -6,7 +6,7 @@ import { m } from '@/lib/i18n'
 import { Button, buttonVariants } from '@/ui/button'
 import { SystemCard, SystemText } from './system-card'
 
-// Unsupported browser (27 §3.11, 24 §1, States.dc.html): which hard requirement is missing, in
+// Unsupported browser (27 §3.11, 24 §1): which hard requirement is missing, in
 // plain words; the supported versions under Details; a link to copy into another browser, and the
 // way back to the library (still readable without the audio engine).
 
@@ -34,7 +34,7 @@ export function UnsupportedBrowser() {
       title={m['system.unsupported_title']()}
       actions={
         <>
-          <Button onClick={copyLink}>
+          <Button variant="primary" onClick={copyLink}>
             <CopyIcon aria-hidden />
             {copied ? m['system.link_copied']() : m['system.copy_link']()}
           </Button>
@@ -47,8 +47,8 @@ export function UnsupportedBrowser() {
       <SystemText>
         {m['system.unsupported']({ missing: LIST.format(listed.map((r) => NAMES[r]())) })}
       </SystemText>
-      <details className="group text-sm text-muted-foreground">
-        <summary className="inline-flex min-h-target cursor-pointer items-center rounded-md font-semibold text-foreground">
+      <details className="group flex flex-col items-center text-sm text-muted-foreground">
+        <summary className="inline-flex min-h-target cursor-pointer items-center rounded-full px-3 font-medium text-foreground hover:bg-muted">
           {m['system.details']()}
         </summary>
         <p>{m['system.supported_browsers']()}</p>

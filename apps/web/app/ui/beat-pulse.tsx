@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 
 // Doc 26 §4.7, §10, §12.2 (V9): the beat pulse, static until s42 animates it. One dot per beat of
 // the bar (meter-aware): the downbeat is a square, the others round, so the downbeat reads by
-// shape; beats played are filled `--beat-done`, the current beat `--beat-now` with the glow,
+// shape; beats played are filled `--beat-done`, the current beat `--beat-now` (the ink),
 // upcoming ones an outline in `--beat-slot`. A small dot, never a flash (2.3.1).
 
 const SIZES = {
@@ -43,7 +43,7 @@ function BeatPulse({ beats, current, size = 'sm', label, className }: BeatPulseP
             SIZES[size],
             beat === 0 ? 'rounded-xs' : 'rounded-full',
             beat < current && 'border-beat-done bg-beat-done',
-            beat === current && 'border-beat-now bg-beat-now shadow-glow',
+            beat === current && 'border-beat-now bg-beat-now',
             beat > current && 'border-beat-slot',
           )}
         />

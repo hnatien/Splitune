@@ -38,7 +38,7 @@ describe.each(CONTEXTS)('$name', ({ context }) => {
     },
   )
 
-  it('only the washes, the Night chip hairline and the scrim are translucent', () => {
+  it('only the ink wash, its hairline and the scrim are translucent', () => {
     for (const name of [...SEMANTIC_ROLES, ...COMPONENT_TOKENS].filter(
       (n) => !NON_COLOURS.has(n),
     )) {
@@ -89,8 +89,8 @@ describe('translucent washes (§4.6)', () => {
 
   // The table in doc 26 §4.6 (one decimal, so ±0.1; the note-head row is a lower bound).
   const WASHES = {
-    dark: { ink: [8.8, 7.9, 7.1], foreground: 12.0, head: 9.5 },
-    light: { ink: [5.1, 5.4, 4.9], foreground: 15.4, head: 10.6 },
+    dark: { ink: [16.6, 13.5, 11.4], foreground: 13.5, head: 12.6 },
+    light: { ink: [16.4, 16.4, 15.1], foreground: 16.4, head: 12.4 },
   }
   it.each(Object.entries(WASHES))('%s matches the documented ratios', (appearance, rows) => {
     const tokens = tokensFor(rules, {
@@ -116,36 +116,36 @@ describe('translucent washes (§4.6)', () => {
 
 describe('§4.6 baseline values', () => {
   // The table in doc 26 §4.6 (one decimal, so ±0.1). A value change must update the doc too.
-  const NIGHT: [string, string, number][] = [
-    ['--foreground', '--background', 16.9],
-    ['--muted-foreground', '--card', 9.9],
-    ['--primary-foreground', '--primary', 9.7],
-    ['--ring', '--background', 10.1],
-    ['--input', '--card', 3.4],
-    ['--ink', '--paper', 16.9],
-    ['--conf-medium', '--paper', 16.9],
-    ['--conf-low', '--paper', 9.6],
-    ['--score-loop-edge', '--paper', 10.1],
-    ['--score-playhead', '--paper', 10.1],
-    ['--staff', '--paper', 4.0],
-    ['--staff', '--score-loop-fill', 3.7],
+  const DARK: [string, string, number][] = [
+    ['--foreground', '--background', 21],
+    ['--muted-foreground', '--card', 7.4],
+    ['--primary-foreground', '--primary', 21],
+    ['--ring', '--background', 21],
+    ['--input', '--card', 3.8],
+    ['--ink', '--paper', 21],
+    ['--conf-medium', '--paper', 21],
+    ['--conf-low', '--paper', 8.5],
+    ['--score-loop-edge', '--paper', 21],
+    ['--score-playhead', '--paper', 21],
+    ['--staff', '--paper', 4.4],
+    ['--staff', '--score-loop-fill', 3.9],
   ]
   const BASELINE: Record<string, [string, string, number][]> = {
-    dark: NIGHT,
-    stage: NIGHT,
+    dark: DARK,
+    stage: DARK,
     light: [
-      ['--foreground', '--background', 16.4],
-      ['--muted-foreground', '--card', 9.1],
-      ['--primary-foreground', '--primary', 9.7],
-      ['--ring', '--background', 5.8],
-      ['--input', '--card', 3.5],
-      ['--ink', '--paper', 16.4],
-      ['--conf-medium', '--paper', 16.4],
-      ['--conf-low', '--paper', 5.6],
-      ['--score-loop-edge', '--paper', 3.6],
-      ['--score-playhead', '--paper', 3.6],
-      ['--staff', '--paper', 3.6],
-      ['--staff', '--score-loop-fill', 3.5],
+      ['--foreground', '--background', 19.4],
+      ['--muted-foreground', '--card', 8.5],
+      ['--primary-foreground', '--primary', 19.4],
+      ['--ring', '--background', 19.4],
+      ['--input', '--card', 3.6],
+      ['--ink', '--paper', 19.4],
+      ['--conf-medium', '--paper', 19.4],
+      ['--conf-low', '--paper', 6.1],
+      ['--score-loop-edge', '--paper', 19.4],
+      ['--score-playhead', '--paper', 19.4],
+      ['--staff', '--paper', 3.9],
+      ['--staff', '--score-loop-fill', 3.6],
     ],
   }
   it.each(Object.entries(BASELINE))('%s matches the documented ratios', (appearance, pairs) => {
@@ -162,53 +162,53 @@ describe('§4.6 baseline values', () => {
 describe('§4.8 surface and status-surface values', () => {
   // The table in doc 26 §4.8 (one decimal, so ±0.1): normal contrast, then increased contrast for
   // the muted text rows (warning and info are muted text).
-  const NIGHT = {
+  const DARK = {
     pairs: [
-      ['--foreground', '--surface-raised', 15.7],
-      ['--foreground', '--surface-sunken', 16.9],
-      ['--muted-foreground', '--surface-raised', 9.9],
-      ['--muted-foreground', '--surface-sunken', 10.7],
-      ['--foreground', '--success-surface', 11.9],
-      ['--foreground', '--warning-surface', 12.2],
-      ['--foreground', '--info-surface', 15.7],
-      ['--foreground', '--destructive-surface', 12.7],
-      ['--success', '--success-surface', 7.4],
-      ['--warning', '--warning-surface', 7.7],
-      ['--info', '--info-surface', 9.9],
+      ['--foreground', '--surface-raised', 18.7],
+      ['--foreground', '--surface-sunken', 21],
+      ['--muted-foreground', '--surface-raised', 7.4],
+      ['--muted-foreground', '--surface-sunken', 8.3],
+      ['--foreground', '--success-surface', 15.2],
+      ['--foreground', '--warning-surface', 14.4],
+      ['--foreground', '--info-surface', 18.7],
+      ['--foreground', '--destructive-surface', 15.8],
+      ['--success', '--success-surface', 7.3],
+      ['--warning', '--warning-surface', 5.7],
+      ['--info', '--info-surface', 7.4],
       ['--destructive', '--destructive-surface', 5.5],
-      ['--unsure', '--unsure-surface', 7.3],
+      ['--unsure', '--unsure-surface', 6.4],
     ],
     more: [
-      ['--muted-foreground', '--surface-raised', 12.1],
-      ['--muted-foreground', '--surface-sunken', 13.0],
-      ['--warning', '--warning-surface', 9.4],
-      ['--info', '--info-surface', 12.1],
+      ['--muted-foreground', '--surface-raised', 11.7],
+      ['--muted-foreground', '--surface-sunken', 13.1],
+      ['--warning', '--warning-surface', 8.9],
+      ['--info', '--info-surface', 11.7],
     ],
   } satisfies { pairs: [string, string, number][]; more: [string, string, number][] }
-  const SURFACES: Record<string, typeof NIGHT> = {
-    dark: NIGHT,
-    stage: NIGHT,
+  const SURFACES: Record<string, typeof DARK> = {
+    dark: DARK,
+    stage: DARK,
     light: {
       pairs: [
-        ['--foreground', '--surface-raised', 17.4],
-        ['--foreground', '--surface-sunken', 16.4],
-        ['--muted-foreground', '--surface-raised', 9.1],
+        ['--foreground', '--surface-raised', 19.4],
+        ['--foreground', '--surface-sunken', 19.4],
+        ['--muted-foreground', '--surface-raised', 8.5],
         ['--muted-foreground', '--surface-sunken', 8.5],
-        ['--foreground', '--success-surface', 14.7],
-        ['--foreground', '--warning-surface', 13.8],
-        ['--foreground', '--info-surface', 17.4],
-        ['--foreground', '--destructive-surface', 14.9],
-        ['--success', '--success-surface', 4.7],
+        ['--foreground', '--success-surface', 17.2],
+        ['--foreground', '--warning-surface', 16.4],
+        ['--foreground', '--info-surface', 19.4],
+        ['--foreground', '--destructive-surface', 16.9],
+        ['--success', '--success-surface', 5.5],
         ['--warning', '--warning-surface', 7.2],
-        ['--info', '--info-surface', 9.1],
-        ['--destructive', '--destructive-surface', 5.1],
-        ['--unsure', '--unsure-surface', 4.9],
+        ['--info', '--info-surface', 8.5],
+        ['--destructive', '--destructive-surface', 4.8],
+        ['--unsure', '--unsure-surface', 5.4],
       ],
       more: [
-        ['--muted-foreground', '--surface-raised', 12.0],
-        ['--muted-foreground', '--surface-sunken', 11.3],
-        ['--warning', '--warning-surface', 9.5],
-        ['--info', '--info-surface', 12.0],
+        ['--muted-foreground', '--surface-raised', 12.6],
+        ['--muted-foreground', '--surface-sunken', 12.6],
+        ['--warning', '--warning-surface', 10.7],
+        ['--info', '--info-surface', 12.6],
       ],
     },
   }

@@ -45,6 +45,9 @@ export async function authenticate(
   return m['system.error']()
 }
 
+// The credential fields are 52 px tall, a step above the 44 px browse control: the form is the page.
+const FIELD = 'min-h-13'
+
 interface Problems {
   username?: string | undefined
   password?: string | undefined
@@ -116,12 +119,13 @@ export function CredentialsForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-4.5">
+    <form noValidate onSubmit={submit} className="flex flex-col gap-4">
       <Field data-invalid={problems.username ? true : undefined}>
         <FieldLabel htmlFor={usernameId}>{m['auth.username_label']()}</FieldLabel>
         <Input
           ref={usernameField}
           id={usernameId}
+          className={FIELD}
           autoComplete="username"
           autoCapitalize="none"
           autoCorrect="off"
@@ -143,6 +147,7 @@ export function CredentialsForm({
         <Input
           ref={passwordField}
           id={passwordId}
+          className={FIELD}
           type="password"
           autoComplete={signUp ? 'new-password' : 'current-password'}
           maxLength={PASSWORD_MAX}
@@ -165,11 +170,13 @@ export function CredentialsForm({
   )
 }
 
-const LINK = 'text-primary-ink underline underline-offset-4 hover:decoration-2'
+const LINK = 'text-foreground underline underline-offset-4 hover:decoration-2'
+// The terms keep the small print's colour; the underline marks them as links.
+const SMALL_LINK = 'underline underline-offset-4 hover:text-foreground'
 
 /**
- * The sign-in or sign-up page (27 §3.4, `SignIn.dc.html`): heading and lead, the form, Google
- * when configured, the way to the other mode, and the terms.
+ * The sign-in or sign-up page (27 §3.4): a centred heading and lead, the form, Google when
+ * configured (after an "or" rule), the way to the other mode, and the terms at the foot of the page.
  */
 export function AuthScreen({
   mode,
@@ -183,45 +190,48 @@ export function AuthScreen({
   const signUp = mode === 'sign-up'
   return (
     <>
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl text-balance">
-          {signUp ? m['auth.sign_up_title']() : m['auth.sign_in_title']()}
-        </h1>
-        <p className="text-base text-muted-foreground">
-          {signUp ? m['auth.sign_up_lead']() : m['auth.sign_in_lead']()}
+      <div className="my-auto flex flex-col gap-6 py-10 sm:py-16">
+        <div className="flex flex-col gap-2 text-center">
+          <h1 className="text-2xl text-balance">
+            {signUp ? m['auth.sign_up_title']() : m['auth.sign_in_title']()}
+          </h1>
+          <p className="text-base text-muted-foreground">
+            {signUp ? m['auth.sign_up_lead']() : m['auth.sign_in_lead']()}
+          </p>
+        </div>
+        <CredentialsForm mode={mode} next={next} />
+        {google && (
+          <>
+            <p className="flex items-center gap-3 text-sm text-faint-foreground">
+              <span aria-hidden className="h-px flex-1 bg-border" />
+              {m['auth.or']()}
+              <span aria-hidden className="h-px flex-1 bg-border" />
+            </p>
+            <Button
+              variant="outline"
+              size="lg"
+              block
+              onClick={() => authClient.signIn.social({ provider: 'google', callbackURL: next })}
+            >
+              {m['auth.google']()}
+            </Button>
+          </>
+        )}
+        <p className="text-center text-sm text-muted-foreground">
+          {signUp ? m['auth.have_account']() : m['auth.new_here']()}{' '}
+          <Link to={signUp ? '/auth/sign-in' : '/auth/sign-up'} search={{ next }} className={LINK}>
+            {signUp ? m['auth.sign_in_title']() : m['auth.sign_up_title']()}
+          </Link>
+          {signUp ? null : m['auth.no_email']()}
         </p>
       </div>
-      <CredentialsForm mode={mode} next={next} />
-      {google && (
-        <>
-          <p className="flex items-center gap-3 text-sm text-faint-foreground">
-            <span aria-hidden className="h-px flex-1 bg-border" />
-            {m['auth.or']()}
-            <span aria-hidden className="h-px flex-1 bg-border" />
-          </p>
-          <Button
-            size="lg"
-            block
-            onClick={() => authClient.signIn.social({ provider: 'google', callbackURL: next })}
-          >
-            {m['auth.google']()}
-          </Button>
-        </>
-      )}
-      <p className="text-sm text-muted-foreground">
-        {signUp ? m['auth.have_account']() : m['auth.new_here']()}{' '}
-        <Link to={signUp ? '/auth/sign-in' : '/auth/sign-up'} search={{ next }} className={LINK}>
-          {signUp ? m['auth.sign_in_title']() : m['auth.sign_up_title']()}
-        </Link>
-        {signUp ? null : m['auth.no_email']()}
-      </p>
-      <p className="text-sm text-faint-foreground">
+      <p className="pb-6 text-center text-sm text-faint-foreground">
         {m['auth.small_print']()}{' '}
-        <Link to="/legal/$page" params={{ page: 'terms' }} className={LINK}>
+        <Link to="/legal/$page" params={{ page: 'terms' }} className={SMALL_LINK}>
           {m['legal.terms_title']()}
         </Link>{' '}
         {m['auth.and']()}{' '}
-        <Link to="/legal/$page" params={{ page: 'privacy' }} className={LINK}>
+        <Link to="/legal/$page" params={{ page: 'privacy' }} className={SMALL_LINK}>
           {m['legal.privacy_title']()}
         </Link>{' '}
         {m['auth.small_print_end']()}

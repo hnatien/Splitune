@@ -3,15 +3,15 @@ import { useId } from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { SaveStatus } from '@/ui/save-status'
-import { Separator } from '@/ui/separator'
 import { Switch } from '@/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { type SaveState, useSaveState } from './use-save-state'
 
 // The parts every settings section is built from (27 §3.9; Settings-Account, -Display, -Pedal):
-// a page title, sections 28 apart separated by hairlines, and rows with the label (and its hint)
-// on the left and the control on the right, wrapping under it on narrow screens. Each field saves
-// on its own and says so next to its label (no global save).
+// a page title, sections set apart by whitespace, each a heading over rows divided by hairlines
+// (`SettingRows`), with the label (and its hint) on the left and the control on the right, wrapping
+// under it on narrow screens. Each field saves on its own and says so next to its label (no global
+// save).
 
 export function SettingsPage({
   title,
@@ -25,7 +25,7 @@ export function SettingsPage({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="flex-1 text-2xl">{title}</h1>
@@ -42,12 +42,15 @@ export function SettingSection({
   id,
   title,
   aside,
+  description,
   children,
   className,
 }: {
   id: string
   title: string
   aside?: React.ReactNode
+  /** A line under the heading that explains the whole group. */
+  description?: string
   children: React.ReactNode
   className?: string
 }) {
@@ -55,21 +58,40 @@ export function SettingSection({
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn('flex scroll-mt-24 flex-col gap-3.5', className)}
+      className={cn('flex scroll-mt-24 flex-col gap-3', className)}
     >
-      <div className="flex flex-wrap items-center gap-2.5">
-        <h2 id={`${id}-title`} className="flex-1 text-lg">
-          {title}
-        </h2>
-        {aside}
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 id={`${id}-title`} className="flex-1 text-lg">
+            {title}
+          </h2>
+          {aside}
+        </div>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
     </section>
   )
 }
 
-export function SectionRule() {
-  return <Separator />
+/** A group's rows, divided by hairlines: each direct child is one row. */
+export function SettingRows({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col divide-y divide-border border-y border-border *:py-4',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
 }
 
 /** The label column: the label, the inline save status, and the hint under them. */
@@ -109,7 +131,7 @@ function LabelColumn({
         />
       </div>
       {hint && (
-        <span id={hintId} className="text-sm text-faint-foreground">
+        <span id={hintId} className="text-sm text-muted-foreground">
           {hint}
         </span>
       )}

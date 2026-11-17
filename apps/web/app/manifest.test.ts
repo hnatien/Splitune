@@ -28,7 +28,7 @@ describe('web app manifest', () => {
     expect(manifest.icons.some((i) => i.purpose === 'maskable')).toBe(true)
   })
 
-  it('takes its colours from the Night Rehearsal background token', () => {
+  it('takes its colours from the Dark background token', () => {
     expect(manifest.background_color).toBe(BACKGROUND_HEX.dark)
     expect(manifest.theme_color).toBe(BACKGROUND_HEX.dark)
   })

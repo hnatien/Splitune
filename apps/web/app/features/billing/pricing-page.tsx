@@ -10,15 +10,15 @@ import type { MeData } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/ui/badge'
 import { Button, buttonVariants } from '@/ui/button'
-import { Card } from '@/ui/card'
 import { InlineError } from '@/ui/status-message'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { checkoutUrl, DEFAULT_PLAN, type PaidPlanName, type Plan, planPrice } from './plans'
 import { formatPrice } from './price'
 
-// Pricing (27 §3.2, `Pricing.dc.html`; 23 §3 and §5): the demo-mode banner, "Every practice tool is
-// free", Free and Plus cards (Monthly / Yearly segmented with neither emphasised, monthly chosen,
-// the price from the provider), and the Compare table. No countdowns, no "most popular" badge,
+// Pricing (27 §3.2; 23 §3 and §5): the demo-mode line, "Every practice tool is free" centred with
+// one sentence under it, the Monthly / Yearly segmented control (neither emphasised, monthly chosen,
+// the price from the provider), then Free and Plus as hairline columns: name, one line, price, the
+// action, a rule and the checklist. Then the Compare table. No countdowns, no "most popular" badge,
 // never a card field (25 §2). Honesty gates (27 §3.1, flipped in s45): the mixer phrase of the lead
 // (s40b), the speed ladder (s37), beat lights (s42) and Stand view (s43) stay out until they ship.
 
@@ -50,10 +50,10 @@ function compareRows(plans: Plans): [string, string, string][] {
 
 function Points({ points }: { points: string[] }) {
   return (
-    <ul className="flex flex-col gap-2.5">
+    <ul className="flex flex-col gap-3.5 border-t border-border pt-6">
       {points.map((point) => (
-        <li key={point} className="flex gap-2.5 text-base">
-          <CheckIcon aria-hidden strokeWidth={1.8} className="size-5 shrink-0 text-foreground" />
+        <li key={point} className="flex gap-3 text-md">
+          <CheckIcon aria-hidden strokeWidth={1.5} className="size-5 shrink-0 text-foreground" />
           {point}
         </li>
       ))}
@@ -61,41 +61,38 @@ function Points({ points }: { points: string[] }) {
   )
 }
 
-function PlanCard({
+function PlanColumn({
   title,
   lead,
   current,
-  aside,
   children,
 }: {
   title: string
   lead: string
   current: boolean
-  aside?: React.ReactNode
   children: React.ReactNode
 }) {
   const id = useId()
   return (
-    <Card role="region" aria-labelledby={id} className="gap-4.5 p-7">
-      <div className="flex flex-wrap items-start gap-2.5">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 id={id} className="flex flex-wrap items-center gap-2 text-xl">
-            {title}
-            {current && (
-              <Badge className="forced-colors:bg-card forced-colors:inset-ring forced-colors:inset-ring-border">
-                {m['billing.current_plan']()}
-              </Badge>
-            )}
-          </h2>
-          <p className="text-base text-muted-foreground">{lead}</p>
-        </div>
-        {aside}
+    <section
+      aria-labelledby={id}
+      className="flex flex-col gap-6 rounded-xl border border-border p-6 sm:p-8"
+    >
+      <div className="flex flex-col gap-2">
+        <h2 id={id} className="flex flex-wrap items-center gap-3 text-2xl">
+          {title}
+          {current && (
+            <Badge className="forced-colors:bg-card forced-colors:inset-ring forced-colors:inset-ring-border">
+              {m['billing.current_plan']()}
+            </Badge>
+          )}
+        </h2>
+        <p className="text-base text-muted-foreground">{lead}</p>
       </div>
       {children}
-    </Card>
+    </section>
   )
 }
-
 function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
   const navigate = useNavigate()
   const [pending, setPending] = useState(false)
@@ -148,7 +145,7 @@ function PlusPrice({ chosen, other }: { chosen: Plan | undefined; other: Plan | 
   if (!chosen) return null
   return (
     <p className="flex flex-wrap items-baseline gap-x-2">
-      <span className="font-mono text-3xl tabular-nums">
+      <span className="text-4xl tabular-nums">
         {formatPrice(chosen.price_minor, chosen.currency)}
       </span>{' '}
       <span className="text-base text-muted-foreground">
@@ -181,26 +178,51 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
     <div className="flex flex-col">
       <p
         role="status"
-        className="flex items-center justify-center gap-2 bg-accent px-4 py-2 text-center text-md text-foreground forced-colors:border-b forced-colors:bg-card"
+        className="flex items-center justify-center gap-2 border-b border-border bg-muted px-4 py-2.5 text-center text-md text-foreground forced-colors:bg-card"
       >
-        <InfoIcon aria-hidden strokeWidth={1.8} className="size-4 shrink-0 text-info" />
+        <InfoIcon aria-hidden strokeWidth={1.5} className="size-4 shrink-0" />
         {m['billing.demo']()}
       </p>
-      <div className="mx-auto flex w-full max-w-pricing flex-col gap-10 px-4 pt-10 pb-18 sm:px-6">
-        <header className="flex flex-col items-center gap-3 text-center">
-          <h1 className="text-5xl text-balance">{m['pricing.title']()}</h1>
+      <div className="mx-auto flex w-full max-w-pricing flex-col px-4 pt-16 pb-24 sm:px-6 sm:pt-20">
+        <header className="flex flex-col items-center gap-4 text-center">
+          <h1 className="text-5xl text-balance max-sm:text-4xl">{m['pricing.title']()}</h1>
           <p className="max-w-2xl text-lead text-pretty text-muted-foreground">
             {m['pricing.lead']()}
           </p>
         </header>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(23.75rem,100%),1fr))] gap-5">
-          <PlanCard
+        <div className="mt-10 flex justify-center">
+          <span id={periodId} className="sr-only">
+            {m['pricing.period']()}
+          </span>
+          <ToggleGroup
+            aria-labelledby={periodId}
+            value={[plan]}
+            onValueChange={(next) => {
+              const picked = next[0]
+              if (picked) setPlan(picked as PaidPlanName)
+            }}
+          >
+            {plans.plans.map((p) => (
+              <ToggleGroupItem key={p.plan} value={p.plan}>
+                {p.interval === 'year' ? m['plan.yearly']() : m['plan.monthly']()}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
+          <PlanColumn
             title={m['pricing.free_name']()}
             lead={m['pricing.free_lead']()}
             current={me !== null && !onPlus}
           >
-            <p className="font-mono text-3xl">{m['pricing.free_price']()}</p>
+            <p className="text-4xl">{m['pricing.free_price']()}</p>
+            {!me && (
+              <Link to="/start" className={buttonVariants({ size: 'lg', block: true })}>
+                {m['home.cta_example']()}
+              </Link>
+            )}
             <Points
               points={[
                 m['pricing.free_point_welcome'](),
@@ -210,42 +232,14 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
                 m['pricing.free_point_tools'](),
               ]}
             />
-            {!me && (
-              <Link
-                to="/start"
-                className={cn(buttonVariants({ size: 'lg', block: true }), 'mt-auto')}
-              >
-                {m['home.cta_example']()}
-              </Link>
-            )}
-          </PlanCard>
-          <PlanCard
+          </PlanColumn>
+          <PlanColumn
             title={m['pricing.plus_name']()}
             lead={m['pricing.plus_lead']()}
             current={onPlus}
-            aside={
-              <div className="flex flex-col items-end">
-                <span id={periodId} className="sr-only">
-                  {m['pricing.period']()}
-                </span>
-                <ToggleGroup
-                  aria-labelledby={periodId}
-                  value={[plan]}
-                  onValueChange={(next) => {
-                    const picked = next[0]
-                    if (picked) setPlan(picked as PaidPlanName)
-                  }}
-                >
-                  {plans.plans.map((p) => (
-                    <ToggleGroupItem key={p.plan} value={p.plan}>
-                      {p.interval === 'year' ? m['plan.yearly']() : m['plan.monthly']()}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </div>
-            }
           >
             <PlusPrice chosen={chosen} other={other} />
+            <PlusAction me={me} plan={plan} />
             <Points
               points={[
                 m['pricing.plus_point_full']({
@@ -256,29 +250,24 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
                 m['pricing.plus_point_priority'](),
               ]}
             />
-            <div className="mt-auto flex flex-col gap-3">
-              <PlusAction me={me} plan={plan} />
-              <p className="text-center text-sm text-faint-foreground">
-                {m['pricing.cancel_note']()}
-              </p>
-            </div>
-          </PlanCard>
+            <p className="mt-auto text-sm text-faint-foreground">{m['pricing.cancel_note']()}</p>
+          </PlanColumn>
         </div>
 
-        <section aria-labelledby="compare" className="flex flex-col gap-3.5">
-          <h2 id="compare" className="text-lg">
+        <section aria-labelledby="compare" className="mt-24 flex flex-col gap-6">
+          <h2 id="compare" className="text-xl">
             {m['pricing.compare']()}
           </h2>
           <table className="w-full border-collapse text-left text-base">
             <thead>
               <tr className="text-sm text-faint-foreground">
-                <th scope="col" className="py-2.5 pr-4 font-semibold">
+                <th scope="col" className="py-3 pr-4 font-medium">
                   {m['pricing.feature']()}
                 </th>
-                <th scope="col" className="w-24 py-2.5 pr-3 font-semibold sm:w-45">
+                <th scope="col" className="w-24 py-3 pr-3 font-medium sm:w-45">
                   {m['pricing.free_name']()}
                 </th>
-                <th scope="col" className="w-24 py-2.5 font-semibold sm:w-45">
+                <th scope="col" className="w-24 py-3 font-medium sm:w-45">
                   {m['pricing.plus_name']()}
                 </th>
               </tr>
@@ -286,11 +275,25 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
             <tbody>
               {compareRows(plans).map(([feature, free, plus]) => (
                 <tr key={feature} className="border-t border-border align-top">
-                  <th scope="row" className="py-3 pr-4 font-normal">
+                  <th scope="row" className="py-4 pr-4 font-normal">
                     {feature}
                   </th>
-                  <td className="py-3 pr-3 text-muted-foreground">{free}</td>
-                  <td className="py-3">{plus}</td>
+                  <td
+                    className={cn(
+                      'py-4 pr-3',
+                      free === m['pricing.coming_soon']() && 'text-muted-foreground',
+                    )}
+                  >
+                    {free}
+                  </td>
+                  <td
+                    className={cn(
+                      'py-4',
+                      plus === m['pricing.coming_soon']() && 'text-muted-foreground',
+                    )}
+                  >
+                    {plus}
+                  </td>
                 </tr>
               ))}
             </tbody>

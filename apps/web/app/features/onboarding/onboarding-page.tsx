@@ -94,8 +94,8 @@ export function OnboardingPage({
 }
 
 /**
- * The onboarding shell around one step (27 §1, §3.3, `Onboarding.dc.html`): a 64 px bar with Back,
- * the step dots and Skip, then the 1120 px column. Back leaves onboarding from step 1 (Home, or
+ * The onboarding shell around one step (27 §1, §3.3): a 64 px bar with Back, the step dots and
+ * Skip as ghost text, then one centred column (each step sets its width). Back leaves onboarding from step 1 (Home, or
  * the library when signed in); Skip goes to adding a song of one's own (27 §2), through creating
  * an account when signed out.
  */
@@ -120,8 +120,8 @@ export function StepFrame({
   return (
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
-      <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)]">
-        <div className="grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-5">
+      <header className="sticky top-0 z-(--z-sticky) bg-background pt-[env(safe-area-inset-top)]">
+        <div className="grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-2 sm:px-4 lg:px-6">
           <div className="justify-self-start">
             {onBack ? (
               <Button variant="ghost" size="sm" onClick={onBack}>
@@ -158,7 +158,7 @@ export function StepFrame({
         tabIndex={-1}
         className="flex flex-1 flex-col pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="mx-auto flex w-full max-w-onboarding flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mx-auto flex w-full max-w-onboarding flex-col items-center gap-8 px-4 pt-8 pb-12 sm:px-6 sm:pt-16 sm:pb-20">
           {children}
         </div>
       </main>
@@ -167,12 +167,15 @@ export function StepFrame({
   )
 }
 
+// The answers to a question: one column of rows under it, as wide as a form.
+const CHOICES = 'flex w-full max-w-md flex-col gap-3'
+
 function InstrumentStep({ onPick }: { onPick: (instrument: InstrumentName) => void }) {
   const coming = m['start.instrument_coming']()
   return (
     <>
       <StepTitle>{m['start.instrument_title']()}</StepTitle>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={CHOICES}>
         <ChoiceCard
           icon={<GuitarIcon />}
           title={m['instrument.guitar']()}
@@ -209,7 +212,7 @@ function LevelStep({ onPick }: { onPick: (level: LevelName) => void }) {
   return (
     <>
       <StepTitle>{m['start.level_title']()}</StepTitle>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={CHOICES}>
         <ChoiceCard
           title={m['settings.level_just_started']()}
           onClick={() => onPick('just_started')}
@@ -221,9 +224,9 @@ function LevelStep({ onPick }: { onPick: (level: LevelName) => void }) {
   )
 }
 
-/** A step's display title (26 §6.2: `text-4xl`, 48 px). */
+/** A step's question, centred: 32 px on phones, 44 px from `sm`. */
 export function StepTitle({ children }: { children: React.ReactNode }) {
-  return <h1 className="font-display text-4xl text-balance">{children}</h1>
+  return <h1 className="max-w-2xl text-center text-2xl text-balance sm:text-3xl">{children}</h1>
 }
 
 // Chord names are notation, not copy: the same in every language.
@@ -271,15 +274,17 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
   const sizeId = useId()
   return (
     <>
-      <div className="flex max-w-160 flex-col gap-2.5">
+      <div className="flex flex-col items-center gap-3">
         <StepTitle>{m['start.screen_title']()}</StepTitle>
-        <p className="text-lead text-muted-foreground">{m['start.screen_hint']()}</p>
+        <p className="max-w-xl text-center text-lead text-pretty text-muted-foreground">
+          {m['start.screen_hint']()}
+        </p>
       </div>
       <RadioCardGroup
         value={distance ?? null}
         onValueChange={(value) => update({ distance: value as Distance })}
         aria-label={m['start.screen_title']()}
-        className="gap-3.5 sm:grid-cols-3"
+        className="w-full max-w-3xl sm:grid-cols-3"
       >
         {DISTANCES.map((d) => (
           <RadioCard
@@ -293,9 +298,9 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
       </RadioCardGroup>
       <section
         aria-labelledby={sampleId}
-        className="flex flex-wrap items-center gap-8 rounded-3xl border border-border bg-card p-6"
+        className="flex w-full max-w-3xl flex-wrap items-center gap-8 rounded-xl border border-border bg-card p-6"
       >
-        <div className="flex min-w-0 flex-[1_1_22rem] flex-col gap-3">
+        <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-3">
           <h2 id={sampleId} className="text-lg">
             {m['start.read_title']()}
           </h2>
@@ -303,7 +308,7 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
           <div className="flex max-w-90 flex-col gap-2">
             <div className="flex items-baseline justify-between gap-3">
               <Label id={sizeId}>{m['settings.calibration']()}</Label>
-              <span className="font-mono text-sm font-semibold tabular-nums text-muted-foreground">
+              <span className="text-sm font-medium text-muted-foreground tabular-nums">
                 {formatPercent(calibration * 100)}
               </span>
             </div>
@@ -321,7 +326,7 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
         </div>
         <ReadingSample />
       </section>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         <Button variant="primary" size="lg" onClick={onDone}>
           {m['start.continue']()}
         </Button>
@@ -346,7 +351,7 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
  */
 function ReadingSample() {
   return (
-    <div className="flex min-w-0 flex-[1_1_26rem] flex-wrap items-end justify-center gap-10 p-2.5">
+    <div className="flex min-w-0 flex-[1_1_20rem] flex-wrap items-end justify-center gap-10 p-2.5">
       <div className="text-read-chord-sheet">
         <div className="flex gap-6.5 font-reading text-[1.6em] leading-none">
           {SAMPLE.map((chord) => (

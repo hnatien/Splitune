@@ -233,10 +233,10 @@ export function FixPill({ onDone = leaveFix }: { onDone?: () => void }) {
   return (
     <div
       data-slot="fix-pill"
-      className="flex h-11 items-center gap-2.5 rounded-xl bg-unsure-surface pr-1 pl-3.5 text-unsure"
+      className="flex h-11 items-center gap-2.5 rounded-full bg-unsure-surface pr-1 pl-3.5 text-unsure"
     >
       <PencilIcon aria-hidden className="size-4.5 shrink-0" strokeWidth={1.8} />
-      <span className="text-md font-[650] whitespace-nowrap max-lg:sr-only">
+      <span className="text-md font-medium whitespace-nowrap max-lg:sr-only">
         {m['fix.fixing']()}
       </span>
       <Button
@@ -351,7 +351,7 @@ export function FixDock() {
         onClick={() => practice.togglePlay()}
       />
       {bar !== undefined && endBar !== undefined && (
-        <span className="text-base font-semibold whitespace-nowrap tabular-nums">
+        <span className="text-base font-medium whitespace-nowrap tabular-nums">
           {many
             ? m['fix.bars']({ bars: barsLabel(bar, endBar) })
             : m['fix.bar_one']({ bar: barLabel(bar) })}
@@ -385,10 +385,7 @@ export function FixDock() {
         >
           <MinusIcon aria-hidden />
         </Button>
-        <span
-          aria-live="polite"
-          className="w-16 text-center font-mono text-lg font-normal tabular-nums"
-        >
+        <span aria-live="polite" className="w-16 text-center text-lg font-normal tabular-nums">
           {formatPercent(player.speedPct)}
         </span>
         <Button

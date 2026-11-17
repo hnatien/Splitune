@@ -14,7 +14,7 @@ import { type PaletteAction, parseLoopQuery, usePalette, usePaletteActions } fro
 // The shells (27 §1): the app shell's 64 px bar (Library, Settings, search, allowance, Add song,
 // account) and the phone header and bottom bar, the account menu, the "Drop to add" overlay, the
 // ⌘K palette (open, results, a registered loop action, empty, offline), the marketing shell's
-// phone Menu and the focus shell, in Night Rehearsal and Daylight. Phone stories set the viewport
+// phone Menu and the focus shell, in Dark and Light. Phone stories set the viewport
 // global, so the same breakpoints apply as in the app.
 const meta = {
   title: 'Screens/Shell',
@@ -57,8 +57,8 @@ const appShell = (path: string) => () => (
 const playDesktop: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement)
   const banner = await canvas.findByRole('banner')
-  // 64 px plus the 1 px rule under it, sticky (26 §7).
-  await expect(banner.getBoundingClientRect().height).toBe(65)
+  // 64 px with no rule under it, sticky (26 §7).
+  await expect(banner.getBoundingClientRect().height).toBe(64)
   await expect(getComputedStyle(banner).position).toBe('sticky')
   const nav = await canvas.findByRole('navigation', { name: 'Main' })
   const links = within(nav).getAllByRole('link')
@@ -146,8 +146,8 @@ const playAccountMenu: Story['play'] = async ({ canvasElement }) => {
   await expect(menu.getByText('Ana', { exact: true })).toBeVisible()
   await expect(menu.queryByText(/splitune\.invalid/)).toBeNull()
   await expect(menu.getAllByRole('menuitemradio').map((item) => item.textContent?.trim())).toEqual([
-    'Night Rehearsal',
-    'Daylight',
+    'Dark',
+    'Light',
     'Follow my device',
   ])
   await expect(menu.getByRole('menuitem', { name: 'Keyboard & pedal' })).toHaveAttribute(

@@ -1,44 +1,37 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
-import { Card } from '@/ui/card'
 
-// The system pages' card (27 §3.11, States.dc.html): a `.card` with the page's h1 in the h3 size,
-// one or two sentences in muted text, then the actions. `aside` sits before the text (the 404's
-// mono number); `wide` lays text and actions out in one row from `sm` when there is room.
+// A system page's message (27 §3.11): no card, centred in the bare shell's column. A one-sentence
+// h1, one supporting sentence in muted text, then the actions: one primary pill and a text link.
+// `aside` sits above the heading (the 404's mono number).
 export function SystemCard({
   title,
   aside,
   children,
   actions,
-  wide = false,
   className,
 }: {
   title: string
   aside?: React.ReactNode
   children?: React.ReactNode
   actions?: React.ReactNode
-  wide?: boolean
   className?: string
 }) {
   return (
-    <Card
-      className={cn(
-        'gap-3 p-5.5',
-        wide && 'sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3.5',
-        className,
-      )}
-    >
+    <div className={cn('my-auto flex flex-col items-center gap-6 py-12 text-center', className)}>
       {aside}
-      <div className={cn('flex min-w-0 flex-col gap-1', wide && 'sm:flex-1 sm:basis-56')}>
-        <h1 className="text-lg">{title}</h1>
+      <div className="flex min-w-0 flex-col items-center gap-2">
+        <h1 className="text-2xl text-balance">{title}</h1>
         {children}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-    </Card>
+      {actions && (
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-3">{actions}</div>
+      )}
+    </div>
   )
 }
 
-/** The sentence under a system card's title. */
+/** The sentence under a system page's heading. */
 export function SystemText({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>
+  return <p className="text-base text-pretty text-muted-foreground">{children}</p>
 }

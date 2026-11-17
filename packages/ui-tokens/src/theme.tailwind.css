@@ -1,12 +1,12 @@
 /*
- * Tailwind v4 mapping for the "Night Rehearsal" tokens (docs/specs/26-design-system.md §3,
+ * Tailwind v4 mapping for the design tokens (docs/specs/26-design-system.md §3,
  * §6–§10). Import after `tailwindcss`, primitives.css and themes.css.
  *
  * The default palette is cleared, so only semantic colours exist as utilities (`bg-card`,
  * `text-muted-foreground`, `border-input`…); a component can never write `bg-graphite-245`.
  */
 
-/* `.dark` is set for dark and stage (26 §2), and Night is the page without an appearance yet. */
+/* `.dark` is set for dark and stage (26 §2), and Dark is the page without an appearance yet. */
 @custom-variant dark (
   &:where(.dark, .dark *, :root:not([data-appearance]), :root:not([data-appearance]) *)
 );
@@ -53,62 +53,64 @@
   /* Families (§6.1): words, display sizes, and every number that changes. Each fallback face is
      metric-matched (fonts.css), so the swap can't reflow the transport. */
   --font-sans:
-    "Instrument Sans", "Instrument Sans Fallback", ui-sans-serif, system-ui, "Segoe UI", Roboto,
-    sans-serif;
+    "Figtree", "Figtree Fallback", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   --font-display:
-    "Instrument Sans", "Instrument Sans Fallback", ui-sans-serif, system-ui, "Segoe UI", Roboto,
-    sans-serif;
+    "Figtree", "Figtree Fallback", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   --font-mono:
     "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
-  /* Browse scale (§6.2) */
+  /* Browse scale (§6.2): one weight step between text (400) and everything that leads (500), and
+     tracking that tightens as the size grows. */
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 0.875rem;
-  --text-2xs--font-weight: 650;
+  --text-2xs--font-weight: 600;
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
-  --text-xs--font-weight: 650;
+  --text-xs--font-weight: 500;
   --text-sm: 0.8125rem;
   --text-sm--line-height: 1.125rem;
   --text-md: 0.875rem;
   --text-md--line-height: 1.25rem;
-  --text-md--font-weight: 600;
-  /* Large buttons (`.btn.lg`, `xl`), §6.2. */
+  --text-md--font-weight: 500;
+  /* Large buttons (`lg`, `xl`), §6.2. */
   --text-button-lg: 1rem;
   --text-button-lg--line-height: 1.375rem;
-  --text-button-lg--font-weight: 600;
+  --text-button-lg--font-weight: 500;
   --text-base: 0.9375rem;
   --text-base--line-height: 1.375rem;
   --text-base--font-weight: 400;
-  --text-lead: 1.1875rem;
-  --text-lead--line-height: 1.45;
+  --text-base--letter-spacing: -0.01em;
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.65;
+  --text-lead--letter-spacing: -0.01em;
   --text-lg: 1.0625rem;
-  --text-lg--line-height: 1.375rem;
-  --text-lg--font-weight: 650;
+  --text-lg--line-height: 1.5rem;
+  --text-lg--font-weight: 500;
+  --text-lg--letter-spacing: -0.01em;
   --text-xl: 1.375rem;
-  --text-xl--line-height: 1.625rem;
-  --text-xl--font-weight: 650;
+  --text-xl--line-height: 1.75rem;
+  --text-xl--font-weight: 500;
   --text-xl--letter-spacing: -0.01em;
   --text-2xl: 2rem;
-  --text-2xl--line-height: 2.3125rem;
-  --text-2xl--font-weight: 650;
+  --text-2xl--line-height: 2.375rem;
+  --text-2xl--font-weight: 500;
   --text-2xl--letter-spacing: -0.02em;
   --text-3xl: 2.75rem;
-  --text-3xl--line-height: 2.875rem;
-  --text-3xl--font-weight: 600;
-  --text-3xl--letter-spacing: -0.02em;
+  --text-3xl--line-height: 3rem;
+  --text-3xl--font-weight: 500;
+  --text-3xl--letter-spacing: -0.03em;
   --text-4xl: 3rem;
-  --text-4xl--line-height: 3.125rem;
-  --text-4xl--font-weight: 600;
-  --text-4xl--letter-spacing: -0.02em;
+  --text-4xl--line-height: 3.25rem;
+  --text-4xl--font-weight: 500;
+  --text-4xl--letter-spacing: -0.03em;
   --text-5xl: 3.5rem;
-  --text-5xl--line-height: 3.6875rem;
-  --text-5xl--font-weight: 600;
-  --text-5xl--letter-spacing: -0.02em;
-  --text-display: clamp(2.75rem, 6vw, 4.75rem);
-  --text-display--line-height: 1.05;
-  --text-display--font-weight: 600;
-  --text-display--letter-spacing: -0.02em;
+  --text-5xl--line-height: 3.75rem;
+  --text-5xl--font-weight: 500;
+  --text-5xl--letter-spacing: -0.03em;
+  --text-display: clamp(2.5rem, 5.6vw, 4rem);
+  --text-display--line-height: 1.1;
+  --text-display--font-weight: 500;
+  --text-display--letter-spacing: -0.03em;
 
   /* Shape (§9): one base radius (10 px) and steps around it. */
   --radius-xs: calc(var(--radius) - 6px);
@@ -382,6 +384,7 @@
   --color-key-right-fg: var(--key-right-fg);
   --color-tile-foreground: var(--tile-foreground);
   --color-scrim: var(--scrim);
+  --color-capsule: var(--capsule);
   --color-hud-bg: var(--hud-bg);
   --color-hud-fg: var(--hud-fg);
 }
@@ -525,6 +528,15 @@
     background-color: var(--background);
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* The parts the browser draws carry the palette too: selection, caret and scrollbars. */
+  ::selection {
+    background-color: color-mix(in oklab, var(--foreground) 24%, transparent);
+  }
+  html {
+    caret-color: var(--foreground);
+    scrollbar-color: var(--border-strong) transparent;
   }
 
   /* Focus (§9): 2 px outline in --ring with 2 px offset, 3 px under increased contrast. */

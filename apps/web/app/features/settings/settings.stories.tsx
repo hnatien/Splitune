@@ -19,7 +19,7 @@ import { type DeleteStep, exportStateQuery } from './privacy-settings'
 import { SettingsLayout } from './settings-layout'
 
 // Settings (27 §3.9): Account (Profile, Plan, Privacy, Sign out), Display & practice, Keyboard &
-// pedal and About, in Night Rehearsal (the default), Daylight and on a phone. The Privacy stories
+// pedal and About, in Dark (the default), Light and on a phone. The Privacy stories
 // render Account (Privacy is one of its sections) and keep their ids for the visual matrix.
 const meta = { title: 'Screens/Settings', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
@@ -52,7 +52,7 @@ export const Display: Story = {
     const canvas = within(canvasElement)
     const cards = await canvas.findByRole('radiogroup', { name: 'Appearance' })
     await expect(within(cards).getAllByRole('radio')).toHaveLength(3)
-    await expect(within(cards).getByRole('radio', { name: 'Night Rehearsal' })).toBeChecked()
+    await expect(within(cards).getByRole('radio', { name: 'Dark' })).toBeChecked()
     await expect(canvas.getByText('Saved on this device')).toBeVisible()
     await expect(
       canvas.getByText('Can you read the fret numbers from where you play?'),
@@ -90,7 +90,7 @@ export const DisplayPhone: Story = {
   globals: PHONE,
   play: noSidewaysScroll,
 }
-/** A stored `stage` (26 §2, D2) has no card: it shows Night Rehearsal and the distance it raised. */
+/** A stored `stage` (26 §2, D2) has no card: it shows Dark and the distance it raised. */
 export const DisplayStage: Story = {
   render: () => shell('display', <DisplaySettings me={ME} />),
   globals: { appearance: 'stage', distance: 'stand' },
@@ -101,7 +101,7 @@ export const DisplayStage: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const cards = await canvas.findByRole('radiogroup', { name: 'Appearance' })
-    await expect(within(cards).getByRole('radio', { name: 'Night Rehearsal' })).toBeChecked()
+    await expect(within(cards).getByRole('radio', { name: 'Dark' })).toBeChecked()
     const distance = canvas.getByRole('group', { name: 'Where is your screen?' })
     await expect(within(distance).getByRole('button', { name: 'Music stand' })).toHaveAttribute(
       'aria-pressed',

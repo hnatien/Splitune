@@ -2,9 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { BrandMark, Wordmark } from './brand.tsx'
 import { CUSTOM_ICONS } from './icons/index.tsx'
 
-// Doc 26 §11: the lowercase wordmark and the amber disc crossed by a graphite wave; the custom
-// icons on Lucide's grid at 1.8 px. The PWA icons and favicon below are the earlier mark: s45
-// redraws them (D12).
+// Doc 26 §11: the lowercase wordmark and the ink disc crossed by a wave in the page colour; the
+// custom icons on Lucide's grid at 1.8 px. The PWA icons and favicon below draw the same mark.
 const meta = { title: 'Brand/Marks and icons' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>

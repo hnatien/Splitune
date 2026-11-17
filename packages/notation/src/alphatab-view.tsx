@@ -515,10 +515,10 @@ export function AlphaTabView({
             data-style={playhead}
             className={
               playhead === 'block'
-                ? 'absolute top-0 left-0 size-3 rounded-xs bg-score-playhead shadow-glow will-change-transform'
+                ? 'absolute top-0 left-0 size-3 rounded-xs bg-score-playhead will-change-transform'
                 : playhead === 'bar'
                   ? 'hidden'
-                  : 'absolute top-0 left-0 w-0.5 rounded-full bg-score-playhead shadow-glow will-change-transform'
+                  : 'absolute top-0 left-0 w-0.5 rounded-full bg-score-playhead will-change-transform'
             }
           />
         </div>
@@ -650,8 +650,8 @@ function NoteMarks({ note }: { note: NoteBox }) {
   )
 }
 
-// The sounding fill (26 §5 "Sounding now"): the beat's fret digits as amber boxes with the digit in
-// `--primary-foreground`, redrawn once per beat while playing (tab only; noteheads keep their ink).
+// The sounding fill (26 §5 "Sounding now"): the beat's fret digits as ink boxes with the digit in
+// `--primary-foreground` (paper on ink), redrawn once per beat while playing (tab only; noteheads keep their ink).
 function showSounding(container: HTMLElement | null, beat: CursorPosition['beat']) {
   if (!container) return
   container.replaceChildren()
@@ -662,7 +662,7 @@ function showSounding(container: HTMLElement | null, beat: CursorPosition['beat'
     const fill = document.createElement('span')
     fill.setAttribute('data-slot', 'sounding-note')
     fill.className =
-      'absolute grid place-items-center rounded-xs bg-primary font-reading-mono text-read-tab leading-none font-semibold text-primary-foreground shadow-glow'
+      'absolute grid place-items-center rounded-xs bg-primary font-reading-mono text-read-tab leading-none font-semibold text-primary-foreground'
     fill.style.left = `${box.x - 3}px`
     fill.style.top = `${box.y - 1}px`
     fill.style.width = `${box.w + 6}px`

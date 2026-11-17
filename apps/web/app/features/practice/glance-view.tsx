@@ -1,5 +1,5 @@
 import { KeyboardDiagram } from '@splitune/notation'
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
@@ -13,7 +13,8 @@ import { usePracticeUi } from './practice-store'
 // Glance view (26 §6.3, 27 §3.7.2): the phone-portrait default and the Floor distance — current
 // chord with its guitar shape (for piano, its voicing on a keyboard below it), next chord,
 // bar.beat, loop and speed at reading sizes a learner can see from 1.5 m. The current chord rises
-// in when it changes; "Loop this bar" is the glance view's way to make a loop.
+// in when it changes, and a long name (or "No chord") shrinks to fit the phone's width (the fit
+// rule, 26 §6.3); "Loop this bar" is the glance view's way to make a loop.
 
 export function GlanceView() {
   const { view, audio, grid, player, tapBar, data, options } = usePractice()
@@ -46,14 +47,19 @@ export function GlanceView() {
   }, [audio, grid, view])
 
   const voicing = voicings[now.index]
+  const name = now.chord || m['practice.no_chord']()
   return (
     <section
       aria-label={m['practice.glance']()}
       data-slot="glance-view"
-      className="flex flex-1 flex-col items-center justify-center gap-4 bg-paper px-4 py-6 text-ink"
+      className="@container flex flex-1 flex-col items-center justify-center gap-4 bg-paper px-4 py-6 text-ink"
     >
-      <div key={now.index} className="flex animate-rise-in items-center gap-5">
-        <p className="font-reading text-read-chord-current leading-none" aria-live="off">
+      <div key={now.index} className="flex max-w-full animate-rise-in items-center gap-5">
+        <p
+          style={{ '--fit': `calc(100cqi / ${Math.max(2, name.length) * 0.62})` } as CSSProperties}
+          className="font-reading text-[length:min(var(--read-chord-current),var(--fit))] leading-none whitespace-nowrap"
+          aria-live="off"
+        >
           {now.chord ? <ChordSymbol name={now.chord} /> : m['practice.no_chord']()}
         </p>
         {now.label && data.instrument === 'guitar' && (

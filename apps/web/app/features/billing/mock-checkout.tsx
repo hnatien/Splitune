@@ -8,7 +8,7 @@ import { Banner, InlineError } from '@/ui/status-message'
 import { BillingCard } from './billing-card'
 import { billingClient, billingOrpc, planName, planPrice, plansQuery, useRefreshMe } from './plans'
 
-// Mock checkout (27 §3.10, 25 §2): the demo banner, the plan and its price on the Pricing card, and
+// Mock checkout (27 §3.10, 25 §2): the demo banner, the plan and its price between hairlines, and
 // three buttons that make the mock provider act — success sends the real webhook event, declined
 // and cancel create nothing. No card fields, ever.
 
@@ -109,7 +109,7 @@ export function MockCheckout({ session }: { session: string }) {
         />
       ) : (
         <div className="flex flex-col gap-3" aria-hidden>
-          <Skeleton className="h-40 rounded-3xl" />
+          <Skeleton className="h-40 rounded-xl" />
           <Skeleton className="h-12" />
           <Skeleton className="h-12" />
         </div>

@@ -26,10 +26,10 @@ export function LinkPanel({
   const canPaste =
     typeof navigator !== 'undefined' && typeof navigator.clipboard?.readText === 'function'
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <Field data-invalid={invalid || undefined}>
         <FieldLabel htmlFor={`${id}-url`}>{m['import.url_label']()}</FieldLabel>
-        <div className="flex gap-2">
+        <div className="relative">
           <Input
             id={`${id}-url`}
             type="url"
@@ -41,10 +41,12 @@ export function LinkPanel({
             aria-describedby={`${id}-hint${invalid ? ` ${id}-error` : ''}`}
             onBlur={() => setTouched(true)}
             onChange={(event) => onChange({ ...value, url: event.target.value })}
+            className={canPaste ? 'pr-26' : undefined}
           />
           {canPaste && (
             <Button
-              variant="outline"
+              size="sm"
+              className="absolute top-0 right-0.5"
               onClick={async () => {
                 const text = await navigator.clipboard.readText().catch(() => '')
                 if (text) onChange({ ...value, url: text.trim() })
@@ -58,13 +60,15 @@ export function LinkPanel({
         <FieldDescription id={`${id}-hint`}>{m['import.sites_hint']()}</FieldDescription>
         {invalid && <FieldError id={`${id}-error`}>{m['import.url_invalid']()}</FieldError>}
       </Field>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <Label htmlFor={`${id}-video`} className="text-md font-normal text-foreground">
+          {m['import.download_video']()}
+        </Label>
         <Switch
           id={`${id}-video`}
           checked={value.downloadVideo}
           onCheckedChange={(checked) => onChange({ ...value, downloadVideo: checked })}
         />
-        <Label htmlFor={`${id}-video`}>{m['import.download_video']()}</Label>
       </div>
     </div>
   )

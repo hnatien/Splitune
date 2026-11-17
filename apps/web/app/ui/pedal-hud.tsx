@@ -41,7 +41,7 @@ function PedalHud({ message, sequence, source, icon, action, className }: PedalH
     </>
   )
   const chip = cn(
-    'flex items-center gap-3 rounded-2xl border border-border-strong bg-hud-bg px-4 py-2.5 text-md font-semibold whitespace-nowrap text-hud-fg tabular-nums shadow-2 [&_svg]:size-5',
+    'flex items-center gap-3 rounded-full border border-border-strong bg-hud-bg px-4 py-2.5 text-md font-medium whitespace-nowrap text-hud-fg tabular-nums shadow-2 [&_svg]:size-5',
   )
   return (
     <>

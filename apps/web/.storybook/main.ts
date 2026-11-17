@@ -16,7 +16,7 @@ const config: StorybookConfig = {
   core: { disableTelemetry: true },
   previewHead: (head) => `${head}
 <script>${DISPLAY_SCRIPT}</script>
-<link rel="preload" href="/fonts/InstrumentSans.woff2" as="font" type="font/woff2" crossorigin>`,
+<link rel="preload" href="/fonts/Figtree.woff2" as="font" type="font/woff2" crossorigin>`,
 }
 
 export default config

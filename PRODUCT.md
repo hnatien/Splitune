@@ -54,11 +54,11 @@ Other products do one step each: stems, auto-tabs, practice players or fixed cur
 ## Brand Commitments
 
 - **Name:** "Splitune" in copy; the wordmark is lowercase "splitune".
-- **Identity:** the "Night Rehearsal" design system in two themes, Night Rehearsal and Daylight. Amber means "now". `docs/specs/26`–`28` are the visual authority; tokens come from `@splitune/ui-tokens` and components from `apps/web/app/ui`.
+- **Identity:** a black-and-white design system in two themes, Dark and Light, modelled on OpenAI's interface language: Figtree in two weights, pill controls, hairlines and whitespace. There is no accent colour: the primary action and "now" (playhead, loop edges, current beat) are the ink itself, and colour is kept for meaning (status, stems, the two hands). `docs/specs/26`–`28` are the visual authority; tokens come from `@splitune/ui-tokens` and components from `apps/web/app/ui`.
 - **Voice:** a calm coach who knows music. Plain words, short sentences, real numbers. Uncertainty is given as a frequency ("about 1 in 3"), never a percentage. No streaks, guilt, hype, emoji or loss-framed messages. Errors say what happened, what it means and what the learner can do.
 - **Honest machine output:** notation is "Auto-transcribed", looks like a draft where it is unsure, and is one tap from a fix.
 - **Fair plans:** practice basics (loop, slow-down, count-in, mixer, notation) are never paywalled. Caps are published, failed analyses never use them, and nothing given to Free is taken back.
-- **Imagery:** no stock photos or people. The product, the waveform and the notation are the imagery.
+- **Imagery:** no stock photos or people. Home carries abstract colour art (`docs/home-art.md`); everywhere else the product, the waveform and the notation are the imagery.
 
 ## Evidence on Hand
 

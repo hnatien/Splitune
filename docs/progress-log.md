@@ -2697,3 +2697,36 @@ New `features/practice/fix.stories.tsx` (Screens/Practice Fix, 25): Empty, First
 **Next**
 - s39 (Progress): Fix mode records no passes; `practice.resumed` says when the saved loop and speed are back.
 - s40b ("Hear the chords"): `FixSynth` + `chordEvents` / `chordVoicing` (`fix-synth.ts`, `model/synth-schedule.ts`) schedule any events against the engine clock; give it the song's chords instead of one alternative.
+
+## 2026-11-17 — Step s46: black-and-white redesign after OpenAI's interface language (done, not merged; owner review next)
+
+**Instruction (owner):** "Learn OpenAI's UI design then redo every page of mine", the font closest to OpenAI's, new images for the Home page from prompts the owner will generate. Owner decisions in the session: no amber anywhere (fully monochrome, playhead and loop included); Home images are abstract colour art.
+
+**Branch** `impl/s46-monochrome-redesign` from `dev` (4679127). Nothing committed yet.
+
+**What was measured.** openai.com and chatgpt.com in the browser: pure black and white grounds, alpha-step neutrals, OpenAI Sans at 400/500, body 17/28, pill buttons at 36–44 px, 6 px media corners, 24 px composer corners, 200 ms motion, bars with no rule. Font choice by metrics: OpenAI Sans's glyph advances and vertical metrics at weight 500 were read from the page with `measureText` and 91 open-licensed families were ranked against them; Figtree has the same x-height (0.50 em), cap height (0.70 em), ascender, descender and stem width, with advances within 2.5 %.
+
+**Tokens (`packages/ui-tokens`).** Achromatic primitives; `--primary`, `--primary-ink`, `--signal` and `--ring` are the ink; status, stems and hands keep colour; `--stem-mix` is the ink (the grey mix collided with other stems under the CVD test); new `--capsule` for the segmented control; elevation in black only, no glow, no Play haze; type scale at 400/500 with tracking that tightens with size; `BACKGROUND_HEX` `#fff`/`#000`. Figtree 2.002 replaces Instrument Sans in `scripts/fonts/subset.sh` (19,580 bytes; fallback metrics recomputed over Arial).
+
+**Components and screens.** Buttons, chips, badges and segmented controls are pills; fields and cards 12 px; weights lowered one step app-wide (reading sizes untouched); uppercase tracked labels became sentence-case labels. Shells: no rule under the bars; Sign in and the app bar's Add song are quiet pills. Home recomposed (centred hero, sticky lead art with two tiles, image-led stand list, session steps on hairlines, closing panel) with interim art in `apps/web/public/art/` and prompts in `docs/home-art.md`. Pricing, How it works, legal, billing, auth, onboarding, system pages, library, Add song, settings and the practice screen were recomposed in the same language. Favicon and PWA icons redrawn as the ink mark. Theme names in copy are Dark and Light; fourteen unused copy keys removed.
+
+**Docs.** 26 rewritten in place (section numbers kept); 27 and 28 edited; `PRODUCT.md`, `CLAUDE.md`, `AGENTS.md` identity lines updated.
+
+**Design review (independent reviewer, screenshots of Home, Library, Practice, Settings, Sign in, Pricing and the toggle states).** First verdict: fix, eight items, all applied: one pressed treatment for chips (the filled ink pill; practice-size toggles keep the wash beside Play); interface numbers in Figtree with tabular figures (JetBrains Mono stays for keycaps, ids and the tab digits); no label above the Continue card's title; the switch's knob is the page colour in both states; the Loop tab's rest group and Settings' Sound delay no longer repeat their own names; Home's headline holds each sentence on its own line; "Next · in 1 beat"; Pricing's Free column reads like Plus. Also: the footer rule spans the content column; `--capsule` replaced a `dark:` variant in the segmented control.
+
+**Verification (PC, 2026-11-17)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`: clean.
+- `node scripts/check-ui-tokens.mjs`: one violation, `apps/web/app/features/shell/command-palette.tsx` (`focus-visible:outline-none` on the palette input), already on `dev` at 4679127; `scripts/check-ui-tokens.test.mjs` fails on it for the same reason (93 / 94 in `vitest run --dir scripts`).
+- `pnpm typecheck`: every TypeScript package clean; `@splitune/ml` pyright reports 5 errors in `services/ml` tests, untouched by this step.
+- `pnpm --filter @splitune/ui-tokens test`: 1357 / 1357 (with `--capsule`). `pnpm --filter @splitune/notation test`: 43 / 43. `pnpm --filter @splitune/web exec vitest run --project unit`: 301 / 301.
+- `vitest run --project="storybook (chromium)"` (apps/web): 691 / 692, then the one failure (`ui/dialog.stories.tsx > Open Scrim`, the old scrim alpha) updated and re-run green with the other files touched since.
+- After the review fixes: the same suite 689 / 692, the three failures being assertions of the mono face on NumberField, the speed ladder and the speed readout; updated to Figtree with tabular figures and re-run green (78 / 78 for the six files touched). `biome`, web `tsc` and the 301 unit tests re-run clean; `ui-tokens` 1357 / 1357.
+
+**Story and test expectations changed by design:** badge height 22 → 24 and weight 650 → 500; card corners 16 → 12; field label weight 600 → 500; keycap edge 2 px → 1 px; three distinct elevations; app bar 65 → 64 px; scrim alpha 0.62 → 0.7; Home's hero still assertion replaced by "art is decorative, the three proof headings are visible"; Library asserts Resume practice is the ink primary; sign-in asserts no showcase panel; banners are transparent with a bottom hairline; theme names; the token tests' documented contrast tables.
+
+**Known gaps**
+- Home art: the owner's eight generated images replaced the interim renders on 2026-11-17 (corner mark painted out, sized, WebP; provenance in `docs/home-art.md`). The two tiles crop to 4:3 on phones (was 16:9) so the ring in `home-loop` is not clipped. In Light the pale top-right corner of `home-loop` has only a faint edge against the white page.
+- Visual-regression baselines (`e2e:visual`, Docker) not regenerated; every baseline will differ.
+- WebKit story run and Playwright e2e not run in this step. Two onboarding Guide stories timed out in WebKit in one agent's run (not compared against `dev`).
+- No device checks; no music-stand reading test of the new palette.
+- New files under `docs/` are excluded by this machine's `.git/info/exclude` (`docs/home-art.md` needs `git add -f`).

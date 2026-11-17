@@ -48,9 +48,9 @@ function MixPresetGroup({
           key={option.value}
           value={option.value}
           data-slot="mix-preset"
-          className="group/preset flex min-h-target-practice-2 cursor-pointer flex-col items-start rounded-3xl border border-border bg-card px-3 py-2.5 text-left transition-colors duration-(--duration-fast) hover:bg-muted data-checked:border-signal data-checked:bg-primary-soft data-checked:inset-ring data-checked:inset-ring-signal forced-colors:data-checked:bg-card forced-colors:data-checked:outline-2 forced-colors:data-checked:outline-signal forced-colors:data-checked:outline-solid"
+          className="group/preset flex min-h-target-practice-2 cursor-pointer flex-col items-start rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors duration-(--duration-fast) hover:bg-muted data-checked:border-signal data-checked:bg-primary-soft data-checked:inset-ring data-checked:inset-ring-signal forced-colors:data-checked:bg-card forced-colors:data-checked:outline-2 forced-colors:data-checked:outline-signal forced-colors:data-checked:outline-solid"
         >
-          <span className="text-md font-semibold group-data-checked/preset:text-primary-ink">
+          <span className="text-md font-medium group-data-checked/preset:text-primary-ink">
             {option.label}
           </span>
           <span className="text-sm text-faint-foreground group-data-checked/preset:text-muted-foreground">

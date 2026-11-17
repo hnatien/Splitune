@@ -1,14 +1,14 @@
 /*
  * Self-hosted fonts (docs/specs/26-design-system.md §6.1). Files live in
  * apps/web/public/fonts/, made by scripts/fonts/subset.sh (SIL OFL 1.1; licences beside them).
- * Only Instrument Sans is preloaded; JetBrains Mono and Atkinson Hyperlegible Next load on first use.
+ * Only Figtree is preloaded; JetBrains Mono and Atkinson Hyperlegible Next load on first use.
  */
 @font-face {
-  font-family: "Instrument Sans";
+  font-family: "Figtree";
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/fonts/InstrumentSans.woff2") format("woff2");
+  src: url("/fonts/Figtree.woff2") format("woff2");
 }
 
 @font-face {
@@ -30,15 +30,15 @@
 /*
  * Metric-matched fallbacks, so the swap to the real font can't reflow the transport or a readout:
  * the local face is scaled to the web font's average letter width and takes its line metrics
- * (scripts/fonts/fallback-metrics.py; Instrument Sans 1.000 over Arial 7.06, JetBrains Mono 2.304
+ * (scripts/fonts/fallback-metrics.py; Figtree 2.002 over Arial 7.07, JetBrains Mono 2.304
  * over Courier New 6.95). The other local faces listed have the same metrics as the first.
  */
 @font-face {
-  font-family: "Instrument Sans Fallback";
+  font-family: "Figtree Fallback";
   src: local("Arial"), local("Helvetica"), local("Liberation Sans");
-  size-adjust: 102.55%;
-  ascent-override: 94.59%;
-  descent-override: 24.38%;
+  size-adjust: 101.19%;
+  ascent-override: 93.88%;
+  descent-override: 24.71%;
   line-gap-override: 0%;
 }
 

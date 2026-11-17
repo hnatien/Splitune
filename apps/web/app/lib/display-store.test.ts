@@ -31,16 +31,16 @@ describe('the stage → dark rewrite (26 §2)', () => {
   })
 
   it('stores dark and the distance shown on the next appearance or distance change', () => {
-    // Choosing Night Rehearsal keeps the distance `stage` resolved to.
+    // Choosing Dark keeps the distance `stage` resolved to.
     expect(rewriteStage({ appearance: 'stage' }, { appearance: 'dark' }, 'stand')).toEqual({
       appearance: 'dark',
       distance: 'stand',
     })
-    // Choosing Daylight stores Daylight, still with the distance shown.
+    // Choosing Light stores Light, still with the distance shown.
     expect(
       rewriteStage({ appearance: 'stage', distance: 'floor' }, { appearance: 'light' }, 'stand'),
     ).toEqual({ appearance: 'light', distance: 'floor' })
-    // Choosing a distance stores it with Night Rehearsal.
+    // Choosing a distance stores it with Dark.
     expect(rewriteStage({ appearance: 'stage' }, { distance: 'desk' }, 'stand')).toEqual({
       appearance: 'dark',
       distance: 'desk',

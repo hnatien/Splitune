@@ -1,8 +1,9 @@
 import type * as React from 'react'
-import { Card } from '@/ui/card'
+import { useId } from 'react'
 
-// The Pricing card style (27 §3.2, §3.10; Pricing.dc.html) for mock checkout and the mock portal:
-// the plan as an h2, its price (or renewal line) large, a muted note, then the card's own actions.
+// The plan block of mock checkout and the mock portal (27 §3.10): a hairline, the plan as an h2,
+// its price (or renewal line) large and a muted note, then another hairline and the block's own
+// actions. One column, no box.
 export function BillingCard({
   title,
   price,
@@ -14,14 +15,19 @@ export function BillingCard({
   note?: string | undefined
   children?: React.ReactNode
 }) {
+  const id = useId()
   return (
-    <Card className="gap-4.5 p-7 max-sm:p-5">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-xl">{title}</h2>
+    <section aria-labelledby={id} className="flex flex-col border-t border-border">
+      <div className="flex flex-col gap-1.5 py-6">
+        <h2 id={id} className="text-xl">
+          {title}
+        </h2>
         {price && <p className="text-2xl tabular-nums">{price}</p>}
         {note && <p className="text-base text-muted-foreground">{note}</p>}
       </div>
-      {children}
-    </Card>
+      {children && (
+        <div className="flex flex-col gap-4 border-t border-border pt-6">{children}</div>
+      )}
+    </section>
   )
 }

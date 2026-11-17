@@ -6,23 +6,22 @@ import { Button, buttonVariants } from '@/ui/button'
 import { BareShell } from '../shell/bare-shell'
 import { SystemCard, SystemText } from './system-card'
 
-// System pages (27 §3.11, States.dc.html): 404 with its mono number, and the error boundary with a
-// copyable error id. The id is logged with the error so a report can be matched to it; the message
+// System pages (27 §3.11): 404 with its mono number, and the error boundary with a copyable
+// error id. The id is logged with the error so a report can be matched to it; the message
 // itself is never shown.
 
 export function NotFoundPage() {
   return (
     <BareShell>
       <SystemCard
-        wide
         title={m['system.not_found']()}
         aside={
-          <span aria-hidden className="font-mono text-2xl font-semibold text-faint-foreground">
+          <span aria-hidden className="text-lg text-faint-foreground tabular-nums">
             404
           </span>
         }
         actions={
-          <Link to="/library" className={buttonVariants({ size: 'sm' })}>
+          <Link to="/library" className={buttonVariants({ variant: 'primary' })}>
             {m['system.go_library']()}
           </Link>
         }
@@ -49,16 +48,14 @@ export function ErrorPage({ error }: { error: unknown }) {
               <RotateCwIcon aria-hidden />
               {m['system.reload']()}
             </Button>
-            <Link to="/library" className={buttonVariants()}>
+            <Link to="/library" className={buttonVariants({ variant: 'ghost' })}>
               {m['system.go_library']()}
             </Link>
           </>
         }
       >
-        <div className="flex flex-wrap items-center gap-x-2">
-          <SystemText>
-            <span className="font-mono">{m['system.error_id']({ id })}</span>
-          </SystemText>
+        <div className="flex flex-wrap items-center justify-center gap-x-1">
+          <p className="font-mono text-sm text-faint-foreground">{m['system.error_id']({ id })}</p>
           <Button
             variant="ghost"
             size="sm"

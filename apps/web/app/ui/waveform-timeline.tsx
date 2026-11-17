@@ -186,7 +186,7 @@ function WaveformTimeline({
         back.fillRect(at(shown.start), bandTop, at(shown.end) - at(shown.start), bandHeight)
         back.globalAlpha = 1
       }
-      // Waveform bars over the band: in the loop amber, else unplayed (base) and played (front).
+      // Waveform bars over the band: in the loop the ink, else unplayed (base) and played (front).
       const columnW = width / Math.max(1, columns)
       for (let c = 0; c < columns; c++) {
         const level = Math.max(0.06, levels[c] ?? 0)
@@ -394,7 +394,7 @@ function WaveformTimeline({
         <div
           aria-hidden
           data-slot="ruler"
-          className="relative h-3.5 font-mono text-2xs leading-3.5 font-normal text-faint-foreground"
+          className="relative h-3.5 text-2xs leading-3.5 font-normal text-faint-foreground tabular-nums"
         >
           {marks.map((mark) => (
             <span

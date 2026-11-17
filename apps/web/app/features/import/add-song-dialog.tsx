@@ -9,10 +9,9 @@ import { apiErrorMessage } from '@/lib/reasons'
 import { reloadMe } from '@/lib/reload-me'
 import type { MeData } from '@/lib/session'
 import { track } from '@/lib/track'
-import { useMediaQuery } from '@/lib/use-media-query'
 import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
-import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/ui/dialog'
 import { DropZone } from '@/ui/drop-zone'
 import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
@@ -40,10 +39,11 @@ const titleOf = (file: File) =>
     .trim()
     .slice(0, 200) || file.name
 
-// Add song (27 §3.6; AddSong and Phone-Add): a 940 px dialog over the library, a full-screen sheet
-// on phones (56 px header, 48 px tabs). File · Link · Record, the last one used remembered; Your
-// part and Analysis; "Start practising" opens Practice at once while the upload and the analysis
-// carry on (27 §2 "Add a file"), and an upload keeps going after the dialog closes.
+// Add song (27 §3.6; AddSong and Phone-Add): one 640 px column over the library, a full-screen
+// sheet on phones. The title with its one promise ("It opens right away"), the File · Link · Record
+// segmented control (the last one used remembered), the source, then Your part and Analysis under a
+// hairline. The primary opens Practice at once while the upload and the analysis carry on (27 §2
+// "Add a file"), and an upload keeps going after the dialog closes.
 export default function AddSongDialog({
   me,
   tab: requested,
@@ -55,7 +55,6 @@ export default function AddSongDialog({
 }) {
   const navigate = useNavigate()
   const online = useOnline()
-  const wide = useMediaQuery('(min-width: 640px)')
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<AddTab>(requested)
   const [instrument, setInstrument] = useState<InstrumentName>(me.primary_instrument ?? 'guitar')
@@ -183,14 +182,22 @@ export default function AddSongDialog({
       <Dialog open onOpenChange={(open) => !open && onClose()}>
         <DialogContent
           data-slot="add-song"
-          className="flex max-h-[calc(100dvh-4rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-235 max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0"
+          className="flex max-h-[calc(100dvh-4rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-160 max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0"
         >
-          <div className="flex shrink-0 items-center gap-3 pt-[env(safe-area-inset-top)] max-sm:h-14 max-sm:pr-2 max-sm:pl-4 sm:pt-5 sm:pr-5 sm:pl-6">
-            <DialogTitle className="flex-1 text-xl max-sm:text-lg">
-              {m['import.title']()}
-            </DialogTitle>
+          <div className="flex shrink-0 items-start gap-3 px-4 pt-[calc(env(safe-area-inset-top)+--spacing(4))] sm:px-6 sm:pt-6">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <DialogTitle>{m['import.title']()}</DialogTitle>
+              <DialogDescription className="text-md">{m['import.opens_now']()}</DialogDescription>
+            </div>
             <DialogClose
-              render={<Button variant="ghost" size="icon" aria-label={m['system.close']()} />}
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={m['system.close']()}
+                  className="-mt-2 -mr-2"
+                />
+              }
             >
               <XIcon aria-hidden />
             </DialogClose>
@@ -200,17 +207,20 @@ export default function AddSongDialog({
             onValueChange={(value) => changeTab(value as AddTab)}
             className="min-h-0 flex-1 gap-0"
           >
-            <TabsList className="shrink-0 px-4 sm:mt-2 max-sm:grid max-sm:grid-cols-3 max-sm:px-2">
-              {tabs.map(({ value, label, Icon }) => (
-                <TabsTrigger key={value} value={value} className="max-sm:min-h-12">
-                  <Icon aria-hidden className="max-sm:hidden" />
-                  {label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <div className="flex min-h-0 flex-1 flex-wrap gap-6 overflow-y-auto px-4 py-5 sm:px-6">
-              <div className="flex min-w-0 flex-[999_1_26.25rem] flex-col">
-                <TabsContent value="file" className="flex flex-col gap-3.5">
+            <div className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-5">
+              <TabsList look="segmented">
+                {tabs.map(({ value, label, Icon }) => (
+                  <TabsTrigger key={value} value={value}>
+                    <Icon aria-hidden />
+                    {label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4 pb-6 sm:px-6">
+              {/* The source keeps one height across tabs, so switching never jolts the settings. */}
+              <div className="flex flex-col sm:min-h-48">
+                <TabsContent value="file" className="flex flex-col gap-4">
                   {file.picked ? (
                     <>
                       <FileRow
@@ -247,15 +257,6 @@ export default function AddSongDialog({
                           />
                         </div>
                       </div>
-                      <DropZone
-                        variant="row"
-                        prompt={m['import.drop_another']()}
-                        chooseLabel={m['import.choose_file']()}
-                        hint={m['import.formats']()}
-                        dropLabel={m['import.drop_here']()}
-                        accept={ACCEPT}
-                        onFiles={([picked]) => picked && onFile(picked)}
-                      />
                     </>
                   ) : (
                     <DropZone
@@ -265,7 +266,7 @@ export default function AddSongDialog({
                       dropLabel={m['import.drop_here']()}
                       accept={ACCEPT}
                       onFiles={([picked]) => picked && onFile(picked)}
-                      className="flex-1"
+                      className="min-h-48 py-8"
                     />
                   )}
                 </TabsContent>
@@ -276,63 +277,64 @@ export default function AddSongDialog({
                   <RecordPanel onRecording={setRecording} />
                 </TabsContent>
               </div>
-              <div className="flex min-w-0 flex-[1_1_21.25rem] flex-col gap-4">
-                {available.full && type !== 'full' && !available.plus && (
-                  <InlineError
-                    tone="info"
-                    title={m['plan.welcome_available']()}
-                    actions={
-                      <Button onClick={() => setType('full')}>{m['plan.use_it_now']()}</Button>
-                    }
-                  />
-                )}
+              <div className="mt-6 flex flex-col gap-5 border-t border-border pt-4">
                 <PartPicker
                   instrument={instrument}
                   onInstrumentChange={setInstrument}
                   hand={hand}
                   onHandChange={changeHand}
-                  compact={!wide}
                 />
-                <AnalysisChoice
-                  me={me}
-                  type={type}
-                  onTypeChange={setType}
-                  onSeePlus={setUpgrade}
-                  compact={!wide}
-                />
+                <div className="flex flex-col gap-3">
+                  <AnalysisChoice
+                    me={me}
+                    type={type}
+                    onTypeChange={setType}
+                    onSeePlus={setUpgrade}
+                  />
+                  {available.full && type !== 'full' && !available.plus && (
+                    <InlineError
+                      tone="info"
+                      title={m['plan.welcome_available']()}
+                      actions={
+                        <Button onClick={() => setType('full')}>{m['plan.use_it_now']()}</Button>
+                      }
+                    />
+                  )}
+                </div>
                 {waitingOnline && <InlineError tone="warning" title={m['import.offline']()} />}
                 {failure && <InlineError title={failure} />}
               </div>
             </div>
           </Tabs>
-          <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border px-4 pt-3 pb-[calc(var(--spacing)*5.5+env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
-            <p className="flex-[1_1_18.75rem] text-sm text-muted-foreground max-sm:hidden">
-              {m['import.opens_now']()}{' '}
-              <Popover>
-                <PopoverTrigger
-                  render={<Button variant="link" className="h-auto min-h-0 px-0 text-sm" />}
-                >
-                  {m['import.works_best']()}
-                </PopoverTrigger>
-                <PopoverContent
-                  aria-label={m['import.works_best']()}
-                  className="flex w-80 flex-col gap-2 text-sm"
-                >
-                  <p>{m['import.works_best_with']()}</p>
-                  <p className="text-muted-foreground">{m['import.has_trouble_with']()}</p>
-                </PopoverContent>
-              </Popover>
-            </p>
+          <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 pt-3 pb-[calc(--spacing(3)+env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="link"
+                    className="mr-auto px-0 text-muted-foreground hover:text-foreground max-sm:hidden"
+                  />
+                }
+              >
+                {m['import.works_best']()}
+              </PopoverTrigger>
+              <PopoverContent
+                aria-label={m['import.works_best']()}
+                className="flex w-80 flex-col gap-2 text-sm"
+              >
+                <p>{m['import.works_best_with']()}</p>
+                <p className="text-muted-foreground">{m['import.has_trouble_with']()}</p>
+              </PopoverContent>
+            </Popover>
             <DialogClose render={<Button className="max-sm:hidden" />}>
               {m['common.cancel']()}
             </DialogClose>
             <Button
               variant="primary"
-              size="lg"
               disabled={!ready}
               loading={submitting}
               onClick={submit}
-              className="max-sm:w-full"
+              className="max-sm:w-full max-sm:[--face:3rem]"
             >
               {primaryLabel}
             </Button>

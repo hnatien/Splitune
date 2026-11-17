@@ -4,8 +4,8 @@ import { createIcon } from '@/ui/icons/create'
 import { PopoverTrigger } from '@/ui/popover'
 
 // Doc 26 §12.2, §12.3 (`.ladder`, Main.dc.html): the speed ladder's rungs from start to goal, 70 px
-// tall and rising to the goal. Done = amber fill with a 1 px --signal edge and graphite label (the
-// edge keeps done apart from upcoming in Daylight, V16), current = --primary-soft with a 2 px inset
+// tall and rising to the goal. Done = the ink fill with a 1 px --signal edge and paper label (the
+// edge keeps done apart from upcoming in Light, V16), current = --primary-soft with a 2 px inset
 // --signal ring, upcoming = --accent. Fill, edge and ring differ, so the state never rests on
 // colour alone (forced colours draw the ring as a border: thin for done, thick for current); the
 // group's name says it in words ("70 percent done, 75 percent now, 80 percent
@@ -55,7 +55,7 @@ function SpeedLadder({ rungs, current, label, className }: SpeedLadderProps) {
               height: `${FIRST_HEIGHT_PCT + ((100 - FIRST_HEIGHT_PCT) * index) / last}%`,
             }}
             className={cn(
-              'flex min-w-0 flex-1 items-start justify-center rounded-xs pt-1.25 font-mono text-2xs tabular-nums transition-colors duration-(--duration-fast)',
+              'flex min-w-0 flex-1 items-start justify-center rounded-xs pt-1.25 text-2xs tabular-nums transition-colors duration-(--duration-fast)',
               state === 'done' &&
                 'bg-primary text-primary-foreground inset-ring inset-ring-signal forced-colors:border',
               state === 'current' &&

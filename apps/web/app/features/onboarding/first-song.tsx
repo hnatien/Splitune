@@ -45,6 +45,7 @@ export function FirstSong({
     return (
       <StepFrame step={4} signedIn={signedIn} onBack={onBack}>
         <InlineError
+          className="w-full max-w-md"
           title={examples.isError ? m['start.examples_failed']() : m['start.coming']()}
           actions={
             examples.isError ? (
@@ -86,17 +87,20 @@ function SignedInSong({
   return (
     <StepFrame step={4} signedIn onBack={onBack}>
       <StepTitle>{m['start.song_title']()}</StepTitle>
-      <SongSummary example={example} />
-      {claim.isError && <InlineError title={m['system.error']()} />}
-      <Button
-        variant="primary"
-        size="practice"
-        loading={claim.isPending}
-        onClick={() => claim.mutate()}
-      >
-        <PlayIcon aria-hidden />
-        {m['start.play_part']()}
-      </Button>
+      <div className="flex w-full max-w-md flex-col gap-4">
+        <SongSummary example={example} />
+        {claim.isError && <InlineError title={m['system.error']()} />}
+        <Button
+          variant="primary"
+          size="practice"
+          block
+          loading={claim.isPending}
+          onClick={() => claim.mutate()}
+        >
+          <PlayIcon aria-hidden />
+          {m['start.play_part']()}
+        </Button>
+      </div>
     </StepFrame>
   )
 }

@@ -5,7 +5,8 @@ import { Button } from '@/ui/button'
 
 // Doc 26 §12.2, 27 §5.4: status icon + what happened + what it means (optional) + what you can do.
 // Status colour is the icon and, for inline messages, a tinted surface (a hairline border returns
-// under increased contrast) — never a saturated fill, and the title carries the meaning.
+// under increased contrast); banners are a plain line. Never a saturated fill, and the title
+// carries the meaning.
 
 export type StatusTone = 'error' | 'warning' | 'info' | 'success'
 
@@ -64,7 +65,7 @@ function InlineError({
       data-slot="inline-error"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex gap-3 rounded-2xl border border-transparent p-4',
+        'flex gap-3 rounded-xl border border-transparent p-4',
         style.surface,
         style.border,
         className,
@@ -87,34 +88,25 @@ type BannerProps = StatusMessageProps & {
   dismiss?: { label: string; onDismiss: () => void } | undefined
 }
 
-// Banners are cards (26 §12.2, States.dc.html): --card with its --border edge, the tone in the icon.
-// Errors and successes keep their status surface; an error also gets the --destructive edge.
-const BANNER_SURFACE: Record<StatusTone, string> = {
-  error: 'border-destructive bg-destructive-surface',
-  warning: 'border-border bg-card',
-  info: 'border-border bg-card',
-  success: 'border-border bg-success-surface',
-}
-
-/** Page-level notice at the top of a region (offline, worker offline, demo mode, browser support). */
+/**
+ * Page-level notice at the top of a region (offline, worker offline, demo mode, browser support):
+ * one quiet line, the tone in the icon and the words, a hairline below; no box and no tinted bar.
+ */
 function Banner({ tone, title, description, actions, icon, dismiss, className }: BannerProps) {
   const style = TONES[tone]
-  const trailing = actions !== undefined || dismiss !== undefined
   return (
     <div
       data-slot="banner"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex animate-rise-in flex-wrap items-center gap-x-2.5 gap-y-2 rounded-3xl border pl-3.5 sm:flex-nowrap',
-        trailing ? 'py-1 pr-1' : 'py-1.5 pr-3.5',
-        BANNER_SURFACE[tone],
+        'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-1 border-b border-border py-1.5 sm:flex-nowrap',
         className,
       )}
     >
-      <span className={cn('shrink-0 [&_svg]:size-5', style.text)}>{icon ?? style.icon}</span>
+      <span className={cn('shrink-0 [&_svg]:size-4.5', style.text)}>{icon ?? style.icon}</span>
       <p className="min-w-0 flex-1 basis-3xs py-2 text-sm text-foreground">
         <span className={cn(description && 'font-medium')}>{title}</span>
-        {description && <span> {description}</span>}
+        {description && <span className="text-muted-foreground"> {description}</span>}
       </p>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       {dismiss && (

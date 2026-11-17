@@ -31,6 +31,21 @@ const SourceTabs = ({ value = 'file' }: { value?: string }) => (
   </Tabs>
 )
 
+// The segmented look (Add song's source switch): equal items on a quiet track, the selected one
+// on the raised capsule.
+const SegmentedTabs = ({ value = 'file' }: { value?: string }) => (
+  <Tabs defaultValue={value} className="max-w-md">
+    <TabsList look="segmented" aria-label="Add a song">
+      <TabsTrigger value="file">File</TabsTrigger>
+      <TabsTrigger value="link">Link</TabsTrigger>
+      <TabsTrigger value="record">Record</TabsTrigger>
+    </TabsList>
+    <TabsContent value="file">Choose an audio or video file from this device.</TabsContent>
+    <TabsContent value="link">Paste a link to a song.</TabsContent>
+    <TabsContent value="record">Record yourself playing.</TabsContent>
+  </Tabs>
+)
+
 const InspectorTabs = () => (
   <Tabs defaultValue="fix" className="w-95">
     <TabsList aria-label="Inspector">
@@ -126,9 +141,37 @@ export const PracticeInspector: Story = {
   },
 }
 
+export const Segmented: Story = {
+  render: () => <SegmentedTabs />,
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const canvas = within(frame)
+      const tabs = canvas.getAllByRole('tab')
+      // Equal items with full-size targets; the capsule sits under the selected one.
+      await expectTargets(tabs, { width: 44, height: 44 })
+      const widths = tabs.map((tab) => Math.round(tab.getBoundingClientRect().width))
+      await expect(new Set(widths).size).toBe(1)
+      const capsule = frame.querySelector<HTMLElement>('[data-slot=tabs-capsule]')
+      await expect(capsule).not.toBeNull()
+      await userEvent.click(canvas.getByRole('tab', { name: 'Record' }))
+      await expect(canvas.getByRole('tab', { name: 'Record' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+      await expect(canvas.getByText('Record yourself playing.')).toBeVisible()
+    }
+  },
+}
+export const SegmentedSelected: Story = {
+  render: () => <SegmentedTabs value="link" />,
+  globals: BOTH_THEMES_MORE_CONTRAST,
+}
+
 const Gallery = () => (
   <div className="flex flex-col gap-8">
     <SourceTabs />
+    <SegmentedTabs />
     <InspectorTabs />
   </div>
 )
