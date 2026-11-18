@@ -39,6 +39,8 @@ const PAGES = [
   { path: '/import', heading: /./ },
   { path: '/settings/display', heading: /./ },
   { path: '/settings/account', heading: 'Account' },
+  { path: '/settings/usage', heading: 'Usage' },
+  { path: '/settings/plan', heading: 'Plan' },
   { path: '/settings/keyboard', heading: /./ },
   { path: '/settings/about', heading: 'About' },
 ]

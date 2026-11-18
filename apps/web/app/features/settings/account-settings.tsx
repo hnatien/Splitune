@@ -9,7 +9,6 @@ import { INSTRUMENTS, instrumentLabel } from '@/lib/instruments'
 import { type MeData, meQuery } from '@/lib/session'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
-import { BillingSettings } from '../billing/billing-settings'
 import { useSignOut } from '../shell/use-sign-out'
 import { type DeleteStep, PrivacySettings } from './privacy-settings'
 import {
@@ -21,8 +20,8 @@ import {
 } from './setting-row'
 import { useSaveState } from './use-save-state'
 
-// Settings → Account (27 §3.9, Settings-Account): Profile, Plan, Privacy, then Sign out. The old
-// Profile, Plan & billing and Privacy URLs land on the section anchors (#profile, #plan, #privacy).
+// Settings → Account (27 §3.9, Settings-Account): Profile, Privacy, then Sign out. The old Profile
+// and Privacy URLs land on the section anchors (#profile, #privacy); Plan is its own section.
 
 type Patch = z.infer<typeof UpdateMeInput>
 
@@ -43,11 +42,9 @@ function levelLabel(level: z.infer<typeof Level>) {
 
 export function AccountSettings({
   me,
-  checkout,
   deleteDialog,
 }: {
   me: MeData
-  checkout?: 'success' | 'cancelled' | undefined
   /** Opens "Delete my account" at this step (Google re-authentication returns to confirm). */
   deleteDialog?: DeleteStep | undefined
 }) {
@@ -55,7 +52,6 @@ export function AccountSettings({
   return (
     <SettingsPage title={m['settings.account']()}>
       <Profile me={me} />
-      <BillingSettings me={me} checkout={checkout} />
       <PrivacySettings me={me} deleteDialog={deleteDialog} />
       <Button variant="ghost" className="self-start" onClick={signOut}>
         <LogOutIcon aria-hidden />

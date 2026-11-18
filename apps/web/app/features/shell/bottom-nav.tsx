@@ -1,16 +1,25 @@
 import { Link } from '@tanstack/react-router'
-import { LayoutGridIcon, PlusIcon, SlidersHorizontalIcon } from 'lucide-react'
+import { GaugeIcon, LayoutGridIcon, PlusIcon } from 'lucide-react'
 import { m } from '@/lib/i18n'
+import type { MeData } from '@/lib/session'
 import { Button } from '@/ui/button'
+import { UsagePopover } from './usage-popover'
 
 const TAB =
-  'flex min-h-target min-w-target flex-col items-center justify-center gap-0.5 rounded-lg text-xs text-faint-foreground aria-[current=page]:text-foreground focus-visible:-outline-offset-2 [&_svg]:size-5 [&_.lucide]:stroke-[1.8]'
+  'flex min-h-target min-w-target flex-col items-center justify-center gap-0.5 rounded-lg text-xs text-faint-foreground aria-[current=page]:text-foreground data-popup-open:text-foreground focus-visible:-outline-offset-2 [&_svg]:size-5 [&_.lucide]:stroke-[1.8]'
 
 // Phone bottom bar (27 §1, 26 §12.2 BottomNav, Phone-Library): Library · Add song (a 48 px primary
-// pill) · Settings, 76 px plus the safe area. Hidden from `sm`, where the top bar has them.
-export function BottomNav({ pathname, onAddSong }: { pathname: string; onAddSong: () => void }) {
+// pill) · Usage (the allowances and plan in a popover above it), 76 px plus the safe area. Hidden from `sm`, where the top bar has them.
+export function BottomNav({
+  me,
+  pathname,
+  onAddSong,
+}: {
+  me: MeData
+  pathname: string
+  onAddSong: () => void
+}) {
   const library = pathname === '/library' || pathname.startsWith('/library/')
-  const settings = pathname === '/settings' || pathname.startsWith('/settings/')
   return (
     <nav
       data-slot="bottom-tabs"
@@ -25,10 +34,16 @@ export function BottomNav({ pathname, onAddSong }: { pathname: string; onAddSong
         <PlusIcon aria-hidden className="size-4" />
         {m['nav.add_song']()}
       </Button>
-      <Link to="/settings/account" aria-current={settings ? 'page' : undefined} className={TAB}>
-        <SlidersHorizontalIcon aria-hidden />
-        {m['nav.settings']()}
-      </Link>
+      <UsagePopover
+        me={me}
+        side="top"
+        trigger={
+          <button type="button" className={TAB}>
+            <GaugeIcon aria-hidden />
+            {m['nav.usage']()}
+          </button>
+        }
+      />
     </nav>
   )
 }

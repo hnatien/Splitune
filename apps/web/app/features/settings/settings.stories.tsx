@@ -18,8 +18,8 @@ import { KeyboardSettings } from './keyboard-settings'
 import { type DeleteStep, exportStateQuery } from './privacy-settings'
 import { SettingsLayout } from './settings-layout'
 
-// Settings (27 §3.9): Account (Profile, Plan, Privacy, Sign out), Display & practice, Keyboard &
-// pedal and About, in Dark (the default), Light and on a phone. The Privacy stories
+// Settings (27 §3.9): Account (Profile, Privacy, Sign out), Display & practice, Keyboard & pedal
+// and About (Usage and Plan are in plan.stories.tsx), in Dark (the default), Light and on a phone. The Privacy stories
 // render Account (Privacy is one of its sections) and keep their ids for the visual matrix.
 const meta = { title: 'Screens/Settings', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
@@ -141,7 +141,7 @@ const privacy =
     })
   }
 
-/** Account (27 §3.9, Settings-Account): Profile, Plan, Privacy and Sign out. */
+/** Account (27 §3.9, Settings-Account): Profile, Privacy and Sign out; Plan is its own section. */
 export const Account: Story = {
   render: privacy(NO_EXPORT),
   play: async ({ canvasElement }) => {
@@ -150,8 +150,7 @@ export const Account: Story = {
     await expect(canvas.getByLabelText('Name')).toHaveValue('Ana')
     await expect(canvas.getByRole('group', { name: 'Main instrument' })).toBeVisible()
     await expect(canvas.getByRole('group', { name: 'How long have you played?' })).toBeVisible()
-    await expect(canvas.getByText('Demo billing')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'See Plus' })).toBeVisible()
+    await expect(canvas.queryByText('Demo billing')).toBeNull()
     await expect(canvas.getByRole('button', { name: 'Sign out' })).toBeVisible()
   },
 }

@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { expectAccessible, projectContext, signIn } from './helpers'
 
-// Settings IA (27 §1 route map, §3.9): Account · Display & practice · Keyboard & pedal · About.
-// The old section URLs land on Account's anchors and keep the return states.
+// Settings IA (27 §1 route map, §3.9): Account · Usage · Plan · Display & practice · Keyboard &
+// pedal · About. The old section URLs land on Account's anchors or on Plan and keep the return
+// states.
 
 test('old settings URLs land on Account with the query kept, and About exists', async ({
   browser,
@@ -16,7 +17,7 @@ test('old settings URLs land on Account with the query kept, and About exists', 
   await expect(page.getByRole('heading', { level: 1, name: 'Account' })).toBeVisible()
 
   await page.goto('/settings/profile?checkout=success')
-  await expect(page).toHaveURL(/\/settings\/account\?checkout=success#plan$/)
+  await expect(page).toHaveURL(/\/settings\/plan\?checkout=success$/)
   await page.goto('/settings/privacy?confirm=delete')
   await expect(page).toHaveURL(/\/settings\/account\?confirm=delete#privacy$/)
   await expect(page.getByRole('alertdialog', { name: 'Delete my account' })).toBeVisible()
@@ -25,6 +26,8 @@ test('old settings URLs land on Account with the query kept, and About exists', 
   const nav = page.getByRole('navigation', { name: 'Settings sections' })
   await expect(nav.getByRole('link')).toHaveText([
     'Account',
+    'Usage',
+    'Plan',
     'Display & practice',
     'Keyboard & pedal',
     'About',

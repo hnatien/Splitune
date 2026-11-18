@@ -110,11 +110,7 @@ function PlusAction({ me, plan }: { me: MeData | null; plan: PaidPlanName }) {
   }
   if (me.plan !== 'free') {
     return (
-      <Link
-        to="/settings/account"
-        hash="plan"
-        className={buttonVariants({ size: 'lg', block: true })}
-      >
+      <Link to="/settings/plan" className={buttonVariants({ size: 'lg', block: true })}>
         {m['pricing.manage']()}
       </Link>
     )

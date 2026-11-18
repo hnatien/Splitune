@@ -18,7 +18,7 @@ import { DropOverlay } from './drop-overlay'
 import { PaletteLauncher } from './palette-launcher'
 import { usePalette } from './palette-store'
 import { SkipLink } from './skip-link'
-import { UsageMeter } from './usage-meter'
+import { UsagePopover } from './usage-popover'
 
 export const isCurrent = (pathname: string, section: string) =>
   pathname === section || pathname.startsWith(`${section}/`)
@@ -36,19 +36,18 @@ function paletteKey() {
 
 const openPalette = () => usePalette.getState().setOpen(true)
 
-// App shell (27 §1, 26 §7, §12.2 AppBar): a sticky 64 px bar with no rule under it: the wordmark (→ Library), Library
-// and Settings, the search button that opens the ⌘K palette, the allowance (from lg), Add song (a
-// quiet pill: the bar is chrome, and each page keeps its one primary) and the account menu. Phones get a 56 px header with the page title, search
-// and the account menu, and the 76 px bottom bar. A file dropped anywhere opens Add song with it.
+// App shell (27 §1, 26 §7, §12.2 AppBar): a sticky 64 px bar with no rule under it: the wordmark
+// (→ Library), Library and Usage (a popover with the allowances and the plan; Settings is in the
+// account menu),
+// the search button that opens the ⌘K palette, Add song (a quiet pill: the bar is chrome, and each
+// page keeps its one primary) and the account menu. Phones get a 56 px header with the page title,
+// search and the account menu, and the 76 px bottom bar. A file dropped anywhere opens Add song with it.
 export function AppShell({ me, children }: { me: MeData; children: React.ReactNode }) {
   useClaimOnSignIn()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const openAddSong = useOpenAddSong()
   const name = me.display_name || me.username || me.email
-  const links = [
-    { to: '/library', section: '/library', label: m['nav.library']() },
-    { to: '/settings/account', section: '/settings', label: m['nav.settings']() },
-  ] as const
+  const links = [{ to: '/library', section: '/library', label: m['nav.library']() }] as const
   return (
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
@@ -84,6 +83,20 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
                 </Link>
               )
             })}
+            <UsagePopover
+              me={me}
+              trigger={
+                <button
+                  type="button"
+                  className={cn(
+                    buttonVariants({ variant: 'ghost' }),
+                    'px-3 data-popup-open:bg-muted data-popup-open:text-foreground',
+                  )}
+                >
+                  {m['nav.usage']()}
+                </button>
+              }
+            />
           </nav>
           <div className="flex-1 max-sm:hidden" />
           <Button
@@ -105,7 +118,6 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
             <SearchIcon aria-hidden />
           </Button>
           <div className="flex-1 max-lg:hidden" />
-          <UsageMeter me={me} className="max-lg:hidden" />
           <UploadPill />
           <Button variant="secondary" onClick={() => openAddSong()} className="max-sm:hidden">
             <PlusIcon aria-hidden className="size-4" />
@@ -128,7 +140,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
       >
         {children}
       </main>
-      <BottomNav pathname={pathname} onAddSong={() => openAddSong()} />
+      <BottomNav me={me} pathname={pathname} onAddSong={() => openAddSong()} />
       <DropOverlay onFile={(file) => openAddSong('file', file)} />
       <PaletteLauncher />
       <AddSongHost me={me} />

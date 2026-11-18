@@ -9,6 +9,8 @@ import { buttonVariants } from '@/ui/button'
 
 const SECTIONS = [
   { to: '/settings/account', label: () => m['settings.account']() },
+  { to: '/settings/usage', label: () => m['settings.usage']() },
+  { to: '/settings/plan', label: () => m['settings.billing']() },
   { to: '/settings/display', label: () => m['settings.display']() },
   { to: '/settings/keyboard', label: () => m['settings.keyboard']() },
   { to: '/settings/about', label: () => m['settings.about']() },

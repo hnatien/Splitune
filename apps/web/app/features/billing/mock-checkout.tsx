@@ -19,7 +19,7 @@ export function SessionExpired() {
     <InlineError
       title={m['billing.session_expired']()}
       actions={
-        <Link to="/settings/account" hash="plan" className={buttonVariants({ variant: 'outline' })}>
+        <Link to="/settings/plan" className={buttonVariants({ variant: 'outline' })}>
           {m['billing.go_billing']()}
         </Link>
       }

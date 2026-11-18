@@ -36,7 +36,7 @@ type Row = PaletteAction & { group: 'songs' | 'clips' | 'actions'; tile?: React.
 
 const SONG_LIMIT = 5
 
-type SettingsPath = `/settings/${'account' | 'display' | 'keyboard' | 'about'}`
+type SettingsPath = `/settings/${'account' | 'usage' | 'plan' | 'display' | 'keyboard' | 'about'}`
 
 const APPEARANCE_ICON = { dark: MoonIcon, light: SunIcon, system: MonitorSmartphoneIcon }
 
@@ -151,6 +151,8 @@ export default function CommandPalette() {
     ...(
       [
         ['account', m['settings.account']()],
+        ['usage', m['settings.usage']()],
+        ['plan', m['settings.billing']()],
         ['display', m['settings.display']()],
         ['keyboard', m['settings.keyboard']()],
         ['about', m['settings.about']()],

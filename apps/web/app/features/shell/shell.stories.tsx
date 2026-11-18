@@ -5,13 +5,13 @@ import { orpc } from '@/lib/api'
 import { meQuery } from '@/lib/session'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { libraryQuery } from '../library/queries'
-import { LIBRARY, ME } from '../story-fixtures'
+import { LIBRARY, ME, ME_PLUS } from '../story-fixtures'
 import { AppShell } from './app-shell'
 import { FocusShell } from './focus-shell'
 import { MarketingShell } from './marketing-shell'
 import { type PaletteAction, parseLoopQuery, usePalette, usePaletteActions } from './palette-store'
 
-// The shells (27 §1): the app shell's 64 px bar (Library, Settings, search, allowance, Add song,
+// The shells (27 §1): the app shell's 64 px bar (Library, the Usage popover, search, Add song,
 // account) and the phone header and bottom bar, the account menu, the "Drop to add" overlay, the
 // ⌘K palette (open, results, a registered loop action, empty, offline), the marketing shell's
 // phone Menu and the focus shell, in Dark and Light. Phone stories set the viewport
@@ -62,7 +62,8 @@ const playDesktop: Story['play'] = async ({ canvasElement }) => {
   await expect(getComputedStyle(banner).position).toBe('sticky')
   const nav = await canvas.findByRole('navigation', { name: 'Main' })
   const links = within(nav).getAllByRole('link')
-  await expect(links.map((link) => link.textContent)).toEqual(['Library', 'Settings'])
+  await expect(links.map((link) => link.textContent)).toEqual(['Library'])
+  await expect(within(nav).getByRole('button', { name: 'Usage' })).toBeVisible()
   await expect(within(nav).getByRole('link', { name: 'Library' })).toHaveAttribute(
     'aria-current',
     'page',
@@ -71,7 +72,8 @@ const playDesktop: Story['play'] = async ({ canvasElement }) => {
   await expect(
     header.getByRole('button', { name: /Search songs, clips and actions/ }),
   ).toBeVisible()
-  await expect(header.getByText('4 of 5 Lite left · resets 1 Dec')).toBeVisible()
+  // The allowance lives on Usage now, not in the bar.
+  await expect(canvasElement.querySelector('[data-slot="meter"]')).toBeNull()
   await expect(header.getByRole('button', { name: 'Add song' })).toBeVisible()
   // The initials are painted from data-initials, so the button's only text is "Account" (2.5.3).
   const account = header.getByRole('button', { name: 'Account' })
@@ -87,18 +89,77 @@ export const AppDesktopDaylight: Story = {
   globals: DAYLIGHT,
 }
 
-// Any settings section keeps Settings current, though the link leads to Account.
-export const AppDesktopSettingsCurrent: Story = {
-  render: appShell('/settings/about'),
+const appShellAs = (me: typeof ME) => () => (
+  <AppStory
+    path="/library"
+    seed={(client) => {
+      seed(client)
+      client.setQueryData(meQuery.queryKey, me)
+    }}
+  >
+    <AppShell me={me}>
+      <h1 className="text-3xl">Library</h1>
+    </AppShell>
+  </AppStory>
+)
+
+// The popover renders in a portal, outside the story's canvas.
+const screen = () => within(document.body)
+
+/** Opens Usage from the main nav and waits out the popover's entrance. */
+async function openUsage(canvasElement: HTMLElement) {
+  const nav = await within(canvasElement).findByRole('navigation', { name: 'Main' })
+  await userEvent.click(within(nav).getByRole('button', { name: 'Usage' }))
+  const dialog = await screen().findByRole('dialog', { name: 'Analysis limits' })
+  await Promise.all(dialog.getAnimations({ subtree: true }).map((a) => a.finished))
+  return { nav, dialog, popover: within(dialog) }
+}
+
+// Usage (Claude's usage popover): each allowance with its bar and reset date, then the plan with
+// View plan, and See Plus on Free.
+const playUsageFree: Story['play'] = async ({ canvasElement }) => {
+  const { popover } = await openUsage(canvasElement)
+  await expect(popover.getByText('Part of Plus')).toBeVisible()
+  await expect(popover.getByRole('meter', { name: 'Lite analyses' })).toHaveAttribute(
+    'aria-valuetext',
+    '1 of 5 used, Resets 1 Dec',
+  )
+  await expect(popover.getByRole('meter', { name: 'Welcome analysis' })).toBeVisible()
+  await expect(popover.getByText('Free', { exact: true })).toBeVisible()
+  await expect(popover.getByRole('link', { name: 'View plan' })).toHaveAttribute(
+    'href',
+    '/settings/plan',
+  )
+  await expect(popover.getByRole('button', { name: 'See Plus' })).toBeVisible()
+}
+
+export const UsagePopoverFree: Story = { render: appShell('/library'), play: playUsageFree }
+export const UsagePopoverFreeDaylight: Story = {
+  render: appShell('/library'),
+  play: playUsageFree,
+  globals: DAYLIGHT,
+}
+export const UsagePopoverPlus: Story = {
+  render: appShellAs(ME_PLUS),
   play: async ({ canvasElement }) => {
-    const nav = await within(canvasElement).findByRole('navigation', { name: 'Main' })
-    await expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute(
-      'aria-current',
-      'page',
+    const { popover } = await openUsage(canvasElement)
+    await expect(popover.getByText('3 of 15 used')).toBeVisible()
+    await expect(popover.getByText('12 used · no monthly limit')).toBeVisible()
+    await expect(popover.queryByRole('meter', { name: 'Welcome analysis' })).toBeNull()
+    await expect(popover.getByText('Renews on 22 Nov')).toBeVisible()
+    await expect(popover.queryByRole('button', { name: 'See Plus' })).toBeNull()
+  },
+}
+export const UsagePopoverPhone: Story = {
+  render: appShell('/library'),
+  globals: PHONE,
+  play: async ({ canvasElement }) => {
+    const { nav, dialog } = await openUsage(canvasElement)
+    // Above the bottom bar, inside the screen.
+    await expect(dialog.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      nav.getBoundingClientRect().top,
     )
-    await expect(within(nav).getByRole('link', { name: 'Library' })).not.toHaveAttribute(
-      'aria-current',
-    )
+    await expect(dialog.getBoundingClientRect().left).toBeGreaterThanOrEqual(0)
   },
 }
 
@@ -107,13 +168,14 @@ const playPhone: Story['play'] = async ({ canvasElement }) => {
   const nav = await canvas.findByRole('navigation', { name: 'Main' })
   await expect(nav).toHaveAttribute('data-slot', 'bottom-tabs')
   await expect(nav).toBeVisible()
-  // Phone-Library: Library · Add song (a 48 px pill) · Settings in a 76 px bar.
+  // Phone-Library: Library · Add song (a 48 px pill) · Usage in a 76 px bar.
   await expect(nav.getBoundingClientRect().height).toBe(76)
   await expect(
     within(nav)
       .getAllByRole('link')
       .map((link) => link.textContent),
-  ).toEqual(['Library', 'Settings'])
+  ).toEqual(['Library'])
+  await expect(within(nav).getByRole('button', { name: 'Usage' })).toBeVisible()
   await expect(within(nav).getByRole('button', { name: 'Add song' })).toBeVisible()
   await expect(within(nav).getByRole('link', { name: 'Library' })).toHaveAttribute(
     'aria-current',

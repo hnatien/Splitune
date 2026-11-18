@@ -60,12 +60,8 @@ async function advanceClock(days: number) {
   expect(res.status()).toBe(200)
 }
 
-// Settings → Plan is a section of Account, beside the Profile fields: scan only the section there.
 async function checkBillingPage() {
-  await expectNoCardInputs(
-    page,
-    new URL(page.url()).pathname === '/settings/account' ? '#plan' : 'body',
-  )
+  await expectNoCardInputs(page, 'body')
   await expectAccessible(page)
   await expectNoHorizontalScroll(page)
 }
@@ -125,8 +121,11 @@ test('billing: the Welcome analysis is the first full one, then Full is locked',
 
 test('billing: the Lite allowance runs out with its exact limit and reset date', async () => {
   for (let i = 0; i < LITE_PER_MONTH; i++) await importLink('Lite')
-  await page.goto('/settings/billing')
-  await expect(page.getByRole('main').getByText(/^0 of 5 left · resets /)).toBeVisible()
+  await page.goto('/settings/usage')
+  await expect(page.getByRole('meter', { name: 'Lite analyses' })).toHaveAttribute(
+    'aria-valuetext',
+    /^5 of 5 used, Resets /,
+  )
   await page.goto('/import')
   await expect(
     page.getByText(/You've used this month's 5 Lite analyses\. They reset on \d+ \w+/),
@@ -154,8 +153,8 @@ test('billing: a declined payment changes nothing, a successful one upgrades to 
   ).toBeVisible()
   await page.getByRole('button', { name: 'Simulate successful payment' }).click()
 
-  // The mock checkout returns to /settings/billing, which lands on Account → Plan (27 §1).
-  await expect(page).toHaveURL(/\/settings\/account\?checkout=success#plan$/)
+  // The mock checkout returns to /settings/billing, which lands on Plan (27 §1).
+  await expect(page).toHaveURL(/\/settings\/plan\?checkout=success$/)
   await expect(
     page.getByText(/^You're on Plus\. 15 full analyses a month, resets \d+ \w+/),
   ).toBeVisible()
@@ -166,8 +165,11 @@ test('billing: a declined payment changes nothing, a successful one upgrades to 
 test('billing: Plus allows a Full analysis and queues it first', async () => {
   const songId = await importLink('Full')
   expect(await prioritiesOf(songId)).toEqual([50])
-  await page.goto('/settings/billing')
-  await expect(page.getByRole('main').getByText(/^14 of 15 left · resets /)).toBeVisible()
+  await page.goto('/settings/usage')
+  await expect(page.getByRole('meter', { name: 'Full analyses' })).toHaveAttribute(
+    'aria-valuetext',
+    /^1 of 15 used, Resets /,
+  )
 })
 
 test('billing: the portal shows the plan, and Settings cancels in one tap', async () => {
@@ -176,7 +178,7 @@ test('billing: the portal shows the plan, and Settings cancels in one tap', asyn
   await expect(page).toHaveURL(/\/billing\/mock-portal\?session=/)
   await expect(page.getByText(/^Renews on \d+ \w+/)).toBeVisible()
   await checkBillingPage()
-  await page.getByRole('link', { name: 'Back to Account' }).click()
+  await page.getByRole('link', { name: 'Back to Plan' }).click()
 
   await page.getByRole('button', { name: 'Cancel Plus' }).click()
   await expect(
@@ -194,9 +196,13 @@ test('billing: Plus lasts to the period end, then the account is back on Free', 
   await page.reload()
   await expect(page.getByText('Free', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'See Plus' })).toBeVisible()
-  // A new month on the billing clock: the Lite allowance is back.
-  await expect(page.getByRole('main').getByText(/^5 of 5 left · resets /)).toBeVisible()
   await checkBillingPage()
+  // A new month on the billing clock: the Lite allowance is back.
+  await page.goto('/settings/usage')
+  await expect(page.getByRole('meter', { name: 'Lite analyses' })).toHaveAttribute(
+    'aria-valuetext',
+    /^0 of 5 used, Resets /,
+  )
 })
 
 // Fetches a navigation cancels are already left out by collectErrors (helpers.ts).

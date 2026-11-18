@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
-import { AllowanceMeter } from './allowance-meter.tsx'
 import { Badge } from './badge.tsx'
 import { Button } from './button.tsx'
 import { EmptyState } from './empty-state.tsx'
@@ -189,21 +188,6 @@ export const WorkerOffline: Story = {
 }
 export const WorkerOnline: Story = {
   render: () => <WorkerStatus online text={COPY.workerOnline} />,
-}
-
-export const Allowance: Story = {
-  render: () => <AllowanceMeter left={4} limit={5} text={COPY.allowance} />,
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('meter')).toHaveAttribute(
-      'aria-valuetext',
-      COPY.allowance,
-    )
-    // 26 §12.2 (s34): a 4 px bar under the faint text, at least 150 px wide.
-    const track = canvasElement.querySelector<HTMLElement>('[data-slot=meter-track]') as HTMLElement
-    await expect(track.getBoundingClientRect().height).toBe(4)
-    const meter = within(canvasElement).getByRole('meter')
-    await expect(meter.getBoundingClientRect().width).toBeGreaterThanOrEqual(150)
-  },
 }
 
 export const Empty: Story = {
@@ -446,7 +430,6 @@ const Gallery = () => (
       className="max-w-lg"
     />
     <WorkerStatus online={false} text={COPY.queuedOffline} />
-    <AllowanceMeter left={4} limit={5} text={COPY.allowance} />
     <InlineError
       title={COPY.libraryFailed}
       actions={<Button variant="outline">{COPY.retry}</Button>}
