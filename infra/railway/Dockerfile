@@ -45,6 +45,8 @@ RUN pnpm install --frozen-lockfile --filter "@splitune/web..."
 COPY tsconfig.base.json .browserslistrc .gitignore ./
 COPY apps ./apps
 COPY packages ./packages
+# Settings → About lists the pipeline's models from the register at build time (vite.base.ts).
+COPY compliance/register/models ./compliance/register/models
 COPY --from=dsp /build/dsp.wasm packages/audio-dsp/dist/dsp.wasm
 RUN pnpm --filter @splitune/web build \
   && for css in $(grep -rhoE 'assets/[A-Za-z0-9_.-]+\.css' apps/web/.output/server | sort -u); do \
