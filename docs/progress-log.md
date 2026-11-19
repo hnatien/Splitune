@@ -2004,7 +2004,7 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - `pnpm lint`: Biome and check-db-access clean, then check-ui-tokens fails on `apps/web/app/features/shell/command-palette.tsx:249` (`outline-none` without `focus-visible:outline-*`). That file is unchanged from `dev`, so the failure is in `dev` too; ruff run separately is clean;
   - web unit 322/322; `test:stories` 914 passed, 151 failed:
     - 150 are WebKit 15 s timeouts, 128 in `practice.stories.tsx` and 22 in `fix.stories.tsx` (s38's, newer than the known list). They are the known WebKit practice class, and the same stories pass in Chromium. Not re-run on `dev`.
-    - **1 is this step's:** Chromium `app/ui/mixer.stories.tsx > Gain By Keyboard` drives the "Volume Bass" slider. `136f88e` took the empty bass out of the stems fixture, as stem_post now writes it. The fix is in a web file outside s40a's globs (stop point 3), so it waits for the owner;
+    - **1 is this step's:** Chromium `app/ui/mixer.stories.tsx > Gain By Keyboard` drives the "Volume Bass" slider. `136f88e` took the empty bass out of the stems fixture, as stem_post now writes it. The owner chose to retarget it (stop point 3 answered): the story now drives "Volume Drums", and `vitest run --project='storybook*' app/ui/mixer.stories.tsx` passes 20/20 in Chromium and WebKit;
   - `SPLITUNE_DATASETS_DIR=D:/datasets pnpm eval:regression --smoke`: PASS (without the variable it looks in `~/datasets`, which doesn't exist on the PC).
 
 **Known gaps / next:**
