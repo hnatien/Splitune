@@ -1879,7 +1879,7 @@ export const InspectorMixBeforeStems: Story = {
   },
 }
 
-/** Progress until s39: its empty state (27 §4). */
+/** Progress with no passes and no clips yet: its empty state (27 §4). */
 export const InspectorProgress: Story = {
   render: screen(ALL, {}, { tab: 'progress' }),
   play: async ({ canvasElement }) => {

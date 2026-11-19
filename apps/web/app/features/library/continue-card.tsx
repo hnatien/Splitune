@@ -7,9 +7,11 @@ import { buttonVariants } from '@/ui/button'
 
 export type ContinueSummary = {
   title: string
-  /** "Mara Quinn · Guitar · bars 25–28" */
-  meta: string
-  /** "yesterday" */
+  /** "Mara Quinn · Guitar · clip **Chorus riff**, bars 25–28" */
+  meta: React.ReactNode
+  /** The phone card's line: "Chorus riff · bars 25–28 · ladder at 75 %" */
+  compact: string
+  /** "yesterday, 24 min" */
   when: string
   badges: { label: string; variant: 'primary' | 'neutral' }[]
 }
@@ -92,7 +94,7 @@ export function ContinueCardCompact({
         <span className="flex items-center gap-3">
           <span className="min-w-0 flex-1">
             <span className="block truncate text-lg">{song.title}</span>
-            <span className="block truncate text-sm text-muted-foreground">{song.meta}</span>
+            <span className="block truncate text-sm text-muted-foreground">{song.compact}</span>
           </span>
           <span
             aria-hidden

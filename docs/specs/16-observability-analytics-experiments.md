@@ -104,6 +104,9 @@ Instrumentation for three audiences: engineers (errors, traces, SLOs), the busin
 - **`v1.drums`** (default off) plans `notes.drums` for drums analyses and opens the drum grid and staff. It goes on with a `feature_flags` row once the branch is deployed and the owner's drum excerpts pass end to end.
 - **Success metric:** among drums analyses, the share whose recommended view is `drum_grid` (not `chords_only`), together with the drums correction and report rate (Trust). Watch it per `model_id@version` (ADTOF `adtofAll_0-pt-85c192e`), and pull the flag if the report rate for drums is above guitar's.
 
+## Implementation notes (step s39, 2026-11-19)
+- **Success metric (practice, 12 §5): "first clean pass next session"** (`first_clean_pass_next_session`): for a clip played clean on two different days, the speed of the first clean pass of the later day's first session with one, beside the earlier day's best clean pass. It is what stuck, not minutes. Computed in the web by `nextSessionRetention` (`apps/web/app/features/practice/model/progress-metrics.ts`) from `GET /v1/progress`, and shown to the learner as the Continue card's "Yesterday's first clean pass" and the dashed series of the Progress chart. No analytics event: the inputs already are rows (`practice_sessions`, `practice_attempts`), so a dashboard can compute it in SQL; an event would need an `AnalyticsEvent` change in contracts (follow-up if a dashboard wants it per cohort).
+
 ## Open questions
 - PostHog region (EU vs US) and consent requirements (QL6).
 - Whether self-assessment (clean pass) correlates with expert ratings (roadmap open question) — run a sampled study in beta.

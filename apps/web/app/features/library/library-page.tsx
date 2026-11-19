@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 import { type ComponentProps, type CSSProperties, useEffect, useState } from 'react'
 import type { z } from 'zod'
-import { barNumber, formatPercent, formatRelativeDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { INSTRUMENTS, type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import { useMediaQuery } from '@/lib/use-media-query'
@@ -36,11 +35,14 @@ import { Toggle } from '@/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { WorkerStatus } from '@/ui/worker-status'
 import { useOpenAddSong } from '../import/add-song-state'
-import { ContinueCard, ContinueCardCompact, type ContinueSummary } from './continue-card'
+import { ContinueCard, ContinueCardCompact } from './continue-card'
+import { useLibraryProgress } from './library-progress'
 import { LibrarySkeleton, SongsSkeleton } from './library-skeleton'
 import { type LibraryFilters, libraryQuery, workerStatusQuery } from './queries'
+import { RevisitList } from './revisit-list'
 import { SongEntry } from './song-entry'
 import { cardStatus, isInProgress } from './song-status'
+import { WeekStrip, WeekStripCompact } from './week-strip'
 
 type Song = z.infer<typeof LibrarySong>
 type Sort = z.infer<typeof LibrarySort>
@@ -74,34 +76,6 @@ function statusLabel(status: StatusFilter): string {
   }
 }
 
-/** Before s39 (27 §3.5): the most recently opened song, its part and its best clean tempo. */
-function continueSummary(song: Song): ContinueSummary {
-  const best = song.best_clean
-  return {
-    title: song.title,
-    meta: [
-      song.artist,
-      instrumentLabel(song.instrument),
-      best &&
-        m['library.bars']({
-          start: String(barNumber(best.start_bar)),
-          end: String(barNumber(best.end_bar)),
-        }),
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    when: formatRelativeDate(new Date(song.last_opened_at ?? song.created_at)),
-    badges: best
-      ? [
-          {
-            label: m['library.best_clean']({ pct: formatPercent(best.tempo_pct) }),
-            variant: 'neutral',
-          },
-        ]
-      : [],
-  }
-}
-
 const practiceLink =
   (song: Song) =>
   ({ className, children }: ComponentProps<'a'>) => (
@@ -110,9 +84,10 @@ const practiceLink =
     </Link>
   )
 
-// Library (27 §3.5, §4; Library, Phone-Library and States mockups): the Continue card, then Songs
-// with its toolbar (filter, instrument chips, sort and status menu, Grid/List; all in the URL) and
-// the cards, 24 at a time. This week and Worth a revisit wait for progress data (s39).
+// Library (27 §3.5, §4; Library, Phone-Library and States mockups): the Continue card with This
+// week beside it, Worth a revisit, then Songs with its toolbar (filter, instrument chips, sort and
+// status menu, Grid/List; all in the URL) and the cards, 24 at a time. The strips read the
+// practice progress (library-progress.tsx, s39).
 export function LibraryPage({ search }: { search: LibrarySearch }) {
   const navigate = useNavigate({ from: '/library' })
   const openAddSong = useOpenAddSong()
@@ -135,6 +110,8 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
   // unfiltered first page: the same request when no filter is on).
   const recent = useInfiniteQuery({ ...libraryQuery({}), enabled: songs.isSuccess })
   const last = recent.data?.pages[0]?.items.find((song) => song.last_opened_at !== null)
+  const progress = useLibraryProgress(last)
+  const lead = last && progress.continueCard(last)
   // Each page's index restarts at 0, so a loaded page staggers in like the first one did.
   const entries =
     songs.data?.pages.flatMap((page) => page.items.map((song, index) => ({ song, index }))) ?? []
@@ -246,21 +223,51 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
 
       {workerOffline && <WorkerStatus online={false} text={m['analysis.queued_offline']()} />}
 
-      {last &&
-        (wide ? (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(380px,100%),1fr))] gap-4">
-            <ContinueCard
-              song={continueSummary(last)}
-              renderLink={practiceLink(last)}
-              className="col-span-full lg:col-span-2"
-            />
-          </div>
-        ) : (
-          <>
-            <h1 className="sr-only">{m['library.title']()}</h1>
-            <ContinueCardCompact song={continueSummary(last)} renderLink={practiceLink(last)} />
-          </>
-        ))}
+      {wide
+        ? (lead || progress.week) && (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(380px,100%),1fr))] gap-4">
+              {last && lead && (
+                <ContinueCard
+                  song={lead.summary}
+                  chart={lead.chart}
+                  renderLink={practiceLink(last)}
+                  className="col-span-full lg:col-span-2"
+                />
+              )}
+              {progress.week && <WeekStrip days={progress.week.days} stats={progress.week.stats} />}
+            </div>
+          )
+        : (lead || progress.week) && (
+            <div className="flex flex-col gap-4">
+              {last && <h1 className="sr-only">{m['library.title']()}</h1>}
+              {last && lead && (
+                <ContinueCardCompact song={lead.summary} renderLink={practiceLink(last)} />
+              )}
+              {progress.week && (
+                <WeekStripCompact days={progress.week.days} total={progress.week.total} />
+              )}
+            </div>
+          )}
+
+      {/* Phones keep the songs close to the top: no revisit rows (27 §3.5 Phone). */}
+      {wide && progress.revisit.length > 0 && (
+        <RevisitList
+          clips={progress.revisit}
+          renderLink={({ clip, className, children }) => {
+            const target = progress.revisit.find((r) => r.id === clip.id)
+            return (
+              <Link
+                to="/songs/$songId/practice"
+                params={{ songId: target?.songId ?? '' }}
+                search={{ loop: target?.loop, tab: 'progress' }}
+                className={className}
+              >
+                {children}
+              </Link>
+            )
+          }}
+        />
+      )}
 
       {empty ? (
         <EmptyState

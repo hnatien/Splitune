@@ -5,18 +5,36 @@ import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { orpc } from '@/lib/api'
 import { meQuery } from '@/lib/session'
 import { AppStory } from '../../../.storybook/app.tsx'
+import { memoryOutbox } from '../practice/model/outbox-memory'
+import { configurePracticeSync } from '../practice/model/practice-sync'
+import { progressQuery } from '../practice/progress-data'
+import { climb, type StorySession, storyProgress } from '../practice/progress-story-data'
 import { AppShell } from '../shell/app-shell'
-import { analysis, LIBRARY, ME, STATS, WORKER_OFFLINE, WORKER_ONLINE } from '../story-fixtures'
+import {
+  analysis,
+  detail,
+  LIBRARY,
+  ME,
+  STATS,
+  WORKER_OFFLINE,
+  WORKER_ONLINE,
+} from '../story-fixtures'
 import { LibraryPage, type LibrarySearch } from './library-page'
 import { LibrarySkeleton } from './library-skeleton'
 import { libraryQuery, statsQuery, workerStatusQuery } from './queries'
 import { RevisitList } from './revisit-list'
 import { WeekStrip, WeekStripCompact } from './week-strip'
 
-// Library screen states (27 §3.5, §4; Library, Phone-Library, States): the Continue card and every
-// card status, phone rows, empty, no results, loading, load error, offline and the worker-offline
-// banner, in Dark and Light; This week and Worth a revisit with fixture data (s39).
-const meta = { title: 'Screens/Library', parameters: { layout: 'fullscreen' } } satisfies Meta
+// Library screen states (27 §3.5, §4; Library, Phone-Library, States): the Continue card with its
+// clip, badges and sparkline, This week, Worth a revisit (s39, from the progress fixture below) and
+// every card status, phone rows, empty, no results, loading, load error, offline and the
+// worker-offline banner, in Dark and Light.
+const meta = {
+  title: 'Screens/Library',
+  parameters: { layout: 'fullscreen' },
+  // Progress reads the practice outbox: an empty one per story, not what other stories left.
+  beforeEach: () => configurePracticeSync({ db: memoryOutbox() }),
+} satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -26,8 +44,80 @@ const DAYLIGHT = { appearance: 'light' }
 // Entries and empty states rise in (26 §10); wait for the entrance rather than sampling mid-way.
 const settled = (element: HTMLElement) => waitFor(() => expect(element).toBeVisible())
 
+// Progress (s39): "Chorus riff" (bars 17–20 of Riff in A minor) climbed from 60 to 85 % over nine
+// sessions, the last yesterday; Bridge bends 6 days ago, an unnamed loop 9 days ago and two clips
+// 12 and 20 days ago (only three are worth a revisit). Practised on 4 of the last 7 days.
+const songId = (n: number) => LIBRARY[n - 1]?.id ?? ''
+const loop = (n: number, song: number, name: string | null, from: number, to: number) => ({
+  id: `00000000-0000-4000-c000-${String(n).padStart(12, '0')}`,
+  song_id: songId(song),
+  name,
+  start_bar: from - 1,
+  start_beat: 1,
+  end_bar: to - 1,
+  end_beat: 4,
+  start_s: 2 * (from - 1),
+  end_s: 2 * to,
+  rest_between: 'none' as const,
+  count_in_bars: 1,
+  trainer: null,
+  best_clean_tempo_pct: null,
+  created_at: '2026-10-22T10:00:00Z',
+})
+const CHORUS = {
+  ...loop(1, 1, 'Chorus riff', 17, 20),
+  best_clean_tempo_pct: 85,
+  trainer: {
+    start_pct: 60,
+    end_pct: 100,
+    step_pct: 5,
+    plays_per_step: 3,
+    count_in_each_pass: false,
+    drop_after_misses: 2,
+    on_goal: 'keep' as const,
+    current_pct: 75,
+  },
+}
+const BRIDGE = { ...loop(2, 4, 'Bridge bends', 3, 4), best_clean_tempo_pct: 65 }
+const LOOSE = { ...loop(3, 5, null, 9, 12), best_clean_tempo_pct: 90 }
+const SOLO = { ...loop(4, 6, 'Solo run', 25, 28), best_clean_tempo_pct: 55 }
+const INTRO = { ...loop(5, 6, 'Intro', 1, 4), best_clean_tempo_pct: 50 }
+const LOOPS = [CHORUS, BRIDGE, LOOSE, SOLO, INTRO]
+const on = (clip: (typeof LOOPS)[number]) => ({
+  id: clip.id,
+  song_id: clip.song_id,
+  name: clip.name,
+})
+const SESSIONS: StorySession[] = [
+  { daysAgo: 27, minutes: 18, passes: climb(55, 60), clip: on(CHORUS) },
+  { daysAgo: 24, minutes: 20, passes: climb(60, 65), clip: on(CHORUS) },
+  { daysAgo: 20, minutes: 15, passes: climb(45, 50, 1), clip: on(INTRO) },
+  { daysAgo: 20, minutes: 22, passes: climb(60, 70), clip: on(CHORUS) },
+  { daysAgo: 16, minutes: 12, passes: climb(65, 70), clip: on(CHORUS) },
+  { daysAgo: 13, minutes: 25, passes: climb(65, 75), clip: on(CHORUS) },
+  { daysAgo: 12, minutes: 14, passes: climb(50, 55), clip: on(SOLO) },
+  { daysAgo: 9, minutes: 16, passes: climb(70, 75), clip: on(CHORUS) },
+  { daysAgo: 9, minutes: 10, passes: climb(85, 90), clip: on(LOOSE) },
+  { daysAgo: 6, minutes: 7, passes: climb(60, 65), clip: on(BRIDGE) },
+  { daysAgo: 5, minutes: 12, passes: climb(70, 80), clip: on(CHORUS) },
+  { daysAgo: 3, minutes: 31, passes: climb(70, 80), clip: on(CHORUS) },
+  { daysAgo: 1, minutes: 24, passes: climb(70, 85), clip: on(CHORUS) },
+]
+const LIBRARY_PROGRESS = storyProgress(SESSIONS)
+
 function seed(songs = LIBRARY, worker = WORKER_ONLINE, filters: LibrarySearch = {}) {
   return (client: QueryClient) => {
+    client.setQueryData(
+      progressQuery.queryKey,
+      songs.length > 0 ? LIBRARY_PROGRESS : { clips: [], sessions: [] },
+    )
+    client.setQueryData(['practice-outbox'], { sessions: [], attempts: [] })
+    for (const n of [1, 4, 5, 6]) {
+      client.setQueryData(orpc.loops.list.queryKey({ input: { id: songId(n) } }), {
+        items: LOOPS.filter((l) => l.song_id === songId(n)),
+      })
+      client.setQueryData(orpc.songs.get.queryKey({ input: { id: songId(n) } }), detail(n, null))
+    }
     const pages = { pages: [{ items: songs, next_cursor: null }], pageParams: [undefined] }
     client.setQueryData(libraryQuery(filters).queryKey, pages)
     client.setQueryData(libraryQuery({}).queryKey, {
@@ -68,9 +158,37 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
   ]) {
     await settled(await canvas.findByText(label))
   }
-  // The Continue card: the most recently opened song is the page's h1 (27 §3.5, before s39).
-  await expect(canvas.getByRole('heading', { level: 1, name: 'Riff in A minor' })).toBeVisible()
-  await expect(canvas.getByText('Best clean 85 %')).toBeVisible()
+  // The Continue card: the most recently opened song is the page's h1, with the clip practised
+  // last, its ladder, best and yesterday's first clean pass, and the 30-day sparkline (27 §3.5).
+  const lead = within(canvas.getByRole('region', { name: 'Pick up where you left off' }))
+  await expect(lead.getByRole('heading', { level: 1, name: 'Riff in A minor' })).toBeVisible()
+  await expect(lead.getByText('Chorus riff', { selector: 'strong' })).toBeVisible()
+  await expect(lead.getByText(/bars 17–20 · yesterday, 24\smin$/)).toBeVisible()
+  await expect(lead.getByText(/^Ladder at 75\s% → 100\s%$/)).toBeVisible()
+  await expect(lead.getByText('Best clean 85 %')).toBeVisible()
+  await expect(lead.getByText("Yesterday's first clean pass: 70 %")).toBeVisible()
+  await expect(
+    lead.getByRole('img', { name: 'Best clean speed rose from 60 to 85 percent over 9 sessions' }),
+  ).toBeVisible()
+  // This week: four practised days, never a streak or a missed day.
+  const week = within(canvas.getByRole('region', { name: 'This week' }))
+  await expect(week.getByRole('img', { name: 'Practised on 4 of the last 7 days' })).toBeVisible()
+  await expect(week.getByText('+10 %')).toBeVisible()
+  await expect(week.getByText('on Chorus riff')).toBeVisible()
+  await expect(week.getByText('1 h 14')).toBeVisible()
+  // Worth a revisit: three clips, the newest first, each opening Practice on its bars.
+  const revisit = within(canvas.getByRole('region', { name: 'Worth a revisit' }))
+  const links = revisit.getAllByRole('link')
+  await expect(links.map((link) => link.textContent)).toEqual([
+    expect.stringMatching(/^Bridge bendsBallad with a capo · 6 days ago · best 65\s%$/),
+    expect.stringMatching(/^Bars 9–12Indie Rock .* · best 90\s%$/),
+    expect.stringMatching(/^Solo runOld practice take · .* · best 55\s%$/),
+  ])
+  await expect(links[0]).toHaveAttribute(
+    'href',
+    `/songs/${songId(4)}/practice?loop=3-4&tab=progress`,
+  )
+  await expect(canvasElement.textContent).not.toMatch(/streak|missed|in a row/i)
   await expect(canvas.getByRole('link', { name: 'Resume practice' })).toHaveAttribute(
     'href',
     '/songs/00000000-0000-4000-8000-000000000001/practice',
@@ -86,7 +204,9 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
   const entries = canvasElement.querySelectorAll<HTMLElement>('li[data-vt-song]')
   await expect(entries).toHaveLength(8)
   await expect(entries[3]?.style.getPropertyValue('--i')).toBe('3')
-  await expect(canvasElement.querySelectorAll('[data-slot=instrument-tile]')).toHaveLength(8)
+  await expect(
+    canvasElement.querySelectorAll('li[data-vt-song] [data-slot=instrument-tile]'),
+  ).toHaveLength(8)
   await settled(await canvas.findByText("This didn't use an analysis."))
   // Resume practice is the page's lead action: the ink pill (--primary fill), not a quiet fill.
   const fill = (el: Element) => getComputedStyle(el).backgroundColor
@@ -103,12 +223,28 @@ export const PopulatedDaylight: Story = {
   play: playPopulated,
   globals: DAYLIGHT,
 }
+export const PopulatedIncreasedContrast: Story = {
+  render: populated,
+  play: playPopulated,
+  globals: { contrast: 'more' },
+}
+export const PopulatedDaylightIncreasedContrast: Story = {
+  render: populated,
+  play: playPopulated,
+  globals: { ...DAYLIGHT, contrast: 'more' },
+}
 
 const playPhone: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement)
   await settled(await canvas.findByText('Analysing 3/8'))
   // Phone-Library: the compact Continue card is one link; entries are rows of at least 60 px.
-  await expect(canvas.getByRole('link', { name: /Pick up where you left off/ })).toBeVisible()
+  await expect(canvas.getByRole('link', { name: /Pick up where you left off/ })).toHaveTextContent(
+    /Chorus riff · bars 17–20 · ladder at 75\s%/,
+  )
+  // The phone's This week row: seven 22 px dots and the week's time.
+  await expect(canvas.getByRole('img', { name: 'Practised on 4 of the last 7 days' })).toBeVisible()
+  await expect(canvas.getByText('1 h 14')).toBeVisible()
+  await expect(canvas.queryByRole('region', { name: 'Worth a revisit' })).toBeNull()
   const rows = canvasElement.querySelectorAll<HTMLElement>('[data-slot=song-row]')
   await expect(rows).toHaveLength(8)
   for (const row of rows) await expect(row.getBoundingClientRect().height).toBeGreaterThan(59)

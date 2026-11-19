@@ -122,7 +122,7 @@ Technical notes for the v1 tier in `research/product/feature-roadmap-beginner-to
 | Feature | Step | Backend state (2026-11-08) | UI |
 |---|---|---|---|
 | Multi-stem mixer | s40a (backend, owner gate G3), s40b (UI) | Separation keeps only the target (plus drums/bass) and a mix-minus, although the model outputs six stems; keeping all six changes the cache key and needs `eval:regression` | Mix tab: every stem, presets incl. Rhythm only, Click and Hear the chords channels, Rough tags, phone mini-mixer (`27` §3.7.4) |
-| Progress | s39 | `GET /v1/progress` (per-clip attempts with time, tempo, outcome) exists; the web never calls it | Progress tab, Library's Continue card, This week, Worth a revisit; "first clean pass next session"; no streaks |
+| Progress | s39 | Built (s39): `GET /v1/progress` gained sessions, session ids, clip names and a `days` window; the web calls it | Progress tab, Library's Continue card, This week, Worth a revisit; "first clean pass next session"; no streaks |
 | Fix tab | s38 | Correction ops exist (`set_chord`, `split_chord`, `set_note`, `add_note`, `delete_note`, `shift_downbeat`, `tempo_octave`, `nudge_beat`, `set_section`, `mark_correct`, `report_wrong`) | Fix mode: queue by consequence, alternatives with frequency wording, audition over the loop, It's right, Your edits with Revert |
 | "Notify me when it's ready" | s44 | Web Push doesn't exist anywhere | Button in the Getting ready card where Web Push exists; SW `push`/`notificationclick`, subscription contract and route, table + migration, sender on `analysis.done`; permission asked only on click; on iOS only when installed |
 | Stand view, phone Tools sheet, pedal wizard | s43 | — | `27` §3.7.2, §3.9 |

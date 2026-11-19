@@ -16,8 +16,8 @@ export type RevisitClip = {
 type LinkRenderer = (props: React.ComponentProps<'a'> & { clip: RevisitClip }) => React.ReactElement
 
 // "Worth a revisit" (27 §3.5, 26 §12.2 RevisitList): up to three clips not played for 5 days or
-// more that have a best clean tempo, each a card row to Practice. Built with fixture data; s39
-// feeds it.
+// more that have a best clean tempo, each a card row to Practice on that clip. Fed by the progress
+// data (s39, library-progress.tsx).
 export function RevisitList({
   clips,
   renderLink,

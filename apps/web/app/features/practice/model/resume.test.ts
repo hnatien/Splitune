@@ -87,6 +87,14 @@ describe('planResume', () => {
     expect(plan({ search: { loop: '2-3' }, grid: undefined }).loop).toBeNull()
   })
 
+  it('opens the saved clip whose bars the URL names, so its history carries on', () => {
+    const other = { ...clip, id: '00000000-0000-4000-8000-000000000009', start_bar: 0, end_bar: 1 }
+    expect(
+      plan({ search: { loop: '3-4' }, saved: { selected_loop_id: other.id }, clips: [other, clip] })
+        .loop,
+    ).toEqual({ clip })
+  })
+
   it('seeks to the saved position', () => {
     expect(plan({ saved: { position_s: 12.5 } }).seek).toBe(12.5)
   })

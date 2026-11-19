@@ -1,5 +1,6 @@
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { dayDotOpacity } from '../practice/model/progress-metrics'
 
 export type WeekDay = {
   /** "M" */
@@ -9,7 +10,7 @@ export type WeekDay = {
 
 // "This week" (27 §3.5, §5.5, 26 §12.2 WeekStrip): seven day dots, filled --signal with an opacity
 // that grows with the minutes practised (at least 0.45) or outlined --input when not practised;
-// never a streak count or a missed day. Built with fixture data; s39 feeds it.
+// never a streak count or a missed day. Fed by the progress data (s39, library-progress.tsx).
 function Dot({ day, size }: { day: WeekDay; size: 'sm' | 'md' }) {
   return (
     <span
@@ -18,7 +19,7 @@ function Dot({ day, size }: { day: WeekDay; size: 'sm' | 'md' }) {
         size === 'md' ? 'size-7.5' : 'size-5.5',
         day.minutes === 0 ? 'border-2 border-input' : 'bg-signal',
       )}
-      style={day.minutes === 0 ? undefined : { opacity: Math.min(1, 0.45 + day.minutes / 60) }}
+      style={day.minutes === 0 ? undefined : { opacity: dayDotOpacity(day.minutes) }}
     />
   )
 }
@@ -32,7 +33,7 @@ export function WeekStrip({
   className,
 }: {
   days: WeekDay[]
-  /** Three mono figures: "1 h 20" practised, "23" clean passes, "+10 %" on {clip}. */
+  /** Up to three figures: "1 h 20" practised, "23" clean passes, "+10 %" on {clip}. */
   stats: { value: string; label: string }[]
   className?: string
 }) {
