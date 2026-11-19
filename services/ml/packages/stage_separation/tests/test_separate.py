@@ -981,6 +981,18 @@ def test_a_silent_target_the_tagger_hears_is_replaced_by_the_fallback_outputs(
     else:
         assert check.provider is None
         assert len(doc.models) == 1
+    # SW's "other" would repeat the keys the fallback put in the target: once it applied, "other"
+    # is the rest of the mixture and the kept stems sum to the song (s40a).
+    stored = {
+        s.name: sf.read(str(Path(job.cache_dir) / "separated" / s.file), always_2d=True)[0]
+        for s in doc.stems
+    }
+    assert {s.name for s in doc.stems} == {"piano", "bass", "drums", "guitar", "vocals", "other"}
+    sw = 1 / len(cfg.models["bs_roformer_sw"].outputs)  # FakeModels' level for each SW output
+    if applied:
+        np.testing.assert_allclose(sum(stored.values()), mix, atol=1e-5)
+    else:
+        np.testing.assert_allclose(stored["other"], mix * sw, atol=1e-6)
     assert doc.provider == cfg.models["bs_roformer_sw"].provider  # the extras are still SW's
 
 

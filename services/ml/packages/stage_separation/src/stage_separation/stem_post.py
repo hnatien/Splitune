@@ -169,6 +169,8 @@ def run(job: StageJob) -> StageOutput:
     target_quality = instrument_quality.get(separation.target, "good")
     if fallback is not None and fallback.applied and fallback.provider is not None:
         target_provider, target_quality = fallback.provider, "rough"
+        # `separate` made "other" the rest of the mixture: rough like the stem it is cut from.
+        instrument_quality["other"] = "rough"
 
     # id, kind, instrument, audio, base quality, provider
     outputs: list[tuple[str, str, str | None, Audio, str, str]] = []
