@@ -1,0 +1,42 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: mdx23c-drumsep5
+kind: model
+name: "MDX23C DrumSep 5-stem kit separator (community checkpoint by jarredou)"
+version: "noblebarkrr mirror 2830252"
+repo_url: https://github.com/ZFTurbo/Music-Source-Separation-Training
+code_spdx: MIT
+weights:
+  licence: "not stated"
+  url: https://huggingface.co/noblebarkrr/mvsepless_resources/tree/283025218e6447db47da1ad18df3c2f67ca8d66d/mdx23c
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "fe5b5dd7826bde50aff9b567942c7a1dcb06f285d5d0857d689df811cef4c2ab"
+  files:
+    - name: MDX23C-DrumSep5-jarredou.ckpt
+      sha256: "1f8e636fb674b88a52c8399fde9a4ebe2b72b065ca07eed4e03ab1c9f0bfb2e0"
+      bytes: 437648758
+      url: https://huggingface.co/noblebarkrr/mvsepless_resources/resolve/283025218e6447db47da1ad18df3c2f67ca8d66d/mdx23c/mdx23c_drumsep_5stem_aufr33_jarredou.ckpt
+    - name: config_drumsep5_mdx23c.yaml
+      sha256: "b559768ab3209adb667d6d9c0bab2816107b03a86f75df432f9f275990ecb9bb"
+      bytes: 1061
+      url: https://huggingface.co/noblebarkrr/mvsepless_resources/resolve/283025218e6447db47da1ad18df3c2f67ca8d66d/mdx23c/mdx23c_drumsep_5stem_aufr33_jarredou_config.yaml
+training_data:
+  - name: undisclosed
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    moisesdb_in_training: unknown
+    source: https://github.com/ZFTurbo/Music-Source-Separation-Training/blob/main/docs/pretrained_models.md
+tier: red
+tier_reason: "community checkpoint from a mirror, identity unverifiable, weights licence and training data undisclosed"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Kick, snare, toms, hh, cymbals (no ride/crash split). MSST pretrained_models.md credits it to
+  jarredou alone (DrumSep test kick 16.66 / snare 11.53 / toms 12.33 / hh 4.04 / cymbals 6.36); the
+  mirror's file name says aufr33_jarredou. Every original jarredou URL returns 404 and openmirlab
+  found no intact original, so the file's identity is unverified; the mirror's 6-stem file is byte-
+  identical to mdx23c-drumsep, which speaks for the mirror only. MSST chunk 523,776 (audio-separator
+  0.44.5 would use 261,632). Step 29 Phase 7 was not run: drumsep5 has mixtures only (owner's
+  default, 2026-11-07).
+reviewer: owner
+reviewed: 2026-11-08

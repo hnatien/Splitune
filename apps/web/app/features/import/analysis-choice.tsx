@@ -1,14 +1,14 @@
 import type { AnalysisType } from '@splitune/contracts'
+import { useId } from 'react'
 import type { z } from 'zod'
 import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { INSTRUMENTS, type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import type { MeData } from '@/lib/session'
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { RadioCard, RadioCardGroup } from '@/ui/radio-card'
 import { InlineError } from '@/ui/status-message'
 import type { Trigger } from '../billing/plans'
-import { OptionSelect } from '../common/option-select'
 
 export type AnalysisKind = z.infer<typeof AnalysisType>
 
@@ -31,103 +31,91 @@ export function analysisAvailability(me: MeData) {
   }
 }
 
-// "Your part" and the Full / Lite choice (27 §3.6), shared by the File, Link and Record tabs. A used
-// up allowance is a lock right here, where the learner acts (23 §5), with the way to Plus.
+// The Full / Lite choice (27 §3.6), shared by the File, Link and Record tabs: two choice cards
+// side by side (stacked on phones) with the Welcome and allowance badges. A used-up allowance is a
+// lock right here, where the learner acts (23 §5), with the way to Plus.
 export function AnalysisChoice({
   me,
-  instrument,
-  onInstrumentChange,
   type,
   onTypeChange,
   onSeePlus,
 }: {
   me: MeData
-  instrument: InstrumentName
-  onInstrumentChange: (instrument: InstrumentName) => void
   type: AnalysisKind
   onTypeChange: (type: AnalysisKind) => void
   onSeePlus: (trigger: Trigger) => void
 }) {
+  const legend = useId()
   const available = analysisAvailability(me)
   const date = (iso: string | null) => (iso ? formatDate(new Date(iso)) : '')
   const resets = date(available.resetsAt)
+  const welcome = !available.plus && me.usage.welcome_available
+  const liteLeft =
+    available.liteCap !== null && available.liteLeft !== undefined
+      ? { left: String(available.liteLeft), limit: String(available.liteCap) }
+      : undefined
   const seePlus = (trigger: Trigger) =>
-    !available.plus && (
-      <Button variant="outline" onClick={() => onSeePlus(trigger)}>
-        {m['plan.see_plus']()}
-      </Button>
-    )
+    !available.plus && <Button onClick={() => onSeePlus(trigger)}>{m['plan.see_plus']()}</Button>
   return (
-    <div className="flex flex-col gap-5">
-      <OptionSelect
-        label={m['import.your_part']()}
-        value={instrument}
-        options={INSTRUMENTS.map((value) => ({ value, label: instrumentLabel(value) }))}
-        onChange={onInstrumentChange}
-        className="w-full sm:w-64"
-      />
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3 text-sm font-medium">{m['import.analysis_label']()}</legend>
-        <RadioCardGroup
-          value={type}
-          onValueChange={(value) => onTypeChange(value as AnalysisKind)}
-          className="lg:grid-cols-1"
-        >
-          <RadioCard
-            value="full"
-            title={m['import.full_title']()}
-            description={m['import.full_body']()}
-            disabled={!available.full}
-          />
-          <RadioCard
-            value="lite"
-            title={m['import.lite_title']()}
-            description={m['import.lite_body']()}
-            disabled={!available.lite}
-            meta={
-              available.liteCap !== null && available.liteLeft !== undefined
-                ? m['plan.allowance']({
-                    left: String(available.liteLeft),
-                    limit: String(available.liteCap),
-                    date: resets,
-                  })
-                : undefined
-            }
-          />
-        </RadioCardGroup>
-        {!available.full && (
-          <InlineError
-            tone="info"
-            title={
-              available.plus
-                ? m['plan.cap_full_plus']({
-                    limit: String(available.fullCap ?? ''),
-                    date: date(available.fullResetsAt),
-                  })
-                : m['plan.cap_full']()
-            }
-            actions={
-              (!available.plus || (available.lite && type === 'full')) && (
-                <>
-                  {seePlus('cap_full')}
-                  {available.lite && type === 'full' && (
-                    <Button variant="ghost" onClick={() => onTypeChange('lite')}>
-                      {m['plan.use_lite']()}
-                    </Button>
-                  )}
-                </>
-              )
-            }
-          />
-        )}
-        {!available.lite && (
-          <InlineError
-            tone="info"
-            title={m['plan.cap_lite']({ limit: String(available.liteCap ?? ''), date: resets })}
-            actions={seePlus('cap_lite')}
-          />
-        )}
-      </fieldset>
+    <div className="flex min-w-0 flex-col gap-2">
+      <span id={legend} className="flex min-h-target items-center text-md font-medium">
+        {m['import.analysis_label']()}
+      </span>
+      <RadioCardGroup
+        aria-labelledby={legend}
+        value={type}
+        onValueChange={(value) => onTypeChange(value as AnalysisKind)}
+        className="gap-2"
+      >
+        <RadioCard
+          value="full"
+          disabled={!available.full}
+          className="bg-transparent"
+          title={m['import.full_title']()}
+          description={m['import.full_body']()}
+          meta={welcome && <Badge variant="primary">{m['import.welcome_badge']()}</Badge>}
+        />
+        <RadioCard
+          value="lite"
+          disabled={!available.lite}
+          className="bg-transparent"
+          title={m['import.lite_title']()}
+          description={m['import.lite_body']()}
+          meta={liteLeft && <Badge>{m['import.left_badge'](liteLeft)}</Badge>}
+        />
+      </RadioCardGroup>
+      {!available.full && (
+        <InlineError
+          tone="info"
+          title={
+            available.plus
+              ? m['plan.cap_full_plus']({
+                  limit: String(available.fullCap ?? ''),
+                  date: date(available.fullResetsAt),
+                })
+              : m['plan.cap_full']()
+          }
+          actions={
+            (!available.plus || (available.lite && type === 'full')) && (
+              <>
+                {seePlus('cap_full')}
+                {available.lite && type === 'full' && (
+                  <Button variant="ghost" onClick={() => onTypeChange('lite')}>
+                    {m['plan.use_lite']()}
+                  </Button>
+                )}
+              </>
+            )
+          }
+        />
+      )}
+      {!available.lite && (
+        <InlineError
+          tone="info"
+          title={m['plan.cap_lite']({ limit: String(available.liteCap ?? ''), date: resets })}
+          actions={seePlus('cap_lite')}
+        />
+      )}
     </div>
   )
 }

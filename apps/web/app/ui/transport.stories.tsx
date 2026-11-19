@@ -95,7 +95,7 @@ function Transport({
         </fieldset>
         <fieldset
           aria-label="Loop"
-          className="m-0 flex min-w-0 items-center gap-1 rounded-2xl border-0 bg-surface-sunken p-1"
+          className="m-0 flex min-w-0 items-center gap-1 rounded-full border-0 bg-surface-sunken p-1"
         >
           {loop ? (
             <TransportButton
@@ -117,7 +117,7 @@ function Transport({
           )}
           <LoopBadge
             state={loop ? (loopOn ? 'active' : 'off') : 'off'}
-            className="min-h-target-practice rounded-xl text-read-label"
+            className="min-h-target-practice text-read-label"
           >
             {loop ? 'Loop · bars 17–20 · pass 3' : 'No loop — tap two bars'}
           </LoopBadge>
@@ -276,12 +276,12 @@ export const InlinePresets: Story = {
       'aria-pressed',
       'true',
     )
-    await userEvent.click(within(presets).getByRole('button', { name: /^85/ }))
-    await expect(canvas.getByRole('button', { name: /^Speed: 85/ })).toBeInTheDocument()
+    await userEvent.click(within(presets).getByRole('button', { name: /^80/ }))
+    await expect(canvas.getByRole('button', { name: /^Speed: 80/ })).toBeInTheDocument()
     await waitFor(() =>
-      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^85/),
+      expect(canvas.getByRole('button', { name: /^Speed: / })).toHaveTextContent(/^80/),
     )
-    await expect(within(presets).getByRole('button', { name: /^85/ })).toHaveAttribute(
+    await expect(within(presets).getByRole('button', { name: /^80/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )

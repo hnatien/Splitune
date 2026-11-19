@@ -64,9 +64,10 @@ def songs(root: Path) -> list[str]:
 
 
 def spec_for(model: str, setting: str) -> Any:
+    from splitune_eval import sepmap
     from stage_separation import config
 
-    spec = config.load().models[model]
+    spec = sepmap.spec(model)  # the model map plus eval/separation.eval.yaml
     if setting == "library":
         spec = config.ModelSpec.model_validate({**spec.model_dump(), "inference": {}})
     return spec

@@ -29,6 +29,7 @@ pnpm eval:regression  # separation regression suite (services/ml/eval/regression
 - Web: `pnpm --filter @splitune/web test` (unit), `test:stories` (Storybook stories with axe in Chromium/WebKit), `e2e` (Playwright). Its typecheck/test first run `generate` (Paraglide messages + `routeTree.gen.ts`).
 - music-core golden files (`packages/music-core/golden/`): `pnpm --filter @splitune/music-core golden:update` when an output change is intended.
 - Python: `cd services/ml && uv run --no-sync ruff check && uv run --no-sync pyright && uv run --no-sync pytest` (one test: `uv run --no-sync pytest packages/stage_notes -k <name>`). Always `--no-sync`: the workers run from `services/ml/.venv`. Tests marked `models` load real model weights.
+- Separation experiments (step 29, `services/ml`): `uv run --no-sync python scripts/fetch_models.py --eval` fetches the eval-only candidates of `eval/separation.eval.yaml`; `eval/sep_matrix.py run` scores a model per condition (`combine` builds ensembles and routed virtual models from `--keep-outputs` stems) and `eval/sep_improve.py <phase>` writes the step 29 reports.
 - Integration tests in `packages/db`, `packages/storage` and `apps/api` need the compose Postgres and SeaweedFS running (no mail server: sign-in is username + password; tests record email in memory).
 
 Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `splitune-media`).
@@ -47,7 +48,7 @@ Local services: Postgres `localhost:5432`, S3 `http://localhost:8333` (bucket `s
 - User-scoped queries go through repository helpers that require `userId`; RLS is defence in depth.
 - Times are seconds on the decoded-PCM timeline; quantization is a separate re-runnable stage; corrections are overlays.
 - Confidence never shown by colour alone; every practice action keyboard/pedal operable; WCAG 2.2 AA.
-- UI follows the "Night Rehearsal" design system (docs 26–28), in both of its themes, Night Rehearsal and Daylight: semantic tokens from `@splitune/ui-tokens` and `apps/web/app/ui` components only (no raw colours, ad-hoc sizes or one-off components); every UI change gets stories for its states in both themes (`pnpm --filter web test:stories`).
+- UI follows the black-and-white design system of docs 26–28 (no accent colour; pills, hairlines, Figtree at 400/500), in both of its themes, Dark and Light: semantic tokens from `@splitune/ui-tokens` and `apps/web/app/ui` components only (no raw colours, ad-hoc sizes or one-off components); every UI change gets stories for its states in both themes (`pnpm --filter web test:stories`).
 - Tier 1 browsers per doc 24: feature-detect, never UA-sniff (except the in-app-browser banner). No cross-origin isolation.
 - No secrets in git (`.env` is ignored; `.env.example` holds fake values). gitleaks runs as the pre-commit hook.
 - No debug prints, dead code, commented-out blocks or stray TODOs.

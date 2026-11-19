@@ -1,22 +1,22 @@
 ---
 title: UI quality workflow and design review
 workstream: engineering
-last_researched: 2026-11-08
+last_researched: 2026-11-17
 confidence: medium
 ---
 
 # UI quality workflow and design review
 
-How Splitune keeps the "Night Rehearsal" UI consistent, accessible, fast and faithful to its mockups while steps s32–s45 rebuild every screen: Storybook as the component workbench, automated checks (tokens, colour vision, a11y, targets, motion, performance, visual regression), the mockup-fidelity procedure, the design QA checklist every UI change passes, and the owner's usability and music-stand rounds. Tokens and components: `26-design-system.md`; screens and copy: `27-screens-flows-and-content.md`; the wider test pyramid: `18-testing-strategy.md`.
+How Splitune keeps its UI consistent, accessible, fast and faithful to the design system while the redesign steps rebuild every screen: Storybook as the component workbench, automated checks (tokens, colour vision, a11y, targets, motion, performance, visual regression), the mockup-fidelity procedure (s32–s38, retired as a gate from s46), the design QA checklist every UI change passes, and the owner's usability and music-stand rounds. Tokens and components: `26-design-system.md`; screens and copy: `27-screens-flows-and-content.md`; the wider test pyramid: `18-testing-strategy.md`.
 
-Rewritten in place in step s31a (2026-11-08); section numbers are unchanged. The Music Stand version is in git (`git show 8d6a3f6:docs/specs/28-ui-quality-and-design-review.md`).
+Rewritten in place in step s31a (2026-11-08); step s46 (2026-11-17) made targeted edits for the black-and-white system of `26` (theme names, the end of mockup fidelity as a gate, the ink in place of amber). Section numbers are unchanged. The Music Stand version is in git (`git show 8d6a3f6:docs/specs/28-ui-quality-and-design-review.md`).
 
 > **Personal mode (`25-personal-mode.md`):** everything here is free and local: no Chromatic, no hosted review UI, no device cloud. Usability rounds are the owner plus a few friends.
 
 ## TL;DR
-- **Storybook 10.6** in `apps/web`: every `app/ui` and `packages/notation` component and every screen has one story per state, rendered under an Appearance (Night Rehearsal / Daylight / Stage) × Contrast × Density × Distance × Reduced-motion toolbar; axe runs with `test: 'error'` and the WCAG 2.2 tags; `test:stories` runs them in Chromium and WebKit.
+- **Storybook 10.6** in `apps/web`: every `app/ui` and `packages/notation` component and every screen has one story per state, rendered under an Appearance (Dark / Light / Stage) × Contrast × Density × Distance × Reduced-motion toolbar; axe runs with `test: 'error'` and the WCAG 2.2 tags; `test:stories` runs them in Chromium and WebKit.
 - **Token tests** fail the build if any pair in `26` §4.6 drops below its WCAG minimum in any of the six contexts, leaves sRGB gamut, or if two stem colours fall under 12 ΔE2000 under simulated CVD.
-- **Mockup fidelity is measured, not eyeballed** (§5.1): `scripts/redesign` (s31c) renders every mockup at 1440 / 1180 / 390 in both themes and probes computed styles and boxes; a screen matches when structure, styles and boxes agree within tolerance (or with the `26` §4.9 deviation register); a pixel diff is a smoke signal only.
+- **The visual source is the code, not the mockups** (from s46): screens are reviewed against `26`, the tokens and Storybook in both themes. The `redesign/mockups/` and the s31c fidelity probe (§5.1) are history: they measured s32–s38 against the Night Rehearsal mockups and no longer gate a step.
 - **Accessibility gates for the redesign:** target-size probe (64 main practice controls in every layout, 48 secondary practice, 44 everywhere else, 88 Stand view, 24 only for desktop section chips), focus-not-obscured probe, keyboard-only journeys, single-key shortcuts off, reduced-motion runs, no flash over 3/s, colour-not-alone review.
 - **Performance gate:** Long Animation Frames, forced layout and p75 practice-action latency on the practice screen in Chromium with CPU throttling, compared with the baseline s32 records before any restyle.
 - **Visual regression** with Playwright in the pinned Docker image; the 72 Music Stand baselines are all invalidated by the redesign and are regenerated screen by screen after the owner's review (s33, then s45).
@@ -30,25 +30,25 @@ Rewritten in place in step s31a (2026-11-08); section numbers are unchanged. The
 | `packages/notation` | `AlphaTabView` and overlay, rolls, grids, keyboard and fretboard diagrams |
 | `apps/web/.storybook/` | Storybook config, decorators, test setup |
 | `apps/web/e2e/` | Playwright E2E, a11y, focus, target, perf specs; `e2e/visual/` with baselines in `__screenshots__/` |
-| `scripts/redesign/` | Mockup harness (s31c): renders `redesign/mockups/*.dc.html` to PNGs (ignored folder) and exposes the probe helper |
-| `redesign/mockups/` | The mockups and `splitune.css`; **read-only** for every step |
+| `scripts/redesign/` | Mockup harness (s31c): renders `redesign/mockups/*.dc.html` to PNGs (ignored folder) and exposes the probe helper; history from s46 |
+| `redesign/mockups/` | The Night Rehearsal mockups and `splitune.css`; historical from s46 (not a visual source) and **read-only** for every step |
 
 Rule: a feature that needs a new visual pattern adds it to `app/ui` with stories first, then uses it.
 
 ## 2. Storybook
 - **Version and addons:** `storybook` 10.6.x, `@storybook/react-vite`, `@storybook/addon-a11y`, `@storybook/addon-vitest` (Vitest 5 browser mode, Playwright provider).
-- **Toolbar globals and decorators:** Appearance (**Night Rehearsal**, **Daylight**, Stage, and **Side by side**: the story twice, in `data-appearance="dark"` and `"light"` subtrees), Contrast (normal / more), Density (browse / practice), Distance (Desk / Music stand / Floor), Reduced motion, Pointer (fine / coarse, for target sizes). Decorators set the same `data-*` attributes as the app (`26` §2), so stories prove the real theming path. The Music Stand "Score" global is removed.
-- **Story conventions:** `Component.stories.tsx` beside the component; one story per state from `26` §12.3 (`Default`, `Hover`, `Focus`, `Pressed`, `On`, `Disabled`, `Loading`, `Error`, plus domain states like `Unsure`, `EditedByYou`, `Sounding`, `RoughStem`, `LadderClimbing`, `FixMode`); every story renders in both themes (the side-by-side global, or a `Daylight` story per screen); interaction tests with `play` functions for keyboard paths; realistic content (fixture songs, 80-character titles, two-digit frets, F♯m7♭5).
+- **Toolbar globals and decorators:** Appearance (**Dark**, **Light**, Stage, and **Side by side**: the story twice, in `data-appearance="dark"` and `"light"` subtrees), Contrast (normal / more), Density (browse / practice), Distance (Desk / Music stand / Floor), Reduced motion, Pointer (fine / coarse, for target sizes). Decorators set the same `data-*` attributes as the app (`26` §2), so stories prove the real theming path. The Music Stand "Score" global is removed.
+- **Story conventions:** `Component.stories.tsx` beside the component; one story per state from `26` §12.3 (`Default`, `Hover`, `Focus`, `Pressed`, `On`, `Disabled`, `Loading`, `Error`, plus domain states like `Unsure`, `EditedByYou`, `Sounding`, `RoughStem`, `LadderClimbing`, `FixMode`); every story renders in both themes (the side-by-side global, or a Light-theme story per screen); interaction tests with `play` functions for keyboard paths; realistic content (fixture songs, 80-character titles, two-digit frets, F♯m7♭5).
 - **Screens:** `Screens/*` stories for every screen and state in `27` §3–§4 (Library with and without progress data, Add song per tab and state, Practice per layout, stage and inspector tab, Stand view, phone glance and Tools sheet, Settings sections, system states, command palette), rendered edge to edge with fixture data.
 - **Fixtures:** `packages/contracts/fixtures` (the 8-bar Am–F–C–G example) and `apps/web/app/features/story-fixtures.ts`, extended with multi-stem, sections, progress history and unsure-spot fixtures as the steps that use them land.
 - **a11y:** `parameters.a11y.test = 'error'` globally with `runOnly` tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, `best-practice` (so `target-size` runs); a story may downgrade a rule only with a comment naming the WCAG criterion and why.
-- **Commands:** `pnpm --filter @splitune/web storybook`, `storybook:build`, `test:stories` (every story in Chromium + WebKit, a11y included; run under the heavy lock in the redesign run).
+- **Commands:** `pnpm --filter @splitune/web storybook`, `storybook:build`, `test:stories` (every story in Chromium + WebKit, a11y included).
 
 ## 3. Automated design checks
 | Check | Where | Fails when |
 |---|---|---|
 | Contrast table | `packages/ui-tokens/src/contrast.test.ts` (colorjs.io) | Any pair in `26` §4.6 or `CONTRAST_PAIRS` drops below its minimum in any context (`dark`, `light`, `stage` × normal, more), or a §4.6 value moves by more than 0.1 without the doc changing |
-| Translucency | same | A wash (`--primary-soft`, `--unsure-surface`, `--score-loop-fill`, status surfaces) composited over each surface it can sit on, or text over it, drops below its minimum |
+| Translucency | same | A role other than `--primary-soft`, `--primary-line` and `--scrim` is translucent; or the ink wash `--primary-soft`, composited over each surface it can sit on (`--background`, `--card`, `--muted`), drops text on it below its minimum (`26` §4.6). The opaque washes (`--unsure-surface`, `--bar-current`, `--loop-fill`, `--score-loop-fill`, status surfaces) are checked as ordinary `CONTRAST_PAIRS` backgrounds |
 | Gamut | same | A semantic or component token resolves outside sRGB (the source must clamp, `26` §3) |
 | CVD separation | `palette.test.ts` | Any two of `STEMS` (guitar, bass, drums, vocals, keys, other, mix) have ΔE2000 < 12 under normal vision or simulated protanopia, deuteranopia or tritanopia (Machado 2009), per context |
 | Token naming | `tokens.test.ts` | A semantic role is missing in a context, a component token references a primitive, `BACKGROUND_HEX` disagrees with `--background`, or (from s45) a Music Stand role is still defined |
@@ -81,28 +81,28 @@ Rule: a feature that needs a new visual pattern adds it to `app/ui` with stories
 
 | Screen (fixture data) | Themes | Viewports |
 |---|---|---|
-| Home, Library (with progress), Add song (file picked), Settings → Display & practice | Night Rehearsal, Daylight | 390 × 844 (touch), 1180 × 820, 1440 × 900 |
-| Practice: Tab with loop and ladder, Chords + Mix tab, Fix mode, Getting ready | Night Rehearsal, Daylight | 1180 × 820, 1440 × 900 |
-| Practice: phone glance, Tools sheet | Night Rehearsal, Daylight | 390 × 844 (touch) |
-| Stand view | Night Rehearsal, Daylight | 1180 × 820 (touch) |
-| Practice Tab, increased contrast | Night Rehearsal | 1440 × 900 |
-| System states (unsupported, 404, failure card, delete dialog), Sign in, Pricing | Night Rehearsal | 390 × 844, 1440 × 900 |
+| Home, Library (with progress), Add song (file picked), Settings → Display & practice | Dark, Light | 390 × 844 (touch), 1180 × 820, 1440 × 900 |
+| Practice: Tab with loop and ladder, Chords + Mix tab, Fix mode, Getting ready | Dark, Light | 1180 × 820, 1440 × 900 |
+| Practice: phone glance, Tools sheet | Dark, Light | 390 × 844 (touch) |
+| Stand view | Dark, Light | 1180 × 820 (touch) |
+| Practice Tab, increased contrast | Dark | 1440 × 900 |
+| System states (unsupported, 404, failure card, delete dialog), Sign in, Pricing | Dark | 390 × 844, 1440 × 900 |
 
 - Baselines in `apps/web/e2e/visual/__screenshots__/` are committed test expectations; update only with an intentional UI change, in the same commit.
 
 ## 5. Design QA checklist (definition of done for UI changes)
 Run on the changed screens (and every screen in s45). Record pass/fail in the step report.
 
-**Fidelity** (§5.1)
-- [ ] The screen's fidelity report passes at the viewports and themes in the §5.1 matrix, with every difference either inside tolerance or in the `26` §4.9 deviation register; at most 6 fix iterations without improvement before reporting.
+**Fidelity** (to `26` and Storybook; the §5.1 mockup procedure no longer applies from s46)
+- [ ] The screen matches `26` in both themes at 390, 1180 and 1440: the colour, type, shape and component rules of `26` §4–§12, and the rules the `26` §4.9 register keeps as binding.
 - [ ] Uses only tokens and `app/ui` components; no one-off colours, radii, shadows, font sizes or arbitrary values.
-- [ ] One primary (amber) action per view; amber used only for the `26` §4.5 list.
+- [ ] One primary (filled ink) action per view; the ink marks only the `26` §4.5 list, and colour appears only for status, stems and hands.
 
 **Visual quality**
-- [ ] Hierarchy uses the `26` §6.2 scale; numbers that change are JetBrains Mono with tabular figures and don't change width.
+- [ ] Hierarchy uses the `26` §6.2 scale; numbers that change are Figtree with tabular figures and don't change width; JetBrains Mono only for tab digits, keycaps, shortcut hints and ids.
 - [ ] Alignment on the 4 px grid; gutters per `26` §7; no orphaned elements or uneven gaps.
 - [ ] Long content: 80-character titles, two-digit frets, F♯m7♭5, 20-minute songs, 99+ unsure spots, empty and one-item lists.
-- [ ] Looks right in Night Rehearsal and Daylight, at normal and increased contrast.
+- [ ] Looks right in Dark and Light, at normal and increased contrast.
 
 **Practice at a distance**
 - [ ] Tab digits and the current chord are readable from 0.75 m on a tablet at Music stand and from 1.5 m at Floor, without leaning in.
@@ -129,7 +129,9 @@ Run on the changed screens (and every screen in s45). Record pass/fail in the st
 - [ ] §3.1 gate green; route budget green.
 
 ### 5.1 Mockup fidelity procedure
-1. **References.** `scripts/redesign` (s31c) renders each `redesign/mockups/*.dc.html` (with its `renderVals()` defaults) at 1440 × 900, 1180 × 820 and 390 × 844 in Night Rehearsal (`look` = "Night Rehearsal") and Daylight (`look` = "Daylight") into an ignored folder. Mockups are never edited.
+*History (s32–s38). From s46 the mockups are no longer the visual source (`26` §4.9) and this procedure gates no step; it is kept for the record and for reading earlier step reports.*
+
+1. **References.** `scripts/redesign` (s31c) renders each `redesign/mockups/*.dc.html` (with its `renderVals()` defaults) at 1440 × 900, 1180 × 820 and 390 × 844 in the mockups' two looks (`look` = "Night Rehearsal" and "Daylight", the s31a theme names) into an ignored folder. Mockups are never edited.
 2. **Pairing.** Compare the app's story or route (same fixture data where possible) with the reference that has the same layout:
 
 | Mockups | Compare at |
@@ -146,7 +148,7 @@ Run on the changed screens (and every screen in s45). Record pass/fail in the st
 5. **After the owner's review** (G2 for components, G4 for screens) the app screenshot becomes the regular baseline (§4) and the mockup comparison is retired for that screen.
 
 ## 6. Usability rounds and the music-stand test (personal mode)
-- **G5 music-stand reading test (owner, before the final merge):** Night Rehearsal vs Daylight (and Annotated Score as a comparison) on the same static Practice screen and song; laptop on a desk at 0.5 m, iPad on a stand at 0.75 m (portrait and landscape), tablet or phone on the floor at 1.5 m; daylight by a window, evening room light, a nearly dark room. Tasks: read the current and next chord while playing; read a fret sequence with 1/7, 3/8, 6/0; find the bar being played after looking away; recognise "?" and the dashed outline. Measures: misreadings, time to find the place again, leaning in, eye strain and preference after 20 minutes. **Decision rule:** Night equals or beats Daylight everywhere → Night is the default everywhere; Daylight wins only in daylight → Night stays default, Daylight one tap away in the top bar and Stand view with a one-time suggestion on tablets; Daylight clearly wins most conditions → Daylight is the default for Practice and Stand view, Night keeps the brand role for marketing, Library and dark rooms. The result may retune `26` §6.3.
+- **G5 music-stand reading test (owner, before the final merge):** Dark vs Light on the same static Practice screen and song; laptop on a desk at 0.5 m, iPad on a stand at 0.75 m (portrait and landscape), tablet or phone on the floor at 1.5 m; daylight by a window, evening room light, a nearly dark room. Tasks: read the current and next chord while playing; read a fret sequence with 1/7, 3/8, 6/0; find the bar being played after looking away; recognise "?" and the dashed outline. Measures: misreadings, time to find the place again, leaning in, eye strain and preference after 20 minutes. **Decision rule:** Dark equals or beats Light everywhere → Dark is the default everywhere; Light wins only in daylight → Dark stays default, Light one tap away in the top bar and Stand view with a one-time suggestion on tablets; Light clearly wins most conditions → Light is the default for Practice and Stand view, Dark stays the default for marketing, Library and dark rooms. The result may retune `26` §6.3.
 - **Task round** (owner + 3–5 friends who play; include a beginner and, if possible, a player over 45; own instrument, a stand, bright and dim rooms; think-aloud, no help unless stuck for 60 s):
 
 | Task | Success | Target |
@@ -165,7 +167,7 @@ Each item 1–3; a screen ships at ≥ 2 on every item.
 | Item | 3 looks like |
 |---|---|
 | Focus | The music (or the screen's one task) is unmistakably the main thing |
-| Restraint | Amber only for now, the loop and the one primary action; no decorative gradients beyond the Continue card; no glass |
+| Restraint | Black, white and greys; the ink marks now, the loop and the one primary action; colour only for status, stems and hands; no gradients, glows or glass (Home's abstract art is the one place colour is imagery) |
 | Rhythm | Spacing follows the scale; edges line up across regions |
 | Typography | Few sizes, clear weights, mono numbers that never jump; nothing below 11 px |
 | Consistency | Same component, same behaviour, same words everywhere; both themes feel like one product |
@@ -180,7 +182,7 @@ Each item 1–3; a screen ships at ≥ 2 on every item.
 - The CVD threshold (12 ΔE2000) is met with a small margin (12.4); revisit with simulated stem lanes by eye at G2.
 
 ## Sources
-- `redesign/orchestrator/research/design_system_migration.md` (fidelity layers, token membership, WCAG 2.2 gates, LoAF perf spec, font checks), `redesign/report.md` (acceptance criteria, music-stand test), `redesign/orchestrator/prompt.md` §3 and §10 (budgets, gates) — 2026-11-08.
+- `26-design-system.md` §1.1 (s46 direction, 2026-11-17). `redesign/research/design_system_migration.md` (fidelity layers, token membership, WCAG 2.2 gates, LoAF perf spec, font checks), `redesign/report.md` (acceptance criteria, music-stand test), `docs/steps/00-shared-context.md` ("Redesign steps") (budgets, gates) — 2026-11-08.
 - [Storybook accessibility testing](https://storybook.js.org/docs/writing-tests/accessibility-testing), [Playwright snapshots](https://playwright.dev/docs/test-snapshots), [Playwright ARIA snapshots](https://playwright.dev/docs/aria-snapshots), [Long Animation Frames](https://developer.chrome.com/docs/web-platform/long-animation-frames) — tier 2.
 - Machado, Oliveira & Fernandes, IEEE TVCG 2009 — tier 1. [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (1.4.1, 1.4.4, 1.4.10, 1.4.11, 2.1.4, 2.2.2, 2.3.1, 2.4.7, 2.4.11, 2.5.3, 2.5.7, 2.5.8, 4.1.3) — tier 1.
 - Cross-linked: `18-testing-strategy.md` §5, `24-browser-compatibility.md`, `research/ux/accessibility.md`, `research/ux/hands-busy-and-device-context.md`.

@@ -9,7 +9,7 @@ Read `docs/steps/00-shared-context.md`, then:
 - Research: `docs/research/ml/transcription-piano.md`, `docs/research/ml/transcription-drums.md`, `docs/research/ux/music-display-ui.md` (roll + keyboard strip, drum notation)
 - `docs/specs/26-design-system.md` (incl. the step 17d/18 notes), `specs/27-screens-flows-and-content.md` §5, `specs/28-ui-quality-and-design-review.md` §5 — wait mode and drum grid: compose from the kit, add stories for new states, use catalogue copy (add keys), pass the design QA checklist
 
-Prerequisites: MVP (steps 01–17) and the piano work on `dev` (PROGRESS steps 17d–18a). Branch `impl/19-piano-drums` from the current `dev`; split into `impl/19a-…` sub-branches if large, each shippable behind a flag. Per `specs/23-plans-free-and-paid.md` piano/drums notation is part of Full analyses (and the Welcome analysis). The owner doesn't play an instrument: no deliverable may depend on owner-played recordings; use datasets, virtual MIDI and scripted tests.
+Prerequisites: MVP (steps 01–17) and the piano work on `dev` (PROGRESS steps 17d–18a). Branch `impl/19-piano-drums` from the latest `dev`; split into `impl/19a-…` sub-branches if large, each shippable behind a flag. Per `specs/23-plans-free-and-paid.md` piano/drums notation is part of Full analyses (and the Welcome analysis). The owner doesn't play an instrument: no deliverable may depend on owner-played recordings; use datasets, virtual MIDI and scripted tests.
 
 ## Already done (don't rebuild)
 - `notes.piano` = Transkun V2 in the torch island on MPS, chosen and calibrated by P2 piano (`services/ml/eval/results/p2/2026-10-23.md`); `views.yaml` piano gate `pass`, default view `roll`.

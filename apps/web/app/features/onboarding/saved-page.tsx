@@ -28,9 +28,9 @@ export function SavedPage() {
 
   return (
     <FocusShell>
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-10 px-4 pt-12 pb-16 sm:px-6 sm:pt-20">
         {claim.isPending ? (
-          <p role="status" className="flex items-center gap-3 text-base">
+          <p role="status" className="flex items-center justify-center gap-3 text-base">
             <Spinner />
             {m['start.saving']()}
           </p>
@@ -42,13 +42,13 @@ export function SavedPage() {
             }
           />
         ) : (
-          <section aria-labelledby="saved" className="flex flex-col gap-2">
-            <h1 id="saved" className="flex items-center gap-3 text-2xl">
-              <CircleCheckIcon aria-hidden className="size-7 text-success" />
+          <section aria-labelledby="saved" className="flex flex-col items-center gap-3 text-center">
+            <CircleCheckIcon aria-hidden strokeWidth={1.8} className="size-8 text-success" />
+            <h1 id="saved" className="text-2xl text-balance">
               {songId ? m['start.saved_title']() : m['start.saved_nothing']()}
             </h1>
             {song.data && (
-              <p className="text-base text-muted-foreground">
+              <p className="text-base text-pretty text-muted-foreground">
                 {m['start.saved_body']({ title: song.data.title })}
               </p>
             )}
@@ -56,23 +56,24 @@ export function SavedPage() {
         )}
         <section
           aria-labelledby="next"
-          className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6"
+          className="flex flex-col items-center gap-3 border-t border-border pt-10 text-center"
         >
-          <h2 id="next" className="text-xl">
+          <h2 id="next" className="text-xl text-balance">
             {m['start.next_title']()}
           </h2>
-          <p className="text-base text-muted-foreground">{m['start.next_body']()}</p>
-          <div className="flex flex-wrap gap-3">
+          <p className="text-base text-pretty text-muted-foreground">{m['start.next_body']()}</p>
+          <div className="mt-3 flex flex-wrap justify-center gap-3">
             <Link
-              to="/import"
+              to="/library"
+              search={{ add: 'file' }}
               className={buttonVariants({ variant: 'primary', size: 'practice-2' })}
             >
               <UploadIcon aria-hidden />
-              {m['library.import_song']()}
+              {m['nav.add_song']()}
             </Link>
             <Link
-              to="/import"
-              search={{ tab: 'record' }}
+              to="/library"
+              search={{ add: 'record' }}
               className={buttonVariants({ variant: 'outline', size: 'practice-2' })}
             >
               <MicIcon aria-hidden />

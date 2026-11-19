@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <title>Splitune</title>
-  <g fill="none" stroke="#14110d" stroke-linecap="round" stroke-width="2.75" transform="scale(16)">
-    <path d="M3 16c2.5-5.5 4.5-5.5 6.5 0s4 5.5 6.5 0"/>
-    <path d="M16 16c3-3.75 6-6 13-6"/>
-    <path d="M16 16c3 3.75 6 6 13 6"/>
+  <g fill="none" stroke="#000" stroke-linecap="round" transform="translate(46 46) scale(15)">
+    <circle cx="14" cy="14" r="12" stroke-width="2"/>
+    <path d="M3 14c3.2-4.6 5.8 4.6 11 0s7.8 4.6 11 0" stroke-width="2.4"/>
   </g>
 </svg>

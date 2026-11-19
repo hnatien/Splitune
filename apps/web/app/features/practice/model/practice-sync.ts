@@ -18,6 +18,30 @@ let outbox: OutboxDb = createOutboxDb()
 let current: StoredSession | undefined
 const modes = new Set<'touch' | 'keyboard' | 'pedal'>()
 let flushing: Promise<void> | undefined
+const listeners = new Set<(sent: boolean) => void>()
+
+/** Called when a pass is written or a flush reaches the API (`sent`), for Progress (s39). */
+export function onPracticeChange(listener: (sent: boolean) => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+const notify = (sent: boolean) => {
+  for (const listener of listeners) listener(sent)
+}
+
+/** The session open on this screen, if any. */
+export const openSessionId = () => current?.client_session_id
+
+/** What the API doesn't have yet, so Progress can show it offline (s39). */
+export async function pendingPractice(): Promise<{ sessions: Session[]; attempts: Attempt[] }> {
+  const strip = <T extends { id: string }>({ id: _id, ...rest }: T) => rest
+  const [sessions, attempts] = await Promise.all([
+    safely(() => outbox.all<StoredSession>('sessions'), []),
+    safely(() => outbox.all<StoredAttempt>('attempts'), []),
+  ])
+  return { sessions: sessions.map(strip), attempts: attempts.map(strip) }
+}
 
 export function configurePracticeSync(options: { db: OutboxDb }) {
   outbox = options.db
@@ -76,7 +100,10 @@ export function recordAttempt(attempt: {
     at: (attempt.at ?? new Date()).toISOString(),
     ...(attempt.loopClipId ? { loop_clip_id: attempt.loopClipId } : {}),
   }
-  void safely(() => outbox.put('attempts', stored), undefined).then(() => flushPractice())
+  void safely(() => outbox.put('attempts', stored), undefined).then(() => {
+    notify(false)
+    return flushPractice()
+  })
 }
 
 export function flushPractice(): Promise<void> {
@@ -96,6 +123,7 @@ export function flushPractice(): Promise<void> {
       const done = result.accepted_sessions.filter((id) => id !== current?.client_session_id)
       await safely(() => outbox.delete('sessions', done), undefined)
       await safely(() => outbox.delete('attempts', result.accepted_attempts), undefined)
+      notify(true)
     } catch {
       // Offline or the API is away: the outbox keeps everything for the next flush.
     }

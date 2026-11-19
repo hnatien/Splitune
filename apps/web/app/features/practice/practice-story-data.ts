@@ -1,4 +1,4 @@
-import type { Analysis, SongDetail } from '@splitune/contracts'
+import type { Analysis, CorrectionOp, LoopClip, SongDetail } from '@splitune/contracts'
 import beats from '@splitune/contracts/fixtures/beats.json'
 import chords from '@splitune/contracts/fixtures/chords.json'
 import notes from '@splitune/contracts/fixtures/notes.guitar.json'
@@ -28,11 +28,20 @@ export type Kind =
   | 'tab.bass'
   | 'notes.vocals'
   | 'notes.drums'
+  | 'tags'
 /** Every artefact of the guitar song. */
 export const ALL: Kind[] = ['beats', 'stems', 'chords', 'notes.guitar', 'tab.guitar', 'summary']
 /** Every artefact of the song as a bass part. */
 export const ALL_BASS: Kind[] = ['beats', 'stems', 'chords', 'notes.bass', 'tab.bass', 'summary']
-const IDS: Kind[] = [...ALL, 'notes.piano', 'notes.bass', 'tab.bass', 'notes.vocals', 'notes.drums']
+const IDS: Kind[] = [
+  ...ALL,
+  'notes.piano',
+  'notes.bass',
+  'tab.bass',
+  'notes.vocals',
+  'notes.drums',
+  'tags',
+]
 export const artefactId = (kind: Kind) =>
   `00000000-0000-4000-9000-${String(IDS.indexOf(kind) + 1).padStart(12, '0')}`
 
@@ -56,6 +65,65 @@ export type Patch = {
   leftHanded?: boolean
   /** The view saved on the last visit (resume, 13 §5). */
   savedView?: 'tab' | 'chords_only'
+  /** What the tagger heard (27 §3.7.3 part question): seeds the `tags` artefact. */
+  heard?: string[]
+  /** The whole analysis failed (27 §3.11 failure card). */
+  analysisFailed?: boolean
+  /** The processing machine is offline while the analysis waits (27 §3.7.3). */
+  workerOffline?: boolean
+  /** The song's saved clips; the first is the one left selected (resume, 13 §5). */
+  clips?: StoryClip[]
+  /** `v1.speed_trainer` switched off for this account (16 §5). */
+  ladderFlagOff?: boolean
+  /** Edits already saved on the server (Your edits, 27 §3.7.4), oldest first. */
+  corrections?: { chords?: StoryOp[]; notes?: StoryOp[] }
+}
+
+export type StoryOp = z.infer<typeof CorrectionOp>
+
+export type StoryClip = z.infer<typeof LoopClip>
+
+/** A saved clip on the fixture's grid (4/4, bar n from 0.5 + 2.4 n s; bars are 1-based here). */
+export function storyClip(
+  n: number,
+  name: string | null,
+  from: number,
+  to: number,
+  patch: Partial<StoryClip> = {},
+): StoryClip {
+  return {
+    id: `00000000-0000-4000-a000-${String(n).padStart(12, '0')}`,
+    song_id: SONG_ID,
+    name,
+    start_bar: from - 1,
+    start_beat: 1,
+    end_bar: to - 1,
+    end_beat: 4,
+    start_s: 0.5 + 2.4 * (from - 1),
+    end_s: 0.5 + 2.4 * to,
+    rest_between: 'none',
+    count_in_bars: 1,
+    trainer: null,
+    best_clean_tempo_pct: null,
+    created_at: '2026-10-22T10:00:00Z',
+    ...patch,
+  }
+}
+
+/** The ladder's defaults (12 §5) as a stored trainer, at a place on it. */
+export function storyLadder(
+  patch: Partial<NonNullable<StoryClip['trainer']>> = {},
+): NonNullable<StoryClip['trainer']> {
+  return {
+    start_pct: 70,
+    end_pct: 100,
+    step_pct: 5,
+    plays_per_step: 3,
+    count_in_each_pass: true,
+    drop_after_misses: 2,
+    on_goal: 'keep',
+    ...patch,
+  }
 }
 
 // A piano song on the same 8 bars (4/4, bar n from 0.5 + 2.4 n s): E♭ major as the chord model
@@ -174,6 +242,98 @@ export const GUITAR_SHIFTS = partNotes('guitar', [
   [6, 2, 2, [71]],
   [7, 0, 4, [43, 47, 50, 55, 59, 67]],
 ])
+// Fix (s38): the fixture's song with spots to fix. The G of bars 7–8 is an unsure chord whose
+// second guess has another root (E minor, "about 1 in 3"), the F of bars 3–4 an unsure one whose
+// second guess keeps the root (Fmaj7); with the fixture's own unsure note in bar 4 that is a queue
+// of three, the note first.
+const fixSegments = (
+  changes: Record<string, { confidence: number; label?: string; top_k: [string, number][] }>,
+) =>
+  chords.segments.map((segment) => {
+    const change = changes[segment.id]
+    return change
+      ? {
+          ...segment,
+          label: change.label ?? segment.label,
+          confidence: change.confidence,
+          top_k: [
+            { label: change.label ?? segment.label, prob: 1 - change.confidence },
+            ...change.top_k.map(([label, prob]) => ({ label, prob })),
+          ],
+        }
+      : segment
+  })
+export const FIX_CHORDS = {
+  ...chords,
+  segments: fixSegments({
+    c0002: {
+      confidence: 0.38,
+      top_k: [
+        ['F:maj7', 0.24],
+        ['A:min', 0.1],
+      ],
+    },
+    c0004: {
+      confidence: 0.33,
+      top_k: [
+        ['E:min', 0.33],
+        ['G:7', 0.2],
+      ],
+    },
+  }),
+}
+/** Long names (27 §3.7.4 stories): F♯m7♭5 and its neighbours in the rows. */
+export const FIX_CHORDS_LONG = {
+  ...chords,
+  segments: fixSegments({
+    c0004: {
+      confidence: 0.3,
+      label: 'F#:hdim7',
+      top_k: [
+        ['F#:min7', 0.3],
+        ['A:min6', 0.2],
+        ['D:maj9', 0.1],
+      ],
+    },
+  }),
+}
+/** Nothing unsure: the fixture's one unsure note made sure. */
+export const FIX_NOTES_SURE = {
+  ...notes,
+  notes: notes.notes.map((note) => (note.confidence < 0.4 ? { ...note, confidence: 0.9 } : note)),
+}
+/** The G of bars 3-4 again in bars 7-8, unsure there: Replace all in this song has a second G. */
+export const FIX_CHORDS_REPEAT = {
+  ...chords,
+  segments: fixSegments({
+    c0004: {
+      confidence: 0.33,
+      top_k: [
+        ['E:min', 0.33],
+        ['G:7', 0.2],
+      ],
+    },
+  }).map((segment) => (segment.id === 'c0002' ? { ...segment, label: 'G:maj' } : segment)),
+}
+/** Bar 7 mostly unsure: one shaky-bar spot instead of a mark per note (26 §5). */
+export const FIX_NOTES_SHAKY = {
+  ...notes,
+  notes: notes.notes.map((note, i) =>
+    i >= 24 && i <= 26 ? { ...note, confidence: 0.2 + (i - 24) * 0.05 } : note,
+  ),
+}
+// 128 spots: every sixteenth note unsure over sure chords on the beats, so no bar is shaky.
+export const FIX_NOTES_MANY = partNotes(
+  'guitar',
+  Array.from({ length: 8 }, (_, bar) => bar).flatMap((bar): Part[] => [
+    ...Array.from({ length: 4 }, (_, beat): Part => [bar, beat, 1, [45, 52, 57, 60]]),
+    ...Array.from(
+      { length: 16 },
+      (_, step): Part => [bar, step / 4, 0.25, [64 + (step % 5)], 0.1 + ((bar + step) % 6) * 0.05],
+    ),
+  ]),
+)
+
 export const BASS_LINE = partNotes(
   'bass',
   [33, 33, 29, 29, 36, 36, 31, 31].flatMap((root, bar): Part[] => [
@@ -410,7 +570,10 @@ export const PIANO_CHORDS = {
 
 export function seed(kinds: Kind[], patch: Patch = {}) {
   return (client: QueryClient) => {
-    const base = analysis(1, patch.running ? 'running' : 'done')
+    const base = analysis(
+      1,
+      patch.analysisFailed ? 'failed' : patch.running || patch.workerOffline ? 'running' : 'done',
+    )
     // The fixture's stages are the guitar song's: another part has its own notes stage.
     const done = patch.instrument
       ? {
@@ -430,7 +593,8 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     const run = patch.video
       ? { ...failed, stages: { ...failed.stages, url_import: { status: 'done' as const } } }
       : failed
-    const entries = kinds.map((kind) => ({
+    const seeded: Kind[] = patch.heard ? [...kinds, 'tags'] : kinds
+    const entries = seeded.map((kind) => ({
       id: artefactId(kind),
       kind,
       version: 1,
@@ -445,6 +609,7 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
       ...(patch.video ? { source_kind: 'url' as const } : {}),
       ...(patch.instrument ? { instrument: patch.instrument } : {}),
       ...(patch.savedView ? { player_state: { view: patch.savedView } } : {}),
+      ...(patch.clips?.[0] ? { player_state: { selected_loop_id: patch.clips[0].id } } : {}),
       duration_s: 20.5,
       artefacts: entries,
     }
@@ -456,14 +621,41 @@ export function seed(kinds: Kind[], patch: Patch = {}) {
     }
     client.setQueryData(orpc.songs.get.queryKey({ input: { id: song.id } }), song)
     client.setQueryData(orpc.analyses.get.queryKey({ input: { id: run.id } }), withArtefacts)
-    client.setQueryData(orpc.loops.list.queryKey({ input: { id: song.id } }), { items: [] })
+    client.setQueryData(orpc.loops.list.queryKey({ input: { id: song.id } }), {
+      items: patch.clips ?? [],
+    })
     client.setQueryData(statsQuery.queryKey, STATS)
-    client.setQueryData(workerStatusQuery.queryKey, WORKER_ONLINE)
-    client.setQueryData(meQuery.queryKey, patch.leftHanded ? { ...ME, handedness: 'left' } : ME)
+    client.setQueryData(
+      workerStatusQuery.queryKey,
+      patch.workerOffline ? { ...WORKER_ONLINE, online: false } : WORKER_ONLINE,
+    )
+    if (patch.heard) {
+      client.setQueryData(['artefact-doc', artefactId('tags')], {
+        instruments: patch.heard.map((instrument) => ({ instrument, present_prob: 0.9 })),
+      })
+    }
+    client.setQueryData(meQuery.queryKey, {
+      ...ME,
+      ...(patch.leftHanded ? { handedness: 'left' as const } : {}),
+      ...(patch.ladderFlagOff ? { flags: { 'v1.speed_trainer': false } } : {}),
+    })
     for (const kind of kinds) {
+      const saved =
+        kind === 'chords'
+          ? patch.corrections?.chords
+          : kind.startsWith('notes.')
+            ? patch.corrections?.notes
+            : undefined
       client.setQueryData(
         orpc.artefacts.listCorrections.queryKey({ input: { id: artefactId(kind) } }),
-        { ops: [] },
+        {
+          ops: (saved ?? []).map((op, i) => ({
+            rev: i + 1,
+            client_op_id: `00000000-0000-7000-8000-${String(i + 1).padStart(12, '0')}`,
+            op,
+            created_at: '2026-10-20T09:00:00Z',
+          })),
+        },
       )
       const doc =
         kind === 'summary' && patch.summary

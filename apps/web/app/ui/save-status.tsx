@@ -1,10 +1,12 @@
 import { CircleXIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/ui/badge'
 import { CheckDrawIcon } from '@/ui/icons/check-draw'
 import { Spinner } from '@/ui/spinner'
 
-// Per-field save feedback (27 §3.9: no global save button): "Saving…" → "Saved" next to the field,
-// announced politely, the tick drawing itself; a failure stays visible with its reason.
+// Per-field save feedback (27 §3.9: no global save button): "Saving…" → "Saved on this device"
+// next to the field, announced politely. Saved is the success badge (26 §12.2) with the tick
+// drawing itself; a failure stays visible with its reason and icon.
 
 type SaveStatusProps = {
   state: 'idle' | 'saving' | 'saved' | 'error'
@@ -19,23 +21,26 @@ function SaveStatus({ state, savingLabel, savedLabel, errorLabel, className }: S
     <span
       data-slot="save-status"
       role="status"
-      className={cn('inline-flex min-h-6 items-center gap-1.5 text-sm [&_svg]:size-4', className)}
+      className={cn(
+        'inline-flex min-h-5.5 items-center gap-1.5 text-sm [&_svg]:size-3.5',
+        className,
+      )}
     >
       {state === 'saving' && (
         <>
-          <Spinner aria-hidden />
+          <Spinner aria-hidden className="size-3.5" />
           <span className="text-muted-foreground">{savingLabel}</span>
         </>
       )}
       {state === 'saved' && (
-        <>
-          <CheckDrawIcon aria-hidden className="text-success" />
-          <span className="text-success">{savedLabel}</span>
-        </>
+        <Badge variant="success">
+          <CheckDrawIcon aria-hidden />
+          {savedLabel}
+        </Badge>
       )}
       {state === 'error' && errorLabel && (
         <>
-          <CircleXIcon aria-hidden className="text-destructive" />
+          <CircleXIcon aria-hidden strokeWidth={1.8} className="text-destructive" />
           <span className="text-destructive">{errorLabel}</span>
         </>
       )}

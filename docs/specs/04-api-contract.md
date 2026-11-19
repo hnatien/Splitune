@@ -81,9 +81,9 @@ Codes and statuses live in `packages/contracts/src/api/errors.ts` (`ERROR_STATUS
 |---|---|---|
 | `GET /v1/artefacts/{id}/corrections?after_rev=` | Ops since rev | |
 | `POST /v1/artefacts/{id}/corrections` | Batch `{ ops: [{ client_op_id, op }] }` → `{ applied: [{client_op_id, rev}] }` | Ops validated with `CorrectionOp` |
-| `GET/POST/PATCH/DELETE /v1/songs/{id}/loops` | Loop clips CRUD | |
+| `GET/POST/PATCH/DELETE /v1/songs/{id}/loops` | Loop clips CRUD | `trainer` is the speed ladder (`21` V1): `start_pct`, `end_pct`, `step_pct`, `plays_per_step` (clean passes per step), `count_in_each_pass`, `drop_after_misses` (0–5), `on_goal` (`keep` / `stop`) and the optional place `current_pct`, `clean_count`, `miss_count`; refused with `trainer` / `feature_disabled` while `v1.speed_trainer` is off and with `trainer.end_pct` / `empty_range` when the goal is below the start (s37) |
 | `POST /v1/practice/sync` | Batch `{ sessions[], attempts[] }` with client ids | Offline-safe; server dedupes |
-| `GET /v1/progress?song_id=` | Per-clip best clean tempo, attempts over time | |
+| `GET /v1/progress?song_id=&days=` | Per-clip best clean tempo, last attempt, attempts over time with their session; the sessions with pass counts (s39) | |
 
 ### URL import (personal mode)
 | Method & path | Purpose |
@@ -187,6 +187,9 @@ HTTP/1.1 202 Accepted
 
 ## Implementation notes (step 15, 2026-10-22)
 - `POST /v1/me/export` (202, `DataExportState`), `GET /v1/me/export`, `DELETE /v1/me` (202 `{ purge_after }`, re-auth ≤ 10 min) and `POST /v1/events` live in contracts' `privacyContract` / `eventsContract` (like `billingContract`), so the shared client and the practice bundle don't carry their schemas. `ArtefactIndexEntry.purged_at`; rerun of a run whose stems were swept uses no allowance; `url_unsupported` with `details.reason = import_disabled` when the `import.url` flag is off; loop `trainer` refused (`feature_disabled`) while `v1.speed_trainer` is off.
+## Implementation notes (step s39, 2026-11-19)
+- **`GET /v1/progress`** (additive, owner-approved before it was written): `days` (1–366, optional) keeps attempts and sessions to the last n days on the server's clock; each clip gains `name` and `last_attempt_at` (over all time, so "Worth a revisit" can see clips older than the window); each attempt gains `client_session_id`; the answer gains `sessions` (`client_session_id`, `song_id`, `started_at`, `ended_at` or null, `passes`, `clean_passes`, counted over every loop, saved as a clip or not). No migration: `practice_sessions` and `practice_attempts` held all of it. User-scoped through `practiceRepo.progress(userId, songId?, days?)` under `withUser` (RLS); another user's song id answers empty. The web asks for `days=31` once for every song (Progress tab and library share the answer), a stable URL the service worker's API cache keeps for offline use.
+
 ## Open questions
 - Whether native apps (v1) need a GraphQL-style aggregate endpoint for the practice screen to reduce round-trips (start with `GET /v1/songs/{id}` returning everything needed).
 - Whether to expose WebSocket instead of SSE for native (SSE works in WebViews and native HTTP clients; keep SSE unless measurements say otherwise).

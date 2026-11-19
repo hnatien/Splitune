@@ -4,21 +4,22 @@ import { useState } from 'react'
 import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
-import { AllowanceMeter } from '@/ui/allowance-meter'
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { InlineError } from '@/ui/status-message'
-import { UsageMeter } from '../shell/usage-meter'
+import { SettingsPage } from '../settings/setting-row'
 import { billingClient, periodLine, planName, portalAction, useRefreshMe } from './plans'
 import { UpgradeSheet } from './upgrade-sheet'
 
-// Settings → Plan & billing (27 §3.9): the plan, allowances with their reset dates, the renewal
-// date, Manage (→ mock portal) and one-tap Cancel (14 §4.4: never a retention maze). The return
-// states of checkout (27 §3.10) land here.
+// Settings → Plan (27 §3.9, §3.10): the "Demo billing" badge, then the plan between hairlines with
+// the Welcome status or renewal line and its action: See Plus on Free; Cancel or Resume Plus and
+// Manage plan on Plus (14 §4.4: one tap, never a retention maze). The allowances are on Usage.
+// The return states of checkout land here.
 
-// A checkout cancelled from here comes back to say so.
-const CANCELLED_PATH = '/settings/billing?checkout=cancelled'
+// A checkout cancelled from Settings comes back here to say so.
+export const CANCELLED_PATH = '/settings/plan?checkout=cancelled'
 
-export function BillingSettings({
+export function PlanSettings({
   me,
   checkout,
 }: {
@@ -58,106 +59,98 @@ export function BillingSettings({
   }
 
   return (
-    <section className="flex flex-col gap-5">
-      <h2 className="text-xl">{m['settings.billing']()}</h2>
-      {checkout === 'success' && plus && (
-        <InlineError
-          tone="success"
-          title={m['billing.success']({
-            limit: String(full.cap ?? 0),
-            date: resets(full.resets_at),
-          })}
-        />
-      )}
-      {checkout === 'cancelled' && (
-        <InlineError tone="info" title={m['billing.checkout_cancelled']()} />
-      )}
-
-      <div className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">{m['billing.current_plan']()}</p>
-        <p className="text-lg font-semibold">
-          {plus ? planName(subscription.plan) : m['billing.plan_free']()}
-        </p>
-        {plus && <p className="text-base">{periodLine(current)}</p>}
-        {plus && subscription.status === 'past_due' && (
-          <p className="text-base">{m['billing.status_past_due']()}</p>
-        )}
-      </div>
-
+    <SettingsPage
+      title={m['settings.billing']()}
+      badge={<Badge variant="primary">{m['settings.demo_billing']()}</Badge>}
+    >
       <div className="flex flex-col gap-3">
-        {plus ? (
-          <>
-            {full.cap !== null && (
-              <AllowanceMeter
-                left={Math.max(0, full.cap - full.used)}
-                limit={full.cap}
-                text={m['billing.full_allowance']({
-                  left: String(Math.max(0, full.cap - full.used)),
-                  limit: String(full.cap),
-                  date: resets(full.resets_at),
-                })}
-              />
-            )}
-            {lite.cap === null && <p className="text-base">{m['billing.lite_unlimited']()}</p>}
-          </>
-        ) : (
-          <>
-            <p className="text-base">
-              {current.usage.welcome_available
-                ? m['billing.welcome_unused']()
-                : m['billing.welcome_used']()}
-            </p>
-            <UsageMeter me={current} />
-          </>
+        {checkout === 'success' && plus && (
+          <InlineError
+            tone="success"
+            title={m['billing.success']({
+              limit: String(full.cap ?? 0),
+              date: resets(full.resets_at),
+            })}
+          />
         )}
-      </div>
-
-      {cancelled && subscription?.cancel_at_period_end && (
-        <InlineError
-          tone="success"
-          title={m['billing.cancelled_at_period_end']({
-            date: resets(subscription.current_period_end),
-          })}
-        />
-      )}
-      {failed && <InlineError title={m['billing.action_failed']()} />}
-
-      <div className="flex flex-wrap gap-3">
-        {plus ? (
-          <>
-            {subscription.cancel_at_period_end ? (
-              <Button
-                variant="primary"
-                loading={pending === 'resume'}
-                disabled={pending !== undefined}
-                onClick={() => run('resume')}
-              >
-                {m['billing.resume_plus']()}
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                loading={pending === 'cancel'}
-                disabled={pending !== undefined}
-                onClick={() => run('cancel')}
-              >
-                {m['billing.cancel_plus']()}
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              loading={pending === 'manage'}
-              disabled={pending !== undefined}
-              onClick={() => run('manage')}
-            >
-              {m['billing.manage']()}
-            </Button>
-          </>
-        ) : (
-          <Button variant="primary" onClick={() => setUpgrading(true)}>
-            {m['plan.see_plus']()}
-          </Button>
+        {checkout === 'cancelled' && (
+          <InlineError tone="info" title={m['billing.checkout_cancelled']()} />
         )}
+
+        <div className="flex flex-col divide-y divide-border border-y border-border">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-5">
+            <div className="flex min-w-0 grow basis-65 flex-col gap-1">
+              <p className="text-lg">
+                {plus ? planName(subscription.plan) : m['billing.plan_free']()}
+              </p>
+              {plus ? (
+                <>
+                  <p className="text-sm text-muted-foreground">{periodLine(current)}</p>
+                  {subscription.status === 'past_due' && (
+                    <p className="text-sm text-muted-foreground">
+                      {m['billing.status_past_due']()}
+                    </p>
+                  )}
+                  {lite.cap === null && (
+                    <p className="text-sm text-muted-foreground">{m['billing.lite_unlimited']()}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {current.usage.welcome_available
+                    ? m['billing.welcome_unused']()
+                    : m['billing.welcome_used']()}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {plus ? (
+                <>
+                  {subscription.cancel_at_period_end ? (
+                    <Button
+                      variant="primary"
+                      loading={pending === 'resume'}
+                      disabled={pending !== undefined}
+                      onClick={() => run('resume')}
+                    >
+                      {m['billing.resume_plus']()}
+                    </Button>
+                  ) : (
+                    <Button
+                      loading={pending === 'cancel'}
+                      disabled={pending !== undefined}
+                      onClick={() => run('cancel')}
+                    >
+                      {m['billing.cancel_plus']()}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    loading={pending === 'manage'}
+                    disabled={pending !== undefined}
+                    onClick={() => run('manage')}
+                  >
+                    {m['billing.manage']()}
+                  </Button>
+                </>
+              ) : (
+                <Button variant="primary" onClick={() => setUpgrading(true)}>
+                  {m['plan.see_plus']()}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {cancelled && subscription?.cancel_at_period_end && (
+          <InlineError
+            tone="success"
+            title={m['billing.cancelled_at_period_end']({
+              date: resets(subscription.current_period_end),
+            })}
+          />
+        )}
+        {failed && <InlineError title={m['billing.action_failed']()} />}
       </div>
       <UpgradeSheet
         open={upgrading}
@@ -165,6 +158,6 @@ export function BillingSettings({
         trigger="settings"
         returnPath={CANCELLED_PATH}
       />
-    </section>
+    </SettingsPage>
   )
 }

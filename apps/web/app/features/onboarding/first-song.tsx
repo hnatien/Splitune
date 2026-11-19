@@ -10,7 +10,7 @@ import { InlineError } from '@/ui/status-message'
 import { PracticeLoading } from '../practice/practice-loading'
 import { examplePractice, startingSpeed } from './defaults'
 import { type ExampleSong, exampleFor, examplesQuery } from './examples'
-import { StepFrame } from './onboarding-page'
+import { StepFrame, StepTitle } from './onboarding-page'
 import { type Answers, SongSummary, useStepViewed } from './song-parts'
 
 // Step 4 of onboarding (27 §3.3): the example song chosen for the answers. A visitor goes on to
@@ -45,6 +45,7 @@ export function FirstSong({
     return (
       <StepFrame step={4} signedIn={signedIn} onBack={onBack}>
         <InlineError
+          className="w-full max-w-md"
           title={examples.isError ? m['start.examples_failed']() : m['start.coming']()}
           actions={
             examples.isError ? (
@@ -85,18 +86,21 @@ function SignedInSong({
   })
   return (
     <StepFrame step={4} signedIn onBack={onBack}>
-      <h1 className="text-2xl">{m['start.song_title']()}</h1>
-      <SongSummary example={example} />
-      {claim.isError && <InlineError title={m['system.error']()} />}
-      <Button
-        variant="primary"
-        size="practice"
-        loading={claim.isPending}
-        onClick={() => claim.mutate()}
-      >
-        <PlayIcon aria-hidden />
-        {m['start.play_part']()}
-      </Button>
+      <StepTitle>{m['start.song_title']()}</StepTitle>
+      <div className="flex w-full max-w-md flex-col gap-4">
+        <SongSummary example={example} />
+        {claim.isError && <InlineError title={m['system.error']()} />}
+        <Button
+          variant="primary"
+          size="practice"
+          block
+          loading={claim.isPending}
+          onClick={() => claim.mutate()}
+        >
+          <PlayIcon aria-hidden />
+          {m['start.play_part']()}
+        </Button>
+      </div>
     </StepFrame>
   )
 }

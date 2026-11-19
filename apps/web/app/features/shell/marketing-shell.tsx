@@ -14,10 +14,11 @@ import {
 import { SystemBanners } from '../system/system-banners'
 import { SkipLink } from './skip-link'
 
-// Marketing shell (27 §1): 64 px bar with How it works · Pricing · Sign in · Try an example song,
-// legal links in the footer; no app chrome. The bar stays pinned at the top; on phones everything
-// but the wordmark sits behind the Menu button, so it stays one row. Signed-in visitors get
-// "Library" instead of Sign in.
+// Marketing shell (27 §1): a 64 px bar with no rule under it, How it works · Pricing as plain
+// links, Sign in as a quiet pill and Try an example song as the one primary pill; legal links in the
+// footer; no app chrome. The bar stays pinned at the top; on phones everything but the wordmark
+// sits behind the Menu button, so it stays one row. Signed-in visitors get "Library" instead of
+// Sign in.
 export function MarketingShell({
   signedIn,
   children,
@@ -29,8 +30,8 @@ export function MarketingShell({
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
       <SystemBanners />
-      <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background [view-transition-name:app-header]">
-        <div className="mx-auto flex min-h-16 max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-6 lg:px-8">
+      <header className="sticky top-0 z-(--z-sticky) bg-background [view-transition-name:app-header]">
+        <div className="mx-auto flex min-h-16 max-w-marketing flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
           <Link
             to="/"
             aria-label={m['nav.home']()}
@@ -72,13 +73,13 @@ export function MarketingShell({
             </DropdownMenu>
             <Link
               to="/how-it-works"
-              className={cn(buttonVariants({ variant: 'ghost' }), 'max-sm:hidden')}
+              className={cn(buttonVariants({ variant: 'ghost' }), 'text-foreground max-sm:hidden')}
             >
               {m['nav.how_it_works']()}
             </Link>
             <Link
               to="/pricing"
-              className={cn(buttonVariants({ variant: 'ghost' }), 'max-sm:hidden')}
+              className={cn(buttonVariants({ variant: 'ghost' }), 'text-foreground max-sm:hidden')}
             >
               {m['nav.pricing']()}
             </Link>
@@ -93,7 +94,7 @@ export function MarketingShell({
               <>
                 <Link
                   to="/auth/sign-in"
-                  className={cn(buttonVariants({ variant: 'ghost' }), 'max-sm:hidden')}
+                  className={cn(buttonVariants({ variant: 'secondary' }), 'ml-2 max-sm:hidden')}
                 >
                   {m['nav.sign_in']()}
                 </Link>
@@ -118,35 +119,35 @@ export function MarketingShell({
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border">
+    <footer className="mx-auto w-full max-w-marketing px-4 sm:px-6 lg:px-8">
       <nav
         aria-label={m['footer.nav']()}
-        className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 px-4 py-4 text-sm text-muted-foreground md:px-6 lg:px-8"
+        className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-border py-8 text-md"
       >
-        <Wordmark tone="mono" className="text-base text-muted-foreground" />
+        <Wordmark tone="mono" className="mr-auto text-base text-muted-foreground max-sm:w-full" />
         <Link
           to="/how-it-works"
-          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
+          className="inline-flex min-h-target items-center text-foreground transition-colors duration-(--duration-base) hover:text-muted-foreground"
         >
           {m['nav.how_it_works']()}
         </Link>
         <Link
           to="/pricing"
-          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
+          className="inline-flex min-h-target items-center text-foreground transition-colors duration-(--duration-base) hover:text-muted-foreground"
         >
           {m['nav.pricing']()}
         </Link>
         <Link
           to="/legal/$page"
           params={{ page: 'terms' }}
-          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
+          className="inline-flex min-h-target items-center text-foreground transition-colors duration-(--duration-base) hover:text-muted-foreground"
         >
           {m['legal.terms_title']()}
         </Link>
         <Link
           to="/legal/$page"
           params={{ page: 'privacy' }}
-          className="inline-flex min-h-target min-w-target items-center justify-center underline-offset-4 hover:underline"
+          className="inline-flex min-h-target items-center text-foreground transition-colors duration-(--duration-base) hover:text-muted-foreground"
         >
           {m['legal.privacy_title']()}
         </Link>

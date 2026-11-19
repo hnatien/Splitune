@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
-import { AllowanceMeter } from './allowance-meter.tsx'
 import { Badge } from './badge.tsx'
 import { Button } from './button.tsx'
 import { EmptyState } from './empty-state.tsx'
@@ -76,16 +75,41 @@ const transparent = () => {
 }
 
 const STAGES: Stage[] = [
-  { id: 'decode', label: 'Reading the file', status: 'done', statusText: 'Done' },
-  { id: 'beats', label: 'Finding the beat', status: 'done', statusText: 'Done' },
+  {
+    id: 'decode',
+    label: 'Reading the audio',
+    status: 'done',
+    statusText: 'Done',
+    detail: '3:12, stereo',
+  },
+  {
+    id: 'beats',
+    label: 'Finding the beat',
+    status: 'done',
+    statusText: 'Done',
+    detail: '84 BPM in 4/4, starts on a pickup bar',
+  },
   {
     id: 'separate',
-    label: 'Separating your part',
+    label: 'Isolating your part',
     status: 'running',
-    statusText: 'About 2 min left',
+    statusText: '~2 min',
+    detail: 'Separating guitar from the band',
   },
-  { id: 'chords', label: 'Working out the chords', status: 'queued', statusText: 'Queued' },
-  { id: 'notes', label: 'Writing the tab', status: 'queued', statusText: 'Queued' },
+  {
+    id: 'chords',
+    label: 'Working out the chords',
+    status: 'queued',
+    statusText: 'Waiting',
+    detail: 'Also finds the key',
+  },
+  {
+    id: 'notes',
+    label: 'Building the tab',
+    status: 'queued',
+    statusText: 'Waiting',
+    detail: 'Fingerings you can actually play',
+  },
 ]
 
 export const Stages: Story = {
@@ -98,23 +122,14 @@ export const Stages: Story = {
     />
   ),
   play: async ({ canvasElement }) => {
-    // The overall bar is the one progressbar; the running stage's own bar is decorative.
+    // One overall bar (27 §3.7.3); each stage says its state by icon and words, never colour alone.
     await expect(within(canvasElement).getAllByRole('progressbar')).toHaveLength(1)
-    const running = canvasElement.querySelector<HTMLElement>('[data-status=running]')
-    const indicator = running?.querySelector<HTMLElement>('[data-slot=progress-indicator]')
-    await expect(indicator).toHaveAttribute('data-indeterminate')
-    await expect(getComputedStyle(indicator as Element).animationName).toBe(
-      'progress-indeterminate',
-    )
-    const done = canvasElement.querySelectorAll<SVGPathElement>('[data-status=done] svg path')
-    await expect(done).toHaveLength(2)
-    for (const tick of done) {
-      await expect(tick).toHaveAttribute('pathLength', '1')
-      await expect(getComputedStyle(tick).animationName).toBe('check-draw')
-    }
     await expect(
-      canvasElement.querySelector('[data-status=queued] [data-slot=progress]'),
-    ).toBeNull()
+      canvasElement.querySelector('[data-status=running] [data-slot=spinner]'),
+    ).not.toBeNull()
+    await expect(canvasElement.querySelectorAll('[data-status=done] svg')).toHaveLength(2)
+    await expect(canvasElement.querySelector('[data-status=queued] svg')).toBeNull()
+    await expect(within(canvasElement).getByText('Separating guitar from the band')).toBeVisible()
   },
 }
 export const StagesDark: Story = {
@@ -166,31 +181,13 @@ export const WorkerOffline: Story = {
   ),
   play: async ({ canvasElement }) => {
     const status = within(canvasElement).getByRole('status')
-    // A warning surface, not a muted well with a coloured border.
+    // A card-style banner (26 §12.2, s34): the card surface with its --border edge, not an error.
     await expect(getComputedStyle(status).backgroundColor).not.toBe(transparent())
-    await expect(getComputedStyle(status).borderTopColor).toBe(transparent())
+    await expect(getComputedStyle(status).borderTopColor).not.toBe(transparent())
   },
 }
 export const WorkerOnline: Story = {
   render: () => <WorkerStatus online text={COPY.workerOnline} />,
-}
-
-export const Allowance: Story = {
-  render: () => <AllowanceMeter left={4} limit={5} text={COPY.allowance} />,
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('meter')).toHaveAttribute(
-      'aria-valuetext',
-      COPY.allowance,
-    )
-    const track = canvasElement.querySelector<HTMLElement>('[data-slot=meter-track]') as HTMLElement
-    const sunken = document.createElement('div')
-    sunken.className = 'bg-surface-sunken'
-    document.body.append(sunken)
-    await expect(getComputedStyle(track).backgroundColor).toBe(
-      getComputedStyle(sunken).backgroundColor,
-    )
-    sunken.remove()
-  },
 }
 
 export const Empty: Story = {
@@ -294,11 +291,19 @@ export const StatusTonesLight: Story = {
     await expect(boxes).toHaveLength(8)
     for (const box of boxes) {
       const style = getComputedStyle(box)
-      // A tinted surface and an icon carry the tone; the hairline border waits for increased contrast.
+      await expect(box.querySelector('svg')).not.toBeNull()
+      // Banners are one quiet line: no surface, the tone in the icon, a hairline below.
+      if (box.getAttribute('data-slot') === 'banner') {
+        await expect(style.backgroundColor).toBe(transparent())
+        await expect(style.borderTopWidth).toBe('0px')
+        await expect(style.borderBottomColor).not.toBe(transparent())
+        continue
+      }
+      // Inline messages: a surface off the page and an icon carry the tone; they wait for
+      // increased contrast for their hairline.
       await expect(style.backgroundColor).not.toBe(page)
       await expect(style.backgroundColor).not.toBe(transparent())
       await expect(style.borderTopColor).toBe(transparent())
-      await expect(box.querySelector('svg')).not.toBeNull()
     }
     await expect(
       canvas.getByText(TONE_COPY.error, { selector: 'p' }).closest('[role=alert]'),
@@ -318,8 +323,11 @@ export const StatusTonesIncreasedContrast: Story = {
       '[data-slot=inline-error], [data-slot=banner]',
     )
     for (const box of boxes) {
-      await expect(getComputedStyle(box).borderTopColor).not.toBe(transparent())
-      await expect(getComputedStyle(box).borderTopWidth).toBe('1px')
+      // Inline messages get their hairline back; a banner's is the rule below it.
+      const side = box.getAttribute('data-slot') === 'banner' ? 'Bottom' : 'Top'
+      const style = getComputedStyle(box)
+      await expect(style[`border${side}Color`]).not.toBe(transparent())
+      await expect(style[`border${side}Width`]).toBe('1px')
     }
   },
 }
@@ -354,7 +362,9 @@ export const StatusBadgeStates: Story = {
       await expect(getComputedStyle(badge).backgroundColor).not.toBe(
         getComputedStyle(document.body).backgroundColor,
       )
-      await expect(getComputedStyle(badge).borderTopWidth).toBe('1px')
+      // `.badge` (26 §12.1): the status surface and an icon carry the tone; no outline.
+      await expect(getComputedStyle(badge).borderTopWidth).toBe('0px')
+      await expect(badge.querySelector('svg')).not.toBeNull()
     }
   },
 }
@@ -420,7 +430,6 @@ const Gallery = () => (
       className="max-w-lg"
     />
     <WorkerStatus online={false} text={COPY.queuedOffline} />
-    <AllowanceMeter left={4} limit={5} text={COPY.allowance} />
     <InlineError
       title={COPY.libraryFailed}
       actions={<Button variant="outline">{COPY.retry}</Button>}

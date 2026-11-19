@@ -27,6 +27,20 @@ function loadEnv() {
   }
 }
 
+// On Windows, kill() ends only uv.exe and leaves its python worker running (still writing to our
+// stderr), so end the whole tree there; elsewhere uv forwards SIGTERM to its child.
+function stop(child: ChildProcess) {
+  if (process.platform === 'win32' && child.pid !== undefined) {
+    try {
+      execFileSync('taskkill', ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore' })
+      return
+    } catch {
+      // already gone: fall through
+    }
+  }
+  child.kill('SIGTERM')
+}
+
 async function waitFor(url: string, child: ChildProcess, timeoutMs = 30_000) {
   const until = Date.now() + timeoutMs
   while (Date.now() < until) {
@@ -130,7 +144,7 @@ export default async function setup() {
   try {
     await built
   } catch (error) {
-    for (const worker of workers) worker.kill('SIGTERM')
+    for (const worker of workers) stop(worker)
     throw error
   }
   const web = spawn(process.execPath, [server], {
@@ -155,9 +169,10 @@ export default async function setup() {
       children.map(
         (child) =>
           new Promise<void>((resolve) => {
-            if (child.exitCode !== null) return resolve()
+            // A child that died by a signal has a null exitCode and has already emitted 'exit'.
+            if (child.exitCode !== null || child.signalCode !== null) return resolve()
             child.once('exit', () => resolve())
-            child.kill('SIGTERM')
+            stop(child)
           }),
       ),
     )

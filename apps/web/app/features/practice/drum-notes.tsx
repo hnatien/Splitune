@@ -45,8 +45,8 @@ function readGridTheme(element: HTMLElement): DrumGridTheme {
     playhead: token('--score-playhead'),
     loopFill: token('--score-loop-fill'),
     loopEdge: token('--score-loop-edge'),
-    barLabel: token('--conf-medium'),
-    medium: token('--conf-medium'),
+    barLabel: token('--faint-foreground'),
+    medium: token('--conf-medium-edge'),
     low: token('--conf-low'),
   }
 }

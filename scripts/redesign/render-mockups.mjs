@@ -6,7 +6,7 @@
 //   node scripts/redesign/render-mockups.mjs --file Main --width 1440 --look daylight
 //   node scripts/redesign/render-mockups.mjs --check               # self-check, no PNGs
 //
-// One heavy browser run per machine: hold the run's heavy lock around it. See README.md.
+// Don't run it alongside another browser test run on the same machine. See README.md.
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'

@@ -12,15 +12,21 @@ models:
   # demucs_params (shifts = random-shift passes, default 2; overlap = segment fraction, 0.25).
   # Values: the cheapest setting within 0.3 dB median uSDR of the default on the P1 clips
   # (services/ml/eval/results/p1/2026-10-21-overlap.md). RoFormer overlap = the model's chunk
-  # length (no overlap between windows); viperx's chunk is 8 s, so its default already is.
-  # BS-Roformer-SW keeps the library default (8 s steps over a 9.29 s chunk, 1.29 s crossfade):
-  # abutting windows (overlap 9.3) left a seam in its bass stem on full songs, +0.16 dB uSDR for
-  # +14 % time at the default (step 28, eval/results/p1/2026-11-07-fullsong.md).
+  # length (no overlap between windows); viperx's chunk is 8 s, so the default 8 already is. Every
+  # RoFormer states its overlap, so a library upgrade can't change it (step 29).
+  # `autocast: true` runs fp16 on CUDA only; MPS and CPU stay fp32 until measured there. On the
+  # RTX 3060: 0.42-0.49x full-song time, no regression value outside tolerance (step 29,
+  # eval/results/sep-improve/2026-11-08-autocast.md).
+  # BS-Roformer-SW: 13.35 s windows (588,800 samples) in 11.5 s steps, 1.85 s crossfade, instead
+  # of its 9.29 s chunk: +0.02 to +0.18 dB median uSDR on all five instruments, bass seam 0.47 dB
+  # (1.00 at the old chunk), 1.09x full-song time (step 29, eval/results/sep-improve/
+  # 2026-11-08-chunk.md). Abutting windows (overlap 9.3) had left a bass seam (step 28).
   bs_roformer_sw:
     record: bs-roformer-sw
     filename: BS-Roformer-SW.ckpt
     provider: "bs_roformer:BS-Roformer-SW"
     arch: mdxc
+    inference: {chunk: 588800, overlap: 11.5, autocast: true}
     outputs: {bass: bass, drums: drums, guitar: guitar, piano: piano, vocals: vocals, other: other}
   htdemucs_6s:
     record: htdemucs-6s
@@ -41,6 +47,7 @@ models:
     filename: model_bs_roformer_ep_317_sdr_12.9755.ckpt
     provider: "bs_roformer:viperx-1297"
     arch: mdxc
+    inference: {overlap: 8, autocast: true}
     outputs: {vocals: vocals, instrumental: null}
   # Guitar-only 2-stem model (step 22 Phase 1 candidate, eval/results/p2g); outside
   # audio-separator's catalogue, loaded from `config`.
@@ -50,14 +57,27 @@ models:
     config: mel_band_roformer_guitar_becruily.yaml
     provider: "mel_roformer:guitar-becruily"
     arch: mdxc
+    inference: {overlap: 8, autocast: true}
     outputs: {guitar: guitar, other: null}
   mel_roformer_kim_vocals:
     record: mel-roformer-kim-vocals
     filename: vocals_mel_band_roformer.ckpt
     provider: "mel_roformer:kim-vocals"
     arch: mdxc
-    inference: {overlap: 11}  # chunk 11.0 s
+    inference: {overlap: 11, autocast: true}  # chunk 11.0 s
     outputs: {vocals: vocals, other: null}
+  # MVSep's Mega-53 BS-RoFormer cut to its organ, keys, synth, piano and digital-piano heads
+  # (`scripts/fetch_models.py mega53-keys`): piano's fallback when SW hears no piano (below). Its
+  # keys + synth outputs make the stem; chunk 20 s, 10 s steps (MSST's 882,000 samples rounded to
+  # the STFT hop, num_overlap 2), as measured in step 29.
+  mega53_keys:
+    record: bs-roformer-mega53-keys5
+    filename: bs_roformer_mega53_keys5.ckpt
+    config: bs_roformer_mega53_keys5.yaml
+    provider: "bs_roformer:mega53-keys"
+    arch: mdxc
+    inference: {chunk: 882176, overlap: 10.002}
+    outputs: {organ: null, keys: piano, synth: piano, piano: null, digital-piano: null}
 
 # mix_minus: subtract = mixture − aligned stem; complement = sum of the model's other outputs.
 # quality: the default quality_hint of the isolated stem (doc 08 P1 fail rule marks weak ones rough).
@@ -71,6 +91,11 @@ instruments:
     # drums + bass + vocals below -15 dB of the mixture the song is solo piano (24/24 solo
     # excerpts, 0/57 band excerpts) and the chain is skipped.
     solo_check: {model: htdemucs_6s, threshold_db: -15}
+    # Step 29 (eval/results/sep-improve/2026-11-08-keys.md): SW outputs no piano for synth- and
+    # organ-heavy keys (3 of 25 MoisesDB windows with keys). Below -40 dB of the mixture, with the
+    # tagger's piano present_prob at 0.03 or more (those 3, none of the 15 windows without keys),
+    # Mega-53's keys + synth stand in: 4.5 dB median uSDR on those 3, 6.1 on 5 Slakh windows.
+    fallback_when_silent: {model: mega53_keys, threshold_db: -40, min_present_prob: 0.03}
   bass: {chain: [bs_roformer_sw, htdemucs_ft, htdemucs_6s], mix_minus: subtract, quality: good}
   drums: {chain: [bs_roformer_sw, htdemucs_ft, htdemucs_6s], mix_minus: subtract, quality: good}
   vocals:

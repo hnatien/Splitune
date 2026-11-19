@@ -25,6 +25,7 @@ export default defineRailway(() => {
         'apps/web/**',
         'apps/api/**',
         'packages/**',
+        'compliance/register/models/**',
         'infra/railway/**',
         'package.json',
         'pnpm-lock.yaml',

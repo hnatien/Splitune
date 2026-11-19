@@ -1,22 +1,32 @@
 import { lazy, Suspense, useMemo } from 'react'
 import { m } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import type { TimelineLane } from '@/ui/waveform-timeline'
 import { barAt } from './model/grid'
-import { barRange, nudge } from './model/loops'
+import { barRange, type LoopRange, nudge } from './model/loops'
 import { usePractice } from './practice-context'
+import { usePracticeUi } from './practice-store'
 
 // The canvas loads with the first waveform (after the audio is decoded), at the same height.
 const WaveformTimeline = lazy(() =>
   import('@/ui/waveform-timeline').then((module) => ({ default: module.WaveformTimeline })),
 )
 
-// Timeline (12 §2, 27 §3.7.1): a slim overview of the song above the transport — your part's
-// waveform (or the song's own audio before stems), the bar ruler once beats exist (seconds
-// before), loop band, unsure-bar hatching and the now-line; the other stems live in the mixer.
-// Tap seeks to the bar's downbeat; dragging a loop handle snaps to bars. Phone landscape keeps
-// only the compact ruler.
+// The song map (12 §2, 27 §3.7.1, Main.dc.html): your part's waveform (or the song's own audio
+// before stems), the unsure hatch, the loop band with keyboard-nudgeable edges, the now-line and
+// the ruler (bar numbers every 8 bars, seconds before the beat is known). Tap seeks to the bar's
+// downbeat; dragging a loop edge snaps to bars. No section chips until sections exist (s41b), never
+// fake ones. On desktop (`map`) it's the region under the top bar; tablets keep it above the
+// transport and phone landscape keeps only the compact ruler.
 
-export function PracticeTimeline({ compact = false }: { compact?: boolean }) {
+export function PracticeTimeline({
+  compact = false,
+  map = false,
+}: {
+  compact?: boolean
+  /** Desktop: the song map region under the top bar. */
+  map?: boolean
+}) {
   const practice = usePractice()
   const { lanes, grid, player, view, audio } = practice
   const shown = lanes.filter((lane) => lane.role === 'part')
@@ -50,19 +60,34 @@ export function PracticeTimeline({ compact = false }: { compact?: boolean }) {
     [grid, view],
   )
   const loop = player.loop
+  // Fix mode (27 §3.7.4): the band is the selected bars, and its edges move the selection.
+  const fixing = usePracticeUi((s) => s.fixing)
+  const moveLoop = (range: LoopRange) => {
+    if (fixing) {
+      usePracticeUi.setState({
+        editor: { kind: 'bar', bar: range.startBar, endBar: range.endBar },
+      })
+    } else practice.setLoop(range)
+  }
+  const height = compact ? 'h-8' : 'h-17.5'
   return (
-    <div className="shrink-0 px-4 pt-2 md:px-6">
-      <Suspense fallback={<div className={compact ? 'h-8' : 'h-12'} />}>
+    <section
+      aria-label={m['practice.song_map']()}
+      data-slot="song-map"
+      className={cn(
+        'shrink-0',
+        map ? 'border-b border-border px-4 pt-2.5 pb-1.5' : 'px-4 pt-2 md:px-6',
+      )}
+    >
+      <Suspense fallback={<div className={height} />}>
         <WaveformTimeline
           lanes={timelineLanes}
-          blockSeconds={lanes[0]?.blockSeconds ?? 1}
           duration={audio.duration || practice.data.song.data?.duration_s || 1}
           bars={bars}
           loop={loop}
           unsure={unsure}
           position={() => audio.position()}
           compact={compact}
-          overview={!compact}
           onSeek={(seconds) =>
             practice.send({
               type: 'SEEK',
@@ -70,20 +95,18 @@ export function PracticeTimeline({ compact = false }: { compact?: boolean }) {
             })
           }
           onNudgeLoop={(edge, direction) => {
-            if (grid && loop) practice.setLoop(nudge(grid, loop, edge, direction))
+            if (grid && loop) moveLoop(nudge(grid, loop, edge, direction))
           }}
           onDragLoop={(edge, seconds) => {
             if (!grid || !loop) return
             const bar = barAt(grid, seconds)
-            practice.setLoop(
+            moveLoop(
               edge === 'start'
                 ? barRange(grid, bar, loop.endBar)
                 : barRange(grid, loop.startBar, bar),
             )
           }}
           labels={{
-            zoomIn: m['practice.zoom_in'](),
-            zoomOut: m['practice.zoom_out'](),
             loopStart: loop
               ? m['practice.loop_start']({ bar: String(loop.startBar + 1) })
               : m['practice.loop'](),
@@ -93,6 +116,6 @@ export function PracticeTimeline({ compact = false }: { compact?: boolean }) {
           }}
         />
       </Suspense>
-    </div>
+    </section>
   )
 }

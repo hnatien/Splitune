@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, sql } from 'drizzle-orm'
 import { type Database, withUser } from '../client.ts'
 import { loopClips, practiceAttempts, practiceSessions, songs } from '../schema/index.ts'
 
@@ -112,13 +112,18 @@ export function practiceRepo(db: Database) {
         return stored.map((s) => s.clientAttemptId)
       }),
 
-    // GET /v1/progress: every clip (optionally of one song) with its attempts in time order.
-    progress: (userId: string, songId?: string) =>
+    // GET /v1/progress (12 §5, s39): every clip (optionally of one song) with its attempts in time
+    // order, and the sessions with their pass counts over every loop, clip or not. `days` keeps
+    // attempts and sessions to the last n days; a clip's last attempt is over all time, so Worth a
+    // revisit can tell how long ago a clip was played.
+    progress: (userId: string, songId?: string, days?: number) =>
       withUser(db, userId, async (tx) => {
+        const since = days === undefined ? undefined : new Date(Date.now() - days * 86_400_000)
         const clips = await tx
           .select({
             id: loopClips.id,
             songId: loopClips.songId,
+            name: loopClips.name,
             bestCleanTempoPct: loopClips.bestCleanTempoPct,
           })
           .from(loopClips)
@@ -129,8 +134,9 @@ export function practiceRepo(db: Database) {
             ),
           )
           .orderBy(asc(loopClips.createdAt))
+        const clipIds = clips.map((c) => c.id)
         const attempts =
-          clips.length === 0
+          clipIds.length === 0
             ? []
             : await tx
                 .select({
@@ -138,22 +144,63 @@ export function practiceRepo(db: Database) {
                   at: practiceAttempts.at,
                   tempoPct: practiceAttempts.tempoPct,
                   outcome: practiceAttempts.outcome,
+                  clientSessionId: practiceSessions.clientSessionId,
+                })
+                .from(practiceAttempts)
+                .innerJoin(practiceSessions, eq(practiceSessions.id, practiceAttempts.sessionId))
+                .where(
+                  and(
+                    eq(practiceAttempts.userId, userId),
+                    inArray(practiceAttempts.loopClipId, clipIds),
+                    since === undefined ? undefined : gte(practiceAttempts.at, since),
+                  ),
+                )
+                .orderBy(asc(practiceAttempts.at))
+        const latest =
+          clipIds.length === 0
+            ? []
+            : await tx
+                .select({
+                  loopClipId: practiceAttempts.loopClipId,
+                  at: sql<Date>`max(${practiceAttempts.at})`.mapWith(practiceAttempts.at),
                 })
                 .from(practiceAttempts)
                 .where(
                   and(
                     eq(practiceAttempts.userId, userId),
-                    inArray(
-                      practiceAttempts.loopClipId,
-                      clips.map((c) => c.id),
-                    ),
+                    inArray(practiceAttempts.loopClipId, clipIds),
                   ),
                 )
-                .orderBy(asc(practiceAttempts.at))
-        return clips.map((clip) => ({
-          ...clip,
-          attempts: attempts.filter((a) => a.loopClipId === clip.id),
-        }))
+                .groupBy(practiceAttempts.loopClipId)
+        const lastAttemptAt = new Map(latest.map((l) => [l.loopClipId, l.at]))
+        const sessions = await tx
+          .select({
+            clientSessionId: practiceSessions.clientSessionId,
+            songId: practiceSessions.songId,
+            startedAt: practiceSessions.startedAt,
+            endedAt: practiceSessions.endedAt,
+            passes: sql<number>`count(${practiceAttempts.id})::int`,
+            cleanPasses: sql<number>`(count(${practiceAttempts.id}) filter (where ${practiceAttempts.outcome} = 'clean'))::int`,
+          })
+          .from(practiceSessions)
+          .leftJoin(practiceAttempts, eq(practiceAttempts.sessionId, practiceSessions.id))
+          .where(
+            and(
+              eq(practiceSessions.userId, userId),
+              songId === undefined ? undefined : eq(practiceSessions.songId, songId),
+              since === undefined ? undefined : gte(practiceSessions.startedAt, since),
+            ),
+          )
+          .groupBy(practiceSessions.id)
+          .orderBy(asc(practiceSessions.startedAt))
+        return {
+          clips: clips.map((clip) => ({
+            ...clip,
+            lastAttemptAt: lastAttemptAt.get(clip.id) ?? null,
+            attempts: attempts.filter((a) => a.loopClipId === clip.id),
+          })),
+          sessions,
+        }
       }),
   }
 }

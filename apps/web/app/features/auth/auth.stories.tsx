@@ -4,8 +4,9 @@ import { AppStory } from '../../../.storybook/app.tsx'
 import { AuthShell } from './auth-shell'
 import { AuthScreen } from './sign-in'
 
-// Auth screens (27 §3.4) in the auth shell: sign in and create an account with a username and a
-// password, the field errors, Google when configured, and the phone layout without the showcase.
+// Auth screens (27 §3.4) in the auth shell, in both themes: sign in and create an account with a
+// username and a password, the field errors, Google when configured, and the phone layout. One
+// centred column on every screen size.
 const meta = { title: 'Screens/Auth', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -36,11 +37,24 @@ export const SignIn: Story = {
       'href',
       '/auth/sign-up?next=%2Flibrary',
     )
+    await expect(canvas.getByText(/No email needed\./)).toBeVisible()
+    // One heading and the form alone: no panel beside it, even on a wide screen.
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible()
+    await expect(canvas.queryByRole('complementary', { hidden: true })).toBeNull()
+    // No Google button unless it is configured.
+    await expect(canvas.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
   },
 }
+export const SignInDaylight: Story = { render: screen('sign-in'), globals: { appearance: 'light' } }
 export const SignInPhone: Story = {
   render: screen('sign-in'),
   globals: { viewport: { value: 'mobile2', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    // Phones get the same single column.
+    await expect(await canvas.findByLabelText('Username')).toBeVisible()
+    await expect(canvas.queryByRole('heading', { level: 2 })).toBeNull()
+  },
 }
 export const SignInWithGoogle: Story = {
   render: screen('sign-in', true),
@@ -67,7 +81,11 @@ export const SignUp: Story = {
     await expect(canvas.getByRole('link', { name: 'Sign in' })).toBeVisible()
   },
 }
-export const SignUpStage: Story = { render: screen('sign-up'), globals: { appearance: 'stage' } }
+export const SignUpDaylight: Story = { render: screen('sign-up'), globals: { appearance: 'light' } }
+export const SignUpPhone: Story = {
+  render: screen('sign-up'),
+  globals: { appearance: 'light', viewport: { value: 'mobile2', isRotated: false } },
+}
 /** A username with a space and a short password, each with its own error. */
 export const SignUpInvalid: Story = {
   render: screen('sign-up'),

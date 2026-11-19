@@ -482,6 +482,67 @@ describe('practice sync', () => {
     ).toEqual([])
     expect(await repo.practice.upsertSessions(bob, [])).toEqual([])
   })
+
+  it('lists progress with session ids, sessions with their passes, and a window of days', async () => {
+    const carol = await createUser(db)
+    const g = await seedUserGraph(db, carol)
+    const now = Date.now()
+    const ago = (days: number, minutes = 0) => new Date(now - days * 86_400_000 + minutes * 60_000)
+    const [old, recent, opened] = [randomUUID(), randomUUID(), randomUUID()]
+    await repo.practice.upsertSessions(carol, [
+      { clientSessionId: old, songId: g.song.id, startedAt: ago(40), endedAt: ago(40, 20) },
+      { clientSessionId: recent, songId: g.song.id, startedAt: ago(2), endedAt: ago(2, 18) },
+      { clientSessionId: opened, songId: g.song.id, startedAt: ago(1) },
+    ])
+    const attempt = (
+      session: string,
+      days: number,
+      minute: number,
+      tempoPct: number,
+      outcome: 'clean' | 'not_yet',
+      loopClipId: string | null = g.loop.id,
+    ) => ({
+      clientAttemptId: randomUUID(),
+      clientSessionId: session,
+      loopClipId,
+      tempoPct,
+      outcome,
+      at: ago(days, minute),
+    })
+    await repo.practice.recordAttempts(carol, [
+      attempt(old, 40, 5, 60, 'clean'),
+      attempt(recent, 2, 1, 65, 'not_yet'),
+      attempt(recent, 2, 2, 70, 'clean'),
+      attempt(recent, 2, 3, 75, 'clean', null), // a loop not saved as a clip
+    ])
+
+    const all = await repo.practice.progress(carol)
+    expect(all.clips).toHaveLength(1)
+    const [clip] = all.clips
+    expect(clip?.attempts.map((a) => [a.clientSessionId, a.tempoPct])).toEqual([
+      [old, 60],
+      [recent, 65],
+      [recent, 70],
+      [expect.any(String), 80], // the seeded session's attempt, made now
+    ])
+    expect(clip?.lastAttemptAt?.getTime()).toBeGreaterThanOrEqual(ago(0, -1).getTime())
+    const byId = new Map(all.sessions.map((s) => [s.clientSessionId, s]))
+    expect(all.sessions).toHaveLength(4)
+    expect(byId.get(old)).toMatchObject({ passes: 1, cleanPasses: 1, endedAt: ago(40, 20) })
+    expect(byId.get(recent)).toMatchObject({ passes: 3, cleanPasses: 2, songId: g.song.id })
+    expect(byId.get(opened)).toMatchObject({ passes: 0, cleanPasses: 0, endedAt: null })
+
+    // The window keeps the last 30 days of attempts and sessions; the last attempt stays.
+    const month = await repo.practice.progress(carol, g.song.id, 30)
+    expect(month.clips[0]?.attempts.map((a) => a.tempoPct)).toEqual([65, 70, 80])
+    expect(month.clips[0]?.lastAttemptAt).toEqual(clip?.lastAttemptAt)
+    expect(month.sessions.map((s) => s.clientSessionId)).not.toContain(old)
+    expect(month.sessions).toHaveLength(3)
+
+    // Scoped to the user: Bob sees none of it, even with Carol's song id.
+    const theirs = await repo.practice.progress(bob, g.song.id)
+    expect(theirs).toEqual({ clips: [], sessions: [] })
+  })
 })
 
 describe('usage', () => {

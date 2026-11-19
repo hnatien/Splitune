@@ -27,5 +27,12 @@ used_in: [separate]
 profiles: [personal]
 notes: >-
   MVSep Multisong: bass 14.62, drums 14.11, vocals 11.30, guitar 9.05, piano 7.83 dB (tier-2, self-reported).
+  Provenance (step 29, recorded as a fact, not a gate): probably Apple Logic Pro 11.2's Stem
+  Splitter model extracted from Core ML (tier 4: deton24's guide, MSST issue #248), consistent with
+  MVSep scores within 0.015 dB of Logic Pro 11.2 on guitar and piano (tier 2). The original
+  uploader's Hugging Face and GitHub accounts are deleted (404); the mirror enerjazzer/BS-ROFO-SW-Fixed
+  holds the same file (same sha256), and X-LANCE's key_mss, syn_mss and gtr_mss keep its backbone
+  and one of its heads bit for bit (eval/results/sep-improve/2026-11-08-weights.md).
+  docs/research/ml/separation-improvements-2026-11.md §0.
 reviewer: owner
-reviewed: 2026-10-21
+reviewed: 2026-11-08

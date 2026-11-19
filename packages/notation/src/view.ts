@@ -6,6 +6,7 @@ export {
   barFraction,
   type CursorPosition,
   cursorAt,
+  loopSpans,
   type NoteBox,
   noteBoxes,
 } from './geometry.ts'

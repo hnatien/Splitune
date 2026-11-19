@@ -10,3 +10,10 @@ export function barText(bar: number, chords: string[], notes: string[]): string 
     notes: notes.length > 0 ? notes.join(', ') : m['practice.no_notes'](),
   })
 }
+
+/** "Next · in 3 beats", or "Next · in 1 beat" for one. */
+export function nextInBeats(count: number): string {
+  return count === 1
+    ? m['practice.next_in_beat']()
+    : m['practice.next_in_beats']({ count: String(count) })
+}

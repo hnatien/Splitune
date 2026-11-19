@@ -94,8 +94,9 @@ class Measured:
 def separated(
     model: str, mixture: Array, work: Path, referenced: tuple[Instrument, ...] = REFERENCED
 ) -> tuple[dict[str, Array], float]:
-    """instrument → estimate of one shipped-wrapper run (files removed), and its seconds. Demucs
-    draws its time shift from `random` (and torch), so both are seeded: a rerun reproduces it."""
+    """instrument → estimate of one shipped-wrapper run (the sum of the outputs mapped to it; files
+    removed), and its seconds. Demucs draws its time shift from `random` (and torch), so both are
+    seeded: a rerun reproduces it."""
     import torch
     from stage_separation import config, models
 
@@ -113,7 +114,7 @@ def separated(
             path = result.files.get(name)
             audio = read(path) if path is not None else np.zeros_like(mixture)
             audio = np.pad(audio, ((0, max(0, len(mixture) - len(audio))), (0, 0)))
-            estimates[instrument] = audio[: len(mixture)]
+            estimates[instrument] = estimates.get(instrument, 0) + audio[: len(mixture)]
     shutil.rmtree(out, ignore_errors=True)
     return estimates, result.seconds
 

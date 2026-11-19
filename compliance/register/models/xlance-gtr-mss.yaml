@@ -1,0 +1,50 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: xlance-gtr-mss
+kind: model
+name: "X-LANCE MSR gtr_mss.pth (guitar; SJTU X-LANCE MSR Challenge 2025 system)"
+version: "c275b1f gtr_mss.pth"
+repo_url: https://github.com/ModistAndrew/xlance-msr
+code_spdx: MIT
+weights:
+  licence: "MIT (Hugging Face tag)"
+  url: https://huggingface.co/chenxie95/xlance-msr-ckpt/tree/c275b1fda995b98fc061ce571327f91b2ca666a2
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "b72e10b3d2aef72e53e12b89aba083498ed8602a7eb2fc299387d610f0d5000e"
+  files:
+    - name: bs_roformer_xlance_gtr_mss.ckpt
+      sha256: "813a92bd210e1fc7412d658c777e3676b4991e33499437ea2f830d7b58af2684"
+      bytes: 204409973
+      url: https://huggingface.co/chenxie95/xlance-msr-ckpt/resolve/c275b1fda995b98fc061ce571327f91b2ca666a2/gtr_mss.pth
+    - name: bs_roformer_xlance_gtr_mss.yaml
+      sha256: "4297a7c74770657355cb80746e4d81e02cac76a40b6caa28ac5fb917634240e3"
+      bytes: 3678
+training_data:
+  - name: MoisesDB
+    licence: CC-BY-NC-SA-4.0
+    commercial_ok: false
+    musdb18_test_in_training: "no"
+    # X-LANCE trained on MoisesDB: in-sample for the eval set moisesdb-p1.
+    moisesdb_in_training: "yes"
+    source: https://arxiv.org/abs/2602.09042
+  - name: RawStems
+    licence: "annotations Apache-2.0; audio rights retained by the creators"
+    commercial_ok: false
+    source: https://huggingface.co/datasets/yongyizang/RawStems
+  - name: BS-Roformer-SW initialisation (undisclosed data; see bs-roformer-sw)
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    source: https://github.com/ModistAndrew/xlance-msr/blob/main/system_card.md
+tier: red
+tier_reason: "MIT tag, but trained on non-commercial data (MoisesDB) from an SW initialisation of unknown provenance"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Step 29 keys-fallback candidate (research section 5). The X-LANCE repo has no config for it;
+  downloaded to answer the research's open question of what it is (eval/weights_check.py compares it
+  with SW's guitar head). The YAML is ours (eval/model-configs/): X-LANCE's model params equal SW's
+  except num_stems 1. ans.py also runs a denoise pre-pass and a whole-track fp16 pass; step 29 runs
+  it windowed like SW without the denoise pass (owner's default, 2026-11-07). In-sample for
+  moisesdb-p1.
+reviewer: owner
+reviewed: 2026-11-08

@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
 // Doc 26 §12.2, 27 §5.4: status icon + what happened + what it means (optional) + what you can do.
-// Status colour is the icon and a tinted surface (a hairline border returns under increased
-// contrast) — never a saturated fill, and the title carries the meaning.
+// Status colour is the icon and, for inline messages, a tinted surface (a hairline border returns
+// under increased contrast); banners are a plain line. Never a saturated fill, and the title
+// carries the meaning.
 
 export type StatusTone = 'error' | 'warning' | 'info' | 'success'
 
@@ -81,28 +82,31 @@ function InlineError({
 }
 
 type BannerProps = StatusMessageProps & {
+  /** Replaces the tone icon where a more specific one says it better (offline: a crossed-out wifi). */
+  icon?: React.ReactNode
   /** Only non-blocking banners can be dismissed (doc 26 §12.2). */
   dismiss?: { label: string; onDismiss: () => void } | undefined
 }
 
-/** Page-level notice at the top of a region (offline, worker offline, demo mode, browser support). */
-function Banner({ tone, title, description, actions, dismiss, className }: BannerProps) {
+/**
+ * Page-level notice at the top of a region (offline, worker offline, demo mode, browser support):
+ * one quiet line, the tone in the icon and the words, a hairline below; no box and no tinted bar.
+ */
+function Banner({ tone, title, description, actions, icon, dismiss, className }: BannerProps) {
   const style = TONES[tone]
   return (
     <div
       data-slot="banner"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent px-4 py-3 sm:flex-nowrap',
-        style.surface,
-        style.border,
+        'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-1 border-b border-border py-1.5 sm:flex-nowrap',
         className,
       )}
     >
-      <span className={cn('shrink-0 [&_svg]:size-5', style.text)}>{style.icon}</span>
-      <p className="min-w-0 flex-1 basis-3xs text-sm text-foreground">
-        <span className="font-medium">{title}</span>
-        {description && <span> {description}</span>}
+      <span className={cn('shrink-0 [&_svg]:size-4.5', style.text)}>{icon ?? style.icon}</span>
+      <p className="min-w-0 flex-1 basis-3xs py-2 text-sm text-foreground">
+        <span className={cn(description && 'font-medium')}>{title}</span>
+        {description && <span className="text-muted-foreground"> {description}</span>}
       </p>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       {dismiss && (

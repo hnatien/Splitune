@@ -31,7 +31,7 @@ export function PracticeLoading({ slowText }: { slowText?: string }) {
       <div className="flex shrink-0 items-center gap-3 border-t border-border px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-6">
         <Skeleton className="size-(--target-practice) rounded-xl" />
         <Skeleton className="size-18 rounded-full" />
-        <Skeleton className="h-(--target-practice) w-48 rounded-2xl" />
+        <Skeleton className="h-(--target-practice) w-48 rounded-full" />
       </div>
     </FocusShell>
   )

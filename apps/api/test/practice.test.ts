@@ -106,6 +106,16 @@ const LOOP = {
   end_s: 10.1,
 }
 
+const LADDER = {
+  start_pct: 70,
+  end_pct: 100,
+  step_pct: 5,
+  plays_per_step: 3,
+  count_in_each_pass: true,
+  drop_after_misses: 2,
+  on_goal: 'keep',
+}
+
 describe('loop clips', () => {
   let loopId: string
 
@@ -147,6 +157,88 @@ describe('loop clips', () => {
       start_s: 20,
     })
     expect(patched.status).toBe(400)
+  })
+
+  it('stores the speed ladder with its miss rule, end action and position', async () => {
+    const created = await alice.request('POST', `/v1/songs/${songId}/loops`, {
+      ...LOOP,
+      trainer: LADDER,
+    })
+    expect(created.status).toBe(201)
+    const clip = await json<{ id: string; trainer: unknown }>(created)
+    expect(clip.trainer).toEqual(LADDER)
+    const climbed = { ...LADDER, on_goal: 'stop', current_pct: 75, clean_count: 2, miss_count: 1 }
+    const patched = await alice.request('PATCH', `/v1/songs/${songId}/loops/${clip.id}`, {
+      trainer: climbed,
+    })
+    expect(patched.status).toBe(200)
+    const list = await json<{ items: { id: string; trainer: unknown }[] }>(
+      await alice.request('GET', `/v1/songs/${songId}/loops`),
+    )
+    expect(list.items.find((item) => item.id === clip.id)?.trainer).toEqual(climbed)
+    const off = await alice.request('PATCH', `/v1/songs/${songId}/loops/${clip.id}`, {
+      trainer: null,
+    })
+    expect((await json<{ trainer: unknown }>(off)).trainer).toBeNull()
+    expect((await alice.request('DELETE', `/v1/songs/${songId}/loops/${clip.id}`)).status).toBe(204)
+  })
+
+  it('refuses a ladder outside its limits', async () => {
+    const refused: Record<string, unknown>[] = [
+      { start_pct: 24 },
+      { end_pct: 201 },
+      { step_pct: 0 },
+      { step_pct: 51 },
+      { plays_per_step: 0 },
+      { plays_per_step: 21 },
+      { drop_after_misses: -1 },
+      { drop_after_misses: 6 },
+      { on_goal: 'restart' },
+      { current_pct: 20 },
+      { clean_count: 21 },
+      { miss_count: 6 },
+      { start_pct: 90, end_pct: 80 },
+    ]
+    for (const patch of refused) {
+      const res = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+        trainer: { ...LADDER, ...patch },
+      })
+      expect(res.status, JSON.stringify(patch)).toBe(400)
+    }
+    const { drop_after_misses: _misses, ...old } = LADDER
+    const missing = await alice.request('POST', `/v1/songs/${songId}/loops`, {
+      ...LOOP,
+      trainer: old,
+    })
+    expect(missing.status).toBe(400)
+    const edges = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      trainer: { ...LADDER, start_pct: 25, end_pct: 200, step_pct: 50, plays_per_step: 20 },
+    })
+    expect(edges.status).toBe(200)
+    const cleared = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      trainer: null,
+    })
+    expect(cleared.status).toBe(200)
+  })
+
+  it('lets only the owner rename or delete a clip', async () => {
+    const renamed = await bob.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      name: 'Mine now',
+    })
+    expect(renamed.status).toBe(404)
+    expect((await bob.request('DELETE', `/v1/songs/${songId}/loops/${loopId}`)).status).toBe(404)
+    const mine = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      name: '  Bridge bends ',
+    })
+    expect((await json<{ name: string }>(mine)).name).toBe('Bridge bends')
+    const blank = await alice.request('PATCH', `/v1/songs/${songId}/loops/${loopId}`, {
+      name: '   ',
+    })
+    expect(blank.status).toBe(400)
+    const list = await json<{ items: { id: string; name: string }[] }>(
+      await alice.request('GET', `/v1/songs/${songId}/loops`),
+    )
+    expect(list.items).toMatchObject([{ id: loopId, name: 'Bridge bends' }])
   })
 
   it('keeps clips of other songs and users out of reach', async () => {
@@ -211,19 +303,57 @@ describe('practice sync and progress', () => {
 
     const progress = await json<{
       clips: { loop_clip_id: string; best_clean_tempo_pct: number; attempts: unknown[] }[]
+      sessions: unknown[]
     }>(await alice.request('GET', `/v1/progress?song_id=${songId}`))
+    const sid = session.client_session_id
     expect(progress.clips).toEqual([
       {
         loop_clip_id: clip.id,
         song_id: songId,
+        name: null,
         best_clean_tempo_pct: 70,
+        last_attempt_at: '2026-10-22T10:03:00.000Z',
         attempts: [
-          { at: '2026-10-22T10:01:00.000Z', tempo_pct: 70, outcome: 'not_yet' },
-          { at: '2026-10-22T10:02:00.000Z', tempo_pct: 70, outcome: 'clean' },
-          { at: '2026-10-22T10:03:00.000Z', tempo_pct: 85, outcome: 'not_yet' },
+          {
+            at: '2026-10-22T10:01:00.000Z',
+            tempo_pct: 70,
+            outcome: 'not_yet',
+            client_session_id: sid,
+          },
+          {
+            at: '2026-10-22T10:02:00.000Z',
+            tempo_pct: 70,
+            outcome: 'clean',
+            client_session_id: sid,
+          },
+          {
+            at: '2026-10-22T10:03:00.000Z',
+            tempo_pct: 85,
+            outcome: 'not_yet',
+            client_session_id: sid,
+          },
         ],
       },
     ])
+    expect(progress.sessions).toEqual([
+      {
+        client_session_id: sid,
+        song_id: songId,
+        started_at: '2026-10-22T10:00:00.000Z',
+        ended_at: null,
+        passes: 3,
+        clean_passes: 1,
+      },
+    ])
+    // The session's end arrives with a later sync.
+    await alice.request('POST', '/v1/practice/sync', {
+      sessions: [{ ...session, ended_at: '2026-10-22T10:18:00.000Z' }],
+      attempts: [],
+    })
+    const ended = await json<{ sessions: { ended_at: string }[] }>(
+      await alice.request('GET', `/v1/progress?song_id=${songId}`),
+    )
+    expect(ended.sessions[0]?.ended_at).toBe('2026-10-22T10:18:00.000Z')
 
     // A slower clean pass never lowers it; a faster one raises it.
     await alice.request('POST', '/v1/practice/sync', {
@@ -237,6 +367,47 @@ describe('practice sync and progress', () => {
       await alice.request('GET', `/v1/songs/${songId}/loops`),
     )
     expect(clips.items[0]?.best_clean_tempo_pct).toBe(85)
+  })
+
+  it('keeps the last n days with ?days and counts passes on loops that are not clips', async () => {
+    const recent = {
+      client_session_id: randomUUID(),
+      song_id: songId,
+      started_at: new Date(Date.now() - 3_600_000).toISOString(),
+      ended_at: new Date(Date.now() - 2_400_000).toISOString(),
+      input_mode: 'touch',
+    }
+    const at = new Date(Date.now() - 3_000_000).toISOString()
+    await alice.request('POST', '/v1/practice/sync', {
+      sessions: [recent],
+      attempts: [
+        {
+          client_attempt_id: randomUUID(),
+          client_session_id: recent.client_session_id,
+          tempo_pct: 75,
+          outcome: 'clean',
+          at,
+        },
+      ],
+    })
+    const res = await alice.request('GET', `/v1/progress?song_id=${songId}&days=7`)
+    expect(res.status).toBe(200)
+    const body = await json<{
+      clips: { attempts: unknown[]; last_attempt_at: string }[]
+      sessions: { client_session_id: string; passes: number; clean_passes: number }[]
+    }>(res)
+    // October's sessions and attempts fall outside the window; the clip keeps its last attempt.
+    expect(body.sessions).toEqual([
+      expect.objectContaining({
+        client_session_id: recent.client_session_id,
+        passes: 1,
+        clean_passes: 1,
+      }),
+    ])
+    expect(body.clips.every((c) => c.attempts.length === 0)).toBe(true)
+    expect(body.clips[0]?.last_attempt_at).toBe('2026-10-22T10:05:00.000Z')
+    expect((await alice.request('GET', '/v1/progress?days=0')).status).toBe(400)
+    expect((await alice.request('GET', '/v1/progress?days=367')).status).toBe(400)
   })
 
   it('keeps an attempt whose clip is gone or not the user’s, without the clip', async () => {
@@ -287,7 +458,7 @@ describe('practice sync and progress', () => {
     const progress = await json<{ clips: unknown[] }>(
       await bob.request('GET', `/v1/progress?song_id=${songId}`),
     )
-    expect(progress.clips).toEqual([])
+    expect(progress).toEqual({ clips: [], sessions: [] })
   })
 })
 

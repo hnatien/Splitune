@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { oneIn, parseChordInput } from './chord-input'
+import { parseChordInput } from './chord-input'
 
 describe('chord input', () => {
   it('reads chart names', () => {
@@ -20,11 +20,5 @@ describe('chord input', () => {
     expect(parseChordInput('H7')).toBeNull()
     expect(parseChordInput('Amaj13#11')).toBeNull()
     expect(parseChordInput('A:nonsense')).toBeNull()
-  })
-
-  it('turns probabilities into frequencies', () => {
-    expect(oneIn(0.33)).toBe(3)
-    expect(oneIn(0.5)).toBe(2)
-    expect(oneIn(0)).toBe(1000)
   })
 })

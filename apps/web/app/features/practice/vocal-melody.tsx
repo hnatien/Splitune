@@ -10,6 +10,7 @@ import { spelledNote } from './model/view-model'
 import { phraseBars } from './phrase-strip'
 import { usePractice } from './practice-context'
 import { readScoreTheme, useTokens } from './score-theme'
+import { useSpokenLabel } from './spoken-label'
 
 // Vocals' Melody view (step 18c, mockup and owner's go-ahead 2026-10-24): the sung notes as a
 // horizontal roll with phrase markers that need no lyrics (MelodyRoll), under the phrase strip.
@@ -141,15 +142,7 @@ export function VocalMelody({
           : m['practice.singing_none'](),
     })
   }, [now, melody, music])
-  const [label, setLabel] = useState('')
-  useEffect(() => {
-    if (!audio.playing()) {
-      setLabel(description)
-      return
-    }
-    const timer = setTimeout(() => setLabel(description), LABEL_EVERY_MS)
-    return () => clearTimeout(timer)
-  }, [description, audio])
+  const label = useSpokenLabel(description, audio, LABEL_EVERY_MS)
 
   if (!grid || !timing || !melody) return null
   const loop = player.loop

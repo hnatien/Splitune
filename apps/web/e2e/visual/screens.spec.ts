@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { openStory } from './story'
 
 // The visual matrix of 28 §4 (~36 images per engine): key screens × appearances × viewports,
 // each a Screens/ story with fixture data. The clock is fixed so relative dates, renewal dates
@@ -13,7 +14,6 @@ const VIEWPORTS: Record<Viewport, Parameters<typeof test.use>[0]> = {
   desktop: { viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false },
 }
 const ALL: Viewport[] = ['phone', 'tablet', 'desktop']
-const FIXED_NOW = new Date('2026-10-22T10:00:00Z')
 
 const MATRIX: { name: string; story: string; appearances: Appearance[]; viewports: Viewport[] }[] =
   [
@@ -81,35 +81,13 @@ const MATRIX: { name: string; story: string; appearances: Appearance[]; viewport
     },
   ]
 
-async function openStory(page: Page, story: string, appearance: Appearance) {
-  await page.clock.setFixedTime(FIXED_NOW)
-  await page.goto(`/iframe.html?id=${story}&viewMode=story&globals=appearance:${appearance}`)
-  // The story rendered and its play function (which waits for the screen's state) passed.
-  const phase = await page.waitForFunction(
-    () => {
-      const current = (
-        window as unknown as { __STORYBOOK_PREVIEW__?: { currentRender?: { phase?: string } } }
-      ).__STORYBOOK_PREVIEW__?.currentRender?.phase
-      return current === 'finished' || current === 'errored' ? current : false
-    },
-    null,
-    { timeout: 60_000 },
-  )
-  expect(await phase.jsonValue(), `${story} rendered without errors`).toBe('finished')
-  await page.waitForLoadState('networkidle')
-  // alphaTab draws in its worker after the story settles: wait for the score's first glyphs.
-  const score = page.locator('[data-slot=alphatab-view]')
-  if (await score.isVisible()) await expect(score.locator('svg').first()).toBeVisible()
-  await page.evaluate(() => document.fonts.ready.then(() => undefined))
-}
-
 for (const row of MATRIX) {
   for (const viewport of row.viewports) {
     test.describe(`${row.name} @ ${viewport}`, () => {
       test.use(VIEWPORTS[viewport])
       for (const appearance of row.appearances) {
         test(appearance, async ({ page }) => {
-          await openStory(page, row.story, appearance)
+          await openStory(page, row.story, `appearance:${appearance}`)
           await expect(page).toHaveScreenshot(`${row.name}--${viewport}--${appearance}.png`)
         })
       }

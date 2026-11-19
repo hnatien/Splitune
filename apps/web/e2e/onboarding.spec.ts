@@ -61,8 +61,8 @@ test('a fresh visitor reaches a slowed loop of their part without signing in', a
   await page.getByRole('button', { name: 'Just started' }).click()
   await expect(page.getByRole('heading', { name: "Where's your screen?" })).toBeVisible()
   await expectAccessible(page)
-  // 4. Skip the screen step.
-  await page.getByRole('button', { name: 'Skip' }).click()
+  // 4. Skip the screen step (the header's Skip leaves onboarding; this one keeps going).
+  await page.getByRole('button', { name: 'Skip for now' }).click()
   // The example's practice screen loads behind its card; the card's button starts the audio.
   const card = page.getByRole('dialog', { name: 'Your first song' })
   await expect(card).toBeVisible({ timeout: 30_000 })
@@ -126,7 +126,7 @@ test('signing up from "Save your progress?" keeps the loop and the pass', async 
   expect(me).toMatchObject({ primary_instrument: 'guitar', level: 'just_started' })
 
   // The next step: a song of their own.
-  await expect(page.getByRole('link', { name: 'Import a song' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Add song' })).toBeVisible()
   await page.getByRole('link', { name: 'Keep practising' }).click()
   await expect(page).toHaveURL(new RegExp(`/songs/${song?.id}/practice`))
   await expect(loopBadge()).toHaveText(`Loop · bars ${looped.bars}`, { timeout: 30_000 })

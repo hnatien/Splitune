@@ -26,7 +26,7 @@ export function ScoreTools({ capo }: { capo: boolean }) {
         render={
           <Button
             variant="outline"
-            className="ml-auto shrink-0 border-staff bg-paper text-ink hover:bg-bar-current in-data-[appearance=stage]:hidden"
+            className="ml-auto shrink-0 bg-paper text-ink inset-ring-staff hover:bg-bar-current in-data-[appearance=stage]:hidden"
             aria-label={`${title}: ${summary}`}
           />
         }

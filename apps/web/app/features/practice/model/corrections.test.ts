@@ -26,7 +26,14 @@ describe('corrections outbox', () => {
   beforeEach(() => {
     db = memoryOutbox()
     configureCorrections({ db })
-    useCorrections.setState({ pending: [], undo: [], redo: [], rejected: 0, hydrated: true })
+    useCorrections.setState({
+      pending: [],
+      undo: [],
+      redo: [],
+      rejected: 0,
+      offline: false,
+      hydrated: true,
+    })
     applyCorrections.mockReset()
   })
 
@@ -50,6 +57,24 @@ describe('corrections outbox', () => {
       await flushCorrections()
       expect(useCorrections.getState().pending).toHaveLength(1)
       expect(db.rows.size).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('says edits wait on this device while the API is unreachable, until they get through', async () => {
+    vi.useFakeTimers()
+    try {
+      applyCorrections.mockRejectedValue(new TypeError('Failed to fetch'))
+      applyCorrection('art-1', SET_DM, SET_F)
+      await flushCorrections()
+      expect(useCorrections.getState().offline).toBe(true)
+      // Still applied: the effective ops carry it.
+      expect(effectiveOps([], useCorrections.getState().pending, 'art-1')).toEqual([SET_DM])
+      applyCorrections.mockResolvedValue({ applied: [] })
+      await flushCorrections()
+      expect(useCorrections.getState().offline).toBe(false)
+      expect(useCorrections.getState().pending).toEqual([])
     } finally {
       vi.useRealTimers()
     }

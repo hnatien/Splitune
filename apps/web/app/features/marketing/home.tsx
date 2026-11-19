@@ -1,132 +1,95 @@
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  EyeIcon,
-  type LucideIcon,
-  MetronomeIcon,
-  MoonStarIcon,
-  TrendingUpIcon,
-  WifiOffIcon,
-} from 'lucide-react'
-import type * as React from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/ui/badge'
 import { buttonVariants } from '@/ui/button'
-import { PedalIcon } from '@/ui/icons'
-import {
-  AlternativesStill,
-  ChordStill,
-  LegendStill,
-  LoopStill,
-  MixerStill,
-  PassStill,
-  ProductStill,
-  TabStill,
-  TimelineStill,
-} from './product-still'
 
-// Home (27 §3.1): the promise in one screen and the way to the example song, then the three proofs,
-// what makes it work at the stand, how a session goes and the pricing teaser. The headline is the
-// LCP element (budget ≤ 2.5 s, 10 §9), so it is plain text that never animates in.
+// Home (27 §3.1): the promise and the way to the example song, what it does, what makes it work at
+// the stand, how a session goes and the pricing teaser. The headline is the LCP element (budget
+// ≤ 2.5 s, 10 §9), so it is plain text that never animates in. The pictures are abstract colour
+// art (public/art/): the one place colour lives outside meaning, each piece set beside the words
+// that carry its point, so every image is decorative and has no text alternative.
+// Honesty gates (27 §3.1): claims of unbuilt steps keep today's wording until s45 flips them — the
+// isolate body (s40b), the loop body (s37), the count-in body (s42) — and "Stand view for tablets"
+// (s43) is left out of the stand list until then.
 
-const SECTION = 'mx-auto w-full max-w-page px-4 md:px-6 lg:px-8'
+const SECTION = 'mx-auto w-full max-w-marketing px-4 sm:px-6 lg:px-8'
 
-function Proof({
-  index,
-  eyebrow,
-  title,
-  body,
-  points,
-  flip = false,
-  wide = false,
-  children,
+type ArtName =
+  | 'home-isolate'
+  | 'home-loop'
+  | 'home-honest'
+  | 'home-pedal'
+  | 'home-read'
+  | 'home-beat'
+  | 'home-offline'
+  | 'home-progress'
+
+function Art({
+  name,
+  width,
+  height,
+  className,
 }: {
-  index: number
-  eyebrow: string
-  title: string
-  body: string
-  points: string[]
-  /** Picture first on wide screens, so the rows alternate. */
-  flip?: boolean
-  /** The picture needs the full width (the mixer rows): text above it, the points beside the text. */
-  wide?: boolean
-  children: React.ReactNode
+  name: ArtName
+  width: number
+  height: number
+  className?: string
 }) {
-  const list = (
-    <ul className="mt-2 flex flex-col gap-3">
-      {points.map((point) => (
-        <li key={point} className="flex gap-3 text-base">
-          <CheckIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-          {point}
-        </li>
-      ))}
-    </ul>
-  )
   return (
-    <section
-      className={cn(
-        'grid items-center gap-8',
-        !wide && 'lg:gap-16',
-        !wide && (flip ? 'lg:grid-cols-[3fr_2fr]' : 'lg:grid-cols-[2fr_3fr]'),
-      )}
-    >
-      <div
-        className={cn(
-          'grid gap-4',
-          flip && 'lg:order-2',
-          wide && 'lg:grid-cols-2 lg:items-end lg:gap-x-16',
-        )}
-      >
-        <div className="flex flex-col gap-4">
-          <p className="flex items-center gap-3 text-sm font-semibold text-muted-foreground">
-            <span className="tabular-nums">{String(index).padStart(2, '0')}</span>
-            <span aria-hidden className="h-px w-8 bg-border" />
-            {eyebrow}
-          </p>
-          <h2 className="text-3xl text-balance lg:text-4xl">{title}</h2>
-          <p className="max-w-reading text-lg text-muted-foreground">{body}</p>
-        </div>
-        {list}
-      </div>
-      <div className="min-w-0 sm:rounded-3xl sm:bg-surface-sunken sm:p-6 lg:p-8">{children}</div>
-    </section>
+    <img
+      src={`/art/${name}.webp`}
+      alt=""
+      width={width}
+      height={height}
+      loading="lazy"
+      decoding="async"
+      className={cn('rounded-md bg-muted object-cover', className)}
+    />
   )
 }
 
-const STAND: { icon: LucideIcon; title: () => string; body: () => string }[] = [
+function Tile({ art, title, body }: { art: ArtName; title: string; body: string }) {
+  return (
+    <article className="flex flex-1 flex-col gap-4">
+      <Art name={art} width={1024} height={1024} className="aspect-4/3 w-full sm:aspect-square" />
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-lg text-balance">{title}</h2>
+        <p className="text-base text-pretty text-muted-foreground">{body}</p>
+      </div>
+    </article>
+  )
+}
+
+const STAND: { art: ArtName; title: () => string; body: () => string }[] = [
   {
-    icon: MetronomeIcon,
-    title: () => m['home.stand_beat_title'](),
-    body: () => m['home.stand_beat_body'](),
-  },
-  {
-    icon: PedalIcon,
+    art: 'home-pedal',
     title: () => m['home.stand_pedal_title'](),
     body: () => m['home.stand_pedal_body'](),
   },
   {
-    icon: EyeIcon,
+    art: 'home-read',
     title: () => m['home.stand_read_title'](),
     body: () => m['home.stand_read_body'](),
   },
   {
-    icon: MoonStarIcon,
-    title: () => m['home.stand_stage_title'](),
-    body: () => m['home.stand_stage_body'](),
+    art: 'home-beat',
+    title: () => m['home.stand_beat_title'](),
+    body: () => m['home.stand_beat_body'](),
   },
   {
-    icon: WifiOffIcon,
+    art: 'home-offline',
     title: () => m['home.stand_offline_title'](),
     body: () => m['home.stand_offline_body'](),
   },
   {
-    icon: TrendingUpIcon,
+    art: 'home-progress',
     title: () => m['home.stand_progress_title'](),
     body: () => m['home.stand_progress_body'](),
   },
 ]
+
+/** The headline's sentences, so each can hold its own line. */
+const sentences = (text: string) => text.match(/[^.!?]+[.!?]+/g)?.map((s) => s.trim()) ?? [text]
 
 export function Home() {
   const steps = [
@@ -136,170 +99,109 @@ export function Home() {
     { title: m['home.step_4_title'](), body: m['home.step_4']() },
   ]
   return (
-    <div className="flex flex-col gap-24 pb-24 lg:gap-32 lg:pb-32">
-      <section className={cn(SECTION, 'flex flex-col gap-12 pt-12 lg:gap-16 lg:pt-20')}>
-        <div className="grid items-end gap-6 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
-          <div className="flex flex-col items-start gap-6">
-            <Badge variant="primary">{m['home.badge']()}</Badge>
-            <h1 className="max-w-[14ch] text-display text-balance">{m['home.headline']()}</h1>
-          </div>
-          <div className="flex flex-col gap-6">
-            <p className="max-w-reading text-lg text-muted-foreground lg:text-xl lg:leading-8">
-              {m['home.subhead']()}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/start"
-                className={buttonVariants({ variant: 'primary', size: 'practice-2' })}
-              >
-                {m['home.cta_example']()}
-                <ArrowRightIcon aria-hidden />
-              </Link>
-              <Link
-                to="/auth/sign-in"
-                className={buttonVariants({ variant: 'outline', size: 'practice-2' })}
-              >
-                {m['nav.sign_in']()}
-              </Link>
-            </div>
-          </div>
+    <div className="flex flex-col gap-24 pb-24 sm:gap-30">
+      <section
+        aria-labelledby="home-title"
+        className={cn(SECTION, 'flex flex-col items-center gap-6 pt-16 text-center sm:pt-28')}
+      >
+        <h1 id="home-title" className="text-display">
+          {sentences(m['home.headline']()).map((sentence) => (
+            <span key={sentence} className="block text-balance">
+              {sentence}{' '}
+            </span>
+          ))}
+        </h1>
+        <p className="max-w-[58ch] text-lead text-pretty text-muted-foreground">
+          {m['home.subhead']()}
+        </p>
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <Link to="/start" className={buttonVariants({ variant: 'primary', size: 'lg' })}>
+            {m['home.cta_example']()}
+          </Link>
+          <Link to="/auth/sign-in" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
+            {m['nav.sign_in']()}
+          </Link>
         </div>
-        <div className="relative">
-          <div
-            aria-hidden
-            className="absolute inset-x-0 top-1/4 -bottom-6 -z-10 rounded-3xl bg-surface-sunken"
-          />
-          <div className="px-0 sm:px-6 lg:px-12">
-            <ProductStill caption={m['home.still_caption']()} />
-          </div>
+        <div className="flex flex-col gap-1 text-sm">
+          <p className="text-muted-foreground">{m['home.badge']()}</p>
+          <p className="text-faint-foreground">{m['home.note']()}</p>
         </div>
       </section>
 
-      <div className={cn(SECTION, 'flex flex-col gap-24 lg:gap-32')}>
-        <Proof
-          index={1}
-          eyebrow={m['home.proof_isolate_eyebrow']()}
-          title={m['home.proof_isolate_title']()}
-          body={m['home.proof_isolate_body']()}
-          points={[
-            m['home.proof_isolate_point_1'](),
-            m['home.proof_isolate_point_2'](),
-            m['home.proof_isolate_point_3'](),
-          ]}
-          wide
-        >
-          <div className="rounded-2xl border border-border bg-card p-3 shadow-2 sm:p-5">
-            <MixerStill />
+      <section
+        aria-label={m['home.does_label']()}
+        className={cn(SECTION, 'grid gap-x-8 gap-y-12 lg:grid-cols-4')}
+      >
+        <article className="flex flex-col gap-6 lg:sticky lg:top-24 lg:col-span-3 lg:self-start">
+          <Art name="home-isolate" width={1984} height={1116} className="aspect-video w-full" />
+          <div className="flex max-w-[44ch] flex-col gap-2.5">
+            <h2 className="text-2xl text-balance">{m['home.proof_isolate_title']()}</h2>
+            <p className="text-lead text-pretty text-muted-foreground">
+              {m['home.proof_isolate_body']()}
+            </p>
           </div>
-        </Proof>
-        <Proof
-          index={2}
-          eyebrow={m['home.proof_loop_eyebrow']()}
-          title={m['home.proof_loop_title']()}
-          body={m['home.proof_loop_body']()}
-          points={[
-            m['home.proof_loop_point_1'](),
-            m['home.proof_loop_point_2'](),
-            m['home.proof_loop_point_3'](),
-          ]}
-          flip
-        >
-          <div
-            inert
-            aria-hidden
-            data-density="practice"
-            data-distance="desk"
-            className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-2 sm:p-5"
-          >
-            <TimelineStill />
-            <LoopStill />
-            <PassStill />
-          </div>
-        </Proof>
-        <Proof
-          index={3}
-          eyebrow={m['home.proof_honest_eyebrow']()}
-          title={m['home.proof_honest_title']()}
-          body={m['home.proof_honest_body']()}
-          points={[
-            m['home.proof_honest_point_1'](),
-            m['home.proof_honest_point_2'](),
-            m['home.proof_honest_point_3'](),
-          ]}
-        >
-          <div
-            inert
-            aria-hidden
-            data-density="practice"
-            data-distance="desk"
-            className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-2 sm:p-5"
-          >
-            <ChordStill />
-            <TabStill bars={{ from: 7, to: 9 }} />
-            <div className="grid gap-4 xl:grid-cols-[auto_1fr] xl:items-start">
-              <AlternativesStill />
-              <LegendStill />
-            </div>
-          </div>
-        </Proof>
-      </div>
-
-      <section aria-labelledby="stand" className={cn(SECTION, 'flex flex-col gap-10')}>
-        <div className="flex max-w-reading flex-col gap-3">
-          <h2 id="stand" className="text-3xl text-balance lg:text-4xl">
-            {m['home.stand_title']()}
-          </h2>
-          <p className="text-lg text-muted-foreground">{m['home.stand_intro']()}</p>
+        </article>
+        <div className="flex flex-col gap-10 sm:flex-row sm:gap-8 lg:flex-col lg:gap-12">
+          <Tile
+            art="home-loop"
+            title={m['home.proof_loop_title']()}
+            body={m['home.proof_loop_body']()}
+          />
+          <Tile
+            art="home-honest"
+            title={m['home.proof_honest_title']()}
+            body={m['home.proof_honest_body']()}
+          />
         </div>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {STAND.map(({ icon: Icon, title, body }) => (
-            <li
-              key={title()}
-              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-raised p-6 shadow-1"
-            >
-              <span className="grid size-11 place-items-center rounded-xl bg-muted text-foreground">
-                <Icon aria-hidden className="size-5" />
-              </span>
-              <h3 className="text-lg">{title()}</h3>
-              <p className="text-base text-muted-foreground">{body()}</p>
+      </section>
+
+      <section aria-labelledby="stand" className={cn(SECTION, 'flex flex-col gap-8')}>
+        <h2 id="stand" className="text-xl">
+          {m['home.stand_title']()}
+        </h2>
+        <ul className="grid gap-x-8 gap-y-7 md:grid-cols-2">
+          {STAND.map(({ art, title, body }) => (
+            <li key={title()} className="flex items-center gap-5">
+              <Art name={art} width={800} height={800} className="size-24 shrink-0 sm:size-29" />
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg text-balance">{title()}</h3>
+                <p className="text-base text-pretty text-muted-foreground">{body()}</p>
+              </div>
             </li>
           ))}
         </ul>
       </section>
 
-      <section aria-labelledby="session" className={cn(SECTION, 'flex flex-col gap-10')}>
-        <h2 id="session" className="text-3xl text-balance lg:text-4xl">
+      <section aria-labelledby="session" className={cn(SECTION, 'flex flex-col gap-8')}>
+        <h2 id="session" className="text-xl">
           {m['home.session_title']()}
         </h2>
-        <ol className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
-            <li key={step.title} className="flex flex-col gap-3 border-t-2 border-border pt-5">
-              <span className="text-4xl text-muted-foreground tabular-nums">{i + 1}</span>
-              <h3 className="text-lg">{step.title}</h3>
-              <p className="text-base text-muted-foreground">{step.body}</p>
+            <li key={step.title} className="flex flex-col gap-2 border-t border-border pt-5">
+              <span aria-hidden className="text-sm text-faint-foreground tabular-nums">
+                {i + 1}
+              </span>
+              <h3 className="text-lg text-balance">{step.title}</h3>
+              <p className="text-base text-pretty text-muted-foreground">{step.body}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section className={SECTION}>
-        <div className="grid items-center gap-8 rounded-3xl border border-border bg-surface-raised p-6 shadow-2 sm:p-10 lg:grid-cols-[1fr_auto] lg:p-14">
-          <div className="flex max-w-reading flex-col gap-3">
-            <h2 className="text-3xl text-balance lg:text-4xl">{m['home.pricing_title']()}</h2>
-            <p className="text-lg text-muted-foreground">{m['home.pricing_body']()}</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/start"
-              className={buttonVariants({ variant: 'primary', size: 'practice-2' })}
-            >
+      <section aria-labelledby="free" className={SECTION}>
+        <div className="flex flex-col items-center gap-5 rounded-xl bg-muted px-6 py-16 text-center sm:py-24">
+          <h2 id="free" className="max-w-[18ch] text-2xl text-balance sm:text-3xl">
+            {m['home.pricing_title']()}
+          </h2>
+          <p className="max-w-[48ch] text-lead text-pretty text-muted-foreground">
+            {m['home.pricing_body']()}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <Link to="/start" className={buttonVariants({ variant: 'primary', size: 'lg' })}>
               {m['home.cta_example']()}
-              <ArrowRightIcon aria-hidden />
             </Link>
-            <Link
-              to="/pricing"
-              className={buttonVariants({ variant: 'outline', size: 'practice-2' })}
-            >
+            <Link to="/pricing" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
               {m['home.pricing_link']()}
             </Link>
           </div>

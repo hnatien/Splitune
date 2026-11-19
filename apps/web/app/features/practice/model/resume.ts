@@ -24,6 +24,8 @@ export interface PracticeSearch {
   mix?: 'your-part' | 'minus-one' | 'original' | undefined
   /** The level toggle's start (07 §6); ignored if the song's instrument has no such level. */
   level?: Level | undefined
+  /** The inspector tab to open (27 §1); the device's last tab otherwise. */
+  tab?: 'loop' | 'mix' | 'progress' | 'fix' | undefined
 }
 
 export interface ResumeInput {
@@ -79,7 +81,11 @@ export function planResume({
     search.view ??
     (saved.view === 'chords_only' ? 'chords' : saved.view === 'tab' ? 'tab' : undefined)
   const fromUrl = grid ? parseLoopParam(search.loop, grid) : null
-  const clip = clips.find((c) => c.id === saved.selected_loop_id)
+  // URL bars that are a saved clip's bars open that clip (Worth a revisit, s39), so its passes,
+  // ladder and history carry on.
+  const urlClip =
+    fromUrl && clips.find((c) => c.start_bar === fromUrl.startBar && c.end_bar === fromUrl.endBar)
+  const clip = urlClip || clips.find((c) => c.id === saved.selected_loop_id)
   return {
     ...(startLevel ? { level: startLevel } : {}),
     ...(speed === undefined ? {} : { speed }),
@@ -89,7 +95,7 @@ export function planResume({
         ? { preset: PRESET_PARAM[search.mix] }
         : { saved: saved.mix as Mix | undefined },
     ...(view ? { view } : {}),
-    loop: fromUrl ? { range: fromUrl } : clip ? { clip } : null,
+    loop: fromUrl && !urlClip ? { range: fromUrl } : clip ? { clip } : null,
     ...(saved.position_s === undefined ? {} : { seek: saved.position_s }),
   }
 }

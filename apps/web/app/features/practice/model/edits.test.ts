@@ -7,7 +7,19 @@ import {
   type Notes,
 } from '@splitune/music-core'
 import { describe, expect, it } from 'vitest'
-import { beatFix, deleteNote, placeNote, revertOp, setChord, setNoteEnd, splitChord } from './edits'
+import {
+  beatFix,
+  confirmedEntities,
+  deleteNote,
+  markCorrect,
+  placeNote,
+  replaceAll,
+  revertOp,
+  setChord,
+  setNoteEnd,
+  splitChord,
+  UNCONFIRM,
+} from './edits'
 
 const segments = (chords as Chords).segments
 const F = segments.find((s) => s.id === 'c0002') as Chords['segments'][number]
@@ -103,5 +115,70 @@ describe('reverting one op from the history', () => {
     expect(
       revertOp('notes', notes as Notes, [{ op: 'report_wrong', entity_id: note.id }], 0),
     ).toBeNull()
+  })
+})
+
+describe("It's right", () => {
+  it('confirms an entity, and its undo is a report that takes the confirmation back', () => {
+    const edit = markCorrect('notes', note.id)
+    expect(edit.op).toEqual({ op: 'mark_correct', entity_id: note.id })
+    expect(edit.inverse).toEqual({ op: 'report_wrong', entity_id: note.id, comment: UNCONFIRM })
+    expect([...confirmedEntities([edit.op])]).toEqual([note.id])
+    expect(confirmedEntities([edit.op, edit.inverse as never]).size).toBe(0)
+    // Confirmed again after taking it back.
+    expect(confirmedEntities([edit.op, edit.inverse as never, edit.op]).has(note.id)).toBe(true)
+  })
+
+  it('is not undone by an ordinary report, and never changes the notes', () => {
+    const edit = markCorrect('notes', note.id)
+    const ops = [edit.op, { op: 'report_wrong', entity_id: note.id } as const]
+    expect(confirmedEntities(ops).has(note.id)).toBe(true)
+    expect(applyNoteCorrections(notes as Notes, ops as never).value.notes).toEqual(
+      (notes as Notes).notes,
+    )
+  })
+
+  it('reverts from the history only while it stands', () => {
+    const edit = markCorrect('chords', 'c0002')
+    expect(revertOp('chords', chords as Chords, [edit.op], 0)).toEqual(edit.inverse)
+    expect(revertOp('chords', chords as Chords, [edit.op, edit.inverse as never], 0)).toBeNull()
+  })
+})
+
+describe('Replace all in this song', () => {
+  const song = [
+    { ...F, id: 'a', label: 'A:min' },
+    { ...F, id: 'b', label: 'F:maj' },
+    { ...F, id: 'c', label: 'A:min' },
+    { ...F, id: 'd', label: 'A:min', bass: 'G' },
+    { ...F, id: 'e', label: 'A:min' },
+  ]
+
+  it('changes every other chord with the label the changed one had, each undoable', () => {
+    const edits = replaceAll(
+      song,
+      { id: 'a', label: 'A:min', bass: undefined },
+      { label: 'A:min7' },
+    )
+    expect(edits.map((edit) => edit.op)).toEqual([
+      { op: 'set_chord', segment_id: 'c', label: 'A:min7' },
+      { op: 'set_chord', segment_id: 'e', label: 'A:min7' },
+    ])
+    expect(edits.map((edit) => edit.inverse)).toEqual([
+      { op: 'set_chord', segment_id: 'c', label: 'A:min' },
+      { op: 'set_chord', segment_id: 'e', label: 'A:min' },
+    ])
+  })
+
+  it('carries a typed bass and finds nothing when the chord stood alone', () => {
+    const [edit] = replaceAll(
+      song,
+      { id: 'a', label: 'A:min', bass: undefined },
+      { label: 'C:maj', bass: 'A' },
+    )
+    expect(edit?.op).toEqual({ op: 'set_chord', segment_id: 'c', label: 'C:maj', bass: 'A' })
+    expect(
+      replaceAll(song, { id: 'b', label: 'F:maj', bass: undefined }, { label: 'F:maj7' }),
+    ).toEqual([])
   })
 })

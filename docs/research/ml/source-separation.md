@@ -34,7 +34,7 @@ Benchmarks are almost all 4-stem because MUSDB18 only provides vocals/drums/bass
 - **SCNet** (Sparse Compression Network). It reaches 9.0 dB on MUSDB18-HQ with no extra data, with CPU inference at **48% of HT-Demucs's time** ([SCNet paper](https://arxiv.org/abs/2401.13276)). Larger community variants (SCNet XL IHF) reach 10.08 dB on MUSDB test when trained on MUSDB18-HQ only ([MSST pretrained list](https://github.com/ZFTurbo/Music-Source-Separation-Training/blob/main/docs/pretrained_models.md)).
 - **TFC-TDF U-Net v3 / MDX23C** (KUIELab). It placed 1st on SDX'23 leaderboard B (bleeding) and 3rd on A (label noise) ([kuielab/sdx23](https://github.com/kuielab/sdx23)). ZFTurbo's MDX23C vocal checkpoint scores 10.17 dB on the MVSep Multisong set ([MSST pretrained list](https://github.com/ZFTurbo/Music-Source-Separation-Training/blob/main/docs/pretrained_models.md)).
 - **Efficient band-split U-Nets: Moises-Light** (Moises, Oct 2025). The paper reports 9.96 dB average on MUSDB-HQ with 5M×4 parameters, versus 9.80 for BS-RoFormer at 72M×4 ([Moises-Light, Table 4](https://arxiv.org/html/2510.06785v1)). The paper does not say whether code or weights are released ([arXiv abs](https://arxiv.org/abs/2510.06785)). It matters because a commercial vendor is publicly optimising for cheap inference.
-- **Query-based separation: Banquet.** A single-decoder band-split model is conditioned on a PaSST instrument embedding, with 24.9M parameters. On MoisesDB it beat `htdemucs_6s` on guitar and piano and came close to it on VDBO stems ([Banquet paper](https://arxiv.org/abs/2406.18747); [code, MIT](https://github.com/kwatcharasupat/query-bandit)).
+- **Query-based separation: Banquet.** A single-decoder band-split model is conditioned on a PaSST instrument embedding, with 24.9M parameters. On MoisesDB it beat `htdemucs_6s` on guitar and piano in some configurations and came close to it on VDBO stems ([Banquet paper](https://arxiv.org/abs/2406.18747); [code, MIT](https://github.com/kwatcharasupat/query-bandit)). 2026-11-07 correction: the paper reports median SNR, not SDR, and the margin depends on configuration (`other-instruments-feasibility.md` §2.5).
 - **Generative, prompted separation: Meta SAM Audio** (Dec 2025). It is a flow-matching diffusion transformer with 500M, 1B and 3B variants. Prompts can be text, a time span, or a masked video region ([SAM Audio paper](https://arxiv.org/html/2512.18099); [The Register](https://www.theregister.com/2025/12/16/meta_sam_ai_audio/)). The paper reports subjective overall scores, not SDR. On MUSDB instruments it scored 4.45 vs AudioShake 4.28, Demucs 4.26 and Spleeter 3.90. On in-the-wild instruments it scored 4.00 vs MoisesAI 3.12 and AudioShake 3.43. Large on an A100 takes about **7.3 s per 10 s of audio** ([SAM Audio paper §7](https://arxiv.org/html/2512.18099)). Meta says isolating "highly similar" sources, such as one instrument in an orchestra, is still hard ([The Register](https://www.theregister.com/2025/12/16/meta_sam_ai_audio/)). The video-prompt mode is relevant to `video-and-audio-visual-analysis.md`.
 - **Legacy:** Spleeter (Deezer, 2019, TensorFlow U-Net) and Open-Unmix (2019) are fast and easy to deploy but 2–4 dB behind the current state of the art (see the comparison doc).
 
@@ -59,7 +59,7 @@ The Moises-Light paper reproduces most of these values and adds SCNet-L at 9.69 
 
 **Community leaderboard (MVSep "Multisong", 100 one-minute songs, SDR)** ([MVSep quality checker](https://de.mvsep.com/en/quality_checker); [MVSep algorithms](https://mvsep.com/en/algorithms)):
 - Best listed vocals: BS-Roformer 124-band (2026.07) at 12.33 dB vocals / 18.64 dB instrumental.
-- BS-Roformer SW 6-stem: bass 14.62, drums 14.11, guitar 9.05, piano 7.83.
+- BS-Roformer SW 6-stem: bass 14.62, drums 14.11, guitar 9.05, piano 7.83. 2026-11-07 correction: the guitar and piano figures come from MVSep's separate Guitar (30 tracks) and Piano (50 tracks) leaderboards, not Multisong (`other-instruments-feasibility.md` §5).
 - `htdemucs_6s`: bass 11.42, drums 10.59, other 2.63.
 - These are tier-2 self-reported numbers from a commercial separation site, on a private test set. They are useful for ranking checkpoints, but not peer-reviewed and not comparable to MUSDB.
 
@@ -69,7 +69,7 @@ The Moises-Light paper reproduces most of these values and adds SCNet-L at 9.69 
   | Method | Vocals | Bass | Drums | Other | Piano | Guitar |
   |---|---|---|---|---|---|---|
   | `htdemucs_6s` | 9.55 | 11.93 | 11.02 | **0.28** | **1.60** | **3.07** |
-  | Oracle IRM (upper bound) | 9.73 | 7.92 | 9.19 | 4.67 | 4.71 | 5.28 |
+  | Oracle IRM (reference; htdemucs_6s exceeds it on bass and drums) | 9.73 | 7.92 | 9.19 | 4.67 | 4.71 | 5.28 |
 
   Spleeter 5-stem piano scores 1.17 dB (N=104). Even ideal-ratio-mask oracles reach only about 5 dB on piano and guitar, which shows how much these sources overlap spectrally with other instruments ([MoisesDB paper](https://arxiv.org/pdf/2307.15913)).
 - The Demucs authors call the 6-stem piano source poor ("a lot of bleeding and artifacts") and guitar "okay" ([Demucs README](https://github.com/facebookresearch/demucs)).

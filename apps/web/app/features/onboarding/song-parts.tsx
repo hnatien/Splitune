@@ -38,7 +38,7 @@ export function StepHeading({ step }: { step: number }) {
 export function SongSummary({ example }: { example: ExampleSong }) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4">
-      <span className="text-lg font-semibold">{example.title}</span>
+      <span className="text-lg font-medium">{example.title}</span>
       <span className="text-sm text-muted-foreground">
         {[example.artist, PART_LABEL[example.part](), formatDuration(example.duration_s)]
           .filter(Boolean)

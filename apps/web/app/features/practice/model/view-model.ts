@@ -61,7 +61,19 @@ export function spelledNote(midi: number, names: readonly string[]): string {
   return `${name.replace('b', '♭').replace('#', '♯')}${Math.floor(midi / 12) - 1}`
 }
 
-export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewModel {
+/** Chords and notes the learner confirmed with "It's right" (12 §4): shown as sure. */
+export interface Confirmed {
+  chords: ReadonlySet<string>
+  notes: ReadonlySet<string>
+}
+
+const NONE: Confirmed = { chords: new Set(), notes: new Set() }
+
+export function buildViewModel(
+  music: MusicOutput,
+  grid: PracticeGrid,
+  confirmed: Confirmed = NONE,
+): ViewModel {
   const bands: BandThresholds = music.bands
   const confidence = (c: number) => confidenceBand(c, bands)
   // Spelled for the song's key: E♭maj7 in E♭ major, not the model's D#maj7.
@@ -76,7 +88,7 @@ export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewMode
         name: chordDisplayName(segment.label, segment.bass, names),
         label: segment.label,
         bass: segment.bass,
-        confidence: confidence(segment.confidence),
+        confidence: confirmed.chords.has(segment.id) ? 'high' : confidence(segment.confidence),
         t0: segment.t0,
         t1: segment.t1,
         bar: at.bar,
@@ -103,7 +115,7 @@ export function buildViewModel(music: MusicOutput, grid: PracticeGrid): ViewMode
       onset: note.onset_s,
       offset: note.offset_s,
       pitch: note.pitch_midi,
-      confidence: confidence(note.confidence),
+      confidence: confirmed.notes.has(note.id) ? 'high' : confidence(note.confidence),
       bar: event?.bar ?? at.bar,
       beat: event?.beat ?? at.beat,
       string: event?.string,
@@ -179,4 +191,20 @@ export function staffMarks(
       return [n.id, n.residualFlagged ? { level, timingFlagged: true } : { level }]
     }),
   )
+}
+
+/**
+ * Unsure spots (26 §5, the Fix tab's badge and the legend chip): each unsure chord, each unsure
+ * note outside a shaky bar, and each shaky bar once. `noteShare` is the share of notes marked
+ * unsure, for the legend's frequency line.
+ */
+export function unsureSpots(view: ViewModel | undefined): { count: number; noteShare: number } {
+  if (!view) return { count: 0, noteShare: 0 }
+  const lowNotes = view.notes.filter((n) => n.confidence === 'low')
+  const spread = lowNotes.filter((n) => !view.unsureBars.has(n.bar)).length
+  const chords = view.chords.filter((c) => c.confidence === 'low').length
+  return {
+    count: chords + spread + view.unsureBars.size,
+    noteShare: view.notes.length > 0 ? lowNotes.length / view.notes.length : 0,
+  }
 }

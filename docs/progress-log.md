@@ -975,7 +975,6 @@ Branch `impl/16-compat-a11y-hardening` from `dev` (`67721ac`). On the owner's re
 
 **Release gate (24 §6 / 18 §7)** — automated parts green on Playwright's three engines + 4 device emulations: import → analysis → practice (loop at 70 %, count-in, mixer, tab cursor sync), billing checkout, account deletion; PR checks; nightly matrix (as run here); accessibility checks; no open critical security findings. **Open, need devices or the owner:** real-device audio checklist (below), real Safari macOS/iOS sign-off (Playwright's WebKit is not Safari), Samsung Internet, VoiceOver/TalkBack pass, Bluetooth offset, page-turner hardware, PWA install on iOS/Android, ML regression on the pinned pipeline (not run this step), usability round (15a), low-privilege worker account (step 17).
 
-
 **Real-device checklist (deliverable 3): not run — needs the owner's devices.** I have only this Mac (macOS 27, Apple Silicon) and Playwright's engines; no iPhone/iPad, Android, real Safari or Firefox desktop session with audio, page turner or Bluetooth headphones. Serve over HTTPS for phones (Tailscale serve or Caddy + mkcert, doc 25), open `/start` (example song) and a song of your own, and fill in:
 
 | # | Device · OS · browser (versions) | Loop seam (100 % / 70 %) | 0.5× quality | Count-in on the downbeat | Sound delay (Bluetooth: cursor vs sound, value that lines up) | Interruption (call / Siri) → "Tap to resume" | Pedal keys (page turner) | PWA install / Home Screen | Keep-screen-on tip or screen stays on | VoiceOver (iOS/macOS) / TalkBack | Notes |
@@ -1428,7 +1427,6 @@ Same branch and worktree as Phases 0–1. **Owner, 2026-10-24:** "Approved: run 
 
 **Effect on P2p:** 4 of 81 songs gated (two roomy/phone uprights, a doubled band part, one BabySlakh electric piano), mean onset F1 0.516; no song with onset F1 ≥ 0.9.
 
-
 ## 2026-10-28 — Step 25: Drums (in progress)
 Branch `impl/25-drums` from `dev` (`9306fc9`), in worktree `.claude/worktrees/s25-drums`. Its own CUDA venv is `D:/venvs/s25-ml`; the shared `services/ml/.venv` is untouched.
 
@@ -1821,7 +1819,7 @@ Owner request: sign-in and sign-up with only a username and a password, no Mailp
 - **Verification:** `pnpm lint` exit 0; `pnpm --filter @splitune/{api,web,node-worker,contracts,db} typecheck` clean; `pnpm --filter @splitune/api test` 212 passed (after fixing the new delete assertion to 202); `pnpm --filter @splitune/db test` 161 passed; `pnpm --filter @splitune/web test` 214 passed; `pnpm contracts:check` and `pnpm db:check` clean; `vitest run --project storybook` on the auth, settings, shell and onboarding stories: 112 passed, `Guide`/`Guide Dark` time out in WebKit like the other audio-playing practice stories on this Windows machine. `pnpm --filter @splitune/node-worker test`: the digest passes; `pg-dump` fails because this machine has no `pg_dump` binary. Playwright e2e not run (needs the full stack with workers).
 
 ## 2026-11-08 — Step s31c: Mockup harness (Night Rehearsal redesign)
-Redesign orchestrator step s31c (`redesign/orchestrator/prompt.md` §5), branch `impl/s31c-mockup-harness`.
+Redesign step s31c, branch `impl/s31c-mockup-harness`.
 - **Built:** `scripts/redesign/` renders the 25 `redesign/mockups/*.dc.html` boards without the canvas runtime. `shim.js` stands in for the canvas `support.js` (`<x-dc>`, `<helmet>`, `<sc-for>`, `<sc-if>`, `{{holes}}`, `renderVals()`, the `look` prop) and fails loudly on an unknown tag or an unresolved hole. `render-mockups.mjs` writes full-page reference PNGs (Night Rehearsal and Daylight at 1440/1180/390; fixed boards at their own width) and a manifest (fonts, overflow) to the git-ignored `redesign/.renders/`. `probe.mjs` (CLI and module) returns the aria snapshot, role counts, bounding boxes and computed styles (sRGB-normalised colours) for a board or any URL. On Storybook it sets the `appearance` global, on the app it sets `splitune.display`, and it reports the `data-appearance` actually in effect. It never waits for network idle, and it exits 1 with an `errors` field on a bad status, page or request errors, or a theme that doesn't match.
 - **Review rework:** URL mode now themes, waits and fails the way the app does (review M1–M3). Fidelity fixtures pin the shim's output for `sc-if` branches, `sc-for` shadowing, nested holes and `?look=` (M4). Added probe fields margin, fontStyle, textTransform, textAlign and boxShadow, plus `--touch` and `--motion`.
 - **Notes for later steps:** at 390 px the desktop-only boards (Main, Practice-*) are squeezed desktop layouts, not phone designs. The manifest flags them with `overflowX`, and phone QA compares against the Phone-* boards only. The mockup fonts load from Google Fonts, so rendering needs network access.
@@ -1833,7 +1831,7 @@ Redesign orchestrator step s31c (`redesign/orchestrator/prompt.md` §5), branch 
   - After the merge: web typecheck clean and web unit tests 214 passed. `test:stories` and the build were not re-run because no web file changed.
 
 ## 2026-11-08 — Step s31a: Redesign specs (Night Rehearsal)
-Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch `impl/s31a-specs`.
+Redesign step s31a, branch `impl/s31a-specs`.
 - **Built:** docs 26, 27 and 28 are rewritten in place for Night Rehearsal with their section numbers kept, so code comments citing "26 §5" still point at the right topic. They cover:
   - the theme model: `dark` = Night Rehearsal (the default), `light` = Daylight, `stage` = Night with the stand reading sizes; the picker shows three cards and `stage` stays a valid id;
   - OKLCH tokens with an sRGB-clamped amber, contrast pairs (§4.8), the amber-use list (§4.5) and a deviation register (§4.9, V1–V17);
@@ -1843,15 +1841,15 @@ Redesign orchestrator step s31a (`redesign/orchestrator/prompt.md` §5), branch 
   - motion and confidence encoding (dashed outline plus "?" and frequency wording; calibration check C1);
   - the component inventory, the IA and route map, every screen and state, and the copy catalogue (27 §5.6 changed/new keys, §5.7 every other change by owning step);
   - design QA measured against the mockup renders (28 §5.1) and a perf gate (28 §3.1).
-- **Also updated:** doc 12 (practice layout) and doc 21 (V-feature UI notes). The UI rule in `CLAUDE.md`, `AGENTS.md` and `docs/steps/00-shared-context.md` now names Night Rehearsal. The budget line reads 318.7 KB gzip of 320 KB, about 1.3 KB left, measured on impl/redesign at 8d6a3f6. The rest: the Designer row in `docs/README.md`, row 26 in `docs/specs/README.md` (`assets/design/reference.html` marked superseded), and one wording line each in docs 02 and 10.
+- **Also updated:** doc 12 (practice layout) and doc 21 (V-feature UI notes). The UI rule in `CLAUDE.md`, `AGENTS.md` and `docs/steps/00-shared-context.md` now names Night Rehearsal. The budget line reads 318.7 KB gzip of 320 KB, about 1.3 KB left, measured at 8d6a3f6. The rest: the Designer row in `docs/README.md`, row 26 in `docs/specs/README.md` (`assets/design/reference.html` marked superseded), and one wording line each in docs 02 and 10.
 - **Review:** the first review failed the draft: it lowered the main practice targets to 52 px and halved the reading sizes. Round 1 restored 64 px and today's tested floors, fixed the `--primary` text pairs (now `--primary-ink`, with an old → new table) and restored the §4.8 table that contrast.test.ts cites. Round 2 added the phone fit rule and the wash paint order (the loop band sits under the waveform bars) and made the size values consistent across docs.
 - **By design for later steps:** some mockup values fail the existing minimums: tab and staff lines, field borders, Daylight amber marks and focus ring, piano keys, Night danger text, and the stem palette (the mockup's worst pair is 1.9 ΔE2000; the retuned palette's is 12.4). Doc 26 corrects them, and no minimum is lowered. Reading-size literals rise (for example `--read-chord-current` Desk 32 → 112 px), and s32 updates those token-test values.
 - **Owner calls:** taken under the owner's pre-approval of G1. D2: 3 theme cards. D3: the ladder steps up after 3 clean passes. D4: Stand view is the default on tablets. D5: the brighter lines and retuned stems. The rest of the deviation register is listed for the owner to revisit.
 - **Verification:** `pnpm exec biome check .`, `check-db-access` and `check-ui-tokens` are clean, every relative link resolves and gitleaks is clean. The changes are Markdown only, so no build or tests were run.
 
 ## 2026-11-08 — Step s31b: Redesign step prompts
-Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch `impl/s31b-step-prompts`.
-- **Built:** 16 step prompts in the house format: s32–s39, s40a/b, s41a/b and s42–s45 in `docs/steps/`. Each prompt has its owned globs, hard deps, gates and effort as in the plan table, a "What exists" section checked against the code, acceptance criteria with exact commands, and stop points. `docs/steps/README.md` gains rows s31a–s45 and a "Redesign steps" section: steps branch from `impl/redesign`, the orchestrator merges them, plus the gates and lanes.
+Redesign step s31b, branch `impl/s31b-step-prompts`.
+- **Built:** 16 step prompts in the house format: s32–s39, s40a/b, s41a/b and s42–s45 in `docs/steps/`. Each prompt has its owned globs, hard deps, gates and effort as in the plan table, a "What exists" section checked against the code, acceptance criteria with exact commands, and stop points. `docs/steps/README.md` gains rows s31a–s45 and a "Redesign steps" section with the gates and the order.
 - **Facts checked in the code:**
   - The speed trainer is behind `v1.speed_trainer`, and the web reads neither the trainer nor `me.flags`.
   - `GET /v1/progress` is unused and has no session data, so s39 needs an additive contract.
@@ -1859,11 +1857,11 @@ Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch 
   - Separation keeps the target plus drums/bass and a mix-minus.
   - The next migration is `0016`, and Web Push doesn't exist.
   - `impl/29-separation-improvements` doesn't exist on this machine or on origin, so s40a builds on the current tip, and reconciling it is an owner action.
-- **Ownership decided by the orchestrator** (ledger D8–D14):
+- **Ownership decided** (D8–D14, now in `docs/steps/00-shared-context.md`):
   - Files in `apps/web/app/ui/` are owned per file after s33. `story-fixtures.ts` goes to s33.
   - s35 owns `lib/display-store.ts` and `features/practice/banners.tsx`.
   - Each existing e2e spec has one owner: practice → s35; onboarding, account, billing, fallbacks and a11y → s36; journey → s34. A file becomes available to another step only after its owner merges.
-  - The orchestrator union-merges `en.json`, the `copy-keys.test.ts` CATALOGUE and additive `e2e/helpers.ts` changes.
+  - `en.json`, the `copy-keys.test.ts` CATALOGUE and additive `e2e/helpers.ts` changes are union-merged.
   - s33 owns `scripts/check-ui-tokens.mjs`: it adds the 28 §3 rules scoped to `ui/**`, and s45 widens the scope.
   - s32 also writes the perf baseline (`e2e/perf-practice.spec.ts`, `perf-baseline.json`, desktop and 1180×820 tablet).
   - s37 waits for s36. s41a and s44 are never in flight together.
@@ -1874,9 +1872,9 @@ Redesign orchestrator step s31b (`redesign/orchestrator/prompt.md` §5), branch 
   - The glob overlap over the 33 parallel pairs finds only the union-merged hot files and the one-at-a-time contracts pairs.
   - gitleaks is clean.
 
-## 2026-11-08 — Redesign run paused and handed off to the owner's PC
-The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started on the owner's Mac and was paused there on the owner's instruction. Its state, the owner's later instructions and the decisions register D1–D15 are in `redesign/orchestrator/handoff.md`.
-- **Merged:** s31a (specs), s31b (step prompts) and s31c (mockup harness), via `impl/redesign`. G1 closed under the owner's pre-approval.
+## 2026-11-08 — Redesign paused on the Mac and moved to the owner's PC
+The Night Rehearsal redesign started on the owner's Mac and was paused there on the owner's instruction. Its decisions (D1–D15) are now in `docs/steps/00-shared-context.md` ("Redesign steps").
+- **Merged:** s31a (specs), s31b (step prompts) and s31c (mockup harness) into `dev`. G1 closed under the owner's pre-approval.
 - **Parked on pushed branches, unverified:**
   - `impl/s32-tokens-fonts` (`cb8fcd3`): only a draft of `apps/web/e2e/perf-practice.spec.ts`, never run; no tokens changed.
   - `impl/s40a-all-stems` (`ac460c6`): unfinished all-stems separation edits and tests, never run.
@@ -1886,3 +1884,906 @@ The Night Rehearsal orchestrator run (`redesign/orchestrator/prompt.md`) started
   - web unit tests: 214 passed;
   - `test:stories`: 988 passed (the first run failed on Vite dependency re-optimisation; the rerun was green);
   - practice-route JS: 318.7 KB gzip of 320.0 KB.
+
+## 2026-11-08 — Redesign steps moved to the normal step flow
+- **Setup.** The owner dropped the multi-agent setup and removed its files. The redesign steps branch from `dev` and run one at a time like every other step. Their shared decisions (D1–D21), owner gates, PC setup and known failures are in `docs/steps/00-shared-context.md` ("Redesign steps"). The design-system research moved to `redesign/research/design_system_migration.md`.
+- **PC baseline at `9b5bf01`:**
+  - lint, web typecheck, web unit (214), build + budget (318.7 KB of 320) and css-floor pass;
+  - `test:stories` has 80 WebKit-only failures (77 practice timeouts; import "Record Tab"; onboarding "Guide"/"Guide Dark" after a page crash);
+  - "Screen May Lock" also fails after 20:00 in both browsers (the evening "Try Stage" hint), carried to s35.
+- **Owner decisions:**
+  - D16: s40a sets `impl/29-separation-improvements` aside until it is in `dev`;
+  - D17: gate pre-approvals;
+  - D19: sections design;
+  - D20: font gaps;
+  - D21: steps one at a time.
+- **State:** s32, s41a and s40a are in progress (entries below). The other steps haven't started, and s44 is deferred.
+
+## 2026-11-08 — Step s41a: sections backend (in progress)
+Branch `impl/s41a-sections` from the redesign docs at `9b5bf01`, worktree `.claude/worktrees/s41a-sections`, HEAD `d944b61`. Own CPU venv; the shared ML venv untouched; no weights fetched.
+
+**Owner decisions (Stop point 1, 2026-11-08)**
+- Q1: allin1 through the fork **all-in-one-infer** @ `566f96c`, with madmom-infer @ `a9ed04e` and demucs-infer @ `ffe0080`, pinned by full SHA. Upstream allin1 1.1.0 needs NATTEN's removed 1-D ops.
+- Q2: the decoded mixture through allin1's own htdemucs.
+- Q3: no allin1 job in Lite; finalize's fallback gives Lite "Part A/B/C". This deviates from 06 §2's Lite row.
+- Q5: no contract change. Fallback segments use `label: unknown` and ids `part-a1`, `part-b1`, `part-a2`… (`/^part-([a-z]+)(\d+)$/`).
+- Q7: no Isophonics evaluation.
+- Q8: `sections` hard on decode and beats, soft on stem_post, GPU slot.
+- Q4: (a), the fallback is written in finalize.
+
+**Built**
+- **music-core `sections/novelty.ts`** (CLI `sections`, 4 goldens).
+  - Downbeat bars described by beat-slot chord classes. A dynamic-programming cut into parts that each repeat a 1–8-bar unit (part, unit, mismatch and partial-unit costs).
+  - Letters reused for similar parts (≥ 0.75). Silent edges join their neighbours.
+  - No parts without chords or with a single part.
+  - The Foote / bag-of-chords novelty in the plan was dropped after it misplaced boundaries on the synthetic forms.
+- **`islands/legacy`** (own lock, 112 packages, torch 2.14.1 cpu / cu126).
+- **`stage_sections`.**
+  - `snap.py`: label map, `start` / `end` joined, nearest-downbeat snapping, collapse and `min_bars` joins.
+  - `allin1.py`: lazy library through a Protocol, one warm session. Weights verified first; htdemucs from `ML_MODELS_DIR/allin1` through demucs-infer's checkpoint runtime as allin1's stem provider; no MPS, so CPU on the Mac; `empty_cache` after each run.
+  - `stage.py`: params from `config/sections.personal.yaml` plus the beats hash → cache key.
+- **Registration and weights.** `stages.py` registration (legacy, gpu, 360 s, `failure_fallback: sections_novelty`). Register record `allin1` (tier red, about 95 MB) and a `fetch_models.py allin1` target.
+- **Pipeline.** The full graph gains `sections`. finalize reads it and has the same key as an optional output.
+- **finalize.** Writes the fallback when the stage's artefact is missing (stage failed, or Lite). Sections never change done / partial. Requests planned before the change, without a `sections` output, stay valid.
+- **Spec notes.** 06 (sections row and notes), 07 (module map), 21 V3 State, packages/db README.
+
+**Verification**
+- music-core: 195/195. api: 214/214 twice in a row, after moving `library.test.ts`'s stand-in stage from `sections` to `lyrics` (the mock pipeline now runs `sections`). node-worker: 42/43; pg_dump is missing on the PC (environment).
+- contracts:check up to date. `eval:regression --smoke`: PASS, with `SPLITUNE_DATASETS_DIR=D:/datasets`.
+- ruff clean. pyright: 5 pre-existing errors in `test_guitab.py`.
+- pytest `stage_sections`: 15 passed, 1 skipped. Full pytest: 341 passed, 4 pre-existing failures (`test_recovery` ×2, `test_stem_post` ×2).
+
+**Known gaps and next**
+- G3 (owner): install and import the island, fetch the weights, run the `models` test, time it on both machines (Stop point 2 ~30 % rule; fallback-only path documented), check 3 songs by ear, run the full `eval:regression` on the GPU.
+- Follow-ups:
+  - `scripts/setup.mjs` and `audit.mjs` for `islands/legacy`;
+  - the web's `stages.ts` labels `sections` "Other", and the ETA goes away until `sections` has timings (s41b / s35).
+- s41b reads `sections.json` (allin1 labels or `part-*` fallback ids).
+- An independent review found no high-severity problem. Its open fixes (timeout retries, an invalid `sections.json` failing finalize, a queue-level failing-job test, the fallback's sample rate and downbeats, two spec lines, the G3 test fixture) are listed in the prompt's "Resume here"; three web follow-ups are in s41b's prompt.
+
+## 2026-11-08 — Step s40a: all stems, backend (in progress)
+Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action after impl/29 is in `dev`. An independent review found a stem_post cache collision between learners, fixed in `4c1def6`.
+
+**Built:**
+- `config/separation.personal.yaml` `keep: [bass, drums, guitar, piano, vocals, other]`. Every output of the run that made the learner's stem is kept, unless the tagger is near-certain the instrument is absent (`keep_min_prob` 0.01 unchanged). The tagger has no "other" class, so "other" is never vetoed. Two-stem vocals heads have no extras: their "other" is the mix-minus.
+- `stem_post` writes one isolated stem per kept output (`instrument` set, "other" too).
+  - It leaves an **empty extra** out of stems.json: active fraction < 2 % or energy ratio < 0.001, so a part under ≈ 4.8 s of a 4-minute song isn't encoded. The extra stays in presence.json, and the target and the mix-minus are always listed.
+  - Empty extras are found by instrument, so impl/29's `provider` tuple field merges cleanly (trial merge: one docstring conflict left in `separate.py`).
+- **stem_post's cache key now carries the target, each raw stem's role and the mix-minus mode.**
+  - With every output kept, learners of one SW-headed song share byte-identical raw stems, and the old key (`name:sha256` only) let a bass analysis reuse a guitar analysis's stems.json (`mix_minus_guitar`).
+  - The collision already existed for bass↔drums before s40a. Two new tests cover it.
+- `eval/all_stems.py` (run/export for G3) now:
+  - warms each pass's first model;
+  - reports separate and stem_post time before → after, the tagger's state, and the isolated extra most correlated with the learner's stem;
+  - adds the MoisesDB synth-keys window `765d5131-piano`;
+  - follows `SPLITUNE_DATASETS_DIR`.
+- 06 (§4 "Request one target", `separate` and `stem_post` notes), the 05 `empty` comment and the `stems.ts` comment (no schema change) describe the new behaviour. The `stems.json` fixture holds drums, guitar, other and `mix_minus_guitar` (bass, piano and vocals are empty extras), so the bass stories get no mismatched mixer.
+- Confirmed that the API plans only `notes.<learner instrument>`, so notes always reads the target.
+
+**Impact (estimate):**
+- **R2:** inside the free tier (10 GB-month, 1 M Class A, 10 M Class B; pricing page updated 2026-10-30).
+  - AAC ≈ 4.85 MB per stem per 4 min (PC ffmpeg 4.0–5.1 MB).
+  - guitar/piano 19.4 → 34.0 MB, bass/drums 14.6 → 34.0 MB, vocals unchanged at 9.7 MB per analysis; ≈ 294 SW-headed 4-minute analyses fit in 10 GB.
+  - Stems are per analysis version, and an old version's stems stay while the song is opened.
+  - +6 to +8 Class A per analysis, negligible.
+- **Worker cache:** one raw directory per learner instrument per song, with no eviction.
+  - After s40a each SW-headed directory holds all six raw stems, ≈ 110–185 MB per 4-minute song (+75–130 MB per learner).
+  - A song practised on two instruments holds two sets.
+- **Compute:** separate's model time is unchanged (+0.8 s per stored stem).
+  - stem_post: Mac 11.3 → 18.6 s (measured); PC CPU 22.5 → 34.3 s (measured), bass/drums 18.5 → 34.3 s.
+  - Mac ≈ +3–5 %. PC guitar/piano ≈ 13–26 % depending on the uplink.
+  - **PC bass/drums: +31 % on the measured separate + stem_post, 18–37 % of a whole analysis** (unmeasured stages, uplink 50–10 Mbit/s). So approval there is conditional on G3's measurement.
+  - Recommended lever if needed: encode and verify stems in parallel in stem_post (not built).
+- **Vocals second run:** not proposed. SW would double a vocals analysis; an on-demand "split the band" is a later option.
+- **Cache:**
+  - every instrument's `separate` key and every stem_post key change once;
+  - a re-analysis re-separates once;
+  - with RoFormer heads (deterministic) notes and chords are reused;
+  - nothing recomputes on its own;
+  - best shipped with impl/29's piano key change.
+- **Regression suite:** it can't see s40a (its separation parts call `models.separate` directly; p2g scores only the target). The guard is `all_stems.py`'s "target identical" (yes on all six Mac items).
+
+**Changed expected values (design):** all in the WIP's tests.
+- `keep` lists in `test_plan_keeps_extras…`.
+- Six kept stems in `test_first_model_failing…` and in the `models`-marked `test_real_chain…htdemucs_6s` (the step said `models` tests stay; this one had to change).
+- The empty bass extra is out of `test_stem_post_aligns…` (its checks moved to the new empty-target test).
+
+**Verification (PC, worktree CPU venv):**
+- Before the review fixes:
+  - full pytest 344 passed, 4 known failures (the `test_stem_post` pair is identical on the base `54c9438`);
+  - ruff clean; `contracts:check` clean, contracts tests 61/61;
+  - web unit 214/214; `eval:regression --smoke` PASS.
+- After the fixes (`4c1def6`, `02d71b6`, `136f88e`, `f068351`): not yet re-run; the prompt's "Resume here" lists the commands.
+
+**Known gaps / next:**
+- G3 on the PC after impl/29 is in `dev`:
+  - resolve the one `separate.py` docstring conflict;
+  - `all_stems.py run --before <dev map>` with a working tagger and the Mega-53 weights;
+  - one timed Full bass analysis before and after (decides the PC ~30 %);
+  - full `pnpm eval:regression` (expected pass, unchanged baseline);
+  - `pytest -m models packages/stage_separation`;
+  - listening session `all_stems.py export`.
+- Songs analysed for both bass and drums before this fix may carry the other instrument's mix-minus: "Analyse again".
+- With impl/29, SW's "other" holds the synth keys the fallback put in the target. Recommended fix at the reconciliation: derive "other" as mixture − target − Σ other extras when the fallback applied; check it with the overlap column on `765d5131-piano`.
+- s40b: the isolated stems don't always sum to the song (vetoed extras, two-stem heads, short "empty" extras), so fall back to the mix-minus as the band unless a six- or four-stem run kept every instrument.
+
+## 2026-11-08 — Step 29: Separation improvements (done; owner actions pending)
+Branch `impl/29-separation-improvements` from `dev` (`d1449d3`). The owner approved the Phase 0 plan with its defaults:
+- Phase 5 passes if the median doesn't fall and the mean rises;
+- Phase 7 and the X-LANCE denoise pre-pass are skipped;
+- the research docs go in one docs commit.
+
+Overnight the owner said "choose whatever is recommended", so Stop point 2 (map, contract and cache-key changes) was decided by the recommended option and is reported here. The vocals head and SW shift averaging stay proposals, as the step requires. All runs on the Windows PC (RTX 3060, CUDA).
+
+**Downloads** (models dir and `D:\datasets`, never committed): the Leap Xe, Leap v1 and anvuew ft1 vocals checkpoints; X-LANCE `key_mss`, `syn_mss`, `syn_mss1` and `gtr_mss`; MVSep Mega-53 (1.4 GB, cut to a 177 MB keys slice); DrumSep 5-stem (registered, not run). The Slakh2100 test split was already on disk.
+
+**Built**
+- **Wrapper inference keys** (`stage_separation.config`, `models.py`): `chunk`, `gain`, `shifts` (MSST `--bigshifts`), `autocast` and `sample_rate`, each in the cache key only when set. Input shorter than a chunk is padded, and the library's under-10 s segment switch no longer sticks to a warm model.
+- **Eval-only models:** `eval/separation.eval.yaml` + `splitune_eval.sepmap`, `fetch_models.py --eval`, configs pinned in `eval/model-configs/`, a register record per candidate (tier red, `used_in: [eval]`), `eval/weights_check.py`.
+- **`sep_matrix.py`:** virtual models (`combine`: `avg_wave`, `avg_fft`, `route`), cascades (`--input-from`), `--no-clip`, `limit-XL+aac128` / `+opus128`. A model's outputs mapped to one instrument are scored as their sum (also in the regression suite).
+- **Sets and tools:** `slakh-keys-p1` (`eval/p1_slakh.py`), `eval/keys_tags.py`, `eval/sep_improve.py <phase>` (the reports).
+- **Keys fallback (shipped):** `fallback_when_silent` on piano. Mega-53's keys + synth replace SW's piano when that stem is below −40 dB of the mixture and the tagger's piano present_prob is at least 0.03. Contracts **1.9.0** (`separation.json` records the check). `stem_post` credits the fallback's provider and marks the stem rough.
+- **Map changes (shipped):**
+  - SW runs 13.35 s windows (`chunk: 588800`, `overlap: 11.5`).
+  - SW, Kim, viperx and becruily set `autocast: true`, applied on CUDA only.
+  - Every RoFormer states its `overlap`.
+- **Register:** SW's probable Logic Pro origin, its deleted host and its identical mirror.
+
+**Results** (08 step 29 notes; reports in `services/ml/eval/results/sep-improve/2026-11-08-*`)
+- **Phase 2 (vocals head): PASS with abutting windows; proposed.**
+  - Paired vs Kim at `aac128` (v2 / MoisesDB): Leap Xe +0.57 / +0.70 dB, Leap v1 +0.47 / +0.60, ft1 +0.47 / +0.56.
+  - All three fail on time at the half-chunk step: 6.8×, 4.6× and 3.0× Kim's.
+  - With abutting windows, Leap v1 (+0.48 / +0.59 dB, 2.45×) and ft1 (2.08×) pass; Xe (3.6×) still fails.
+  - Ensembles: FAIL (+0.04 / +0.05 dB).
+- **Phase 3 (loud masters): FALSIFIED.** Pre-separation gain moves no clip by 0.001 dB, because the RoFormer band split RMS-normalises every band. Decode clipping costs ≤ 0.005 dB per stem: no fix.
+- **Phase 4 (SW inference):**
+  - Chunk 13.35 s: PASS, shipped. +0.02 to +0.18 dB pooled on all five instruments, seam 0.47 dB (1.00 before), 1.09× time, 1.8 GB.
+  - Chunk 20 s: INCONCLUSIVE (1.27× time).
+  - Autocast: PASS, shipped. 0.42–0.49× full-song time, +0.00 dB, bit-identical repeats, regression with autocast 0 of 264 outside tolerance.
+- **Phase 5 (keys fallback): PASS, shipped.** The 3 windows where SW outputs no piano reach a median 4.46 dB (from 0). The 25-window median goes from 6.39 to 11.84 dB and the mean from 9.03 to 9.81 dB. 5 Slakh windows (out of sample) score 6.08 dB.
+- **Phase 6 (shift averaging): bass PASS, drums INCONCLUSIVE; proposed.** Bass +0.17 / +0.16 dB with 3 shifts (2.91× time) and +0.19 / +0.15 with 5 (5.06×). Drums +0.13 / +0.08 and +0.16 / +0.09.
+- **Phase 7:** not run (plan default).
+- **Regression on the final map:**
+  - **Against the step 28 baseline: FAIL**, 2 of 264 values. Both are SW's piano bleedless on the 3 MoisesDB piano windows under `opus128`, 53.47 → 24.17 (as SW and as the head).
+  - **Cause:** the 13.35 s chunk flips one clip, `c228818e-piano` (the median of three): bleedless 53.5 → 24.2, fullness 10.7 → 18.3, uSDR −0.02 dB. fp16 alone keeps it at 53.44.
+  - **On all 40 MoisesDB `opus128` windows:** the paired median uSDR is up on every stem (+0.05 to +0.16 dB) and fullness is up. Bleedless ranges from −0.11 (vocals) to +0.69 (drums), and single clips swing by up to 65 points both ways.
+  - **Decision:** shipped (08 has the analysis), tolerances unchanged.
+  - **Then:** `--update-baseline` (266 values), rerun **PASS** (0 of 277). The step 28 degraded config **FAILS** with 74 breaches (bass head uSDR 10.69 → 6.94 dB, P2g onset F1 0.721 → 0.638).
+  - Reports: `services/ml/eval/results/regression/2026-11-09*.md`.
+
+**Cache keys**
+- Piano's `separate` params gain `fallback_when_silent`: every piano `separate` artefact recomputes once.
+- The map change alters the `inference` of SW, Kim, viperx and becruily, which head or back up every chain, so every `separate` artefact recomputes once. `stem_post` and later stages recompute where the raw stems' bytes change: every SW- and Kim-headed analysis.
+- The device is still not in the key: a CUDA worker (fp16) and the Mac (fp32) write different bytes under one key.
+
+**Deviations and decisions**
+- **Abutting windows for the vocals candidates** (`<model>@abut`) are not in the step. All three candidates failed on time at MSST's half-chunk step, and Kim already runs abutting windows. They cost ≤ 0.01 dB.
+- **Kim re-timed in the same session** as the abutting runs (`mel_roformer_kim_vocals@s29-abut`), because the GPU power limit changed after Phase 2's first runs.
+- **Chunk and autocast measured separately.** The regression suite on the final map checks them together.
+- **Autocast on CUDA only:** fp16 on MPS isn't measured, so the Mac stays fp32. Mega-53 stays fp32 (not measured).
+- **20 s chunk not shipped:** it gains as much as 13.35 s but misses the time limit (1.27× vs 1.25×).
+- **Corrected baselines:** step 28 had re-run only SW and htdemucs_6s after its loud-master fix. Kim's and viperx's affected rows and SW's pre-overlap-change rows were re-run; the old rows are kept as `@before-fix` / `@overlap9.3`.
+- **Listening stems predate the map change:** SW's bass and vocals items use the step 28 settings (9.29 s chunk, fp32), the same settings as the shift runs they are compared with.
+
+**Incidents**
+- **Restarts and the power limit:**
+  - an unexpected shutdown at 06:11 during a GPU run;
+  - owner restarts at 10:27, before 18:26 and at 23:21, and an owner pause at 22:31.
+
+  The power limit moved between 170 W and the owner's 129 W cap with them. Every run resumed per clip; the reports state the limit and compare times only within one session.
+- **Two job loops shared the GPU from 12:27 to 14:47.** Stopping a queue with the agent's task stop killed only its running job, and its `while read` loop went on to the next line. Every record of that window was set aside (`D:\datasets\_s29\concurrent`) and re-run by one loop from 18:30. The runner now writes its PID, so a stop kills the loop first.
+- **A false failure exit from `splitune-eval regress`:** with its output redirected to a file, it failed on its last `print("→ …")` (cp1252 console encoding) after writing a PASS report. The exit code was 1, but the report is valid. Runs with redirected output now set `PYTHONIOENCODING=utf-8`. The same arrow print is in five eval scripts: a follow-up.
+
+**Verification**
+- **Lint and types:**
+  - `pnpm lint`: exit 0.
+  - `pnpm typecheck`: TS clean. ML: the 5 pre-existing pyright errors in `packages/stage_notes/tests/test_guitab.py` only (file untouched).
+  - `cd services/ml && uv run --no-sync ruff check` and `ruff format --check`: clean.
+- **JS tests:** `turbo run test` (all packages but ML, Docker Postgres and SeaweedFS up): every package passes except two pre-existing failures in packages this branch doesn't touch.
+  - `@splitune/node-worker` `pg-dump`: no `pg_dump` on this PC.
+  - `@splitune/db` `lifecycle.test.ts` "claims a run once per due time".
+
+  `vitest run --dir scripts`: 52 passed.
+- **Python tests:**
+  - `pytest -m "not models"` (`test_recovery.py` excluded, as in steps 27 and 28): 335 passed, 1 skipped, 3 failed. These are the same failures as on `dev` on this PC: `test_beats_model::test_cpu_fallback_uses_the_small_model` and `test_stem_post` ×2.
+  - `pytest -m models packages/stage_separation` on CUDA: 5 passed, including the real BS-Roformer-SW wrapper-settings test.
+- **Contracts and DB:** `pnpm contracts:check`: up to date. `pnpm db:check`: migrations match.
+- **Regression:** `splitune-eval regress` as above: the vs-step28 FAIL (analysed), then a new baseline, PASS on the rerun, and FAIL on the degraded config.
+
+**Owner actions**
+1. Rate the listening session **`p1-2026-11-09-s29`** (`D:\datasets\musdb18hq-p1\listening\p1-2026-11-09-s29`):
+   - **Contents:** 6 clips, 42 rated items and 24 pairs. The vocals head candidates are Leap v1 with abutting windows, SW and Kim, on the 3 v2 vocals clips. The bass candidates are SW, SW with 3 shifts and htdemucs_ft, on the 3 bass clips.
+   - **Serve it** with `apps/listening`: `LISTENING_SESSION_DIR=<that dir> LISTENING_PORT=<free port> pnpm --filter @splitune/listening dev`.
+   - **Then report:** `uv run --no-sync python eval/p1.py report --session p1-2026-11-09-s29`.
+2. OK or reject each change:
+   - **Shipped, reversible by reverting its commit:**
+     - SW 13.35 s windows: +0.02 to +0.18 dB, 1.09× time. Its one regression breach (piano bleedless under `opus128`, one clip) is analysed above.
+     - fp16 on CUDA: 0.42–0.49× time.
+     - Both invalidate every `separate` artefact.
+     - The keys fallback invalidates every piano `separate` artefact.
+   - **Proposed vocals head:** Leap v1 with abutting windows ahead of Kim. +0.48 / +0.59 dB, 2.45× Kim's time, no licence. It invalidates every vocals `separate` artefact.
+   - **Proposed bass shifts:** an SW entry with `shifts: 3` heading the bass chain. +0.17 / +0.16 dB, 2.91× SW's time on bass analyses. It invalidates every bass `separate` artefact.
+3. Optionally supply 3–5 synth- or organ-heavy clips with a keys stem for another out-of-sample check.
+4. **On the Mac:**
+   - Run `uv run python scripts/fetch_models.py mega53-keys`. Until then the keys fallback fails soft and SW's stem stays.
+   - Measure fp16 on MPS before enabling it there.
+5. **After merging:** restart the workers (every `separate` recomputes once). Re-apply the GPU cap after each reboot.
+6. s40a (all stems, G3) can resume now that this branch is in `dev`.
+
+## 2026-11-09 — Step s32: Night Rehearsal tokens, fonts and the practice perf baseline (done, not merged)
+Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), from the redesign docs at `9b5bf01`, with `dev` merged in at `58bcf42` (which brings in step 29). Not merged into `dev`.
+
+**Built**
+- **Perf baseline, recorded before any token changed.**
+  - `apps/web/e2e/perf-practice.spec.ts`: Chromium only, CDP `Emulation.setCPUThrottlingRate` 4×, `openExample`, one selector table at the top. It records JSON and asserts nothing.
+  - Two contexts: desktop 1440 × 900 with a fine pointer, and tablet 1180 × 820 with `hasTouch` and `isMobile`.
+  - Measures:
+    - Long Animation Frames over 20 s of looped playback with count-in, with script attribution;
+    - forced style and layout from a **CDP trace** over 10 s of steady playback;
+    - Event Timing p75 for play/pause, loop nudge, the on-screen speed −/+ buttons and a mixer fader key step, N = 12 each.
+  - Recorded on the owner's PC (Ryzen 5 7600, Chromium 156.0.8078.4) from `a447ab3`, the unchanged Music Stand screen, and committed alone in `8bd9050` as `apps/web/e2e/perf-baseline.json`. Each context ran 3 times; the median run is kept and the spread is in the file.
+  - Results:
+    - every p75 is ≤ 72 ms (desktop 32–48 ms; tablet speed step 72 ms);
+    - steady playback has no LoAF, but about 60 forced layouts a second come from the alphaTab view chunk;
+    - across the 3 runs, desktop LoAF p75 spread 74.9–117.8 ms and tablet 70–85.1 ms; latency p75 moved ≤ 8 ms.
+- **Tokens (`packages/ui-tokens`) follow doc 26.**
+  - Night Rehearsal on `:root`, `dark` and `stage` (`stage` = ×1.25 reading scale); Daylight on `light`; each × increased contrast. Subtree theming on any `[data-appearance]`.
+  - §3 roles; §4.7 component tokens, including `--tile-foreground`, `--read-chord-sheet`, `--read-chord-next` and `--target-stand`.
+  - Static scales: §6.2 browse type, §6.3 reading sizes, §8 targets, §9 radius 4–22, §10 motion.
+  - `data-score` and the Music Stand primitives are removed. The Music Stand roles doc 26 no longer lists stay defined until s45.
+  - `CONTRAST_PAIRS` mapped per §4.6: 81 → 113 pairs, none dropped, no minimum moved.
+  - Token tests (1,329) check every pair in six contexts, the §4.6 and §4.8 tables to ±0.1, translucent washes via `over()`, gamut, CVD ≥ 12 ΔE2000 and naming.
+  - `BACKGROUND_HEX` = `{ light: #f8f5f1, dark: #110e0b }`. The manifest and the `theme-color` meta without a media query (which also covers dark) use the Night value; the `prefers-color-scheme: light` meta uses Daylight.
+- **Fonts.**
+  - `scripts/fonts/subset.sh` subsets Instrument Sans 1.000 (38,192 B, preloaded) and JetBrains Mono 2.304 (35,704 B) reproducibly: pinned SHA-256, `wght` 400–700, every layout feature, the §6.1 code points.
+  - Inter's files, `@font-face` and preload are removed.
+  - Metric-matched fallbacks come from `scripts/fonts/fallback-metrics.py`.
+  - `scripts/fonts/fonts.test.mjs` proves `tnum` (JetBrains Mono is fixed-pitch), the code points and the 80 KB preload.
+  - The browser check is a story `play` function, Foundations/Fonts › Tabular Readouts: readouts keep their width as digits change.
+- **Storybook toolbar:** Appearance (Night Rehearsal / Daylight / Stage / Side by side, default Night Rehearsal), Contrast, Density, Distance, Motion, Pointer, Reading font. The Score global is removed.
+- **Last round (2026-11-09).**
+  - No shadow is now written as a transparent zero shadow (deviation below).
+  - The piano chart's chord names and bar height use `--read-chord-sheet`: doc 26 §6.3 assigns it to "chord sheet and piano chart names".
+  - `e2e/security.spec.ts` requests `/fonts/InstrumentSans.woff2`.
+  - Music Stand story values moved to doc 26.
+
+**Deviations**
+- **No shadow.** `--elevation-1` (both themes) and the dropped `--glow` (increased contrast and forced colours) are `0 0 0 0 transparent`, not doc 26's `none`. Tailwind joins `shadow-*` and `ring-*` into one `box-shadow` list, and a `none` inside that list drops the whole declaration: a checked `RadioCard` (`shadow-1` with `ring-2`) lost its ring. It looks the same as `none`.
+- **D20 (owner).** U+202F maps to each family's no-break space (no upstream glyph). Instrument Sans' 12 missing Latin-1 glyphs (¤ ¦ ¬ soft hyphen ± ² ³ µ ¹ ¼ ½ ¾) fall back per glyph, pinned by the font test.
+
+**Changed expected values (by design; no minimum, tolerance or floor lowered)**
+- **`tokens.test.ts` reading sizes (D7, §6.3).**
+
+  | Token | Desk | Music stand | Floor |
+  |---|---|---|---|
+  | `--read-chord-current-base` | 2 → 7rem | 3 → 9.375rem | 5.5 → 12.5rem |
+  | `--read-chord-base` | 1.375 → 1.6875rem | 2 → 2.5rem | 3.5 → 4.9375rem |
+  | `--read-readout-base` | 1.25 → 1.375rem | unchanged | unchanged |
+  | `--read-tab-base` | unchanged | unchanged | 2.25 → 3.375rem |
+  | `--read-chord-sheet-base` (new) | 1.875rem | 2.75rem | 5.5rem |
+  | `--read-chord-next-base` (new) | 3.5rem | 4rem | 6.25rem |
+
+  Bar number and label are unchanged. `stage`'s `--read-scale` stays 1.25. The floors still hold: Stand tab ≥ 36 px, Desk current chord ≥ 32, Floor current chord ≥ 88, tab digits ≥ 18.
+- **`tokens.test.ts`, other values.**
+  - **Scrim (§4.7):** Light `oklch(0.2 0.01 75 / 0.4)` and Dark/Stage `oklch(0 0 0 / 0.6)` → `oklch(0.1 0.01 60 / 0.62)` in every theme.
+  - **`BACKGROUND_HEX` (§11):** light `#f7f6f2` → `#f8f5f1`, dark `#181612` → `#110e0b`.
+  - **Radius (§9):** `xl` / `2xl` / `3xl` 14 / 18 / 24 → 12 / 14 / 16; new `xs` 4 and `4xl` 22.
+  - **Targets (§8):** `--target-stand` 88 px added.
+  - **No shadow:** `--elevation-1` and the increased-contrast / forced-colours `--glow` `none` → `0 0 0 0 transparent` (deviation above).
+  - **Contrast pairs (§4.6):** where `--primary` was text, the pair is now `--primary-ink`.
+- **`manifest.test.ts` (D9):** `background_color` and `theme_color` expect `BACKGROUND_HEX.dark` instead of `.light`.
+- **`app/ui` stories (owner-approved, expected values only).**
+  - `dialog` OpenScrim: scrim alpha 0.6 → 0.62 (§4.7). Dialog radius "> 16" → 14, because `rounded-2xl` is 14 in §9; s33 moves dialogs to `rounded-4xl`.
+  - `drawer` BottomSheetShape: radius "> 20" → 16 (`rounded-3xl`, §9).
+  - `foundations` TargetSizes: `--target-stand` 88 added (§8).
+  - `foundations` Surfaces: 3 → 2 distinct shadows, because `--elevation-2` = `--elevation-3` (§4.7).
+  - `foundations` RadiusScale: 14 / 18 / 24 → 12 / 14 / 16 (§9).
+  - `foundations` TypeScale: `frac` now leaves the width unchanged, because Instrument Sans has no `frac` feature (§6.1).
+  - `onboarding` ChoicesRaised: available and unavailable cards now have the same (no) shadow, because cards are bordered, not lifted (§9). The surface check is unchanged.
+- **`e2e/security.spec.ts`:** the cached font path `InterVariable.woff2` → `InstrumentSans.woff2`.
+
+**Glyph check (26 §6.1)**
+- Instrument Sans: − · × U+202F yes; ♯ ♭ ♮ no.
+- JetBrains Mono: ♯ ♭ − · × U+202F yes; ♮ no.
+- Atkinson Hyperlegible Next (opt-in, unchanged): − · × yes; ♯ ♭ ♮ U+202F no.
+- Missing ♯ ♭ ♮ fall back through `ChordSymbol`. Nothing else is missing in the two new families.
+
+**Verification (PC, 2026-11-09, after the `dev` merge unless noted)**
+- **Lint:** `pnpm exec biome check .` clean (2 infos, pre-existing); `check-db-access` and `check-ui-tokens` clean.
+- **Tokens:** `pnpm --filter @splitune/ui-tokens typecheck` clean; `test` 1,329 / 1,329.
+- **Scripts:** `pnpm exec vitest run --dir scripts` 80 / 80.
+- **Font reproducibility:** `bash scripts/fonts/subset.sh` gave byte-identical files (`git status` clean).
+- **Web:** `pnpm --filter @splitune/web typecheck` clean; `test` 214 / 214.
+- **`pnpm --filter @splitune/web test:stories`** (before the merge, which changed nothing under `apps/web`): 992 tests, 906 passed, 86 failed.
+  - 82 failures are known (`00-shared-context.md`):
+    - 75 WebKit `practice.stories.tsx` timeouts;
+    - `import` Record Tab;
+    - `onboarding` Guide and Guide Dark;
+    - "Screen May Lock" and "Screen May Lock No Storage" in both browsers (run after 20:00).
+    - That is 78 WebKit failures against the 80-failure baseline.
+  - 4 were new (`foundations` TypeScale and `onboarding` ChoicesRaised, × 2 browsers). After `0e765b5`, the `foundations`, `onboarding`, `dialog`, `drawer` and `.storybook/fonts` stories pass 90 / 90 in Chromium and WebKit.
+- **e2e:** `playwright test e2e/security.spec.ts --project chromium` 4 / 4. The first run's teardown left the mock ML worker running (fixed below); after the fix the same piped run returns in 14 s and leaves no `uv` or python process.
+- **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`: practice route 318.7 KB gzip of 320.0 KB. That is unchanged from before the step (326,389 → 326,398 B measured mid-step); CSS −341 B gzip; css-floor clean.
+- **Fidelity smoke.** `probe.mjs System --look fixed` at 1440 against the Foundations stories at 1440 in both looks (results in `redesign/.renders/s32/`, ignored).
+  - `--bg`, `--s1`, `--s2` and `--s3` match `--background`, `--card`, `--muted` and `--accent` exactly.
+  - The other mockup colours match the token cascade, except Night `--unsure` and Daylight `--ok`. Those differ by 1/255 in one sRGB channel only because two converters round differently; the OKLCH literals are identical.
+  - Type: Instrument Sans and JetBrains Mono loaded, none missing. The display chord is 112 px (Desk `--read-chord-current`) and the mono readout 22 px (Desk `--read-readout`).
+  - Radii 6–16 match §9; card 16, chip full.
+  - No mismatch outside 26 §4.9.
+
+**Known gaps and next**
+- **Owner action, the legibility check (26 §6.1).**
+  - Run `pnpm --filter @splitune/web storybook` and open `http://localhost:6006/?path=/story/foundations-fonts--legibility`.
+  - Read JetBrains Mono tab digits against Instrument Sans and Inter 4 tabular digits on 1/7, 3/8 and 6/0, at 0.5, 0.75 and 1.5 m.
+  - The outcome decides whether Inter 4 replaces a family in a later step.
+- **Fixed: the e2e teardown left the mock ML worker running on Windows (pre-existing, `e2e/global-setup.ts`).**
+  - `child.kill()` ends only `uv.exe`. Its python worker kept running, retrying the dropped database and writing to the inherited stderr, so a piped run never returned (9 hours here). An earlier run left one too.
+  - Teardown and the example-build error path now end the whole tree with `taskkill /t /f` on Windows (elsewhere `uv` forwards SIGTERM). A child that already died by a signal (null `exitCode`, `signalCode` set) counts as exited.
+  - Two python processes (PIDs 7144 and 9604) from before this run are probably last night's orphan; left for the owner to check.
+- **`display.ts` still writes `data-score`.** Nothing reads it; s35 owns the display store.
+- **s33:** the Foundations story is still Music Stand-labelled ("Inter features", radius labels); `Kbd`'s ⌘ ⇧ ⌥ fall back in Instrument Sans; set `DEFAULT_DISPLAY` to `dark`.
+- **s35:** move tab digits and readouts to `font-reading-mono`, chart chord names to `text-read-chord-sheet`, and the waveform ruler off Inter.
+
+## 2026-11-09 — Step s33: base components restyled for Night Rehearsal (done, not merged; G2 next)
+Branch `impl/s33-base-components` (worktree `.claude/worktrees/s33-base-components`) from `dev` at `bb42507`. Not merged into `dev`.
+
+**Built**
+- **Base components (26 §12.1) restyled in place, props kept.**
+  - Button: `primary`, `secondary`, `quiet` (new), `outline` (= quiet, kept for callers), `ghost`, `box` and `on` (new; `.ib.box`, `.ib.on`), `destructive`, `destructiveSolid` (new), `link`. Sizes `sm` 32, `md` 40, `lg` 48 (new), `xl` 56 (new), `practice-2` 48, `practice` 64, and icon sizes `icon-sm` 32, `icon` 40, `icon-practice-2` 52 (`.ib.lg`), `icon-practice` 64; `block` (new) and `unavailableLabel` (new).
+  - Toggle (`.chip`), ToggleGroup (`.seg`), Tabs (`.tabs`), Switch (`.toggle`), Checkbox, RadioGroup (`.check`), Slider (`.range`), NumberField (`.stepper`), Field, Input, Label (`.field`, `.label`), Select, DropdownMenu, Popover, Tooltip (`.sheet`), Dialog, AlertDialog, Drawer, Toast, Badge (`unsure` is new), Kbd (JetBrains Mono), Card (`variant="emphasis"` is new), Progress, Meter, Spinner (an SVG ring and arc), Separator, ScrollArea and Skeleton.
+- **Targets (26 §8, V12).** A painted face inside the target box:
+  - Each size sets `--face` and `--r`.
+  - The box pads out to `max(--control-size, --face)` with a transparent border.
+  - The edge is an inset ring.
+  - Focus sits 2 px off the face (`outline-offset: calc(2px - pad)`).
+  - This works on `buttonVariants` links too, and no `::after` hit areas are left (checkbox, radio, slider thumb).
+  - `--target-sm` is no longer used (s45 deletes it).
+  - Segments paint 34 px faces inside a 44/48 box over a 42 px track drawn by `::before`. The sliding capsule takes the item's box and pads to the same face, so the capsule contract the library story asserts is unchanged.
+- **Kit restyles marked s33 (26 §12.2):**
+  - TransportButton: tones `neutral` (`.ib.lg`), `box` (new, `.ib.lg.box`) and `primary` (`.play`); on and active are `.ib.on`; `practice` 64, `practice-2` 52.
+  - SpeedControl: boxed −/+ at 64 in every layout, including `compact` (V11), and a quiet 64 px mono readout.
+  - SpeedPanel, CoachMark, DropZone (dragging turns the dashed edge solid `--signal` over `--primary-soft`), WaveformPreview, SaveStatus (saved is the success badge), Brand (lowercase wordmark, 28 px amber disc crossed by a graphite wave).
+- **Every other `ui/` file** is on the new radius scale (old `xl` 14 / `2xl` 18 / `3xl` 24 → `2xl` / `3xl` / `4xl`) and reads only doc 26 roles: amber is never text or a mark. ChoiceCard's icon, PassControl's ring, RadioCard's checked ring, StageList's running tone and StepDots moved to `--muted-foreground`, `--signal` or `--primary-ink`. Their layouts stay with s34–s43.
+- **Display defaults (26 §2):**
+  - `DEFAULT_DISPLAY.appearance` is `dark`, and nothing stored resolves to Night.
+  - `system` follows the OS.
+  - `stage` at Desk resolves to Music stand.
+  - `color-scheme` is written; `.dark` is set for `dark` and `stage` as before.
+- **Icons (26 §11):** `ui/icons/create.tsx` makes custom icons at a 1.8 px stroke. New icons: two pedals, and the desk, stand and floor distances. Lucide icons inside `ui/` controls draw at 1.8.
+- **Stories (28 §2):**
+  - Every base component has a story per 26 §12.3 state: Default, Hover, Focus, Pressed, On, Disabled, Loading, Error and the domain states.
+  - Static states render side by side, Night beside Daylight. Hover, Focus and the open popups have a Daylight twin.
+  - `AllStates` and `AllStatesIncreasedContrast` galleries; `Targets` probes measure each control's own border box.
+  - Shared helpers are in `ui/story-kit.tsx`; `tabs.stories.tsx` and `transport-button.stories.tsx` are new.
+  - Synthetic pointer events don't apply `:hover`, so the Hover stories hover without asserting colour.
+- **`scripts/check-ui-tokens.mjs` (28 §3 "Raw values")** has new rules, on `apps/web/app/ui/**`:
+  - arbitrary colours, including named and system colours and `color-mix()`;
+  - arbitrary radii;
+  - arbitrary font sizes (em multiples pass, because they scale a token size);
+  - arbitrary shadows;
+  - style-prop colour literals and colour-valued JSX attributes.
+
+  A value built only from `var(--…)` tokens passes. The repeatable `--path <dir>` runs these rules on another area, as documented in the script header. The base rules and their scope are unchanged. `scripts/check-ui-tokens.test.mjs` tests each rule with a passing and a failing sample (14 tests). `--path apps/web/app/features` already flags 9 one-off font sizes in `features/marketing` for its screen step.
+- **Visual baselines:** `e2e/visual/components.spec.ts` captures 16 side-by-side component boards plus 9 popups × 2 themes at 1440 × 900, in both engines. `e2e/visual/story.ts` is the story opener, now shared with `screens.spec.ts`. The 72 screen baselines are left stale on purpose: each screen step regenerates its own.
+
+**Expected values changed by design**
+- `display.test.ts`:
+  - "follows the OS" now stores `system`;
+  - `color-scheme` is asserted;
+  - new tests: nothing stored is Night whatever the OS says, and `stage` at Desk resolves to stand;
+  - `DISPLAY_SCRIPT`: empty, corrupt or blocked storage falls back to Night, and stored `system` follows the OS.
+- `dialog` OpenScrim radius 14 → 22 (`rounded-4xl`). The delete confirm is `destructiveSolid`.
+- `drawer` BottomSheetShape: radius 16 → 22; grabber 36 × 4 → 40 × 5.
+- `foundations` RadiusScale adds `xs` 4 and `4xl` 22, with the §9 uses. The "Inter features" section is relabelled for Instrument Sans.
+- `form` ChoiceKeyboard: the `::after` hit area is gone, so it asserts `content: none`.
+- `slider` ThumbHitArea → Targets: the thumb's own box.
+- `import` DropZoneDragging: the ring became a solid `--signal` edge.
+- `feedback` StatusBadgeStates: badges have no outline (`.badge`).
+- `number-field` Steppers measure the 40 px well and its 44 px halves.
+
+**Tokens added at the owner's request (stop point 3: s32 hadn't shipped them; doc 26 updated)**
+1. `--primary-hover`: `oklch(0.826 0.152 75)`, the amber at `brightness(1.06)` computed in sRGB (the mockup's `.btn.pri:hover`). It is the primary button's and Play's hover; `--primary-foreground` on it is 10.6:1, now a `CONTRAST_PAIRS` entry. `destructiveSolid` keeps `brightness(1.06)`.
+2. `text-button-lg`: 16 / 22 / 600, for Button `lg` and `xl`.
+3. `--elevation-capsule` (`shadow-capsule`): `0 1px 2px oklch(0 0 0 / 0.25)`, the pressed segment's shadow. The capsule keeps the item's box and paints its 34 px face, with the shadow, in `::before`.
+4. `rounded-5xl` (24): phone bottom sheets' top corners. Side drawers keep 22.
+5. `--elevation-play` (`shadow-play`): `0 6px 20px oklch(0.8 0.15 72 / 0.28)` under Play. Dropped under increased contrast and forced colours, like `--glow`, and on a disabled Play.
+6. Sizes, with no token needed: `practice-2` TransportButtons grow from 48 to the mockup's 52, and the `compact` SpeedControl steppers are 64 (V11).
+
+Token tests: `pnpm --filter @splitune/ui-tokens test` 1,342 / 1,342 (it was 1,329). The new checks: the radius scale to `5xl`, `text-button-lg`, the two shadows per context and the new contrast pair.
+
+Feature components that override button or toggle border colours draw them only where the face fills the whole box (`practice-2`/`practice` sizes), so no feature story breaks; their own restyles belong to s34–s43. AllowanceMeter keeps its sunken track until s34.
+
+**Fidelity (28 §5.1, `redesign/.renders/s33/`, ignored)**
+- Night stories were measured against `System` (fixed, 1440) or AddSong (night, 1440 and 1180); Daylight stories against Main, AddSong and Settings-Display (daylight, 1440 and 1180). 26 components, 66 comparisons. The script is kept there as `g2.mjs`.
+- Differences per iteration: 170 → 85 → 66 → 66 (iteration 4, after the token additions; the probe now reads the capsule's `::before` face). Iteration 2 fixed segment-item radii and the field's vertical padding, plus probe parsing (inset rings, elliptical radii, fonts on text-less controls). After iteration 3, 0 are unexplained. The 66 are:
+  - **Register:** V2 (`--input` edges), V5, V11, V16 and V17.
+  - **Doc 26 values the mockup's own cascade overrides:** `.app button { font: inherit; color: inherit }` turns its `<button class="btn">`/`.chip`/`.ib` into 15/400 `--tx` text (its `<a class="btn">` measures 14/600 like ours) and Play's icon light on amber (1.9:1). Line heights are 1.45× where §6.2 binds 18/16.
+- `fidelity-<n>.md` has every difference per component. `index.html` puts story crops beside mockup crops and the full side-by-side boards.
+
+**Verification (PC, 2026-11-09)**
+- **Lint:** `pnpm exec biome check .` (2 infos, pre-existing in `features/practice`); `node scripts/check-db-access.mjs` and `node scripts/check-ui-tokens.mjs` clean; `--path apps/web/app/ui` clean.
+- **Scripts:** `pnpm exec vitest run --dir scripts` 94 / 94.
+- **Web:** `pnpm --filter @splitune/web typecheck` clean; unit tests 217 / 217.
+- **Stories:** `vitest run --project storybook` in Chromium and WebKit, in batches:
+  - `app/ui` + `.storybook`: 688 / 688; after the token additions, `app/ui` + `.storybook` + `features/library` 708 / 708;
+  - features except practice: 253 / 256. The 3 failures are the known WebKit Record Tab, Guide and Guide Dark;
+  - `practice.stories.tsx`: Chromium 89 / 89; WebKit 77 failures, all the known 15 s timeouts.
+
+  `transport.stories.tsx` Targets (64 / 48) is unchanged and green.
+- **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route 326,384 → 327,515 B gzip (318.7 → 319.8 KB of 320.0; +1,131 B, 165 B left). css-floor clean.
+- **Visual:** `pnpm --filter @splitune/web e2e:visual:update -g "components"` in `mcr.microsoft.com/playwright:v1.64.1-noble` wrote 68 baselines (34 per engine, `component-*.png`). A compare run with `-g "components"` then passed 68 / 68. After the token additions, the changed rows were regenerated: button (`lg`), drawer (24 px corners), and toggle and transport (capsule and Play shadows; these two were deleted and rewritten, because the faint shadows sit inside the 20-pixel tolerance). The compare run passed 68 / 68 again. The 72 `Screens/` baselines are not regenerated, so `screens.spec.ts` fails until each screen step regenerates its own (28 §4).
+
+**Next**
+- **G2:** the owner reviews `redesign/.renders/s33/index.html` (Night beside Daylight, crops beside the mockup).
+- **s34–s36:** run `node scripts/check-ui-tokens.mjs --path <your area>`. Feature code that passes border colours to buttons or toggles should move to the variants.
+- **The 165 B budget headroom:** the next practice UI must free bytes first.
+- **s45:** widens the raw-value rules to `apps/web/app`, redraws the PWA icons and favicon with the new mark (D12), and deletes `--target-sm`.
+
+## 2026-11-09 — Step s34: app shell, ⌘K palette, Library and Add song (done, not merged; G4 next)
+Branch `impl/s34-shell-library` (worktree `.claude/worktrees/s34-shell-library`) from `dev` at `db6a0d1`. Not merged into `dev`.
+
+**Built**
+- **App shell** (27 §1, 26 §7, §12.2 AppBar): a sticky 64 px bar with the wordmark (→ Library), Library · Settings nav links (current = `--muted` fill), the search button "Search songs, clips and actions" + `Kbd` (`Ctrl K` / `⌘ K` from the platform string; an icon below `lg`), the allowance meter from `lg`, **Add song** (the view's one primary) and a 40 px avatar with the initials. The bar wraps instead of scrolling sideways at 200 % text. Phones: a 56 px header (mark, page title, search, avatar) and the 76 px bottom bar (Library · Add song pill · Settings) with safe-area padding; `styles.css` widens `--bottom-bar` to 84 px for scroll padding (2.4.11). A file dragged anywhere shows "Drop to add" and the drop opens Add song with the file. The account menu is the username · Settings · Keyboard & pedal · Appearance (Night Rehearsal / Daylight / Follow my device) · Help · Sign out; Plan & billing left it (27 §1), `nav.plan` is retired. The marketing bar sits on the 1240 container with 20 px app-bar gutters; the focus bar is 60 px.
+- **Command palette** (27 §3.12), `features/shell`: a `Dialog` with the 52 px field (17 px), `Esc`, groups Songs / Clips / Actions, the typed text bold, ↑/↓ + Enter with `Enter` on the selected row. Songs come from the library search (5), filtered by the text typed, and from the query cache when offline or when the search fails. Actions outside Practice: Add song, the three appearances ("Appearance: …"), Set up a pedal (`/settings/keyboard`), Display and reading (`/settings/display`), each Settings section, Sign out. No global chord for Add song. Empty: "No matches. Try a song title or “loop 17-20”." ⌘K / Ctrl K in the app shell and, signed in, the focus shell; touch screens get a search button in the focus bar (`pointer-fine:hidden`). Lazy: the shells carry `palette-launcher` (key listener) → `palette-host` → `command-palette`, so the practice route doesn't carry the palette's preload list.
+- **Contract with s35 (the registration hook):** `usePaletteActions(group, actions)` from `features/shell/palette-store.ts`, `group` = `'clips' | 'actions'`. A `PaletteAction` is `{ id, label, context?, keywords?, kbd?, icon?, run, parse? }`. `parse(query)` returns `{ label, run }` to turn typed text into its own row; `parseLoopQuery(query)` reads "loop 17-20" (en dash or hyphen, 1-based) as `{ start, end }`, so Practice registers one action whose `parse` gives "Loop bars 17–20" (`nav.loop_bars`). Pass a stable (memoised) array; it re-registers when the array changes. The palette's open state is `usePalette` in the same module.
+- **Library** (27 §3.5): the Continue card (before s39: the most recently opened song from the unfiltered first page, "{artist} · {part} · bars a–b" and "Best clean {pct}" from `best_clean`, the relative date; Resume practice 56 px secondary, see Decisions), the Songs toolbar ("Songs · n", Filter by title, instrument chips, the "Last practised ▾" menu with Sort by and Show, Grid/List), `SongCard`s in `minmax(280px, 1fr)` and phone rows, 24 per page + Show more, every filter in the URL. Card meta lines per state: Ready/Partial "Practised … · best … on bars …", Analysing "You can loop it already" + the bar and "{stage} · about n min left" (`analysis.eta_inline`), Queued "Processing machine offline. Starts automatically." when the worker is offline, Chords only "Add stems + tab with a Full analysis", Failed/Stems expired as before. States: empty (dashed drop-style panel, Add song + Try an example), filters empty, loading skeleton (Continue card + 6 cards), load error with Retry, offline (cards that need the server dimmed with "Needs connection"), worker-offline banner. `ContinueCard`/`ContinueCardCompact`, `WeekStrip`/`WeekStripCompact` and `RevisitList` are built under `features/library` with fixture stories only; This week and Worth a revisit stay hidden until s39.
+- **Add song** (27 §3.6), `features/import/add-song-dialog.tsx` (lazy, mounted by the app shell from `?add=`): a 940 px dialog over the library (`rounded-4xl`), a full-screen sheet below `sm` (56 px header, 48 px tabs, part chips, the "Full · free once / Lite · n left" segments, one full-width primary). File · Link · Record with icons, the last tab remembered. File: drop zone, then the file card (`--muted`, tile, name, mono size · length, Remove, 44 px waveform, warning badges, blocking errors, duplicate notice Open it / Add anyway), Title (from the file name) and Artist (optional) (sent to `songs.create`, which already takes `artist`), and the one-line "Drop another file here, or [choose a file]" zone (`DropZone variant="row"`). Your part: six radio cards with the stem swatch and the Hand button (changes the profile's handedness through `me.update`); no Tuning button (V12 not shipped). Analysis: Full / Lite radio cards with "Welcome · free" and "{left} of {limit} left"; the cap, Welcome and Plus-cap notices as before. Footer: "It opens right away…" + "What works best?" (a popover with the works best / has trouble with lines; G4 checks its place) + Cancel + Start practising / Use this recording / Add and analyse. Record (Phone-Add): the Recording badge, a mono 48 px timer, the input level, an 84 px round Record/Stop, Count-in and Click, the headset hint. Practice still opens right after Start practising while the upload continues.
+- **Routes:** `/import` and `/import?tab=…` redirect to `/library?add=file|link|record`; `?add=` opens the dialog; closing drops `add` and keeps the rest of the URL.
+- **`ui/` (owner's OK):** `song-card.tsx` (letter tiles on the stem colour, 16/650 two-line title + meta, the link = title + meta at ≥ 44 px with the card-wide `::after`, `preview` and `unavailable` slots, 60 px rows), `allowance-meter.tsx` (150 px, 13 px faint text over a 4 px bar), `empty-state.tsx` (dashed drop panel — the system pages that use it change too; s36 restyles them), `worker-status.tsx` (card banner, clock icon), `drop-zone.tsx` (`row` variant), `library.stories.tsx`. `waveform-preview.tsx` needed no change.
+
+**Copy (27 §5.6, §5.7) and `copy-keys.test.ts` CATALOGUE (old → new)**
+- `import.live`: "This sounds like a live recording. Parts may separate less cleanly — we'll mark rough results." → "Sounds like a live recording. Separation may be rougher."
+- `analysis.queued_offline`: "Processing machine offline — your song is queued and will start automatically." → "Processing machine offline. Your song is queued and starts automatically."
+- `plan.allowance`: "{left} of {limit} Lite analyses left · resets {date}" → "{left} of {limit} Lite left · resets {date}"
+- `library.empty`: "Your library is empty. Import a song you want to learn, or start with an example." → "Bring the first song you want to learn"; new `library.empty_body` "Drop a file anywhere on this page, paste a link, or record it."
+- `delete.song_confirm`: "Delete “{title}”? Its stems, loops and edits will be removed. This can't be undone." → "Delete “{title}”?" (the dialog title); new `delete.song_confirm_body` "Its stems, loops, passes and edits will be removed. This can't be undone." The confirm button is `destructiveSolid`.
+- Other §5.7 s34 rows: `import.title` "Add a song", `import.full_body` "Your part isolated, plus tab." (mixer phrase waits for s40b; the minutes are left out), `import.lite_body`, `import.formats` "… · up to 20 min", `import.import_anyway` "Add anyway", `import.import_and_analyse` "Add and analyse", `import.drop_here` "Drop to add", `import.checks_label` "File checks", the new `import.*` keys of the table, `analysis.eta_inline`, `nav.add_song`, the new `library.*` keys. Retired: `nav.import`, `library.import_song`, `nav.plan`, `library.search_label`, `library.search_placeholder`, `library.filter_status`, `library.sort_label`. New keys outside the table: palette (`nav.search`, `nav.search_short`, `nav.palette_*`, `nav.key_*`, `nav.set_up_pedal`, `nav.display_reading`, `nav.appearance_choice`, `nav.settings_section`, `nav.loop_bars`), tile letters `library.tile_*`, `library.best_clean`, `library.best_on_bars_inline`, `library.bars`, `library.sort_menu`, `library.sort_by`, `library.show`, `library.needs_connection`, `library.week_*`, `library.revisit_meta`, `import.hand_right/left`, `import.full_free_once`, `import.lite_left`, `import.stop_recording`, `import.works_best_with`, `import.has_trouble_with`.
+- `appearance.dark/light/system` → Night Rehearsal / Daylight / Follow my device (owner, see Decisions); 27 §5.7 updated. Settings' and Practice's appearance pickers show the new labels too.
+
+**Decisions (owner, 2026-11-09)**
+- Resume practice is secondary (56 px); Add song in the bar stays the Library's one primary (26 §4.5). 27 §3.5 updated.
+- `features/onboarding/saved-page.tsx`: its two links now say "Add song" and go to `/library?add=file` / `?add=record`, so `library.import_song` could retire (s36 owns the file).
+- s34 renames the three appearance labels (D2); s36 adds the hints and retires `appearance.stage`.
+- Budget (stop point 2): see Verification. The owner chose the chunk setting in `apps/web/vite.config.ts`.
+
+**Deviations and fixes outside the owned globs**
+- `apps/web/vite.config.ts`: `build.rolldownOptions.output.codeSplitting.groups = [{ name: 'index', tags: ['$initial'] }]` — every module the entry loads statically goes into the entry chunk. Before it, s34's new lazy chunks made Rolldown split modules the entry used to hold (upload pill, badge, format, upload store, the preload helper, popover, stages…) into 11 more small chunks; the practice route grew 3,932 B gzip although its raw code grew 5.7 KB. Lazy chunks split as before; the budget script still finds `index-` and `_songId.practice-`.
+- `apps/web/app/lib/utils.ts`: tailwind-merge didn't know `text-button-lg` (s33), `text-lead`, `text-display`, `text-read-chord-next`, `text-read-chord-sheet` as sizes, so `cn()` dropped `text-primary-foreground` from every primary `lg`/`xl` button (light text on amber, 1.68:1; axe failed on Start practising). Added to the size group.
+- `apps/web/app/styles.css`: `--bottom-bar` 64 → 84 px for the 76 px bottom bar.
+- Expected values changed by design in stories I don't own: `ui/feedback.stories.tsx` Worker Offline (the card banner has a border) and Allowance (4 px bar, 150 px wide instead of the sunken track); `features/billing/billing.stories.tsx` Settings Free (`plan.allowance` copy); `features/onboarding/onboarding.stories.tsx` Saved ("Add song").
+- The songs list has no clip name, so the Continue card shows the best clean tempo's bars without the clip (27 §3.5 "Before s39" updated); no clips search across songs exists, so the palette's Clips group shows only what a screen registers; cards have no waveform preview (no peaks in the list; the `preview` slot is ready); the Partial card has no reason line (the list has no reasons).
+- Offline (27 §4): there's no per-song offline index, so offline cards that aren't Ready (they need the server) are dimmed with "Needs connection"; Ready cards stay, and Practice says when a song isn't saved for offline.
+- Library's h1 is the Continue card's song title (27 §3.5); without a Continue card it's a visually hidden "Library". `e2e/a11y.spec.ts` expects the heading "Library" on `/library` (s36's spec): with a recently opened song that is now the song title.
+
+**E2E specs I don't own (stop point 6; edits for their owners)**
+- `billing.spec.ts:29` and `:130` (s36): `'Import and analyse'` → `'Add and analyse'` (27 §5.7 `import.import_and_analyse`). `:122` and `:191`: `/^0 of 5 Lite analyses left · resets /` → `/^0 of 5 Lite left · resets /` and `/^5 of 5 …/` likewise (`plan.allowance`). `getByRole('main')` → the allowance is in the app bar from `lg` (`getByRole('banner')`); below `lg` it shows in Add song's Lite badge only.
+- `a11y.spec.ts:333` (s36): `getByRole('link', { name: /Import/ })` → `getByRole('button', { name: 'Add song' })` (`nav.add_song`). `:39`/`:99` `/import` still work (redirect to `/library?add=file`, the dialog opens).
+- `account.spec.ts:18`, `fallbacks.spec.ts:173`/`:207`, `practice.spec.ts:62`: `page.goto('/import')` still works (redirect); selectors inside the page now live in the dialog (`page.getByRole('dialog', { name: 'Add a song' })`).
+
+**Verification (PC, 2026-11-09)**
+- `pnpm exec biome check .` clean (2 infos, pre-existing in `features/practice`); `node scripts/check-db-access.mjs` clean; `node scripts/check-ui-tokens.mjs` clean, and with `--path apps/web/app/features/shell --path apps/web/app/features/library --path apps/web/app/features/import` (s33's 28 §3 rules) clean.
+- `pnpm --filter @splitune/web typecheck` clean; `pnpm --filter @splitune/web test` 219 / 219 (copy-keys with the entries above; new `palette-store.test.ts`).
+- Stories (`vitest run --project storybook`, Chromium + WebKit): shell, library, import, `ui/library`, `ui/import`, `ui/feedback`, onboarding, billing 297 / 300 — the 3 failures are the known WebKit Record Tab, Guide and Guide Dark; after the last row and allowance changes, shell, library, import, `ui/library`, `ui/feedback` 205 / 206 (the known WebKit Record Tab). `app/ui` + `.storybook` + auth, billing, common, marketing, onboarding, settings, system: 834 / 844, the failures being the known WebKit Guide pair and the four expected-value updates above, which then passed 8 / 8. Practice (Chromium): 89 / 89.
+- Build and budget (D6): `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route on `dev` (`db6a0d1`) 327,515 B (319.8 KB); this branch before the chunk setting 331,447 B (over: +1,478 B launcher and focus-bar button, +2,454 B re-splitting); `dev` with the setting 310,931 B; this branch with it **312,110 B (304.8 KB of 320.0, +1,179 B for s34)**. css-floor clean.
+- Fidelity (28 §5.1, `redesign/.renders/s34/fidelity.mjs`, ignored): 41 anchors (app bar, nav links, search, Add song, avatar, Continue card and title, Resume, song card, tile, title, badge, filter, chip, sort, dialog, title, tabs, file card, field, part and analysis cards, Cancel, Start practising; phone header, bottom bar and pill, phone Continue card and row; sheet title, tab, part chip, primary; palette, field, row; empty library and title) against Library and AddSong at 1440 and 1180, Phone-Library and Phone-Add at 390 × 844 (touch), States at 1440, Night and Daylight: 130 comparisons. Iterations: 136 differences (39 unexplained) → 124 (2) → 122 (0) → 130 (6, after the link and chip changes) → **122 (0)**. Every remaining difference is a register entry (V2, V3, V5, V6, V12, V17), the mockup's `.app button`/`.app a` cascade or 1.45 line heights, the sticky bar's page-colour background, `--tile-foreground`, 26 §12.3's disabled face, or the Resume decision. Fixes on the way: phone header without a rule, the search button's 320 px face, tile weight 750, 60 px rows, part cards without the wash, chips painted 40 in a 44 box.
+- Structure, targets, reflow, keyboard (`redesign/.renders/s34/checks.mjs`): aria snapshots of Library, Add song and the palette (`aria-*.yml`) match 27 §3.5/§3.6/§3.12 (landmarks, h1, Songs region with its search toolbar, the dialog's tabs, tabpanel, Your part and Analysis radiogroups, the listbox groups). Every control ≥ 44 × 44 on Library (desktop, phone), empty library, Add song (dialog, sheet, Link), palette, account menu, phone shell. 320 px and 200 % text: no horizontal overflow, no clipped text on Library, Add song and empty library. Keyboard: Ctrl K → "add song" → Enter opens Add song; with a file picked, 13 Tab stops to Start practising, focus never covered.
+- Visual: `pnpm --filter @splitune/web e2e:visual:update -g "library @|import-file @"` (Docker, `mcr.microsoft.com/playwright:v1.64.1-noble`) rewrote the 24 images of the two rows; compare runs (`e2e:visual --no-build -g …`) passed 24 / 24 twice. Intended differences, every image: the 64 px app bar (wordmark, Library · Settings, search with `Ctrl K`, allowance from `lg`, amber Add song, the initials avatar) instead of the 56 px bar with Import; phones: the 56 px header with the page title and the 76 px bottom bar with the Add song pill. `library--*`: the Continue card above the songs, the Songs toolbar (filter, chips, sort menu, Grid/List; on phones the sort menu and chips), bordered cards with letter tiles, badges with their meta lines, phone rows. `import-file--*`: the Add song dialog over the dimmed library (sheet on phones) with the file card, Title and Artist, the row drop zone, Your part cards (chips on phones), Analysis cards (segments on phones) and the footer. One update run captured a WebKit phone image before the picked file showed (cause not found); it was re-captured, and the row then compared clean three times.
+- E2E (stop point 5): `E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts` doesn't get past `signIn` in `beforeAll`: the username typed into the sign-up form is cleared before Create account is pressed (the trace shows the fill; the form then says "Use 3–30 letters…"), so the 7 tests don't run. A clean `dev` build (`db6a0d1`, temporary worktree) fails the same way, so this predates s34; the sign-up form and `e2e/helpers.ts` `signIn` belong to s36/shared. Firefox isn't installed on this PC (`firefox-1555` missing). WebKit also met a strict-mode clash on the home page's two "Try an example song" links (s36's home). The journey spec's s34 edits (the `/import` redirect, the dialog, "Add and analyse", the empty library's heading) are therefore not verified end to end; the stories cover the same paths.
+
+**Known gaps**
+- G4 (owner, devices): both themes at desk and stand distance, and the place of "What works best?".
+- The Library's Continue card can't name the clip; the palette has no cross-song clips; cards have no waveform until the list carries peaks (each needs an API change).
+- Modal focus can leave the dialog through the browser's own UI and come back to the page (Base UI dialog, s33's `ui/dialog.tsx`; seen in the keyboard probe, not caused by s34).
+- The e2e smoke can't sign up on this PC (above); the journey edits wait for that fix.
+
+**Next**
+- s35: register Practice's clips, "Loop bars a–b" (via `parse` + `parseLoopQuery`), view switches and Display and reading with `usePaletteActions`; the focus bar already has ⌘K and the touch search button. about 15.2 KB of practice budget is free now.
+- s36: the spec edits listed above; its settings pages render inside the app shell's `max-w-page` main as before.
+- s39: feed `ContinueCard` (`chart`, the ladder and first-pass badges), `WeekStrip` and `RevisitList`.
+
+## 2026-11-09 — Step s36: home, auth, onboarding, pricing, settings IA, system states (done, not merged; G4 next)
+Branch `impl/s36-outside-app` (worktree `.claude/worktrees/s36-outside-app`) from `dev` at `830ce64` (s34 merged). Not merged into `dev`. Built in four file-disjoint lanes (marketing; auth + onboarding; billing + system; settings), browser checks run once at the end.
+
+**Built**
+- **Home** (27 §3.1, `Home.dc.html`): hero (primary badge, `text-display` headline, `text-lead` lead, Try an example song + Sign in at 56 px, the early-access note) beside an inert practice still built from kit components (`HeroStill`, `role="img"` with the 27 label: Now column C → G with beat dots, two tab bars with the sounding digit, one unsure digit and the playhead, the pass-prompt row); What it does on `--card` (stem levels, loop + speed, sure/unsure digits with "about 1 in 3/5" alternatives); Made for the music stand (`text-3xl`, five items); How a session goes (four cards, amber-ink numbers); closing CTA. **Honesty gates:** "Stand view for tablets" left out until s43; the stem picture shows your part and the Band only and the isolate body is the current "Turn your part up, mute it to play along, or hear the original." until s40b; no ladder picture or sentence until s37; no beat lights until s42. The stories check none of those words appear.
+- **How it works, Legal** (27 §3.2): restyled on tokens (amber-ink step numbers, pictures on cards, accuracy note "Most notes come out right; about 1 in 8 is marked unsure, so you know where to listen."); Legal on the 72 ch column with its table of contents and 44 px links.
+- **Pricing** (27 §3.2, `Pricing.dc.html`): `billing.demo` strip, centred `text-5xl` "Every practice tool is free" + lead (mixer phrase gated), Free and Plus cards (Monthly / Yearly segmented, neither emphasised, price from the API with the other interval beside it, Get Plus primary, "Cancel anytime in one tap. Failed analyses never count."), the Compare table. No countdowns, no "most popular", no card field.
+- **Auth** (27 §3.4, `SignIn.dc.html`): 400 px form column under the wordmark; heading, lead, fields with errors under the field and an icon (wrong credentials under Password, username taken under Username), primary `lg` block submit, "or" + Google only when configured, "New to Splitune? Create an account. No email needed.", the terms; the showcase panel from `lg` on `--card` (44 px title, three check points, an inert sheet: Am, the loop badge, four rungs). `?next=` unchanged (same-origin only).
+- **Sign-up blocker (s34's e2e note):** the credential fields were controlled; text typed before hydration stayed in the DOM while React state stayed empty, so the first render after hydration cleared it and validation said "Use 3–30 letters…". `CredentialsForm` now uses uncontrolled inputs read through refs on submit.
+- **Onboarding** (27 §3.3, `Onboarding.dc.html`): the 64 px bar (Back · `StepDots` + "Step n of 5" · Skip), the 1120 px column, `text-4xl` display step titles; **Where's your screen?** with three radio cards and their line drawings (`ui/icons/distance.tsx`: Desk / Music stand / Floor, token colours, no amber), a card applies its preset at once; the sample card ("Can you read this from where you play?", the hint, the Reading size slider 80–140 % writing `calibration` live, the sample Am and F at `--read-chord-sheet` × 1.6 and the tab "0 2 2 1 0" on six `--staff` lines at `--read-tab`); Continue (primary, 48) · Skip for now (puts back the distance and size it found). First song, loop coach marks and the save sheet keep their placement rules.
+- **Billing** (27 §3.10): checkout and portal on the Pricing card style (`billing-card.tsx`): plan name, price, a note, the actions inside the card; checkout's three buttons large and stacked (Simulate successful payment primary, Simulate declined card, Cancel); the upgrade sheet's checks lose their amber (26 §4.5). Never a card field.
+- **System states** (27 §3.11, `States.dc.html`): `system-card.tsx` (the States card) for 404 (mono "404", Go to library), the error page (Reload primary, Go to library, the id in mono with Copy error id), unsupported (the missing features in plain words, the supported versions under Details, Copy link, "Your library is still available") and account deleted; banners on the card style (offline with its icon, update ready with a small Reload, in-app browser with Copy link). `ui/status-message.tsx` `Banner` is card-style (owner's OK); errors and successes keep their surfaces; a new optional `icon` prop.
+- **Settings IA** (27 §3.9, `Settings-*.dc.html`): the 1180 container with the 220 px section list (a list above the section on phones): Account · Display & practice · Keyboard & pedal · About; each section has its own h1; sections 28 apart with hairlines; every field saves on its own with "Saving…" / "Saved" / "Couldn't save. Try again." beside its label (`setting-row.tsx`: `SettingsPage`, `SettingSection`, `SegmentSetting`, `SwitchSetting`, `SettingRow`).
+  - **Routes:** `/settings` → `/settings/account`; `/settings/profile`, `/settings/billing`, `/settings/privacy` → `/settings/account#profile|#plan|#privacy` keeping `?checkout=` and `?confirm=` (`account-redirect.ts`, unit-tested); new `/settings/account` and `/settings/about`. Google re-authentication returns to `/settings/account?confirm=delete#privacy`; the upgrade sheet's cancel returns to `/settings/account?checkout=cancelled#plan`.
+  - **Account:** Profile (Name, Username read-only, Main instrument and "How long have you played?" as segmented controls), Plan (h2 + "Demo billing" badge; one card: plan name, Welcome status or renewal line, the "Lite analyses · 3 of 5 left · resets 1 Dec" meter (Full analyses on Plus), See Plus primary on Free / Cancel or Resume Plus and Manage plan on Plus; checkout return messages), Privacy (the training switch with its new hint, the data-export card with every built state, the Delete my account card on a `--destructive-surface` edge → AlertDialog with a `destructiveSolid` confirm → "Confirm it's you"), Sign out (ghost).
+  - **Display & practice:** badge "Saved on this device"; three appearance cards with themed miniatures (each a `data-appearance` subtree on tokens, Follow my device split in two halves), Increase contrast; Reading (Where is your screen?, the Reading size card with its live sample at the reading tokens, Hyperlegible font, Show uncertainty, Left-handed on the account); Motion ("Notation follows the music": Page by page · Scrolling from the store's `notationLayout` type; Reduce motion with its hint); Practice defaults (Starting speed 25–110 %, Count-in, Rest between repeats) and the sound-delay card with today's ±150 ms stepper. The Score setting is gone. A stored `stage` shows Night Rehearsal and the distance it resolved to; the next change to either control stores `dark` and the distance shown.
+  - **Keyboard & pedal:** the intro, a "Have a pedal? Set it up" card (no wizard), Keys: the table Action · Keys · Pedal · learn (12 §8 order from `ACTIONS`; Keys from `DEFAULT_KEYS`, Pedal the learned key), the dashed test area with Reset to the defaults.
+  - **About:** "Version {commit}, built {date}", the transcription models and versions, the four fonts with links to their SIL OFL 1.1 texts (the three self-hosted `/fonts/*-OFL.txt`, Bravura's from alphaTab via `?url`), the provenance register link and the 27 personal-mode line. Build facts come from `buildDefines()` in `apps/web/vite.base.ts` (owner's OK): the commit (`RAILWAY_GIT_COMMIT_SHA`, else `git rev-parse --short HEAD`, else none), the build time and the register's models whose `used_in` names a pipeline stage (eval-only candidates left out; 19 today). Only the lazy About chunk references it.
+- **Shell (owner's OK):** the nav, account menu and bottom bar link Settings to `/settings/account`; the palette lists Account, Display & practice, Keyboard & pedal and About.
+- **`ui/` (owner's OK):** `step-dots.tsx` (8 px dots, 22 × 8 current pill, faint step text), `status-message.tsx` (card banners), `radio-card.tsx` (optional `media` slot above the choice; other cards unchanged), new `icons/distance.tsx`. `coach-mark.tsx` and `save-status.tsx` needed no change.
+
+**Copy (27 §5.6, §5.7) and `copy-keys.test.ts` CATALOGUE (old → new)**
+- CATALOGUE: `billing.demo` "Demo mode — no real charges." → "Demo mode — no real charges. Payments are simulated."; `system.offline` "You're offline. You can keep practising songs you've opened." → "You're offline. Songs you've opened keep working."; `system.unsupported` "Your browser can't run Splitune's audio engine ({missing})." → "It's missing {missing}. Try a recent Chrome, Edge, Firefox or Safari.". `shortcuts.single_keys_hint` is not added: the switch waits for s35 (Decisions).
+- Other §5.7 s36 rows: `system.update_ready` (+ "It waits until you stop playing."); `appearance.dark_hint`, `appearance.light_hint`, `appearance.system_hint` (new), `appearance.stage` retired (`lib/appearance.ts` names `stage` Night Rehearsal); `settings.level` "How long have you played?", `settings.level_few_songs` "A few songs", `settings.level_returning` "Coming back"; `settings.handedness`, `settings.handedness_hint`, `settings.right_handed` retired, `settings.left_handed_hint` new; `settings.account`, `settings.about` new, `settings.billing` "Plan & billing" → "Plan" (now a section heading, as are `settings.profile` and `settings.privacy`); `privacy.training_hint`, `privacy.delete_body`; `auth.showcase_title` and `auth.showcase_point_1…3`; `home.*` (headline, lead, proof, stand and session copy; the Music Stand eyebrows, point lists, `home.stand_stage_*` and `home.proof_isolate_point_2` retired); `pricing.*` (title, leads, card points, compare rows; the old `pricing.f_*`, `group_*` etc. retired); `start.screen_hint` (+ "You can change this any time."), `start.screen_stand_hint`, `start.screen_floor_hint`, new `start.read_title`, `start.read_hint`, `start.skip_for_now`, `start.can_you_read` retired; `how.accuracy_body` in frequency wording; `legal.privacy.delete_body` names Settings → Account.
+- New keys outside the table, all from 27 §3.x text: the settings section and row labels (`settings.reading`, `settings.motion`, `settings.follow`, `settings.device_badge`, `settings.demo_billing`, `settings.plan_lite`, `settings.plan_full`, `settings.plan_left`, the hints, `settings.pedal_setup`, the sample keys), About (`settings.about_*`), `shortcuts.pedal`, Home and Pricing fragments, `auth.showcase_loop`, `auth.no_email`, `system.details`. Owner's wording (27 gives none): `billing.back_to_settings` "Back to Account", `billing.go_billing` "Go to Account", `billing.session_expired` "… Start again from Account."; About's headings ("Transcription models", "Font licences", "Provenance register", "Where every model and dataset comes from") are mine and wait for G4.
+- Totals: 73 keys added, 57 retired, 41 changed. `settings.score*` stay until s35 drops them from the practice Display popover (its last use); `settings.rest_beat`/`rest_bar` keep "One beat"/"One bar" because the Loop panel (s35's) shares them.
+
+**Decisions (owner, 2026-11-09)**
+- `ui/step-dots.tsx`, `ui/status-message.tsx`, `ui/coach-mark.tsx`, `ui/save-status.tsx` may change (props kept) and new `ui/icons` files are fine; `ui/radio-card.tsx` gets an optional `media` prop.
+- The Single-key shortcuts switch (s35's `keys-store` `singleKeys`) is left for s35/s43: s35 runs after s36 and hasn't merged. With it: `shortcuts.single_keys`, `shortcuts.single_keys_hint` and its CATALOGUE entry, and the `a11y.spec.ts` ↑-for-speed fix.
+- About's build constants come from `vite.base.ts`/`vite.config.ts` (`buildDefines()`).
+- The shell (s34's, merged) may point at the new sections.
+- Billing back-links say "Account".
+
+**Deviations and fixes outside the owned globs**
+- `apps/web/vitest.config.ts`, `apps/web/package.json` (`test:stories`): Chromium's and WebKit's story runs are separate projects run one after the other (`sequence.groupOrder`), WebKit one file at a time; `test:stories` selects both with `--project=storybook*` (the browser names stay `storybook (chromium)` / `storybook (webkit)`; `--project storybook-webkit` runs WebKit alone). Why: Playwright's WebKit content process on this PC dies part-way ("The webkit page crashed while running tests"; 21 GB free, so not machine memory). With the old config one run aborted and one waited 45 minutes until stopped. Crash counts on the 37 affected files (512 stories per browser): default parallelism 2 of 2; WebKit two files at a time 2 of 4; Chromium then WebKit one at a time 2 of 3; WebKit alone one at a time 3 of 8 (1 of 6 without a `-t` filter). Leaving out the audio and microphone stories (Guide, Record Tab) didn't stop it. So the crash is rarer, not gone: a known Playwright-WebKit-on-Windows instability. Every crash since the change ended its run within about 80 s; none hung. Cost: WebKit takes ~190 s for these files, and the 77 known WebKit practice timeouts now run one after another (about 20 min of a full `test:stories`) until s35 fixes them. Run browser checks under a hard time limit.
+- Story fixes in files I don't own: `features/shell/shell.stories.tsx` and `features/import/import.stories.tsx` give their lazily loaded dialogs 10 s (`LAZY`) instead of 1 s: on a cold dev server Vite compiles the chunk on first request and they failed under load. `shell.stories.tsx` `AppDesktopSettingsCurrent` opens `/settings/about` and checks the avatar's `data-initials`. `features/onboarding/onboarding.stories.tsx` `Screen` matched "110 %", but Testing Library reads the no-break space before % as a plain space, so it compares on `\s` now.
+- **Account avatar (s34's shell, WCAG 2.5.3):** axe (`label-content-name-mismatch`) failed every signed-in page in e2e: the button's name is "Account" but its visible text was the initials (two letters for e2e users; the stories' "Ana" gives one, which axe skips). The initials are painted from `data-initials` (`before:content-[attr(data-initials)]`), so the button's only text is its name.
+- **Forced colours on Pricing:** the demo strip and the "Your plan" badge painted `bg-accent` (= Highlight) behind CanvasText; they add `forced-colors:bg-card` as `themes.css` asks. The neutral `Badge` variant has the same gap everywhere (s33's `ui/badge.tsx`, not changed).
+- Stories: `*Dark` variants became `*Daylight` (the default story theme is Night Rehearsal, so `Dark` repeated it). Pricing stories moved to `features/billing/pricing.stories.tsx` (`Screens/Pricing`), Settings → Plan stories to `features/settings/plan.stories.tsx` (`Screens/Settings/Plan`); `screens-billing--checkout`, `screens-home--signed-out`, `screens-settings--display`, `screens-settings--privacy`, `screens-system--account-was-deleted` keep their ids.
+- One primary per view (26 §4.5): on Account, See Plus is the primary, so Prepare my data and Download my data are secondary (the mockup paints Download amber too). The Plus pricing card has no amber edge, and the upgrade sheet's checks aren't amber.
+- The appearance cards are composed in `features/settings/appearance-cards.tsx` from Base UI's radio (the miniature sits above the name; `RadioCard` keeps its radio dot layout for its other users).
+
+**E2E (stop point 6)**
+- Mine, changed: `onboarding.spec.ts:65` 'Skip' → 'Skip for now', `:129` 'Import a song' → 'Add song' (s34's saved-page link). `billing.spec.ts`: 'Import and analyse' → 'Add and analyse' (`:29`, `:130`); the demo copy; the allowance lines `/^0 of 5 Lite analyses left · resets /` → `/^0 of 5 left · resets /` (and 5 of 5, and Plus' `/^14 of 15 full analyses left/` → `/^14 of 15 left · resets /`: Account → Plan's meter); Pricing's Monthly is a segmented button (`:99`); the checkout's return lands on `/settings/account?checkout=success#plan`; the cap test opens the Link tab first (`/import` now opens Add song on File); the Welcome check looks for the Full card's "Welcome · free" badge; `checkBillingPage` scans only `#plan` on the Account page (Profile's Name and Username are text fields). `a11y.spec.ts`: pages `/settings/account`, `/settings/keyboard`, `/settings/about` (the old section URLs are redirects), `/library` heading `/./`, Tab to 'Skip for now' on the screen step, 'Add song' instead of the Import link. New `settings.spec.ts` (redirects with the query kept, the nav, About).
+- `journey.spec.ts` (s34's, merged): the Home h1, and `.first()` on the two "Try an example song" links (27 gives them the same name).
+- `helpers.ts` `signIn` (additive): waits for the "Create an account" h1 before typing. **This was s34's sign-up blocker:** the router changes the URL before the sign-up form replaces the sign-in one, so the username went into the old form and only the password reached the new one. Fork B's uncontrolled `CredentialsForm` inputs stay: they keep text typed before hydration.
+- Redirect rule: a return state names its own section, whichever old URL it arrives on (`?checkout=` → `#plan`, `?confirm=delete` → `#privacy`), so `/settings/profile?checkout=success` lands on `/settings/account?checkout=success#plan` as the acceptance criterion asks.
+- Still open, for their owners: `a11y.spec.ts` "core pages: forced colours" fails on the library's song-card tile (s34's `ui/song-card.tsx`: the `--tile-foreground` letters stay near-white while forced colours make the tile Canvas; needs a forced-colours token or class there). `practice.spec.ts` (s35): "a capo change…" ('Capo up' not found) and "guitar's Notes follow the clock…" (the fretboard label doesn't change). `a11y.spec.ts:239` ↑ for speed waits for s35's keymap.
+
+**Verification (PC, 2026-11-09)**
+- `pnpm exec biome check .` clean (3 infos: two pre-existing in `features/practice`, and `vite.base.ts`'s `process.env['RAILWAY_GIT_COMMIT_SHA']`, which TypeScript's index-signature rule needs); `node scripts/check-db-access.mjs` clean; `node scripts/check-ui-tokens.mjs` clean, and with `--path` on marketing, auth, onboarding, billing, settings, system and common (62 files) clean.
+- `pnpm --filter @splitune/web typecheck` clean; `pnpm --filter @splitune/web test` 222 / 222 (copy-keys with the CATALOGUE above, new `account-redirect.test.ts`).
+- Stories (settings, billing, marketing, auth, onboarding, system, shell, library, import, `app/ui`; 37 files): Chromium 512 / 512; WebKit 510 / 513, the 3 being the known Guide, Guide Daylight and Record Tab.
+- Build and budget (D6): `pnpm --filter @splitune/web build && budget --enforce && css-floor`: practice route **304.8 KB before → 304.2 KB after** (entry chunk 219.7 → 219.8 KB); css-floor clean. About's model list and build facts live in the lazy About chunk only.
+- Fidelity (28 §5.1, `redesign/.renders/s36/fidelity.mjs`, ignored): 58 anchors on Home, SignIn, Onboarding, Pricing, Settings-Account, Settings-Display, Settings-Pedal (1440, 1180) and States (1440), Night and Daylight: 220 comparisons. Iteration 1 compared Daylight boards against Night stories (a URL global doesn't override a story's theme), but its Night rows showed 4 defects (hero badge 22 → 28 px, the current settings link's muted text, the test area's fill and radius); iteration 2 fixed them; iteration 3 with Daylight stories: **141 differences, 0 unexplained** (the mockup's `.app a`/`.app button` cascade, 26 §6.2 line heights and the 44 px Home heading, V9, V17, the amber rule on the Plus card edge, and s33's segmented control painting its track and capsule as separate layers).
+- E2E (Chromium; Firefox isn't installed here): `UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test --project=chromium …`. journey, onboarding, account, billing, fallbacks and settings pass; `a11y.spec.ts` 16 / 16 without the forced-colours case (which fails on s34's tile, above); `practice.spec.ts` (s35) fails capo and guitar Notes. Before the `signIn` fix none of the signed-in specs could start (4 passed of 54).
+- Visual: `pnpm --filter @splitune/web e2e:visual:update -g "home @|mock-checkout @|settings-display @|settings-privacy @|account-deleted @"` (Docker) rewrote 26 images; the compare run passed 26 / 26. Intended differences: `home--*` the new hero (badge, display headline, lead, 56 px CTAs, the practice still), What it does, Made for the music stand, the session cards and the closing CTA; `mock-checkout--*` the Pricing-card checkout with three stacked buttons and the new demo copy; `settings-display--*` the section list (Account · Display & practice · Keyboard & pedal · About), the h1 with "Saved on this device", the appearance cards, segmented rows, the Reading size card with its sample, switch rows; `settings-privacy--*` the Account page (Profile, the Plan card, Privacy cards, Sign out); `account-deleted--*` the States card.
+
+**Known gaps**
+- G4 (owner, devices, both themes) for every screen here; About's headings and the billing back-link wording are mine (27 gives none).
+- The Single-key shortcuts switch (s35/s43), the ladder default row (s37), tap-along sound delay (s42), the pedal wizard (s43). The Keys table keeps "Learn this pedal" and today's test-area copy until s43's `shortcuts.*` rows.
+- `settings.score*` retire when s35's Display popover drops them.
+- The WebKit story crash (above). The forced-colours tile and the practice e2e failures are their owners'.
+
+**Next**
+- s35: wire `singleKeys` into Keyboard & pedal (the Keys section of `features/settings/keyboard-settings.tsx`) with `shortcuts.single_keys`, `shortcuts.single_keys_hint` and its CATALOGUE entry; drop `settings.score*` from the Display popover; the `a11y.spec.ts:239` ↑ fix; the practice e2e failures above.
+- s37: the ladder row goes in Display & practice → Practice defaults (`PracticeDefaultsSection`).
+- s45: the forced-colours song-card tile and the neutral `Badge` under forced colours.
+
+## 2026-11-10 — Step s35: practice core, five regions, notation restyle, progressive state, new keymap (done, not merged; G4 next)
+Branch `impl/s35-practice-core` (worktree `.claude/worktrees/s35-practice-core`) from `dev` at `b61d0f7` (s34 and s36 merged). Not merged into `dev`.
+
+**Built**
+- **Five regions on desktop** (27 §3.7.1, `Main.dc.html`; fine pointer only, `layout.ts` `useDesktopRegions`): the top bar (divider, title + "artist · part · key · BPM", "key after chords" while the chords are still to come; centre: Analysing badge or the view switch, piano Hands; the legend chip "{count} unsure" with its frequency; Display and reading `Aa`, Keyboard & pedal, Tools when the inspector is a drawer, More), the song map (`practice-timeline.tsx` → `waveform-timeline.tsx`: played/unplayed canvas, hatch for unsure stretches, the loop band beneath, handles, DOM ruler every 8 bars; no section chips until s41b), the **Now column** (264; `now-column.tsx`: "Now · bar 26 · beat 3" or the pickup, the current chord with the fit rule, the shape diagram, `BeatPulse` (static, `ui/beat-pulse.tsx`), Next · in n beats + bar, Then (up to five chips → the Fix tab), the Level / Capo card), the notation, the **inspector** (380 docked ≥ 1180, a drawer below and while Getting ready shows; `inspector.tsx`: Loop · Mix · Progress · Fix with the unsure badge, each tab lazy, the last tab remembered, `?tab=`), the **dock** (96; `transport-dock.tsx`: position, restart / play / next 64, loop pill 64, speed −/+ 64 with the readout, count-in 64, click 52, the Mix pill (disabled "after your part is isolated" before stems), the volume inline from 1440 (the mockup's width), a popover below with the Mix pill as its icon). Below 1024 the Now column becomes a strip over the notation. Tablets and phones keep today's arrangement on the new tokens (`transport-bar.tsx`, `CompactRegions`); their redesign is s43.
+- **Inspector tabs:** Loop (`loop-tab.tsx`: Bars a–b + best tempo, From / To steppers, Next phrase · ×2 · ÷2, Fine-tune, between repeats, saved clips "Bars 9–12 · best 80 %", Clear loop), Mix (`mix-tab.tsx`: the four presets as radio cards with their glosses, stem rows with M/S, faders and a dB readout that opens a stepper (2.5.7), Band, Helpers: metronome; "waiting for your part" before stems), Progress (today's data only; s39), Fix (`fix-tab.tsx`: the unsure count, J/K through the unsure spots, E edits the playing bar, the editor docked in the tab on desktop). Loop and Mix keep their popover / drawer forms on tablets.
+- **Notation restyle** (`packages/notation`, 12 §3–4, 26 §9): 44 px system top room with the loop bracket and badge, 4 bars a row, rhythm with bars, washes beneath the notes (loop shade, current bar), the shaky-bar outline, note marks (medium edge, low wash + "?"), edited underline, the sounding fill per beat on fretted parts, playhead **Line / Block / Bar**. Follow **Page / Scroll / Off**: page turns once per bar from cached scroller geometry (ResizeObserver + scroll events, never read in a frame); the scroll itself waits until after the frame, so it rarely forces layout (Perf below); pausing stops scrolling; Off never scrolls. Reduced motion: page turns, a stepped playhead, no smooth scroll (`notation-motion.ts`). The marks key sits under the score.
+- **Progressive state** (27 §3.7.3, `Practice-Ready.dc.html`; `getting-ready.tsx`, `model/getting-ready.ts`): "Getting ready" with one overall bar and its ETA ("3–5 min" when long), the stage list with each stage's detail and time, "You can practise already" once the beats are in; the part question after tagging ("We hear guitar, bass, drums and vocals. Is guitar your part?" → Yes / Pick another); What works now (loop, count-in, mixer, chords, notation: ready / soon / later with minutes); the worker-offline and failure cards (Try again). Arrivals toast "Tab is ready · Show" and keep the chords view while playing. `analysis-status.tsx` keeps only `analysisFailures`.
+- **Pass prompt** (27 §3.7.1; `pass-prompt.tsx`, lazy): "Pass 2 at 70 % — how was it?" floating over the notation's foot, Felt clean (C) / Not yet (N) at 64, after every pass while a loop is active; it never covers the focused control.
+- **Keymap** (12 §8, frozen decision 5; `model/keymap.ts`, `input-mapper.ts`, `keys-store.ts`): `,` / `.` slower / faster by 5 %, Shift 1 % (`<`/`>` and the `Comma`/`Period` codes too); ↑/↓ never change speed: before a pedal is learned they show the HUD "Pedal detected? Set it up" (→ Keyboard & pedal), after that nothing; J / K / E for the Fix tab; ⌘K / Ctrl K the palette. `singleKeys` (default on): off makes character keys inert while Space, Enter, arrows, PageUp / PageDown, learned keys and chords keep working. The PedalHud names its source ("Key ,", "Pedal").
+- **Palette (s34's hook):** Practice registers "Loop bars a–b" (typed bars, `parseLoopQuery`), the view switches ("Show Tab", …), "Display and reading" and the saved clips.
+- **Display popover** (27 §3.7.4; `display-popover.tsx`, `display-options.ts`): Appearance (three choices; a stored `stage` shows Night Rehearsal and the resolved distance, and the next change stores `dark`, 26 §2), distance + Reading size, Hyperlegible, Show uncertainty, Notation follows the music, Playhead, Reduce motion.
+- **Video and piano hands** (27 §3.7.2, §3.7.5): the floating video from ⋯ More (closed by default); piano **Hands** Both · Left · Right in the top bar (other hand at 45 %, audio unchanged; Left is new).
+- **Limiter:** presets and faders keep the loudest audible stem at unity (`model/mixer.ts` `limitToUnity`).
+- **`ui/` (owner's OK):** `beat-pulse.tsx` (new), `loop-badge.tsx` (64 pill with its detail line), `pass-control.tsx` (prompt variant: fieldset + legend, `Kbd`), `pedal-hud.tsx` (top-right toast with its source and an optional action), `chord-chip.tsx` (`pill` variant), `confidence-legend.tsx`, `stem-row.tsx` (M/S 32 in 48, stem-colour fader, dB readout), `mix-preset-group.tsx` (2 × 2 radio cards), `waveform-timeline.tsx` (song map), `speed-control.tsx` / `speed-panel.tsx` (presets 50 · 60 · 70 · 75 · 80 · 90 · 100), `stage-list.tsx` (dots, detail, time).
+
+**Contracts with other steps**
+- s34: the ⌘K registration hook (above); `command-palette.tsx` filters its built-in actions by the registered screen ids so "Display and reading" isn't listed twice (a one-line change in s34's file, recorded as a deviation).
+- s36: `keys-store.ts` `singleKeys: boolean` (default `true`, persisted with the learned keys) and `setSingleKeys`; Keyboard & pedal's **Single-key shortcuts** switch binds to it (`keyboard-settings.tsx`, owner's OK) with `shortcuts.single_keys` / `shortcuts.single_keys_hint`; the test area uses `resolveKey`. `lib/display-store.ts` exports `FOLLOW_MODES`, `PLAYHEAD_STYLES`, `PIANO_HANDS`, `APPEARANCE_CHOICES` (+ types); Display & practice maps over them (`display-settings.tsx`, owner's OK: Follow and the new Playhead row). `appearance.*` copy is s36's, used as is.
+- s37+: `practice-store.ts` `openTab(tab)`, `tab`, `inspectorOpen`; the Loop tab leaves room for the ladder; Progress shows today's data until s39; Fix holds today's editor until s38.
+
+**Copy (27 §5.6, §5.7) and `copy-keys.test.ts` CATALOGUE**
+- Changed: `mixer.backing` "Backing" → "Band"; `practice.pass_prompt` "How was that pass?" → "Pass {pass} at {speed} — how was it?" (CATALOGUE updated); preset glosses (`part_loud` "Learn it: {part} up, band down", `minus_one` "Play it: your part muted", `original` "The song as recorded"); `practice.legend_short` → "Auto-transcribed · {count} unsure"; `practice.loop_off` → "No loop" (+ `loop_off_hint` "tap two bars, or a section"); `practice.hands_right` → "Right"; `shortcuts.slower` / `faster` → "Slower by 5 %" / "Faster by 5 %".
+- Renamed: `practice.tab_layout*` → `practice.follow`, `follow_page`, `follow_scroll` (+ `follow_off`).
+- Retired: `practice.pass_question`, `stage_hint`, `try_stage`, `can_loop_now`, `stages_title`, `analysing_eta`, `display`, `display_section_look` / `_motion` / `_reading`, `loop_badge_pass`, `zoom_in`, `zoom_out`; `settings.score`, `score_hint`, `score_match`, `score_paper` (the Display popover dropped them, as s36 asked); `shortcuts.key_edit`.
+- Added (114): the Getting ready and What works now keys (`practice.getting_ready`, `practise_already(_beats)`, `unlock_*`, `stage.detail.*`), `analysis.heard`, `analysis.wrong_instrument`, `practice.pedal_detected`, `practice.now_bar_beat` / `now_pickup(_beat)` / `now_at_bar`, the inspector tabs (`practice.tab_loop` / `tab_mix` / `tab_progress` / `tab_fix`, `practice.tools`), loop tab, mix tab (`mixer.helpers`, `mixer.muted`), playhead and follow, `shortcuts.next_unsure` / `previous_unsure` / `palette` / `single_keys(_hint)`, `practice.voicing_label_left`, and the rest listed in the diff. CATALOGUE entries added: `analysis.wrong_instrument`, `analysis.heard`, `practice.pedal_detected`, `shortcuts.single_keys_hint`; `en.json` has 1060 keys.
+
+**Decisions (owner, 2026-11-09, at the stop points)**
+- All practice-kit files in `apps/web/app/ui/` may change, plus the new `beat-pulse.tsx`, the CATALOGUE, additive `helpers.ts` and the perf spec's selector table.
+- `display-settings.tsx` and `keyboard-settings.tsx` edited for the Single-key switch and the new display constants.
+- **Stop analysing** left out: there is no cancel API; recorded as a gap.
+- **Pick another** built on the existing routes: `songs.update` (the part) + `analyses.create` (a new analysis). It costs an allowance and doesn't cancel the running analysis.
+
+**Deviations (mine, for G4)**
+- The pass prompt shows after every pass while a loop is active, not only with "Ask after each pass" on (my reading of 27 "leaves with the next pass").
+- The inspector is a drawer while Getting ready shows (the placeholder needs the width), even at ≥ 1180.
+- Chord names over the bars carry no confidence overlay yet; "Use as default for {part}" (Level popover) is not built.
+- The speed range stays 50–100 % (the mock's).
+- FocusShell's "Back to library" stays as s34 built it.
+- The top-bar icon buttons use the `icon` size (40 painted, 48 box in practice density, V12), not the mockup's 38.
+- **Fixes found by the e2e smoke:** guitar and vocal Notes' screen-reader label was a debounce, so with a note every beat it never updated while playing (the guitar-Notes failure s36 recorded); `spoken-label.ts` `useSpokenLabel` makes it a throttle (at most once a second). The Getting ready card asked `system.stats` for guests (401 in onboarding); it now asks only for signed-in learners while an analysis runs. The loop pill's name read "bars 3–4 , pass 1": its comma is now inline text painted clear (a positioned or inline-block one gets a space before it). At 1280 px the dock squeezed the loop pill to "Loo…": the inline volume and the Mix pill's words now start at 1440 (the mockup's width) and the pill keeps `min-w-44`. The `stage` → `dark` rewrite fired on onboarding's Skip, which only puts back what was stored (a11y's Stage case); only a real change of appearance or distance rewrites now (`display-store.test.ts`).
+- **s34's palette (`command-palette.tsx`), a second small change:** song rows filtered by the debounced text, so Enter right after typing "loop 3-4" ran the first song instead of "Loop bars 3–4"; they now filter by the text as typed (the search request stays debounced).
+
+**Fidelity (28 §5.1)**
+- `node redesign/.renders/s35/fidelity.mjs <n>` (adapted from s34's; Storybook dev on :6006, reports and crops in the ignored `redesign/.renders/s35/`): 42 anchors over Main and Practice-Ready (1440, 1180) and Practice-Mix, Practice-Piano and Practice-Drums (1440), Night Rehearsal and Daylight: top bar, title, view switch, legend chip, Display, song map, ruler, Now column (eyebrow, current chord, beat dot, Then chip, Level card), inspector (panel, tabs, heading), dock (Play, Restart, loop pill, speed −, count-in, Mix pill), pass prompt and Felt clean, Getting ready (card, title, What works now, Analysing badge, stage name, disabled Mix pill), preset card, M button, Hands.
+- Iterations: 1 (the probe shared one page between looks; fixed), 2: 116 unexplained of 290, 3: 8, 4: 34 (load timeouts while Storybook recompiled; restarted), 5: 2 (cold-start timeouts), **6: 0 unexplained of 204 differences over 148 comparisons**. Fixed on the way: the title (16 / 650), eyebrows (650), ruler labels (400), Now-column beat dots (14), the Analysing badge (12 / 650), stage names (15), M/S letters (750), top-bar icon buttons (`icon`: 40 in a 48 box). Explained: the mockup's `.app button` cascade (68), its 1.45 line height (38), V11 64 px controls and their radius (36), V12 48 px boxes (12), V15 reading sizes incl. Then chips at `--read-chord` (16), sticky bar ground (8), the ToggleGroup capsule `::before` (6), V3 / V5 Daylight amber (8), V10 (4), no section chips until s41b (4), 26 §12.3 disabled face (4).
+- Per board (look · width): Main 35–41 each, Practice-Ready 2–6, Mix 5–6, Piano 6, Drums 6–7; all explained.
+
+**Perf (28 §3.1 step 2)**
+`cd apps/web && PERF_PRACTICE_OUT=<scratchpad> UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/perf-practice.spec.ts --project chromium` (three runs per context inside one invocation, CPU 4×), run twice on the built tip: before and after moving the notation's scroll to after the frame. Final run (kept run, as the spec picks it) against `perf-baseline.json`:
+
+| Measure | Desktop base | Desktop s35 | Tablet base | Tablet s35 |
+|---|---|---|---|---|
+| LoAF p75 / max (kept run) | 74.9 / 74.9 (n 3) | 84.1 / 84.1 (n 1) | 80.5 / 80.5 (n 3) | 71.2 / 71.2 (n 1) |
+| LoAF p75, the three runs (median) | 117.8 · 74.9 · 89.9 (89.9) | 119 · 84.1 · 88.3 (88.3) | 70 · 85.1 · 80.5 (80.5) | 71.2 · 76.2 · 88.8 (76.2) |
+| LoAF blocking p75 | 21 | 31.2 | 22.9 | 18.3 |
+| Forced style + layout in steady playback (n / total ms) | 604 / 63.8 | **0 / 0** | 606 / 73.4 | **6 / 6.8** |
+| Play / pause p75 (max) | 32 (48) | 32 (32) | 48 (48) | 48 (48) |
+| Loop nudge p75 (max) | 40 (48) | 40 (40) | 40 (48) | 40 (40) |
+| Speed step p75 (max) | 48 (56) | 48 (56) | 72 (96) | 72 (80) |
+| Fader step p75 (max) | 48 (64) | 40 (48) | 48 (64) | 40 (48) |
+
+- No LoAF attributed to playhead, song-map or roll code: the only long frame in each run is the press that starts playback (the React commit behind the click, `index-*.js`, ~49–61 ms of script, ~9 ms forced), the same frame the baseline has (55.9 ms). As a single frame it swings 75–118 ms between the baseline's own runs; the kept-run figure is 12 % over on desktop and its blocking time 10 ms over, while the three-run medians are at or under the baseline. Recorded for G4 rather than claimed as within 10 %.
+- Forced layout: the old per-frame geometry reads in `view-*.js` (604–606 per window) are gone. Desktop has none. Tablet keeps 6 small ones (≈ 1.1 ms each), attributed to the notation chunk (one named function twice, an anonymous one four times), which fits the page turn back at the loop's wrap; the first run, which scrolled inside the frame, had 8 (9.8 ms). Not zero, so recorded rather than claimed.
+- p75 practice-action latency ≤ 100 ms everywhere (worst: tablet speed step 72 ms, max 80); no latency worse than the baseline. PedalHud latency: see E2E.
+
+**Budget (12 §10, D6)**
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **309.2 KB** gzip of 320 KB, before 304.2 KB (dev at `b61d0f7`, built the same way). New panels load lazily: the inspector and its four tabs, Getting ready, the Display popover body, the pass prompt, the narrow dock's volume popover, the Now column, the loop panel. `css-floor` clean.
+
+**E2E (stop point 6)**
+- Chromium, built app, `UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts e2e/practice.spec.ts e2e/onboarding.spec.ts e2e/account.spec.ts e2e/practice-keys.spec.ts e2e/a11y.spec.ts --project chromium` (Firefox isn't installed here): journey, account, practice, practice-keys, onboarding pass; a11y passes except **core pages: forced colours**, the s34 song-card tile s36 recorded (white initials on the forced-colours ground; s45). `practice.spec.ts` also passes on `tablet-chrome` and `mobile-chrome` (21 passed, 9 skipped by design). PedalHud latency (practice-keys, Chromium): ↑ 4.0 ms, ↓ 0.4, `,` 3.8, `.` 3.1, Shift+. 2.9, L 0.4 (≤ 100 ms each).
+- My specs: `practice.spec.ts` selectors changed: the mixer control → the dock's Mix pill named by its preset (27 §3.7.1) or the touch transport's Mix button; preset buttons → radio cards, `aria-checked` (27 §3.7.4, 26 §12.2); the loop pill by accessible name ("Loop · bars 3–4, pass 1"; 27 §5.7 pill words); speed by `,` (12 §8) after checking ↓ shows "Pedal detected? Set it up" and leaves 100 %; edits in the Fix tab on desktop (restart, then E: 12 §8; the chord list there is only the next chords), the editor sheet on touch; capo through the Level and capo card (27 §3.7.1); the layers test reads Getting ready's heading and "You can practise already…" (27 §5.7); a phone may show the glance view before the lazy Getting ready card (the mock's beats land within a second). New `practice-keys.spec.ts` (12 §8 keymap: HUD latency, ↑/↓ never change speed, ⌘K loops typed bars, single keys off).
+- Edits in specs I don't own, after their owners merged (s36's merged into `dev` before this branch): `a11y.spec.ts:239` `ArrowUp` → `.` (12 §8 frozen decision 5: ↑/↓ are the pedal's keys); `a11y.spec.ts` keyboard test, "Tab never reached /^Mix$/" → Tab to the Mix pill (`MIX_PILL`, named by its preset), Enter, the Mix tab selected with its "Mix" radio group (27 §3.7.1: on desktop the mixer is the inspector's Mix tab; there's no dialog to close); reduced-motion test, `button 'Mix'` + `dialog /Mix/` → the Mix pill + the radio group (same reason). `perf-practice.spec.ts` (s32, owner's OK): the slower / faster / mixer selectors take the new names. `onboarding.spec.ts` needed no edit (its console error was mine: fixed above).
+
+**Visual baselines**
+- `pnpm --filter @splitune/web e2e:visual:update -g "practice @|practice-tab-pending @|practice-stems-expired @"` (Docker) rewrote 22 images (Chromium and WebKit: `practice--{desktop,tablet,phone}--{light,dark,stage}`, `practice-tab-pending--tablet--light`, `practice-stems-expired--tablet--light`); the compare run (`e2e:visual --no-build`, same filter) passed 22 / 22. Intended differences: desktop shows the five regions (top bar with the view switch, legend chip and `Aa`; the song map; the Now column; the notation with the loop bracket, washes and marks key; the inspector on Loop; the 96 px dock with the 64 px controls and the Mix pill); tablet and phone keep their layout on the restyled kit: the loop pill "No loop / tap two bars, or a section", the 64 px pill and speed controls, and the Analysing badge in the top bar while the tab is pending.
+
+**Verification (PC, 2026-11-10)**
+- `pnpm exec biome check .`: clean (3 infos, all older than s35: `vite.base.ts`, `video-url.ts`, `practice-context.tsx`'s `stages['url_import']`). `node scripts/check-db-access.mjs`, `node scripts/check-ui-tokens.mjs` and `node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path packages/notation/src --path apps/web/app/features/settings` (138 files, the extended 28 §3 rules): clean.
+- `pnpm --filter @splitune/notation typecheck && pnpm --filter @splitune/notation test`: clean, 43 / 43. `pnpm --filter @splitune/web typecheck`: clean. `pnpm --filter @splitune/web test`: 245 / 245 (keymap, input mapper, getting ready, display store, mixer, loops, copy keys).
+- Stories, Chromium (`vitest run --project="storybook (chromium)"`): all 39 files pass. The first full run lost `practice.stories.tsx` to Vite re-optimising dependencies mid-run (82 "reading 'useId'" failures, the step's known first-run failure); its rerun passed 121 / 122, and the one timing failure (Piano Notes' fade-in, now awaited) passes; the files touched after that (practice, shell, onboarding, settings, mixer, transport) pass 227 / 227.
+- Stories, WebKit (`--project="storybook (webkit)"`, per file list): the 37 files other than practice pass 510 / 513, the three s36 recorded (Guide, Guide Daylight, Record Tab); one run stopped when `mixer.stories.tsx`'s iframe never became ready (s36's WebKit crash) and the 24 files after it passed on their own. `practice.stories.tsx` in WebKit: the playable stories time out at 15 s (the step's known failure); stopped after 14 of 122 rather than spend 30 minutes on timeouts.
+- **Stalls:** a combined `pnpm --filter @splitune/web test:stories` hung with Chromium idle for 20 minutes and was stopped; the per-browser runs above replace it. Every browser run here had a hard `timeout`.
+- `pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor`: 309.2 KB of 320 KB; css-floor clean.
+
+**Known gaps**
+- G4 (owner, devices, both themes) for every region and state here.
+- Stop analysing (needs a cancel route); Pick another re-runs the whole analysis (re-running from separation needs an API); the chord-name confidence overlay; "Use as default for {part}".
+- Section chips (s41b), the beat pulse animation (s42), Stand view, phone glance, Tools sheet and pedal wizard (s43).
+- On short desktop windows (1280 × 720 in e2e) the Now column scrolls: its chord, shape and Then rows are taller than the room between the song map and the dock. For G4 (a compact Now column, or the strip, below some height).
+- Perf: the play-press frame's kept-run figure and the tablet's 6 small forced layouts (above).
+- Known failures that aren't s35's: the forced-colours song-card tile (s34; s45), WebKit's playable practice stories at 15 s, WebKit's Guide / Guide Daylight / Record Tab stories and its occasional story-run crash (s36).
+
+**Next**
+- s37: the speed ladder in the Loop tab (`loop-tab.tsx` leaves the slot), clip rename / delete in the saved-clip rows.
+- s38: Fix mode and the queue replace today's editor in the Fix tab.
+
+## 2026-11-11 — Step s37: speed ladder (V1) and the finished Loop tab (done, not merged; G4 next)
+Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) from `dev` at `cf76235` (s35 and s36 merged). Not merged into `dev`.
+
+**Data check (deliverable 1)**
+- Local compose database (`splitune`): `SELECT count(*) FROM loop_clips WHERE trainer IS NOT NULL;` → **0** (the table has 0 rows). No stored trainer anywhere I can see, so `plays_per_step` now means clean passes per step.
+- **Owner action:** run the same query against production before deploying. If it returns anything but 0, tell me before the deploy: those clips would change meaning.
+
+**Built**
+- **Contract** (`packages/contracts/src/api/loops.ts`): `SpeedTrainer` gains `drop_after_misses` (0 = off, 1–5) and `on_goal` (`keep` / `stop`), both required; the comment says `plays_per_step` counts clean passes. It also gains the learner's place, optional: `current_pct` (25–200), `clean_count` (0–20), `miss_count` (0–5) (deviation 1). `SpeedTrainer` isn't registered for JSON Schema, so nothing is generated; `loop_clips.trainer` is typed from the contract, so no migration.
+- **Flag:** `v1.speed_trainer` defaults **on** ("Speed ladder on loop clips (kill switch)"). The web reads `me.flags` for it (guests: the declared default).
+- **API** (`apps/api/src/routes/loops.ts`): `checkTrainer` keeps the flag gate and refuses a goal below the start (`trainer.end_pct` / `empty_range`).
+- **Ladder rules** (`features/practice/model/ladder.ts`, pure): defaults (12 §5), rungs, the rung a speed stands on, `ratePass` (up on the nth clean pass, down one rung on the nth miss in a row, never below the start, Off; at the goal keep or stop), the view the UI reads, and the trainer round-trip.
+- **Machine** (`model/player-machine.ts`): `ladder`, `pendingSpeed`, `finishing` in the context; `SET_LADDER`; `PASS_RATED` replaces `ASSESSED` and is sent for every answer. **Seam rule:** a move decided while a pass plays makes that one wrap a stop at the loop end (`setStopAt`); the rate is set while the engine is stopped there, then the pass (and its count-in, asked for after the rate) starts. With a rest, the pass prompt or the ladder's count-in before each pass it changes in the same place; during the count-in between passes the count-in starts again at the new tempo; while stopped the rate is set at once. No engine change. A no-rest gap now lasts 0 ms (it used `restSeconds` whatever the rest was).
+- **Provider** (`practice-context.tsx`): `ladderEnabled`, `ladder` (the view), `setLadder`, `selectClip`. The trainer is saved on the clip after every rating, move and setting (300 ms debounce; a new loop's create carries it). `selectClip` (the saved-clip rows and resume) loads the clip's bars, rest, count-in, ladder and speed instead of copying its range into a new unnamed clip. PedalHud: "Speed 80 % · ladder" on every move, "Goal reached · 100 %" when a ladder set to Stop ends the loop.
+- **UI:** `ui/speed-ladder.tsx` (new: `SpeedLadder` rungs, `LadderIcon`, `LadderChip`), `features/practice/ladder-card.tsx` (the card: switch, rungs, summary, chips Start / Goal / Step / clean passes / More, each opening a stepper with 48 px halves), `loop-tab.tsx` (card between Fine-tune and Between repeats; clip rows with a More menu), `clip-actions.ts` (rename, delete), `ui/speed-control.tsx` + `speed-panel.tsx` (goal: "72 BPM · → 100", in the readout's name and the panel), the loop pill and the notation bracket ("pass 2 of 3 at 75 %").
+- **Saved clips:** Rename inline (Enter or "Save name", Escape or Cancel keeps the name), optimistic, toast "Renamed to {name}" + Undo, rollback + error toast on refusal. Delete hides the row at once; the DELETE is sent when the Undo toast closes or the page hides, so Undo restores the same clip with its best clean pass. "Save this loop" (was "Save clip") opens the name field for the unnamed loop being played.
+- **Settings** (owner's OK): Display & practice → Practice defaults → Speed ladder: "+5 % after {n} clean passes" with a stepper (1–20, default 3) and the switch "On for new loops" / "Up to 100 %"; stored as `ladderCleanPasses` and `ladderNewLoops` in `lib/display-store.ts`.
+- **Copy:** 50 `ladder.*` keys (new group between `instrument` and `legal`), `practice.clip_*` (9), `practice.loop_pass_ladder`, `practice.loop_bracket_ladder`, `practice.save_this_loop`; 62 new keys; `en.json` has 1121.
+
+**Decisions (owner, 2026-11-11, at the stop points)**
+- **Stop point 6:** unmerged `impl/s40a-all-stems` changes `packages/contracts` (a comment in `src/analysis/stems.ts` and `fixtures/stems.json`). No overlap with `api/loops.ts` / `api/flags.ts`: proceed.
+- **Owner files:** `ui/speed-control.tsx`, `ui/speed-panel.tsx`, the new `ui/speed-ladder.tsx` (+ stories), the Speed ladder row in `settings/display-settings.tsx` and its values in `lib/display-store.ts`: all OK'd.
+- **Ladder for new loops: off by default.** 27 §3.9 read "Up to 100 %, on for new loops". On by default would have slowed every new loop to at most 70 % with a count-in before each pass (the onboarding loop included) and changed the loop assertions of journey, onboarding, practice and a11y and the perf-practice scenario. The owner chose off; the switch is in Settings, and 27 §3.9 and 12 §5 say so now.
+
+**Deviations (mine, for G4)**
+1. **The place on the ladder is stored in the trainer** (`current_pct`, `clean_count`, `miss_count`): the step asks that state and position survive a reload "saved on the clip", and the song's `player_state.speed_pct` can't hold it per clip. Optional fields, so a settings-only trainer stays valid.
+2. **Turning the ladder on never speeds the learner up:** Start is the lower of the current speed and "best clean tempo, else 70 %" (12 §5 gives only the latter).
+3. **The rung is the speed.** A speed set by hand (`,` / `.`, the panel) stands on the highest rung at or below it and starts the counts over; the next step up is the next rung above it.
+4. **Clean passes at a rung add up** (a miss doesn't undo them); misses count in a row.
+5. **Summary wording:** 27's sample "Clean pass 2 of 3 at 75 % moves you to 80 %." is only true on the last pass, so the card says "Clean pass 2 of 3 at 75 %. Pass 3 moves you to 80 %." and the sample's sentence on the last one. 27 §3.7.4 updated.
+6. **`aria-label`:** "70 percent done, 75 percent now, 80 percent next" (26's "70 and 75 percent done, 80 percent next" counts the current rung as done). 26 §12.2 updated.
+7. **The readout's name carries the visible goal** ("Speed: 75 % · 72 BPM · → 100, ladder goal 100 %"): axe's label-content-name-mismatch wants the visible "→ 100" in the name.
+8. **Ladder range in the steppers:** Start and Goal 50–110 %, Step 1–50 %, clean passes 1–20, misses 0–5. The speed control itself still stops at 100 % (s35's range).
+9. **`apps/api/test/privacy.test.ts`:** its trainer body gained the two required fields (the test still checks the flag gate).
+10. **`apps/web/app/lib/display-store.test.ts`** and **`features/settings/settings.stories.tsx`:** the migration test expects the two new defaults; one new story for the settings row.
+
+**Fidelity (28 §5.1)**
+- `node <scratchpad>/fidelity.mjs` (probe of `Main` against the `Ladder1180` story, Storybook dev on :6006), 11 anchors (ladder box, done / current / upcoming / goal rung, first and last chip, summary, title, card, clip name) at 1440 and 1180 in Night Rehearsal and Daylight: 44 comparisons.
+- Iteration 1: 4 unexplained (the card title was 14 / 600 instead of the h3's 17 / 650, at each width and look). Iteration 2: **0 unexplained.** Explained: the inspector is 380 wide where the mockup draws 360 (27 §3.7.1; ladder, rungs, summary and card 20 px wider); rung labels 11 px / 650 (V10, `text-2xs`); rung corners 4 px (`rounded-xs`, 26 §9); the done rung's 1 px `--signal` edge (V16) and its height (the mockup's first rung has no height; 26 says rising to the goal); Daylight's ring in the Daylight `--signal` (V3 / V5); chips 13 / 500 in `--muted-foreground` where the mockup's `.app button` cascade draws 15 / 400 in `--foreground` (s35's finding; `.chip` itself is 13 / 550); line heights (the mockup's 1.45); the card 36 px taller for the switch's 44 px box and the chips' 48 px boxes (V12, 26 §8).
+
+**Budget (12 §10, D6)**
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **311.4 KB** gzip of 320 KB, before 309.1 KB (`dev` at `cf76235`, built the same way). The ladder card, its steppers and the clip actions load with the Loop tab (already lazy); the 2.3 KB are the ladder rules, the machine, the provider's wiring and the pill / bracket / readout strings. `css-floor` clean.
+
+**E2E**
+- New `apps/web/e2e/speed-ladder.spec.ts` (Chromium, built app, keys only): a loop of bars 3–4 from the palette at 70 %, the ladder switched on with Space, three `C` → 75 % with "Speed 75 % · ladder"; while the loop plays, three `C` put the ladder on 80 % at once and the readout stays at 75 % until the seam; after a reload the clip's trainer (`current_pct` 80), the switch and "pass 1 of 3 at 80 %" are back. 3 / 3.
+- `cd apps/web && UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts e2e/practice.spec.ts e2e/onboarding.spec.ts e2e/account.spec.ts e2e/practice-keys.spec.ts e2e/a11y.spec.ts e2e/settings.spec.ts e2e/speed-ladder.spec.ts --project chromium`: 36 passed, 1 skipped by design (the phone case), **1 failed: a11y "core pages: forced colours"**, the s34 song-card tile s35 and s36 recorded, and the 8 serial cases behind it did not run. Run on their own (`-g "practice \(example song"`), the practice screen's axe cases pass in all 7 appearances, forced colours included. No existing spec needed an edit (stop point 7 not hit). Firefox and WebKit e2e not run here (Firefox isn't installed on this PC).
+
+**Stories**
+- New: `ui/speed-ladder.stories.tsx` (Kit/SpeedLadder: LadderClimbing, EachRung, AtStart, AtGoal, LongValues, LongValuesAtGoal, Daylight, IncreasedContrast, Chips, SpeedReadoutWithGoal); in `practice.stories.tsx`: LadderOff, LadderOnForNewLoops, LadderOffForNewLoops, LadderAtStart, LadderClimbing, LadderDroppingBack, LadderAtGoalKeep, LadderAtGoalStop, LadderLongValues (Goal 110 %, Step 1 %, 12 clean passes), LadderChips, LadderMore, LadderDaylight, Ladder1180, LadderIncreasedContrast, LadderReducedMotion, LadderFlagOff, SavedClips, ClipRename, ClipDeleteUndo; in `settings.stories.tsx`: DisplayLadderDefault. `practice-story-data.ts` seeds saved clips (`clips`, the first one selected) and the flag (`ladderFlagOff`).
+- Chromium (`vitest run --project="storybook (chromium)"`): **40 files, 667 / 667**, axe included. Two earlier runs lost stories to Vite re-optimising dependencies mid-run ("reading 'useId'" / "'useContext'", the known first-run failure); the run after each passed.
+- WebKit (`--project="storybook-webkit"`): `ui/speed-ladder`, `ui/transport`, `ui/transport-button` and `settings` stories 78 / 78. The 19 new practice stories time out at 15 s there, like the other playable practice stories on this PC (the known failure); not run further.
+
+**Visual baselines**
+- `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (Docker): 22 rows ran, **6 images changed**: `practice--desktop--{light,dark,stage}.png` in Chromium and WebKit. Intended difference: the Loop tab now shows the Speed ladder card (off, with its one-line description) between Fine-tune edges and Between repeats, so Between repeats sits lower and Clear loop is below the fold. Tablet and phone rows, `practice-tab-pending` and `practice-stems-expired` are unchanged.
+
+**Verification (PC, 2026-11-11)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`, `node scripts/check-ui-tokens.mjs` and `node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice --path apps/web/app/features/settings` (124 files): clean.
+- `pnpm --filter @splitune/contracts typecheck && pnpm --filter @splitune/contracts test`: clean, 61 / 61. `UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm contracts:check`: "Generated contracts are up to date."
+- `pnpm --filter @splitune/api typecheck && pnpm --filter @splitune/api test`: clean, **215 / 215** (new: the ladder's fields stored and patched, 13 out-of-range trainers refused, a trainer without `drop_after_misses` refused, the limits' edges accepted, rename / delete by another user 404, a blank name refused). `pnpm --filter @splitune/api openapi:check`: valid (33 paths). `pnpm --filter @splitune/node-worker typecheck`: clean.
+- `pnpm --filter @splitune/db typecheck && pnpm --filter @splitune/db test && pnpm db:check`: clean, 161 / 161 (the lifecycle test passed this time), "Migrations match the schema." (drizzle-kit prints an ENOENT for a Windows temp path before that line; it does so on `dev` too).
+- `pnpm --filter @splitune/web typecheck`: clean. `pnpm --filter @splitune/web test`: **265 / 265** (new: `model/ladder.test.ts` 11, 9 ladder cases in `player-machine.test.ts`, the store's two defaults).
+- `pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor`: 311.4 KB of 320 KB; css-floor clean.
+- `pnpm secrets:scan` reports 2 findings in history, both test passwords that predate s37 (`apps/api/test/helpers.ts:49`, `apps/web/e2e/helpers.ts:45`); nothing in this step's files.
+
+**Known gaps**
+- G4 (owner, devices, both themes): the ladder card and its steppers by touch, the count-in at the upcoming tempo by ear, the step at the seam by ear (the restart after the stop at the loop end is a few milliseconds of silence, not a seamless wrap).
+- `L` with no loop shows "No loop — tap two bars" instead of looping the current bar (12 §5 / §8 say it should); older than s37, noticed while writing the e2e.
+- Deleting a clip and closing the tab before its Undo toast closes relies on the request sent at `pagehide`; if the browser drops it the clip is back on the next visit.
+- The phone Tools sheet's ladder card is s43's; Progress (s39) will read the same clips. The home / pricing honesty-gate flip for the ladder is s45's.
+- WebKit practice stories (the known timeout) and e2e outside Chromium weren't exercised here.
+
+**Follow-up (owner's OK, same day)**
+- A clip chosen from ⌘K now loads through `selectClip` too (`practice-page.tsx`, outside the step's files), so it comes back with its rest, count-in, ladder and speed instead of as a new unnamed loop. `selectClip(clip, 'clip')` also sends `loop_created` with method `clip` for the palette and the saved-clip rows (the rows had stopped sending it when they moved to `selectClip`). `speed-ladder.spec.ts` gained a fourth case: save the loop as "Chorus climb", clear it, speed back to 100 %, pick the clip from the palette → ladder on, 80 %, "pass 1 of 3 at 80 %". Chromium: `speed-ladder` 4 / 4 and `practice-keys` 4 / 4; web typecheck clean, unit 265 / 265, budget still 311.4 KB.
+
+**Owner actions**
+- Production data check before deploy: `SELECT count(*) FROM loop_clips WHERE trainer IS NOT NULL;` must be 0.
+- If production has a `feature_flags` row for `v1.speed_trainer`, it overrides the new default: `SELECT key, enabled FROM feature_flags WHERE key = 'v1.speed_trainer';` and set it to `true` (or delete the row) to turn the ladder on there.
+
+**Next**
+- s38: Fix mode and the queue replace today's editor in the Fix tab. `PASS_RATED` (not `ASSESSED`) is the machine's event for a rated pass; `practice.selectClip(clip)` loads a saved clip with its ladder; `practice.ladder` is the ladder's view (rungs, current, pass, of, nextPct, speedPct) for anything that shows it (s39's "Ladder at 75 % → 100 %", s43's Tools sheet).
+
+## 2026-11-17 — Step s38: Fix mode, the unsure-spot queue, alternatives in frequencies, audition over the loop (done, not merged; G4 next)
+Branch `impl/s38-fix-tab` (worktree `.claude/worktrees/s38-fix-tab`) from `dev` at `92c0d38` (s37 merged). Not merged into `dev`.
+
+**Built**
+- **Queue and ranking** (`features/practice/model/fix-queue.ts`, pure): a spot per unsure chord, per unsure note outside a shaky bar and per shaky bar; ranked by consequence (`pitch` → `octave` → `chord-root` → `chord-quality`), then by how likely the guess is wrong (1 − calibrated confidence), then song order. `stepSpot` (J / K, wrapping) and `spotFor` (the spot a selection sits on).
+- **Frequency wording** (`model/frequency.ts`): `oneIn` and `wrongOneIn` over s35's `oneInBand` (nearest of 1 in 2 / 3 / 4 / 5 / 10 / 20); `chord-input.ts`'s unbounded `oneIn` is gone.
+- **Fix mode** (`fix-mode.tsx`, lazy): the controller (takes the player over and hands it back, J / K / E, the first spot on entry, Esc), the top bar's pill "Fixing · every change saves as you go" + Undo + Done, the key line under the notation, the Fix dock (80: Play 64 "Play bars 7 to 8", "Bars 7–8", the hint, Listen to Original · Your part · Tab synth · Both at 48, speed − / + at 64). In Fix mode a tap on the notation selects the bar or the note, the song map's edges move the selection, and the pass prompt, the legend chip and the loop badge stay away.
+- **Audition** (`fix-synth.ts` over `model/synth-schedule.ts`): a pluck and a soft held tone on the engine's `AudioContext`, scheduled from the engine's heard position, rate and loop (150 ms look-ahead, 30 ms ticks). No engine change was needed (stop point 5 not reached). `tab-preview.ts` is replaced by its `playOnce`.
+- **Cards** (`fix-cards.tsx`): `SpotHeader` (FixQueue), `ChordCard` with `AlternativeRow`s, Type a chord (Enter uses it), Split at beat n, It's right, Report wrong, Replace all in this song; `NoteCard` (the bar's notes as chips, "or play it as" from `alt_fingerings`, String / Fret steppers, Length, It's right, Delete note, Report wrong; a shaky bar is confirmed whole); `BeatFixes` with "Re-barred {n} bars" + Undo. `fix-history.tsx`: Your edits ("Changed a chord · bar 7 · G → Em", when, Revert), Show original, "Your fixes are saved for this song."
+- **Persistence:** the toast names the change ("Edit saved · bar 4, string 5 → fret 4") with Undo; offline it reads "Saved on this device · …" and the edit's row carries "Saved on this device" until it is sent (`corrections.ts` `offline`); refusals still roll back with the error toast.
+- **Desktop editor** (`edit-page.tsx`): Fix mode on its own page from the same components; touch devices go to Practice with `?tab=fix`.
+- **Copy:** 47 `fix.*` keys (new group between `error` and `footer`), `practice.fix_saved_note` (+ its `copy-keys.test.ts` CATALOGUE entry, additive per D10); removed, now unused: `edit.select`, `edit.select_bars`, `edit.select_notes`, `editor.chord`, `editor.hear_bar`, `editor.notes`, `editor.one_in`, `editor.position`, `editor.second_guess`, `editor.split`, `editor.type_chord_hint`, `editor.use_chord`, `practice.fix_select`.
+
+**Deviations and decisions (mine; for G4)**
+1. **Files outside the step's list, all in `features/practice`:** `practice-store.ts`, `practice-page.tsx`, `status-bar.tsx`, `notation-pane.tsx`, `practice-timeline.tsx`, `input-mapper.ts`, `model/view-model.ts`: Fix mode can't be entered, drawn or keyed without them. No contract, `music-core`, `audio-engine`, `packages/notation` or `ui/` file changed.
+2. **What a spot is:** the mockup's "Spot 2 of 6 · bar 27–28" holds a chord card and a note card. Here a spot is one unsure thing, its bars are what loops, and the tab shows the chord card and the note card of those bars. The mockup doesn't show its ranking, so stop point 1 wasn't reached.
+3. **It's right** uses `mark_correct`, which music-core ignores; the mark is taken off in the view model, and Undo / Revert append `report_wrong` with the comment `undo:mark_correct` (no contract change). The chord card has It's right too.
+4. **Revert / Undo of a sent op** bring the label or fret back but not the unsure mark (music-core gives edited entities confidence 1; the overlay is append-only).
+5. **The guess is 44 px** (`text-3xl`); the scale has no 40.
+6. **The pill is the opaque `--unsure-surface`** (27 §3.7.4; the top bar is `--background`, the ground it was composited on), not the mockup's translucent wash.
+7. **Fix speed** is its own for the session and starts at the practice speed; the practice speed, loop, rest, pass prompt and ladder (with its counts) come back on Done.
+8. **Octave consequence** is read from the tab's "moved by octaves" fact: notes carry no alternative pitch (stop point 4 not reached: no card needs one).
+9. **E before the first downbeat** takes the first bar.
+10. **Existing spec** `e2e/practice.spec.ts` (s35's, merged): "Use this chord" click → Enter in "Type a chord", twice.
+
+**G4 list (owner)**
+- Placement of **Replace all in this song** (chord card, after a change) and **Show original** (switch in Your edits).
+- The song map's band and the notation's wash for the selection are the loop's amber, not `--unsure-surface`: that needs a prop in `ui/waveform-timeline.tsx` and `packages/notation` (both outside this step).
+- Tapping a "?" on a **note** in the notation outside Fix mode doesn't enter Fix (the notation has note targets only in Fix mode and the editor); chord "?" chips, J / K, E and the tab do.
+- By ear on real audio: the synth against the loop at 50–100 %, wired and Bluetooth.
+
+**Fidelity (28 §5.1)**
+`node <scratchpad>/fidelity.mjs` (probe of `Practice-Fix` against the `Wide` / `At1180` stories, Storybook dev on :6006): 24 anchors (pill, Done, spot title, progress, previous, chord card, eyebrow, guess, its line, alternative row, name, frequency, Use, Type a chord, dock, Play, bars, hint, Listen to, slower, readout, key line) at 1440 and 1180 in Night Rehearsal and Daylight, 96 comparisons. Iteration 1: 268 differing fields; fixed: progress 6 px, row radius 10, pill 44 tall, dock label 15, readout weight 400. Iteration 2: 240, all explained: targets (48 boxes for 32 / 40 px faces, Play and speed 64: 26 §8, V11); the inspector is 380 where the mockup draws 400 (27 §3.7.1), so cards and rows are 24 px narrower; kit type and radii (17 for 18, 16 for 15, button weight 600, button radii); the guess at 44; the opaque pill; the key line as a row under the notation; Listen to's track painted on `::before`; story data (spot 2 of 3, G not Am).
+
+**Budget (12 §10, D6)**
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.2 KB** gzip of 320 KB, before 311.4 KB (`dev` at `92c0d38`, built the same way). Fix mode, cards, history, synth, queue and frequency wording are lazy chunks (`fix-mode`, `fix-cards`, `fix-history`). `css-floor` clean.
+
+**Perf (12 §10)**
+Asserted in stories (Chromium): re-quantize after Half tempo with its consequence line ≤ 300 ms (`BeatFix`, `data-requantize-ms`); the tab redrawn after a fret edit ≤ 150 ms (`OfflineQueued`, `data-update-ms`).
+
+**Stories**
+New `features/practice/fix.stories.tsx` (Screens/Practice Fix, 25): Empty, FirstSpot, NoteSpot, ChordSpot, KeysOnly, EnterByKey, ShakyBar, BeatFix, AfterUse (edited mark, Revert), OfflineQueued, SavedEdits (Show original), ReplaceAll, ManySpots (128; badge 99+), LongChordNames (F♯m7♭5), ListenTo, Targets, Done, Wide (1440), At1180, Daylight, Daylight1440, IncreasedContrast, DaylightIncreasedContrast, Editor, EditorDaylight. `practice.stories.tsx`: InspectorFix now expects Fix mode on the first spot.
+- Chromium (`vitest run --project=storybook`): first run lost 96 stories to Vite re-optimising dependencies mid-run (the known first-run failure); the rerun: **41 files, 691 / 692**, axe included; the one failure, `ui/music.stories.tsx > Legend Button`, passes on its own (22 / 22 for its file).
+- WebKit: (`--project=storybook-webkit app/features/practice/fix.stories.tsx`): Editor and EditorDaylight pass; the other 23 time out at 15 s, like the other playable practice stories on this PC (the known failure). Not run further.
+
+**E2E** (built app, mock workers)
+- New `apps/web/e2e/fix.spec.ts` (desktop): J enters Fix mode on the fixture's unsure note with focus on It's right, Enter confirms it, and after a reload nothing is marked unsure and Your edits lists it; an edit made offline says "Saved on this device", is sent when the connection is back, and is there after a reload; Done hands the screen back. Chromium 3 / 3.
+- `E2E_SMOKE=1 … pnpm exec playwright test` (journey, practice, onboarding, account): Chromium 21 passed, 1 skipped by design. `practice-keys` and `speed-ladder` in Chromium: 8 / 8.
+- Firefox isn't installed on this PC ("Executable doesn't exist"); WebKit fails at sign-in / first navigation in `account`, `journey`, `onboarding`, `practice` and `fix` alike (URL never reached), before any Fix code runs. Not exercised further here.
+
+**Visual baselines**
+`pnpm --filter @splitune/web e2e:visual -g "practice"` (Docker, no update): 22 rows, 22 passed, no image changed. The default practice screen opens on the Loop tab, so nothing of Fix shows in the matrix; no baseline regenerated.
+
+**Verification (PC, 2026-11-17)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`, `node scripts/check-ui-tokens.mjs`, `node scripts/check-ui-tokens.mjs --path apps/web/app/features/practice` (124 files): clean.
+- `pnpm --filter @splitune/web typecheck`: clean. `pnpm --filter @splitune/web test`: **44 files, 301 / 301** (new: `fix-queue` 9, `frequency` 9, `synth-schedule` 13, 5 in `edits`, 1 in `corrections`).
+- `pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce && pnpm --filter @splitune/web css-floor`: 312.2 KB of 320 KB; css-floor clean.
+- `pnpm secrets:scan`: 3 findings in history, none in this step's files.
+
+**Known gaps**
+- G4 items above; the synth and the offline queue haven't been heard or tried on a device.
+- Tablets and phones keep the editor sheet (the cards without the queue, the loop or Listen to) until s43.
+- `mark_correct` isn't read by the node worker's finalize, so a stored tab artefact still carries the confidence; the browser's own recompute is what the learner sees.
+- Chord names over the notation aren't underlined when edited (alphaTex text; the chord card and Your edits say so); edited notes are.
+
+**Next**
+- s39 (Progress): Fix mode records no passes; `practice.resumed` says when the saved loop and speed are back.
+- s40b ("Hear the chords"): `FixSynth` + `chordEvents` / `chordVoicing` (`fix-synth.ts`, `model/synth-schedule.ts`) schedule any events against the engine clock; give it the song's chords instead of one alternative.
+
+## 2026-11-17 — Step s46: black-and-white redesign after OpenAI's interface language (done, not merged; owner review next)
+
+**Instruction (owner):** "Learn OpenAI's UI design then redo every page of mine", the font closest to OpenAI's, new images for the Home page from prompts the owner will generate. Owner decisions in the session: no amber anywhere (fully monochrome, playhead and loop included); Home images are abstract colour art.
+
+**Branch** `impl/s46-monochrome-redesign` from `dev` (4679127). Nothing committed yet.
+
+**What was measured.** openai.com and chatgpt.com in the browser: pure black and white grounds, alpha-step neutrals, OpenAI Sans at 400/500, body 17/28, pill buttons at 36–44 px, 6 px media corners, 24 px composer corners, 200 ms motion, bars with no rule. Font choice by metrics: OpenAI Sans's glyph advances and vertical metrics at weight 500 were read from the page with `measureText` and 91 open-licensed families were ranked against them; Figtree has the same x-height (0.50 em), cap height (0.70 em), ascender, descender and stem width, with advances within 2.5 %.
+
+**Tokens (`packages/ui-tokens`).** Achromatic primitives; `--primary`, `--primary-ink`, `--signal` and `--ring` are the ink; status, stems and hands keep colour; `--stem-mix` is the ink (the grey mix collided with other stems under the CVD test); new `--capsule` for the segmented control; elevation in black only, no glow, no Play haze; type scale at 400/500 with tracking that tightens with size; `BACKGROUND_HEX` `#fff`/`#000`. Figtree 2.002 replaces Instrument Sans in `scripts/fonts/subset.sh` (19,580 bytes; fallback metrics recomputed over Arial).
+
+**Components and screens.** Buttons, chips, badges and segmented controls are pills; fields and cards 12 px; weights lowered one step app-wide (reading sizes untouched); uppercase tracked labels became sentence-case labels. Shells: no rule under the bars; Sign in and the app bar's Add song are quiet pills. Home recomposed (centred hero, sticky lead art with two tiles, image-led stand list, session steps on hairlines, closing panel) with interim art in `apps/web/public/art/` and prompts in `docs/home-art.md`. Pricing, How it works, legal, billing, auth, onboarding, system pages, library, Add song, settings and the practice screen were recomposed in the same language. Favicon and PWA icons redrawn as the ink mark. Theme names in copy are Dark and Light; fourteen unused copy keys removed.
+
+**Docs.** 26 rewritten in place (section numbers kept); 27 and 28 edited; `PRODUCT.md`, `CLAUDE.md`, `AGENTS.md` identity lines updated.
+
+**Design review (independent reviewer, screenshots of Home, Library, Practice, Settings, Sign in, Pricing and the toggle states).** First verdict: fix, eight items, all applied: one pressed treatment for chips (the filled ink pill; practice-size toggles keep the wash beside Play); interface numbers in Figtree with tabular figures (JetBrains Mono stays for keycaps, ids and the tab digits); no label above the Continue card's title; the switch's knob is the page colour in both states; the Loop tab's rest group and Settings' Sound delay no longer repeat their own names; Home's headline holds each sentence on its own line; "Next · in 1 beat"; Pricing's Free column reads like Plus. Also: the footer rule spans the content column; `--capsule` replaced a `dark:` variant in the segmented control.
+
+**Verification (PC, 2026-11-17)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`: clean.
+- `node scripts/check-ui-tokens.mjs`: one violation, `apps/web/app/features/shell/command-palette.tsx` (`focus-visible:outline-none` on the palette input), already on `dev` at 4679127; `scripts/check-ui-tokens.test.mjs` fails on it for the same reason (93 / 94 in `vitest run --dir scripts`).
+- `pnpm typecheck`: every TypeScript package clean; `@splitune/ml` pyright reports 5 errors in `services/ml` tests, untouched by this step.
+- `pnpm --filter @splitune/ui-tokens test`: 1357 / 1357 (with `--capsule`). `pnpm --filter @splitune/notation test`: 43 / 43. `pnpm --filter @splitune/web exec vitest run --project unit`: 301 / 301.
+- `vitest run --project="storybook (chromium)"` (apps/web): 691 / 692, then the one failure (`ui/dialog.stories.tsx > Open Scrim`, the old scrim alpha) updated and re-run green with the other files touched since.
+- After the review fixes: the same suite 689 / 692, the three failures being assertions of the mono face on NumberField, the speed ladder and the speed readout; updated to Figtree with tabular figures and re-run green (78 / 78 for the six files touched). `biome`, web `tsc` and the 301 unit tests re-run clean; `ui-tokens` 1357 / 1357.
+
+**Story and test expectations changed by design:** badge height 22 → 24 and weight 650 → 500; card corners 16 → 12; field label weight 600 → 500; keycap edge 2 px → 1 px; three distinct elevations; app bar 65 → 64 px; scrim alpha 0.62 → 0.7; Home's hero still assertion replaced by "art is decorative, the three proof headings are visible"; Library asserts Resume practice is the ink primary; sign-in asserts no showcase panel; banners are transparent with a bottom hairline; theme names; the token tests' documented contrast tables.
+
+**Known gaps**
+- Home art: the owner's eight generated images replaced the interim renders on 2026-11-17 (corner mark painted out, sized, WebP; provenance in `docs/home-art.md`). The two tiles crop to 4:3 on phones (was 16:9) so the ring in `home-loop` is not clipped. In Light the pale top-right corner of `home-loop` has only a faint edge against the white page.
+- Visual-regression baselines (`e2e:visual`, Docker) not regenerated; every baseline will differ.
+- WebKit story run and Playwright e2e not run in this step. Two onboarding Guide stories timed out in WebKit in one agent's run (not compared against `dev`).
+- No device checks; no music-stand reading test of the new palette.
+- New files under `docs/` are excluded by this machine's `.git/info/exclude` (`docs/home-art.md` needs `git add -f`).
+
+## 2026-11-19 — Step s39: Progress tab and the library's progress strips from GET /v1/progress (done, not merged; G4 next)
+Branch `impl/s39-progress` (worktree `.claude/worktrees/s39-progress`) from `dev` at `b3db5c9` (s32–s38 and s46 merged). Not merged into `dev`.
+
+**Owner decisions (2026-11-19, before any code)**
+1. **Contract change approved as drafted** (stop point 4): sessions with pass counts, a session id on each attempt, the clip's name and last attempt, and a `days` window. No other unmerged step changes contracts: `impl/s40a-all-stems` touches `analysis/stems.ts` with a comment only (no schema change); `impl/s41a-sections` none.
+2. **New `ui/` primitives:** `ui/progress-chart.tsx`, `ui/sparkline.tsx`, `ui/stat-card.tsx` (28 §1, D8).
+3. **Weekly goal = days a week** (1–7, default 3), on this device, off by default.
+
+**Built**
+- **Contract** (`packages/contracts/src/api/practice.ts`): `ProgressInput.days` (1–366); `ClipProgress.name`, `.last_attempt_at` (all time), `attempts[].client_session_id`; new `ProgressSession` (`client_session_id`, `song_id`, `started_at`, `ended_at` | null, `passes`, `clean_passes`); `ProgressOutput.sessions`. Not part of the generated JSON Schema / Pydantic set, so `contracts:check` has nothing to regenerate.
+- **Repo and route** (`packages/db/src/repo/practice.ts` `progress(userId, songId?, days?)`, `apps/api/src/routes/practice.ts`): attempts joined to their session's client id; the clip's latest attempt over all time; sessions with `count(*)` and `count(*) filter (where outcome = 'clean')` over every attempt (clip or not); all under `withUser` with `userId` filters. No migration.
+- **Metrics** (`features/practice/model/progress-metrics.ts`, pure, 18 tests): local days by `Intl` in a given zone; session minutes (end → last pass → now for the open session); per clip and session passes / clean / best / cold; chart points for the last 30 local days; the trend wording; today's stats; **`nextSessionRetention`** (the success metric); the first clean pass of the latest day; This week (seven days by minutes, practised days, clean passes, "+n % on {clip}"); Worth a revisit; the latest clip; the Warm up target; days this calendar week; `withPending` (the outbox's unsent sessions and passes merged into the answer).
+- **Data** (`features/practice/progress-data.ts`): one `GET /v1/progress?days=31` for every song, shared by the tab and the library (the service worker's API cache keeps it for offline use, like the library's lists), plus the outbox (`practice-sync.ts` gains `pendingPractice`, `openSessionId` and `onPracticeChange`: a written pass refreshes the outbox part, a sent flush refetches the server part; both refetch whenever a progress view mounts, which the e2e run showed is needed: the library behind the Add song dialog had cached an empty answer that the tab then reused).
+- **Progress tab** (`progress-tab.tsx`, lazy as before): "Clip" + name (unnamed: "Bars 25–28") + bars; Last 30 days card with `ProgressChart` and its text alternative; `StatCards` (cold start today, clean / passes today, minutes of the song today); Sessions rows newest first; the Warm up chip; the Weekly goal (`progress-goal.ts`); no clip: "Clips in this song" rows that loop the clip; no pass: the 27 §4 empty state; passes but none clean: the empty line in the chart's card and the counts.
+- **Library** (`features/library/library-progress.tsx`, `library-page.tsx` where the strips mount): the Continue card's clip (the one practised last in the most recently opened song; bars and ladder from the song's loop list), meta "Guitar · clip **Chorus riff**, bars 17–20 · yesterday, 24 min", badges "Ladder at 75 % → 100 %" (primary), "Best clean 85 %", "Yesterday's first clean pass: 70 %", the 30-day sparkline; This week beside it (dots by `dayDotOpacity`, letters, "1 h 14 practised", clean passes, "+10 % on Chorus riff"); Worth a revisit rows opening Practice on the clip's bars with `tab=progress`; phone: the compact card's "Chorus riff · bars 17–20 · ladder at 75 %" and the This week row. Before a song has a practised clip the card falls back to the songs list's best clean bars (the old rule).
+- **Resume** (`model/resume.ts`): URL bars that are a saved clip's bars open that clip, so a revisit carries its history and ladder.
+- **Copy:** new group `progress.*` (32 keys, between `privacy` and `record`); `library.clip`, `library.first_clean_today`, `library.first_clean_yesterday`, `library.first_clean_ago`, `library.ladder_at`, `library.ladder_short`, `library.when_minutes`. Every new key is used. Copy review: the only "streak" is the goal's hint "No streaks, no reminders unless you ask."; no missed-day or loss wording (asserted in the NineSessions and Populated stories).
+- **Success metric (doc 16):** "first clean pass next session" (`first_clean_pass_next_session`), computed by `nextSessionRetention`; no analytics event (it would need an `AnalyticsEvent` contracts change; the inputs already are rows, so a dashboard can compute it in SQL). Follow-up if wanted per cohort.
+
+**Deviations and decisions (mine; for G4)**
+1. **Warm up chip** (no mockup): an outline pill at the top of the Progress tab on the song's first session of a day after an earlier practice day; it loops the clip with the most "Not yet" on that earlier day (then the slowest best) and goes once that clip is looped. "Warm up with yesterday's hard bars", or "… last session's hard bars" after a longer break.
+2. **This week** is hidden when no day of the last seven has practice (never a row of empty dots); "+n % on {clip}" shows only when a clip climbed, compared with its best before the week inside the 31-day answer.
+3. **Phones have no Worth a revisit** (27 §3.5 Phone lists none; it pushed the songs a screen down).
+4. **Sessions minutes** count the time the practice screen was open (start → end), not playing time; a session whose end never arrived ends at its last pass.
+5. **The first clean pass badge** names its day: "Today's", "Yesterday's", else "First clean pass {when}: 70 %".
+6. **Mono → tabular figures:** 26 after s46 sets numbers in Figtree with tabular figures; the step's "mono" stat cards follow that.
+7. **Ink, not amber:** after s46 `--signal` is the ink; the chart's main series and the day dots are the ink (26 §4.2), the comparison series dashed `--muted-foreground`.
+8. **Files outside the owned list:** `features/practice/model/resume.ts` (+ test) for the revisit link; `features/practice/model/practice-sync.ts` for the outbox read and listeners; `practice.stories.tsx` (one comment); `docs/specs/04`, `12`, `16`, `21`, `26`, `27` notes.
+
+**Fidelity (28 §5.1)**
+After s46 the mockups' Night Rehearsal look is retired (owner, 2026-11-17: docs 26–28 describe the shipped black-and-white system), so the comparison is structural, by screenshots of the stories in the browser pane: Practice-Piano's Progress tab at 1440 (`Wide`) and 1180 (`At1180`): eyebrow, h2, bars line, the Last 30 days card with its two series, legend, three stat cards, Sessions rows, Weekly goal at the bottom; Library at 1440 (the regenerated `library--desktop` baselines): the Continue card spanning two columns with sparkline and badges, This week as the third column, the revisit rows; Phone-Library at 390: compact card, This week row. One defect found and fixed in iteration 1: the "cold start today" label truncated in the 380 px inspector (stat labels now wrap). The probe script was not run against the mockups (every style field differs by s46's design).
+
+**Budget (D6)**
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.4 KB** gzip of 320 KB (312.5 in one intermediate build), before **311.8 KB** (`dev` at `b3db5c9`, built the same way). The tab, chart, stat cards, metrics and copy are in the tab's lazy chunk; the 0.6 KB are `practice-sync`'s outbox read and listeners, now a 1.2 KB chunk shared with the library (`keymap` −0.9 KB). `css-floor` clean.
+
+**Visual baselines**
+`pnpm --filter @splitune/web e2e:visual:update -g "library @"` (Docker): 12 rows written (Chromium desktop / tablet / phone, WebKit tablet / phone, Dark and Light). Intended differences: the s46 black-and-white restyle (merged without regenerated baselines) and s39's strips: the Continue card's clip line, three badges and sparkline, This week beside it, the Worth a revisit row; on phones the compact card's clip line and the This week row.
+
+**Verification (PC, 2026-11-19)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`: clean (767 files). `node scripts/check-ui-tokens.mjs` and `--path apps/web/app/features/practice --path apps/web/app/features/library`: one violation, `features/shell/command-palette.tsx:249`, already on `dev` (s46 log); none in s39's files.
+- `pnpm --filter @splitune/contracts typecheck` clean; `pnpm --filter @splitune/contracts test`: 61 / 61. `UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm contracts:check`: "Generated contracts are up to date."
+- `pnpm --filter @splitune/db exec vitest run test/repo.test.ts`: 32 / 32 (new: session ids, pass counts over clip and non-clip passes, the window, the all-time last attempt, Bob sees nothing of Carol's).
+- `pnpm --filter @splitune/api exec vitest run test/practice.test.ts test/examples.test.ts test/openapi.test.ts test/authz-matrix.test.ts`: 89 / 89 (new: the new fields, `ended_at` arriving later, `?days=7`, non-clip passes counted, `days` 0 / 367 refused, another user's song empty). `pnpm --filter @splitune/api openapi:check`: valid (33 paths). `pnpm --filter @splitune/db typecheck`, `@splitune/api typecheck`: clean.
+- `pnpm --filter @splitune/web typecheck`: clean. `vitest run --project unit`: **45 files, 322 / 322** (new: `progress-metrics` 18, `resume` +1).
+- Stories, Chromium (`vitest run --project="storybook (chromium)"`, all files): the first run lost 125 stories to Vite re-optimising mid-run (the known first-run failure); the rerun: **43 files, 729 / 729**, axe included, with one unhandled alphaTab worker message after `fix.stories.tsx > Beat Fix` unmounted (not s39 code; that file, Progress and Library rerun alone: 61 / 61, no error). After the refetch fix: library, Progress and practice stories 177 / 177. New: `ui/progress-chart.stories.tsx` (Kit/Progress, 6), `features/practice/progress.stories.tsx` (Screens/Practice Progress, 16: NineSessions, OneSession, ThirtyDays, NoCleanPass, NoClip, Empty, WarmUp, WeeklyGoalOn, Wide, At1180, Daylight, Daylight1440, IncreasedContrast, DaylightIncreasedContrast, WarmUpDaylight, WeeklyGoalDaylight); Library gains data and `PopulatedIncreasedContrast`, `PopulatedDaylightIncreasedContrast`.
+- Stories, WebKit, one file at a time (the whole set crashed the WebKit page, the known s36 crash): `ui/progress-chart.stories.tsx` 6 / 6, `library.stories.tsx` 20 / 20; `progress.stories.tsx` 0 / 16, every one the 15 s timeout of playable practice stories on this PC (known, as `practice.stories.tsx` and `fix.stories.tsx`).
+- E2E (built app, mock workers, Chromium): new `apps/web/e2e/progress.spec.ts` 2 / 2 (keys mark Not yet, Felt clean, Felt clean on a palette loop at 70 %; the Progress tab shows the one-session chart, 70 % cold start, 2 / 3 and the Today row; the library shows the clip's bars, "Today's first clean pass: 70 %", "Best clean 70 %" and "Practised on 1 of the last 7 days"). Its first run failed on the stale cached answer (fixed above). `E2E_SMOKE=1 … playwright test --project=chromium` (journey, practice, onboarding, account): 19 passed, 1 skipped by design; `speed-ladder`, `fix`, `practice-keys`: 11 / 11. WebKit and Firefox e2e not run (known on this PC).
+
+**Known gaps**
+- G4: the Warm up chip's place and wording; devices in both themes.
+- Guests (example songs before sign-in) see only the passes not yet handed to the guest store on the tab; `practice.progress` isn't routed through the guest link.
+- Every loop is stored as a clip, and the unnamed clip is reused for the next loop (s35/s37 behaviour, unchanged): its history can span different bars. Named clips are stable.
+- No analytics event for the success metric (contracts change; follow-up).
+
+**Next**
+- s40b / s41b: nothing here depends on them. A section-named loop would give the Progress heading a better name than "Bars 25–28".

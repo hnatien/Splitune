@@ -1,7 +1,8 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §12.2: icon, one-sentence explanation, one primary action, optional example.
+// Doc 26 §12.2, 27 §4: no box, just space. An icon in a quiet circle, an h2, one sentence, the
+// primary action and an optional secondary one, centred.
 
 type EmptyStateProps = {
   icon: React.ReactNode
@@ -25,17 +26,14 @@ function EmptyState({
   return (
     <section
       data-slot="empty-state"
-      className={cn(
-        'mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-12 text-center',
-        className,
-      )}
+      className={cn('flex flex-col items-center gap-3 px-6 py-16 text-center', className)}
     >
-      <span className="grid size-16 place-items-center rounded-2xl bg-surface-sunken text-muted-foreground [&_svg]:size-8">
+      <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground [&_svg]:size-6">
         {icon}
       </span>
-      {title && <h2 className="text-xl">{title}</h2>}
-      <p className="text-base text-muted-foreground">{description}</p>
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      {title && <h2 className="text-xl text-balance">{title}</h2>}
+      <p className="max-w-sm text-base text-pretty text-muted-foreground">{description}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         {action}
         {secondaryAction}
       </div>

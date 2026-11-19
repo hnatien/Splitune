@@ -3,10 +3,12 @@ import { Slider } from '@/ui/slider'
 import { SPEED_FINE_STEP } from '@/ui/speed-control'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
-// SpeedControl's popover (doc 26 §12.2): the slider and the 50/70/85/100 presets. The presets
-// alone are also set inline in the transport bar from `lg`.
+// SpeedControl's popover (doc 26 §12.2): the slider and the presets 50 · 60 · 70 · 75 · 80 · 90 · 100
+// as a segmented group (`.seg`), and the speed ladder's goal in words while it is on. The presets
+// alone may also sit inline in the transport bar from `2xl` (tablets until s43; the desktop dock
+// has no room for them).
 
-export const SPEED_PRESETS = [50, 70, 85, 100] as const
+export const SPEED_PRESETS = [50, 60, 70, 75, 80, 90, 100] as const
 
 const NBSP = ' '
 
@@ -36,7 +38,7 @@ export function SpeedPresets({
         <ToggleGroupItem
           key={preset}
           value={String(preset)}
-          className="min-w-18 flex-1 px-2 tabular-nums"
+          className="min-w-12 flex-1 px-1.5 tabular-nums"
         >
           {preset}
           {NBSP}%
@@ -52,15 +54,22 @@ export function SpeedPanel({
   max,
   onValueChange,
   labels,
+  goal,
 }: {
   value: number
   min: number
   max: number
   onValueChange: (value: number) => void
   labels: { speed: string; presets: string }
+  /** "ladder goal 100 %" while the speed ladder is on. */
+  goal?: string | undefined
 }) {
   return (
-    <PopoverContent side="top" aria-label={labels.speed} className="w-96 gap-4">
+    <PopoverContent
+      side="top"
+      aria-label={labels.speed}
+      className="w-auto max-w-[min(32rem,100vw)] gap-4"
+    >
       <Slider
         value={value}
         min={min}
@@ -75,6 +84,9 @@ export function SpeedPanel({
         label={labels.presets}
         className="w-full justify-between"
       />
+      {goal && (
+        <p className="text-sm text-muted-foreground first-letter:uppercase tabular-nums">{goal}</p>
+      )}
     </PopoverContent>
   )
 }

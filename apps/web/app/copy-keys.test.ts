@@ -19,8 +19,7 @@ const CATALOGUE: Record<string, string> = {
   'import.too_long': 'Songs up to 20 minutes are supported. This one is {duration}.',
   'import.too_large': 'Files up to 500\u00a0MB are supported.',
   'import.speech': 'This sounds like speech, so results may be poor.',
-  'import.live':
-    "This sounds like a live recording. Parts may separate less cleanly — we'll mark rough results.",
+  'import.live': 'Sounds like a live recording. Separation may be rougher.',
   'import.duplicate': 'You already have this song.',
   'import.offline': "You're offline. We'll start the upload when you're back.",
   'import.url_unsupported': "We can't import from this link. Try uploading the audio file instead.",
@@ -30,11 +29,12 @@ const CATALOGUE: Record<string, string> = {
   'record.permission_denied':
     "Splitune needs your microphone to record. You can allow it in your browser's site settings.",
   'analysis.queued_offline':
-    'Processing machine offline — your song is queued and will start automatically.',
+    'Processing machine offline. Your song is queued and starts automatically.',
   'analysis.eta': 'About {minutes}\u00a0min left',
   'analysis.stems_unavailable':
     "Stems are unavailable right now; chords and beat are ready. This didn't use an analysis.",
   'analysis.failed': "We couldn't analyse this song. This didn't use an analysis.",
+  'analysis.wrong_instrument': 'Is {instrument} the part you play?',
   'practice.chords_only':
     "We're not confident in the note-level tab for this song — showing chords.",
   'practice.rough_stem': 'This stem may contain bits of other instruments.',
@@ -43,28 +43,34 @@ const CATALOGUE: Record<string, string> = {
     'The stems for this song were removed after 180 days unused. Your loops and edits are safe.',
   'practice.not_offline': "This song isn't saved for offline yet.",
   'practice.beat_off': 'Metronome off the beat?',
-  'practice.pass_prompt': 'How was that pass?',
+  'practice.fix_saved_note': 'Your fixes are saved for this song.',
+  'practice.pass_prompt': 'Pass {pass} at {speed} — how was it?',
   'practice.best_tempo': 'Best clean pass: {pct}\u00a0%',
   'plan.cap_lite':
     "You've used this month's {limit} Lite analyses. They reset on {date}. You can keep practising every song you already have.",
   'plan.welcome_available': 'Your first full analysis is free — your part isolated, plus tab.',
   'plan.cap_full': "Full analyses are part of Plus. You've used your free Welcome analysis.",
-  'plan.allowance': '{left} of {limit} Lite analyses left · resets {date}',
-  'billing.demo': 'Demo mode — no real charges.',
+  'plan.allowance': '{left} of {limit} Lite left · resets {date}',
+  'billing.demo': 'Demo mode — no real charges. Payments are simulated.',
   'billing.declined': 'The (simulated) payment was declined. Nothing was charged.',
   'billing.cancelled_at_period_end':
     "Plus stays active until {date}. Then you'll be on Free — nothing you've made is removed.",
   'auth.wrong_credentials': "That username and password don't match.",
   'auth.username_taken': 'That username is taken. Try another.',
-  'system.offline': "You're offline. You can keep practising songs you've opened.",
-  'system.unsupported': "Your browser can't run Splitune's audio engine ({missing}).",
+  'system.offline': "You're offline. Songs you've opened keep working.",
+  'system.unsupported': "It's missing {missing}. Try a recent Chrome, Edge, Firefox or Safari.",
   'system.in_app_browser': 'Open in your browser for audio and uploads.',
   'system.error': 'Something went wrong on this screen.',
-  'library.empty':
-    'Your library is empty. Import a song you want to learn, or start with an example.',
-  'delete.song_confirm':
-    "Delete “{title}”? Its stems, loops and edits will be removed. This can't be undone.",
+  'library.empty': 'Bring the first song you want to learn',
+  'library.empty_body': 'Drop a file anywhere on this page, paste a link, or record it.',
+  'delete.song_confirm': 'Delete “{title}”?',
+  'delete.song_confirm_body':
+    "Its stems, loops, passes and edits will be removed. This can't be undone.",
   'delete.account_confirm': "Delete your account and everything in it? This can't be undone.",
+  'analysis.heard': 'We hear {instruments}.',
+  'practice.pedal_detected': 'Pedal detected? Set it up',
+  'shortcuts.single_keys_hint':
+    'Turn single keys off if you use speech input or switch control. Ctrl shortcuts keep working.',
   'practice.reason.notes_unavailable':
     "Note-level tab isn't available for this song — showing chords.",
   'practice.reason.notation_not_supported':

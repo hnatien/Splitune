@@ -5,8 +5,10 @@ import { Popover, PopoverTrigger } from '@/ui/popover'
 import { TransportButton } from '@/ui/transport-button'
 
 // Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
-// (50–100 %, 25–200 % advanced) and presets 50/70/85/100, which also sit inline from `2xl`;
-// readout "70 % · 84 BPM". A sunken capsule: raised −/+ (icons only, 26 §11) around a plain readout.
+// (50–100 %, 25–200 % advanced) and the presets, which may also sit inline from `2xl`; readout
+// "70 %" over "84 BPM", and with the speed ladder on its goal after the BPM ("72 BPM · → 100").
+// Round −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet pill readout button; all three are
+// main practice controls, 64 px in every layout (§8, V11).
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
@@ -21,6 +23,8 @@ type SpeedControlProps = {
   onValueChange: (value: number) => void
   /** Original tempo; omit when the beat grid is unknown (the readout shows % only). */
   bpm?: number | undefined
+  /** The speed ladder's goal: `text` after the BPM ("→ 100"), `label` in the readout's name. */
+  goal?: { text: string; label: string } | undefined
   advanced?: boolean
   labels: {
     /** Accessible name of the readout button and slider, e.g. "Speed". */
@@ -30,8 +34,10 @@ type SpeedControlProps = {
     presets: string
   }
   shortcuts?: { decrease?: string; increase?: string }
-  /** Phones: secondary-size steppers (48 px) so the transport fits two rows. */
+  /** Phones: a narrower readout so the transport fits two rows (the steppers stay 64 px, V11). */
   compact?: boolean
+  /** The presets inline from `2xl` too (tablet transport); the desktop dock leaves them out. */
+  inlinePresets?: boolean
   className?: string
 }
 
@@ -76,10 +82,12 @@ function SpeedControl({
   value,
   onValueChange,
   bpm,
+  goal,
   advanced = false,
   labels,
   shortcuts,
   compact = false,
+  inlinePresets = true,
   className,
 }: SpeedControlProps) {
   const [min, max] = advanced ? [25, 200] : [50, 100]
@@ -89,35 +97,33 @@ function SpeedControl({
     set(value + direction * (event.shiftKey ? SPEED_FINE_STEP : SPEED_STEP))
 
   return (
-    <div
-      data-slot="speed-control"
-      className={cn('inline-flex items-center gap-1 rounded-2xl bg-surface-sunken p-1', className)}
-    >
+    <div data-slot="speed-control" className={cn('inline-flex items-center gap-1', className)}>
       <TransportButton
         icon={<MinusIcon aria-hidden />}
         label={labels.decrease}
         showLabel={false}
-        size={compact ? 'practice-2' : 'practice'}
+        tone="box"
         shortcut={shortcuts?.decrease}
         disabled={value <= min}
         onClick={step(-1)}
       />
       <Popover>
         <PopoverTrigger
-          aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}`}
+          aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}${goal ? ` · ${goal.text}, ${goal.label}` : ''}`}
           className={cn(
-            'flex flex-col items-center justify-center rounded-xl px-3 text-center hover:bg-muted',
-            compact ? 'min-h-target-practice-2 min-w-20' : 'min-h-target-practice min-w-24',
+            'flex min-h-target-practice flex-col items-center justify-center rounded-full px-3 text-center transition-colors hover:bg-accent aria-expanded:bg-accent',
+            compact ? 'min-w-20' : 'min-w-26',
           )}
         >
           <span className="font-reading text-read-readout tabular-nums">
             {shown}
             {NBSP}%
           </span>
-          {bpm !== undefined && (
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {Math.round((bpm * shown) / 100)}
-              {NBSP}BPM
+          {(bpm !== undefined || goal) && (
+            <span className="text-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
+              {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
+              {bpm !== undefined && goal && ' · '}
+              {goal?.text}
             </span>
           )}
         </PopoverTrigger>
@@ -128,6 +134,7 @@ function SpeedControl({
             max={max}
             onValueChange={set}
             labels={{ speed: labels.speed, presets: labels.presets }}
+            goal={goal?.label}
           />
         </Suspense>
       </Popover>
@@ -135,21 +142,23 @@ function SpeedControl({
         icon={<PlusIcon aria-hidden />}
         label={labels.increase}
         showLabel={false}
-        size={compact ? 'practice-2' : 'practice'}
+        tone="box"
         shortcut={shortcuts?.increase}
         disabled={value >= max}
         onClick={step(1)}
       />
-      <div className="hidden 2xl:block">
-        <Suspense fallback={<div aria-hidden className="h-target-practice-2 w-75" />}>
-          <SpeedPresets
-            value={value}
-            onValueChange={set}
-            label={labels.presets}
-            className="bg-transparent p-0"
-          />
-        </Suspense>
-      </div>
+      {inlinePresets && (
+        <div className="hidden 2xl:block">
+          <Suspense fallback={<div aria-hidden className="h-target-practice-2 w-75" />}>
+            <SpeedPresets
+              value={value}
+              onValueChange={set}
+              label={labels.presets}
+              className="bg-transparent p-0"
+            />
+          </Suspense>
+        </div>
+      )}
     </div>
   )
 }

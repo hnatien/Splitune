@@ -35,6 +35,8 @@ interface CorrectionsStore {
   redo: HistoryEntry[]
   /** Ops the API refused (contract errors): rolled back with an inline notice (26 §13). */
   rejected: number
+  /** The last send didn't get through: edits wait on this device ("Saved on this device"). */
+  offline: boolean
   hydrated: boolean
 }
 
@@ -43,6 +45,7 @@ export const useCorrections = create<CorrectionsStore>()(() => ({
   undo: [],
   redo: [],
   rejected: 0,
+  offline: false,
   hydrated: false,
 }))
 
@@ -142,6 +145,7 @@ export function flushCorrections(): Promise<void> {
         for (const p of batch) tried.add(p.id)
         if ((await sendBatch(artefactId, batch)) === 'offline') offline = true
       }
+      useCorrections.setState({ offline })
       if (offline) {
         scheduleRetry()
         return

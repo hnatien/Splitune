@@ -1,0 +1,51 @@
+# Provenance record (personal mode: a record, not a gate; 09-licence-register-and-release-gates.md).
+id: xlance-syn-mss1
+kind: model
+name: "X-LANCE MSR syn_mss1.pth (synth; SJTU X-LANCE MSR Challenge 2025 system)"
+version: "c275b1f syn_mss1.pth"
+repo_url: https://github.com/ModistAndrew/xlance-msr
+code_spdx: MIT
+weights:
+  licence: "MIT (Hugging Face tag)"
+  url: https://huggingface.co/chenxie95/xlance-msr-ckpt/tree/c275b1fda995b98fc061ce571327f91b2ca666a2
+  # sha256 of the sorted "<file>:<sha256>" lines below (splitune_ml_core.register.aggregate_sha256)
+  sha256: "c74e238bf1724b37df3aaa69a8a6dd30dafaa34945430bcefc7814097124991f"
+  files:
+    - name: bs_roformer_xlance_syn_mss1.ckpt
+      sha256: "c1f692422fd1d235b358751e8f9d712b15cc11c84c5e93356cb726c91a1f7ab0"
+      bytes: 204411168
+      url: https://huggingface.co/chenxie95/xlance-msr-ckpt/resolve/c275b1fda995b98fc061ce571327f91b2ca666a2/syn_mss1.pth
+    - name: bs_roformer_xlance_syn_mss1.yaml
+      sha256: "1ba2ab789737ec581bcb4767d62c6e042d82cfce884fe78d827f15de7d231688"
+      bytes: 3689
+training_data:
+  - name: MoisesDB
+    licence: CC-BY-NC-SA-4.0
+    commercial_ok: false
+    musdb18_test_in_training: "no"
+    # X-LANCE trained on MoisesDB: in-sample for the eval set moisesdb-p1.
+    moisesdb_in_training: "yes"
+    source: https://arxiv.org/abs/2602.09042
+  - name: RawStems
+    licence: "annotations Apache-2.0; audio rights retained by the creators"
+    commercial_ok: false
+    source: https://huggingface.co/datasets/yongyizang/RawStems
+  - name: BS-Roformer-SW initialisation (undisclosed data; see bs-roformer-sw)
+    licence: unknown
+    commercial_ok: false
+    musdb18_test_in_training: unknown
+    source: https://github.com/ModistAndrew/xlance-msr/blob/main/system_card.md
+tier: red
+tier_reason: "MIT tag, but trained on non-commercial data (MoisesDB) from an SW initialisation of unknown provenance"
+used_in: [eval]
+profiles: [personal]
+notes: >-
+  Step 29 keys-fallback candidate (research section 5). Newly trained (checkpoint type roformer):
+  SW's backbone with a fresh head, trained at 48 kHz on MoisesDB synth and RawStems Synth; ans.py
+  runs it on syn_mss's output (the synth chain). Its config sets audio.sample_rate 48000 and
+  eval/separation.eval.yaml sample_rate 48000. The YAML is ours (eval/model-configs/): X-LANCE's
+  model params equal SW's except num_stems 1. ans.py also runs a denoise pre-pass and a whole-track
+  fp16 pass; step 29 runs it windowed like SW without the denoise pass (owner's default,
+  2026-11-07). In-sample for moisesdb-p1.
+reviewer: owner
+reviewed: 2026-11-08

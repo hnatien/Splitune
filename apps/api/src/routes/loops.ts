@@ -29,13 +29,20 @@ const toLoop = (clip: LoopClip): LoopOut => ({
 const emptyRange = () =>
   apiError('invalid_input', { details: { issues: [{ path: 'end_s', code: 'empty_range' }] } })
 
-// Speed trainer settings are a v1 feature behind the `v1.speed_trainer` flag (21, 16 §5).
-async function checkTrainer(deps: ApiDeps, trainer: unknown) {
+// The speed ladder on a clip (21 V1, 12 §5). `v1.speed_trainer` is its kill switch (16 §5); the
+// contract bounds each field, and the goal can't sit below the start.
+async function checkTrainer(deps: ApiDeps, trainer: LoopOut['trainer'] | undefined) {
   if (trainer === undefined || trainer === null) return
-  if (await deps.flags.flag('v1.speed_trainer')) return
-  throw apiError('invalid_input', {
-    details: { issues: [{ path: 'trainer', code: 'feature_disabled' }] },
-  })
+  if (!(await deps.flags.flag('v1.speed_trainer'))) {
+    throw apiError('invalid_input', {
+      details: { issues: [{ path: 'trainer', code: 'feature_disabled' }] },
+    })
+  }
+  if (trainer.end_pct < trainer.start_pct) {
+    throw apiError('invalid_input', {
+      details: { issues: [{ path: 'trainer.end_pct', code: 'empty_range' }] },
+    })
+  }
 }
 
 export const loops = {
