@@ -8,7 +8,7 @@ Built and re-verified on `impl/s40a-all-stems` in the worktree `D:/Projects/Spli
 - **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. For bass/drums learners on the RTX 3060 the estimate is 18–37 %, so that case waits for G3's measurement.
 - **Done:** the review's fixes (`4c1def6`, `02d71b6`, `136f88e`, `f068351`) and their verification. When piano's keys fallback applies, "other" is now the mixture minus every other kept stem, marked rough (`4c56f93`).
 - **Left (G3, owner, on the GPU):**
-  - `all_stems.py run --before <dev's map with keep: [drums, bass]>` with a working tagger and the Mega-53 weights. On `765d5131-piano` the overlap column should not name "other";
+  - done on 2026-11-19: `all_stems.py run` (`eval/results/all-stems/2026-11-19-pc.md`). It found that the tagger veto drops loud real stems (bass 0.46 of the mixture); whether to stop vetoing extras is the owner's call;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - the full `pnpm eval:regression`. It can't see this change; the real guard is `all_stems.py`'s "target identical" column;
   - `pytest -m models packages/stage_separation`;

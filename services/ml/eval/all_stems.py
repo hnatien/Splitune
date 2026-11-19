@@ -235,7 +235,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
     report = RESULTS / f"{args.tag}.md"
     report.write_text(render(rows, args), encoding="utf-8")
-    print(f"report → {report}")
+    print(f"report -> {report}")
     return 0
 
 
@@ -376,7 +376,7 @@ def cmd_export(args: argparse.Namespace) -> int:
     }
     (session / "session.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     extra = sorted(p.name for p in other.iterdir()) if other.is_dir() else []
-    print(f"{len(items)} items in {len(clips)} clips → {session}")
+    print(f"{len(items)} items in {len(clips)} clips -> {session}")
     if extra:
         print(f"by ear only (no listening target), in {other}: {', '.join(extra)}")
     return 0

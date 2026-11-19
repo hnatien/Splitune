@@ -2007,9 +2007,20 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
     - **1 is this step's:** Chromium `app/ui/mixer.stories.tsx > Gain By Keyboard` drives the "Volume Bass" slider. `136f88e` took the empty bass out of the stems fixture, as stem_post now writes it. The owner chose to retarget it (stop point 3 answered): the story now drives "Volume Drums", and `vitest run --project='storybook*' app/ui/mixer.stories.tsx` passes 20/20 in Chromium and WebKit;
   - `SPLITUNE_DATASETS_DIR=D:/datasets pnpm eval:regression --smoke`: PASS (without the variable it looks in `~/datasets`, which doesn't exist on the PC).
 
+**G3 all_stems comparison (PC, RTX 3060, 2026-11-19; `eval/results/all-stems/2026-11-19-pc.md`):**
+- **How it ran:** the shared CUDA venv's Python with `PYTHONPATH` set to this branch's `packages/*/src` and `eval/src` (nothing installed or synced). The full song was copied to `D:/datasets/musdb18hq-p1/full/the-mountaineering-club-mallory.wav` from `musdb18hq-full`. The run took 4 min 19 s.
+- **The learner's stem is byte-identical** under both maps on all seven items.
+- **Storage:** the whole song goes from 4 stems / 17.2 MB to 7 stems / 30.0 MB.
+- **Time, whole 244.5 s song (guitar learner, +3 stems):** separate 21.8 → 29.7 s, stem_post 19.7 → 33.3 s, so +21.5 s together. A bass or drums learner (+4 stems) comes to ≈ +28 s. The ~30 % decision still needs the timed Full bass analysis.
+- **Keys fallback on `765d5131-piano`:** it fired. The overlap column names "other" at 0.35. SW's raw "other" would correlate 0.88 with the fallback's piano stem and 0.95 with the reference keys; the derived "other" correlates 0.35 and 0.47, holding only what the fallback missed.
+- **The tagger veto drops real stems.** With the tagger working, `keep_min_prob` 0.01 vetoed bass on `speak-softly-like-horses` (0.46 of the mixture, its loudest part), vocals on `765d5131-piano` (0.41), and bass on `pr-happy-daze` (0.12) and `nerve-9-pray-for-the-rain` (0.13). `dev` vetoes bass the same way.
+  - stem_post's empty check now covers what the veto was for.
+  - **Owner decision:** stop vetoing extras by tagger, keeping every output and letting stem_post drop the empty ones. That would change every `separate` key once and keep a few more stems.
+- **all_stems.py** printed "→" to a redirected Windows stdout (cp1252) and crashed after writing the report; its two prints now use "->".
+
 **Known gaps / next:**
 - G3 on the PC (impl/29 is merged in):
-  - `all_stems.py run --before <dev map>` (`git show dev:services/ml/config/separation.personal.yaml`, `keep: [drums, bass]`) with a working tagger and the Mega-53 weights. On `765d5131-piano` the fallback should fire, and the overlap column should not name "other";
+  - done: `all_stems.py run` (above); open: the tagger-veto decision;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - full `pnpm eval:regression` (expected pass, unchanged baseline);
   - `pytest -m models packages/stage_separation`;
