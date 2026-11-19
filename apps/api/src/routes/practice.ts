@@ -31,17 +31,32 @@ export const practice = {
   }),
 
   progress: authed.practice.progress.handler(async ({ context, input }) => {
-    const clips = await context.deps.repos.practice.progress(context.userId, input.song_id)
+    const { clips, sessions } = await context.deps.repos.practice.progress(
+      context.userId,
+      input.song_id,
+      input.days,
+    )
     return {
       clips: clips.map((clip) => ({
         loop_clip_id: clip.id,
         song_id: clip.songId,
+        name: clip.name,
         best_clean_tempo_pct: clip.bestCleanTempoPct,
+        last_attempt_at: clip.lastAttemptAt?.toISOString() ?? null,
         attempts: clip.attempts.map((a) => ({
           at: a.at.toISOString(),
           tempo_pct: a.tempoPct,
           outcome: a.outcome,
+          client_session_id: a.clientSessionId,
         })),
+      })),
+      sessions: sessions.map((s) => ({
+        client_session_id: s.clientSessionId,
+        song_id: s.songId,
+        started_at: s.startedAt.toISOString(),
+        ended_at: s.endedAt?.toISOString() ?? null,
+        passes: s.passes,
+        clean_passes: s.cleanPasses,
       })),
     }
   }),

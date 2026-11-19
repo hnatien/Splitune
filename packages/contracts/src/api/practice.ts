@@ -34,15 +34,41 @@ export const PracticeSyncOutput = z.object({
   accepted_attempts: z.array(z.uuid()),
 })
 
-export const ProgressInput = z.object({ song_id: z.uuid().optional() })
+// GET /v1/progress (12 §5, s39). `days` keeps sessions and attempts to the last n days on the
+// server's clock (the client trims to its own local days); omitted, all of them.
+export const ProgressInput = z.object({
+  song_id: z.uuid().optional(),
+  days: z.number().int().min(1).max(366).optional(),
+})
 
 export const ClipProgress = z.object({
   loop_clip_id: z.uuid(),
   song_id: z.uuid(),
+  name: z.string().nullable(),
   best_clean_tempo_pct: TempoPct.nullable(),
+  last_attempt_at: z.iso.datetime().nullable(), // over all time, whatever `days` says
   attempts: z.array(
-    z.object({ at: z.iso.datetime(), tempo_pct: TempoPct, outcome: AttemptOutcome }),
+    z.object({
+      at: z.iso.datetime(),
+      tempo_pct: TempoPct,
+      outcome: AttemptOutcome,
+      client_session_id: z.uuid(),
+    }),
   ),
 })
 
-export const ProgressOutput = z.object({ clips: z.array(ClipProgress) })
+// One practice session (a visit to a song's practice screen) with its passes over every loop,
+// saved as a clip or not. `ended_at` is null while the session is open or if it never ended.
+export const ProgressSession = z.object({
+  client_session_id: z.uuid(),
+  song_id: z.uuid(),
+  started_at: z.iso.datetime(),
+  ended_at: z.iso.datetime().nullable(),
+  passes: z.number().int().nonnegative(),
+  clean_passes: z.number().int().nonnegative(),
+})
+
+export const ProgressOutput = z.object({
+  clips: z.array(ClipProgress),
+  sessions: z.array(ProgressSession),
+})
