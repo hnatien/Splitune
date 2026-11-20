@@ -78,6 +78,31 @@ export const Loop: Story = {
   },
 }
 
+const scrubSeek = fn()
+
+export const Scrub: Story = {
+  render: () => <Timeline onSeek={scrubSeek} />,
+  play: async ({ canvasElement }) => {
+    scrubSeek.mockClear()
+    const map = canvasElement.querySelector<HTMLElement>('[data-slot="waveform-timeline"] > div')
+    if (!map) throw new Error('no map')
+    const box = map.getBoundingClientRect()
+    const at = (fraction: number) => ({
+      clientX: box.left + box.width * fraction,
+      clientY: box.top + box.height / 2,
+    })
+    // Pressing seeks, and dragging keeps seeking until release.
+    await userEvent.pointer([
+      { keys: '[MouseLeft>]', target: map, coords: at(0.25) },
+      { target: map, coords: at(0.5) },
+      { target: map, coords: at(0.75) },
+      { keys: '[/MouseLeft]', target: map, coords: at(0.75) },
+    ])
+    await expect(scrubSeek).toHaveBeenNthCalledWith(1, expect.closeTo(DURATION * 0.25, 1), false)
+    await expect(scrubSeek).toHaveBeenLastCalledWith(expect.closeTo(DURATION * 0.75, 1), true)
+  },
+}
+
 export const UnsureBars: Story = {
   render: () => (
     <Timeline

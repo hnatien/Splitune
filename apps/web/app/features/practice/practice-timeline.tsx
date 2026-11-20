@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from 'react'
+import { lazy, Suspense, useMemo, useRef } from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { TimelineLane } from '@/ui/waveform-timeline'
@@ -15,7 +15,7 @@ const WaveformTimeline = lazy(() =>
 // The song map (12 §2, 27 §3.7.1, Main.dc.html): your part's waveform (or the song's own audio
 // before stems), the unsure hatch, the loop band with keyboard-nudgeable edges, the now-line and
 // the ruler (bar numbers every 8 bars, seconds before the beat is known). Tap seeks to the bar's
-// downbeat; dragging a loop edge snaps to bars. No section chips until sections exist (s41b), never
+// downbeat and dragging across the map scrubs bar by bar; dragging a loop edge snaps to bars. No section chips until sections exist (s41b), never
 // fake ones. On desktop (`map`) it's the region under the top bar; tablets keep it above the
 // transport and phone landscape keeps only the compact ruler.
 
@@ -69,6 +69,7 @@ export function PracticeTimeline({
       })
     } else practice.setLoop(range)
   }
+  const scrubbed = useRef<number | null>(null)
   const height = compact ? 'h-8' : 'h-17.5'
   return (
     <section
@@ -88,12 +89,13 @@ export function PracticeTimeline({
           unsure={unsure}
           position={() => audio.position()}
           compact={compact}
-          onSeek={(seconds) =>
-            practice.send({
-              type: 'SEEK',
-              seconds: grid ? grid.barStart(barAt(grid, seconds)) : seconds,
-            })
-          }
+          onSeek={(seconds, scrubbing) => {
+            const target = grid ? grid.barStart(barAt(grid, seconds)) : seconds
+            // A drag re-seeks only when it reaches another bar, so the audio doesn't stutter.
+            if (scrubbing && target === scrubbed.current) return
+            scrubbed.current = target
+            practice.send({ type: 'SEEK', seconds: target })
+          }}
           onNudgeLoop={(edge, direction) => {
             if (grid && loop) moveLoop(nudge(grid, loop, edge, direction))
           }}

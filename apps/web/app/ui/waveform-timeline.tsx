@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils'
 // painted beneath the bars (`--loop-fill`, V17) with 2 px `--loop-edge` edges; the unsure hatch as
 // a striped band above the bars (a pattern, never colour alone, 26 §5); the 2 px now-line; and a
 // 14 px mono ruler (bar numbers every 8 bars, or seconds before the beat is known). The loop's edges
-// are ≥ 44 px handles that the arrow keys nudge (dragging is the secondary way). Tap seeks. The
+// are ≥ 44 px handles that the arrow keys nudge (dragging is the secondary way). Tap seeks and a
+// drag across the map scrubs (pointer capture keeps it going past the edges). The
 // waveform is drawn when its data changes; during playback only the now-line moves (transform) and
 // the played part is revealed by a clip on a second canvas, so no frame reads layout (28 §3.1).
 // The loop band eases in, out and between ranges over --duration-base (straight to the end state
@@ -41,7 +42,8 @@ type WaveformTimelineProps = {
   unsure?: { start: number; end: number }[]
   /** Heard position (seconds), read every animation frame. */
   position: () => number
-  onSeek: (seconds: number) => void
+  /** Pressing seeks; dragging across the map keeps seeking (`scrubbing`) until release. */
+  onSeek: (seconds: number, scrubbing: boolean) => void
   /** Moves a loop edge by a step (keys on the handles; the drag is the secondary way). */
   onNudgeLoop?: (edge: 'start' | 'end', direction: 1 | -1) => void
   onDragLoop?: (edge: 'start' | 'end', seconds: number) => void
@@ -302,9 +304,10 @@ function WaveformTimeline({
     return () => cancelAnimationFrame(frame)
   })
 
-  const seekAt = (event: React.PointerEvent<HTMLDivElement>) => {
+  const seekAt = (event: React.PointerEvent<HTMLDivElement>, scrubbing: boolean) => {
     const box = event.currentTarget.getBoundingClientRect()
-    onSeek(((event.clientX - box.left) / box.width) * duration)
+    const fraction = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width))
+    onSeek(fraction * duration, scrubbing)
   }
 
   const handle = (edge: 'start' | 'end') => {
@@ -367,9 +370,16 @@ function WaveformTimeline({
     <div data-slot="waveform-timeline" className={cn('flex flex-col', className)}>
       <div
         ref={host}
-        className="relative w-full cursor-pointer"
+        className="relative w-full cursor-pointer touch-pan-y"
         style={{ height }}
-        onPointerUp={seekAt}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return
+          event.currentTarget.setPointerCapture(event.pointerId)
+          seekAt(event, false)
+        }}
+        onPointerMove={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) seekAt(event, true)
+        }}
       >
         <canvas ref={base} aria-hidden className="absolute inset-0 h-full w-full" />
         <canvas
