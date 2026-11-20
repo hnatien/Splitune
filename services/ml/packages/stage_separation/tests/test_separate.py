@@ -28,6 +28,14 @@ AUDIO_HASH = "cd" * 32
 RATE = 44100
 
 
+@pytest.fixture(autouse=True)
+def default_model_map() -> Generator[None]:
+    """A test that points ML_SEPARATION_CONFIG elsewhere leaves that map cached in config.load;
+    the next test starts from the shipped one (this teardown runs after monkeypatch's)."""
+    yield
+    config.load.cache_clear()
+
+
 def mixture(path: Path, seconds: float = 3.0) -> Path:
     t = np.arange(int(seconds * RATE)) / RATE
     audio = 0.2 * np.sin(2 * np.pi * 220 * t) + 0.1 * np.sin(2 * np.pi * 55 * t)
@@ -76,17 +84,135 @@ def tags(probs: dict[str, float], fallback: str | None = None) -> contracts.Tags
     return contracts.Tags.model_validate(document)
 
 
-def test_plan_keeps_extras_unless_the_tagger_is_sure_they_are_absent() -> None:
+# A veto threshold for the tests of the mechanism; the shipped map sets none (s40a G3).
+VETO = 0.01
+
+
+def vetoing() -> config.SeparationConfig:
+    return config.load().model_copy(update={"keep_min_prob": VETO})
+
+
+def test_the_shipped_map_keeps_every_extra_whatever_the_tagger_scores() -> None:
+    """s40a G3: at 0.01 the tagger vetoed bass at 46 % of a mixture and vocals at 41 %, and
+    stem_post already leaves out an extra it finds empty, so the shipped map vetoes nothing."""
     cfg = config.load()
+    assert cfg.keep_min_prob == 0
+    sure = tags({"guitar": 0.6, "bass": 0.0, "piano": 0.0, "drums": 0.0, "vocals": 0.0})
+    keep = separate.plan(cfg, {"instrument": "guitar"}, sure)["keep"]
+    assert keep == ["bass", "drums", "piano", "vocals", "other"]
+
+
+def test_plan_keeps_extras_unless_the_tagger_is_sure_they_are_absent() -> None:
+    cfg = vetoing()
+    everything = ["bass", "drums", "piano", "vocals", "other"]  # every instrument but the target
     params = separate.plan(cfg, {"instrument": "guitar"}, tags({"drums": 0.005, "bass": 0.02}))
     assert params["chain"] == cfg.instruments["guitar"].chain
-    assert params["keep"] == ["bass"]  # drums below keep_min_prob
-    assert separate.plan(cfg, {"instrument": "guitar"}, None)["keep"] == ["drums", "bass"]
+    assert params["keep"] == ["bass", "piano", "vocals", "other"]  # drums below keep_min_prob
+    assert separate.plan(cfg, {"instrument": "guitar"}, None)["keep"] == everything
     unusable = tags({"drums": 0.0}, fallback="tagger_unavailable")
-    assert separate.plan(cfg, {"instrument": "guitar"}, unusable)["keep"] == ["drums", "bass"]
+    assert separate.plan(cfg, {"instrument": "guitar"}, unusable)["keep"] == everything
+    # The tagger has no "other" class: a full tag list never vetoes it.
+    sure = tags({"guitar": 0.6, "bass": 0.001, "piano": 0.002, "drums": 0.003, "vocals": 0.004})
+    assert separate.plan(cfg, {"instrument": "guitar"}, sure)["keep"] == ["other"]
     with pytest.raises(StageError) as err:
         separate.plan(cfg, {"instrument": "kazoo"}, None)
     assert err.value.code == "invalid_params"
+
+
+EVERY_HEAD: list[tuple[str, config.Instrument, dict[str, float] | None, dict[str, str]]] = [
+    # six-stem heads and fallbacks (subtract): every other output is an extra
+    (
+        "bs_roformer_sw",
+        "guitar",
+        None,
+        {
+            "bass": "extra",
+            "drums": "extra",
+            "guitar": "target",
+            "piano": "extra",
+            "vocals": "extra",
+            "other": "extra",
+        },
+    ),
+    (
+        "htdemucs_6s",
+        "piano",
+        None,
+        {
+            "bass": "extra",
+            "drums": "extra",
+            "guitar": "extra",
+            "piano": "target",
+            "vocals": "extra",
+            "other": "extra",
+        },
+    ),
+    # with a veto threshold (the shipped map has none), the tagger vetoes an absent instrument
+    (
+        "bs_roformer_sw",
+        "drums",
+        {"piano": 0.005},
+        {
+            "bass": "extra",
+            "drums": "target",
+            "guitar": "extra",
+            "vocals": "extra",
+            "other": "extra",
+        },
+    ),
+    # four-stem fallback
+    (
+        "htdemucs_ft",
+        "bass",
+        None,
+        {"bass": "target", "drums": "extra", "vocals": "extra", "other": "extra"},
+    ),
+    # two-stem vocals heads (complement): nothing to add, "other" is the mix-minus
+    ("mel_roformer_kim_vocals", "vocals", None, {"vocals": "target", "other": "complement"}),
+    (
+        "bs_roformer_viperx_1297",
+        "vocals",
+        None,
+        {"vocals": "target", "instrumental": "complement"},
+    ),
+    # a six-stem vocals fallback (complement): extras are stems and in the mix-minus; a vetoed
+    # instrument (with a veto threshold) still belongs to the mix-minus
+    (
+        "bs_roformer_sw",
+        "vocals",
+        {"piano": 0.005},
+        {
+            "bass": "extra",
+            "drums": "extra",
+            "guitar": "extra",
+            "piano": "complement",
+            "vocals": "target",
+            "other": "extra",
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize(("model", "instrument", "probs", "expected"), EVERY_HEAD)
+def test_every_output_of_the_producing_run_is_kept(
+    model: str,
+    instrument: config.Instrument,
+    probs: dict[str, float] | None,
+    expected: dict[str, str],
+) -> None:
+    cfg = config.load() if probs is None else vetoing()
+    assert model in cfg.instruments[instrument].chain
+    params = separate.plan(cfg, {"instrument": instrument}, None if probs is None else tags(probs))
+    assert separate.roles(cfg.models[model], params) == expected
+
+
+def test_a_two_stem_subtract_model_keeps_only_its_target() -> None:
+    """Guitar-only models (step 22 candidates) have no other instrument to give."""
+    cfg = config.load()
+    params = separate.plan(cfg, {"instrument": "guitar"}, None)
+    assert separate.roles(cfg.models["mel_roformer_guitar_becruily"], params) == {
+        "guitar": "target"
+    }
 
 
 def test_roles_follow_the_mix_minus_mode() -> None:
@@ -171,14 +297,25 @@ def test_the_shipped_map_uses_wrapper_settings_only_where_step_29_measured_them(
 def describe_key(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, inference: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
-    document = yaml.safe_load(config.DEFAULT_PATH.read_text(encoding="utf-8"))
+    document = default_document()
     document["models"]["htdemucs_ft"]["inference"] = inference
+    return described_with(tmp_path, monkeypatch, document, "bass")
+
+
+def default_document() -> dict[str, Any]:
+    return yaml.safe_load(config.DEFAULT_PATH.read_text(encoding="utf-8"))
+
+
+def described_with(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, document: dict[str, Any], instrument: str
+) -> tuple[str, dict[str, Any]]:
+    """`separate`'s cache key and effective params under this model map."""
     path = tmp_path / f"separation-{len(list(tmp_path.iterdir()))}.yaml"
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
     monkeypatch.setenv("ML_SEPARATION_CONFIG", str(path))
     config.load.cache_clear()
     try:
-        described = separate.describe({"instrument": "bass"})
+        described = separate.describe({"instrument": instrument})
     finally:
         config.load.cache_clear()
     key = cache_key(
@@ -210,6 +347,26 @@ def test_inference_settings_are_part_of_the_cache_key(
     assert separate.run_id(
         job, "htdemucs_ft", with_inference("htdemucs_ft", {"shifts": 1}), ref, kept
     ) != separate.run_id(job, "htdemucs_ft", with_inference("htdemucs_ft", {}), ref, kept)
+
+
+def test_the_kept_instruments_are_part_of_the_cache_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """s40a: keeping every stem instead of drums and bass separates again (new key, new raw-stem
+    directory), so no analysis reuses a run that stored only some of its outputs."""
+    before = default_document()
+    before["keep"] = ["drums", "bass"]
+    old, old_params = described_with(tmp_path, monkeypatch, before, "guitar")
+    new, new_params = described_with(tmp_path, monkeypatch, default_document(), "guitar")
+    assert old_params["keep"] == ["drums", "bass"]
+    assert new_params["keep"] == ["bass", "drums", "piano", "vocals", "other"]
+    assert old != new
+    job = make_job(tmp_path, new_params)
+    spec = config.load().models["bs_roformer_sw"]
+    ref = models.model_ref(spec)
+    assert separate.run_id(job, "bs_roformer_sw", spec, ref, separate.roles(spec, old_params)) != (
+        separate.run_id(job, "bs_roformer_sw", spec, ref, separate.roles(spec, new_params))
+    )
 
 
 class FakeSeparator:
@@ -516,9 +673,13 @@ def test_first_model_failing_falls_back_to_the_next(
     ]
     assert {(s.name, s.role) for s in doc.stems} == {
         ("guitar", "target"),
-        ("drums", "extra"),
         ("bass", "extra"),
+        ("drums", "extra"),
+        ("piano", "extra"),
+        ("vocals", "extra"),
+        ("other", "extra"),
     }
+    assert {s.name: s.instrument for s in doc.stems}["other"] == "other"
     for stem in doc.stems:
         path = Path(job.cache_dir) / "separated" / stem.file
         assert hashlib.sha256(path.read_bytes()).hexdigest() == stem.sha256
@@ -534,6 +695,100 @@ def test_every_model_failing_means_stems_unavailable(
         separate.run(job)
     assert (err.value.code, err.value.retry) == ("stems_unavailable", False)
     assert fake.calls == ["bs_roformer_sw", "htdemucs_6s"]
+
+
+def stems_after(job: StageJob, separation: str) -> contracts.Stems:
+    """stem_post over a separate run's output, in the same cache."""
+    from stage_separation import stem_post
+
+    inputs = {"separation": separation}
+    work = Path(job.workdir).parent / "stem_post"
+    work.mkdir()
+    post = StageJob(
+        stage="stem_post",
+        analysis_id=job.analysis_id,
+        user_id=job.user_id,
+        artefact_version=1,
+        params=stem_post.describe({}, inputs).params,
+        inputs=inputs,
+        workdir=str(work),
+        cache_dir=job.cache_dir,
+        audio_hash=job.audio_hash,
+        duration_s=job.duration_s,
+        decoded_path=job.decoded_path,
+    )
+    out = stem_post.run(post)
+    stems = contracts.Stems.model_validate_json(Path(out.files["stems"]).read_text())
+    assert set(out.blobs) == {f.path for s in stems.stems for f in s.files}
+    return stems
+
+
+def test_a_six_stem_run_gives_the_mixer_every_stem(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """separate → stem_post with BS-Roformer-SW's six outputs: one isolated stem per output
+    (instrument set, "other" too), then the learner's mix-minus."""
+    monkeypatch.setattr(models, "separate", FakeModels({}).separate)
+    params = separate.plan(config.load(), {"instrument": "bass"}, None)
+    job = make_job(tmp_path, params)
+    out = separate.run(job)
+    stems = stems_after(job, out.files["separation"])
+    assert [(s.stem_id, s.kind, s.instrument) for s in stems.stems] == [
+        ("bass", "isolated", "bass"),
+        ("drums", "isolated", "drums"),
+        ("guitar", "isolated", "guitar"),
+        ("piano", "isolated", "piano"),
+        ("vocals", "isolated", "vocals"),
+        ("other", "isolated", "other"),
+        ("mix_minus_bass", "mix_minus", None),
+    ]
+    assert {s.provider for s in stems.stems} == {"bs_roformer:BS-Roformer-SW"}
+    assert all(not s.empty and s.quality_hint == "good" for s in stems.stems)
+    assert all([f.path for f in s.files] == [f"stems/{s.stem_id}.m4a"] for s in stems.stems)
+
+
+def test_a_two_stem_vocals_run_gives_the_vocals_and_their_mix_minus_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(models, "separate", FakeModels({}).separate)
+    params = separate.plan(config.load(), {"instrument": "vocals"}, None)
+    job = make_job(tmp_path, params)
+    out = separate.run(job)
+    doc = contracts.Separation.model_validate_json(Path(out.files["separation"]).read_text())
+    assert doc.provider == "mel_roformer:kim-vocals"
+    assert [(s.name, s.role) for s in doc.stems] == [("vocals", "target"), ("other", "complement")]
+    stems = stems_after(job, out.files["separation"])
+    assert [s.stem_id for s in stems.stems] == ["vocals", "mix_minus_vocals"]
+
+
+def test_learners_of_one_song_share_raw_stems_but_never_a_stem_post_cache_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """BS-Roformer-SW gives a guitar and a bass learner the same six raw stems, byte for byte;
+    stem_post must not hand the bass analysis the guitar's stems.json (mix_minus_guitar)."""
+    from stage_separation import stem_post
+
+    monkeypatch.setattr(models, "separate", FakeModels({}).separate)
+    runs: list[tuple[set[tuple[str, str]], str]] = []
+    for n, instrument in enumerate(["guitar", "bass", "guitar"]):
+        folder = tmp_path / str(n)
+        folder.mkdir()
+        job = make_job(folder, separate.plan(config.load(), {"instrument": instrument}, None))
+        path = separate.run(job).files["separation"]
+        doc = contracts.Separation.model_validate_json(Path(path).read_text())
+        described = stem_post.describe({}, {"separation": path})
+        key = cache_key(
+            scope="global",
+            audio_id=AUDIO_HASH,
+            stage="stem_post",
+            model_refs=described.model_refs,
+            params=described.params,
+        )
+        runs.append(({(s.name, s.sha256) for s in doc.stems}, key))
+    (guitar, guitar_key), (bass, bass_key), (again, again_key) = runs
+    assert guitar == bass == again
+    assert bass_key != guitar_key
+    assert again_key == guitar_key
 
 
 def test_a_skipped_silent_output_becomes_zeros_and_a_short_one_is_padded(tmp_path: Path) -> None:
@@ -590,7 +845,7 @@ def test_real_chain_skips_missing_weights_and_runs_htdemucs_6s(
         ("bs_roformer_sw", "weights_missing")
     ]
     assert doc.device == models.device()
-    assert {s.name for s in doc.stems} == {"guitar", "drums", "bass"}
+    assert {s.name for s in doc.stems} == {"guitar", "bass", "drums", "piano", "vocals", "other"}
     assert all(s.frames == 6 * RATE for s in doc.stems)
     models.release()
 
@@ -744,6 +999,18 @@ def test_a_silent_target_the_tagger_hears_is_replaced_by_the_fallback_outputs(
     else:
         assert check.provider is None
         assert len(doc.models) == 1
+    # SW's "other" would repeat the keys the fallback put in the target: once it applied, "other"
+    # is the rest of the mixture and the kept stems sum to the song (s40a).
+    stored = {
+        s.name: sf.read(str(Path(job.cache_dir) / "separated" / s.file), always_2d=True)[0]
+        for s in doc.stems
+    }
+    assert {s.name for s in doc.stems} == {"piano", "bass", "drums", "guitar", "vocals", "other"}
+    sw = 1 / len(cfg.models["bs_roformer_sw"].outputs)  # FakeModels' level for each SW output
+    if applied:
+        np.testing.assert_allclose(sum(stored.values()), mix, atol=1e-5)
+    else:
+        np.testing.assert_allclose(stored["other"], mix * sw, atol=1e-6)
     assert doc.provider == cfg.models["bs_roformer_sw"].provider  # the extras are still SW's
 
 

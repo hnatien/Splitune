@@ -6,17 +6,26 @@ the browser encodes (06 §4 stem_post).
    (`complement`), as the model map says for the instrument.
 3. Presence: frame-energy activity of each isolated stem, combined with the tagger. PANNs scores on
    full mixes are low and uncalibrated (bass never above ~0.15 on MUSDB), so the tagger only
-   vetoes: a stem with energy whose instrument the tagger can't hear is `bleed_suspected`.
+   vetoes: a stem with energy whose instrument it scores below `tag_absent_below` is
+   `bleed_suspected`. The threshold is 0 (off): at 0.01 it marked real stems rough, a bass at
+   46 % of the mixture's energy among them (step s40a, G3).
+   An empty extra stays in presence.json but gets no stem: the mixer hides empty stems, and the
+   CBR AAC of silence costs as much storage as music (step s40a). The target and the mix-minus are
+   always listed.
 4. Loudness: one shared `mix_gain_db` brings the mixture to -14 LUFS; `gain_to_unity_db` brings a
    soloed stem to -14 LUFS (it replaces the shared gain while soloing).
-5. Encode AAC (always) and Opus (optional), verify each against the PCM, write the JSON.
+5. Encode AAC (always) and Opus (optional), verify each against the PCM, write the JSON. The stems
+   encode in parallel (each encode and its verifying decode is an ffmpeg process): one at a time,
+   seven stems took a bass analysis 42 % longer than three (step s40a, G3).
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -39,10 +48,12 @@ DEFAULTS: dict[str, Any] = {
     "activity_abs_db": -50.0,
     "empty_active_fraction": 0.02,
     "empty_energy_ratio": 0.001,
-    "tag_absent_below": 0.01,  # tagger veto (see step 3 above)
+    "tag_absent_below": 0.0,  # tagger veto, off (see step 3 above)
     "tag_present_above": 0.3,  # a stem this confident tagger expects but got empty is rough
     "max_unity_gain_db": 20.0,
 }
+# Stems encoded at once; not a param, so the cache key doesn't follow the machine.
+MAX_ENCODES = 8
 
 
 def read_separation(inputs: dict[str, str] | None) -> contracts.Separation:
@@ -61,12 +72,16 @@ def read_tags(inputs: dict[str, str] | None) -> contracts.Tags | None:
 
 def describe(params: dict[str, Any], inputs: dict[str, str] | None = None) -> StageDescription:
     """The key follows the raw stems' content (and the tagger's verdict), so a different model,
-    or a re-run of the same one, gives a different stems.json."""
+    or a re-run of the same one, gives a different stems.json. It also follows what each raw stem
+    is for: since s40a every learner on a six-stem run keeps the same byte-identical outputs, and
+    only the target, the roles and the mix-minus mode tell a guitar analysis from a bass one."""
     separation = read_separation(inputs)
     tags = read_tags(inputs)
     effective = {**DEFAULTS, **{k: v for k, v in params.items() if k in DEFAULTS}}
-    stems = sorted(f"{s.name}:{s.sha256}" for s in separation.stems)
+    stems = sorted(f"{s.name}:{s.role}:{s.sha256}" for s in separation.stems)
     effective["separation"] = hashlib.sha256("\n".join(stems).encode()).hexdigest()
+    effective["target"] = separation.target
+    effective["mix_minus"] = separation.mix_minus
     if tags is not None:
         effective["tags"] = {t.instrument: t.present_prob for t in tags.instruments}
     return StageDescription(model_refs=separation.models, params=effective)
@@ -128,6 +143,8 @@ def run(job: StageJob) -> StageOutput:
     started = time.process_time()
     params = job.params
     separation = read_separation(job.inputs)
+    # The kept extras' instruments: an empty extra gets no stem (step 3 above).
+    extras = {s.instrument for s in separation.stems if s.role == "extra" and s.instrument}
     tags = read_tags(job.inputs)
     tag_probs: dict[str, float] = (
         {t.instrument: t.present_prob for t in tags.instruments} if tags else {}
@@ -160,6 +177,8 @@ def run(job: StageJob) -> StageOutput:
     target_quality = instrument_quality.get(separation.target, "good")
     if fallback is not None and fallback.applied and fallback.provider is not None:
         target_provider, target_quality = fallback.provider, "rough"
+        # `separate` made "other" the rest of the mixture: rough like the stem it is cut from.
+        instrument_quality["other"] = "rough"
 
     # id, kind, instrument, audio, base quality, provider
     outputs: list[tuple[str, str, str | None, Audio, str, str]] = []
@@ -191,6 +210,7 @@ def run(job: StageJob) -> StageOutput:
     stems: list[dict[str, Any]] = []
     presence: list[dict[str, Any]] = []
     blobs: dict[str, str] = {}
+    to_encode: list[tuple[str, Audio]] = []
     for stem_id, kind, instrument, audio, base_quality, provider in outputs:
         ratio = dsp.energy(audio) / mix_energy if mix_energy > 0 else 0.0
         act = dsp.activity(
@@ -230,8 +250,9 @@ def run(job: StageJob) -> StageOutput:
             if subtype is not None:
                 entry["subtype"] = subtype
             presence.append(entry)
-        files, stem_blobs = encode_stem(stem_id, audio, workdir, bool(params["opus"]))
-        blobs.update(stem_blobs)
+        if empty and instrument in extras:
+            continue
+        to_encode.append((stem_id, audio))
         gain = 0.0
         if not empty and loudness is not None:
             limit = float(params["max_unity_gain_db"])
@@ -240,7 +261,6 @@ def run(job: StageJob) -> StageOutput:
             "stem_id": stem_id,
             "kind": kind,
             "provider": provider,
-            "files": files,
             "loudness_lufs": round(loudness if loudness is not None else dsp.SILENCE_LUFS, 2),
             "gain_to_unity_db": round(gain, 2),
             "energy_ratio_to_mix": round(ratio, 4),
@@ -250,6 +270,18 @@ def run(job: StageJob) -> StageOutput:
         if instrument is not None:
             stem["instrument"] = instrument
         stems.append(stem)
+
+    opus = bool(params["opus"])
+
+    def encode_one(item: tuple[str, Audio]) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        return encode_stem(item[0], item[1], workdir, opus)
+
+    workers = max(1, min(len(to_encode), os.cpu_count() or 1, MAX_ENCODES))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        encoded = list(pool.map(encode_one, to_encode))
+    for stem, (files, stem_blobs) in zip(stems, encoded, strict=True):
+        stem["files"] = files
+        blobs.update(stem_blobs)
 
     seen = {p["instrument"] for p in presence}
     for t in tags.instruments if tags else []:

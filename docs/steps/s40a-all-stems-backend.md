@@ -2,27 +2,17 @@
 
 Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), backend lane. Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s40a. This is a measurement-first ML step: **the cache-key and config change ships only after owner gate G3.**
 
-## Resume here (state on 2026-11-08)
-Built and tested on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/worktrees/s40a-all-stems` (the Mac WIP `ac460c6` plus fixes). The estimate, the findings and the G3 commands are in the progress-log entry "Step s40a: all stems, backend (in progress)".
-- **Owner (D16):** `impl/29-separation-improvements` is in `dev` (merge `ddbdf89`). Stop point 6 is answered.
+## Resume here (state on 2026-11-21)
+Built and re-verified on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/worktrees/s40a-all-stems`. The estimate, the findings, the verification and the G3 commands are in the progress-log entry "Step s40a: all stems, backend (in progress)".
+- **Owner (D16):** `impl/29-separation-improvements` is in `dev` and merged into this branch (`a725cfb`, `dev` at `743421a`).
 - **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. For bass/drums learners on the RTX 3060 the estimate is 18–37 %, so that case waits for G3's measurement.
-- **An independent review's fixes are committed:**
-  - `4c1def6`: `stem_post`'s cache key carries the target, the roles and the mix-minus mode;
-  - `02d71b6`: warmed models in `all_stems.py`;
-  - `136f88e`: a coherent stems fixture;
-  - `f068351`: the 06 note.
-
-  Their verification was interrupted, so re-run it: ruff, pyright and `pytest packages/stage_separation eval/tests/test_all_stems.py` in this worktree's venv; the full `pytest`; `pnpm contracts:check` and the contracts tests; `pnpm lint`; web unit tests; and `test:stories` against the known failures (the fixture feeds the bass stories). Then fill in the entry's Verification line.
-- **Now that impl/29 is in `dev`:**
-  1. **Update the branch.** Merge `dev` into `impl/s40a-all-stems`. The only expected conflict is `separate.py`'s module docstring: keep both paragraphs and drop impl/29's stale "(drums, bass)". Run `pnpm contracts:gen`, then ruff, pyright and pytest.
-  2. **Decide the "other" stem case:** when impl/29's piano fallback fires, "other" can hold the learner's keys. Recommendation: when the fallback applies, derive "other" as the mixture − the target − Σ the other extras, and check it with `all_stems.py`'s overlap column on `765d5131-piano`.
-  3. **G3 (owner, on the GPU):**
-     - `all_stems.py run --before <dev's map with keep: [drums, bass]>` with a working tagger and the Mega-53 weights;
-     - one timed Full bass analysis before and after (decides the PC ~30 %);
-     - the full `pnpm eval:regression`. It can't see this change; the real guard is `all_stems.py`'s "target identical" column;
-     - `pytest -m models packages/stage_separation`;
-     - the listening session from `all_stems.py export`.
-  4. **Merge** into `dev` when the owner asks.
+- **Done:** the review's fixes (`4c1def6`, `02d71b6`, `136f88e`, `f068351`) and their verification. When piano's keys fallback applies, "other" is now the mixture minus every other kept stem, marked rough (`4c56f93`).
+- **G3 so far (2026-11-20, PC):**
+  - done: the tagger veto for extras is dropped (`2185f9c`, the owner's call); `all_stems.py run` (`2026-11-20-pc`) keeps the target identical; `pytest -m models` passed; the full `eval:regression` passed against the unchanged baseline; the listening session `s40a-g3-2026-11-20` is exported;
+  - done: the timing. A whole bass analysis's ML stages took +42 % with serial encodes. With parallel encodes in stem_post (`0667873`, the owner's call) it's +15 %, about +2 % against `dev`;
+  - done: stem_post's tagger-only bleed check is off (`tag_absent_below: 0`, the owner's call); `all_stems.py run` (`2026-11-21-pc`) marks no stem bleed and keeps the target identical;
+  - **open:** the owner listens by ear;
+  - then **merge** into `dev` when the owner asks.
 - **Note for s40b (also in s40b's prompt):** isolated stems don't always sum to the song, so use the mix-minus as the band unless every instrument was kept.
 
 | | |

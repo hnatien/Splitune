@@ -38,7 +38,8 @@ export const Separation = ArtefactHeader.extend({
   // Fallback when silent (step 29, piano): the chain's target stem energy relative to the mixture
   // (dB) and the tagger's present_prob for the target (absent without usable tags). `applied` =
   // below the configured threshold while the tagger heard the target: the outputs `provider` maps
-  // to the target (keys + synth) replaced the target stem, which stem_post marks rough.
+  // to the target (keys + synth) replaced the target stem, which stem_post marks rough, and a kept
+  // "other" became the mixture minus every other kept stem (step s40a), rough too.
   fallback_when_silent: z
     .object({
       target_db: z.number(),

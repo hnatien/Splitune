@@ -103,9 +103,12 @@ instruments:
     mix_minus: complement
     quality: good
 
-# Extra stems kept for the mixer and for chords (no-drums input, bass-root prior) when the run
-# that produced the learner's stem also produced them, unless the tagger is near-certain they are
-# absent: PANNs scores on full mixes are low (bass ≤ 0.14, drums ≤ 0.34 on MUSDB18-HQ test), so
-# only scores below keep_min_prob count as "absent" (2026-10-21, 50 test windows).
-keep: [drums, bass]
-keep_min_prob: 0.01
+# Extra stems kept for the mixer and for chords (no-drums input, bass-root prior): every output of
+# the run that produced the learner's stem (s40a: the mixer plays each one). An extra the tagger
+# scores below keep_min_prob is dropped, but none is: PANNs scores on full mixes are low (bass
+# <= 0.14, drums <= 0.34 on MUSDB18-HQ test), and at 0.01 it vetoed bass at 46 % of a mixture's
+# energy and vocals at 41 % (s40a G3, eval/results/all-stems/2026-11-19-pc.md). stem_post leaves out
+# an extra it finds empty instead. A two-stem head (vocals) has no extras: its "other" is the
+# mix-minus.
+keep: [bass, drums, guitar, piano, vocals, other]
+keep_min_prob: 0

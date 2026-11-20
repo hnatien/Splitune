@@ -224,13 +224,13 @@ export const GainByKeyboard: Story = {
   render: () => <Mixer />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    canvas.getByRole('slider', { name: 'Volume Bass' }).focus()
+    canvas.getByRole('slider', { name: 'Volume Drums' }).focus()
     await userEvent.keyboard('{ArrowLeft}')
     // The readout says it, and opens a stepper for setting it without a drag (WCAG 2.5.7).
-    const readout = canvas.getByRole('button', { name: /^Volume Bass: −7\sdB$/ })
+    const readout = canvas.getByRole('button', { name: /^Volume Drums: −7\sdB$/ })
     await userEvent.click(readout)
     const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByRole('textbox', { name: 'Volume Bass' })).toHaveValue('-7')
+    await expect(await body.findByRole('textbox', { name: 'Volume Drums' })).toHaveValue('-7')
   },
 }
 

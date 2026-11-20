@@ -24,6 +24,31 @@
   "created_at": "2026-10-20T12:00:58Z",
   "stems": [
     {
+      "stem_id": "drums",
+      "kind": "isolated",
+      "instrument": "drums",
+      "provider": "htdemucs_6s",
+      "files": [
+        {
+          "codec": "aac",
+          "container": "mp4",
+          "path": "stems/drums.m4a",
+          "bitrate_kbps": 160
+        },
+        {
+          "codec": "opus",
+          "container": "webm",
+          "path": "stems/drums.webm",
+          "bitrate_kbps": 96
+        }
+      ],
+      "loudness_lufs": -21.8,
+      "gain_to_unity_db": 7.8,
+      "energy_ratio_to_mix": 0.31,
+      "quality_hint": "rough",
+      "empty": false
+    },
+    {
       "stem_id": "guitar",
       "kind": "isolated",
       "instrument": "guitar",
@@ -45,6 +70,31 @@
       "loudness_lufs": -19.4,
       "gain_to_unity_db": 5.4,
       "energy_ratio_to_mix": 0.58,
+      "quality_hint": "good",
+      "empty": false
+    },
+    {
+      "stem_id": "other",
+      "kind": "isolated",
+      "instrument": "other",
+      "provider": "htdemucs_6s",
+      "files": [
+        {
+          "codec": "aac",
+          "container": "mp4",
+          "path": "stems/other.m4a",
+          "bitrate_kbps": 160
+        },
+        {
+          "codec": "opus",
+          "container": "webm",
+          "path": "stems/other.webm",
+          "bitrate_kbps": 96
+        }
+      ],
+      "loudness_lufs": -22.6,
+      "gain_to_unity_db": 8.6,
+      "energy_ratio_to_mix": 0.1,
       "quality_hint": "good",
       "empty": false
     },
@@ -71,56 +121,6 @@
       "energy_ratio_to_mix": 0.42,
       "quality_hint": "good",
       "empty": false
-    },
-    {
-      "stem_id": "drums",
-      "kind": "isolated",
-      "instrument": "drums",
-      "provider": "htdemucs_6s",
-      "files": [
-        {
-          "codec": "aac",
-          "container": "mp4",
-          "path": "stems/drums.m4a",
-          "bitrate_kbps": 160
-        },
-        {
-          "codec": "opus",
-          "container": "webm",
-          "path": "stems/drums.webm",
-          "bitrate_kbps": 96
-        }
-      ],
-      "loudness_lufs": -21.8,
-      "gain_to_unity_db": 7.8,
-      "energy_ratio_to_mix": 0.31,
-      "quality_hint": "rough",
-      "empty": false
-    },
-    {
-      "stem_id": "bass",
-      "kind": "isolated",
-      "instrument": "bass",
-      "provider": "htdemucs_6s",
-      "files": [
-        {
-          "codec": "aac",
-          "container": "mp4",
-          "path": "stems/bass.m4a",
-          "bitrate_kbps": 160
-        },
-        {
-          "codec": "opus",
-          "container": "webm",
-          "path": "stems/bass.webm",
-          "bitrate_kbps": 96
-        }
-      ],
-      "loudness_lufs": -48.0,
-      "gain_to_unity_db": 0.0,
-      "energy_ratio_to_mix": 0.01,
-      "quality_hint": "rough",
-      "empty": true
     }
   ],
   "alignment_offset_samples": 0,

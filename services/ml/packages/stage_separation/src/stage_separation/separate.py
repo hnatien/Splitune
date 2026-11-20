@@ -9,11 +9,12 @@ failure after which the analysis continues without stems (06 §6).
 An instrument with `fallback_when_silent` (piano, step 29) gets a second model when the chain's
 target stem is near silent while the tagger hears the instrument: SW outputs no piano for synth-
 and organ-heavy keys. That model's outputs mapped to the instrument, summed, replace the stem;
-`separation.json` records the check and the provider, and `stem_post` marks the stem rough.
+`separation.json` records the check and the provider, and `stem_post` marks the stem rough. The
+kept "other" then becomes the rest of the mixture (step s40a), so those keys aren't heard twice.
 
-Only what the analysis needs is kept (06 §4 "request one target"): the learner's stem, the
-complement parts when mix-minus is `complement`, and the `keep` extras (drums, bass) when the same
-run produced them and the tagger hears them.
+Kept outputs: the learner's stem, the `keep` extras (every other instrument the same run produced,
+step s40a, so the mixer can play each stem) unless the tagger is near-certain they are absent, and
+the complement parts when mix-minus is `complement`.
 
 Raw stems are cached as 24-bit FLAC, or as float32 WAV when they peak above full scale (a loud
 master's stems do, though its mixture doesn't), so `mixture - stem` stays exact (step 28).
@@ -168,6 +169,16 @@ def summed_outputs(
     return np.sum(parts, axis=0, dtype=np.float32)
 
 
+def residual(
+    mixture: NDArray[np.float32], stems: dict[str, NDArray[np.float32]], name: str
+) -> NDArray[np.float32]:
+    """The mixture minus every kept stem but `name`. When the fallback replaced the target, the
+    chain's "other" still holds the keys it didn't call piano, now in the target too (step s40a):
+    the rest of the mixture replaces it, so the kept stems sum to the song."""
+    rest = [audio for stem, audio in stems.items() if stem != name]
+    return mixture - np.sum(rest, axis=0, dtype=np.float32)
+
+
 def load_stem(path: Path | None, frames: int) -> NDArray[np.float32]:
     """A model output as [frames, 2]; a stem the library skipped as silent is zeros."""
     if path is None:
@@ -301,6 +312,9 @@ def run(job: StageJob) -> StageOutput:
                 )
                 silence |= {"applied": True, "provider": replaced[1].provider}
                 refs.append(replaced[2])
+                other = next((s for s in stems if spec.outputs[s] == "other"), None)
+                if other is not None:
+                    stems[other] = residual(load_stem(mixture, frames), stems, other)
 
     directory = run_id(job, name, spec, ref, kept, replaced)
     cache = Path(job.cache_dir) / "separated"

@@ -1942,7 +1942,7 @@ Branch `impl/s41a-sections` from the redesign docs at `9b5bf01`, worktree `.clau
 - An independent review found no high-severity problem. Its open fixes (timeout retries, an invalid `sections.json` failing finalize, a queue-level failing-job test, the fallback's sample rate and downbeats, two spec lines, the G3 test fixture) are listed in the prompt's "Resume here"; three web follow-ups are in s41b's prompt.
 
 ## 2026-11-08 — Step s40a: all stems, backend (in progress)
-Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action after impl/29 is in `dev`. An independent review found a stem_post cache collision between learners, fixed in `4c1def6`.
+Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action. An independent review found a stem_post cache collision between learners, fixed in `4c1def6`. On 2026-11-19 `dev` (`743421a`, impl/29 included) was merged in (`a725cfb`) and the keys-fallback "other" fix landed (`4c56f93`).
 
 **Built:**
 - `config/separation.personal.yaml` `keep: [bass, drums, guitar, piano, vocals, other]`. Every output of the run that made the learner's stem is kept, unless the tagger is near-certain the instrument is absent (`keep_min_prob` 0.01 unchanged). The tagger has no "other" class, so "other" is never vetoed. Two-stem vocals heads have no extras: their "other" is the mix-minus.
@@ -1959,6 +1959,10 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - follows `SPLITUNE_DATASETS_DIR`.
 - 06 (§4 "Request one target", `separate` and `stem_post` notes), the 05 `empty` comment and the `stems.ts` comment (no schema change) describe the new behaviour. The `stems.json` fixture holds drums, guitar, other and `mix_minus_guitar` (bass, piano and vocals are empty extras), so the bass stories get no mismatched mixer.
 - Confirmed that the API plans only `notes.<learner instrument>`, so notes always reads the target.
+- **Reconciliation with impl/29 (2026-11-19):**
+  - Merging `dev` left one conflict, the `separate.py` module docstring: both paragraphs kept, impl/29's "(drums, bass)" dropped. `pnpm contracts:gen` changed nothing.
+  - **"Other" under the keys fallback (`4c56f93`):** when Mega-53 replaces SW's silent piano, SW's "other" still holds those keys. `separate` now stores the kept "other" as the mixture minus every other kept stem, so the keys aren't heard twice and the kept stems sum to the song. `stem_post` marks that "other" rough. 06's keys fallback note and the `separation.ts` comment say so (no schema change).
+  - No cache marker is needed. dev's piano runs never kept "other", and s40a's `keep` change already changes every `separate` key. A replaced run already has its own raw directory.
 
 **Impact (estimate):**
 - **R2:** inside the free tier (10 GB-month, 1 M Class A, 10 M Class B; pricing page updated 2026-10-30).
@@ -1993,19 +1997,66 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - full pytest 344 passed, 4 known failures (the `test_stem_post` pair is identical on the base `54c9438`);
   - ruff clean; `contracts:check` clean, contracts tests 61/61;
   - web unit 214/214; `eval:regression --smoke` PASS.
-- After the fixes (`4c1def6`, `02d71b6`, `136f88e`, `f068351`): not yet re-run; the prompt's "Resume here" lists the commands.
+- After the review fixes, the merge of `dev` and `4c56f93` (2026-11-19):
+  - ruff check + format clean; pyright 5 errors, all the known `stage_notes/tests/test_guitab.py` ones (that package is identical to `dev`);
+  - full pytest 374 passed, 4 skipped, 4 known failures (`test_recovery.py` ×2, `test_stem_post` pair); `pytest packages/stage_separation eval/tests/test_all_stems.py` 73 passed + the known pair;
+  - `contracts:gen` no change, `contracts:check` clean, contracts typecheck + tests 61/61;
+  - `pnpm lint`: Biome and check-db-access clean, then check-ui-tokens fails on `apps/web/app/features/shell/command-palette.tsx:249` (`outline-none` without `focus-visible:outline-*`). That file is unchanged from `dev`, so the failure is in `dev` too; ruff run separately is clean;
+  - web unit 322/322; `test:stories` 914 passed, 151 failed:
+    - 150 are WebKit 15 s timeouts, 128 in `practice.stories.tsx` and 22 in `fix.stories.tsx` (s38's, newer than the known list). They are the known WebKit practice class, and the same stories pass in Chromium. Not re-run on `dev`.
+    - **1 is this step's:** Chromium `app/ui/mixer.stories.tsx > Gain By Keyboard` drives the "Volume Bass" slider. `136f88e` took the empty bass out of the stems fixture, as stem_post now writes it. The owner chose to retarget it (stop point 3 answered): the story now drives "Volume Drums", and `vitest run --project='storybook*' app/ui/mixer.stories.tsx` passes 20/20 in Chromium and WebKit;
+  - `SPLITUNE_DATASETS_DIR=D:/datasets pnpm eval:regression --smoke`: PASS (without the variable it looks in `~/datasets`, which doesn't exist on the PC).
+
+**G3 all_stems comparison (PC, RTX 3060, 2026-11-19; `eval/results/all-stems/2026-11-19-pc.md`):**
+- **How it ran:** the shared CUDA venv's Python with `PYTHONPATH` set to this branch's `packages/*/src` and `eval/src` (nothing installed or synced). The full song was copied to `D:/datasets/musdb18hq-p1/full/the-mountaineering-club-mallory.wav` from `musdb18hq-full`. The run took 4 min 19 s.
+- **The learner's stem is byte-identical** under both maps on all seven items.
+- **Storage:** the whole song goes from 4 stems / 17.2 MB to 7 stems / 30.0 MB.
+- **Time, whole 244.5 s song (guitar learner, +3 stems):** separate 21.8 → 29.7 s, stem_post 19.7 → 33.3 s, so +21.5 s together. A bass or drums learner (+4 stems) comes to ≈ +28 s. The ~30 % decision still needs the timed Full bass analysis.
+- **Keys fallback on `765d5131-piano`:** it fired. The overlap column names "other" at 0.35. SW's raw "other" would correlate 0.88 with the fallback's piano stem and 0.95 with the reference keys; the derived "other" correlates 0.35 and 0.47, holding only what the fallback missed.
+- **The tagger veto drops real stems.** With the tagger working, `keep_min_prob` 0.01 vetoed bass on `speak-softly-like-horses` (0.46 of the mixture, its loudest part), vocals on `765d5131-piano` (0.41), and bass on `pr-happy-daze` (0.12) and `nerve-9-pray-for-the-rain` (0.13). `dev` vetoes bass the same way.
+  - stem_post's empty check now covers what the veto was for.
+  - **Owner decision:** stop vetoing extras by tagger, keeping every output and letting stem_post drop the empty ones. That would change every `separate` key once and keep a few more stems.
+- **all_stems.py** printed "→" to a redirected Windows stdout (cp1252) and crashed after writing the report; its two prints now use "->".
+
+**Tagger veto dropped and the rest of G3 (PC, 2026-11-20):**
+- **Owner decision:** drop the veto for extras. `2185f9c` sets `keep_min_prob: 0`; the plan tests test the mechanism with an explicit threshold, and 06 is updated. `pytest packages/stage_separation/tests/test_separate.py` 50 passed, 2 skipped; ruff and pyright clean.
+- **`all_stems.py run --tag 2026-11-20-pc`** (`eval/results/all-stems/2026-11-20-pc.md`):
+  - target identical on all seven items;
+  - the vetoed bass (0.46) and vocals (0.36) are back;
+  - but stem_post's `tag_absent_below` bleed check marks them rough with `bleed_suspected` (the same weak-tagger problem);
+  - on `765d5131-piano` the derived "other" falls to 0.15 of the mixture's energy, overlap 0.58.
+- **`pytest -m models packages/stage_separation`** on CUDA: 5 passed.
+- **Full `pnpm eval:regression`** on CUDA: PASS, 0 of 277 values outside tolerance against the unchanged baseline (`eval/results/regression/2026-11-20.md`).
+- **Timed Full bass analysis:**
+  - what ran: every ML stage of the Full graph in-process on the 244.5 s song, the second of two alternating runs per map; finalize and uploads not included. The script was a one-off and isn't committed;
+  - result: 53.4 → 75.9 s (+22.5 s, **+42 %**). stem_post 16.2 → 35.8 s (≈ 4.9 s per encoded and verified AAC, one at a time); separate 21.6 → 24.5 s; chords, notes.bass, decode, tag and beats unchanged.
+  - **That's past D17's ~30 %: stop point 2, owner decision.**
+- **Owner decision: parallelise stem encodes (`0667873`).**
+  - What changed: stem_post encodes and verifies the stems in a thread pool (one ffmpeg process per encode and per verifying decode; at most 8 at once, `MAX_ENCODES`, not a param, so the cache key doesn't follow the machine). Results are matched to stems in order.
+  - New test: the encodes overlap and each stem keeps its own files. stem_post tests 19 passed plus the known pair (residual −13.1 dB against the −15 limit, as before); ruff and pyright clean.
+  - Re-timed the same way:
+    - with the parallel stem_post on both maps: 53.3 → 61.3 s (+8.0 s, **+15 %**), stem_post 9.2 → 14.1 s;
+    - against `dev` as shipped (serial stem_post, 3 stems): the stages either map changes go 42.5 → 43.5 s, about +2 % on the whole analysis.
+  - Both are inside D17's ~30 %; uploads still grow ≈ 13 → 30 MB per 4-minute song.
+- **Listening session** `s40a-g3-2026-11-20` exported: 25 clips, plus the "other" stems in `other/` to hear by ear. To listen, from the main checkout (it has the `.env`; compose Postgres running): `$env:LISTENING_SESSION_DIR = "D:/datasets/musdb18hq-p1/listening/s40a-g3-2026-11-20"; $env:LISTENING_PORT = "4107"; pnpm --filter @splitune/listening dev`.
+- **Owner decision: drop stem_post's tagger-only bleed check.** `tag_absent_below` is 0 (off), like `keep_min_prob`; the mechanism stays, tested with an explicit 0.01, and the six-stem test now expects a stem the tagger can't hear to be good. 06 is updated. `pytest packages/stage_separation` 69 passed, 2 skipped, plus the known pair; ruff and pyright clean.
+  - `all_stems.py run --tag 2026-11-21-pc` (`eval/results/all-stems/2026-11-21-pc.md`): no stem is marked bleed; the 0.46 bass and the vocals are good with present_prob 1.0; the only rough stems are the keys fallback's (piano, "other", mix-minus); target identical, stems and bytes as in 2026-11-20-pc.
 
 **Known gaps / next:**
-- G3 on the PC after impl/29 is in `dev`:
-  - resolve the one `separate.py` docstring conflict;
-  - `all_stems.py run --before <dev map>` with a working tagger and the Mega-53 weights;
+- G3 on the PC (impl/29 is merged in):
+  - done: the three `all_stems.py run`s, the veto and bleed-check decisions, the `models` tests, the full `eval:regression`, the timing (+42 %, then +15 % with parallel encodes, ≈ +2 % against `dev`) and the listening export. Open: listening by ear;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - full `pnpm eval:regression` (expected pass, unchanged baseline);
   - `pytest -m models packages/stage_separation`;
   - listening session `all_stems.py export`.
+  - Commands (PowerShell, from the worktree; the worktree venv is CPU-only, so run them where the GPU venv is, after checking out this branch there):
+    - `cd services/ml; $env:SPLITUNE_DATASETS_DIR = "D:/datasets"; git show dev:services/ml/config/separation.personal.yaml > $env:TEMP/sep-before.yaml`
+    - `uv run --no-sync python eval/all_stems.py run --tag 2026-11-g3 --before $env:TEMP/sep-before.yaml` (writes `eval/results/all-stems/2026-11-g3.md`)
+    - `uv run --no-sync python eval/all_stems.py export --tag 2026-11-g3 --session s40a-g3` (refuses an existing session id: pick a new one)
+    - `$env:LISTENING_SESSION_DIR = "D:/datasets/musdb18hq-p1/listening/s40a-g3"; $env:LISTENING_PORT = "4107"; pnpm --filter @splitune/listening dev` (any free port; never stop a running session)
+    - `uv run --no-sync pytest -m models packages/stage_separation` and, from the repo root, `pnpm eval:regression` (expected: PASS against the unchanged baseline)
 - Songs analysed for both bass and drums before this fix may carry the other instrument's mix-minus: "Analyse again".
-- With impl/29, SW's "other" holds the synth keys the fallback put in the target. Recommended fix at the reconciliation: derive "other" as mixture − target − Σ other extras when the fallback applied; check it with the overlap column on `765d5131-piano`.
-- s40b: the isolated stems don't always sum to the song (vetoed extras, two-stem heads, short "empty" extras), so fall back to the mix-minus as the band unless a six- or four-stem run kept every instrument.
+- s40b: the isolated stems don't always sum to the song (vetoed extras, two-stem heads, short "empty" extras), so fall back to the mix-minus as the band unless a six- or four-stem run kept every instrument (a piano run whose keys fallback applied does sum to the song).
 
 ## 2026-11-08 — Step 29: Separation improvements (done; owner actions pending)
 Branch `impl/29-separation-improvements` from `dev` (`d1449d3`). The owner approved the Phase 0 plan with its defaults:
