@@ -2031,11 +2031,18 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - what ran: every ML stage of the Full graph in-process on the 244.5 s song, the second of two alternating runs per map; finalize and uploads not included. The script was a one-off and isn't committed;
   - result: 53.4 → 75.9 s (+22.5 s, **+42 %**). stem_post 16.2 → 35.8 s (≈ 4.9 s per encoded and verified AAC, one at a time); separate 21.6 → 24.5 s; chords, notes.bass, decode, tag and beats unchanged.
   - **That's past D17's ~30 %: stop point 2, owner decision.**
+- **Owner decision: parallelise stem encodes (`0667873`).**
+  - What changed: stem_post encodes and verifies the stems in a thread pool (one ffmpeg process per encode and per verifying decode; at most 8 at once, `MAX_ENCODES`, not a param, so the cache key doesn't follow the machine). Results are matched to stems in order.
+  - New test: the encodes overlap and each stem keeps its own files. stem_post tests 19 passed plus the known pair (residual −13.1 dB against the −15 limit, as before); ruff and pyright clean.
+  - Re-timed the same way:
+    - with the parallel stem_post on both maps: 53.3 → 61.3 s (+8.0 s, **+15 %**), stem_post 9.2 → 14.1 s;
+    - against `dev` as shipped (serial stem_post, 3 stems): the stages either map changes go 42.5 → 43.5 s, about +2 % on the whole analysis.
+  - Both are inside D17's ~30 %; uploads still grow ≈ 13 → 30 MB per 4-minute song.
 - **Listening session** `s40a-g3-2026-11-20` exported: 25 clips, plus the "other" stems in `other/` to hear by ear. To listen, from the main checkout (it has the `.env`; compose Postgres running): `$env:LISTENING_SESSION_DIR = "D:/datasets/musdb18hq-p1/listening/s40a-g3-2026-11-20"; $env:LISTENING_PORT = "4107"; pnpm --filter @splitune/listening dev`.
 
 **Known gaps / next:**
 - G3 on the PC (impl/29 is merged in):
-  - done: both `all_stems.py run`s, the veto decision, the `models` tests, the full `eval:regression`, the timing and the listening export. Open: the +42 % (stop point 2), stem_post's bleed labels on real stems, and listening by ear;
+  - done: both `all_stems.py run`s, the veto decision, the `models` tests, the full `eval:regression`, the timing (+42 %, then +15 % with parallel encodes, ≈ +2 % against `dev`) and the listening export. Open: stem_post's bleed labels on real stems, and listening by ear;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - full `pnpm eval:regression` (expected pass, unchanged baseline);
   - `pytest -m models packages/stage_separation`;
