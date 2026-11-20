@@ -84,8 +84,26 @@ def tags(probs: dict[str, float], fallback: str | None = None) -> contracts.Tags
     return contracts.Tags.model_validate(document)
 
 
-def test_plan_keeps_extras_unless_the_tagger_is_sure_they_are_absent() -> None:
+# A veto threshold for the tests of the mechanism; the shipped map sets none (s40a G3).
+VETO = 0.01
+
+
+def vetoing() -> config.SeparationConfig:
+    return config.load().model_copy(update={"keep_min_prob": VETO})
+
+
+def test_the_shipped_map_keeps_every_extra_whatever_the_tagger_scores() -> None:
+    """s40a G3: at 0.01 the tagger vetoed bass at 46 % of a mixture and vocals at 41 %, and
+    stem_post already leaves out an extra it finds empty, so the shipped map vetoes nothing."""
     cfg = config.load()
+    assert cfg.keep_min_prob == 0
+    sure = tags({"guitar": 0.6, "bass": 0.0, "piano": 0.0, "drums": 0.0, "vocals": 0.0})
+    keep = separate.plan(cfg, {"instrument": "guitar"}, sure)["keep"]
+    assert keep == ["bass", "drums", "piano", "vocals", "other"]
+
+
+def test_plan_keeps_extras_unless_the_tagger_is_sure_they_are_absent() -> None:
+    cfg = vetoing()
     everything = ["bass", "drums", "piano", "vocals", "other"]  # every instrument but the target
     params = separate.plan(cfg, {"instrument": "guitar"}, tags({"drums": 0.005, "bass": 0.02}))
     assert params["chain"] == cfg.instruments["guitar"].chain
@@ -129,7 +147,7 @@ EVERY_HEAD: list[tuple[str, config.Instrument, dict[str, float] | None, dict[str
             "other": "extra",
         },
     ),
-    # the tagger vetoes an absent instrument: no stem
+    # with a veto threshold (the shipped map has none), the tagger vetoes an absent instrument
     (
         "bs_roformer_sw",
         "drums",
@@ -158,7 +176,7 @@ EVERY_HEAD: list[tuple[str, config.Instrument, dict[str, float] | None, dict[str
         {"vocals": "target", "instrumental": "complement"},
     ),
     # a six-stem vocals fallback (complement): extras are stems and in the mix-minus; a vetoed
-    # instrument still belongs to the mix-minus
+    # instrument (with a veto threshold) still belongs to the mix-minus
     (
         "bs_roformer_sw",
         "vocals",
@@ -182,7 +200,7 @@ def test_every_output_of_the_producing_run_is_kept(
     probs: dict[str, float] | None,
     expected: dict[str, str],
 ) -> None:
-    cfg = config.load()
+    cfg = config.load() if probs is None else vetoing()
     assert model in cfg.instruments[instrument].chain
     params = separate.plan(cfg, {"instrument": instrument}, None if probs is None else tags(probs))
     assert separate.roles(cfg.models[model], params) == expected
