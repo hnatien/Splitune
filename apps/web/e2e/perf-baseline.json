@@ -2,7 +2,7 @@
   "schema": 1,
   "recordedAt": "2026-11-08T12:20:47.514Z",
   "git": {
-    "sha": "a447ab3ab125019f7c73e3eeeddfc793b507ee26",
+    "sha": "7b740c53ddcf6341c59185d8c13ecf5bd5e40f7e",
     "subject": "test(web): fix the practice perf record so it runs on windows and writes only a complete baseline",
     "uncommitted": []
   },

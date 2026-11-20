@@ -1942,7 +1942,7 @@ Branch `impl/s41a-sections` from the redesign docs at `9b5bf01`, worktree `.clau
 - An independent review found no high-severity problem. Its open fixes (timeout retries, an invalid `sections.json` failing finalize, a queue-level failing-job test, the fallback's sample rate and downbeats, two spec lines, the G3 test fixture) are listed in the prompt's "Resume here"; three web follow-ups are in s41b's prompt.
 
 ## 2026-11-08 — Step s40a: all stems, backend (done)
-Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action. An independent review found a stem_post cache collision between learners, fixed in `4c1def6`. On 2026-11-19 `dev` (`743421a`, impl/29 included) was merged in (`a725cfb`) and the keys-fallback "other" fix landed (`4c56f93`).
+Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action. An independent review found a stem_post cache collision between learners, fixed in `3ed7306`. On 2026-11-19 `dev` (`88d7d79`, impl/29 included) was merged in (`1d565ed`) and the keys-fallback "other" fix landed (`7cc8fa0`).
 
 **Built:**
 - `config/separation.personal.yaml` `keep: [bass, drums, guitar, piano, vocals, other]`. Every output of the run that made the learner's stem is kept, unless the tagger is near-certain the instrument is absent (`keep_min_prob` 0.01 unchanged). The tagger has no "other" class, so "other" is never vetoed. Two-stem vocals heads have no extras: their "other" is the mix-minus.
@@ -1961,7 +1961,7 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
 - Confirmed that the API plans only `notes.<learner instrument>`, so notes always reads the target.
 - **Reconciliation with impl/29 (2026-11-19):**
   - Merging `dev` left one conflict, the `separate.py` module docstring: both paragraphs kept, impl/29's "(drums, bass)" dropped. `pnpm contracts:gen` changed nothing.
-  - **"Other" under the keys fallback (`4c56f93`):** when Mega-53 replaces SW's silent piano, SW's "other" still holds those keys. `separate` now stores the kept "other" as the mixture minus every other kept stem, so the keys aren't heard twice and the kept stems sum to the song. `stem_post` marks that "other" rough. 06's keys fallback note and the `separation.ts` comment say so (no schema change).
+  - **"Other" under the keys fallback (`7cc8fa0`):** when Mega-53 replaces SW's silent piano, SW's "other" still holds those keys. `separate` now stores the kept "other" as the mixture minus every other kept stem, so the keys aren't heard twice and the kept stems sum to the song. `stem_post` marks that "other" rough. 06's keys fallback note and the `separation.ts` comment say so (no schema change).
   - No cache marker is needed. dev's piano runs never kept "other", and s40a's `keep` change already changes every `separate` key. A replaced run already has its own raw directory.
 
 **Impact (estimate):**
@@ -1997,14 +1997,14 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - full pytest 344 passed, 4 known failures (the `test_stem_post` pair is identical on the base `54c9438`);
   - ruff clean; `contracts:check` clean, contracts tests 61/61;
   - web unit 214/214; `eval:regression --smoke` PASS.
-- After the review fixes, the merge of `dev` and `4c56f93` (2026-11-19):
+- After the review fixes, the merge of `dev` and `7cc8fa0` (2026-11-19):
   - ruff check + format clean; pyright 5 errors, all the known `stage_notes/tests/test_guitab.py` ones (that package is identical to `dev`);
   - full pytest 374 passed, 4 skipped, 4 known failures (`test_recovery.py` ×2, `test_stem_post` pair); `pytest packages/stage_separation eval/tests/test_all_stems.py` 73 passed + the known pair;
   - `contracts:gen` no change, `contracts:check` clean, contracts typecheck + tests 61/61;
   - `pnpm lint`: Biome and check-db-access clean, then check-ui-tokens fails on `apps/web/app/features/shell/command-palette.tsx:249` (`outline-none` without `focus-visible:outline-*`). That file is unchanged from `dev`, so the failure is in `dev` too; ruff run separately is clean;
   - web unit 322/322; `test:stories` 914 passed, 151 failed:
     - 150 are WebKit 15 s timeouts, 128 in `practice.stories.tsx` and 22 in `fix.stories.tsx` (s38's, newer than the known list). They are the known WebKit practice class, and the same stories pass in Chromium. Not re-run on `dev`.
-    - **1 is this step's:** Chromium `app/ui/mixer.stories.tsx > Gain By Keyboard` drives the "Volume Bass" slider. `136f88e` took the empty bass out of the stems fixture, as stem_post now writes it. The owner chose to retarget it (stop point 3 answered): the story now drives "Volume Drums", and `vitest run --project='storybook*' app/ui/mixer.stories.tsx` passes 20/20 in Chromium and WebKit;
+    - **1 is this step's:** Chromium `app/ui/mixer.stories.tsx > Gain By Keyboard` drives the "Volume Bass" slider. `c3d24ce` took the empty bass out of the stems fixture, as stem_post now writes it. The owner chose to retarget it (stop point 3 answered): the story now drives "Volume Drums", and `vitest run --project='storybook*' app/ui/mixer.stories.tsx` passes 20/20 in Chromium and WebKit;
   - `SPLITUNE_DATASETS_DIR=D:/datasets pnpm eval:regression --smoke`: PASS (without the variable it looks in `~/datasets`, which doesn't exist on the PC).
 
 **G3 all_stems comparison (PC, RTX 3060, 2026-11-19; `eval/results/all-stems/2026-11-19-pc.md`):**
@@ -2019,7 +2019,7 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
 - **all_stems.py** printed "→" to a redirected Windows stdout (cp1252) and crashed after writing the report; its two prints now use "->".
 
 **Tagger veto dropped and the rest of G3 (PC, 2026-11-20):**
-- **Owner decision:** drop the veto for extras. `2185f9c` sets `keep_min_prob: 0`; the plan tests test the mechanism with an explicit threshold, and 06 is updated. `pytest packages/stage_separation/tests/test_separate.py` 50 passed, 2 skipped; ruff and pyright clean.
+- **Owner decision:** drop the veto for extras. `db6a94c` sets `keep_min_prob: 0`; the plan tests test the mechanism with an explicit threshold, and 06 is updated. `pytest packages/stage_separation/tests/test_separate.py` 50 passed, 2 skipped; ruff and pyright clean.
 - **`all_stems.py run --tag 2026-11-20-pc`** (`eval/results/all-stems/2026-11-20-pc.md`):
   - target identical on all seven items;
   - the vetoed bass (0.46) and vocals (0.36) are back;
@@ -2031,7 +2031,7 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - what ran: every ML stage of the Full graph in-process on the 244.5 s song, the second of two alternating runs per map; finalize and uploads not included. The script was a one-off and isn't committed;
   - result: 53.4 → 75.9 s (+22.5 s, **+42 %**). stem_post 16.2 → 35.8 s (≈ 4.9 s per encoded and verified AAC, one at a time); separate 21.6 → 24.5 s; chords, notes.bass, decode, tag and beats unchanged.
   - **That's past D17's ~30 %: stop point 2, owner decision.**
-- **Owner decision: parallelise stem encodes (`0667873`).**
+- **Owner decision: parallelise stem encodes (`aa226a4`).**
   - What changed: stem_post encodes and verifies the stems in a thread pool (one ffmpeg process per encode and per verifying decode; at most 8 at once, `MAX_ENCODES`, not a param, so the cache key doesn't follow the machine). Results are matched to stems in order.
   - New test: the encodes overlap and each stem keeps its own files. stem_post tests 19 passed plus the known pair (residual −13.1 dB against the −15 limit, as before); ruff and pyright clean.
   - Re-timed the same way:
@@ -2042,7 +2042,7 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
 - **Owner decision: drop stem_post's tagger-only bleed check.** `tag_absent_below` is 0 (off), like `keep_min_prob`; the mechanism stays, tested with an explicit 0.01, and the six-stem test now expects a stem the tagger can't hear to be good. 06 is updated. `pytest packages/stage_separation` 69 passed, 2 skipped, plus the known pair; ruff and pyright clean.
   - `all_stems.py run --tag 2026-11-21-pc` (`eval/results/all-stems/2026-11-21-pc.md`): no stem is marked bleed; the 0.46 bass and the vocals are good with present_prob 1.0; the only rough stems are the keys fallback's (piano, "other", mix-minus); target identical, stems and bytes as in 2026-11-20-pc.
 
-**Merged (2026-11-21):** the owner asked for the merge; `impl/s40a-all-stems` is in `dev` (`17fcf00`) and pushed.
+**Merged (2026-11-21):** the owner asked for the merge; `impl/s40a-all-stems` is in `dev` (`5ded3d0`) and pushed.
 
 **Known gaps / next:**
 - Owner: update the Mac worker (`git pull`, `uv sync` in `services/ml`, `pnpm workers restart`); until then new analyses keep only drums and bass.
@@ -2166,7 +2166,7 @@ Overnight the owner said "choose whatever is recommended", so Stop point 2 (map,
 6. s40a (all stems, G3) can resume now that this branch is in `dev`.
 
 ## 2026-11-09 — Step s32: Night Rehearsal tokens, fonts and the practice perf baseline (done, not merged)
-Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), from the redesign docs at `9b5bf01`, with `dev` merged in at `58bcf42` (which brings in step 29). Not merged into `dev`.
+Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), from the redesign docs at `9b5bf01`, with `dev` merged in at `4b845c0` (which brings in step 29). Not merged into `dev`.
 
 **Built**
 - **Perf baseline, recorded before any token changed.**
@@ -2176,7 +2176,7 @@ Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), 
     - Long Animation Frames over 20 s of looped playback with count-in, with script attribution;
     - forced style and layout from a **CDP trace** over 10 s of steady playback;
     - Event Timing p75 for play/pause, loop nudge, the on-screen speed −/+ buttons and a mixer fader key step, N = 12 each.
-  - Recorded on the owner's PC (Ryzen 5 7600, Chromium 156.0.8078.4) from `a447ab3`, the unchanged Music Stand screen, and committed alone in `8bd9050` as `apps/web/e2e/perf-baseline.json`. Each context ran 3 times; the median run is kept and the spread is in the file.
+  - Recorded on the owner's PC (Ryzen 5 7600, Chromium 156.0.8078.4) from `7b740c5`, the unchanged Music Stand screen, and committed alone in `fe7b099` as `apps/web/e2e/perf-baseline.json`. Each context ran 3 times; the median run is kept and the spread is in the file.
   - Results:
     - every p75 is ≤ 72 ms (desktop 32–48 ms; tablet speed step 72 ms);
     - steady playback has no LoAF, but about 60 forced layouts a second come from the alphaTab view chunk;
@@ -2256,7 +2256,7 @@ Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), 
     - `onboarding` Guide and Guide Dark;
     - "Screen May Lock" and "Screen May Lock No Storage" in both browsers (run after 20:00).
     - That is 78 WebKit failures against the 80-failure baseline.
-  - 4 were new (`foundations` TypeScale and `onboarding` ChoicesRaised, × 2 browsers). After `0e765b5`, the `foundations`, `onboarding`, `dialog`, `drawer` and `.storybook/fonts` stories pass 90 / 90 in Chromium and WebKit.
+  - 4 were new (`foundations` TypeScale and `onboarding` ChoicesRaised, × 2 browsers). After `b39cbc4`, the `foundations`, `onboarding`, `dialog`, `drawer` and `.storybook/fonts` stories pass 90 / 90 in Chromium and WebKit.
 - **e2e:** `playwright test e2e/security.spec.ts --project chromium` 4 / 4. The first run's teardown left the mock ML worker running (fixed below); after the fix the same piped run returns in 14 s and leaves no `uv` or python process.
 - **Build and budget:** `pnpm --filter @splitune/web build && budget --enforce && css-floor`: practice route 318.7 KB gzip of 320.0 KB. That is unchanged from before the step (326,389 → 326,398 B measured mid-step); CSS −341 B gzip; css-floor clean.
 - **Fidelity smoke.** `probe.mjs System --look fixed` at 1440 against the Foundations stories at 1440 in both looks (results in `redesign/.renders/s32/`, ignored).
@@ -2280,7 +2280,7 @@ Branch `impl/s32-tokens-fonts` (worktree `.claude/worktrees/s32-tokens-fonts`), 
 - **s35:** move tab digits and readouts to `font-reading-mono`, chart chord names to `text-read-chord-sheet`, and the waveform ruler off Inter.
 
 ## 2026-11-09 — Step s33: base components restyled for Night Rehearsal (done, not merged; G2 next)
-Branch `impl/s33-base-components` (worktree `.claude/worktrees/s33-base-components`) from `dev` at `bb42507`. Not merged into `dev`.
+Branch `impl/s33-base-components` (worktree `.claude/worktrees/s33-base-components`) from `dev` at `1036959`. Not merged into `dev`.
 
 **Built**
 - **Base components (26 §12.1) restyled in place, props kept.**
@@ -2375,7 +2375,7 @@ Feature components that override button or toggle border colours draw them only 
 - **s45:** widens the raw-value rules to `apps/web/app`, redraws the PWA icons and favicon with the new mark (D12), and deletes `--target-sm`.
 
 ## 2026-11-09 — Step s34: app shell, ⌘K palette, Library and Add song (done, not merged; G4 next)
-Branch `impl/s34-shell-library` (worktree `.claude/worktrees/s34-shell-library`) from `dev` at `db6a0d1`. Not merged into `dev`.
+Branch `impl/s34-shell-library` (worktree `.claude/worktrees/s34-shell-library`) from `dev` at `7e0f4db`. Not merged into `dev`.
 
 **Built**
 - **App shell** (27 §1, 26 §7, §12.2 AppBar): a sticky 64 px bar with the wordmark (→ Library), Library · Settings nav links (current = `--muted` fill), the search button "Search songs, clips and actions" + `Kbd` (`Ctrl K` / `⌘ K` from the platform string; an icon below `lg`), the allowance meter from `lg`, **Add song** (the view's one primary) and a 40 px avatar with the initials. The bar wraps instead of scrolling sideways at 200 % text. Phones: a 56 px header (mark, page title, search, avatar) and the 76 px bottom bar (Library · Add song pill · Settings) with safe-area padding; `styles.css` widens `--bottom-bar` to 84 px for scroll padding (2.4.11). A file dragged anywhere shows "Drop to add" and the drop opens Add song with the file. The account menu is the username · Settings · Keyboard & pedal · Appearance (Night Rehearsal / Daylight / Follow my device) · Help · Sign out; Plan & billing left it (27 §1), `nav.plan` is retired. The marketing bar sits on the 1240 container with 20 px app-bar gutters; the focus bar is 60 px.
@@ -2419,11 +2419,11 @@ Branch `impl/s34-shell-library` (worktree `.claude/worktrees/s34-shell-library`)
 - `pnpm exec biome check .` clean (2 infos, pre-existing in `features/practice`); `node scripts/check-db-access.mjs` clean; `node scripts/check-ui-tokens.mjs` clean, and with `--path apps/web/app/features/shell --path apps/web/app/features/library --path apps/web/app/features/import` (s33's 28 §3 rules) clean.
 - `pnpm --filter @splitune/web typecheck` clean; `pnpm --filter @splitune/web test` 219 / 219 (copy-keys with the entries above; new `palette-store.test.ts`).
 - Stories (`vitest run --project storybook`, Chromium + WebKit): shell, library, import, `ui/library`, `ui/import`, `ui/feedback`, onboarding, billing 297 / 300 — the 3 failures are the known WebKit Record Tab, Guide and Guide Dark; after the last row and allowance changes, shell, library, import, `ui/library`, `ui/feedback` 205 / 206 (the known WebKit Record Tab). `app/ui` + `.storybook` + auth, billing, common, marketing, onboarding, settings, system: 834 / 844, the failures being the known WebKit Guide pair and the four expected-value updates above, which then passed 8 / 8. Practice (Chromium): 89 / 89.
-- Build and budget (D6): `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route on `dev` (`db6a0d1`) 327,515 B (319.8 KB); this branch before the chunk setting 331,447 B (over: +1,478 B launcher and focus-bar button, +2,454 B re-splitting); `dev` with the setting 310,931 B; this branch with it **312,110 B (304.8 KB of 320.0, +1,179 B for s34)**. css-floor clean.
+- Build and budget (D6): `pnpm --filter @splitune/web build && budget --enforce && css-floor`. Practice route on `dev` (`7e0f4db`) 327,515 B (319.8 KB); this branch before the chunk setting 331,447 B (over: +1,478 B launcher and focus-bar button, +2,454 B re-splitting); `dev` with the setting 310,931 B; this branch with it **312,110 B (304.8 KB of 320.0, +1,179 B for s34)**. css-floor clean.
 - Fidelity (28 §5.1, `redesign/.renders/s34/fidelity.mjs`, ignored): 41 anchors (app bar, nav links, search, Add song, avatar, Continue card and title, Resume, song card, tile, title, badge, filter, chip, sort, dialog, title, tabs, file card, field, part and analysis cards, Cancel, Start practising; phone header, bottom bar and pill, phone Continue card and row; sheet title, tab, part chip, primary; palette, field, row; empty library and title) against Library and AddSong at 1440 and 1180, Phone-Library and Phone-Add at 390 × 844 (touch), States at 1440, Night and Daylight: 130 comparisons. Iterations: 136 differences (39 unexplained) → 124 (2) → 122 (0) → 130 (6, after the link and chip changes) → **122 (0)**. Every remaining difference is a register entry (V2, V3, V5, V6, V12, V17), the mockup's `.app button`/`.app a` cascade or 1.45 line heights, the sticky bar's page-colour background, `--tile-foreground`, 26 §12.3's disabled face, or the Resume decision. Fixes on the way: phone header without a rule, the search button's 320 px face, tile weight 750, 60 px rows, part cards without the wash, chips painted 40 in a 44 box.
 - Structure, targets, reflow, keyboard (`redesign/.renders/s34/checks.mjs`): aria snapshots of Library, Add song and the palette (`aria-*.yml`) match 27 §3.5/§3.6/§3.12 (landmarks, h1, Songs region with its search toolbar, the dialog's tabs, tabpanel, Your part and Analysis radiogroups, the listbox groups). Every control ≥ 44 × 44 on Library (desktop, phone), empty library, Add song (dialog, sheet, Link), palette, account menu, phone shell. 320 px and 200 % text: no horizontal overflow, no clipped text on Library, Add song and empty library. Keyboard: Ctrl K → "add song" → Enter opens Add song; with a file picked, 13 Tab stops to Start practising, focus never covered.
 - Visual: `pnpm --filter @splitune/web e2e:visual:update -g "library @|import-file @"` (Docker, `mcr.microsoft.com/playwright:v1.64.1-noble`) rewrote the 24 images of the two rows; compare runs (`e2e:visual --no-build -g …`) passed 24 / 24 twice. Intended differences, every image: the 64 px app bar (wordmark, Library · Settings, search with `Ctrl K`, allowance from `lg`, amber Add song, the initials avatar) instead of the 56 px bar with Import; phones: the 56 px header with the page title and the 76 px bottom bar with the Add song pill. `library--*`: the Continue card above the songs, the Songs toolbar (filter, chips, sort menu, Grid/List; on phones the sort menu and chips), bordered cards with letter tiles, badges with their meta lines, phone rows. `import-file--*`: the Add song dialog over the dimmed library (sheet on phones) with the file card, Title and Artist, the row drop zone, Your part cards (chips on phones), Analysis cards (segments on phones) and the footer. One update run captured a WebKit phone image before the picked file showed (cause not found); it was re-captured, and the row then compared clean three times.
-- E2E (stop point 5): `E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts` doesn't get past `signIn` in `beforeAll`: the username typed into the sign-up form is cleared before Create account is pressed (the trace shows the fill; the form then says "Use 3–30 letters…"), so the 7 tests don't run. A clean `dev` build (`db6a0d1`, temporary worktree) fails the same way, so this predates s34; the sign-up form and `e2e/helpers.ts` `signIn` belong to s36/shared. Firefox isn't installed on this PC (`firefox-1555` missing). WebKit also met a strict-mode clash on the home page's two "Try an example song" links (s36's home). The journey spec's s34 edits (the `/import` redirect, the dialog, "Add and analyse", the empty library's heading) are therefore not verified end to end; the stories cover the same paths.
+- E2E (stop point 5): `E2E_SMOKE=1 UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts` doesn't get past `signIn` in `beforeAll`: the username typed into the sign-up form is cleared before Create account is pressed (the trace shows the fill; the form then says "Use 3–30 letters…"), so the 7 tests don't run. A clean `dev` build (`7e0f4db`, temporary worktree) fails the same way, so this predates s34; the sign-up form and `e2e/helpers.ts` `signIn` belong to s36/shared. Firefox isn't installed on this PC (`firefox-1555` missing). WebKit also met a strict-mode clash on the home page's two "Try an example song" links (s36's home). The journey spec's s34 edits (the `/import` redirect, the dialog, "Add and analyse", the empty library's heading) are therefore not verified end to end; the stories cover the same paths.
 
 **Known gaps**
 - G4 (owner, devices): both themes at desk and stand distance, and the place of "What works best?".
@@ -2437,7 +2437,7 @@ Branch `impl/s34-shell-library` (worktree `.claude/worktrees/s34-shell-library`)
 - s39: feed `ContinueCard` (`chart`, the ladder and first-pass badges), `WeekStrip` and `RevisitList`.
 
 ## 2026-11-09 — Step s36: home, auth, onboarding, pricing, settings IA, system states (done, not merged; G4 next)
-Branch `impl/s36-outside-app` (worktree `.claude/worktrees/s36-outside-app`) from `dev` at `830ce64` (s34 merged). Not merged into `dev`. Built in four file-disjoint lanes (marketing; auth + onboarding; billing + system; settings), browser checks run once at the end.
+Branch `impl/s36-outside-app` (worktree `.claude/worktrees/s36-outside-app`) from `dev` at `b02b0ad` (s34 merged). Not merged into `dev`. Built in four file-disjoint lanes (marketing; auth + onboarding; billing + system; settings), browser checks run once at the end.
 
 **Built**
 - **Home** (27 §3.1, `Home.dc.html`): hero (primary badge, `text-display` headline, `text-lead` lead, Try an example song + Sign in at 56 px, the early-access note) beside an inert practice still built from kit components (`HeroStill`, `role="img"` with the 27 label: Now column C → G with beat dots, two tab bars with the sounding digit, one unsure digit and the playhead, the pass-prompt row); What it does on `--card` (stem levels, loop + speed, sure/unsure digits with "about 1 in 3/5" alternatives); Made for the music stand (`text-3xl`, five items); How a session goes (four cards, amber-ink numbers); closing CTA. **Honesty gates:** "Stand view for tablets" left out until s43; the stem picture shows your part and the Band only and the isolate body is the current "Turn your part up, mute it to play along, or hear the original." until s40b; no ladder picture or sentence until s37; no beat lights until s42. The stories check none of those words appear.
@@ -2507,7 +2507,7 @@ Branch `impl/s36-outside-app` (worktree `.claude/worktrees/s36-outside-app`) fro
 - s45: the forced-colours song-card tile and the neutral `Badge` under forced colours.
 
 ## 2026-11-10 — Step s35: practice core, five regions, notation restyle, progressive state, new keymap (done, not merged; G4 next)
-Branch `impl/s35-practice-core` (worktree `.claude/worktrees/s35-practice-core`) from `dev` at `b61d0f7` (s34 and s36 merged). Not merged into `dev`.
+Branch `impl/s35-practice-core` (worktree `.claude/worktrees/s35-practice-core`) from `dev` at `cdbe4ba` (s34 and s36 merged). Not merged into `dev`.
 
 **Built**
 - **Five regions on desktop** (27 §3.7.1, `Main.dc.html`; fine pointer only, `layout.ts` `useDesktopRegions`): the top bar (divider, title + "artist · part · key · BPM", "key after chords" while the chords are still to come; centre: Analysing badge or the view switch, piano Hands; the legend chip "{count} unsure" with its frequency; Display and reading `Aa`, Keyboard & pedal, Tools when the inspector is a drawer, More), the song map (`practice-timeline.tsx` → `waveform-timeline.tsx`: played/unplayed canvas, hatch for unsure stretches, the loop band beneath, handles, DOM ruler every 8 bars; no section chips until s41b), the **Now column** (264; `now-column.tsx`: "Now · bar 26 · beat 3" or the pickup, the current chord with the fit rule, the shape diagram, `BeatPulse` (static, `ui/beat-pulse.tsx`), Next · in n beats + bar, Then (up to five chips → the Fix tab), the Level / Capo card), the notation, the **inspector** (380 docked ≥ 1180, a drawer below and while Getting ready shows; `inspector.tsx`: Loop · Mix · Progress · Fix with the unsure badge, each tab lazy, the last tab remembered, `?tab=`), the **dock** (96; `transport-dock.tsx`: position, restart / play / next 64, loop pill 64, speed −/+ 64 with the readout, count-in 64, click 52, the Mix pill (disabled "after your part is isolated" before stems), the volume inline from 1440 (the mockup's width), a popover below with the Mix pill as its icon). Below 1024 the Now column becomes a strip over the notation. Tablets and phones keep today's arrangement on the new tokens (`transport-bar.tsx`, `CompactRegions`); their redesign is s43.
@@ -2573,7 +2573,7 @@ Branch `impl/s35-practice-core` (worktree `.claude/worktrees/s35-practice-core`)
 - p75 practice-action latency ≤ 100 ms everywhere (worst: tablet speed step 72 ms, max 80); no latency worse than the baseline. PedalHud latency: see E2E.
 
 **Budget (12 §10, D6)**
-`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **309.2 KB** gzip of 320 KB, before 304.2 KB (dev at `b61d0f7`, built the same way). New panels load lazily: the inspector and its four tabs, Getting ready, the Display popover body, the pass prompt, the narrow dock's volume popover, the Now column, the loop panel. `css-floor` clean.
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **309.2 KB** gzip of 320 KB, before 304.2 KB (dev at `cdbe4ba`, built the same way). New panels load lazily: the inspector and its four tabs, Getting ready, the Display popover body, the pass prompt, the narrow dock's volume popover, the Now column, the loop panel. `css-floor` clean.
 
 **E2E (stop point 6)**
 - Chromium, built app, `UV_PROJECT_ENVIRONMENT=<shared ML venv> UV_NO_SYNC=1 pnpm exec playwright test e2e/journey.spec.ts e2e/practice.spec.ts e2e/onboarding.spec.ts e2e/account.spec.ts e2e/practice-keys.spec.ts e2e/a11y.spec.ts --project chromium` (Firefox isn't installed here): journey, account, practice, practice-keys, onboarding pass; a11y passes except **core pages: forced colours**, the s34 song-card tile s36 recorded (white initials on the forced-colours ground; s45). `practice.spec.ts` also passes on `tablet-chrome` and `mobile-chrome` (21 passed, 9 skipped by design). PedalHud latency (practice-keys, Chromium): ↑ 4.0 ms, ↓ 0.4, `,` 3.8, `.` 3.1, Shift+. 2.9, L 0.4 (≤ 100 ms each).
@@ -2604,7 +2604,7 @@ Branch `impl/s35-practice-core` (worktree `.claude/worktrees/s35-practice-core`)
 - s38: Fix mode and the queue replace today's editor in the Fix tab.
 
 ## 2026-11-11 — Step s37: speed ladder (V1) and the finished Loop tab (done, not merged; G4 next)
-Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) from `dev` at `cf76235` (s35 and s36 merged). Not merged into `dev`.
+Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) from `dev` at `0724b61` (s35 and s36 merged). Not merged into `dev`.
 
 **Data check (deliverable 1)**
 - Local compose database (`splitune`): `SELECT count(*) FROM loop_clips WHERE trainer IS NOT NULL;` → **0** (the table has 0 rows). No stored trainer anywhere I can see, so `plays_per_step` now means clean passes per step.
@@ -2644,7 +2644,7 @@ Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) f
 - Iteration 1: 4 unexplained (the card title was 14 / 600 instead of the h3's 17 / 650, at each width and look). Iteration 2: **0 unexplained.** Explained: the inspector is 380 wide where the mockup draws 360 (27 §3.7.1; ladder, rungs, summary and card 20 px wider); rung labels 11 px / 650 (V10, `text-2xs`); rung corners 4 px (`rounded-xs`, 26 §9); the done rung's 1 px `--signal` edge (V16) and its height (the mockup's first rung has no height; 26 says rising to the goal); Daylight's ring in the Daylight `--signal` (V3 / V5); chips 13 / 500 in `--muted-foreground` where the mockup's `.app button` cascade draws 15 / 400 in `--foreground` (s35's finding; `.chip` itself is 13 / 550); line heights (the mockup's 1.45); the card 36 px taller for the switch's 44 px box and the chips' 48 px boxes (V12, 26 §8).
 
 **Budget (12 §10, D6)**
-`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **311.4 KB** gzip of 320 KB, before 309.1 KB (`dev` at `cf76235`, built the same way). The ladder card, its steppers and the clip actions load with the Loop tab (already lazy); the 2.3 KB are the ladder rules, the machine, the provider's wiring and the pill / bracket / readout strings. `css-floor` clean.
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **311.4 KB** gzip of 320 KB, before 309.1 KB (`dev` at `0724b61`, built the same way). The ladder card, its steppers and the clip actions load with the Loop tab (already lazy); the 2.3 KB are the ladder rules, the machine, the provider's wiring and the pill / bracket / readout strings. `css-floor` clean.
 
 **E2E**
 - New `apps/web/e2e/speed-ladder.spec.ts` (Chromium, built app, keys only): a loop of bars 3–4 from the palette at 70 %, the ladder switched on with Space, three `C` → 75 % with "Speed 75 % · ladder"; while the loop plays, three `C` put the ladder on 80 % at once and the readout stays at 75 % until the seam; after a reload the clip's trainer (`current_pct` 80), the switch and "pass 1 of 3 at 80 %" are back. 3 / 3.
@@ -2685,7 +2685,7 @@ Branch `impl/s37-speed-ladder` (worktree `.claude/worktrees/s37-speed-ladder`) f
 - s38: Fix mode and the queue replace today's editor in the Fix tab. `PASS_RATED` (not `ASSESSED`) is the machine's event for a rated pass; `practice.selectClip(clip)` loads a saved clip with its ladder; `practice.ladder` is the ladder's view (rungs, current, pass, of, nextPct, speedPct) for anything that shows it (s39's "Ladder at 75 % → 100 %", s43's Tools sheet).
 
 ## 2026-11-17 — Step s38: Fix mode, the unsure-spot queue, alternatives in frequencies, audition over the loop (done, not merged; G4 next)
-Branch `impl/s38-fix-tab` (worktree `.claude/worktrees/s38-fix-tab`) from `dev` at `92c0d38` (s37 merged). Not merged into `dev`.
+Branch `impl/s38-fix-tab` (worktree `.claude/worktrees/s38-fix-tab`) from `dev` at `a9fc9a8` (s37 merged). Not merged into `dev`.
 
 **Built**
 - **Queue and ranking** (`features/practice/model/fix-queue.ts`, pure): a spot per unsure chord, per unsure note outside a shaky bar and per shaky bar; ranked by consequence (`pitch` → `octave` → `chord-root` → `chord-quality`), then by how likely the guess is wrong (1 − calibrated confidence), then song order. `stepSpot` (J / K, wrapping) and `spotFor` (the spot a selection sits on).
@@ -2719,7 +2719,7 @@ Branch `impl/s38-fix-tab` (worktree `.claude/worktrees/s38-fix-tab`) from `dev` 
 `node <scratchpad>/fidelity.mjs` (probe of `Practice-Fix` against the `Wide` / `At1180` stories, Storybook dev on :6006): 24 anchors (pill, Done, spot title, progress, previous, chord card, eyebrow, guess, its line, alternative row, name, frequency, Use, Type a chord, dock, Play, bars, hint, Listen to, slower, readout, key line) at 1440 and 1180 in Night Rehearsal and Daylight, 96 comparisons. Iteration 1: 268 differing fields; fixed: progress 6 px, row radius 10, pill 44 tall, dock label 15, readout weight 400. Iteration 2: 240, all explained: targets (48 boxes for 32 / 40 px faces, Play and speed 64: 26 §8, V11); the inspector is 380 where the mockup draws 400 (27 §3.7.1), so cards and rows are 24 px narrower; kit type and radii (17 for 18, 16 for 15, button weight 600, button radii); the guess at 44; the opaque pill; the key line as a row under the notation; Listen to's track painted on `::before`; story data (spot 2 of 3, G not Am).
 
 **Budget (12 §10, D6)**
-`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.2 KB** gzip of 320 KB, before 311.4 KB (`dev` at `92c0d38`, built the same way). Fix mode, cards, history, synth, queue and frequency wording are lazy chunks (`fix-mode`, `fix-cards`, `fix-history`). `css-floor` clean.
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.2 KB** gzip of 320 KB, before 311.4 KB (`dev` at `a9fc9a8`, built the same way). Fix mode, cards, history, synth, queue and frequency wording are lazy chunks (`fix-mode`, `fix-cards`, `fix-history`). `css-floor` clean.
 
 **Perf (12 §10)**
 Asserted in stories (Chromium): re-quantize after Half tempo with its consequence line ≤ 300 ms (`BeatFix`, `data-requantize-ms`); the tab redrawn after a fret edit ≤ 150 ms (`OfflineQueued`, `data-update-ms`).
@@ -2757,7 +2757,7 @@ New `features/practice/fix.stories.tsx` (Screens/Practice Fix, 25): Empty, First
 
 **Instruction (owner):** "Learn OpenAI's UI design then redo every page of mine", the font closest to OpenAI's, new images for the Home page from prompts the owner will generate. Owner decisions in the session: no amber anywhere (fully monochrome, playhead and loop included); Home images are abstract colour art.
 
-**Branch** `impl/s46-monochrome-redesign` from `dev` (4679127). Nothing committed yet.
+**Branch** `impl/s46-monochrome-redesign` from `dev` (b53b2b0). Nothing committed yet.
 
 **What was measured.** openai.com and chatgpt.com in the browser: pure black and white grounds, alpha-step neutrals, OpenAI Sans at 400/500, body 17/28, pill buttons at 36–44 px, 6 px media corners, 24 px composer corners, 200 ms motion, bars with no rule. Font choice by metrics: OpenAI Sans's glyph advances and vertical metrics at weight 500 were read from the page with `measureText` and 91 open-licensed families were ranked against them; Figtree has the same x-height (0.50 em), cap height (0.70 em), ascender, descender and stem width, with advances within 2.5 %.
 
@@ -2771,7 +2771,7 @@ New `features/practice/fix.stories.tsx` (Screens/Practice Fix, 25): Empty, First
 
 **Verification (PC, 2026-11-17)**
 - `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`: clean.
-- `node scripts/check-ui-tokens.mjs`: one violation, `apps/web/app/features/shell/command-palette.tsx` (`focus-visible:outline-none` on the palette input), already on `dev` at 4679127; `scripts/check-ui-tokens.test.mjs` fails on it for the same reason (93 / 94 in `vitest run --dir scripts`).
+- `node scripts/check-ui-tokens.mjs`: one violation, `apps/web/app/features/shell/command-palette.tsx` (`focus-visible:outline-none` on the palette input), already on `dev` at b53b2b0; `scripts/check-ui-tokens.test.mjs` fails on it for the same reason (93 / 94 in `vitest run --dir scripts`).
 - `pnpm typecheck`: every TypeScript package clean; `@splitune/ml` pyright reports 5 errors in `services/ml` tests, untouched by this step.
 - `pnpm --filter @splitune/ui-tokens test`: 1357 / 1357 (with `--capsule`). `pnpm --filter @splitune/notation test`: 43 / 43. `pnpm --filter @splitune/web exec vitest run --project unit`: 301 / 301.
 - `vitest run --project="storybook (chromium)"` (apps/web): 691 / 692, then the one failure (`ui/dialog.stories.tsx > Open Scrim`, the old scrim alpha) updated and re-run green with the other files touched since.
@@ -2787,7 +2787,7 @@ New `features/practice/fix.stories.tsx` (Screens/Practice Fix, 25): Empty, First
 - New files under `docs/` are excluded by this machine's `.git/info/exclude` (`docs/home-art.md` needs `git add -f`).
 
 ## 2026-11-19 — Step s39: Progress tab and the library's progress strips from GET /v1/progress (done, not merged; G4 next)
-Branch `impl/s39-progress` (worktree `.claude/worktrees/s39-progress`) from `dev` at `b3db5c9` (s32–s38 and s46 merged). Not merged into `dev`.
+Branch `impl/s39-progress` (worktree `.claude/worktrees/s39-progress`) from `dev` at `04a9d33` (s32–s38 and s46 merged). Not merged into `dev`.
 
 **Owner decisions (2026-11-19, before any code)**
 1. **Contract change approved as drafted** (stop point 4): sessions with pass counts, a session id on each attempt, the clip's name and last attempt, and a `days` window. No other unmerged step changes contracts: `impl/s40a-all-stems` touches `analysis/stems.ts` with a comment only (no schema change); `impl/s41a-sections` none.
@@ -2819,7 +2819,7 @@ Branch `impl/s39-progress` (worktree `.claude/worktrees/s39-progress`) from `dev
 After s46 the mockups' Night Rehearsal look is retired (owner, 2026-11-17: docs 26–28 describe the shipped black-and-white system), so the comparison is structural, by screenshots of the stories in the browser pane: Practice-Piano's Progress tab at 1440 (`Wide`) and 1180 (`At1180`): eyebrow, h2, bars line, the Last 30 days card with its two series, legend, three stat cards, Sessions rows, Weekly goal at the bottom; Library at 1440 (the regenerated `library--desktop` baselines): the Continue card spanning two columns with sparkline and badges, This week as the third column, the revisit rows; Phone-Library at 390: compact card, This week row. One defect found and fixed in iteration 1: the "cold start today" label truncated in the 380 px inspector (stat labels now wrap). The probe script was not run against the mockups (every style field differs by s46's design).
 
 **Budget (D6)**
-`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.4 KB** gzip of 320 KB (312.5 in one intermediate build), before **311.8 KB** (`dev` at `b3db5c9`, built the same way). The tab, chart, stat cards, metrics and copy are in the tab's lazy chunk; the 0.6 KB are `practice-sync`'s outbox read and listeners, now a 1.2 KB chunk shared with the library (`keymap` −0.9 KB). `css-floor` clean.
+`pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route JS **312.4 KB** gzip of 320 KB (312.5 in one intermediate build), before **311.8 KB** (`dev` at `04a9d33`, built the same way). The tab, chart, stat cards, metrics and copy are in the tab's lazy chunk; the 0.6 KB are `practice-sync`'s outbox read and listeners, now a 1.2 KB chunk shared with the library (`keymap` −0.9 KB). `css-floor` clean.
 
 **Visual baselines**
 `pnpm --filter @splitune/web e2e:visual:update -g "library @"` (Docker): 12 rows written (Chromium desktop / tablet / phone, WebKit tablet / phone, Dark and Light). Intended differences: the s46 black-and-white restyle (merged without regenerated baselines) and s39's strips: the Continue card's clip line, three badges and sparkline, This week beside it, the Worth a revisit row; on phones the compact card's clip line and the This week row.
