@@ -7,14 +7,10 @@ Built and re-verified on `impl/s40a-all-stems` in the worktree `D:/Projects/Spli
 - **Owner (D16):** `impl/29-separation-improvements` is in `dev` and merged into this branch (`a725cfb`, `dev` at `743421a`).
 - **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. For bass/drums learners on the RTX 3060 the estimate is 18–37 %, so that case waits for G3's measurement.
 - **Done:** the review's fixes (`4c1def6`, `02d71b6`, `136f88e`, `f068351`) and their verification. When piano's keys fallback applies, "other" is now the mixture minus every other kept stem, marked rough (`4c56f93`).
-- **Left (G3, owner, on the GPU):**
-  - done on 2026-11-19: `all_stems.py run` (`eval/results/all-stems/2026-11-19-pc.md`). It found that the tagger veto drops loud real stems (bass 0.46 of the mixture); whether to stop vetoing extras is the owner's call;
-  - one timed Full bass analysis before and after (decides the PC ~30 %);
-  - the full `pnpm eval:regression`. It can't see this change; the real guard is `all_stems.py`'s "target identical" column;
-  - `pytest -m models packages/stage_separation`;
-  - the listening session from `all_stems.py export`.
-
-  Then **merge** into `dev` when the owner asks.
+- **G3 so far (2026-11-20, PC):**
+  - done: the tagger veto for extras is dropped (`2185f9c`, the owner's call); `all_stems.py run` (`2026-11-20-pc`) keeps the target identical; `pytest -m models` passed; the full `eval:regression` passed against the unchanged baseline; the listening session `s40a-g3-2026-11-20` is exported;
+  - **open:** a whole bass analysis's ML stages take +42 % (53.4 → 75.9 s, nearly all stem_post's serial AAC encodes), past D17's ~30 % (stop point 2); stem_post's bleed check marks real bass and vocals rough; the owner listens by ear;
+  - then **merge** into `dev` when the owner asks.
 - **Note for s40b (also in s40b's prompt):** isolated stems don't always sum to the song, so use the mix-minus as the band unless every instrument was kept.
 
 | | |

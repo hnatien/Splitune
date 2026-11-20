@@ -2018,9 +2018,24 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
   - **Owner decision:** stop vetoing extras by tagger, keeping every output and letting stem_post drop the empty ones. That would change every `separate` key once and keep a few more stems.
 - **all_stems.py** printed "→" to a redirected Windows stdout (cp1252) and crashed after writing the report; its two prints now use "->".
 
+**Tagger veto dropped and the rest of G3 (PC, 2026-11-20):**
+- **Owner decision:** drop the veto for extras. `2185f9c` sets `keep_min_prob: 0`; the plan tests test the mechanism with an explicit threshold, and 06 is updated. `pytest packages/stage_separation/tests/test_separate.py` 50 passed, 2 skipped; ruff and pyright clean.
+- **`all_stems.py run --tag 2026-11-20-pc`** (`eval/results/all-stems/2026-11-20-pc.md`):
+  - target identical on all seven items;
+  - the vetoed bass (0.46) and vocals (0.36) are back;
+  - but stem_post's `tag_absent_below` bleed check marks them rough with `bleed_suspected` (the same weak-tagger problem);
+  - on `765d5131-piano` the derived "other" falls to 0.15 of the mixture's energy, overlap 0.58.
+- **`pytest -m models packages/stage_separation`** on CUDA: 5 passed.
+- **Full `pnpm eval:regression`** on CUDA: PASS, 0 of 277 values outside tolerance against the unchanged baseline (`eval/results/regression/2026-11-20.md`).
+- **Timed Full bass analysis:**
+  - what ran: every ML stage of the Full graph in-process on the 244.5 s song, the second of two alternating runs per map; finalize and uploads not included. The script was a one-off and isn't committed;
+  - result: 53.4 → 75.9 s (+22.5 s, **+42 %**). stem_post 16.2 → 35.8 s (≈ 4.9 s per encoded and verified AAC, one at a time); separate 21.6 → 24.5 s; chords, notes.bass, decode, tag and beats unchanged.
+  - **That's past D17's ~30 %: stop point 2, owner decision.**
+- **Listening session** `s40a-g3-2026-11-20` exported: 25 clips, plus the "other" stems in `other/` to hear by ear. To listen, from the main checkout (it has the `.env`; compose Postgres running): `$env:LISTENING_SESSION_DIR = "D:/datasets/musdb18hq-p1/listening/s40a-g3-2026-11-20"; $env:LISTENING_PORT = "4107"; pnpm --filter @splitune/listening dev`.
+
 **Known gaps / next:**
 - G3 on the PC (impl/29 is merged in):
-  - done: `all_stems.py run` (above); open: the tagger-veto decision;
+  - done: both `all_stems.py run`s, the veto decision, the `models` tests, the full `eval:regression`, the timing and the listening export. Open: the +42 % (stop point 2), stem_post's bleed labels on real stems, and listening by ear;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - full `pnpm eval:regression` (expected pass, unchanged baseline);
   - `pytest -m models packages/stage_separation`;
