@@ -1941,7 +1941,7 @@ Branch `impl/s41a-sections` from the redesign docs at `9b5bf01`, worktree `.clau
 - s41b reads `sections.json` (allin1 labels or `part-*` fallback ids).
 - An independent review found no high-severity problem. Its open fixes (timeout retries, an invalid `sections.json` failing finalize, a queue-level failing-job test, the fallback's sample rate and downbeats, two spec lines, the G3 test fixture) are listed in the prompt's "Resume here"; three web follow-ups are in s41b's prompt.
 
-## 2026-11-08 — Step s40a: all stems, backend (in progress)
+## 2026-11-08 — Step s40a: all stems, backend (done)
 Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The Mac parked the WIP as `ac460c6`; it was resumed on the PC from the redesign docs at `9b5bf01` (D16: impl/29 set aside until it merges). Everything except the GPU measurement is done; that is a G3 owner action. An independent review found a stem_post cache collision between learners, fixed in `4c1def6`. On 2026-11-19 `dev` (`743421a`, impl/29 included) was merged in (`a725cfb`) and the keys-fallback "other" fix landed (`4c56f93`).
 
 **Built:**
@@ -2042,9 +2042,13 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
 - **Owner decision: drop stem_post's tagger-only bleed check.** `tag_absent_below` is 0 (off), like `keep_min_prob`; the mechanism stays, tested with an explicit 0.01, and the six-stem test now expects a stem the tagger can't hear to be good. 06 is updated. `pytest packages/stage_separation` 69 passed, 2 skipped, plus the known pair; ruff and pyright clean.
   - `all_stems.py run --tag 2026-11-21-pc` (`eval/results/all-stems/2026-11-21-pc.md`): no stem is marked bleed; the 0.46 bass and the vocals are good with present_prob 1.0; the only rough stems are the keys fallback's (piano, "other", mix-minus); target identical, stems and bytes as in 2026-11-20-pc.
 
+**Merged (2026-11-21):** the owner asked for the merge; `impl/s40a-all-stems` is in `dev` (`17fcf00`) and pushed.
+
 **Known gaps / next:**
+- Owner: update the Mac worker (`git pull`, `uv sync` in `services/ml`, `pnpm workers restart`); until then new analyses keep only drums and bass.
+- Owner: listening session `s40a-g3-2026-11-20` by ear (optional).
 - G3 on the PC (impl/29 is merged in):
-  - done: the three `all_stems.py run`s, the veto and bleed-check decisions, the `models` tests, the full `eval:regression`, the timing (+42 %, then +15 % with parallel encodes, ≈ +2 % against `dev`) and the listening export. Open: listening by ear;
+  - done: the three `all_stems.py run`s, the veto and bleed-check decisions, the `models` tests, the full `eval:regression`, the timing (+42 %, then +15 % with parallel encodes, ≈ +2 % against `dev`) and the listening export;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - full `pnpm eval:regression` (expected pass, unchanged baseline);
   - `pytest -m models packages/stage_separation`;

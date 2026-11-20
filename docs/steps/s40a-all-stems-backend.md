@@ -3,6 +3,8 @@
 Redesign step of the "Night Rehearsal" plan (`redesign/report.md`), backend lane. Read `docs/steps/00-shared-context.md` first, including its "Redesign steps" section (frozen decisions, decisions D1–D21, environment, known failures, owner gates); this prompt holds what is specific to s40a. This is a measurement-first ML step: **the cache-key and config change ships only after owner gate G3.**
 
 ## Resume here (state on 2026-11-21)
+**Done:** merged into `dev` (`17fcf00`) at the owner's request after G3. Left to the owner: update the Mac worker (`git pull`, `uv sync`, `pnpm workers restart`) and, optionally, listen to `s40a-g3-2026-11-20` by ear.
+
 Built and re-verified on `impl/s40a-all-stems` in the worktree `D:/Projects/Splitune/.claude/worktrees/s40a-all-stems`. The estimate, the findings, the verification and the G3 commands are in the progress-log entry "Step s40a: all stems, backend (in progress)".
 - **Owner (D16):** `impl/29-separation-improvements` is in `dev` and merged into this branch (`a725cfb`, `dev` at `743421a`).
 - **Owner (D17):** the config and cache-key change is pre-approved if the estimate stays inside the R2 free tier and adds no more than ~30 % analysis time on either worker. For bass/drums learners on the RTX 3060 the estimate is 18–37 %, so that case waits for G3's measurement.
@@ -11,8 +13,7 @@ Built and re-verified on `impl/s40a-all-stems` in the worktree `D:/Projects/Spli
   - done: the tagger veto for extras is dropped (`2185f9c`, the owner's call); `all_stems.py run` (`2026-11-20-pc`) keeps the target identical; `pytest -m models` passed; the full `eval:regression` passed against the unchanged baseline; the listening session `s40a-g3-2026-11-20` is exported;
   - done: the timing. A whole bass analysis's ML stages took +42 % with serial encodes. With parallel encodes in stem_post (`0667873`, the owner's call) it's +15 %, about +2 % against `dev`;
   - done: stem_post's tagger-only bleed check is off (`tag_absent_below: 0`, the owner's call); `all_stems.py run` (`2026-11-21-pc`) marks no stem bleed and keeps the target identical;
-  - **open:** the owner listens by ear;
-  - then **merge** into `dev` when the owner asks.
+  - merged into `dev` at the owner's request (`17fcf00`).
 - **Note for s40b (also in s40b's prompt):** isolated stems don't always sum to the song, so use the mix-minus as the band unless every instrument was kept.
 
 | | |
