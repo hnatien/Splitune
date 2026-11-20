@@ -124,7 +124,9 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
     document.getElementById('main')?.focus({ preventScroll: true })
   }, [])
 
-  if (song.isPending) return <PracticeLoading slowText={m['practice.loading']()} />
+  if (song.isPending || (!song.isError && !practice.settled)) {
+    return <PracticeLoading slowText={m['practice.loading']()} />
+  }
   if (song.isError) {
     return (
       <FocusShell exit={practice.guest}>

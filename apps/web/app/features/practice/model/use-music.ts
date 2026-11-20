@@ -32,6 +32,8 @@ export interface MusicState {
   /** Time from the change to the result (ms): capo/level budget is 300 ms with the render. */
   requestedAt: number | undefined
   failed: boolean
+  /** The key of the latest request answered (the result, or its failure). */
+  key: string | undefined
 }
 
 export function useMusic(input: MusicInput | undefined, key: string): MusicState {
@@ -40,6 +42,7 @@ export function useMusic(input: MusicInput | undefined, key: string): MusicState
     computeMs: undefined,
     requestedAt: undefined,
     failed: false,
+    key: undefined,
   })
   const latest = useRef(0)
   const inputRef = useRef(input)
@@ -53,8 +56,8 @@ export function useMusic(input: MusicInput | undefined, key: string): MusicState
       if (request !== latest.current) return
       setState(
         response.ok
-          ? { music: response.output, computeMs: response.ms, requestedAt, failed: false }
-          : (previous) => ({ ...previous, failed: true }),
+          ? { music: response.output, computeMs: response.ms, requestedAt, failed: false, key }
+          : (previous) => ({ ...previous, failed: true, key }),
       )
     })
   }, [key])

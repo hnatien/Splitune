@@ -87,6 +87,8 @@ export interface PracticeValue {
   /** A visitor's example song, kept on the device until they sign in (13 §1). */
   guest: boolean
   data: PracticeData
+  /** The first load is in: what the song already has is on screen, not on its way. */
+  settled: boolean
   audio: PracticeAudio
   audioStatus: AudioStatus
   /** The saved loop, speed and mix are back (13 §5): from here the player is the learner's. */
@@ -311,6 +313,17 @@ export function PracticeProvider({
       instrumentProfile(instrument).holdsForNotes &&
       music?.piano === undefined &&
       music?.drums === undefined)
+
+  // The first load is in (27 §4): the song, its analysis, every artefact it already has and the
+  // music made from them, so a refresh opens on the screen as it is instead of passing through
+  // the Getting ready cards. It stays true: artefacts landing later arrive as layers.
+  const loads = [data.song, data.analysis, data.beats, data.stems, data.chords, data.notes]
+  const firstLoadIn =
+    !loads.some((query) => query.isLoading) &&
+    opsReady &&
+    (musicKey === '' || musicState.key === musicKey)
+  const [settled, setSettled] = useState(firstLoadIn)
+  if (firstLoadIn && !settled) setSettled(true)
 
   const local = localFile(songId)
   const targetKey = audioSourceKey({
@@ -860,6 +873,7 @@ export function PracticeProvider({
     songId,
     guest,
     data,
+    settled,
     audio,
     audioStatus,
     resumed: isResumed,
