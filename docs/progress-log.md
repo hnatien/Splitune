@@ -2039,10 +2039,12 @@ Branch `impl/s40a-all-stems` (worktree `.claude/worktrees/s40a-all-stems`). The 
     - against `dev` as shipped (serial stem_post, 3 stems): the stages either map changes go 42.5 → 43.5 s, about +2 % on the whole analysis.
   - Both are inside D17's ~30 %; uploads still grow ≈ 13 → 30 MB per 4-minute song.
 - **Listening session** `s40a-g3-2026-11-20` exported: 25 clips, plus the "other" stems in `other/` to hear by ear. To listen, from the main checkout (it has the `.env`; compose Postgres running): `$env:LISTENING_SESSION_DIR = "D:/datasets/musdb18hq-p1/listening/s40a-g3-2026-11-20"; $env:LISTENING_PORT = "4107"; pnpm --filter @splitune/listening dev`.
+- **Owner decision: drop stem_post's tagger-only bleed check.** `tag_absent_below` is 0 (off), like `keep_min_prob`; the mechanism stays, tested with an explicit 0.01, and the six-stem test now expects a stem the tagger can't hear to be good. 06 is updated. `pytest packages/stage_separation` 69 passed, 2 skipped, plus the known pair; ruff and pyright clean.
+  - `all_stems.py run --tag 2026-11-21-pc` (`eval/results/all-stems/2026-11-21-pc.md`): no stem is marked bleed; the 0.46 bass and the vocals are good with present_prob 1.0; the only rough stems are the keys fallback's (piano, "other", mix-minus); target identical, stems and bytes as in 2026-11-20-pc.
 
 **Known gaps / next:**
 - G3 on the PC (impl/29 is merged in):
-  - done: both `all_stems.py run`s, the veto decision, the `models` tests, the full `eval:regression`, the timing (+42 %, then +15 % with parallel encodes, ≈ +2 % against `dev`) and the listening export. Open: stem_post's bleed labels on real stems, and listening by ear;
+  - done: the three `all_stems.py run`s, the veto and bleed-check decisions, the `models` tests, the full `eval:regression`, the timing (+42 %, then +15 % with parallel encodes, ≈ +2 % against `dev`) and the listening export. Open: listening by ear;
   - one timed Full bass analysis before and after (decides the PC ~30 %);
   - full `pnpm eval:regression` (expected pass, unchanged baseline);
   - `pytest -m models packages/stage_separation`;
