@@ -12,14 +12,18 @@ the browser encodes (06 §4 stem_post).
    always listed.
 4. Loudness: one shared `mix_gain_db` brings the mixture to -14 LUFS; `gain_to_unity_db` brings a
    soloed stem to -14 LUFS (it replaces the shared gain while soloing).
-5. Encode AAC (always) and Opus (optional), verify each against the PCM, write the JSON.
+5. Encode AAC (always) and Opus (optional), verify each against the PCM, write the JSON. The stems
+   encode in parallel (each encode and its verifying decode is an ffmpeg process): one at a time,
+   seven stems took a bass analysis 42 % longer than three (step s40a, G3).
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -46,6 +50,8 @@ DEFAULTS: dict[str, Any] = {
     "tag_present_above": 0.3,  # a stem this confident tagger expects but got empty is rough
     "max_unity_gain_db": 20.0,
 }
+# Stems encoded at once; not a param, so the cache key doesn't follow the machine.
+MAX_ENCODES = 8
 
 
 def read_separation(inputs: dict[str, str] | None) -> contracts.Separation:
@@ -202,6 +208,7 @@ def run(job: StageJob) -> StageOutput:
     stems: list[dict[str, Any]] = []
     presence: list[dict[str, Any]] = []
     blobs: dict[str, str] = {}
+    to_encode: list[tuple[str, Audio]] = []
     for stem_id, kind, instrument, audio, base_quality, provider in outputs:
         ratio = dsp.energy(audio) / mix_energy if mix_energy > 0 else 0.0
         act = dsp.activity(
@@ -243,8 +250,7 @@ def run(job: StageJob) -> StageOutput:
             presence.append(entry)
         if empty and instrument in extras:
             continue
-        files, stem_blobs = encode_stem(stem_id, audio, workdir, bool(params["opus"]))
-        blobs.update(stem_blobs)
+        to_encode.append((stem_id, audio))
         gain = 0.0
         if not empty and loudness is not None:
             limit = float(params["max_unity_gain_db"])
@@ -253,7 +259,6 @@ def run(job: StageJob) -> StageOutput:
             "stem_id": stem_id,
             "kind": kind,
             "provider": provider,
-            "files": files,
             "loudness_lufs": round(loudness if loudness is not None else dsp.SILENCE_LUFS, 2),
             "gain_to_unity_db": round(gain, 2),
             "energy_ratio_to_mix": round(ratio, 4),
@@ -263,6 +268,18 @@ def run(job: StageJob) -> StageOutput:
         if instrument is not None:
             stem["instrument"] = instrument
         stems.append(stem)
+
+    opus = bool(params["opus"])
+
+    def encode_one(item: tuple[str, Audio]) -> tuple[list[dict[str, Any]], dict[str, str]]:
+        return encode_stem(item[0], item[1], workdir, opus)
+
+    workers = max(1, min(len(to_encode), os.cpu_count() or 1, MAX_ENCODES))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        encoded = list(pool.map(encode_one, to_encode))
+    for stem, (files, stem_blobs) in zip(stems, encoded, strict=True):
+        stem["files"] = files
+        blobs.update(stem_blobs)
 
     seen = {p["instrument"] for p in presence}
     for t in tags.instruments if tags else []:

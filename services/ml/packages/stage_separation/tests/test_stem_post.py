@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -437,6 +439,36 @@ def test_every_kept_output_gets_a_stem_and_an_empty_extra_is_left_out(
     # both mix-minus modes give the mixture without the guitar (every other output summed)
     expected = dsp.energy(backing) / dsp.energy(mixture)
     assert by_id["mix_minus_guitar"].energy_ratio_to_mix == pytest.approx(expected, abs=2e-4)
+
+
+def test_stems_encode_at_once_and_each_keeps_its_own_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Six stems one after another took a bass analysis 42 % longer (s40a G3): they encode in
+    parallel, and each stem still gets the files encoded from its own audio."""
+    job, _, _ = band(tmp_path, mix_minus="subtract")
+    lock = threading.Lock()
+    running: list[int] = [0, 0]  # now, most at once
+    original = encode.encode_aac
+
+    def slow_encode(wav: Path, out: Path) -> encode.Encoder:
+        with lock:
+            running[0] += 1
+            running[1] = max(running[1], running[0])
+        time.sleep(0.2)
+        try:
+            return original(wav, out)
+        finally:
+            with lock:
+                running[0] -= 1
+
+    monkeypatch.setattr(encode, "encode_aac", slow_encode)
+    out = stem_post.run(job)
+    stems = contracts.Stems.model_validate(load(out.files["stems"]))
+    assert running[1] > 1
+    for s in stems.stems:
+        assert [f.path for f in s.files] == [f"stems/{s.stem_id}.m4a"]
+        assert Path(out.blobs[f"stems/{s.stem_id}.m4a"]).name == f"{s.stem_id}.m4a"
 
 
 def test_an_empty_target_stays_listed_as_silence(tmp_path: Path) -> None:
