@@ -427,7 +427,7 @@ JetBrains Mono 12 px, 22 px tall, quiet fill, 1 px strong-hairline edge, 4 px co
 The practice dock holds 64 px pill and circle controls (Play/Pause 72 on phones) with 24 px icons at 1.8 px stroke; filled glyphs only for Play and Pause. The playhead, loop edges and beat-now dot are the ink; the current bar and loop fill are a single grey step off the ground. Every practice action is keyboard and pedal operable and confirms its pressed state within 100 ms.
 
 ### Media (Home art)
-Abstract colour art on an 8 px corner with a quiet-fill placeholder: one 16:9 lead, two squares (16:9 on phones) and five thumbnails (96 px, 116 from `sm`), each beside the words that carry its point and decorative (`alt=""`). Palette teal, violet, sky, magenta-pink and lime with white light; no orange, amber, yellow or red; no objects, text or interface.
+Colour art on an 8 px corner with a quiet-fill placeholder: one 16:9 lead, two squares (4:3 on phones) and five thumbnails (96 px, 116 from `sm`), each beside the words that carry its point and decorative (`alt=""`). Each piece is a macro still life of the one object its feature is about (a string, a footswitch, a music stand), mostly dissolved into gel-lit colour with one sharp detail and a fine grain. Palette teal, violet, sky, magenta-pink and lime with white light on black, dark grey or steel; no orange, amber, yellow, red, wood or brass; no people, hands, text, screens or interface. Prompts and provenance live in `docs/home-art.md`.
 
 ## Do's and Don'ts
 

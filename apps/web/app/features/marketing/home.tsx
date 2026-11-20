@@ -5,8 +5,8 @@ import { buttonVariants } from '@/ui/button'
 
 // Home (27 §3.1): the promise and the way to the example song, what it does, what makes it work at
 // the stand, how a session goes and the pricing teaser. The headline is the LCP element (budget
-// ≤ 2.5 s, 10 §9), so it is plain text that never animates in. The pictures are abstract colour
-// art (public/art/): the one place colour lives outside meaning, each piece set beside the words
+// ≤ 2.5 s, 10 §9), so it is plain text that never animates in. The pictures are colour art
+// (public/art/, prompts in docs/home-art.md): the one place colour lives outside meaning, each piece set beside the words
 // that carry its point, so every image is decorative and has no text alternative.
 // Honesty gates (27 §3.1): claims of unbuilt steps keep today's wording until s45 flips them — the
 // isolate body (s40b), the loop body (s37), the count-in body (s42) — and "Stand view for tablets"
@@ -51,7 +51,7 @@ function Art({
 function Tile({ art, title, body }: { art: ArtName; title: string; body: string }) {
   return (
     <article className="flex flex-1 flex-col gap-4">
-      <Art name={art} width={1024} height={1024} className="aspect-4/3 w-full sm:aspect-square" />
+      <Art name={art} width={768} height={768} className="aspect-4/3 w-full sm:aspect-square" />
       <div className="flex flex-col gap-1.5">
         <h2 className="text-lg text-balance">{title}</h2>
         <p className="text-base text-pretty text-muted-foreground">{body}</p>
@@ -162,7 +162,7 @@ export function Home() {
         <ul className="grid gap-x-8 gap-y-7 md:grid-cols-2">
           {STAND.map(({ art, title, body }) => (
             <li key={title()} className="flex items-center gap-5">
-              <Art name={art} width={800} height={800} className="size-24 shrink-0 sm:size-29" />
+              <Art name={art} width={512} height={512} className="size-24 shrink-0 sm:size-29" />
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg text-balance">{title()}</h3>
                 <p className="text-base text-pretty text-muted-foreground">{body()}</p>

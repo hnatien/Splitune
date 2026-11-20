@@ -58,7 +58,7 @@ Other products do one step each: stems, auto-tabs, practice players or fixed cur
 - **Voice:** a calm coach who knows music. Plain words, short sentences, real numbers. Uncertainty is given as a frequency ("about 1 in 3"), never a percentage. No streaks, guilt, hype, emoji or loss-framed messages. Errors say what happened, what it means and what the learner can do.
 - **Honest machine output:** notation is "Auto-transcribed", looks like a draft where it is unsure, and is one tap from a fix.
 - **Fair plans:** practice basics (loop, slow-down, count-in, mixer, notation) are never paywalled. Caps are published, failed analyses never use them, and nothing given to Free is taken back.
-- **Imagery:** no stock photos or people. Home carries abstract colour art (`docs/home-art.md`); everywhere else the product, the waveform and the notation are the imagery.
+- **Imagery:** no stock photos or people. Home carries colour art: soft-focus still lifes of the gear each feature is about (`docs/home-art.md`); everywhere else the product, the waveform and the notation are the imagery.
 
 ## Evidence on Hand
 
