@@ -263,8 +263,9 @@ def test_complement_mix_minus_sums_the_other_outputs(tmp_path: Path) -> None:
     assert residual < -15
 
 
-def test_energy_the_tagger_cannot_hear_is_bleed(tmp_path: Path) -> None:
+def test_energy_the_tagger_cannot_hear_is_bleed_under_a_threshold(tmp_path: Path) -> None:
     job, _, _ = scenario(tmp_path, mix_minus="subtract", tag_guitar=0.005)
+    job.params = stem_post.describe({"tag_absent_below": 0.01}, job.inputs).params
     out = stem_post.run(job)
     stems = {s["stem_id"]: s for s in load(out.files["stems"])["stems"]}
     presence = {p["instrument"]: p for p in load(out.files["presence"])["instruments"]}
@@ -426,10 +427,10 @@ def test_every_kept_output_gets_a_stem_and_an_empty_extra_is_left_out(
     ]
     by_id = {s.stem_id: s for s in stems.stems}
     assert not any(s.empty for s in stems.stems)
-    # energy the tagger can't hear is bleed: listed, but rough
-    assert presence["vocals"].bleed_suspected
-    assert by_id["vocals"].quality_hint == "rough"
-    assert {s.stem_id for s in stems.stems if s.quality_hint == "rough"} == {"vocals"}
+    # the shipped threshold is 0: a stem the tagger can't hear is not bleed (s40a G3)
+    assert not presence["vocals"].bleed_suspected
+    assert presence["vocals"].present_prob > 0.5
+    assert not any(s.quality_hint == "rough" for s in stems.stems)
     # the empty piano: presence only, no stem and no file
     assert presence["piano"].present_prob <= 0.1
     assert presence["piano"].activity == []

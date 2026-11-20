@@ -6,7 +6,9 @@ the browser encodes (06 §4 stem_post).
    (`complement`), as the model map says for the instrument.
 3. Presence: frame-energy activity of each isolated stem, combined with the tagger. PANNs scores on
    full mixes are low and uncalibrated (bass never above ~0.15 on MUSDB), so the tagger only
-   vetoes: a stem with energy whose instrument the tagger can't hear is `bleed_suspected`.
+   vetoes: a stem with energy whose instrument it scores below `tag_absent_below` is
+   `bleed_suspected`. The threshold is 0 (off): at 0.01 it marked real stems rough, a bass at
+   46 % of the mixture's energy among them (step s40a, G3).
    An empty extra stays in presence.json but gets no stem: the mixer hides empty stems, and the
    CBR AAC of silence costs as much storage as music (step s40a). The target and the mix-minus are
    always listed.
@@ -46,7 +48,7 @@ DEFAULTS: dict[str, Any] = {
     "activity_abs_db": -50.0,
     "empty_active_fraction": 0.02,
     "empty_energy_ratio": 0.001,
-    "tag_absent_below": 0.01,  # tagger veto (see step 3 above)
+    "tag_absent_below": 0.0,  # tagger veto, off (see step 3 above)
     "tag_present_above": 0.3,  # a stem this confident tagger expects but got empty is rough
     "max_unity_gain_db": 20.0,
 }
