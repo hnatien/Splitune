@@ -9,9 +9,9 @@ Splitune is a web-first practice app for people learning an instrument. A learne
 |---|---|---|
 | [`status.md`](status.md) | One table: every step, its state, open owner checks | You want to know what exists |
 | [`specs/`](specs/README.md) | The build specs `00`–`28`: stack, architecture, contracts, ML pipeline, music algorithms, audio engine, UI, ops | You build or change something |
-| [`steps/`](steps/README.md) | One prompt per implementation step (`s01`–`s25`), each run by a fresh agent session | You start a step |
+| [`steps/`](steps/README.md) | One prompt per implementation step (`s01`–`s45`; the redesign steps are `s31a`–`s46`), each run by a fresh agent session | You start a step |
 | [`progress-log.md`](progress-log.md) | What each step actually built, decided, verified and left open, newest at the bottom | You need the history or a step's details |
-| [`research/`](research/README.md) | The evidence behind the specs (2026-10-20): ML models, users, UX, market, legal, decisions D1–D13 | You need to know *why* |
+| [`research/`](research/README.md) | The evidence behind the specs (2026-10-20, plus the 2026-11-07 separation and instrument research): ML models, users, UX, market, legal, decisions D1–D13 | You need to know *why* |
 
 ## Numbers and names
 Three numbering systems coexist. They look alike, so check which one a reference uses.
@@ -33,7 +33,7 @@ Spec numbers are stable: code comments cite them hundreds of times, so a spec is
 1. `specs/25-personal-mode.md` — the current mode; overrides everything below.
 2. `specs/README.md` — binding rules and the spec index.
 3. The spec(s) a step names.
-4. `research/` — evidence and rationale, as of 2026-10-20.
+4. `research/` — evidence and rationale, as of 2026-10-20 (some docs dated 2026-11).
 
 ## Start here
 | You are | Read |
@@ -43,7 +43,7 @@ Spec numbers are stable: code comments cite them hundreds of times, so a spec is
 | Full-stack engineer | `specs/` 00–05, 14, 23 |
 | ML engineer | `specs/08`, `06`, `05`, `07`; `research/ml/pipeline-overview.md` |
 | Client / audio engineer | `specs/10`, `11`, `12`, `24` |
-| Designer | `specs/26`, `27`, `28` (the design system), then the mockups and `splitune.css` in [`../redesign/`](../redesign/README.md) |
+| Designer | `specs/26`, `27`, `28` (the black-and-white design system, s46), then the code: `packages/ui-tokens`, `apps/web/app/ui` and Storybook. The Night Rehearsal mockups in [`../redesign/`](../redesign/README.md) are history: use them for structure only |
 | Owner | `status.md` and the "needs the owner" items in `progress-log.md` |
 
 ## Keeping docs tidy

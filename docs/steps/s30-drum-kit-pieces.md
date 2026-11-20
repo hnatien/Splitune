@@ -38,11 +38,12 @@ Read `docs/steps/00-shared-context.md`, then:
   - **Web and notation:**
     - `packages/notation/src/drum-grid.tsx`: `DRUM_LANES` is a fixed list.
     - `packages/notation/src/alphatab-view.tsx`.
-    - `apps/web/app/features/practice/`: `model/mixer.ts` (its header says the MVP mixer plays two stems, part + mix-minus, and that "multi-stem mixing is v1"), `mixer-drawer.tsx`, `chord-sheet.tsx` (the drum views), `input-mapper.ts` (keyboard and pedal), `practice.stories.tsx`, `practice-story-data.ts`.
+    - `apps/web/app/features/practice/`: `model/mixer.ts` (two stems, part + mix-minus, until s40b makes it multi-stem), `mix-tab.tsx` (the inspector's Mix tab; the phone drawer `mixer-drawer.tsx` shows the same body), `drum-notes.tsx` and `chord-sheet.tsx` (the drum views), `input-mapper.ts` (keyboard and pedal), `practice.stories.tsx`, `practice-story-data.ts`.
+    - `apps/web/app/ui/`: `stem-row.tsx`, `mix-preset-group.tsx` (the Mix tab's building blocks).
     - `packages/audio-engine/src/dsp.ts`: `MAX_STEMS = 8`.
     - `apps/web/messages/en.json`.
 
-**Prerequisites:** step 25's work on `dev` (it is), and step 29 on `dev`, or at least its DrumSep loadability check and Phase 7 verdict. If step 29 hasn't run or skipped Phase 7, this step's Phase 0 and Phase 1 make that comparison. Branch `impl/30-drum-kit-pieces` from the latest `dev`. If the step is large, split it into `impl/30a-…` (ML and eval), `30b` (contracts and orchestration) and `30c` (web), each shippable behind the flag.
+**Prerequisites:** step 25's work on `dev` (it is), and step 29 on `dev` (it is, but it skipped Phase 7: it registered the 5-stem DrumSep without running it, so this step's Phase 0 and Phase 1 make the 5-stem vs 6-stem comparison). The web part (Phase 4) also needs s40b's multi-stem mixer on `dev`; until it is, build the ML and orchestration parts only. Branch `impl/30-drum-kit-pieces` from the latest `dev`. If the step is large, split it into `impl/30a-…` (ML and eval), `30b` (contracts and orchestration) and `30c` (web), each shippable behind the flag.
 
 **The owner doesn't play an instrument.** No deliverable may depend on owner-played recordings or owner transcriptions. Use datasets, rendered MIDI, published scores and scripted tests. The owner can choose songs, listen, look at screens and run things on their devices.
 
@@ -143,9 +144,11 @@ Piece stems that are rough (expected: hi-hat and cymbals) carry honest quality h
 5. Report losers as well as winners.
 
 ## Phase 4 — Practice UI
-1. **Mixer.**
-   - Piece channels as a collapsible group under Drums, plus presets: "Kick only", "Drums minus snare", and the others.
-   - `model/mixer.ts` is two-stem (part + backing). Extend it to the multi-stem case within the engine's `MAX_STEMS = 8`, following `specs/11` and `specs/12` §7. Keep solo-gain and mix-minus semantics consistent.
+**Design first (stop for the owner).** Docs 26–28 describe the shipped black-and-white system (s46) and list per-drum channels and lane focus as later scope (27 §3.7.5), so nothing yet says how they look. Before building, add the drum-pieces design to doc 27 (§3.7.4 Mix and §3.7.5 Drums) and its copy rows (§5.7): where the piece group sits in the Mix tab, the piece presets beside the 2 × 2 grid, how lane focus is turned on and shown in the drum views, the phone drawer and Tools sheet, and every state below. Show it as stories in both themes and wait for the owner's OK.
+
+1. **Mixer** (in the Mix tab, on s40b's multi-stem mixer).
+   - Piece channels as a collapsible group under the Drums stem row (`ui/stem-row`), plus presets: "Kick only", "Drums minus snare", and the others (`ui/mix-preset-group`).
+   - Pieces fit within the engine's `MAX_STEMS = 8` together with s40b's stems; say how the channels are chosen when they don't (`specs/11`, `specs/12` §7). Keep solo-gain and mix-minus semantics consistent.
 2. **Lane focus.**
    - The drum grid and staff highlight the focused piece's lane and de-emphasise the others.
    - Focus can be tied to the mixer: focusing "snare" offers "solo snare" and "drums minus snare".
@@ -190,7 +193,8 @@ Piece stems that are rough (expected: hi-hat and cymbals) carry honest quality h
 1. The Phase 0 plan: candidates, eval sets, downloads (including any P2d rebuild), storage and time.
 2. Any loading path that needs code from an external source (the owner decides).
 3. The Phase 1 baseline, before building the stage.
-4. Before turning `v1.drum_pieces` on in production, or any storage growth that could leave the R2 free tier.
+4. The Phase 4 design (doc 27 additions and stories), before building the UI.
+5. Before turning `v1.drum_pieces` on in production, or any storage growth that could leave the R2 free tier.
 
 ## Out of scope
 - Fine-tuning or training a separator.
