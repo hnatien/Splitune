@@ -42,9 +42,11 @@ class SplituneProcessor extends scope.AudioWorkletProcessor {
     this.port.onmessage = (event: MessageEvent<Command>) => this.#core?.receive(event.data)
   }
 
-  process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const [left, right] = outputs[0] ?? []
-    if (this.#core && left) this.#core.render(scope.currentFrame, left, right ?? left)
+    if (this.#core && left) {
+      this.#core.render(scope.currentFrame, left, right ?? left, inputs[0] ?? [])
+    }
     return true
   }
 }

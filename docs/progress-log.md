@@ -2842,3 +2842,46 @@ After s46 the mockups' Night Rehearsal look is retired (owner, 2026-11-17: docs 
 
 **Next**
 - s40b / s41b: nothing here depends on them. A section-named loop would give the Progress heading a better name than "Bars 25–28".
+
+## 2026-11-21 — Step s40b: every stem in the mixer, presets, Rough, Click and "Hear the chords", phone mini-mixer (done, not merged; G4 next)
+Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at `340166b` (s40a merged). Not merged into `dev`.
+
+**Owner decision (2026-11-21, before code):** the three "ask the owner first" files may change: `ui/mix-preset-group.tsx` (`rhythm` in its preset type), `ui/stem-row.tsx` ("solo" in the readout and its name; `StemToggle` exported with a 44 px face for the Tools sheet; `STEM_RULE` / `STEM_FILL` exported), `ui/mixer.stories.tsx` (the "all stems s40b" stories).
+
+**Built**
+- **Channels** (`model/mixer.ts`): every non-empty isolated stem, your part first, then guitar, vocals, bass, drums, piano, other. The stems count as the whole song when one of them beside your part is neither drums nor bass (only s40a's keep-everything run lists those); then the mix-minus isn't loaded. Otherwise (before s40a, a two-stem run) "Your part" + "Band" as before. Stems marked `empty` are left out; an empty part means no mixer. 21 unit tests (all stems, the fixture, both fallbacks, empty stems, rough, presets, Rhythm only availability, no mix-minus with all stems, defaults, the band fader, the unity rule per preset).
+- **Presets:** Your part loud, Minus-one, Original, **Rhythm only** (bass and drums only; offered when both are channels). Reset mix; "Use as default for {part}" (`mixer-prefs.ts`, this device, by instrument with a `band` level); the Mix tab's dot while the mix isn't the default; the dock pill names Rhythm only and counts the channels.
+- **Rows:** `StemRow` with names per instrument ("Other" for the rest), "Your part" and "Rough" badges, "solo" / "muted" readouts; the M key and the PedalHud as before.
+- **Engine** (`packages/audio-engine`): `PeakLimiter` at 0 dBFS in `ProcessorCore` after the stretch (stereo-linked, instant attack, 80 ms release, no lookahead, so no clock change); one worklet input, `Engine.input`, for helpers, added before the limiter. Tests: offline scenarios "solo and mute resolve to gains" and "master at or below 0 dBFS" for every preset's gains, every fader at +6 dB and a +12 dB solo; `limiter.test.ts` (5); `test/helpers.test.ts` (4).
+- **Helpers:** Click = level readout with a stepper (−30…+6 dB, this device) + the switch; **Hear the chords** (`hear-chords.tsx`, lazy) plays every transcribed chord on each beat through s38's synth, scheduled from the engine clock, into `Engine.input` (Fix mode's synth now goes there too, so both pass the master volume and the limiter). Off while fixing; the switch lasts for the visit.
+- **Phone mini-mixer** (`mini-mixer.tsx`): preset chips, "{part} · your part" and "Band" (every other channel as one fader that keeps their balance) with 3 dB stepped faders and the M at 44 in 48, "All {n} stems" turning the sheet into the full Mix tab. The phone mix sheet opens on it.
+- **Copy** (`mixer.*`, `practice.*` mix rows): `mixer.preset_rhythm`, `practice.preset_gloss_rhythm`, `mixer.hear_chords` + hint, `mixer.click`, `mixer.click_level`, `mixer.use_default`, `mixer.default_saved`, `mixer.all_stems`, `mixer.part_row`, `mixer.soloed`, `mixer.stem_other`, `practice.mix_changed`; the 27-fixed ones added to `copy-keys.test.ts`.
+- **Docs:** 12 §7 and its s40b notes, 11 s40b notes, 26 §12.2 `StemRow` / `StemToggle`, 27 §3.7.4 "as built".
+
+**Deviations and decisions (mine; for G4)**
+1. **Phones get the Mix button in the compact transport** (`transport-bar.tsx`): since s35 phones had no way into the mixer at all, and the deliverable says the mini-mixer is used by today's phone layout now. s43's Tools button replaces it.
+2. **Rhythm only isn't tracked:** `MixPresetName` (contracts) has no value for it; a contracts change is a follow-up.
+3. **"Band" on the mini-mixer with every stem** is a group fader: its level is the loudest of the others, moving it shifts them all (clamped to −30…+6), M mutes them all.
+4. **Story data:** `VOCAL_STEMS` is now a two-stem run (vocals + mix-minus), as the vocals chain makes; `SIX_STEMS` and `TWO_STEMS` added; `coarse()` moved from `practice.stories.tsx` into `practice-story-data.ts` for the new stories file. The practice Mixer story checks "Drums" where it checked "Band" (the fixture's run now plays as three stems).
+5. **Fidelity** is structural (s46: the mockups are structure only): the Mix tab at 1440 and 1180 against Practice-Mix (presets 2 × 2 with Rhythm only, rows in its order with badges, Helpers with Click's level and Hear the chords with its line, Reset mix + Use as default) and the mini-mixer at 390 against Phone-Tools (chips, two rows, M, All n stems), by screenshots of the stories in the browser pane, Dark and Light. `probe.mjs` was not run (every style field differs by s46's design). Difference kept: "All 2 stems" on a two-channel song reads oddly (the copy is 27's "All {n} stems").
+
+**Budget (D6):** `pnpm --filter @splitune/web build && pnpm --filter @splitune/web budget --enforce`: practice route **313.7 KB** gzip of 320 KB, before **312.5 KB** (`dev` at `340166b`, built the same way). +0.9 KB in the provider's shared chunk (mixer model, device prefs store, preset names), +0.2 KB the route chunk; the Mix tab, mini-mixer, chord player and the engine stay lazy. `css-floor` clean.
+
+**Visual baselines:** `pnpm --filter @splitune/web e2e:visual:update -g "practice"` (Docker): 22 rows (`practice` desktop / tablet / phone × dark / light / stage, `practice-tab-pending` and `practice-stems-expired` tablet light, Chromium and WebKit). Intended differences: the s46 black-and-white restyle (dev's practice baselines were still amber), the dock pill's "3 stems" (the fixture's run now plays as its three stems), and the phone transport's Mix button.
+
+**Verification (PC, 2026-11-21)**
+- `pnpm exec biome check .`: clean (3 infos, all older). `node scripts/check-db-access.mjs`: clean (777 files). `node scripts/check-ui-tokens.mjs` and `--path apps/web/app/features/practice`: one violation, `features/shell/command-palette.tsx:249`, already on `dev`.
+- `pnpm --filter @splitune/audio-engine typecheck`: clean; `test`: 9 files, 69 / 69 (new: 7 offline scenarios, limiter 5, helpers input 4).
+- `pnpm --filter @splitune/web typecheck`: clean; `vitest run --project unit`: 45 files, 335 / 335.
+- Stories, Chromium, all files: 757 / 761. Two were the Six Stems stories (the tab panel looked up with the 1 s default on a cold load; fixed, the file reruns 24 / 24); `onboarding > Guide` passes on rerun; `ui/waveform-timeline.stories.tsx > Scrub` fails with that file identical to `dev` (not this step's). Stories, WebKit: `ui/mixer.stories.tsx` 17 / 17; `mix.stories.tsx` 0 / 24, every one the 15 s timeout of playable practice stories on this PC (the known class).
+- E2E (built app, mock workers, Chromium): new `e2e/mixer.spec.ts` 3 / 3 (rows and order, a fader set by clicks on its track and by its readout's stepper with no drag, Minus-one, Reset mix, the M key). `E2E_SMOKE=1 … --project chromium`: 15 passed, 1 skipped by design, 1 failed: `journey.spec.ts` "a link import shows its download and analysis progress" (the mock link import's audio repeats an earlier hash, the analysis is done before the page opens and the stage list never shows); not this step's code path, not compared on `dev` (the main checkout's built server doesn't start).
+- `e2e/perf-practice.spec.ts --project chromium`: 6 / 6; fader step p75 40 ms on desktop and tablet (s32 baseline 48 / 48), max 48 / 40 (64 / 64); one long animation frame per context (the play press), baseline three.
+
+**Known gaps**
+- G4: the phone Mix button, the Band group fader, the dot, Hear the chords by ear (its level against the stems), devices in both themes.
+- Memory: every channel is decoded whole; six stems of a 4-minute song ≈ 280 MB of PCM (two ≈ 92 MB). 11 §4's streaming ring isn't built; phones need checking.
+- Rhythm only analytics (contracts). Firefox / WebKit e2e not run on this PC.
+
+**Next**
+- s43 places `MiniMixer` in the Tools sheet and removes the compact transport's Mix button. s30's piece channels build on `mixChannels` (per-drum channels are later scope here).
+- s45 flips the "Every stem has its own fader." / "a mixer for every stem" honesty gates.

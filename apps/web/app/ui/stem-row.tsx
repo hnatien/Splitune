@@ -13,10 +13,11 @@ import { WithTooltip } from '@/ui/tooltip'
 // Doc 26 §4.4, §12.2 (Practice-Mix.dc.html): one row per stem — a 6 × 34 colour rule (colour is
 // never the only cue: the name is always there), the name with "Your part" and "Rough" badges, M/S
 // painted as 32 px circles inside 48 × 48 boxes (on = ink fill, off = outlined), and the fader in the stem's
-// colour with its dB readout (mono 13; "muted" while muted). A tap on the fader's track sets it
-// and the readout opens a stepper, so nothing needs a drag (WCAG 2.5.7).
+// colour with its dB readout (mono 13; "solo" while soloed, "muted" while muted, §12.3). A tap on
+// the fader's track sets it and the readout opens a stepper, so nothing needs a drag (WCAG 2.5.7).
+// `StemToggle` is the same M/S button; the phone Tools sheet paints it at 44 in its 48 box.
 
-const RULE: Record<StemKind, string> = {
+const STEM_RULE: Record<StemKind, string> = {
   guitar: 'bg-stem-guitar',
   bass: 'bg-stem-bass',
   drums: 'bg-stem-drums',
@@ -26,7 +27,7 @@ const RULE: Record<StemKind, string> = {
   mix: 'bg-stem-mix',
 }
 
-const FILL: Record<StemKind, string> = {
+const STEM_FILL: Record<StemKind, string> = {
   guitar: '[&_[data-slot=slider-range]]:bg-stem-guitar',
   bass: '[&_[data-slot=slider-range]]:bg-stem-bass',
   drums: '[&_[data-slot=slider-range]]:bg-stem-drums',
@@ -68,20 +69,31 @@ type StemRowProps = {
     increase: string
     /** The readout while muted. */
     muted?: string
+    /** The readout while soloed. */
+    soloed?: string
   }
   className?: string
 }
 
-function MsToggle({
+// The painted face and the focus ring hugging it (inset by the transparent padding around it).
+const FACE = {
+  row: { box: 'focus-visible:outline-offset-[-6px]', face: 'size-8 text-xs' },
+  tools: { box: 'focus-visible:outline-offset-0', face: 'size-11 text-sm' },
+} as const
+
+function StemToggle({
   pressed,
   onPressedChange,
   label,
   children,
+  size = 'row',
 }: {
   pressed: boolean
   onPressedChange: (pressed: boolean) => void
   label: string
   children: string
+  /** Painted size inside the 48 box: 32 in a stem row, 44 in the phone Tools sheet. */
+  size?: keyof typeof FACE
 }) {
   return (
     <TogglePrimitive
@@ -89,9 +101,17 @@ function MsToggle({
       onPressedChange={onPressedChange}
       aria-label={label}
       data-slot="stem-ms"
-      className="group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-full focus-visible:outline-offset-[-6px]"
+      className={cn(
+        'group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-full',
+        FACE[size].box,
+      )}
     >
-      <span className="grid size-8 place-items-center rounded-full border border-border-strong text-xs font-semibold text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal">
+      <span
+        className={cn(
+          'grid place-items-center rounded-full border border-border-strong font-semibold text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal',
+          FACE[size].face,
+        )}
+      >
         {children}
       </span>
     </TogglePrimitive>
@@ -112,6 +132,13 @@ function StemRow({
   labels,
   className,
 }: StemRowProps) {
+  // Solo wins over mute (a soloed stem plays even when muted), so the readout says so first.
+  const readout =
+    soloed && labels.soloed
+      ? labels.soloed
+      : muted && labels.muted
+        ? labels.muted
+        : formatDb(gainDb)
   return (
     <div
       data-slot="stem-row"
@@ -121,7 +148,7 @@ function StemRow({
         className,
       )}
     >
-      <span aria-hidden className={cn('row-span-2 h-8.5 w-1.5 rounded-full', RULE[stem])} />
+      <span aria-hidden className={cn('row-span-2 h-8.5 w-1.5 rounded-full', STEM_RULE[stem])} />
       <span className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="truncate text-md font-medium">{name}</span>
         {yourPart && <Badge variant="primary">{yourPart}</Badge>}
@@ -136,20 +163,24 @@ function StemRow({
         )}
       </span>
       <span className="row-span-2 flex gap-1">
-        <MsToggle pressed={muted} onPressedChange={onMutedChange} label={`${labels.mute} ${name}`}>
+        <StemToggle
+          pressed={muted}
+          onPressedChange={onMutedChange}
+          label={`${labels.mute} ${name}`}
+        >
           M
-        </MsToggle>
-        <MsToggle
+        </StemToggle>
+        <StemToggle
           pressed={soloed}
           onPressedChange={onSoloedChange}
           label={`${labels.solo} ${name}`}
         >
           S
-        </MsToggle>
+        </StemToggle>
       </span>
       <span className="flex min-w-0 items-center gap-2.5">
         <Slider
-          className={cn('min-w-0 flex-1', FILL[stem])}
+          className={cn('min-w-0 flex-1', STEM_FILL[stem])}
           value={gainDb}
           min={GAIN_RANGE.min}
           max={GAIN_RANGE.max}
@@ -160,10 +191,10 @@ function StemRow({
         />
         <Popover>
           <PopoverTrigger
-            aria-label={`${labels.volume} ${name}: ${muted && labels.muted ? labels.muted : formatDb(gainDb)}`}
+            aria-label={`${labels.volume} ${name}: ${readout}`}
             className="inline-flex min-h-target-practice-2 w-16 shrink-0 items-center justify-end rounded-lg px-1 text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground"
           >
-            {muted && labels.muted ? labels.muted : formatDb(gainDb)}
+            {readout}
           </PopoverTrigger>
           <PopoverContent side="top" aria-label={`${labels.volume} ${name}`} className="w-auto">
             <NumberField
@@ -205,4 +236,4 @@ function StemRowSkeleton({ className }: { className?: string }) {
   )
 }
 
-export { StemRow, StemRowSkeleton }
+export { STEM_FILL, STEM_RULE, StemRow, StemRowSkeleton, StemToggle }

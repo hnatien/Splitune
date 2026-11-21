@@ -7,7 +7,7 @@ import { COPY, FIXTURE_STEMS } from './fixtures.ts'
 import { LoopBadge } from './loop-badge.tsx'
 import { Meter, MeterLabel, MeterValue } from './meter.tsx'
 import { type MixPreset, MixPresetGroup } from './mix-preset-group.tsx'
-import { StemRow, StemRowSkeleton } from './stem-row.tsx'
+import { StemRow, StemRowSkeleton, StemToggle } from './stem-row.tsx'
 
 const meta = { title: 'Kit/Mixer' } satisfies Meta
 export default meta
@@ -19,6 +19,8 @@ const LABELS = {
   volume: 'Volume',
   decrease: 'Quieter',
   increase: 'Louder',
+  muted: 'muted',
+  soloed: 'solo',
 }
 
 const GLOSS = {
@@ -240,3 +242,131 @@ export const Stage: Story = {
   globals: { appearance: 'stage', density: 'practice' },
 }
 export const IncreasedContrast: Story = { render: Gallery, globals: { contrast: 'more' } }
+
+// Every stem of a six-stem run (26 §12.2 "all stems s40b"): your part first, Rhythm only offered,
+// a Rough stem, one soloed and one muted, and names longer than the row.
+const ALL_STEMS = [
+  { id: 'guitar', stem: 'guitar', name: 'Guitar', gain: 0, solo: false, muted: false },
+  { id: 'vocals', stem: 'vocals', name: 'Vocals', gain: -6, solo: false, muted: true },
+  { id: 'bass', stem: 'bass', name: 'Bass', gain: -6, solo: true, muted: false },
+  { id: 'drums', stem: 'drums', name: 'Drums', gain: -2, solo: false, muted: false },
+  { id: 'keys', stem: 'keys', name: 'Piano', gain: -4, solo: false, muted: false, rough: true },
+  { id: 'other', stem: 'other', name: 'Other', gain: -6, solo: false, muted: false },
+] as const
+
+type StemState = { muted: boolean; soloed: boolean; gain: number }
+
+function AllStems({ long = false }: { long?: boolean }) {
+  const [preset, setPreset] = useState<MixPreset | null>(null)
+  const [state, setState] = useState<Record<string, StemState>>(() =>
+    Object.fromEntries(
+      ALL_STEMS.map((s) => [s.id, { muted: s.muted, soloed: s.solo, gain: s.gain }]),
+    ),
+  )
+  const set = (id: string, patch: Partial<StemState>) =>
+    setState((current) => ({
+      ...current,
+      [id]: { muted: false, soloed: false, gain: 0, ...current[id], ...patch },
+    }))
+  return (
+    <div className="flex w-95 max-w-full flex-col gap-4 rounded-xl border border-border bg-card p-4">
+      <MixPresetGroup
+        label="Mix"
+        value={preset}
+        onValueChange={setPreset}
+        options={[
+          { value: 'part-loud', label: 'Your part loud', gloss: 'Learn it: guitar up, band down' },
+          { value: 'minus-one', label: 'Minus-one', gloss: 'Play it: your part muted' },
+          { value: 'original', label: 'Original', gloss: 'The song as recorded' },
+          { value: 'rhythm', label: 'Rhythm only', gloss: 'Bass and drums, nothing else' },
+        ]}
+      />
+      <div className="flex flex-col gap-0.5">
+        {ALL_STEMS.map((stem) => (
+          <StemRow
+            key={stem.id}
+            stem={stem.stem}
+            name={long ? `${stem.name} (left channel, doubled an octave up)` : stem.name}
+            yourPart={stem.id === 'guitar' ? COPY.yourPart : undefined}
+            rough={'rough' in stem ? { label: COPY.rough, reason: COPY.roughStem } : undefined}
+            muted={state[stem.id]?.muted ?? false}
+            soloed={state[stem.id]?.soloed ?? false}
+            gainDb={state[stem.id]?.gain ?? 0}
+            onMutedChange={(muted) => set(stem.id, { muted })}
+            onSoloedChange={(soloed) => set(stem.id, { soloed })}
+            onGainChange={(gain) => set(stem.id, { gain })}
+            labels={LABELS}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export const AllStemsS40b: Story = {
+  render: () => <AllStems />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getAllByRole('radio')).toHaveLength(4)
+    await expect(canvas.getByRole('button', { name: 'Volume Bass: solo' })).toHaveTextContent(
+      'solo',
+    )
+    await expect(canvas.getByRole('button', { name: 'Volume Vocals: muted' })).toHaveTextContent(
+      'muted',
+    )
+    // Solo wins over mute, so the readout says solo when both are on.
+    await userEvent.click(canvas.getByRole('button', { name: 'Solo Vocals' }))
+    await expect(canvas.getByRole('button', { name: 'Volume Vocals: solo' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('radio', { name: /^Rhythm only/ }))
+    await expect(canvas.getByRole('radio', { name: /^Rhythm only/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+  },
+}
+export const AllStemsS40bDaylight: Story = {
+  ...AllStemsS40b,
+  globals: { appearance: 'light' },
+}
+export const AllStemsS40bIncreasedContrast: Story = {
+  ...AllStemsS40b,
+  globals: { contrast: 'more' },
+}
+
+/** Long names truncate; the badges, M/S and the readout keep their room and their 48 boxes. */
+export const LongStemNames: Story = {
+  render: () => <AllStems long />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    for (const toggle of canvas.getAllByRole('button', { name: /^(Mute|Solo) / })) {
+      const box = toggle.getBoundingClientRect()
+      await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(48)
+    }
+    await expect(canvas.getByText('Your part')).toBeVisible()
+    await expect(canvas.getByText('Rough')).toBeVisible()
+  },
+}
+export const LongStemNamesDaylight: Story = { ...LongStemNames, globals: { appearance: 'light' } }
+
+/** The Tools sheet's M (27 §3.7.2): painted 44 inside its 48 box; on = filled. */
+export const ToolsMute: Story = {
+  render: function Render() {
+    const [muted, setMuted] = useState(false)
+    return (
+      <StemToggle size="tools" pressed={muted} onPressedChange={setMuted} label="Mute Band">
+        M
+      </StemToggle>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const mute = canvas.getByRole('button', { name: 'Mute Band' })
+    const box = mute.getBoundingClientRect()
+    await expect(box.width).toBeGreaterThanOrEqual(48)
+    const face = (mute.firstElementChild as HTMLElement).getBoundingClientRect()
+    await expect(face.width).toBe(44)
+    await userEvent.click(mute)
+    await expect(mute).toHaveAttribute('aria-pressed', 'true')
+  },
+}
+export const ToolsMuteDaylight: Story = { ...ToolsMute, globals: { appearance: 'light' } }

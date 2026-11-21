@@ -34,6 +34,9 @@ import { useVideoUrl } from './video-url'
 const MixerDrawer = lazy(() =>
   import('./mixer-drawer').then((module) => ({ default: module.MixerDrawer })),
 )
+const HearChords = lazy(() =>
+  import('./hear-chords').then((module) => ({ default: module.HearChords })),
+)
 const EditorSheet = lazy(() =>
   import('./editor-sheet').then((module) => ({ default: module.EditorSheet })),
 )
@@ -319,8 +322,11 @@ function Overlays({ layout }: { layout: PracticeLayout }) {
   const editor = useOpened(usePracticeUi((s) => s.editor !== null))
   const shortcuts = useOpened(usePracticeUi((s) => s.shortcutsOpen))
   const desktop = layout === 'desktop'
+  const { layers } = usePractice()
+  const hearChords = usePracticeUi((s) => s.hearChords && !s.fixing) && layers.chords
   return (
     <Suspense fallback={null}>
+      {hearChords && <HearChords />}
       {mixer && !desktop && <MixerDrawer phone={isPhone(layout)} />}
       {editor && !desktop && <EditorSheet side={layout === 'tablet-landscape'} />}
       {shortcuts && desktop && <ShortcutsOverlay />}

@@ -1,6 +1,5 @@
 import { MinusIcon, PauseIcon, PencilIcon, PlayIcon, PlusIcon, Undo2Icon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -87,9 +86,8 @@ export function FixMode({ onLeave = leaveFix }: { onLeave?: () => void }) {
   const command = usePracticeUi((s) => s.fixCommand)
   const listen = usePracticeUi((s) => s.fixListen)
   const audition = useFix((s) => s.audition)
-  const volumePct = usePracticeDefaults((s) => s.volumePct)
-  const latest = useRef({ practice, queue, spot, onLeave, volumePct })
-  latest.current = { practice, queue, spot, onLeave, volumePct }
+  const latest = useRef({ practice, queue, spot, onLeave })
+  latest.current = { practice, queue, spot, onLeave }
 
   // The player is Fix mode's while it lasts: no ladder, rest or pass prompt between passes, and
   // the Fix dock's own speed. Leaving puts the learner's loop, speed and ladder back. It waits
@@ -174,7 +172,10 @@ export function FixMode({ onLeave = leaveFix }: { onLeave?: () => void }) {
   const [synth] = useState(
     () =>
       new FixSynth({
-        context: () => latest.current.practice.audio.engine?.context ?? null,
+        output: () => {
+          const engine = latest.current.practice.audio.engine
+          return engine && { context: engine.context, input: engine.input }
+        },
         read: () => {
           const { audio: engine, player: now } = latest.current.practice
           return {
@@ -184,7 +185,6 @@ export function FixMode({ onLeave = leaveFix }: { onLeave?: () => void }) {
             loop: now.loop && now.loopOn ? { start: now.loop.start, end: now.loop.end } : null,
           }
         },
-        volume: () => (latest.current.volumePct / 100) ** 2,
       }),
   )
   useEffect(() => () => synth.stop(), [synth])

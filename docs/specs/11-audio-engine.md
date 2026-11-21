@@ -124,6 +124,11 @@ Budget (proposal, validated in P7): worklet ≤35% of one core on a mid-range An
 - The display offset (§3) is set from Settings → Display & practice → **Sound delay** (`soundDelayMs`, per device, ±150 ms in 10 ms steps); `PracticeAudio.setDisplayOffset` mirrors it into the engine, positive = the cursor follows later (Bluetooth).
 - `ScreenWakeLock.acquire()` failing (unsupported or refused) shows the practice screen's once-per-device "keep screen on" tip from the first play.
 
+## Implementation notes (step s40b, 2026-11-21)
+- **Limiter at 0 dBFS** (12 §7): `ProcessorCore.render` passes its output through `PeakLimiter` (`src/limiter.ts`) after the stretch and the click: stereo-linked, instant attack, 80 ms release, no lookahead, so the clock is unchanged. The master volume (at most 1) follows it.
+- **Helpers input:** the worklet node has one input; `Engine.input` (a gain into it) is where main-thread sounds connect (the chord synth). The core adds that input to the output after the stretch and before the limiter, in the same frames, so helpers share the master volume and the ceiling.
+- **Tests:** offline scenarios "solo and mute resolve to gains" and "master at or below 0 dBFS" (each preset's gains, every fader at +6 dB, a +12 dB solo) in Node and the browser harness; `limiter.test.ts`; `test/helpers.test.ts` (mono and stereo input, limited with the stems).
+
 ## Open questions
 - P7 outcome at 0.5× (D5); fallback is Rubber Band commercial licence or offline pre-render.
 - Whether to support slow-down below 50% (QX13).

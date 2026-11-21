@@ -69,6 +69,12 @@ const CATALOGUE: Record<string, string> = {
   'delete.account_confirm': "Delete your account and everything in it? This can't be undone.",
   'analysis.heard': 'We hear {instruments}.',
   'practice.pedal_detected': 'Pedal detected? Set it up',
+  'mixer.preset_rhythm': 'Rhythm only',
+  'practice.preset_gloss_rhythm': 'Bass and drums, nothing else',
+  'mixer.hear_chords': 'Hear the chords',
+  'mixer.hear_chords_hint': 'A soft synth plays what we transcribed',
+  'mixer.use_default': 'Use as default for {part}',
+  'mixer.all_stems': 'All {count} stems',
   'shortcuts.single_keys_hint':
     'Turn single keys off if you use speech input or switch control. Ctrl shortcuts keep working.',
   'practice.reason.notes_unavailable':

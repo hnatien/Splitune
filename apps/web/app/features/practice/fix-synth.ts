@@ -6,16 +6,21 @@ import {
   SynthScheduler,
 } from './model/synth-schedule'
 
-// The audition synth (12 §4, §6 "Audition"; s40b reuses it for "Hear the chords"): a soft pluck
-// for the transcribed notes and a softer held tone for a chord, played through the audio engine's
-// own AudioContext and scheduled from its clock (model/synth-schedule.ts), so it stays on the loop
-// at any speed. It sounds over the stems, outside their mixer, at the master volume.
+// The audition synth (12 §4, §6 "Audition"; "Hear the chords" reuses it): a soft pluck for the
+// transcribed notes and a softer held tone for a chord, scheduled from the audio engine's clock
+// (model/synth-schedule.ts), so it stays on the loop at any speed. It plays into the engine's
+// helpers input, so it sounds with the stems, outside their mixer, through the master volume and
+// the limiter at 0 dBFS (12 §7).
 
 export interface SynthClock {
-  /** The engine's context once the first play created it. */
-  context(): BaseAudioContext | null
+  /** The engine's context and its helpers input, once the first play created the engine. */
+  output(): { context: BaseAudioContext; input: AudioNode } | null
   read(): Omit<ClockReading, 'time'>
-  /** Master volume as a linear gain. */
+}
+
+/** A context to play a one-off on ("Hear the tab"), at the master volume as a linear gain. */
+export interface OnceClock {
+  context(): BaseAudioContext | null
   volume(): number
 }
 
@@ -52,7 +57,7 @@ export class FixSynth {
   readonly #clock: SynthClock
   readonly #scheduler = new SynthScheduler()
   #timer: ReturnType<typeof setInterval> | undefined
-  #bus: { context: BaseAudioContext; gain: GainNode; tone: BiquadFilterNode } | null = null
+  #bus: { input: AudioNode; tone: BiquadFilterNode } | null = null
 
   constructor(clock: SynthClock) {
     this.#clock = clock
@@ -69,26 +74,26 @@ export class FixSynth {
     this.#timer ??= setInterval(() => this.#tick(), TICK_MS)
   }
 
-  #output(context: BaseAudioContext): AudioNode {
-    if (this.#bus?.context !== context) {
+  #output(context: BaseAudioContext, input: AudioNode): AudioNode {
+    if (this.#bus?.input !== input) {
+      this.#bus?.tone.disconnect()
       // A soft top end: the synth sits behind the recording, it doesn't cut through it.
       const tone = context.createBiquadFilter()
       tone.type = 'lowpass'
       tone.frequency.value = 2400
-      const gain = context.createGain()
-      tone.connect(gain).connect(context.destination)
-      this.#bus = { context, gain, tone }
+      tone.connect(input)
+      this.#bus = { input, tone }
     }
-    this.#bus.gain.gain.value = this.#clock.volume()
     return this.#bus.tone
   }
 
   #tick(): void {
-    const context = this.#clock.context()
-    if (!context) return
+    const output = this.#clock.output()
+    if (!output) return
+    const { context, input } = output
     const due = this.#scheduler.tick({ ...this.#clock.read(), time: context.currentTime })
     if (due.length === 0) return
-    const out = this.#output(context)
+    const out = this.#output(context, input)
     for (const item of due) sound(context, out, item)
   }
 
@@ -97,11 +102,8 @@ export class FixSynth {
     clearInterval(this.#timer)
     this.#timer = undefined
     this.#scheduler.setEvents([])
-    if (this.#bus) {
-      this.#bus.tone.disconnect()
-      this.#bus.gain.disconnect()
-      this.#bus = null
-    }
+    this.#bus?.tone.disconnect()
+    this.#bus = null
   }
 }
 
@@ -115,7 +117,7 @@ export async function playOnce(
   events: readonly SynthEvent[],
   from: number,
   rate: number,
-  clock: Pick<SynthClock, 'context' | 'volume'>,
+  clock: OnceClock,
 ): Promise<void> {
   if (events.length === 0 || typeof AudioContext === 'undefined') return
   const shared = clock.context()

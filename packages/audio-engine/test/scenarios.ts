@@ -2,6 +2,7 @@
 // engine with commands, renders, measures, and checks the measurements. The same scenarios run
 // in Node through ProcessorCore (test/engine.test.ts) and in Chromium, Firefox and WebKit through
 // the real AudioWorklet in an OfflineAudioContext (test/browser/offline.spec.ts).
+import { dbToGain, resolveGains } from '../src/mixer.ts'
 import type { Command, ProcessorEvent } from '../src/protocol.ts'
 import {
   allFinite,
@@ -297,6 +298,81 @@ function gainRamp() {
   })
 }
 
+// Mute and solo resolve to per-stem gains (12 §7): soloing one stem plays it alone at its solo
+// gain, the other stem silent, at the level the gains say.
+function soloAndMute() {
+  const gains = resolveGains([
+    { gain: dbToGain(-6), muted: false, soloed: true, soloGain: dbToGain(6) },
+    { gain: 1, muted: true, soloed: false },
+    { gain: 1, muted: false, soloed: false },
+  ])
+  const part = tone(sr, 4, 440, 0.2)
+  return scenario({
+    name: 'solo and mute resolve to gains',
+    setup: () => ({
+      seconds: 3,
+      stems: [part, tone(sr, 4, 660, 0.2), tone(sr, 4, 880, 0.2)],
+      commands: [
+        ...gains.map((gain, stem): Command => ({ type: 'gain', stem, gain })),
+        { type: 'play', countInBars: 0 },
+      ],
+    }),
+    measure(output) {
+      return {
+        finite: allFinite(output),
+        cents: cents(frequency(output, sr, sr, 2 * sr), 440),
+        levelDb: db(rms(output, sr, 2 * sr) / rms(interleavedChannel(part))),
+      }
+    },
+    check(r, expect) {
+      expect(r.finite).toBe(true)
+      expect(Math.abs(r.cents), 'only the soloed 440 Hz stem (cents)').toBeLessThanOrEqual(5)
+      expect(Math.abs(r.levelDb), 'fader −6 dB × solo gain +6 dB (dB)').toBeLessThanOrEqual(0.5)
+    },
+  })
+}
+
+// The limiter at unity (12 §7, WHO H.870): four stems that sum to a mixture just under full
+// scale, played at the gains each preset resolves to after the mixer's unity rule (Your part
+// loud = part 0, band −12; Minus-one; Original; Rhythm only), soloed at a +12 dB solo gain, and
+// with every fader at its +6 dB top (no unity rule at all): the master never passes 0 dBFS.
+const PRESET_GAINS_DB: Record<string, (number | null)[]> = {
+  'Your part loud': [0, -12, -12, -12],
+  'Minus-one': [null, 0, 0, 0],
+  Original: [0, 0, 0, 0],
+  'Rhythm only': [null, null, 0, 0],
+  'every fader at +6 dB': [6, 6, 6, 6],
+}
+
+function ceiling(name: string, gainsDb: (number | null)[], solo = false) {
+  return scenario({
+    name: `master at or below 0 dBFS: ${name}`,
+    setup: () => ({
+      seconds: 3,
+      stems: gainsDb.map(() => chord(sr, 4, 0.245)),
+      commands: [
+        ...resolveGains(
+          gainsDb.map((db, stem) => ({
+            gain: db === null ? 1 : dbToGain(db),
+            muted: db === null,
+            soloed: solo && stem === 0,
+            soloGain: dbToGain(12),
+          })),
+        ).map((gain, stem): Command => ({ type: 'gain', stem, gain })),
+        { type: 'play', countInBars: 0 },
+      ],
+    }),
+    measure(output) {
+      return { finite: allFinite(output), peak: peak(output, 0, output.length) }
+    },
+    check(r, expect) {
+      expect(r.finite).toBe(true)
+      expect(r.peak, 'master peak').toBeLessThanOrEqual(1)
+      expect(r.peak, 'still playing').toBeGreaterThan(0.05)
+    },
+  })
+}
+
 export const scenarios: Scenario[] = [
   duration(0.5),
   duration(0.75),
@@ -309,4 +385,7 @@ export const scenarios: Scenario[] = [
   clock(1),
   countIn(),
   gainRamp(),
+  soloAndMute(),
+  ...Object.entries(PRESET_GAINS_DB).map(([name, gains]) => ceiling(name, gains)),
+  ceiling('your part soloed at +12 dB', [0, -6, -6, -6], true),
 ]

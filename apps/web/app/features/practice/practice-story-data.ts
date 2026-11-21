@@ -419,17 +419,46 @@ export const VOCAL_LINE = {
     })
   }),
 }
-/** The vocal song's stems: the vocals and the song without them. */
+/** The vocal song's stems: a two-stem run, so the vocals and the song without them. */
 export const VOCAL_STEMS = {
   ...stems,
-  stems: stems.stems.map((stem) =>
+  stems: stems.stems.flatMap((stem) =>
     stem.kind === 'isolated' && stem.instrument === 'guitar'
-      ? { ...stem, stem_id: 'vocals', instrument: 'vocals' }
+      ? [{ ...stem, stem_id: 'vocals', instrument: 'vocals' }]
       : stem.kind === 'mix_minus'
-        ? { ...stem, stem_id: 'mix_minus_vocals' }
-        : stem,
+        ? [{ ...stem, stem_id: 'mix_minus_vocals' }]
+        : [],
   ),
 }
+
+const GUITAR_STEM = stems.stems.find(
+  (stem) => stem.stem_id === 'guitar',
+) as (typeof stems.stems)[number]
+const MIX_MINUS = stems.stems.find(
+  (stem) => stem.kind === 'mix_minus',
+) as (typeof stems.stems)[number]
+const isolatedStem = (instrument: string, rough = false) => ({
+  ...GUITAR_STEM,
+  stem_id: instrument,
+  instrument,
+  files: GUITAR_STEM.files.map((file) => ({
+    ...file,
+    path: file.path.replace('guitar', instrument),
+  })),
+  quality_hint: rough ? 'rough' : 'good',
+})
+/** Every stem of a six-stem run for a guitarist (s40a), the piano marked rough. */
+export const SIX_STEMS = {
+  ...stems,
+  stems: [
+    ...['guitar', 'vocals', 'bass', 'drums'].map((instrument) => isolatedStem(instrument)),
+    isolatedStem('piano', true),
+    isolatedStem('other'),
+    MIX_MINUS,
+  ],
+}
+/** A guitarist's stems from before s40a, or a run with only the target: your part and the band. */
+export const TWO_STEMS = { ...stems, stems: [GUITAR_STEM, MIX_MINUS] }
 export const VOCAL_SUMMARY = {
   ...summary,
   per_instrument: [
@@ -704,3 +733,33 @@ export function toneWav(): ArrayBuffer {
 export const tone: FetchAudio = async () => toneWav()
 
 export const SONG_ID = detail(1, null).id
+
+// A coarse-pointer layout as its feature queries report it (26 §7): the story runner has no touch
+// emulation, so the queries are answered as that device would. Tablet landscape by default.
+export const coarse = (answers: Record<string, boolean> = {}) => {
+  const matchMedia = window.matchMedia
+  const device: Record<string, boolean> = {
+    '(pointer: coarse)': true,
+    '(max-width: 640px)': false,
+    '(max-height: 640px)': false,
+    '(orientation: landscape)': true,
+    ...answers,
+  }
+  window.matchMedia = (query) => {
+    const matches = device[query]
+    if (matches === undefined) return matchMedia.call(window, query)
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }
+  }
+  return () => {
+    window.matchMedia = matchMedia
+  }
+}

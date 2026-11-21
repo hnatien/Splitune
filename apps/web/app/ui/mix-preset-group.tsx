@@ -3,12 +3,13 @@ import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group'
 import { cn } from '@/lib/utils'
 
 // Doc 26 §12.2, 27 §3.7.4, §5.2 (Practice-Mix.dc.html): "Your part loud", "Minus-one", "Original"
-// as a 2 × 2 grid of radio cards (Rhythm only joins in s40b), each with its name and a gloss line
-// ("Learn it: guitar up, band down"). Checked = --primary-soft fill, a 1 px --signal border plus a
-// 1 px inset --signal ring (a 2 px edge, never colour alone) and --primary-ink on the name. None is
-// checked when the mix matches no preset. `list` stacks them for the narrow phone drawer.
+// and "Rhythm only" (when bass and drums are stems of their own) as a 2 × 2 grid of radio cards,
+// each with its name and a gloss line ("Learn it: guitar up, band down"). Checked = --primary-soft
+// fill, a 1 px --signal border plus a 1 px inset --signal ring (a 2 px edge, never colour alone)
+// and --primary-ink on the name. None is checked when the mix matches no preset. `list` stacks
+// them for the narrow phone drawer.
 
-export type MixPreset = 'part-loud' | 'minus-one' | 'original'
+export type MixPreset = 'part-loud' | 'minus-one' | 'original' | 'rhythm'
 
 type MixPresetGroupProps = {
   value: MixPreset | null

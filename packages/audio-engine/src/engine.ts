@@ -108,7 +108,7 @@ export async function createEngine(options: EngineOptions = {}): Promise<Engine>
     reportInterval: Math.round(REPORT_SECONDS * context.sampleRate),
   }
   const node = new AudioWorkletNode(context, PROCESSOR_NAME, {
-    numberOfInputs: 0,
+    numberOfInputs: 1,
     numberOfOutputs: 1,
     outputChannelCount: [2],
     processorOptions,
@@ -116,13 +116,17 @@ export async function createEngine(options: EngineOptions = {}): Promise<Engine>
   // Master volume: a gain after the processor, so it scales the stems and the click together.
   const output = context.createGain()
   node.connect(output).connect(options.destination ?? context.destination)
+  // Helpers (the chord synth) play into the processor, which adds them after the stretch and
+  // before its limiter, so they share the master volume and the 0 dBFS ceiling.
+  const input = context.createGain()
+  input.connect(node)
   const tier =
     options.tier ??
     initialTier({
       deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
       hardwareConcurrency: navigator.hardwareConcurrency,
     })
-  return new Engine(context, node, output, {
+  return new Engine(context, node, output, input, {
     ownsContext,
     tier,
     adaptive: options.adaptive ?? true,
@@ -135,6 +139,8 @@ export class Engine {
   readonly sampleRate: number
   readonly #node: AudioWorkletNode
   readonly #output: GainNode
+  // Where helper sounds connect: heard with the stems, through the master and the limiter.
+  readonly input: AudioNode
   readonly #ownsContext: boolean
   readonly #clock = new PositionClock()
   readonly #timestampLag = new TimestampLag()
@@ -154,12 +160,14 @@ export class Engine {
     context: BaseAudioContext,
     node: AudioWorkletNode,
     output: GainNode,
+    input: AudioNode,
     options: { ownsContext: boolean; tier: Tier; adaptive: boolean; keepScreenOn: boolean },
   ) {
     this.context = context
     this.sampleRate = context.sampleRate
     this.#node = node
     this.#output = output
+    this.input = input
     this.#ownsContext = options.ownsContext
     this.#wakeLock =
       options.keepScreenOn && context instanceof AudioContext ? new ScreenWakeLock() : null
@@ -363,6 +371,7 @@ export class Engine {
     this.#mediaSession?.dispose()
     this.#wakeLock?.dispose()
     this.#node.port.onmessage = null
+    this.input.disconnect()
     this.#node.disconnect()
     this.#output.disconnect()
     if (this.context instanceof AudioContext) {

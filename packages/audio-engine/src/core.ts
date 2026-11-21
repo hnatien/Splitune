@@ -1,7 +1,10 @@
 // The AudioWorklet processor's logic without the AudioWorkletProcessor shell, so tests can drive
 // it in Node: applies commands (now or at a scheduled frame), renders blocks through dsp.wasm,
-// and turns DSP events into protocol events stamped with AudioContext frames.
+// adds the helpers' input (sounds made on the main thread, like the chord synth) after the
+// stretch, limits the sum at 0 dBFS, and turns DSP events into protocol events stamped with
+// AudioContext frames.
 import { Dsp, DspEventType, instantiateDsp, Transport as TransportCode } from './dsp.ts'
+import { PeakLimiter } from './limiter.ts'
 import type { Command, ProcessorEvent, Transport } from './protocol.ts'
 
 const LOAD_WINDOW_SECONDS = 1
@@ -21,6 +24,7 @@ export class ProcessorCore {
   readonly #now: Clock
   readonly #reportInterval: number
   readonly #loadWindow: number
+  readonly #limiter: PeakLimiter
   #queue: Command[] = []
   #nextFrame = 0
   #sinceReport = Number.POSITIVE_INFINITY
@@ -41,6 +45,7 @@ export class ProcessorCore {
     this.#now = now
     this.#reportInterval = reportInterval
     this.#loadWindow = Math.round(LOAD_WINDOW_SECONDS * sampleRate)
+    this.#limiter = new PeakLimiter(sampleRate)
     post({ type: 'ready' })
   }
 
@@ -56,7 +61,14 @@ export class ProcessorCore {
     else this.#queue.splice(index, 0, command)
   }
 
-  render(frame: number, left: Float32Array, right: Float32Array): void {
+  // `input`: the helpers' channels for this block (none, mono or stereo), heard on top of the
+  // stems at the same frames and through the same limiter.
+  render(
+    frame: number,
+    left: Float32Array,
+    right: Float32Array,
+    input: readonly Float32Array[] = [],
+  ): void {
     const frames = left.length
     while (this.#queue.length > 0 && (this.#queue[0]?.at ?? 0) < frame + frames) {
       const command = this.#queue.shift()
@@ -79,7 +91,15 @@ export class ProcessorCore {
     const started = this.#now()
     const [outLeft, outRight] = this.#dsp.process(frames)
     left.set(outLeft)
-    right.set(outRight)
+    if (right !== left) right.set(outRight)
+    const [inLeft, inRight = inLeft] = input
+    if (inLeft && inRight) {
+      for (let i = 0; i < frames; i++) {
+        left[i] = (left[i] ?? 0) + (inLeft[i] ?? 0)
+        if (right !== left) right[i] = (right[i] ?? 0) + (inRight[i] ?? 0)
+      }
+    }
+    this.#limiter.process(left, right)
     const events = this.#dsp.events()
     const heard = this.#dsp.heard(0)
     this.#heardEnd = this.#dsp.heard(frames - 1)

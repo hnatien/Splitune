@@ -17,6 +17,7 @@ import {
   ALL,
   ALL_BASS,
   BASS_LINE,
+  coarse,
   DRUM_NOTES_SWING,
   DRUM_STEMS,
   DRUM_SUMMARY,
@@ -583,36 +584,6 @@ export const ResumeShowTabAnyway: Story = {
   },
 }
 
-// A coarse-pointer layout as its feature queries report it (26 §7): the story runner has no touch
-// emulation, so the queries are answered as that device would. Tablet landscape by default.
-const coarse = (answers: Record<string, boolean> = {}) => {
-  const matchMedia = window.matchMedia
-  const device: Record<string, boolean> = {
-    '(pointer: coarse)': true,
-    '(max-width: 640px)': false,
-    '(max-height: 640px)': false,
-    '(orientation: landscape)': true,
-    ...answers,
-  }
-  window.matchMedia = (query) => {
-    const matches = device[query]
-    if (matches === undefined) return matchMedia.call(window, query)
-    return {
-      matches,
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => false,
-    }
-  }
-  return () => {
-    window.matchMedia = matchMedia
-  }
-}
-
 /** A tab without chords on a phone: phones leave the level out, so no strip is left over the tab
  * (on larger screens the strip holds the level). */
 export const TabWithoutChordsPhone: Story = {
@@ -660,7 +631,8 @@ export const EditorTablet: Story = {
   },
 }
 
-/** The mix pill opens the Mix tab: presets as radio cards, your part and the Band (27 §3.7.4). */
+/** The mix pill opens the Mix tab: presets as radio cards, your part first and every stem the
+ * fixture's run kept (27 §3.7.4). */
 export const Mixer: Story = {
   render: screen(ALL),
   play: async ({ canvasElement }) => {
@@ -673,7 +645,7 @@ export const Mixer: Story = {
     await expect(
       within(panel).getByText('Your part', { selector: '[data-slot=badge]' }),
     ).toBeVisible()
-    await expect(within(panel).getByText('Band')).toBeVisible()
+    await expect(within(panel).getByText('Drums')).toBeVisible()
     await userEvent.click(within(panel).getByRole('radio', { name: /^Minus-one/ }))
     await expect(within(panel).getByRole('radio', { name: /^Minus-one/ })).toHaveAttribute(
       'aria-checked',

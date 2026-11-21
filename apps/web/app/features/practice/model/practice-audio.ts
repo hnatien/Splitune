@@ -19,7 +19,8 @@ const loadEngine = () => {
   return enginePromise
 }
 
-export type LaneRole = 'part' | 'backing' | 'mix'
+/** A stem: your part, another isolated stem, the mix-minus; or the song before its stems. */
+export type LaneRole = 'part' | 'stem' | 'backing' | 'mix'
 
 export interface Lane {
   id: string
@@ -80,6 +81,7 @@ export class PracticeAudio implements PlayerEngine {
   #loop: { start: number; end: number } | null = null
   #stopAt: number | null = null
   #metronome = false
+  #clickDb = 0
   #displayOffset = 0
   #volume = 1
   #position = 0
@@ -197,6 +199,8 @@ export class PracticeAudio implements PlayerEngine {
     engine.setRate(this.#rate)
     engine.setBeatGrid(this.#beats)
     engine.setMetronome(this.#metronome)
+    // The module is in: the engine was created from it.
+    if (engineModule) engine.setClickVolume(engineModule.dbToGain(this.#clickDb))
     engine.setLoop(this.#loop)
     engine.setStopAt(this.#stopAt)
     engine.setDisplayOffset(this.#displayOffset)
@@ -239,6 +243,12 @@ export class PracticeAudio implements PlayerEngine {
   setMetronome(on: boolean): void {
     this.#metronome = on
     this.#engine?.setMetronome(on)
+  }
+
+  /** The click's level in dB against its own unity (Mix → Helpers). */
+  setClickLevel(db: number): void {
+    this.#clickDb = db
+    if (this.#engine && engineModule) this.#engine.setClickVolume(engineModule.dbToGain(db))
   }
 
   /** The learner's sound delay (Bluetooth headphones): the cursor follows what is heard. */

@@ -14,6 +14,7 @@ import { CountInIcon } from '@/ui/icons'
 import { LoopBadge } from '@/ui/loop-badge'
 import { SpeedControl } from '@/ui/speed-control'
 import { TransportButton } from '@/ui/transport-button'
+import { presetName } from './mix-copy'
 import { presetOf } from './model/mixer'
 import { usePractice } from './practice-context'
 import { openTab, usePracticeUi } from './practice-store'
@@ -98,14 +99,7 @@ function Position() {
 function MixPill({ iconOnly }: { iconOnly: boolean }) {
   const { channels, mix, layers, player } = usePractice()
   const preset = presetOf(channels, mix)
-  const name =
-    preset === 'part-loud'
-      ? m['mixer.preset_part_loud']()
-      : preset === 'minus-one'
-        ? m['mixer.preset_minus_one']()
-        : preset === 'original'
-          ? m['mixer.preset_original']()
-          : m['practice.mix']()
+  const name = preset ? presetName(preset) : m['practice.mix']()
   const detail = layers.stems
     ? [
         m['practice.mix_stems']({ count: String(channels.length) }),

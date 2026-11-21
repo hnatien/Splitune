@@ -36,9 +36,9 @@ const VolumePanel = lazy(() =>
 // TransportBar (12 §2, 27 §3.7.2): tablets and phones keep today's arrangement until s43, with
 // round icon buttons: restart and a large round play; the loop toggle joined to the loop pill
 // (which opens the loop's options); speed −/+ around "70 % · 84 BPM"; count-in, metronome and the
-// mixer; master volume; and at the right edge the pass pair (Felt clean / Not yet, 64 px) with the
-// question after each pass. The controls wrap among themselves when the bar is narrow. Desktop has
-// the transport dock (transport-dock.tsx).
+// mixer (phones: the mixer alone); master volume; and at the right edge the pass pair (Felt clean
+// / Not yet, 64 px) with the question after each pass. The controls wrap among themselves when the
+// bar is narrow. Desktop has the transport dock (transport-dock.tsx).
 
 const PLAYING = new Set(['countIn', 'playing', 'loopRest', 'assess', 'audition'])
 
@@ -98,6 +98,19 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
   const loopActive = player.loop !== null
   const compact = layout === 'phone-portrait' || layout === 'phone-landscape'
   const ready = audioStatus === 'ready' && state !== 'loading'
+
+  // Phones reach the mixer here too (its sheet opens on the mini-mixer) until s43's Tools button.
+  const mix = (
+    <TransportButton
+      size="practice-2"
+      icon={<SlidersVerticalIcon aria-hidden />}
+      label={m['practice.mix']()}
+      showLabel={false}
+      pressed={mixerOpen && layers.stems}
+      disabled={!layers.stems}
+      onPressedChange={(open) => usePracticeUi.setState({ mixerOpen: open })}
+    />
+  )
 
   const pass = (loopActive || !compact) && (
     <PassControl
@@ -215,17 +228,10 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
               disabled={!layers.beats}
               onPressedChange={(on) => send({ type: 'SET_METRONOME', on })}
             />
-            <TransportButton
-              size="practice-2"
-              icon={<SlidersVerticalIcon aria-hidden />}
-              label={m['practice.mix']()}
-              showLabel={false}
-              pressed={mixerOpen && layers.stems}
-              disabled={!layers.stems}
-              onPressedChange={(open) => usePracticeUi.setState({ mixerOpen: open })}
-            />
+            {mix}
           </fieldset>
         )}
+        {compact && mix}
         {!compact && <VolumeControl />}
         {compact && pass}
       </div>

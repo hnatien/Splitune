@@ -9,10 +9,13 @@ import { usePlaybackActive } from '@/lib/app-state'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
+import { instrumentLabel } from '@/lib/instruments'
 import { meQuery } from '@/lib/session'
 import { track, trackCorrection } from '@/lib/track'
 import { toast } from '@/ui/toast'
 import { localFile } from '../import/local-files'
+import { presetName } from './mix-copy'
+import { useMixerPrefs } from './mixer-prefs'
 import { audioSourceKey } from './model/audio-source'
 import { confirmedEntities } from './model/confirmed'
 import {
@@ -45,6 +48,7 @@ import {
 } from './model/ladder'
 import { clipBeats, type LoopRange, restSeconds, tapBar } from './model/loops'
 import {
+  defaultMix,
   limitToUnity,
   type Mix,
   type MixChannel,
@@ -52,6 +56,8 @@ import {
   mixChannels,
   presetMix,
   resolveMix,
+  sameMix,
+  toDefault,
 } from './model/mixer'
 import type { MusicInput, MusicOptions, MusicOutput } from './model/music'
 import { type PlayerContext, type PlayerState, playerMachine } from './model/player-machine'
@@ -106,6 +112,12 @@ export interface PracticeValue {
   mix: Mix
   setMix: (mix: Mix) => void
   applyPreset: (preset: MixPreset) => void
+  /** The mix differs from the one Reset mix goes back to (the Mix tab's dot). */
+  mixChanged: boolean
+  /** Back to this part's default on this device, else the built-in one. */
+  resetMix: () => void
+  /** "Use as default for {part}": this mix starts every song of the part on this device. */
+  saveDefaultMix: () => void
   options: MusicOptions
   setOptions: (patch: Partial<MusicOptions>) => void
   clips: Clip[]
@@ -433,7 +445,11 @@ export function PracticeProvider({
 
   // The mix: saved per stem in player_state; the engine gets linear gains.
   const [savedMix, setSavedMix] = useState<Mix | undefined>(undefined)
-  const mix = useMemo(() => resolveMix(channels, savedMix), [channels, savedMix])
+  const deviceDefault = useMixerPrefs((s) => s.defaults[instrument])
+  const baseMix = useMemo(() => defaultMix(channels, deviceDefault), [channels, deviceDefault])
+  const mix = useMemo(() => resolveMix(channels, savedMix, baseMix), [channels, savedMix, baseMix])
+  const clickDb = useMixerPrefs((s) => s.clickDb)
+  useEffect(() => audio.setClickLevel(clickDb), [audio, clickDb])
   const stemsLoaded = lanes.length > 1
   // "Hear this bar" plays the original mix (27 §3.7.4) and Fix mode what its dock's "Listen to"
   // says; then the learner's mix comes back.
@@ -759,17 +775,14 @@ export function PracticeProvider({
   const setMix = (next: Mix) => setSavedMix(next)
   const applyPreset = (preset: MixPreset) => {
     setSavedMix(presetMix(channels, preset))
-    track('mix_preset_applied', {
-      preset:
-        preset === 'part-loud' ? 'part_loud' : preset === 'minus-one' ? 'minus_one' : 'original',
-    })
-    showHud(
-      preset === 'part-loud'
-        ? m['mixer.preset_part_loud']()
-        : preset === 'minus-one'
-          ? m['mixer.preset_minus_one']()
-          : m['mixer.preset_original'](),
-    )
+    // The analytics enum predates Rhythm only (a contracts change); its use isn't counted yet.
+    if (preset !== 'rhythm') {
+      track('mix_preset_applied', {
+        preset:
+          preset === 'part-loud' ? 'part_loud' : preset === 'minus-one' ? 'minus_one' : 'original',
+      })
+    }
+    showHud(presetName(preset))
   }
 
   const setSpeed = (pct: number) => {
@@ -890,6 +903,12 @@ export function PracticeProvider({
     mix,
     setMix,
     applyPreset,
+    mixChanged: channels.length > 0 && !sameMix(channels, mix, baseMix),
+    resetMix: () => setSavedMix(baseMix),
+    saveDefaultMix: () => {
+      useMixerPrefs.getState().setDefault(instrument, toDefault(channels, mix))
+      showHud(m['mixer.default_saved']({ part: instrumentLabel(instrument).toLowerCase() }))
+    },
     options,
     setOptions: (patch) => setOptionsState((current) => ({ ...current, ...patch })),
     clips,

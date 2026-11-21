@@ -17,7 +17,8 @@ const ProgressTab = lazy(() =>
 const FixTab = lazy(() => import('./fix-tab').then((module) => ({ default: module.FixTab })))
 
 // The inspector (27 §3.7.1, §3.7.4, 26 §12.2 InspectorTabs): tabs Loop · Mix · Progress · Fix, the
-// Fix tab carrying the unsure count, 380 px at every tab (V14). Docked from 1180 px; below that a
+// Mix tab carrying a dot while the mix isn't its default (12 §7) and the Fix tab the unsure count,
+// 380 px at every tab (V14). Docked from 1180 px; below that a
 // right drawer opened by "Tools" (and by the loop and mix pills), which never covers the dock.
 // The tab is remembered per device and `?tab=` opens one. The whole inspector loads with the
 // screen, outside the route's JS budget.
@@ -31,7 +32,7 @@ const LABEL: Record<InspectorTab, () => string> = {
 
 function InspectorTabs() {
   const tab = usePracticeUi((s) => s.tab)
-  const { view } = usePractice()
+  const { view, mixChanged } = usePractice()
   const unsure = unsureSpots(view).count
   return (
     <Tabs
@@ -43,6 +44,11 @@ function InspectorTabs() {
         {INSPECTOR_TABS.map((value) => (
           <TabsTrigger key={value} value={value} className="min-h-target-practice-2 font-medium">
             {LABEL[value]()}
+            {value === 'mix' && mixChanged && (
+              <span data-slot="mix-changed" className="size-1.5 rounded-full bg-foreground">
+                <span className="sr-only">{m['practice.mix_changed']()}</span>
+              </span>
+            )}
             {value === 'fix' && unsure > 0 && (
               <Badge
                 variant="unsure"

@@ -60,6 +60,8 @@ export interface PracticeUi {
   /** "Show original": the transcription without the learner's edits (12 §4). */
   showOriginal: boolean
   mixerOpen: boolean
+  /** "Hear the chords" (12 §7): a soft synth plays the transcribed chords with the song. */
+  hearChords: boolean
   shortcutsOpen: boolean
   /** The inspector's open tab (desktop), and whether its drawer is open below 1180 px. */
   tab: InspectorTab
@@ -103,6 +105,7 @@ export const INITIAL_UI: PracticeUi = {
   fixCommand: null,
   showOriginal: false,
   mixerOpen: false,
+  hearChords: false,
   shortcutsOpen: false,
   tab: 'loop',
   inspectorOpen: false,
