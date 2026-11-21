@@ -2843,8 +2843,8 @@ After s46 the mockups' Night Rehearsal look is retired (owner, 2026-11-17: docs 
 **Next**
 - s40b / s41b: nothing here depends on them. A section-named loop would give the Progress heading a better name than "Bars 25–28".
 
-## 2026-11-21 — Step s40b: every stem in the mixer, presets, Rough, Click and "Hear the chords", phone mini-mixer (done, not merged; G4 next)
-Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at `340166b` (s40a merged). Not merged into `dev`.
+## 2026-11-21 — Step s40b: every stem in the mixer, presets, Rough, Click and "Hear the chords", phone mini-mixer (done, merged; G4 next)
+Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at `340166b` (s40a merged). Fast-forwarded into `dev` and pushed on 2026-11-21 (owner).
 
 **Owner decision (2026-11-21, before code):** the three "ask the owner first" files may change: `ui/mix-preset-group.tsx` (`rhythm` in its preset type), `ui/stem-row.tsx` ("solo" in the readout and its name; `StemToggle` exported with a 44 px face for the Tools sheet; `STEM_RULE` / `STEM_FILL` exported), `ui/mixer.stories.tsx` (the "all stems s40b" stories).
 
