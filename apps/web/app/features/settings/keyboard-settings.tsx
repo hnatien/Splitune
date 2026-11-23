@@ -1,3 +1,4 @@
+import { useRouterState } from '@tanstack/react-router'
 import { KeyboardIcon, RotateCcwIcon } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { m } from '@/lib/i18n'
@@ -7,22 +8,38 @@ import { Kbd, KbdGroup } from '@/ui/kbd'
 import { ListGroup, ListRow } from '@/ui/list-row'
 import { actionLabel, keyLabel } from '../practice/input-mapper'
 import { useKeys } from '../practice/keys-store'
-import { ACTIONS, DEFAULT_KEYS, keyOf, resolveKey } from '../practice/model/keymap'
+import {
+  ACTIONS,
+  DEFAULT_KEYS,
+  keyOf,
+  LOOP_BARS,
+  resolveKey,
+  SPEED_KEYS,
+} from '../practice/model/keymap'
 import { SettingRows, SettingSection, SettingsPage, SwitchSetting } from './setting-row'
 
 // Settings → Keyboard & pedal (27 §3.9, Settings-Pedal's Keys part, 12 §8): the intro, the pedal
 // line, the test area first (a learner setting up a pedal tries it straight away), the
 // Single-key shortcuts switch (WCAG 2.1.4; s35's keys store), then every action as a hairline row
 // (its keys and its learned pedal under the name, "Learn this pedal" beside it; the prompt shows
-// in the row being learned, so it stays next to the control at any width) and Reset.
+// in the row being learned, so it stays next to the control at any width), the fixed keys that
+// can't be learned (as the practice shortcuts list names them) and Reset. Reached from a practice
+// "Set it up" link (`/settings/keyboard#pedal`), the left pedal's Learn button takes focus.
+
+/** The hash a "Set it up" link carries to land on the left pedal's Learn button. */
+export const PEDAL_HASH = 'pedal'
 
 export function KeyboardSettings() {
+  const hash = useRouterState({ select: (state) => state.location.hash })
+  useEffect(() => {
+    if (hash === PEDAL_HASH) document.getElementById(PEDAL_HASH)?.focus()
+  }, [hash])
   return (
     <SettingsPage title={m['settings.keyboard']()} intro={m['shortcuts.settings_intro']()}>
       <div className="flex items-start gap-3">
         <PedalIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-label">{m['settings.pedal_setup']()}</h2>
+          <p className="text-label">{m['settings.pedal_setup']()}</p>
           <p className="text-body-sm text-muted-foreground">{m['shortcuts.description']()}</p>
         </div>
       </div>
@@ -33,8 +50,49 @@ export function KeyboardSettings() {
         </SettingRows>
         <KeysList />
       </SettingSection>
+      <MoreKeys />
       <ResetKeys />
     </SettingsPage>
+  )
+}
+
+// The keys with no action of their own to learn a pedal for: the digit loops and speeds, the fine
+// speed step, the shortcuts list and the palette, with the practice shortcuts list's names.
+function MoreKeys() {
+  const rows = [
+    { label: m['shortcuts.loop_bars'](), keys: LOOP_BARS.map(String) },
+    { label: m['shortcuts.speed_keys'](), keys: Object.keys(SPEED_KEYS).map(keyLabel) },
+    { label: m['shortcuts.fine_speed'](), keys: ['Shift+,', 'Shift+.'].map(keyLabel) },
+    { label: m['practice.shortcuts'](), keys: ['?'] },
+    { label: m['shortcuts.palette'](), keys: [m['nav.palette_key_mac'](), m['nav.palette_key']()] },
+    {
+      label: m['shortcuts.undo'](),
+      keys: [m['shortcuts.key_undo_mac'](), m['shortcuts.key_undo']()],
+    },
+  ]
+  return (
+    <SettingSection
+      id="more-keys"
+      title={m['shortcuts.more_keys']()}
+      description={m['shortcuts.more_keys_hint']()}
+    >
+      <ListGroup>
+        {rows.map((row) => (
+          <ListRow
+            key={row.label}
+            className="hover:bg-transparent"
+            title={<span className="whitespace-normal">{row.label}</span>}
+            meta={
+              <KbdGroup className="flex-wrap">
+                {row.keys.map((key) => (
+                  <Kbd key={key}>{key}</Kbd>
+                ))}
+              </KbdGroup>
+            }
+          />
+        ))}
+      </ListGroup>
+    </SettingSection>
   )
 }
 
@@ -104,6 +162,7 @@ function KeysList() {
               }
               aside={
                 <Button
+                  {...(action === 'pedalLeft' ? { id: PEDAL_HASH } : {})}
                   size="sm"
                   variant={now ? 'selected' : 'quiet'}
                   aria-pressed={now}

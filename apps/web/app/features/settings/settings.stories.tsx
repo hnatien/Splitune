@@ -368,13 +368,68 @@ const playKeyboard: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByRole('button', { name: 'Reset to the defaults' }))
   await expect(row).not.toHaveTextContent('Page down')
 }
+/** The fixed keys are listed too, as rows with no Learn button, named as the practice shortcuts
+ * list names them; the pedal line is a statement, not a heading that looks pressable. */
+const moreKeys: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  const more = await canvas.findByRole('region', { name: 'More keys' })
+  await expect(within(more).queryByRole('button')).toBeNull()
+  const keysOf = (label: string | RegExp) =>
+    [
+      ...(
+        within(more).getByText(label).closest('[data-slot=list-row]') as HTMLElement
+      ).querySelectorAll('[data-slot=kbd]'),
+    ].map((key) => key.textContent)
+  await expect(keysOf('Loop 1, 2, 4 or 8 bars from here')).toEqual(['1', '2', '4', '8'])
+  await expect(keysOf('Speed 50 to 100 %')).toEqual(['⇧5', '⇧6', '⇧7', '⇧8', '⇧9', '⇧0'])
+  await expect(keysOf(/^Slower or faster by 1/)).toEqual(['⇧,', '⇧.'])
+  await expect(keysOf('Keyboard shortcuts')).toEqual(['?'])
+  await expect(keysOf('Command palette')).toEqual(['⌘ K', 'Ctrl K'])
+  await expect(canvas.queryByRole('heading', { name: /^Page-turner pedals/ })).toBeNull()
+  await expect(canvas.getByText(/^Page-turner pedals work straight away/)).toBeVisible()
+}
+
 export const Keyboard: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
-  play: playKeyboard,
+  play: async (context) => {
+    await moreKeys(context)
+    await playKeyboard(context)
+  },
 }
 
 export const KeyboardDaylight: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
+  globals: DAYLIGHT,
+  play: moreKeys,
+}
+
+/** Reached from practice's "Set it up" (`/settings/keyboard#pedal`): the left pedal's Learn button
+ * has focus, so one press starts learning it. */
+const fromPedalLink: Story['play'] = async ({ canvasElement }) => {
+  const learn = await within(canvasElement).findByRole('button', {
+    name: /^Learn this pedal for Left pedal/,
+  })
+  await waitFor(() => expect(learn).toHaveFocus())
+  await userEvent.keyboard('{Enter}')
+  await expect(learn).toHaveAttribute('aria-pressed', 'true')
+  await userEvent.keyboard('{Escape}')
+}
+
+export const KeyboardFromPedalLink: Story = {
+  render: () => (
+    <AppStory path="/settings/keyboard#pedal">
+      <AppShell me={ME}>
+        <SettingsLayout>
+          <KeyboardSettings />
+        </SettingsLayout>
+      </AppShell>
+    </AppStory>
+  ),
+  play: fromPedalLink,
+}
+
+export const KeyboardFromPedalLinkDaylight: Story = {
+  ...KeyboardFromPedalLink,
   globals: DAYLIGHT,
 }
 export const KeyboardPhone: Story = {
