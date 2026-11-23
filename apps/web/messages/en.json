@@ -456,6 +456,7 @@
   "library.didnt_use": "This didn't use an analysis.",
   "library.empty": "Bring the first song you want to learn",
   "library.empty_body": "Drop a file anywhere on this page, paste a link, or record it.",
+  "library.empty_body_phone": "Choose a file, paste a link, or record it.",
   "library.filter_all": "All",
   "library.filter_analysing": "Analysing",
   "library.filter_instrument": "Instrument",
