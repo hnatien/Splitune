@@ -4,9 +4,8 @@ import type { z } from 'zod'
 import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import type { MeData } from '@/lib/session'
-import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
-import { RadioCard, RadioCardGroup } from '@/ui/radio-card'
+import { ChoiceRow, ChoiceRowGroup } from '@/ui/choice-row'
 import { InlineError } from '@/ui/status-message'
 import type { Trigger } from '../billing/plans'
 
@@ -31,19 +30,23 @@ export function analysisAvailability(me: MeData) {
   }
 }
 
-// The Full / Lite choice (27 §3.6), shared by the File, Link and Record tabs: two choice cards
-// side by side (stacked on phones) with the Welcome and allowance badges. A used-up allowance is a
-// lock right here, where the learner acts (23 §5), with the way to Plus.
+// The Full / Lite choice (27 §3.6), shared by the File, Link and Record tabs: two choice rows
+// (26 §12.1), each with what it gives and, at its end, the Welcome note or what is left. A used-up
+// allowance says "Unavailable" on its row and explains itself right under the rows, where the
+// learner acts (23 §5), with the way to Plus.
 export function AnalysisChoice({
   me,
   type,
   onTypeChange,
   onSeePlus,
+  groupId,
 }: {
   me: MeData
   type: AnalysisKind
   onTypeChange: (type: AnalysisKind) => void
   onSeePlus: (trigger: Trigger) => void
+  /** The radio group's id, so a submit with no allowance left can move focus here. */
+  groupId?: string
 }) {
   const legend = useId()
   const available = analysisAvailability(me)
@@ -57,33 +60,45 @@ export function AnalysisChoice({
   const seePlus = (trigger: Trigger) =>
     !available.plus && <Button onClick={() => onSeePlus(trigger)}>{m['plan.see_plus']()}</Button>
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <span id={legend} className="flex min-h-target items-center text-label font-medium">
+    <div data-analysis className="flex min-w-0 flex-col gap-2">
+      <span id={legend} className="flex min-h-target items-center text-label">
         {m['import.analysis_label']()}
       </span>
-      <RadioCardGroup
+      <ChoiceRowGroup
+        id={groupId}
         aria-labelledby={legend}
         value={type}
         onValueChange={(value) => onTypeChange(value as AnalysisKind)}
-        className="gap-2"
       >
-        <RadioCard
+        <ChoiceRow
           value="full"
           disabled={!available.full}
-          className="bg-transparent"
-          title={m['import.full_title']()}
+          label={m['import.full_title']()}
           description={m['import.full_body']()}
-          meta={welcome && <Badge variant="primary">{m['import.welcome_badge']()}</Badge>}
+          trailing={
+            <Note>
+              {!available.full
+                ? m['import.unavailable']()
+                : welcome
+                  ? m['import.welcome_badge']()
+                  : undefined}
+            </Note>
+          }
         />
-        <RadioCard
+        <ChoiceRow
           value="lite"
           disabled={!available.lite}
-          className="bg-transparent"
-          title={m['import.lite_title']()}
+          label={m['import.lite_title']()}
           description={m['import.lite_body']()}
-          meta={liteLeft && <Badge>{m['import.left_badge'](liteLeft)}</Badge>}
+          trailing={
+            <Note>
+              {!available.lite
+                ? m['import.unavailable']()
+                : liteLeft && m['import.left_badge'](liteLeft)}
+            </Note>
+          }
         />
-      </RadioCardGroup>
+      </ChoiceRowGroup>
       {!available.full && (
         <InlineError
           tone="info"
@@ -117,5 +132,15 @@ export function AnalysisChoice({
         />
       )}
     </div>
+  )
+}
+
+/** What a row's choice costs or why it can't be chosen, at its end. */
+function Note({ children }: { children: string | undefined }) {
+  if (!children) return null
+  return (
+    <span className="shrink-0 text-right text-label-sm text-muted-foreground tabular-nums">
+      {children}
+    </span>
   )
 }

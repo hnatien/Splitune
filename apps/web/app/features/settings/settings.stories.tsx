@@ -18,15 +18,17 @@ import { KeyboardSettings } from './keyboard-settings'
 import { type DeleteStep, exportStateQuery } from './privacy-settings'
 import { SettingsLayout } from './settings-layout'
 
-// Settings (27 §3.9): Account (Profile, Privacy, Sign out), Display & practice, Keyboard & pedal
-// and About (Usage and Plan are in plan.stories.tsx), in Dark (the default), Light and on a phone. The Privacy stories
-// render Account (Privacy is one of its sections) and keep their ids for the visual matrix.
+// Settings (s47 direction §6, 27 §3.9): Account (Profile, Privacy, Sign out), Display & practice,
+// Keyboard & pedal and About (Usage and Plan are in plan.stories.tsx), as plain rows at the
+// settings width, in Dark (the default), Light and on a phone. The Privacy stories render Account
+// (Privacy is one of its sections) and keep their ids for the visual matrix.
 const meta = { title: 'Screens/Settings', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
 const DAYLIGHT = { appearance: 'light' }
 const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+const TABLET = { viewport: { value: 'tablet', isRotated: false } }
 
 const shell = (
   section: string,
@@ -45,6 +47,12 @@ async function noSidewaysScroll({ canvasElement }: { canvasElement: HTMLElement 
   await waitFor(() => expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth))
 }
 
+/** The section list never pushes the page's h1 down: one line of tabs on phones. */
+async function headingNearTop({ canvasElement }: { canvasElement: HTMLElement }) {
+  const heading = await within(canvasElement).findByRole('heading', { level: 1 })
+  await expect(heading.getBoundingClientRect().top + window.scrollY).toBeLessThan(200)
+}
+
 /** Display & practice (27 §3.9, Settings-Display): appearance cards, reading, motion, defaults. */
 export const Display: Story = {
   render: () => shell('display', <DisplaySettings me={ME} />),
@@ -52,14 +60,21 @@ export const Display: Story = {
     const canvas = within(canvasElement)
     const cards = await canvas.findByRole('radiogroup', { name: 'Appearance' })
     await expect(within(cards).getAllByRole('radio')).toHaveLength(3)
-    await expect(within(cards).getByRole('radio', { name: 'Dark' })).toBeChecked()
-    await expect(canvas.getByText('Saved on this device')).toBeVisible()
+    const dark = within(cards).getByRole('radio', { name: /^Dark/ })
+    await expect(dark).toBeChecked()
+    // Choices are rows: the chosen one has the ink edge (26 §12.1), never a tinted card.
+    await expect(getComputedStyle(dark).boxShadow).toContain('1.5px')
+    // Where these are stored is said once, as words, not a green pill.
+    await expect(canvas.getByText(/^Saved on this device/)).toBeVisible()
+    await expect(canvasElement.querySelector('[data-slot=badge]')).toBeNull()
     await expect(
       canvas.getByText('Can you read the fret numbers from where you play?'),
     ).toBeVisible()
     await expect(canvas.getByRole('switch', { name: 'Hyperlegible font' })).not.toBeChecked()
     await expect(canvas.getByRole('switch', { name: 'Left-handed' })).not.toBeChecked()
     await expect(canvas.queryByText('Score')).toBeNull()
+    // The speed ladder's stepper has its unit.
+    await expect(canvas.getAllByText('clean passes')[0]).toBeVisible()
   },
 }
 export const DisplayDaylight: Story = {
@@ -88,8 +103,12 @@ export const DisplayLadderDefault: Story = {
 export const DisplayPhone: Story = {
   render: () => shell('display', <DisplaySettings me={ME} />),
   globals: PHONE,
-  play: noSidewaysScroll,
+  play: async (context) => {
+    await noSidewaysScroll(context)
+    await headingNearTop(context)
+  },
 }
+export const DisplayPhoneDaylight: Story = { ...DisplayPhone, globals: { ...PHONE, ...DAYLIGHT } }
 /** A stored `stage` (26 §2, D2) has no card: it shows Dark and the distance it raised. */
 export const DisplayStage: Story = {
   render: () => shell('display', <DisplaySettings me={ME} />),
@@ -101,7 +120,7 @@ export const DisplayStage: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const cards = await canvas.findByRole('radiogroup', { name: 'Appearance' })
-    await expect(within(cards).getByRole('radio', { name: 'Dark' })).toBeChecked()
+    await expect(within(cards).getByRole('radio', { name: /^Dark/ })).toBeChecked()
     const distance = canvas.getByRole('group', { name: 'Where is your screen?' })
     await expect(within(distance).getByRole('button', { name: 'Music stand' })).toHaveAttribute(
       'aria-pressed',
@@ -148,16 +167,39 @@ export const Account: Story = {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('heading', { level: 1, name: 'Account' })).toBeVisible()
     await expect(canvas.getByLabelText('Name')).toHaveValue('Ana')
-    await expect(canvas.getByRole('group', { name: 'Main instrument' })).toBeVisible()
+    await expect(canvas.getByText("You sign in with this. It can't be changed here.")).toBeVisible()
+    await expect(canvas.getByRole('combobox', { name: 'Main instrument' })).toHaveTextContent(
+      'Guitar',
+    )
     await expect(canvas.getByRole('group', { name: 'How long have you played?' })).toBeVisible()
-    await expect(canvas.queryByText('Demo billing')).toBeNull()
+    await expect(canvas.queryByText(/Demo/)).toBeNull()
     await expect(canvas.getByRole('button', { name: 'Sign out' })).toBeVisible()
+    // The current section is the ink line, the same mark as the rail's current page.
+    const sections = within(canvas.getByRole('navigation', { name: 'Settings sections' }))
+    const current = sections.getByRole('link', { name: 'Account' })
+    await expect(current).toHaveAttribute('aria-current', 'page')
+    await expect(getComputedStyle(current, '::before').borderLeftWidth).toBe('2px')
   },
 }
 export const AccountDaylight: Story = { render: privacy(NO_EXPORT), globals: DAYLIGHT }
+const playAccountNarrow: Story['play'] = async (context) => {
+  await noSidewaysScroll(context)
+  await headingNearTop(context)
+  const sections = within(
+    within(context.canvasElement).getByRole('navigation', { name: 'Settings sections' }),
+  )
+  const current = sections.getByRole('link', { name: 'Account' })
+  await expect(getComputedStyle(current).borderBottomWidth).toBe('2px')
+}
 export const AccountPhone: Story = {
   render: privacy(NO_EXPORT),
   globals: PHONE,
+  play: playAccountNarrow,
+}
+export const AccountPhoneDaylight: Story = { ...AccountPhone, globals: { ...PHONE, ...DAYLIGHT } }
+export const AccountTablet: Story = {
+  render: privacy(NO_EXPORT),
+  globals: TABLET,
   play: noSidewaysScroll,
 }
 /** Privacy (27 §3.9, 15 §4): training opt-in, "Download my data" and "Delete my account". */
@@ -187,7 +229,15 @@ export const PrivacyOffline: Story = {
     await expect(
       await canvas.findByText("You're offline. These settings need a connection."),
     ).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Delete account' })).toBeDisabled()
+    // Each control says why it can't be used, in its name.
+    for (const name of [
+      /^Delete account\s?, Unavailable offline$/,
+      /^Prepare my data\s?, Unavailable/,
+    ]) {
+      const control = canvas.getByRole('button', { name })
+      await expect(control).toBeDisabled()
+      await expect(getComputedStyle(control).opacity).toBe('1')
+    }
   },
 }
 export const PrivacyExportPending: Story = {
@@ -223,8 +273,12 @@ export const PrivacyExportFailed: Story = {
   render: privacy({ ...NO_EXPORT, status: 'failed', requested_at: new Date().toISOString() }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText("We couldn't prepare your file. Try again.")).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Prepare a new file' })).toBeVisible()
+    const failed = (await canvas.findByText("We couldn't prepare your file. Try again.")).closest(
+      '[data-slot=inline-error]',
+    ) as HTMLElement
+    // The way to try again sits in the message, after what went wrong.
+    await expect(within(failed).getByRole('button', { name: 'Prepare a new file' })).toBeVisible()
+    await expect(canvas.getAllByRole('button', { name: 'Prepare a new file' })).toHaveLength(1)
   },
 }
 /** The export state could not be loaded (unseeded query). */
@@ -248,8 +302,9 @@ export const PrivacyDeleteConfirm: Story = {
       await within(canvasElement).findByRole('button', { name: 'Delete account' }),
     )
     const dialog = within(canvasElement.ownerDocument.body).getByRole('alertdialog')
+    // The confirmation says what goes, as the row does.
     await expect(dialog).toHaveTextContent(
-      "Delete your account and everything in it? This can't be undone.",
+      "Removes every song, stem, loop and edit. This can't be undone.",
     )
     await waitFor(() =>
       expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeVisible(),
@@ -267,9 +322,15 @@ export const PrivacyDeleteReauth: Story = {
     await expect(dialog).toHaveTextContent("Confirm it's you")
     const confirm = within(dialog).getByRole('button', { name: 'Confirm' })
     await waitFor(() => expect(confirm).toBeVisible())
-    await expect(confirm).toBeDisabled()
-    await userEvent.type(within(dialog).getByLabelText('Password'), 'practice-slowly-42')
+    // Never disabled in advance: an empty password says so under the field and focuses it.
     await expect(confirm).toBeEnabled()
+    await userEvent.click(confirm)
+    const field = within(dialog).getByLabelText('Password')
+    await expect(await within(dialog).findByText('Enter your password.')).toBeVisible()
+    await expect(field).toHaveFocus()
+    await expect(field).toHaveAttribute('aria-invalid', 'true')
+    await userEvent.type(field, 'practice-slowly-42')
+    await expect(within(dialog).queryByText('Enter your password.')).toBeNull()
   },
 }
 /** A Google-only account has no password: it signs in with Google again. */
@@ -283,19 +344,33 @@ export const PrivacyDeleteReauthGoogle: Story = {
   },
 }
 
-/** Keyboard & pedal (27 §3.9, Settings-Pedal Keys): the table, learning a key, the test area. */
+/**
+ * Keyboard & pedal (27 §3.9, Settings-Pedal Keys): the test area first, then each action as a row
+ * with its keys; learning a pedal shows the prompt in that row, so it stays beside the control at
+ * any width, and the row is marked current.
+ */
+const playKeyboard: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  const test = await canvas.findByRole('button', { name: /Try a key or pedal here/ })
+  const list = canvas.getByRole('region', { name: 'Keys' })
+  await expect(test.getBoundingClientRect().top).toBeLessThan(list.getBoundingClientRect().top)
+  const learn = canvas.getByRole('button', { name: 'Learn this pedal for Felt clean' })
+  await userEvent.click(learn)
+  const row = learn.closest('[data-slot=list-row]') as HTMLElement
+  const prompt = within(row).getByText('Press the pedal or key for Felt clean. Escape cancels.')
+  await expect(prompt).toBeVisible()
+  await expect(row).toHaveAttribute('data-current')
+  // The prompt wraps inside the screen rather than running off it (WCAG 1.4.10).
+  await expect(prompt.getBoundingClientRect().right).toBeLessThanOrEqual(window.innerWidth)
+  await userEvent.keyboard('{PageDown}')
+  await expect(row).toHaveTextContent('Page down')
+  await expect(row).not.toHaveAttribute('data-current')
+  await userEvent.click(canvas.getByRole('button', { name: 'Reset to the defaults' }))
+  await expect(row).not.toHaveTextContent('Page down')
+}
 export const Keyboard: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'Learn this pedal for Felt clean' }))
-    await expect(
-      canvas.getByText('Press the pedal or key for Felt clean. Escape cancels.'),
-    ).toBeVisible()
-    await userEvent.keyboard('{PageDown}')
-    await expect(canvas.getByRole('row', { name: /Felt clean/ })).toHaveTextContent('Page down')
-    await userEvent.click(canvas.getByRole('button', { name: 'Reset to the defaults' }))
-  },
+  play: playKeyboard,
 }
 
 export const KeyboardDaylight: Story = {
@@ -305,7 +380,20 @@ export const KeyboardDaylight: Story = {
 export const KeyboardPhone: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
   globals: PHONE,
-  play: noSidewaysScroll,
+  play: async (context) => {
+    await noSidewaysScroll(context)
+    // Action names wrap whole; none is cut off mid-word.
+    for (const title of context.canvasElement.querySelectorAll<HTMLElement>(
+      '[data-slot=list-row-title] > span',
+    )) {
+      await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth + 1)
+    }
+    await playKeyboard(context)
+  },
+}
+export const KeyboardPhoneDaylight: Story = {
+  ...KeyboardPhone,
+  globals: { ...PHONE, ...DAYLIGHT },
 }
 
 /** About (27 §3.9): version, models from the register, font licences, the register. */
@@ -316,7 +404,11 @@ export const About: Story = {
     await expect(await canvas.findByRole('heading', { level: 1, name: 'About' })).toBeVisible()
     await expect(canvas.getByText(/^(Version \w+, built|Built) /)).toBeVisible()
     await expect(canvas.getAllByRole('link', { name: 'SIL Open Font License 1.1' })).toHaveLength(4)
-    await expect(canvas.getByText(/^Basic Pitch/)).toBeVisible()
+    // The models are developer provenance: folded away until asked for.
+    const basic = canvas.getByText(/^Basic Pitch/)
+    await expect(basic).not.toBeVisible()
+    await userEvent.click(canvas.getByText(/^Show all \d+ models$/))
+    await expect(basic).toBeVisible()
   },
 }
 export const AboutDaylight: Story = {
@@ -326,5 +418,8 @@ export const AboutDaylight: Story = {
 export const AboutPhone: Story = {
   render: () => shell('about', <AboutSettings />),
   globals: PHONE,
-  play: noSidewaysScroll,
+  play: async (context) => {
+    await noSidewaysScroll(context)
+    await headingNearTop(context)
+  },
 }

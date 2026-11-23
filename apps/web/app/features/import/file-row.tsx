@@ -1,8 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { MusicIcon, TriangleAlertIcon, XIcon } from 'lucide-react'
+import { FileAudioIcon, XIcon } from 'lucide-react'
 import { formatBytes, formatDuration } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { Badge } from '@/ui/badge'
 import { Button, buttonVariants } from '@/ui/button'
 import { Spinner } from '@/ui/spinner'
 import { InlineError } from '@/ui/status-message'
@@ -25,9 +24,10 @@ function issueText(issue: PreflightIssue): string {
   }
 }
 
-// The picked file (27 §3.6, AddSong): a --panel card with the file tile, name, size and duration
-// (mono), Remove, the 44 px waveform from the local decode, the warning badges that don't block,
-// blocking errors inline and the duplicate notice (Open it / Add anyway).
+// The picked file (27 §3.6, AddSong), with no box around it: the file's name, size and duration,
+// Remove, the 44 px waveform from the local decode, then each check that doesn't block as a glyph
+// and words, blocking errors with the way out (choose another file), and the duplicate notice
+// (Open it / Add anyway).
 export function FileRow({
   picked,
   onRemove,
@@ -47,23 +47,18 @@ export function FileRow({
   const blocking = picked.issues.filter(isBlocking)
   const warnings = picked.issues.filter((issue) => !isBlocking(issue))
   return (
-    <section
-      aria-label={file.name}
-      data-slot="file-card"
-      className="flex flex-col gap-3 rounded-field bg-panel p-4"
-    >
+    <section aria-label={file.name} data-slot="file-card" className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <span
+        <FileAudioIcon
           aria-hidden
-          className="grid size-10 shrink-0 place-items-center rounded-media bg-background text-muted-foreground"
-        >
-          <MusicIcon className="size-5" />
-        </span>
+          strokeWidth={1.8}
+          className="size-5 shrink-0 text-muted-foreground"
+        />
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="truncate text-body font-medium" title={file.name}>
+          <p className="truncate text-label" title={file.name}>
             {file.name}
           </p>
-          <p className="text-body-sm text-faint-foreground tabular-nums">
+          <p className="text-caption text-muted-foreground tabular-nums">
             {[formatBytes(file.size), duration === undefined ? undefined : formatDuration(duration)]
               .filter(Boolean)
               .join(' · ')}
@@ -98,22 +93,24 @@ export function FileRow({
       ) : null}
 
       {warnings.length > 0 && (
-        <ul className="flex flex-wrap gap-2" aria-label={m['import.checks_label']()}>
+        <ul className="m-0 flex list-none flex-col p-0" aria-label={m['import.checks_label']()}>
           {warnings.map((issue) => (
             <li key={issue.kind}>
-              <Badge variant="outline" className="h-auto min-h-5.5 py-0.5 whitespace-normal">
-                <TriangleAlertIcon aria-hidden />
-                {issueText(issue)}
-              </Badge>
+              <InlineError tone="warning" title={issueText(issue)} />
             </li>
           ))}
         </ul>
       )}
 
-      {picked.unreadable && <InlineError title={m['import.unreadable']()} />}
-      {blocking.map((issue) => (
-        <InlineError key={issue.kind} title={issueText(issue)} />
-      ))}
+      {(picked.unreadable || blocking.length > 0) && (
+        <InlineError
+          title={
+            picked.unreadable ? m['import.unreadable']() : issueText(blocking[0] as PreflightIssue)
+          }
+          description={m['import.formats']()}
+          actions={<Button onClick={onRemove}>{m['import.choose_another']()}</Button>}
+        />
+      )}
       {picked.duplicateOf && (
         <InlineError
           tone="info"
@@ -123,11 +120,13 @@ export function FileRow({
               <Link
                 to="/songs/$songId/practice"
                 params={{ songId: picked.duplicateOf }}
-                className={buttonVariants({ variant: 'primary' })}
+                className={buttonVariants({ variant: 'outline' })}
               >
                 {m['import.open_it']()}
               </Link>
-              <Button onClick={onImportAnyway}>{m['import.import_anyway']()}</Button>
+              <Button variant="quiet" onClick={onImportAnyway}>
+                {m['import.import_anyway']()}
+              </Button>
             </>
           }
         />
