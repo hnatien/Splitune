@@ -43,7 +43,10 @@ const panel = () => page.getByRole('tabpanel')
 
 test('every stem has a row, your part first, and soloing one leaves the others not heard', async () => {
   await expect(panel().getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
-  const names = await panel().locator('[data-slot=stem-row] .truncate').allInnerTexts()
+  // Each row's name is its first line; a Rough stem's status follows it.
+  const names = await panel()
+    .locator('[data-slot=stem-row]')
+    .evaluateAll((rows) => rows.map((row) => row.querySelector('.truncate')?.textContent))
   expect(names).toEqual(['Guitar', 'Drums', 'Other'])
   await expect(panel().getByText('Band', { exact: true })).toHaveCount(0)
   // The fixture's run has no bass, so no Rhythm only.
