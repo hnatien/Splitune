@@ -60,15 +60,28 @@ const playHowItWorks: Play = async ({ canvasElement }) => {
   await noSidewaysScroll(canvasElement)
 }
 
-/** Reading a step marks it in the step links with the ink edge. */
+/** Reading a step marks it in the step links with the ink edge; the links stay under the bar, so
+ * the mark is in view, and a step reached by its link starts below them, its heading uncovered. */
 const playCurrentStep: Play = async ({ canvasElement }) => {
   const canvas = within(canvasElement)
-  const nav = within(await canvas.findByRole('navigation', { name: 'Steps' }))
-  canvasElement.ownerDocument.getElementById('how-step-3')?.scrollIntoView({ block: 'start' })
+  const steps = await canvas.findByRole('navigation', { name: 'Steps' })
+  const nav = within(steps)
+  const step = canvasElement.ownerDocument.getElementById('how-step-3') as HTMLElement
+  step.scrollIntoView({ block: 'start' })
   await waitFor(() =>
     expect(nav.getByRole('link', { name: 'Transcribe' })).toHaveAttribute('aria-current', 'step'),
   )
+  const transcribe = nav.getByRole('link', { name: 'Transcribe' })
   await expect(nav.getByRole('link', { name: 'Isolate' })).not.toHaveAttribute('aria-current')
+  const bar = (canvasElement.querySelector('header') as HTMLElement).getBoundingClientRect()
+  const held = steps.getBoundingClientRect()
+  await expect(held.top).toBeGreaterThanOrEqual(bar.bottom - 1)
+  await expect(held.top).toBeLessThanOrEqual(bar.bottom + 1)
+  const mark = transcribe.getBoundingClientRect()
+  await expect(mark.left).toBeGreaterThanOrEqual(0)
+  await expect(mark.right).toBeLessThanOrEqual(window.innerWidth)
+  const heading = (step.querySelector('h2') as HTMLElement).getBoundingClientRect()
+  await expect(heading.top).toBeGreaterThanOrEqual(held.bottom)
 }
 
 export const HowItWorksPage: Story = { render: howItWorks, globals: DESKTOP, play: playHowItWorks }
@@ -91,6 +104,16 @@ export const HowItWorksPhoneDaylight: Story = {
 export const HowItWorksCurrentStep: Story = {
   render: howItWorks,
   globals: DESKTOP,
+  play: playCurrentStep,
+}
+export const HowItWorksCurrentStepDaylight: Story = {
+  render: howItWorks,
+  globals: { ...DESKTOP, ...DAYLIGHT },
+  play: playCurrentStep,
+}
+export const HowItWorksCurrentStepPhone: Story = {
+  render: howItWorks,
+  globals: PHONE,
   play: playCurrentStep,
 }
 

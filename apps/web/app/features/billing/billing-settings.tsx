@@ -79,6 +79,15 @@ export function PlanSettings({
       setPending(undefined)
     }
   }
+  const manage = (
+    <Button
+      loading={pending === 'manage'}
+      disabled={pending !== undefined}
+      onClick={() => run('manage')}
+    >
+      {m['billing.manage']()}
+    </Button>
+  )
 
   return (
     <SettingsPage title={m['settings.billing']()} intro={m['billing.demo']()}>
@@ -138,9 +147,11 @@ export function PlanSettings({
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              {/* Resume leads when Plus is ending; otherwise Manage, with the quiet Cancel after it
+                  rather than starting the row. */}
               {plus ? (
-                <>
-                  {subscription.cancel_at_period_end ? (
+                subscription.cancel_at_period_end ? (
+                  <>
                     <Button
                       variant="primary"
                       loading={pending === 'resume'}
@@ -149,7 +160,11 @@ export function PlanSettings({
                     >
                       {m['billing.resume_plus']()}
                     </Button>
-                  ) : (
+                    {manage}
+                  </>
+                ) : (
+                  <>
+                    {manage}
                     <Button
                       variant="quiet"
                       loading={pending === 'cancel'}
@@ -158,15 +173,8 @@ export function PlanSettings({
                     >
                       {m['billing.cancel_plus']()}
                     </Button>
-                  )}
-                  <Button
-                    loading={pending === 'manage'}
-                    disabled={pending !== undefined}
-                    onClick={() => run('manage')}
-                  >
-                    {m['billing.manage']()}
-                  </Button>
-                </>
+                  </>
+                )
               ) : (
                 <Button variant="primary" onClick={() => setUpgrading(true)}>
                   {m['plan.see_plus']()}

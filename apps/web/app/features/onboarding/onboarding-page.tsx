@@ -25,7 +25,7 @@ import { Skeleton } from '@/ui/skeleton'
 import { InlineError } from '@/ui/status-message'
 import { FocusShell } from '../shell/focus-shell'
 import { answersOf, examplePractice, startingSpeed } from './defaults'
-import { type ExampleSong, exampleFor, examplesQuery } from './examples'
+import { type ExampleSong, exampleFor, examplesFor, examplesQuery } from './examples'
 import { exampleMeta, partOf, useStepViewed } from './song-parts'
 
 // Onboarding /start (27 §3.3, 13 §1, s47 direction): one page, then the song. What you play and
@@ -120,7 +120,7 @@ export function OnboardingPage({
   }))
   useStepViewed('instrument', arrived)
   const examples = useQuery(examplesQuery)
-  const items = examples.data?.items ?? []
+  const items = examplesFor(examples.data?.items ?? [], answers.instrument)
   const suggested = exampleFor(items, answers.instrument, answers.level)
   const chosen = items.find((e) => e.id === search.song) ?? suggested
   const songs = suggested ? [suggested, ...items.filter((e) => e !== suggested)] : items
@@ -255,7 +255,7 @@ function Question({
 
 /**
  * The one primary action, kept in reach at the bottom of the screen with what it will do: the
- * song, the part and the bars it loops at the starting speed.
+ * song, the part and the bars it loops at the starting speed (wrapping on phones, never cut off).
  */
 function StartBar({
   example,
@@ -276,8 +276,8 @@ function StartBar({
     >
       <div className="mx-auto flex w-full max-w-library items-center gap-4 px-4 py-3 sm:px-6">
         <p className="flex min-w-0 flex-1 flex-col text-body-sm text-muted-foreground">
-          <span className="truncate text-label text-foreground">{example.title}</span>
-          <span className="truncate">
+          <span className="text-label text-foreground sm:truncate">{example.title}</span>
+          <span className="sm:truncate">
             {m['start.plan']({
               part: partOf(example),
               bars,

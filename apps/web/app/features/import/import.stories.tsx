@@ -73,6 +73,18 @@ const playDropZone: Story['play'] = async () => {
   await userEvent.click(start)
   await expect(await add.findByText('Choose or drop a file first.')).toBeVisible()
   await waitFor(() => expect(choose).toHaveFocus())
+  // The tabs sit above the scrolling body: scrolled to its end, File · Link · Record stay in view.
+  const body = document.querySelector('[data-slot=add-song-body]') as HTMLElement
+  await expect(body.contains(file)).toBe(false)
+  body.scrollTop = body.scrollHeight
+  const sheet = (
+    document.querySelector('[data-slot=add-song]') as HTMLElement
+  ).getBoundingClientRect()
+  for (const tab of add.getAllByRole('tab')) {
+    const box = tab.getBoundingClientRect()
+    await expect(box.top).toBeGreaterThanOrEqual(sheet.top)
+    await expect(box.bottom).toBeLessThanOrEqual(body.getBoundingClientRect().top + 1)
+  }
 }
 
 export const DropZone: Story = {

@@ -56,6 +56,22 @@ const playSignedOut: Play = async ({ canvasElement }) => {
     still.querySelector('[data-slot=transport-button][data-tone=primary]'),
   ).not.toBeNull()
   await expect(canvasElement.querySelectorAll('img')).toHaveLength(0)
+  // The still's loop line is whole at every width, never squeezed over count-in or speed.
+  const badge = still.querySelector('[data-slot=loop-badge]') as HTMLElement
+  const words = badge.querySelector('span > span') as HTMLElement
+  await expect(words.scrollWidth).toBeLessThanOrEqual(words.clientWidth)
+  const loopBox = badge.getBoundingClientRect()
+  const transport = still.querySelector('[data-slot=still-transport]') as HTMLElement
+  for (const control of transport.querySelectorAll<HTMLElement>('button, [role=group]')) {
+    if (badge.contains(control) || control.contains(badge) || control.offsetParent === null) {
+      continue
+    }
+    const box = control.getBoundingClientRect()
+    const overlap =
+      Math.min(box.right, loopBox.right) - Math.max(box.left, loopBox.left) > 1 &&
+      Math.min(box.bottom, loopBox.bottom) - Math.max(box.top, loopBox.top) > 1
+    await expect(overlap, control.getAttribute('aria-label') ?? '').toBe(false)
+  }
   for (const name of [
     'Hear your part on its own',
     'Loop it slow, then climb',

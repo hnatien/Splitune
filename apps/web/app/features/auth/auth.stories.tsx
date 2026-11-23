@@ -98,6 +98,11 @@ export const SignInMissing: Story = {
 }
 export const SignInMissingPhone: Story = {
   render: screen('sign-in'),
+  globals: { ...PHONE, appearance: 'dark' },
+  play: playMissing,
+}
+export const SignInMissingPhoneDaylight: Story = {
+  render: screen('sign-in'),
   globals: { ...PHONE, ...DAYLIGHT },
   play: playMissing,
 }
@@ -132,6 +137,11 @@ export const SignUpDaylight: Story = {
   play: playSignUp,
 }
 export const SignUpPhone: Story = {
+  render: screen('sign-up'),
+  globals: { ...PHONE, appearance: 'dark' },
+  play: playSignUp,
+}
+export const SignUpPhoneDaylight: Story = {
   render: screen('sign-up'),
   globals: { ...PHONE, ...DAYLIGHT },
   play: playSignUp,

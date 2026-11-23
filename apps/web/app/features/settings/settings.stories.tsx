@@ -168,6 +168,11 @@ export const Account: Story = {
     await expect(await canvas.findByRole('heading', { level: 1, name: 'Account' })).toBeVisible()
     await expect(canvas.getByLabelText('Name')).toHaveValue('Ana')
     await expect(canvas.getByText("You sign in with this. It can't be changed here.")).toBeVisible()
+    // The username can't be changed here, so it reads as text, not as a field.
+    await expect(canvas.queryByRole('textbox', { name: 'Username' })).toBeNull()
+    const username = canvasElement.querySelector('[data-slot=username]') as HTMLElement
+    await expect(username).toHaveTextContent('Ana')
+    await expect(getComputedStyle(username).borderTopWidth).toBe('0px')
     await expect(canvas.getByRole('combobox', { name: 'Main instrument' })).toHaveTextContent(
       'Guitar',
     )
@@ -194,7 +199,17 @@ const playAccountNarrow: Story['play'] = async (context) => {
 export const AccountPhone: Story = {
   render: privacy(NO_EXPORT),
   globals: PHONE,
-  play: playAccountNarrow,
+  play: async (context) => {
+    await playAccountNarrow(context)
+    // The tabs cut off at the edge fade out there, so the line reads as one to scroll.
+    const line = within(context.canvasElement)
+      .getByRole('navigation', { name: 'Settings sections' })
+      .querySelector('ul') as HTMLElement
+    await waitFor(() => expect(line).toHaveAttribute('data-more-end'))
+    await expect(line).not.toHaveAttribute('data-more-start')
+    const look = getComputedStyle(line)
+    await expect(look.maskImage || look.webkitMaskImage).toMatch(/gradient/)
+  },
 }
 export const AccountPhoneDaylight: Story = { ...AccountPhone, globals: { ...PHONE, ...DAYLIGHT } }
 export const AccountTablet: Story = {
@@ -315,6 +330,25 @@ export const PrivacyDeleteConfirmDaylight: Story = {
   ...PrivacyDeleteConfirm,
   globals: DAYLIGHT,
 }
+/** On a phone the buttons stack with Cancel on top, the destructive action under it. */
+const deleteStacked: Story['play'] = async (context) => {
+  await PrivacyDeleteConfirm.play?.(context)
+  const dialog = within(context.canvasElement.ownerDocument.body).getByRole('alertdialog')
+  const cancel = within(dialog).getByRole('button', { name: 'Cancel' }).getBoundingClientRect()
+  const remove = within(dialog)
+    .getByRole('button', { name: 'Delete account' })
+    .getBoundingClientRect()
+  await expect(cancel.bottom).toBeLessThanOrEqual(remove.top)
+}
+export const PrivacyDeleteConfirmPhone: Story = {
+  render: privacy(NO_EXPORT),
+  globals: PHONE,
+  play: deleteStacked,
+}
+export const PrivacyDeleteConfirmPhoneDaylight: Story = {
+  ...PrivacyDeleteConfirmPhone,
+  globals: { ...PHONE, ...DAYLIGHT },
+}
 export const PrivacyDeleteReauth: Story = {
   render: privacy(NO_EXPORT, { dialog: 'reauth' }),
   play: async ({ canvasElement }) => {
@@ -368,13 +402,68 @@ const playKeyboard: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByRole('button', { name: 'Reset to the defaults' }))
   await expect(row).not.toHaveTextContent('Page down')
 }
+/** The fixed keys are listed too, as rows with no Learn button, named as the practice shortcuts
+ * list names them; the pedal line is a statement, not a heading that looks pressable. */
+const moreKeys: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  const more = await canvas.findByRole('region', { name: 'More keys' })
+  await expect(within(more).queryByRole('button')).toBeNull()
+  const keysOf = (label: string | RegExp) =>
+    [
+      ...(
+        within(more).getByText(label).closest('[data-slot=list-row]') as HTMLElement
+      ).querySelectorAll('[data-slot=kbd]'),
+    ].map((key) => key.textContent)
+  await expect(keysOf('Loop 1, 2, 4 or 8 bars from here')).toEqual(['1', '2', '4', '8'])
+  await expect(keysOf('Speed 50 to 100 %')).toEqual(['⇧5', '⇧6', '⇧7', '⇧8', '⇧9', '⇧0'])
+  await expect(keysOf(/^Slower or faster by 1/)).toEqual(['⇧,', '⇧.'])
+  await expect(keysOf('Keyboard shortcuts')).toEqual(['?'])
+  await expect(keysOf('Command palette')).toEqual(['⌘ K', 'Ctrl K'])
+  await expect(canvas.queryByRole('heading', { name: /^Page-turner pedals/ })).toBeNull()
+  await expect(canvas.getByText(/^Page-turner pedals work straight away/)).toBeVisible()
+}
+
 export const Keyboard: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
-  play: playKeyboard,
+  play: async (context) => {
+    await moreKeys(context)
+    await playKeyboard(context)
+  },
 }
 
 export const KeyboardDaylight: Story = {
   render: () => shell('keyboard', <KeyboardSettings />),
+  globals: DAYLIGHT,
+  play: moreKeys,
+}
+
+/** Reached from practice's "Set it up" (`/settings/keyboard#pedal`): the left pedal's Learn button
+ * has focus, so one press starts learning it. */
+const fromPedalLink: Story['play'] = async ({ canvasElement }) => {
+  const learn = await within(canvasElement).findByRole('button', {
+    name: /^Learn this pedal for Left pedal/,
+  })
+  await waitFor(() => expect(learn).toHaveFocus())
+  await userEvent.keyboard('{Enter}')
+  await expect(learn).toHaveAttribute('aria-pressed', 'true')
+  await userEvent.keyboard('{Escape}')
+}
+
+export const KeyboardFromPedalLink: Story = {
+  render: () => (
+    <AppStory path="/settings/keyboard#pedal">
+      <AppShell me={ME}>
+        <SettingsLayout>
+          <KeyboardSettings />
+        </SettingsLayout>
+      </AppShell>
+    </AppStory>
+  ),
+  play: fromPedalLink,
+}
+
+export const KeyboardFromPedalLinkDaylight: Story = {
+  ...KeyboardFromPedalLink,
   globals: DAYLIGHT,
 }
 export const KeyboardPhone: Story = {
@@ -409,6 +498,9 @@ export const About: Story = {
     await expect(basic).not.toBeVisible()
     await userEvent.click(canvas.getByText(/^Show all \d+ models$/))
     await expect(basic).toBeVisible()
+    // Open, the label says what pressing it does now.
+    await expect(canvas.getByText('Hide the models')).toBeVisible()
+    await expect(canvas.getByText(/^Show all \d+ models$/)).not.toBeVisible()
   },
 }
 export const AboutDaylight: Story = {

@@ -274,7 +274,11 @@ export const UpdateReady: Story = {
     )
   },
 }
-export const UpdateReadyPhone: Story = { ...UpdateReady, globals: { ...PHONE, ...DAYLIGHT } }
+export const UpdateReadyPhone: Story = { ...UpdateReady, globals: { ...PHONE, appearance: 'dark' } }
+export const UpdateReadyPhoneDaylight: Story = {
+  ...UpdateReady,
+  globals: { ...PHONE, ...DAYLIGHT },
+}
 export const UpdateHeldWhilePlaying: Story = {
   beforeEach: () => {
     usePwa.setState({ updateReady: true })
