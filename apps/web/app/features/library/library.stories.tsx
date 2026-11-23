@@ -298,7 +298,7 @@ export const PopulatedPhoneDaylight: Story = {
   globals: { ...PHONE, ...DAYLIGHT },
 }
 
-// Tablet: no rail, the status column beside the title, no music strip yet.
+// Tablet: no rail, the status column beside the title.
 export const PopulatedTablet: Story = {
   render: populated,
   globals: TABLET,
@@ -307,7 +307,6 @@ export const PopulatedTablet: Story = {
     const row = (await canvas.findByRole('link', { name: /^Walking bass in F/ })).closest(
       '[data-slot=list-row]',
     ) as HTMLElement
-    await expect(row.querySelector('[data-slot=music-strip]')).toBeNull()
     await expect(within(row).getByText('Analysing 3/8')).toBeVisible()
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
   },

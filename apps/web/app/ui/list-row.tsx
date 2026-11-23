@@ -36,7 +36,7 @@ function ListGroup({
 }
 
 /**
- * ListRow (doc 26 §12.2): one hairline row. `media` leads (a MusicStrip, an icon), then the title
+ * ListRow (doc 26 §12.2): one hairline row. `media` leads (an icon), then the title
  * and one meta line, then whatever the caller puts in `aside` (a Status, one action, a ⋯ menu).
  *
  * With `render` the title area becomes the row's link or button and its target grows to the whole

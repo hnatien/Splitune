@@ -371,7 +371,6 @@ All in `apps/web/app/ui`, each with stories in both themes (doc 28 §2).
 | **Panel** | The one docked panel: `--panel`, 340 px, a hairline towards the content, no shadow. In a Drawer it is the same content as a sheet. |
 | **ListGroup, ListRow** | A quiet group head over hairline rows. A row is media, a title, one meta line and an aside (a Status, one action, a ⋯ menu). The row's link stretches to the whole row. The current row has a 2 px ink edge on its leading side. |
 | **Status** | A glyph and words; each state has its own glyph shape (check in a circle, a ring that fills, dashed circle, triangle, cross in a circle, lines of music, struck clock, pause, struck cloud). Hue only for ready and failed. |
-| **MusicStrip** | A song as its music in a row: the waveform as bars, a tick at each section, the part practised in ink. |
 | **Stat** | A tabular figure over its label, no card. |
 | **Transport** (`TransportButton`, `SpeedControl`, `LoopBadge`, `PassControl`) | Quiet 48 px controls with their key caps; Play is the 64 px filled circle. The pass prompt sits in the transport, never on the notation. |
 | **StemRow, MixPresetGroup** | A stem's 4 px rule beside its name, `invert` toggles S and M, a fader and a readout in words. Presets are rows with a check. |

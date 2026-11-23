@@ -5,7 +5,6 @@ import { orpc } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { Button, buttonVariants } from '@/ui/button'
 import { ListGroup, ListRow } from '@/ui/list-row'
-import { MusicStrip } from '@/ui/music-strip'
 import { Spinner } from '@/ui/spinner'
 import { InlineError } from '@/ui/status-message'
 import { FocusShell } from '../shell/focus-shell'
@@ -65,7 +64,6 @@ export function SavedPage() {
             {songId && song.data && (
               <ListGroup>
                 <ListRow
-                  media={<MusicStrip className="w-16 sm:w-24" />}
                   title={song.data.title}
                   meta={song.data.artist ?? undefined}
                   aside={

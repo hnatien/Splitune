@@ -184,6 +184,12 @@ the status row and the sheet, so nothing is desktop-only.
 song needs: Getting ready, Needs you, Ready to practise. A row has the song's music strip, title,
 one meta line, a status glyph with words, one action, and a ⋯ menu.
 
+> **As built (s47).** Rows lead with the instrument's drawing, not a music strip. The library and
+> example lists carry no waveform or section data (the peaks live in each song's separation
+> artefact), so a strip could only draw an empty line. Showing the music in rows needs about 48
+> peak levels and the section starts in the list contracts and the pipeline that fills them: an
+> open question for the owner, not a UI change.
+
 **Forms and settings.** One column, labels above fields, rows divided by hairlines, each field
 saving on its own. Errors sit under the field with an icon; focus moves to the first error; submit
 is never disabled in advance.
@@ -235,8 +241,9 @@ the tokens above with stories in both themes.
   words), Banner and InlineError, StepDots, CoachMark, WorkerStatus, Brand, icons.
 - **Music:** ChordChip, ConfidenceLegend, LoopBadge, PassControl, PedalHud, SpeedControl and
   SpeedPanel, SpeedLadder, StageList, StemRow, **MixPresetList** (rows with a check),
-  TransportButton, WaveformTimeline (the song map), WaveformPreview, **MusicStrip** (a song's
-  waveform and sections in a list row), BeatPulse, ProgressChart, Sparkline, **Stat**.
+  TransportButton, WaveformTimeline (the song map), WaveformPreview, BeatPulse, ProgressChart,
+  Sparkline, **Stat**. (MusicStrip, a song's waveform in a list row, was not built: see §6,
+  Library.)
 - **Removed:** Card, SongCard and InstrumentTile (rows replace cards), ChoiceCard and RadioCard
   (replaced by **ChoiceRow**), StatCard (replaced by Stat), MixPresetGroup (replaced by
   MixPresetList), Badge (replaced by Status and by plain labels).
