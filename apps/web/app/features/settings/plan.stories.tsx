@@ -67,10 +67,13 @@ export const Plus: Story = {
       'data-variant',
       'outline',
     )
-    await expect(canvas.getByRole('button', { name: 'Cancel Plus' })).toHaveAttribute(
-      'data-variant',
-      'quiet',
-    )
+    const cancel = canvas.getByRole('button', { name: 'Cancel Plus' })
+    await expect(cancel).toHaveAttribute('data-variant', 'quiet')
+    // The quiet Cancel follows Manage rather than starting the row.
+    await expect(
+      canvas.getByRole('button', { name: 'Manage plan' }).compareDocumentPosition(cancel) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     await expect(canvas.getByText('12 of 15')).toBeVisible()
   },
 }
