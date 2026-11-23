@@ -60,6 +60,11 @@ export const useUploads = create<UploadStore>()((set) => ({
     }),
 }))
 
+/** Whether this browser is still sending the song's file (not finished, failed or waiting for it). */
+export function isUploading(item: UploadItem | undefined): boolean {
+  return item !== undefined && !['done', 'failed', 'needs_file'].includes(item.phase)
+}
+
 export function uploadPercent(item: UploadItem): number {
   return item.bytesTotal > 0 ? Math.floor((item.bytesUploaded / item.bytesTotal) * 100) : 0
 }

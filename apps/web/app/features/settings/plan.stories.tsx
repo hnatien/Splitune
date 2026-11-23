@@ -10,8 +10,9 @@ import { ME, ME_CAPPED, ME_PLUS, ME_PLUS_CANCELLING, PLANS } from '../story-fixt
 import { SettingsLayout } from './settings-layout'
 import { UsageSettings } from './usage-settings'
 
-// Settings → Plan (27 §3.9, §3.10): Free, Plus and the checkout return states; Settings → Usage:
-// the allowances and the plan they come from, on Free, Plus and at the limit.
+// Settings → Plan (27 §3.9, §3.10): what is left as figures, then the plan, on Free, Plus and the
+// checkout return states; Settings → Usage: the allowances and the plan they come from, on Free,
+// Plus and at the limit.
 const meta = { title: 'Screens/Settings/Plan', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -37,10 +38,21 @@ export const Free: Story = {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('heading', { level: 1, name: 'Plan' })).toBeVisible()
     await expect(canvas.getByText('Your Welcome analysis is still unused.')).toBeVisible()
-    await expect(canvas.getByText('Demo billing')).toBeVisible()
-    // The allowances are on Usage.
+    // Demo billing is said once, as words under the title, not a badge.
+    await expect(canvas.getByText(/^Demo mode — no real charges/)).toBeVisible()
+    await expect(canvasElement.querySelector('[data-slot=badge]')).toBeNull()
+    // What is left is figures (26 §12.2 Stat); the bars are on Usage.
+    const stats = [...canvasElement.querySelectorAll('[data-slot=stat]')].map((s) => s.textContent)
+    await expect(stats).toEqual(['1 of 1Welcome analysis left', '4 of 5Lite analyses left'])
     await expect(canvas.queryByRole('meter')).toBeNull()
-    await expect(canvas.getByRole('button', { name: 'See Plus' })).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'See usage' })).toHaveAttribute(
+      'href',
+      '/settings/usage',
+    )
+    await expect(canvas.getByRole('button', { name: 'See Plus' })).toHaveAttribute(
+      'data-variant',
+      'primary',
+    )
   },
 }
 export const Plus: Story = {
@@ -50,8 +62,16 @@ export const Plus: Story = {
     await expect(
       await canvas.findByText("You're on Plus. 15 full analyses a month, resets 22 Nov."),
     ).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Cancel Plus' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Manage plan' })).toBeVisible()
+    // Managing the plan is the everyday path; cancelling is there, one tap, but quieter.
+    await expect(canvas.getByRole('button', { name: 'Manage plan' })).toHaveAttribute(
+      'data-variant',
+      'outline',
+    )
+    await expect(canvas.getByRole('button', { name: 'Cancel Plus' })).toHaveAttribute(
+      'data-variant',
+      'quiet',
+    )
+    await expect(canvas.getByText('12 of 15')).toBeVisible()
   },
 }
 export const PlusDaylight: Story = { render: settings(ME_PLUS), globals: { appearance: 'light' } }

@@ -1,22 +1,13 @@
 import { type LibrarySong, LibrarySort, LibraryStatusFilter } from '@splitune/contracts'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import {
-  ChevronDownIcon,
-  LayoutGridIcon,
-  ListIcon,
-  MusicIcon,
-  SearchIcon,
-  SearchXIcon,
-  XIcon,
-} from 'lucide-react'
-import { type ComponentProps, type CSSProperties, useEffect, useState } from 'react'
+import { ChevronDownIcon, MusicIcon, SearchIcon, SearchXIcon, XIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { z } from 'zod'
 import { m } from '@/lib/i18n'
 import { INSTRUMENTS, type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import { useMediaQuery } from '@/lib/use-media-query'
 import { useOnline } from '@/lib/use-online'
-import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/ui/button'
 import {
   DropdownMenu,
@@ -25,37 +16,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
 import { EmptyState } from '@/ui/empty-state'
 import { Input } from '@/ui/input'
+import { ListGroup } from '@/ui/list-row'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 import { InlineError } from '@/ui/status-message'
-import { Toggle } from '@/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { WorkerStatus } from '@/ui/worker-status'
-import { useOpenAddSong } from '../import/add-song-state'
-import { ContinueCard, ContinueCardCompact } from './continue-card'
+import { ADD_SONG_KEY, useOpenAddSong } from '../import/add-song-state'
+import { isUploading, useUploads } from '../import/upload-store'
+import { ContinueBlock } from './continue-card'
 import { useLibraryProgress } from './library-progress'
 import { LibrarySkeleton, SongsSkeleton } from './library-skeleton'
 import { type LibraryFilters, libraryQuery, workerStatusQuery } from './queries'
 import { RevisitList } from './revisit-list'
-import { SongEntry } from './song-entry'
-import { cardStatus, isInProgress } from './song-status'
-import { WeekStrip, WeekStripCompact } from './week-strip'
+import { SongRow } from './song-row'
+import { cardStatus, isInProgress, type SongNeed, songNeed } from './song-status'
+import { WeekStrip } from './week-strip'
 
 type Song = z.infer<typeof LibrarySong>
 type Sort = z.infer<typeof LibrarySort>
 type StatusFilter = z.infer<typeof LibraryStatusFilter>
 
-export type LibrarySearch = LibraryFilters & { view?: 'grid' | 'list' | undefined }
+export type LibrarySearch = LibraryFilters
 
 const ALL = 'all'
 
-// Filter, sort and view changes run as a "library-reorder" view transition: styles.css names each
-// entry only during one, so cards glide to their new place and morph between card and row (26 §10).
-// Search keystrokes swap instantly; a transition would freeze the field's rendering while typing.
-const REORDER = { types: ['library-reorder'] }
+const GROUPS: { need: SongNeed; title: () => string }[] = [
+  { need: 'getting_ready', title: () => m['library.group_getting_ready']() },
+  { need: 'needs_you', title: () => m['library.group_needs_you']() },
+  { need: 'ready', title: () => m['library.group_ready']() },
+]
 
 function sortLabel(sort: Sort): string {
   if (sort === 'added') return m['library.sort_added']()
@@ -63,7 +56,7 @@ function sortLabel(sort: Sort): string {
   return m['library.sort_last_practised']()
 }
 
-function statusLabel(status: StatusFilter): string {
+function statusLabel(status: StatusFilter | undefined): string {
   switch (status) {
     case 'ready':
       return m['library.status.ready']()
@@ -71,34 +64,28 @@ function statusLabel(status: StatusFilter): string {
       return m['library.status.partial']()
     case 'analysing':
       return m['library.filter_analysing']()
-    default:
+    case 'failed':
       return m['library.status.failed']()
+    default:
+      return m['library.filter_all']()
   }
 }
 
-const practiceLink =
-  (song: Song) =>
-  ({ className, children }: ComponentProps<'a'>) => (
-    <Link to="/songs/$songId/practice" params={{ songId: song.id }} className={className}>
-      {children}
-    </Link>
-  )
-
-// Library (27 §3.5, §4; Library, Phone-Library and States mockups): the Continue card with This
-// week beside it, Worth a revisit, then Songs with its toolbar (filter, instrument chips, sort and
-// status menu, Grid/List; all in the URL) and the cards, 24 at a time. The strips read the
-// practice progress (library-progress.tsx, s39).
+// Library (s47 direction §6, 27 §3.5): the page title, the Continue block (the page's one filled
+// control) with This week beside it, Worth a revisit, then the songs: the toolbar (instrument,
+// title search, what to show and the sort, all in the URL and each naming its current value) over
+// hairline rows grouped by what each song needs (Getting ready, Needs you, Ready to practise), 24
+// at a time. The progress parts read the practice progress (library-progress.tsx, s39).
 export function LibraryPage({ search }: { search: LibrarySearch }) {
   const navigate = useNavigate({ from: '/library' })
   const openAddSong = useOpenAddSong()
   const online = useOnline()
-  const { view: chosenView = 'grid', ...filters } = search
   const wide = useMediaQuery('(min-width: 640px)')
-  // Phones always get rows (27 §3.5); Grid/List is for tablets and desktops.
-  const view = useMediaQuery('(min-width: 768px)') ? chosenView : 'list'
+  const full = useMediaQuery('(min-width: 1024px)')
+  const layout = !wide ? 'compact' : full ? 'full' : 'wide'
   const songs = useInfiniteQuery({
-    ...libraryQuery(filters),
-    // Cards of songs being analysed refresh themselves; the list catches status changes.
+    ...libraryQuery(search),
+    // Rows of songs being analysed refresh themselves; the list catches status changes.
     refetchInterval: (query) =>
       query.state.data?.pages.some((page) =>
         page.items.some((song) => isInProgress(cardStatus(song, false))),
@@ -106,41 +93,32 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
         ? 10_000
         : false,
   })
-  // The Continue card follows the most recently opened song whatever the filters show (the
-  // unfiltered first page: the same request when no filter is on).
+  // Continue follows the most recently opened song whatever the filters show (the unfiltered first
+  // page: the same request when no filter is on).
   const recent = useInfiniteQuery({ ...libraryQuery({}), enabled: songs.isSuccess })
   const last = recent.data?.pages[0]?.items.find((song) => song.last_opened_at !== null)
   const progress = useLibraryProgress(last)
   const lead = last && progress.continueCard(last)
-  // Each page's index restarts at 0, so a loaded page staggers in like the first one did.
-  const entries =
-    songs.data?.pages.flatMap((page) => page.items.map((song, index) => ({ song, index }))) ?? []
-  const items = entries.map((entry) => entry.song)
+  const items = songs.data?.pages.flatMap((page) => page.items) ?? []
   const anyWaiting = items.some((song) => isInProgress(cardStatus(song, false)))
   const worker = useQuery({ ...workerStatusQuery, enabled: anyWaiting })
   const workerOffline = anyWaiting && worker.data?.online === false
+  const uploads = useUploads((s) => s.items)
   const [query, setQuery] = useState(search.q ?? '')
   useEffect(() => setQuery(search.q ?? ''), [search.q])
 
-  const setSearch = (
-    patch: Partial<LibrarySearch>,
-    viewTransition: typeof REORDER | false = REORDER,
-  ) =>
-    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true, viewTransition })
+  const setSearch = (patch: Partial<LibrarySearch>) =>
+    navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true })
 
   const clearFilters = () => {
     setQuery('')
-    void navigate({
-      search: { view: search.view, sort: search.sort },
-      replace: true,
-      viewTransition: REORDER,
-    })
+    void navigate({ search: { sort: search.sort }, replace: true })
   }
 
   useEffect(() => {
     const trimmed = query.trim()
     if (trimmed === (search.q ?? '')) return
-    const timer = setTimeout(() => setSearch({ q: trimmed || undefined }, false), 300)
+    const timer = setTimeout(() => setSearch({ q: trimmed || undefined }), 300)
     return () => clearTimeout(timer)
   })
 
@@ -150,31 +128,63 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
 
   if (songs.isPending && !filtered) return <LibrarySkeleton />
 
-  const sortMenu = (
+  const groups = GROUPS.map((group) => ({
+    ...group,
+    songs: items.filter(
+      (song: Song) => songNeed(cardStatus(song, isUploading(uploads[song.id]))) === group.need,
+    ),
+  })).filter((group) => group.songs.length > 0)
+
+  const instrument = wide ? (
+    <ToggleGroup
+      aria-label={m['library.filter_instrument']()}
+      className="flex-wrap"
+      value={[search.instrument ?? ALL]}
+      onValueChange={(value) => {
+        const next = value[0] as InstrumentName | typeof ALL | undefined
+        if (next) setSearch({ instrument: next === ALL ? undefined : next })
+      }}
+    >
+      {[ALL, ...INSTRUMENTS].map((value) => (
+        <ToggleGroupItem key={value} value={value} size="sm">
+          {value === ALL ? m['library.filter_all']() : instrumentLabel(value as InstrumentName)}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  ) : (
+    <Select
+      value={search.instrument ?? ALL}
+      onValueChange={(value) =>
+        setSearch({ instrument: value === ALL ? undefined : (value as InstrumentName) })
+      }
+    >
+      <SelectTrigger aria-label={m['library.filter_instrument']()} className="min-w-0 flex-1">
+        <SelectValue>
+          {(value: string) =>
+            value === ALL
+              ? m['library.all_instruments']()
+              : instrumentLabel(value as InstrumentName)
+          }
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent aria-label={m['library.filter_instrument']()}>
+        <SelectItem value={ALL}>{m['library.all_instruments']()}</SelectItem>
+        {INSTRUMENTS.map((value) => (
+          <SelectItem key={value} value={value}>
+            {instrumentLabel(value)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const showMenu = (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button size="sm" />}>
-        <span className="sr-only">{m['library.sort_menu']()}: </span>
-        {sortLabel(search.sort ?? 'last_practised')}
-        {search.status && ` · ${statusLabel(search.status)}`}
+      <DropdownMenuTrigger render={<Button variant="quiet" size="sm" />}>
+        {m['library.show']()}: {statusLabel(search.status)}
         <ChevronDownIcon aria-hidden />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{m['library.sort_by']()}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={search.sort ?? 'last_practised'}
-            onValueChange={(value) =>
-              setSearch({ sort: value === 'last_practised' ? undefined : (value as Sort) })
-            }
-          >
-            {LibrarySort.options.map((value) => (
-              <DropdownMenuRadioItem key={value} value={value}>
-                {sortLabel(value)}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+      <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{m['library.show']()}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
@@ -195,75 +205,72 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
     </DropdownMenu>
   )
 
-  // Outline pills; the chosen one is a filled ink pill (the fill is the cue, not a hue).
-  const chips = (
-    // biome-ignore lint/a11y/useSemanticElements: a toolbar group of toggles, not a form fieldset
-    <div
-      role="group"
-      aria-label={m['library.filter_instrument']()}
-      className="flex gap-1.5 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 sm:basis-full sm:flex-wrap"
-    >
-      {[undefined, ...INSTRUMENTS].map((instrument) => (
-        <Toggle
-          key={instrument ?? ALL}
-          pressed={search.instrument === instrument}
-          onPressedChange={() =>
-            setSearch({ instrument: instrument as InstrumentName | undefined })
-          }
-        >
-          {instrument ? instrumentLabel(instrument) : m['library.filter_all']()}
-        </Toggle>
-      ))}
-    </div>
+  const sortMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="quiet" size="sm" />}>
+        <span className="sr-only">{m['library.sort_by']()}: </span>
+        {sortLabel(search.sort ?? 'last_practised')}
+        <ChevronDownIcon aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{m['library.sort_by']()}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={search.sort ?? 'last_practised'}
+            onValueChange={(value) =>
+              setSearch({ sort: value === 'last_practised' ? undefined : (value as Sort) })
+            }
+          >
+            {LibrarySort.options.map((value) => (
+              <DropdownMenuRadioItem key={value} value={value}>
+                {sortLabel(value)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 
   return (
-    <div className="flex flex-col gap-5 sm:gap-10">
-      {!last && <h1 className="sr-only">{m['library.title']()}</h1>}
+    <div className="flex flex-col gap-10 max-sm:gap-8">
+      <h1 className="text-heading">{m['library.title']()}</h1>
 
       {workerOffline && <WorkerStatus online={false} text={m['analysis.queued_offline']()} />}
 
-      {wide
-        ? (lead || progress.week) && (
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(380px,100%),1fr))] gap-4">
-              {last && lead && (
-                <ContinueCard
-                  song={lead.summary}
-                  chart={lead.chart}
-                  renderLink={practiceLink(last)}
-                  className="col-span-full lg:col-span-2"
-                />
+      {(lead || progress.week) && (
+        <div className="grid gap-x-12 gap-y-8 md:grid-cols-[minmax(0,1fr)_auto]">
+          {last && lead && (
+            <ContinueBlock
+              song={lead.summary}
+              chart={lead.chart}
+              renderLink={({ className, children }) => (
+                <Link
+                  to="/songs/$songId/practice"
+                  params={{ songId: last.id }}
+                  className={className}
+                >
+                  {children}
+                </Link>
               )}
-              {progress.week && <WeekStrip days={progress.week.days} stats={progress.week.stats} />}
-            </div>
-          )
-        : (lead || progress.week) && (
-            <div className="flex flex-col gap-4">
-              {last && <h1 className="sr-only">{m['library.title']()}</h1>}
-              {last && lead && (
-                <ContinueCardCompact song={lead.summary} renderLink={practiceLink(last)} />
-              )}
-              {progress.week && (
-                <WeekStripCompact days={progress.week.days} total={progress.week.total} />
-              )}
-            </div>
+            />
           )}
+          {progress.week && <WeekStrip days={progress.week.days} stats={progress.week.stats} />}
+        </div>
+      )}
 
       {/* Phones keep the songs close to the top: no revisit rows (27 §3.5 Phone). */}
       {wide && progress.revisit.length > 0 && (
         <RevisitList
           clips={progress.revisit}
-          renderLink={({ clip, className, children }) => {
+          renderLink={(clip) => {
             const target = progress.revisit.find((r) => r.id === clip.id)
             return (
               <Link
                 to="/songs/$songId/practice"
                 params={{ songId: target?.songId ?? '' }}
                 search={{ loop: target?.loop, tab: 'progress' }}
-                className={className}
-              >
-                {children}
-              </Link>
+              />
             )
           }}
         />
@@ -276,76 +283,62 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
           title={m['library.empty']()}
           description={m['library.empty_body']()}
           action={
-            <Button variant="primary" onClick={() => openAddSong()}>
+            <Button
+              variant="primary"
+              size="lg"
+              shortcut={ADD_SONG_KEY}
+              onClick={() => openAddSong()}
+            >
               {m['nav.add_song']()}
             </Button>
           }
           secondaryAction={
-            <Link to="/start" className={buttonVariants({ variant: 'outline' })}>
+            <Link to="/start" className={buttonVariants({ variant: 'quiet', size: 'lg' })}>
               {m['library.try_example']()}
             </Link>
           }
         />
       ) : (
-        <section aria-labelledby="songs-title" className="flex flex-col gap-4">
+        <section aria-labelledby="songs-title" className="flex flex-col gap-5">
+          <h2 id="songs-title" className="sr-only">
+            {m['library.songs_heading']()}
+          </h2>
           {/* biome-ignore lint/a11y/useSemanticElements: <search> is newer than the Safari 16.4 floor (24 §2) */}
-          <div role="search" className="flex flex-wrap items-center gap-2.5">
-            <h2 id="songs-title" className={cn('text-heading', !wide && 'sr-only')}>
-              {m['library.songs_heading']()}
-              {songs.isSuccess && (
-                <span className="text-faint-foreground tabular-nums">
-                  {' '}
-                  · {count}
-                  {songs.hasNextPage && '+'}
-                </span>
-              )}
-            </h2>
-            <div className="flex-1 max-sm:hidden" />
-            <div className="relative w-60 max-sm:hidden">
-              <SearchIcon
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint-foreground"
-              />
-              <Input
-                type="search"
-                aria-label={m['library.filter_title']()}
-                placeholder={m['library.filter_title']()}
-                className="rounded-full pl-9 text-label"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
+          <div role="search" className="flex flex-col gap-3">
+            {wide && instrument}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative min-w-0 flex-1 max-sm:basis-full sm:max-w-80">
+                <SearchIcon
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  type="search"
+                  aria-label={m['library.filter_title']()}
+                  placeholder={m['library.filter_title']()}
+                  className="pl-10"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+              {!wide && instrument}
+              <div className="flex items-center gap-1 sm:ml-auto">
+                {filtered && count > 0 && (
+                  <Button variant="quiet" size="sm" onClick={clearFilters}>
+                    <XIcon aria-hidden />
+                    {m['library.clear_filters']()}
+                  </Button>
+                )}
+                {showMenu}
+                {sortMenu}
+              </div>
             </div>
-            {sortMenu}
-            {filtered && (
-              <Button variant="quiet" size="sm" className="animate-pop-in" onClick={clearFilters}>
-                <XIcon aria-hidden />
-                {m['library.clear_filters']()}
-              </Button>
-            )}
-            <ToggleGroup
-              data-vt-view-toggle
-              aria-label={m['library.view_label']()}
-              className="hidden md:flex"
-              value={[chosenView]}
-              onValueChange={(value) => {
-                const next = value[0] as 'grid' | 'list' | undefined
-                if (next) setSearch({ view: next === 'grid' ? undefined : next })
-              }}
-            >
-              <ToggleGroupItem value="grid" aria-label={m['library.view_grid']()}>
-                <LayoutGridIcon aria-hidden />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label={m['library.view_list']()}>
-                <ListIcon aria-hidden />
-              </ToggleGroupItem>
-            </ToggleGroup>
-            {wide && chips}
           </div>
-          {!wide && chips}
 
           {songs.isError && (
             <InlineError
               title={m['library.load_error']()}
+              description={m['library.load_error_body']()}
               actions={<Button onClick={() => songs.refetch()}>{m['common.retry']()}</Button>}
             />
           )}
@@ -356,37 +349,32 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
             <EmptyState
               className="animate-rise-in"
               icon={<SearchXIcon aria-hidden />}
+              title={m['library.no_results_title']()}
               description={m['library.no_results']()}
-              action={
-                <Button variant="primary" onClick={clearFilters}>
-                  {m['library.clear_filters']()}
-                </Button>
-              }
+              action={<Button onClick={clearFilters}>{m['library.clear_filters']()}</Button>}
             />
           ) : (
-            <ul
-              className={
-                view === 'grid'
-                  ? 'stagger-children grid list-none grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3.5 p-0'
-                  : 'stagger-children flex list-none flex-col divide-y divide-border p-0'
-              }
-            >
-              {entries.map(({ song, index }) => (
-                <li
-                  key={song.id}
-                  data-vt-song
-                  className="animate-rise-in"
-                  style={{ '--i': index, '--vt-song': `song-${song.id}` } as CSSProperties}
+            <div className="flex flex-col gap-8">
+              {groups.map((group) => (
+                <ListGroup
+                  key={group.need}
+                  aria-label={group.title()}
+                  data-need={group.need}
+                  title={group.title()}
+                  count={group.songs.length}
                 >
-                  <SongEntry
-                    song={song}
-                    layout={view}
-                    workerOffline={workerOffline}
-                    unavailable={!online && cardStatus(song, false).kind !== 'ready'}
-                  />
-                </li>
+                  {group.songs.map((song) => (
+                    <SongRow
+                      key={song.id}
+                      song={song}
+                      layout={layout}
+                      workerOffline={workerOffline}
+                      unavailable={!online && cardStatus(song, false).kind !== 'ready'}
+                    />
+                  ))}
+                </ListGroup>
               ))}
-            </ul>
+            </div>
           )}
 
           {songs.hasNextPage && (

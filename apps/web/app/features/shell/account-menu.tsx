@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { ChevronsUpDownIcon } from 'lucide-react'
 import { appearanceLabel } from '@/lib/appearance'
 import { useDisplay } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
@@ -33,9 +34,31 @@ export function initials(name: string): string {
     .toLocaleUpperCase()
 }
 
-// Account menu (27 §1): a 40 px avatar with the initials; the username (the email for a Google-only
-// account), then Settings · Keyboard & pedal · Appearance · Help · Sign out.
-export function AccountMenu({ name }: { name: string }) {
+/** The initials in a hairline circle: a picture of the account, painted from an attribute. */
+function Avatar({ name }: { name: string }) {
+  return (
+    // The initials are a picture of the account, not its label (WCAG 2.5.3): painted from an
+    // attribute so the trigger's only text is its name.
+    <span
+      aria-hidden
+      data-initials={initials(name)}
+      className="grid size-7 shrink-0 place-items-center rounded-full text-label-sm text-foreground inset-ring inset-ring-border-strong before:content-[attr(data-initials)]"
+    />
+  )
+}
+
+// Account menu (27 §1): in the rail a row with the initials and the name; in the phone and tablet
+// top bar a 44 px circle. The menu leads with the name (and the username under it, which is how
+// the account signs in), then Settings · Keyboard & pedal · Appearance · Help · Sign out.
+export function AccountMenu({
+  name,
+  username,
+  layout = 'icon',
+}: {
+  name: string
+  username?: string | null | undefined
+  layout?: 'icon' | 'rail'
+}) {
   const appearance = useDisplay((s) => s.appearance)
   const update = useDisplay((s) => s.update)
   const signOut = useSignOut()
@@ -44,25 +67,39 @@ export function AccountMenu({ name }: { name: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label={m['nav.account']()}
-            className="font-medium text-foreground"
-          />
+          layout === 'rail' ? (
+            <button
+              type="button"
+              className="flex min-h-target w-full items-center gap-3 rounded-field px-2 text-left text-label text-foreground transition-colors duration-(--duration-fast) hover:bg-hover data-popup-open:bg-hover focus-visible:-outline-offset-2"
+            />
+          ) : (
+            <Button variant="quiet" size="icon" aria-label={m['nav.account']()} />
+          )
         }
       >
-        {/* The initials are a picture of the account, not its label (WCAG 2.5.3): painted from an
-            attribute so the button's only text is its name, "Account". */}
-        <span
-          aria-hidden
-          data-initials={initials(name)}
-          className="before:content-[attr(data-initials)]"
-        />
+        <Avatar name={name} />
+        {layout === 'rail' && (
+          <>
+            <span className="min-w-0 flex-1 truncate">
+              <span className="sr-only">{m['nav.account']()}, </span>
+              {name}
+            </span>
+            <ChevronsUpDownIcon aria-hidden className="size-4 shrink-0 text-faint-foreground" />
+          </>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent
+        align={layout === 'rail' ? 'start' : 'end'}
+        side={layout === 'rail' ? 'top' : 'bottom'}
+        className="w-64"
+      >
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="truncate">{name}</DropdownMenuLabel>
+          <DropdownMenuLabel className="flex flex-col gap-0.5">
+            <span className="truncate text-label text-foreground">{name}</span>
+            {username && username !== name && (
+              <span className="truncate text-caption text-muted-foreground">{username}</span>
+            )}
+          </DropdownMenuLabel>
           <DropdownMenuItem render={<Link to="/settings/account" />}>
             {m['nav.settings']()}
           </DropdownMenuItem>
