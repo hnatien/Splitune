@@ -132,7 +132,13 @@ test('billing: the Lite allowance runs out with its exact limit and reset date',
   // Nothing can start: Full is Plus' and Lite is used up (`/import` opens Add song on File).
   await page.getByRole('tab', { name: 'Link' }).click()
   await expect(page.getByRole('radio', { name: /^Lite/ })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Add and analyse' })).toBeDisabled()
+  // The submit is never disabled in advance: pressed, it starts nothing and the reason stays.
+  await page.getByRole('button', { name: 'Add and analyse' }).click()
+  await expect(page.getByRole('tab', { name: 'Link' })).toBeVisible()
+  await expect(
+    page.getByText(/You've used this month's 5 Lite analyses\. They reset on \d+ \w+/),
+  ).toBeVisible()
+  await expect(page).not.toHaveURL(/\/practice/)
 })
 
 test('billing: a declined payment changes nothing, a successful one upgrades to Plus', async () => {

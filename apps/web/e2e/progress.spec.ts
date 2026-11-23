@@ -87,7 +87,7 @@ test('passes on a loop show on the Progress tab with the cold pass and today’s
 test('the library picks up the clip, today’s first clean pass and this week', async () => {
   await page.goto('/library')
   const lead = page.getByRole('region', { name: 'Pick up where you left off' })
-  await expect(lead.getByRole('heading', { level: 1, name: 'Progress riff' })).toBeVisible()
+  await expect(lead.getByRole('heading', { level: 2, name: 'Progress riff' })).toBeVisible()
   await expect(lead).toContainText(/bars 3–4 · today, \d+\smin/)
   await expect(lead.getByText(/^Today's first clean pass: 70\s%$/)).toBeVisible()
   await expect(lead.getByText(/^Best clean 70\s%$/)).toBeVisible()

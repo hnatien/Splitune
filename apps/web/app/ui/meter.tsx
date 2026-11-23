@@ -2,9 +2,10 @@ import { Meter as MeterPrimitive } from '@base-ui/react/meter'
 import { cn } from '@/lib/utils'
 
 /**
- * A measurement within a known range (allowance used, stem level), drawn like `.bar` (doc 26
- * §12.1) with a --muted-foreground fill: it is not task progress, so it isn't the ink (§4.5).
- * The value is always in words beside it, so the fill never carries the number alone.
+ * A measurement within a known range (allowance used, stem level): a track edged in `--edge`, so
+ * an empty meter still shows its range (1.4.11), with a --muted-foreground fill. It is not task
+ * progress, so it isn't the ink (26 §4.5). The value is always in words beside it, so the fill
+ * never carries the number alone.
  */
 function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
   return (
@@ -16,7 +17,7 @@ function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
       {children}
       <MeterPrimitive.Track
         data-slot="meter-track"
-        className="relative h-1.5 w-full overflow-hidden rounded-full bg-border"
+        className="relative h-1.5 w-full overflow-hidden rounded-full inset-ring inset-ring-edge"
       >
         <MeterPrimitive.Indicator
           data-slot="meter-indicator"
