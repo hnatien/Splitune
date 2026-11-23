@@ -75,7 +75,7 @@ From **C, Score-first**:
 From **B, Instrument**:
 
 - Key caps printed on the practice controls, and a HUD line that names the source of each action
-  ("Key 4 · Loop bars 5–8", "Pedal ▶ · Play").
+  ("Key 4 · Loop bars 5–8", "Right pedal · Play").
 - `1` `2` `4` `8` loop that many bars from the current bar; Shift+5 … Shift+0 set 50 … 100 %.
 - Pedal labels that change with the moment, shown in the transport.
 - Toggles carry a hollow or filled dot as well as their edge; a control that cannot be used yet

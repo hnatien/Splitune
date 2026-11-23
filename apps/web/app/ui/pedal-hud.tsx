@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 // Doc 26 §4.7, §13, s47 direction §3, §7: confirms a key or pedal action within 100 ms with one
-// quiet line naming the source and the action ("Key 4 · Loop bars 5–8", "Pedal ▶ · Play") on
+// quiet line naming the source and the action ("Key 4 · Loop bars 5–8", "Right pedal · Play") on
 // --raised with a hairline, for 1.2 s, with a polite announcement. Each press pops it in again.
 // It sits in the flow where the screen puts it (the top bar or the status row), never over the
 // notation, and keeps its box while hidden so nothing moves when it shows. Focus never moves and
@@ -18,7 +18,7 @@ type PedalHudProps = {
   /** The latest action; bump `sequence` to show the same text again. */
   message: string | null
   sequence: number
-  /** What pressed it ("Key 4", "Pedal ▶"); shown before the action. */
+  /** What pressed it ("Key 4", "Right pedal"); shown before the action. */
   source?: string | undefined
   icon?: React.ReactNode
   /** A link that acts on the message ("Set it up"), rendered as the whole line. */
