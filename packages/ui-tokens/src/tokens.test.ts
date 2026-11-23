@@ -487,6 +487,7 @@ describe('static scales', () => {
       ['body-sm', 13, 18, 400],
       ['label', 14, 20, 500],
       ['body', 15, 22, 400],
+      ['field', 16, 22, 400],
       ['title', 17, 24, 500],
       ['lead', 17, 26, 400],
       ['heading', 22, 28, 500],
@@ -504,10 +505,19 @@ describe('static scales', () => {
     expect(theme('--text-hero')).toBe('clamp(2.5rem, 5vw, 3.5rem)')
     // Tracking tightens with size and never passes −0.03em.
     expect(
-      ['body', 'title', 'lead', 'heading', 'readout', 'display', 'hero'].map((step) =>
+      ['body', 'field', 'title', 'lead', 'heading', 'readout', 'display', 'hero'].map((step) =>
         theme(`--text-${step}--letter-spacing`),
       ),
-    ).toEqual(['-0.01em', '-0.01em', '-0.01em', '-0.01em', '-0.02em', '-0.02em', '-0.03em'])
+    ).toEqual([
+      '-0.01em',
+      '-0.01em',
+      '-0.01em',
+      '-0.01em',
+      '-0.01em',
+      '-0.02em',
+      '-0.02em',
+      '-0.03em',
+    ])
   })
 
   it('nothing is set below 11 px and no size carries a weight other than 400 or 500 (§6.1)', () => {

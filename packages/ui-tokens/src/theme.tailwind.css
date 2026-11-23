@@ -81,6 +81,11 @@
   --text-body--line-height: 1.375rem;
   --text-body--font-weight: 400;
   --text-body--letter-spacing: -0.01em;
+  /* Fields on coarse pointers: 16 px, the size below which iOS zooms the page on focus. */
+  --text-field: 1rem;
+  --text-field--line-height: 1.375rem;
+  --text-field--font-weight: 400;
+  --text-field--letter-spacing: -0.01em;
   --text-title: 1.0625rem;
   --text-title--line-height: 1.5rem;
   --text-title--font-weight: 500;

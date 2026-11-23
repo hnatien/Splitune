@@ -149,6 +149,7 @@ with the tighter one. Tabular figures for every number that changes. Sentence ca
 | `text-body-sm` | 13 / 18 | 400 | secondary text, descriptions |
 | `text-label` | 14 / 20 | 500 | controls, tabs, row titles in dense lists |
 | `text-body` | 15 / 22 | 400 | body |
+| `text-field` | 16 / 22 | 400 | text in fields on coarse pointers |
 | `text-title` | 17 / 24 | 500 | song titles, panel titles, readouts |
 | `text-lead` | 17 / 26 | 400 | long-form and marketing lead |
 | `text-heading` | 22 / 28 | 500 | page and dialog headings, ETA |
