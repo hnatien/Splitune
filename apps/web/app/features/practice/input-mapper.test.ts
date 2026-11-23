@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { INITIAL_UI, usePracticeUi } from './practice-store'
+import { INITIAL_UI, showHud, usePracticeUi } from './practice-store'
 
 // The hook is driven without a renderer: its effect runs at once and the keydown listener it adds
 // to `window` is called directly.
@@ -263,10 +263,22 @@ describe('input mapper: the two pedal sides', () => {
   it('plays or pauses with the right side and goes back with the left', () => {
     press('PageDown')
     expect(practice.togglePlay).toHaveBeenCalledTimes(1)
-    expect(usePracticeUi.getState().hud).toMatchObject({ source: 'Pedal', message: 'Play' })
+    expect(usePracticeUi.getState().hud).toMatchObject({ source: 'Right pedal', message: 'Play' })
+    // The player confirms a restart itself; whatever it says is named by the side that pressed.
+    practice.restart.mockImplementationOnce(() => showHud('From the top'))
     press('PageUp')
     expect(practice.restart).toHaveBeenCalledTimes(1)
+    expect(usePracticeUi.getState().hud).toMatchObject({
+      source: 'Left pedal',
+      message: 'From the top',
+    })
     expect(practice.markPass).not.toHaveBeenCalled()
+  })
+
+  it('names a learned pedal key for another action just "Pedal"', () => {
+    keys.learned = { toggleLoop: 'F13' }
+    press('F13')
+    expect(usePracticeUi.getState().hud.source).toBe('Pedal')
   })
 
   it('answers a looped pass: right is Felt clean, left is Not yet', () => {

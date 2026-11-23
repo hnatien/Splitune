@@ -852,13 +852,18 @@ export const PedalHudStage: Story = { render: () => <HudDemo />, globals: { appe
 /** The pedal's two meanings after a looped pass, as the HUD names them. */
 export const PedalHudPedal: Story = {
   render: () => (
-    <PedalHud message="Play" source="Pedal ▶" sequence={1} icon={<MetronomeIcon aria-hidden />} />
+    <PedalHud
+      message="Play"
+      source="Right pedal"
+      sequence={1}
+      icon={<MetronomeIcon aria-hidden />}
+    />
   ),
   play: async ({ canvasElement }) => {
     await waitFor(() =>
       expect(canvasElement.querySelector('[data-slot=pedal-hud]')).toHaveAttribute('data-visible'),
     )
-    await expect(within(canvasElement).getByRole('status')).toHaveTextContent('Pedal ▶ · Play')
+    await expect(within(canvasElement).getByRole('status')).toHaveTextContent('Right pedal · Play')
   },
 }
 

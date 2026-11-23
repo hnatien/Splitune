@@ -84,14 +84,18 @@ export function useInputMapper({
       const pedal = PEDAL_KEYS.has(event.key) || (result.kind === 'action' && result.learned)
       noteInput(pedal ? 'pedal' : 'keyboard')
       if (pedal && !usePracticeUi.getState().pedalSeen) usePracticeUi.setState({ pedalSeen: true })
-      pressedWith(
-        pedal ? m['practice.hud_pedal']() : m['practice.hud_key']({ key: keyLabel(keyOf(event)) }),
-        () => {
-          if (result.kind === 'loop-bars') loopBars(result.bars)
-          else if (result.kind === 'speed') practice.setSpeed(result.pct)
-          else run(result.action, result.fine)
-        },
-      )
+      // A press on one of the pedal's two sides is named by its side; any other pedal key is "Pedal".
+      const side =
+        result.kind === 'action' && result.action === 'pedalRight'
+          ? m['practice.pedal_right']()
+          : result.kind === 'action' && result.action === 'pedalLeft'
+            ? m['practice.pedal_left']()
+            : m['practice.hud_pedal']()
+      pressedWith(pedal ? side : m['practice.hud_key']({ key: keyLabel(keyOf(event)) }), () => {
+        if (result.kind === 'loop-bars') loopBars(result.bars)
+        else if (result.kind === 'speed') practice.setSpeed(result.pct)
+        else run(result.action, result.fine)
+      })
     }
 
     // 1, 2, 4, 8: that many bars from the bar that's playing become the loop, and it is on.
