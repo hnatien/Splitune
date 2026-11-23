@@ -25,6 +25,7 @@ import { Popover, PopoverTrigger } from '@/ui/popover'
 import { Slider } from '@/ui/slider'
 import { SpeedControl } from '@/ui/speed-control'
 import { TransportButton } from '@/ui/transport-button'
+import { barAndBeat } from './bar-text'
 import { pedalMoment } from './input-mapper'
 import { isPhone, type PracticeLayout, useTransportStacked } from './layout'
 import { presetName } from './mix-copy'
@@ -122,8 +123,8 @@ function Position() {
       const seconds = audio.position()
       const at = grid && !asTime ? grid.positionAt(seconds) : undefined
       const bars = grid?.positionAt(seconds)
-      const barBeat = bars ? `${bars.bar < 0 ? 0 : bars.bar + 1}.${bars.beat}` : undefined
-      const big = at ? `${at.bar < 0 ? 0 : at.bar + 1}.${at.beat}` : time(seconds)
+      const barBeat = bars ? barAndBeat(bars) : undefined
+      const big = at ? barAndBeat(at) : time(seconds)
       const small = at ? `${time(seconds)} / ${time(duration)}` : (barBeat ?? '')
       const key = `${big}|${small}`
       if (key === last) return

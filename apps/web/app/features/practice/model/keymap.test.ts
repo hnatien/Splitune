@@ -102,6 +102,24 @@ describe('key map', () => {
     expect(ignoredTarget({ ...target('l', 'div'), metaKey: true })).toBe(true)
   })
 
+  it('keeps Space and Enter global on a control that was only clicked', () => {
+    const on = (key: string, keyboard: boolean) => ({
+      target: {
+        closest: (selector: string) =>
+          selector.includes('button') ? { matches: () => keyboard } : null,
+      } as unknown as EventTarget,
+      key,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+    })
+    // Tabbed to: Space presses the control. Clicked: Space plays, so the key stays ours.
+    expect(ignoredTarget(on(' ', true))).toBe(true)
+    expect(ignoredTarget(on('Enter', true))).toBe(true)
+    expect(ignoredTarget(on(' ', false))).toBe(false)
+    expect(ignoredTarget(on('Enter', false))).toBe(false)
+  })
+
   it('keeps the keys working inside the practice sheets, and nowhere else that is a popup', () => {
     const inside = (attributes: string[]) => ({
       target: {
