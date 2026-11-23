@@ -15,7 +15,7 @@ import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { reloadMe } from '@/lib/reload-me'
 import type { MeData } from '@/lib/session'
-import { RadioCard, RadioCardGroup } from '@/ui/radio-card'
+import { ChoiceRow, ChoiceRowGroup } from '@/ui/choice-row'
 import { formatPrice } from './price'
 
 // Plans as the provider prices them (14 §3: never hard-coded in the client), and the way into
@@ -85,7 +85,10 @@ export function periodLine(me: MeData, timeZone?: string): string | undefined {
     : m['billing.renews_on']({ date })
 }
 
-/** Monthly and yearly as equal choice cards, monthly chosen (23 §5: no pre-selected annual). */
+/**
+ * Monthly and yearly as equal choice rows, monthly chosen (23 §5: no pre-selected annual): the
+ * interval and its price, the chosen row marked by the ink edge and a check (s47 direction §4).
+ */
 export function PlanChoice({
   plans,
   value,
@@ -98,20 +101,20 @@ export function PlanChoice({
   className?: string
 }) {
   return (
-    <RadioCardGroup
+    <ChoiceRowGroup
       aria-label={m['plan.interval']()}
       value={value}
       onValueChange={(next) => onChange(next as PaidPlanName)}
       className={className}
     >
       {plans.map((p) => (
-        <RadioCard
+        <ChoiceRow
           key={p.plan}
           value={p.plan}
-          title={p.interval === 'year' ? m['plan.yearly']() : m['plan.monthly']()}
-          description={planPrice(p)}
+          label={p.interval === 'year' ? m['plan.yearly']() : m['plan.monthly']()}
+          description={<span className="tabular-nums">{planPrice(p)}</span>}
         />
       ))}
-    </RadioCardGroup>
+    </ChoiceRowGroup>
   )
 }

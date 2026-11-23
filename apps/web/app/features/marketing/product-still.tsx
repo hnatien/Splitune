@@ -2,22 +2,37 @@ import type * as React from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
-// Product stills (27 §3.2, §3.4): the token-drawn tab with fixture data, for the How it works
-// scenes. Inert: a picture of the app, described by the text beside it, not a control. Desk reading
-// sizes on every device (a phone's Floor sizes overflowed), cropped rather than widening the page
-// at 320 px.
+// Product stills (27 §3.1–§3.2): the token-drawn tab with fixture data, for Home's practice
+// picture and the How it works scenes. Inert: a picture of the app, not a control. Desk reading
+// sizes on every device, cropped to fewer bars rather than shrunk below them or widening the page.
 
-/** A picture of the app: out of reach of the pointer, keyboard and assistive tech. */
-export function Still({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div
-      inert
-      aria-hidden
-      data-density="practice"
-      data-distance="desk"
-      className={cn('min-w-0 overflow-hidden', className)}
-    >
+/**
+ * A picture of the app, out of reach of the pointer and keyboard. With `label` it is one image
+ * with that text alternative (what the picture shows); without, it is hidden from assistive tech
+ * because the words beside it carry its point.
+ */
+export function Still({
+  label,
+  className,
+  children,
+}: {
+  label?: string
+  className?: string
+  children: React.ReactNode
+}) {
+  const picture = (
+    <div inert data-density="practice" data-distance="desk" className="min-w-0">
       {children}
+    </div>
+  )
+  const frame = cn('min-w-0 overflow-hidden', className)
+  return label ? (
+    <div role="img" aria-label={label} className={frame}>
+      {picture}
+    </div>
+  ) : (
+    <div aria-hidden className={frame}>
+      {picture}
     </div>
   )
 }
@@ -147,7 +162,7 @@ export function TabStill({
 }: {
   bars?: { from: number; to: number }
   loop?: boolean
-  playhead?: number | null
+  playhead?: number | null | undefined
   className?: string
 }) {
   const index = (bar: number) => TAB_BARS.findIndex((b) => b.bar === bar)

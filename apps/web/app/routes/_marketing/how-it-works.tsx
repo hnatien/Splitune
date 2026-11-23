@@ -5,5 +5,10 @@ import { m } from '@/lib/i18n'
 // How it works (27 §3.2).
 export const Route = createFileRoute('/_marketing/how-it-works')({
   head: () => ({ meta: [{ title: m['meta.page']({ page: m['how.title']() }) }] }),
-  component: HowItWorks,
+  component: Page,
 })
+
+function Page() {
+  const { me } = Route.useRouteContext()
+  return <HowItWorks signedIn={Boolean(me)} />
+}
