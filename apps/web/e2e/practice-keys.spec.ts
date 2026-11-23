@@ -124,10 +124,12 @@ test('with single keys off, character keys are inert and chords still work', asy
     timeout: 60_000,
   })
   await page.locator('#main').focus()
-  const before = await speedReadout().getAttribute('aria-label')
+  // The readout's name is its text ("Speed: 96 % · 96 BPM"), not an aria-label.
+  const before = (await speedReadout().textContent()) ?? ''
+  expect(before).toMatch(/\d+\s%/)
   await page.keyboard.press('.')
   await page.keyboard.press(',')
-  await expect(speedReadout()).toHaveAttribute('aria-label', before ?? '')
+  await expect(speedReadout()).toHaveText(before)
   // Space isn't a character shortcut: pedals send it.
   await page.keyboard.press('Space')
   await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
