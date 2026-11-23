@@ -14,10 +14,14 @@ const ASSETS = fileURLToPath(new URL('../.output/public/assets/', import.meta.ur
 const IMPORT = /(?:import|from)\s*["']\.\/([^"']+\.js)["']/g
 
 const chunks = readdirSync(ASSETS).filter((name) => name.endsWith('.js'))
-const find = (prefix) => {
-  const match = chunks.find((name) => name.startsWith(prefix))
-  if (!match) throw new Error(`no chunk starting with ${prefix} in ${ASSETS} — build the app first`)
-  return match
+// Every chunk with the prefix: a route can build to more than one (its component, its error
+// component), and taking the first by name would measure whichever hash sorts first.
+const findAll = (prefix) => {
+  const matches = chunks.filter((name) => name.startsWith(prefix))
+  if (matches.length === 0) {
+    throw new Error(`no chunk starting with ${prefix} in ${ASSETS} — build the app first`)
+  }
+  return matches
 }
 
 const seen = new Set()
@@ -26,8 +30,7 @@ const visit = (name) => {
   seen.add(name)
   for (const [, dep] of readFileSync(join(ASSETS, name), 'utf8').matchAll(IMPORT)) visit(dep)
 }
-visit(find('index-'))
-visit(find('_songId.practice-'))
+for (const name of [...findAll('index-'), ...findAll('_songId.practice-')]) visit(name)
 
 const sizes = [...seen].map((name) => ({
   name,
