@@ -1,7 +1,7 @@
 import { pcOfName } from '@splitune/music-core'
 import { Link } from '@tanstack/react-router'
 import { ALargeSmallIcon, EllipsisIcon, KeyboardIcon } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { m } from '@/lib/i18n'
 import { instrumentLabel } from '@/lib/instruments'
 import { Button, buttonVariants } from '@/ui/button'
@@ -70,6 +70,7 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
     : ''
   const phone = isPhone(layout)
   const displayOpen = usePracticeUi((s) => s.displayOpen)
+  const [moreOpen, setMoreOpen] = useState(false)
   const fixing = usePracticeUi((s) => s.fixing) && layout === 'desktop'
   return (
     <>
@@ -117,14 +118,19 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
             <KeyboardIcon aria-hidden />
           </Link>
         )}
-        <Popover>
+        <Popover open={moreOpen} onOpenChange={setMoreOpen}>
           <PopoverTrigger
             render={<Button variant="quiet" size="icon" aria-label={m['practice.more']()} />}
           >
             <EllipsisIcon aria-hidden />
           </PopoverTrigger>
           <Suspense fallback={null}>
-            <MorePanel desktop={layout === 'desktop'} editor={!guest} songId={songId} />
+            <MorePanel
+              desktop={layout === 'desktop'}
+              editor={!guest}
+              songId={songId}
+              onChosen={() => setMoreOpen(false)}
+            />
           </Suspense>
         </Popover>
       </div>
