@@ -3,16 +3,20 @@ import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/ui/button'
 import { HowStage } from './how-scenes'
+import { useCurrentSection } from './use-current-section'
 
-// How it works (27 §3.2): the pipeline in plain language, with an honest note on accuracy. A centred
-// title, then a row of pill links to the four steps; each step is its own generous section, the
-// text on the left and a still picture of the app at that step beside it on wide screens (under it
-// on narrow ones). The text carries the meaning; the pictures are inert and hidden from assistive
-// tech, like Home's. No scroll-driven motion.
+// How it works (27 §3.2): the pipeline in plain language, with an honest note on accuracy. The
+// title, then the four steps as links that mark the step being read with the ink edge
+// (aria-current) as the page scrolls; each step is its own section, the text on the left and a
+// picture of the app at that step beside it on wide screens (under it on narrow ones). Each
+// picture is one image with a text alternative. The page's one primary is the example song at
+// the end. No scroll-driven motion.
 
-const SECTION = 'mx-auto w-full max-w-marketing px-4 sm:px-6'
+const GRID = 'mx-auto w-full max-w-page px-4 sm:px-6 lg:px-8'
 
-export function HowItWorks() {
+const stepId = (index: number) => `how-step-${index + 1}`
+
+export function HowItWorks({ signedIn = false }: { signedIn?: boolean }) {
   const steps = [
     {
       title: m['how.step_1_title'](),
@@ -35,58 +39,72 @@ export function HowItWorks() {
       short: m['how.step_4_short'](),
     },
   ]
+  const current = useCurrentSection(steps.map((_, i) => stepId(i)))
   return (
     <div className="flex flex-col pb-24">
-      <header
-        className={cn(SECTION, 'flex flex-col items-center gap-10 pt-20 text-center sm:pt-24')}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <h1 className="text-hero text-balance max-sm:text-hero">{m['how.title']()}</h1>
-          <p className="max-w-2xl text-lead text-pretty text-muted-foreground">
-            {m['how.intro']()}
-          </p>
+      <header className={cn(GRID, 'flex flex-col items-start gap-8 pt-12 sm:pt-20')}>
+        <div className="flex max-w-3xl flex-col gap-4">
+          <h1 className="text-display text-balance">{m['how.title']()}</h1>
+          <p className="text-lead text-pretty text-muted-foreground">{m['how.intro']()}</p>
         </div>
         <nav aria-label={m['how.nav']()}>
-          <ol className="flex flex-wrap justify-center gap-2">
-            {steps.map((step, i) => (
-              <li key={step.title}>
-                <a href={`#how-step-${i + 1}`} className={buttonVariants({ variant: 'outline' })}>
-                  {step.short}
-                </a>
-              </li>
-            ))}
+          <ol className="flex flex-wrap gap-1">
+            {steps.map((step, i) => {
+              const here = current === stepId(i)
+              return (
+                <li key={step.title}>
+                  <a
+                    href={`#${stepId(i)}`}
+                    aria-current={here ? 'step' : undefined}
+                    className={buttonVariants({ variant: here ? 'selected' : 'quiet' })}
+                  >
+                    <span aria-hidden className="text-muted-foreground tabular-nums">
+                      {i + 1}
+                    </span>
+                    {step.short}
+                  </a>
+                </li>
+              )
+            })}
           </ol>
         </nav>
       </header>
 
-      <ol className={cn(SECTION, 'flex flex-col')}>
+      <ol className={cn(GRID, 'flex flex-col')}>
         {steps.map((step, i) => (
           <li
             key={step.title}
-            id={`how-step-${i + 1}`}
-            className="grid scroll-mt-16 items-start gap-10 py-20 sm:py-24 lg:grid-cols-[2fr_3fr] lg:gap-16"
+            id={stepId(i)}
+            className="grid scroll-mt-20 items-start gap-8 border-b border-border py-16 last:border-b-0 sm:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16"
           >
-            <div className="flex flex-col gap-4 lg:pt-6">
-              <h2 className="text-hero text-balance max-sm:text-display">{step.title}</h2>
-              <p className="max-w-reading text-lead text-muted-foreground">{step.body}</p>
+            <div className="flex flex-col gap-3 lg:pt-4">
+              <span className="text-body-sm text-muted-foreground tabular-nums">
+                {m['how.step_number']({ step: String(i + 1), total: String(steps.length) })}
+              </span>
+              <h2 className="text-heading text-balance">{step.title}</h2>
+              <p className="max-w-reading text-lead text-pretty text-muted-foreground">
+                {step.body}
+              </p>
             </div>
             <HowStage step={i} />
           </li>
         ))}
       </ol>
 
-      <section
-        className={cn(SECTION, 'flex flex-col items-center gap-8 py-20 text-center sm:py-24')}
-      >
-        <div className="flex max-w-reading flex-col items-center gap-4">
-          <h2 className="text-hero text-balance max-sm:text-display">
-            {m['how.accuracy_title']()}
-          </h2>
+      <section className={cn(GRID, 'flex flex-col items-start gap-6 pt-8')}>
+        <div className="flex max-w-reading flex-col gap-3 border-t border-border pt-16">
+          <h2 className="text-display text-balance">{m['how.accuracy_title']()}</h2>
           <p className="text-lead text-pretty text-muted-foreground">{m['how.accuracy_body']()}</p>
         </div>
-        <Link to="/start" className={buttonVariants({ variant: 'primary', size: 'lg' })}>
-          {m['home.cta_example']()}
-        </Link>
+        {signedIn ? (
+          <Link to="/library" className={buttonVariants({ variant: 'primary', size: 'lg' })}>
+            {m['home.cta_library']()}
+          </Link>
+        ) : (
+          <Link to="/start" className={buttonVariants({ variant: 'primary', size: 'lg' })}>
+            {m['home.cta_example']()}
+          </Link>
+        )}
       </section>
     </div>
   )

@@ -96,10 +96,9 @@ test.afterAll(async () => {
 test('billing: pricing shows Free and Plus without card fields or dark patterns', async () => {
   await page.goto('/pricing')
   await expect(page.getByText('Demo mode — no real charges. Payments are simulated.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Monthly' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  // The billing period is two equal choice rows, monthly chosen (23 §5).
+  await expect(page.getByRole('radio', { name: /Monthly/ })).toBeChecked()
+  await expect(page.getByRole('radio', { name: /Yearly/ })).not.toBeChecked()
   await expect(page.getByText('$9.99 a month')).toBeVisible()
   await expect(page.getByText('$79.99 a year')).toBeVisible()
   await expect(page.getByText(/most popular/i)).toHaveCount(0)
@@ -140,7 +139,8 @@ test('billing: a declined payment changes nothing, a successful one upgrades to 
   await page.getByRole('button', { name: 'See Plus' }).first().click()
   await expect(page.getByRole('heading', { name: 'Plus gives you' })).toBeVisible()
   await expect(page.getByRole('radio', { name: /Monthly/ })).toBeChecked()
-  await expectNoCardInputs(page, '[data-slot=drawer-popup]')
+  // A dialog on wide screens, a bottom sheet on phones: both are role=dialog.
+  await expectNoCardInputs(page, '[role=dialog]')
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Continue to checkout' }).click()
 
