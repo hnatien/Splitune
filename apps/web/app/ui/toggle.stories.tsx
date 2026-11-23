@@ -248,7 +248,8 @@ export const GroupPressed: Story = {
     await userEvent.click(chords)
     await expect(chords).toHaveAttribute('aria-pressed', 'true')
     await waitFor(() => expect(edgeOf(chords)?.width).toBe(1.5))
-    await expectChosen(canvas.getByRole('group'), chords)
+    // The edge leaving Tab fades out over the same transition.
+    await waitFor(() => expectChosen(canvas.getByRole('group'), chords))
   },
 }
 
