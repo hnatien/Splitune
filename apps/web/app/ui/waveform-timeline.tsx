@@ -387,7 +387,8 @@ function WaveformTimeline({
       >
         <span
           aria-hidden
-          className="h-6 w-1.5 rounded-full bg-loop-edge opacity-0 transition-opacity duration-(--duration-fast) ease-standard group-hover/handle:opacity-100 group-focus-visible/handle:opacity-100"
+          // The grip shows at rest (a touch screen has no hover) and takes the loop's ink when used.
+          className="h-6 w-1.5 rounded-full bg-edge transition-colors duration-(--duration-fast) ease-standard group-hover/handle:bg-loop-edge group-focus-visible/handle:bg-loop-edge"
         />
       </button>
     )

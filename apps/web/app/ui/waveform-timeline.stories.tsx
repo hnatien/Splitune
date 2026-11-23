@@ -129,8 +129,10 @@ export const SectionChips: Story = {
   },
 }
 
-/** Coarse pointers make every chip a 44 px target; nothing leaves the map at 375 px. */
-export const SectionChipsOnAPhone: Story = {
+/** Coarse pointers make every chip a 44 px target; nothing leaves the full map at 375 px. (The
+ * practice screen's phone map is the compact form, which has no chips; sections reach the app
+ * with s41b.) */
+export const SectionChipsNarrowTouch: Story = {
   render: () => <Timeline sections={SECTIONS} loop={{ start: 5.3, end: 10.1 }} />,
   parameters: { ...VIEWPORTS, layout: 'fullscreen' },
   globals: { ...PHONE, appearance: 'light' },
@@ -146,8 +148,8 @@ export const SectionChipsOnAPhone: Story = {
     await expectTargets(within(map).getAllByRole('button', { name: /^Loop / }), 44)
   },
 }
-export const SectionChipsOnAPhoneDark: Story = {
-  ...SectionChipsOnAPhone,
+export const SectionChipsNarrowTouchDark: Story = {
+  ...SectionChipsNarrowTouch,
   globals: { ...PHONE, appearance: 'dark' },
 }
 
