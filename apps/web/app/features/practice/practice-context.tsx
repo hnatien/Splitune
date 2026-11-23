@@ -241,7 +241,13 @@ export function PracticeProvider({
   const searchTab = useRef(search.tab)
   useEffect(() => {
     const tab = searchTab.current ?? rememberedTab()
-    usePracticeUi.setState({ ...INITIAL_UI, tab, fixing: tab === 'fix' })
+    // `?tab=` opens the panel on that tab (27 §1); otherwise it stays closed until asked for.
+    usePracticeUi.setState({
+      ...INITIAL_UI,
+      tab,
+      fixing: tab === 'fix',
+      inspectorOpen: searchTab.current !== undefined,
+    })
     configureCorrections({ queryClient })
     void hydrateCorrections()
     startSession(songId)

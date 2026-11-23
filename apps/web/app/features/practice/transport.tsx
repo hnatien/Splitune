@@ -16,6 +16,7 @@ import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
+import { useMediaQuery } from '@/lib/use-media-query'
 import { cn } from '@/lib/utils'
 import { CountInIcon } from '@/ui/icons'
 import { LoopBadge, type LoopState } from '@/ui/loop-badge'
@@ -45,7 +46,7 @@ const VolumePanel = lazy(() =>
 // the loop line, which opens the Loop tab; after a looped pass the pass prompt takes this place,
 // so it never covers the music. Right: Count-in, Click, speed − / "70 %" / +, Tools and the volume.
 //
-// Phones: a status row (the loop line or the pass prompt) over two rows, loop · count-in · speed
+// Phones and screens under 1024 px: a status row (the loop line or the pass prompt) over two rows, loop · count-in · speed
 // and Tools · previous · Play · next · from the top. Every control keeps its own 48 px target and
 // nothing wraps or overflows at 375 px.
 
@@ -393,7 +394,10 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
   const playing = PLAYING.has(state)
   const loopActive = player.loop !== null
   const ready = audioStatus === 'ready' && state !== 'loading'
-  const compact = isPhone(layout)
+  // The one row needs about 900 px; narrower screens (an upright tablet, a 768 px window) take the
+  // phone's status row over two rows rather than run past the edge.
+  const narrow = useMediaQuery('(max-width: 1023px)', false)
+  const compact = isPhone(layout) || narrow
   const pass = usePass()
   const loopLine = useLoopPill()
   const speedOpen = usePracticeUi((s) => s.speedOpen)
