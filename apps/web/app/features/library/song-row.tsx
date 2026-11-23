@@ -142,9 +142,9 @@ function useDetail(song: Song, status: CardStatus, workerOffline: boolean): stri
 // One song in the library (s47 direction §6, 26 §12.2 ListRow): its instrument's drawing (from
 // 1024 px), the title linking to Practice across the whole row, one meta line, the status as a
 // glyph and words with the line that explains it, at most one action (Try again, Re-create stems)
-// and the ⋯ menu (Rename, Analyse again or with stems + tab, Delete). Below 640 px the status and
-// its line sit under the title, so the title keeps the width and only the action and ⋯ stay
-// beside it.
+// and the ⋯ menu (Rename, Analyse again or with stems + tab, Delete). The explaining line wraps
+// in its column rather than being cut off. Below 640 px the status and its line sit under the
+// title, so the title keeps the width and only the action and ⋯ stay beside it.
 export function SongRow({
   song,
   layout,
@@ -291,7 +291,11 @@ export function SongRow({
             <>
               <span className="block truncate">{meta}</span>
               <span className="mt-1 flex">{state}</span>
-              {detail && <span className="block truncate">{detail}</span>}
+              {detail && (
+                <span data-slot="song-status-line" className="block whitespace-normal text-pretty">
+                  {detail}
+                </span>
+              )}
             </>
           ) : (
             meta
@@ -300,10 +304,13 @@ export function SongRow({
         aside={
           <>
             {!compact && (
-              <span className="flex w-48 flex-col items-start gap-0.5 xl:w-64">
+              <span className="flex w-48 flex-col items-start gap-0.5 lg:w-64 xl:w-80">
                 {state}
                 {detail && (
-                  <span className="max-w-full truncate text-caption text-muted-foreground">
+                  <span
+                    data-slot="song-status-line"
+                    className="max-w-full text-pretty text-caption text-muted-foreground"
+                  >
                     {detail}
                   </span>
                 )}

@@ -281,12 +281,14 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
           className="animate-rise-in"
           icon={<MusicIcon aria-hidden />}
           title={m['library.empty']()}
-          description={m['library.empty_body']()}
+          // A phone has no page to drop a file on, and no key caps at this width.
+          description={wide ? m['library.empty_body']() : m['library.empty_body_phone']()}
           action={
             <Button
               variant="primary"
               size="lg"
-              shortcut={ADD_SONG_KEY}
+              shortcut={wide ? ADD_SONG_KEY : undefined}
+              aria-keyshortcuts={ADD_SONG_KEY}
               onClick={() => openAddSong()}
             >
               {m['nav.add_song']()}
