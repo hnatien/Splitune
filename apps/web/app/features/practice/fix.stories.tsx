@@ -105,8 +105,8 @@ const atLeast = async (element: HTMLElement, size: number) => {
   await expect(Math.round(box.width)).toBeGreaterThanOrEqual(size)
 }
 
-/** Nothing marked unsure (27 §4): Fix mode is on with the usual transport; Tools opens the tab,
- * which says so with the ready glyph and words. */
+/** Nothing marked unsure (27 §4): Fix mode is on with the usual transport and the tools panel
+ * open on Fix, which says so with the ready glyph and words. */
 export const Empty: Story = {
   render: screen({ notes: FIX_NOTES_SURE }),
   play: async ({ canvasElement }) => {
@@ -118,7 +118,8 @@ export const Empty: Story = {
       .getByRole('toolbar', { name: 'Playback' })
       .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
     if (!tools) throw new Error('No Tools in the transport')
-    await userEvent.click(tools)
+    // `?tab=fix` opens the panel on Fix; Tools only has to be pressed if it is closed.
+    if (tools.getAttribute('aria-pressed') !== 'true') await userEvent.click(tools)
     const empty = await canvas.findByText(m['practice.fix_empty']())
     await expect(empty).toBeVisible()
     await expect(empty.closest('[data-slot=status]')).toHaveAttribute('data-kind', 'ready')
@@ -569,9 +570,19 @@ export const EditorSheetPhone: Story = {
     await expect(inSheet.getByRole('button', { name: 'Next unsure spot' })).toBeVisible()
     await userEvent.click(inSheet.getByRole('button', { name: 'Next unsure spot' }))
     await waitFor(() => expect(queueHead()).toHaveTextContent(/^Spot 1 of 3 · bar 4$/))
+    // J and K walk the same queue as the sheet's own buttons, single notes and chords included.
+    await press('j')
+    await waitFor(() => expect(queueHead()).toHaveTextContent(/^Spot 2 of 3 · /))
+    await press('k')
+    await waitFor(() => expect(queueHead()).toHaveTextContent(/^Spot 1 of 3 · bar 4$/))
     await userEvent.click(inSheet.getByRole('button', { name: m['system.close']() }))
     await waitFor(() =>
       expect(body.queryByRole('dialog', { name: m['editor.title']() })).toBeNull(),
+    )
+    // Closed, J opens it again on the first unsure spot in the song.
+    await press('j')
+    await waitFor(() =>
+      expect(body.getByRole('dialog', { name: m['editor.title']() })).toBeVisible(),
     )
   },
 }

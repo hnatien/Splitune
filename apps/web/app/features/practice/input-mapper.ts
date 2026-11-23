@@ -14,6 +14,7 @@ import {
   fixCommand,
   openTab,
   pressedWith,
+  sheetCommand,
   showHud,
   usePracticeUi,
 } from './practice-store'
@@ -130,28 +131,27 @@ export function useInputMapper({
       showHud(m['nav.loop_bars']({ start: String(start + 1), end: String(end + 1) }))
     }
 
+    // J, K and E (12 §8). With the tools panel that is Fix mode, which holds the queue of unsure
+    // spots. Touch layouts fix in the editor sheet: open, it steps through the same queue; closed,
+    // J or K opens it on the first unsure spot (practice-page's useSheetFix), and E on the bar
+    // that's playing.
     const stepUnsure = (action: 'nextUnsure' | 'previousUnsure' | 'fixBar') => {
-      const { grid, view } = practice
+      const { grid } = practice
       if (!grid) return
       const now = grid.positionAt(practice.audio.position()).bar
+      const step = { kind: action === 'nextUnsure' ? 'next' : 'previous' } as const
       if (desktop) {
-        fixCommand(
-          action === 'fixBar'
-            ? { kind: 'bar', bar: now }
-            : { kind: action === 'nextUnsure' ? 'next' : 'previous' },
-        )
+        fixCommand(action === 'fixBar' ? { kind: 'bar', bar: now } : step)
         return
       }
-      const bar =
-        action === 'fixBar'
-          ? now
-          : unsureAfter(view?.unsureBars, now, action === 'nextUnsure' ? 1 : -1)
-      if (bar === undefined) {
-        showHud(m['practice.hud_no_unsure']())
-        return
+      if (action === 'fixBar') {
+        usePracticeUi.setState({ editor: { kind: 'bar', bar: now } })
+        showHud(m['practice.hud_bar']({ bar: String(now + 1) }))
+      } else if (usePracticeUi.getState().editor) {
+        sheetCommand(step)
+      } else {
+        usePracticeUi.setState({ fixing: true })
       }
-      usePracticeUi.setState({ editor: { kind: 'bar', bar } })
-      showHud(m['practice.hud_bar']({ bar: String(bar + 1) }))
     }
 
     const run = (action: Action, fine: boolean) => {
@@ -316,19 +316,6 @@ export function useInputMapper({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [practice, desktop, views])
-}
-
-/** The next (1) or previous (−1) unsure bar from `bar`, wrapping round the song. */
-export function unsureAfter(
-  bars: ReadonlySet<number> | undefined,
-  bar: number,
-  direction: 1 | -1,
-): number | undefined {
-  const sorted = [...(bars ?? [])].sort((a, b) => a - b)
-  if (sorted.length === 0) return undefined
-  return direction === 1
-    ? (sorted.find((b) => b > bar) ?? sorted[0])
-    : (sorted.findLast((b) => b < bar) ?? sorted.at(-1))
 }
 
 /** Visible name of a key for the shortcut tables. */
