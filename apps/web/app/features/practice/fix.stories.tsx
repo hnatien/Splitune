@@ -587,11 +587,15 @@ export const EditorSheetPhone: Story = {
       (target) => /^Bar 4\b/.test(target.getAttribute('aria-label') ?? ''),
     )
     if (!barFour) throw new Error('No bar 4 in the score')
-    await waitFor(() => {
-      const bar = barFour.getBoundingClientRect()
-      expect(bar.top).toBeGreaterThanOrEqual(score.getBoundingClientRect().top - 1)
-      expect(bar.bottom).toBeLessThanOrEqual(sheet.getBoundingClientRect().top + 1)
-    })
+    // The score scrolls smoothly, so the bar takes a moment to arrive.
+    await waitFor(
+      () => {
+        const bar = barFour.getBoundingClientRect()
+        expect(bar.top).toBeGreaterThanOrEqual(score.getBoundingClientRect().top - 1)
+        expect(bar.bottom).toBeLessThanOrEqual(sheet.getBoundingClientRect().top + 1)
+      },
+      { timeout: 5_000 },
+    )
     await expect(getComputedStyle(sheet, '::after').height).toBe('0px')
     // J and K walk the same queue as the sheet's own buttons, single notes and chords included.
     await press('j')

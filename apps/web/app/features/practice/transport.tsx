@@ -232,13 +232,13 @@ function ToolsButton({ compact }: { compact: boolean }) {
       size="practice"
       icon={<SlidersVerticalIcon aria-hidden />}
       label={compact ? m['practice.tools']() : name}
-      showLabel={!compact}
+      // The mix's name can be long ("Your part loud"): it shows from 1280 px, where there is room.
+      showLabel={compact ? false : 'wide'}
       shortcut="X"
       pressed={open}
+      // The same as its key: open on Mix (the button names the mix in play), or close.
       onPressedChange={(next) =>
-        next
-          ? openTab(usePracticeUi.getState().tab)
-          : usePracticeUi.setState({ inspectorOpen: false })
+        next ? openTab('mix') : usePracticeUi.setState({ inspectorOpen: false })
       }
     />
   )
@@ -575,16 +575,26 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
         {play}
         {next}
       </fieldset>
-      <div className="max-xl:hidden">
-        <Position />
-      </div>
-      <PedalLegend className="max-2xl:hidden" />
+      {/* The pass question needs the row: the readouts step aside while it is up. */}
+      {!pass.asking && (
+        <>
+          <div className="max-xl:hidden">
+            <Position />
+          </div>
+          <PedalLegend className="max-2xl:hidden" />
+        </>
+      )}
       <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
         {pass.asking ? <PassControl {...pass.props} /> : <LoopControl ready={ready} />}
       </div>
       <fieldset
         aria-label={m['practice.group_helpers']()}
-        className="m-0 flex shrink-0 items-center gap-1 border-0 p-0"
+        // Under 1536 px the pass question's two answers need this room while it is up (their
+        // keys, I and T, keep working); the controls after it don't move.
+        className={cn(
+          'm-0 flex shrink-0 items-center gap-1 border-0 p-0',
+          pass.asking && 'max-2xl:hidden',
+        )}
       >
         {countIn}
         {click}
