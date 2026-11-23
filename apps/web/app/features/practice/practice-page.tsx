@@ -1,5 +1,5 @@
 import type * as React from 'react'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
@@ -179,9 +179,10 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
 /** The transport's height as `--transport-height` on the page, for the layers that stop above it
  * (the tools sheet and drawer are portalled out of the practice tree). */
 function useTransportHeight() {
-  const ref = useRef<HTMLDivElement>(null)
+  // One observer per transport element, not one per render: a new observer's first report in the
+  // middle of the notation's own resizes left WebKit with undelivered notifications (an error).
+  const [element, setElement] = useState<HTMLDivElement | null>(null)
   useEffect(() => {
-    const element = ref.current
     if (!element) return
     const root = document.documentElement
     const write = () => root.style.setProperty('--transport-height', `${element.offsetHeight}px`)
@@ -192,8 +193,8 @@ function useTransportHeight() {
       observer.disconnect()
       root.style.removeProperty('--transport-height')
     }
-  })
-  return ref
+  }, [element])
+  return setElement
 }
 
 // The music: a strip where the paper needs one (the lanes' chord, the chord sheet's Now and Next,
