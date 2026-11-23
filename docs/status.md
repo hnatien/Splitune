@@ -1,8 +1,8 @@
 # Status
 
-What is built, as of **2026-11-21**. Details, verification and open items for each row are in `docs/progress-log.md` (search for the heading in the last column). Update the row when a step finishes.
+What is built, as of **2026-11-24**. Details, verification and open items for each row are in `docs/progress-log.md` (search for the heading in the last column). Update the row when a step finishes.
 
-**Summary:** the MVP (s01–s17) is built and deployed; a few owner checks are still open. v1: piano notes, the guitar/bass Notes view, the vocal Melody view, drums (s25), guitar and piano accuracy (s22, s24, steps 26–27) and the separation work (s28, s29, s40a) are on `dev`. The redesign's s32–s39, s40b and the black-and-white system (s46) are merged into `dev`; s41a is in progress, s41b–s45 are not started (s44 deferred). Not started outside the redesign: s18 (most of it), s20, s23 and s30.
+**Summary:** the MVP (s01–s17) is built and deployed; a few owner checks are still open. v1: piano notes, the guitar/bass Notes view, the vocal Melody view, drums (s25), guitar and piano accuracy (s22, s24, steps 26–27) and the separation work (s28, s29, s40a) are on `dev`. The redesign's s32–s39, s40b and the black-and-white system (s46) are merged into `dev`; s41a is in progress, s41b–s45 are not started (s44 deferred). The full audit and redesign (s47, "Calm workspace") is built on `impl/47-full-redesign` and waits for the owner's review; it is not merged. Not started outside the redesign: s18 (most of it), s20, s23 and s30.
 
 ## Steps
 | Step | What | State | Still open | Progress-log heading |
@@ -53,6 +53,7 @@ What is built, as of **2026-11-21**. Details, verification and open items for ea
 | s44 | Redesign: notify when ready (Web Push) | Deferred | Deferred by the owner; VAPID keys are an owner action | — |
 | s45 | Redesign: hardening and QA (WCAG gates, perf gate, visual matrix, G5/G6) | Not started | Visual-regression baselines still predate s46 | — |
 | s46 | Redesign: black-and-white system after OpenAI's interface language (tokens, Figtree, base components, shells, every screen, Home art) | Done | Merged into `dev` (`368fb17`). Every screen area is restyled and docs 26–28 match the code; the Night Rehearsal mockups are history (structure only). The Home art is the owner's generated set (`docs/home-art.md`). Open: visual-regression baselines (`e2e:visual`) not regenerated; the WebKit story run and e2e not run on this PC; real-device checks | Step s46 |
+| s47 | Full UI audit and redesign, "Calm workspace": tokens as two grey ramps with ink selection, the components rebuilt (lists, panels, status lines, no cards), the practice screen as the music and one transport, every other screen rebuilt, docs 12 / 26 / 27 / 28 | Done, not merged | On `impl/47-full-redesign` (from `dev` `bd2c77e`). QA: 55 screens scored 2.95 before, 3.89 after. Open for the owner: Home no longer uses the gear photos; song rows have no music strip (needs waveform data in the list API); near-black and off-white grounds replace pure black and white; phones show one bar a system. Not done: visual-regression baselines, Firefox e2e, device and music-stand checks | Step s47 |
 
 ## Ad-hoc work
 Work done without a step prompt. Its progress-log headings use their own numbers, which do **not** match the step numbers above.
