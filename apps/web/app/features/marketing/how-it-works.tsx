@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/ui/button'
@@ -7,7 +8,8 @@ import { useCurrentSection } from './use-current-section'
 
 // How it works (27 §3.2): the pipeline in plain language, with an honest note on accuracy. The
 // title, then the four steps as links that mark the step being read with the ink edge
-// (aria-current) as the page scrolls; each step is its own section, the text on the left and a
+// (aria-current) as the page scrolls, held under the bar so the mark stays in view (one row,
+// scrolling sideways on phones); each step is its own section, the text on the left and a
 // picture of the app at that step beside it on wide screens (under it on narrow ones). Each
 // picture is one image with a text alternative. The page's one primary is the example song at
 // the end. No scroll-driven motion.
@@ -40,19 +42,35 @@ export function HowItWorks({ signedIn = false }: { signedIn?: boolean }) {
     },
   ]
   const current = useCurrentSection(steps.map((_, i) => stepId(i)))
+  // Where the row scrolls sideways (phones), the marked step is kept in it.
+  const row = useRef<HTMLOListElement>(null)
+  useEffect(() => {
+    const list = row.current
+    const mark = list?.querySelector<HTMLElement>('[aria-current=step]')
+    if (!list || !mark || current === undefined) return
+    const start = mark.offsetLeft - list.offsetLeft
+    if (start < list.scrollLeft || start + mark.offsetWidth > list.scrollLeft + list.clientWidth) {
+      list.scrollLeft = start - (list.clientWidth - mark.offsetWidth) / 2
+    }
+  }, [current])
   return (
     <div className="flex flex-col pb-24">
-      <header className={cn(GRID, 'flex flex-col items-start gap-8 pt-12 sm:pt-20')}>
-        <div className="flex max-w-3xl flex-col gap-4">
-          <h1 className="text-display text-balance">{m['how.title']()}</h1>
-          <p className="text-lead text-pretty text-muted-foreground">{m['how.intro']()}</p>
-        </div>
-        <nav aria-label={m['how.nav']()}>
-          <ol className="flex flex-wrap gap-1">
+      <header className={cn(GRID, 'flex flex-col items-start gap-4 pt-12 sm:pt-20')}>
+        <h1 className="max-w-3xl text-display text-balance">{m['how.title']()}</h1>
+        <p className="max-w-3xl text-lead text-pretty text-muted-foreground">{m['how.intro']()}</p>
+      </header>
+      {/* Under the marketing bar (min-h-16); the steps' scroll margin and the page's scroll
+          padding clear both. */}
+      <nav
+        aria-label={m['how.nav']()}
+        className="sticky top-16 z-(--z-sticky) mt-8 border-b border-border bg-background"
+      >
+        <div className={cn(GRID, 'py-2')}>
+          <ol ref={row} className="-mx-1 flex gap-1 overflow-x-auto px-1 py-1">
             {steps.map((step, i) => {
               const here = current === stepId(i)
               return (
-                <li key={step.title}>
+                <li key={step.title} className="shrink-0">
                   <a
                     href={`#${stepId(i)}`}
                     aria-current={here ? 'step' : undefined}
@@ -67,15 +85,15 @@ export function HowItWorks({ signedIn = false }: { signedIn?: boolean }) {
               )
             })}
           </ol>
-        </nav>
-      </header>
+        </div>
+      </nav>
 
       <ol className={cn(GRID, 'flex flex-col')}>
         {steps.map((step, i) => (
           <li
             key={step.title}
             id={stepId(i)}
-            className="grid scroll-mt-20 items-start gap-8 border-b border-border py-16 last:border-b-0 sm:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16"
+            className="grid scroll-mt-18 items-start gap-8 border-b border-border py-16 last:border-b-0 sm:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16"
           >
             <div className="flex flex-col gap-3 lg:pt-4">
               <span className="text-body-sm text-muted-foreground tabular-nums">
