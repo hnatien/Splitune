@@ -215,14 +215,18 @@ const layoutHolds = async (canvasElement: HTMLElement, share: number | null, bar
     )
   }
   // As many bars a system as fit legibly: each is wide enough that rests and digits stay apart.
-  await waitFor(() => {
-    const targets = [...tab.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].map((target) =>
-      target.getBoundingClientRect(),
-    )
-    const first = targets.filter((box) => Math.abs(box.top - (targets[0]?.top ?? 0)) < 1)
-    expect(first).toHaveLength(bars)
-    for (const box of first) expect(box.width).toBeGreaterThanOrEqual(240)
-  })
+  // alphaTab draws the systems after the tab region shows, which takes seconds under a full run.
+  await waitFor(
+    () => {
+      const targets = [...tab.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].map(
+        (target) => target.getBoundingClientRect(),
+      )
+      const first = targets.filter((box) => Math.abs(box.top - (targets[0]?.top ?? 0)) < 1)
+      expect(first).toHaveLength(bars)
+      for (const box of first) expect(box.width).toBeGreaterThanOrEqual(240)
+    },
+    { timeout: 10_000 },
+  )
   const transport = canvas.getByRole('toolbar', { name: 'Playback' })
   await expect(transport.scrollWidth).toBeLessThanOrEqual(transport.clientWidth)
   const edge = transport.getBoundingClientRect()
