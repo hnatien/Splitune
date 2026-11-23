@@ -2885,3 +2885,46 @@ Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at
 **Next**
 - s43 places `MiniMixer` in the Tools sheet and removes the compact transport's Mix button. s30's piece channels build on `mixChannels` (per-drum channels are later scope here).
 - s45 flips the "Every stem has its own fader." / "a mixer for every stem" honesty gates.
+
+## 2026-11-24 — Step s47: full UI audit and redesign, "Calm workspace" (done, not merged; owner review next)
+
+**Instruction (owner):** a full UI audit and redesign with the lead owning every design decision; the UI before it is a prototype. Rules that held: doc 25, every capability still reachable, WCAG 2.2 AA, confidence and state never by colour alone, every practice action by keyboard and pedal, Dark and Light both first-class, feature detection only, tests rewritten for the new behaviour and never weakened. Step prompt: `docs/steps/s47-full-redesign.md`.
+
+**Branch** `impl/47-full-redesign` from `dev` (`bd2c77e`). Not pushed, no PR, not merged.
+
+**Phases 1–3 (brief, audit, direction).** `docs/design/s47-guidelines.md` and `s47-inventory.md`; every screen and state captured before the change (`docs/design/s47-before/`, kept out of git: about 2,000 images) and scored against the brief in `docs/design/s47-audit.md` (55 screens and regions, top 10 problems). Three prototypes of the practice screen and the library (`docs/design/s47-directions/{a,b,c}/`), judged by a reviewer who saw none of them made (`judge.md`). Chosen: **A, "Calm workspace"**, with C's loop on the score, chord names over the tab and "left = again, right = go" pedal rule, and B's key caps on controls, digit keys and 44/48 px targets (`docs/design/s47-direction.md`).
+
+**Tokens (`packages/ui-tokens`).** Two 12-step achromatic ramps bound per appearance to `--gray-1..12`; roles read steps; selection, focus and "now" are the ink (step 12), never a grey fill; increased contrast is one step further; only `--scrim` is translucent. Grounds are near-black `#0f0f0f` and off-white `#fbfbfb` (s46 had pure black and white). Type by role (`text-caption` … `text-hero`, `text-field` 16 px for inputs), radii `media` 6 / `field` 10 / `panel` 14 / `dialog` 20, two shadows, targets 24 / 44 / 48 / 64 / 88. Retired roles and utilities are rejected by `scripts/check-ui-tokens.mjs`. 1,371 token tests.
+
+**Components (`apps/web/app/ui`).** Button (`primary | outline | quiet | selected | destructive | destructiveSolid | link`, `shortcut` key caps), Toggle, Tabs (`line | pill`), ToggleGroup without the capsule; new **Status** (a glyph and words), **ListGroup / ListRow**, **Panel**, **ChoiceRow**, **Stat**; the music kit restyled (transport, speed with a typed field, loop, pass, mixer, song map with section chips, chords, confidence legend, HUD). Unavailable controls are faint text in a dashed edge. Deleted: Card, Badge, SongCard, ChoiceCard, RadioCard, StatCard, StepDots, CoachMark, the distance drawings, MusicStrip.
+
+**Practice (the reference screen).** The music and one transport: top bar 52 (48 on phones), song map, notation from edge to edge with a key row, one `Transport` (one 80 px row from 1024 px; a status row over two rows below that), the tools panel (Loop / Mix / Progress / Fix) closed by default, docked from 1180 px, a drawer below, a sheet on phones. Notation share about 77 % at 1440×900 (was about 40 %) and 64 % at 375×812 (was 0 % by default), both asserted in stories. Removed: now-column, transport dock, floating pass prompt, mixer drawer, loop panel. Keys: `1 2 4 8` loop bars, `Shift`+`5…0` speeds, `S` typed speed, `Shift`+arrows move the loop, `R`, `I`, `T` (click), `X`, `V`, `U`, `Y`; the pedal's two sides mean again and go by the moment; every press is confirmed in words beside the music. Notation: dashed "?" for unsure, dotted for probably, a 2 px ink line under the bar playing, printed bar numbers that follow the song's own count.
+
+**Other screens (five agents in worktrees, merged).**
+- Public: Home's hero is the practice screen drawn from the kit; Pricing as rows; system pages and banners unboxed; marketing bar keeps one filled control per page.
+- Onboarding: `/start` is one page with defaults; two actions to the first note (was four); the guide is one line in the page's flow.
+- Signed-in app: a left rail from 1024 px; the library is hairline rows grouped Getting ready / Needs you / Ready to practise; Add song with `ChoiceRow`s and a submit that is never disabled in advance; settings as plain rows.
+- Practice tools: Loop, Mix (solo says "Not heard"), Progress, Fix (`Y` accepts), the touch editor sheet, the full editor on the practice key map.
+- Practice stage: getting ready with the part question first, chord sheet and piano chart with ink names and edge-only confidence, glance view, Display and reading, shortcuts overlay on every layout, loading and error states.
+
+**Defects found and fixed along the way.** Transport and top bar overlapped between 641 and 1279 px; a loading button lost its fill; the panel header was a second page banner in drawers; an empty meter was invisible; toasts sat over the transport; the guide came last in Tab order; the notation region had no focusable content while laying out; on touch layouts J / K never reached a single unsure note or chord; `?tab=` did not open the panel; failed rest and count-in saves raised unhandled rejections; the bundle-budget script measured the wrong chunk.
+
+**Docs.** 26 rewritten; 27 §1, §3 and the new §3.7.6; 12 §8 and its s47 notes; 28 (checks and targets); the direction, audit, guidelines and inventory under `docs/design/`.
+
+**Final QA (independent reviewer, 260 after-screenshots and the code).** 55 screens and regions: 2.95 before, 3.89 after (Public 3.27 → 4.36, Signed-in app 3.11 → 3.94, Onboarding / Getting ready / Fix / editor 2.90 → 3.70, Practice 2.56 → 3.63). No critical finding, 3 high, 22 medium, 36 low; the scores predate the fixes that followed. Fixed after it: bars per system follow the pane's width and digit size (rests ran into fret digits at 1180 with the panel, at 768 and on phones); the touch editor sheet takes its room from the stage and the bar being fixed scrolls into view; Pricing and Home state the real 50–100 % speed range; sheets no longer paint over the status row; unavailable controls have a dashed edge; Space stays Play after a click; the lead-in reads "–"; the More menu closes over what it opens; the Display panel stops above the transport; the blank band above the first system is gone; loop grips show at rest; the click has a key (`T`); the fretboard's next shape is a solid ring; Getting ready, analysis failed, stems unavailable, Keyboard & pedal ("More keys", the pedal anchor), Add song's tabs, the library's state line, the Home still at 768 and the How it works step nav. Review and scores: `docs/design/s47-qa.md`, `docs/design/s47-audit.md` ("Scores after the redesign").
+
+**Decisions and deviations (the lead's; for the owner)**
+1. **Grounds are near-black and off-white** (`#0f0f0f`, `#fbfbfb`), not s46's pure black and white: a 12-step ramp needs room below the page colour for wells and above it for raised layers.
+2. **No music strip in song rows.** The direction asked for a song's waveform in its row; the library and example lists carry no peaks or sections (they live in each song's separation artefact). Rows lead with the instrument's drawing. Needs a contract and pipeline change to do properly.
+3. **Home no longer uses the owner's eight gear photos** (`apps/web/public/art/home-*.webp`, `docs/home-art.md`): the hero is the product drawn from the kit. The files are still in the repo, unused.
+4. **Onboarding is one page**; the "Where's your screen?" step is gone (the distance starts from the device and is changed in Display and reading).
+5. **The pedal has one rule** (left again, right go, by the moment); the s43 plan of presets and held pedals is replaced. A guided wizard is still s43.
+6. **Speed stays 50–100 %** (11 §4, 23); the public copy that said 25 % and "any speed" was corrected instead.
+7. **Phones show one bar a system** at the desk reading size, because two ran the digits together.
+8. **Python environment:** `uv sync --frozen` was run in `services/ml` on the coding Mac (its venv had never been synced) so that lint, pyright, pytest and the e2e mock worker could run.
+
+**Known gaps**
+- Visual-regression baselines (`e2e:visual`, Docker) not regenerated: every baseline differs by design.
+- Section chips on the phone song map wait for sections (s41b). The position readout's bar total disagrees with a score that prints a trailing bar. The Back link is a bare chevron below 1024 px in practice. About 26 low findings of the QA remain (`s47-qa.md`).
+- Reading sizes use weight 500; the palette and those sizes have had no music-stand reading test (G5). No real-device checks.
+- An intermittent alphaTab render race in the Fix stories (Half tempo, then Undo) predates this step.
