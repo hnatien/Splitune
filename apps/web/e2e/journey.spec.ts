@@ -1,5 +1,12 @@
 import { expect, type Page, test } from '@playwright/test'
-import { collectErrors, expectAccessible, expectNoHorizontalScroll, signIn, wav } from './helpers'
+import {
+  collectErrors,
+  expectAccessible,
+  expectNoHorizontalScroll,
+  projectContext,
+  signIn,
+  wav,
+} from './helpers'
 
 // Step 10 acceptance (prompt 10), with Add song as a dialog over the library (s34, 27 §3.6): sign
 // up with a username and a password → add a short audio file → stages progress → ready in the
@@ -67,14 +74,26 @@ test.afterAll(async () => {
   await page.context().close()
 })
 
-test('landing page is accessible and leads to the example', async () => {
+test('landing page is accessible and leads to the example', async ({ browser }) => {
+  // A visitor is offered the example song; signed in, the same place opens the library (27 §3.1).
+  const visitor = await (await projectContext(browser)).newPage()
+  await visitor.goto('/')
+  await expect(visitor.getByRole('heading', { level: 1 })).toHaveText(
+    'Bring any song. Practise just your part.',
+  )
+  await expect(
+    visitor.getByRole('main').getByRole('link', { name: 'Try an example song' }).first(),
+  ).toHaveAttribute('href', '/start')
+  await expectAccessible(visitor)
+  await visitor.context().close()
+
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Bring any song. Practise just your part.',
   )
   await expect(
-    page.getByRole('main').getByRole('link', { name: 'Try an example song' }).first(),
-  ).toHaveAttribute('href', '/start')
+    page.getByRole('main').getByRole('link', { name: 'Open your library' }),
+  ).toHaveAttribute('href', '/library')
   await expectAccessible(page)
 })
 
@@ -124,10 +143,28 @@ test('a link import shows its download and analysis progress', async () => {
   await page
     .getByLabel('Link to a video or song')
     .fill('https://www.youtube.com/watch?v=h_N0-H49R6I')
+  // The mock workers finish a Lite run in about a second, so the stage list is on screen for
+  // moments: watch for its download row from before the client-side navigation to practice.
+  await page.evaluate(() => {
+    const seen = window as unknown as { downloadRow?: string }
+    const observer = new MutationObserver(() => {
+      const row = [...document.querySelectorAll('li')].find(
+        (li) =>
+          li.textContent?.includes('Downloading') &&
+          li.textContent.includes('From the link you added'),
+      )
+      if (!row) return
+      seen.downloadRow = row.textContent ?? ''
+      observer.disconnect()
+    })
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true })
+  })
   await page.getByRole('button', { name: 'Add and analyse' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
-  await expect(page.locator('li', { hasText: 'Downloading' })).toBeVisible()
   await expect(finished()).toBeVisible({ timeout: 90_000 })
+  // "Downloading · From the link you added", then its state, in Getting ready's stage list.
+  const row = await page.evaluate(() => (window as unknown as { downloadRow?: string }).downloadRow)
+  expect(row).toMatch(/Downloading.*From the link you added/)
 })
 
 test('an upload interrupted by a reload resumes instead of restarting', async () => {
