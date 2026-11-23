@@ -612,7 +612,7 @@ test.afterAll(async ({ browser }, info) => {
     },
     method: {
       screen:
-        'the onboarding example song (openExample: /start, Guitar, Just started, Skip), its practice screen, started from the "Play your part" card',
+        'the onboarding example song (openExample: /start, Start practising), its practice screen, started from Play',
       motion: 'full (reducedMotion no-preference); service workers blocked',
       longAnimationFrames: `PerformanceObserver long-animation-frame (≥ 50 ms), ${LOAF_WINDOW_MS / 1000} s from the press that starts the looped playback with its count-in`,
       forcedStyleAndLayout: `CDP trace (devtools.timeline) over ${TRACE_WINDOW_MS / 1000} s of steady playback right after that window: Layout/UpdateLayoutTree nested in script on CrRendererMain, attributed to the innermost FunctionCall; LoAF per-script forcedStyleAndLayoutDuration is in attribution.longAnimationFrames`,
