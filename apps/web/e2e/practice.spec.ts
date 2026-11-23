@@ -316,9 +316,10 @@ test('on the desktop editor, a chord and a note edit persist', async () => {
   test.skip(mobile, 'the editor is desktop-first')
   await page.goto(`${songUrl.replace(/\/practice$/, '/edit')}`)
   if (test.info().project.use.hasTouch) {
-    // Touch devices edit in practice's editor sheet (27 §3.8), covered above. The tab loads before
-    // the next test navigates (WebKit reports cancelled worker and font loads as errors).
-    await expect(page).toHaveURL(new RegExp(`${songUrl}$`))
+    // Touch devices edit in practice's editor sheet (27 §3.8), covered above: /edit sends them
+    // to practice on its Fix tab. The tab loads before the next test navigates (WebKit reports
+    // cancelled worker and font loads as errors).
+    await expect(page).toHaveURL(new RegExp(`${songUrl}\\?tab=fix$`))
     await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
       timeout: 60_000,
     })
@@ -409,7 +410,12 @@ test('layers appear one by one without moving the transport', async () => {
   boxes.push(await box())
 
   released = ['beats', 'stems']
-  await expect(mixControl()).toHaveAccessibleName(MIXED, { timeout: 30_000 })
+  // What works now marks the mixer ready on every layout; where the transport has room for a
+  // label (a fine pointer), Tools names the mix too. Stacked under 1024 px it stays "Tools".
+  await expect(
+    page.locator('[data-slot=list-row]', { hasText: 'Mixer: your part loud or muted' }),
+  ).toContainText('Ready to use', { timeout: 30_000 })
+  if (desktop) await expect(mixControl()).toHaveAccessibleName(MIXED)
   boxes.push(await box())
 
   released = ['beats', 'stems', 'chords']
@@ -450,7 +456,9 @@ test('the notation leads and the transport fits', async ({ browserName }, info) 
   test.skip(size === null, 'measured on the desktop and phone projects')
   if (!size) return
   await page.setViewportSize(size)
-  await page.goto(songUrl)
+  // The tab on every layout; the phone test before this one may have left Chords as the
+  // song's stored view.
+  await page.goto(`${songUrl}?view=tab`)
   await ready()
   const notation = await page.locator('[data-slot=notation]').boundingBox()
   const share = (notation?.height ?? 0) / size.height
