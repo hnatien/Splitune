@@ -55,7 +55,7 @@ function beatsBetween(times: readonly number[], from: number, to: number) {
   return Math.max(0, after(to + EPS) - after(from))
 }
 
-const label = 'text-caption font-medium text-conf-medium'
+const label = 'text-caption font-medium text-muted-foreground'
 
 export function PianoStrip({
   chip,
@@ -133,7 +133,7 @@ export function PianoStrip({
         {current ? (
           chip(current, 'current')
         ) : (
-          <span className="inline-flex min-h-target-practice items-center border-2 border-transparent px-3 font-reading text-read-chord-current leading-none font-medium text-conf-medium">
+          <span className="inline-flex min-h-target-practice items-center border-2 border-transparent px-3 font-reading text-read-chord-current leading-none font-medium text-muted-foreground">
             {m['practice.no_chord_short']()}
           </span>
         )}
@@ -194,7 +194,7 @@ export function PianoStrip({
         {then.length > 0 && (
           <div className="hidden flex-col items-end gap-1 @6xl:flex">
             <span className={label}>{m['practice.then']()}</span>
-            <span className="flex gap-4 font-reading text-read-chord font-medium text-conf-medium">
+            <span className="flex gap-4 font-reading text-read-chord font-medium text-muted-foreground">
               {then.map((chord) => (
                 <ChordSymbol key={chord.id} name={chord.name} />
               ))}
