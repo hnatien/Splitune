@@ -3,66 +3,111 @@ import { DrumIcon, GuitarIcon } from 'lucide-react'
 import { useState } from 'react'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
-import { ChoiceCard } from './choice-card.tsx'
+import { ChoiceRow, ChoiceRowGroup } from './choice-row.tsx'
 import { CoachMark } from './coach-mark.tsx'
 import { BassIcon } from './icons/bass.tsx'
 import { DistanceIllustration } from './icons/distance.tsx'
 import { StepDots } from './step-dots.tsx'
+import {
+  BOTH_THEMES,
+  contrast,
+  edgeOf,
+  expectFloatingLayer,
+  expectInkEdge,
+  expectTargets,
+  shadowsOf,
+  surfaceOf,
+  themeFrames,
+} from './story-kit.tsx'
 
-// Onboarding's kit pieces (27 §3.3): tap-to-choose cards (available and "coming soon"), the
-// progress dots with their "Step n of 5" text, a dismissible, non-modal coach mark, and the
-// distance drawings of "Where's your screen?".
+// Onboarding's kit pieces (27 §3.3): the instrument and level as ChoiceRows (what replaced the
+// tap-to-choose cards: the chosen row has the 1.5 px ink edge and a check, "coming soon" is a
+// disabled row that says why), the progress dots with their "Step n of 5" text, a dismissible,
+// non-modal coach mark, and the distance drawings of "Where's your screen?".
 const meta = { title: 'Kit/Onboarding' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
 const onChoose = fn()
 
-const choices = () => (
-  <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
-    <ChoiceCard icon={<GuitarIcon />} title="Guitar" onClick={() => onChoose('guitar')} />
-    <ChoiceCard icon={<BassIcon />} title="Bass" onClick={() => onChoose('bass')} />
-    <ChoiceCard
-      icon={<DrumIcon />}
-      title="Drums"
-      description="Coming soon — try guitar or bass"
-      unavailable
-      onClick={() => onChoose('drums')}
-    />
-    <ChoiceCard title="I can play a few songs" onClick={() => onChoose('few_songs')} />
-  </div>
-)
+function Instruments() {
+  const [value, setValue] = useState<string | null>(null)
+  return (
+    <ChoiceRowGroup
+      aria-label="Your instrument"
+      value={value}
+      onValueChange={(next) => {
+        setValue(String(next))
+        onChoose(next)
+      }}
+      className="max-w-md"
+    >
+      <ChoiceRow value="guitar" icon={<GuitarIcon />} label="Guitar" />
+      <ChoiceRow value="bass" icon={<BassIcon />} label="Bass" />
+      <ChoiceRow
+        value="drums"
+        icon={<DrumIcon />}
+        label="Drums"
+        description="Coming soon. Try guitar or bass for now."
+        disabled
+      />
+      <ChoiceRow
+        value="few_songs"
+        label="I can play a few songs"
+        description="We'll start you on the simplified tab and step up from there."
+      />
+    </ChoiceRowGroup>
+  )
+}
 
 export const Choices: Story = {
-  render: choices,
+  render: () => <Instruments />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'Guitar' }))
+    const guitar = canvas.getByRole('radio', { name: /Guitar/ })
+    await expectTargets(canvas.getAllByRole('radio'))
+    await userEvent.click(guitar)
     await expect(onChoose).toHaveBeenLastCalledWith('guitar')
-    const drums = canvas.getByRole('button', { name: /^Drums/ })
-    // Unavailable stays focusable and says why, but does nothing.
+    await expect(guitar).toBeChecked()
+    // Coming soon stays in the list and says why, but can't be chosen.
+    const drums = canvas.getByRole('radio', { name: /Drums/ })
     await expect(drums).toHaveAttribute('aria-disabled', 'true')
+    await expect(drums).toHaveTextContent('Coming soon')
     await userEvent.click(drums)
     await expect(onChoose).toHaveBeenLastCalledWith('guitar')
+    await expect(drums).not.toBeChecked()
   },
 }
-export const ChoicesDark: Story = { render: choices, globals: { appearance: 'dark' } }
-export const ChoicesDaylight: Story = { render: choices, globals: { appearance: 'light' } }
 
-export const ChoicesRaised: Story = {
-  render: choices,
+/** Chosen is the ink edge plus a check, on the same surface as the rest; nothing is lifted. */
+export const ChoicesChosen: Story = {
+  render: () => <Instruments />,
+  globals: BOTH_THEMES,
   play: async ({ canvasElement }) => {
-    const [available, , unavailable] =
-      canvasElement.querySelectorAll<HTMLElement>('[data-slot=choice-card]')
-    // Rows are drawn by a hairline, never lifted, so both are flat; an unavailable one sits on the
-    // quiet fill.
-    await expect(getComputedStyle(available as Element).boxShadow).toBe(
-      getComputedStyle(unavailable as Element).boxShadow,
-    )
-    await expect(getComputedStyle(available as Element).backgroundColor).not.toBe(
-      getComputedStyle(unavailable as Element).backgroundColor,
-    )
+    for (const frame of themeFrames(canvasElement)) {
+      const canvas = within(frame)
+      const bass = canvas.getByRole('radio', { name: /Bass/ })
+      const guitar = canvas.getByRole('radio', { name: /Guitar/ })
+      await userEvent.click(bass)
+      await waitFor(() => expect(edgeOf(bass)?.width).toBe(1.5))
+      await expectInkEdge(bass)
+      await expect(edgeOf(guitar)?.width).toBe(1)
+      await expect(getComputedStyle(bass).backgroundColor).toBe(
+        getComputedStyle(guitar).backgroundColor,
+      )
+      await expect(shadowsOf(bass).filter((shadow) => !shadow.inset)).toEqual([])
+      // A disabled row keeps full opacity; its words fade to the faint grey, still ≥ 4.5:1.
+      const drums = canvas.getByRole('radio', { name: /Drums/ })
+      await expect(getComputedStyle(drums).opacity).toBe('1')
+      await expect(
+        contrast(getComputedStyle(drums).color, surfaceOf(frame)),
+      ).toBeGreaterThanOrEqual(4.5)
+    }
   },
+}
+export const ChoicesStage: Story = {
+  render: () => <Instruments />,
+  globals: { appearance: 'stage' },
 }
 
 const steps = () => (
@@ -81,20 +126,28 @@ const steps = () => (
 
 export const Steps: Story = {
   render: steps,
+  globals: BOTH_THEMES,
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await expect(canvas.getByText('Step 3 of 5')).toBeVisible()
-    const current = canvasElement.querySelectorAll<HTMLElement>('[aria-current=step]')
-    await expect(current).toHaveLength(3)
-    // The current dot is a 22 × 8 pill, the others 8 px dots (26 §12.2).
-    for (const dot of current) await expect(dot.getBoundingClientRect().width).toBe(22)
-    const others = canvasElement.querySelectorAll<HTMLElement>('li:not([aria-current])')
-    await expect(others).toHaveLength(12)
-    for (const dot of others) await expect(dot.getBoundingClientRect().width).toBe(8)
+    for (const frame of themeFrames(canvasElement)) {
+      const canvas = within(frame)
+      await expect(canvas.getByText('Step 3 of 5')).toBeVisible()
+      const current = frame.querySelectorAll<HTMLElement>('[aria-current=step]')
+      await expect(current).toHaveLength(3)
+      // The current dot is a 22 × 8 pill, the others 8 px dots (26 §12.2).
+      for (const dot of current) await expect(dot.getBoundingClientRect().width).toBe(22)
+      const others = frame.querySelectorAll<HTMLElement>('li:not([aria-current])')
+      await expect(others).toHaveLength(12)
+      for (const dot of others) await expect(dot.getBoundingClientRect().width).toBe(8)
+      // Done and current are the ink, upcoming the --edge grey; both ≥ 3:1 on the page.
+      const [, , upcoming] = frame.querySelectorAll<HTMLElement>('ol')[0]?.children ?? []
+      for (const dot of [current[0], upcoming] as HTMLElement[]) {
+        await expect(
+          contrast(getComputedStyle(dot).backgroundColor, surfaceOf(frame)),
+        ).toBeGreaterThanOrEqual(3)
+      }
+    }
   },
 }
-export const StepsDark: Story = { render: steps, globals: { appearance: 'dark' } }
-export const StepsDaylight: Story = { render: steps, globals: { appearance: 'light' } }
 
 function StepAdvance() {
   const [step, setStep] = useState(1)
@@ -111,7 +164,7 @@ export const StepsAdvance: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
-    // The widening is a width transition (not a swap), so it settles on the new pill.
+    // Only the colour animates; the pill moves to the new step straight away.
     await waitFor(() => {
       const [first, second] = canvasElement.querySelectorAll<HTMLElement>('li')
       expect((first as HTMLElement).getBoundingClientRect().width).toBe(8)
@@ -139,14 +192,24 @@ export const Coach: Story = {
     await expect(canvas.getByRole('status')).toHaveTextContent(/looped bars 5–8/)
     const mark = canvasElement.querySelector<HTMLElement>('[data-slot=coach-mark]') as HTMLElement
     await expect(getComputedStyle(mark).animationName).toBe('pop-in')
-    await expect(getComputedStyle(mark).boxShadow).not.toBe('none')
+    // A floating layer: raised, one hairline, 14 px corners, the popover shadow.
+    await waitFor(() => expect(getComputedStyle(mark).opacity).toBe('1'))
+    await expectFloatingLayer(mark, '--elevation-popover', '--radius-panel')
+    await expectTargets([canvas.getByRole('button', { name: 'Got it' })])
     await userEvent.click(canvas.getByRole('button', { name: 'Got it' }))
     await expect(canvas.getByText('Dismissed')).toBeVisible()
   },
 }
 export const CoachBothThemes: Story = {
   render: () => <CoachDemo />,
-  globals: { appearance: 'side-by-side' },
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const mark = frame.querySelector<HTMLElement>('[data-slot=coach-mark]') as HTMLElement
+      await waitFor(() => expect(getComputedStyle(mark).opacity).toBe('1'))
+      await expectFloatingLayer(mark, '--elevation-popover', '--radius-panel')
+    }
+  },
 }
 
 // The line drawings of onboarding's "Where's your screen?" cards (26 §11).
@@ -166,4 +229,4 @@ export const Distances: Story = {
     for (const svg of svgs) await expect(svg).toHaveAttribute('aria-hidden', 'true')
   },
 }
-export const DistancesDaylight: Story = { render: drawings, globals: { appearance: 'light' } }
+export const DistancesBothThemes: Story = { render: drawings, globals: BOTH_THEMES }

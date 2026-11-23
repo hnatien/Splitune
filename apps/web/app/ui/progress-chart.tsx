@@ -6,9 +6,11 @@ export type ProgressPoint = { at: Date; best: number; cold: number }
 
 /**
  * The Progress tab's "Last 30 days" (26 §4.4, §12.2 ProgressChart; 27 §3.7.4): per session, the
- * best clean pass as a solid ink line with round markers and the first clean pass ("cold") as a
- * dashed --muted-foreground line with square markers, so the two never differ by colour alone.
- * The picture is one `img` named by `label`, its text alternative; the legend stays visible.
+ * best clean pass as a solid ink line with round markers (the latest larger) and the first clean
+ * pass ("cold") as a dashed --muted-foreground line with square markers, so the two never differ
+ * by colour alone; markers are solid, so they read on the panel and on a sheet alike. Hairline
+ * gridlines carry tabular percentages. The picture is one `img` named by `label`, its text
+ * alternative; the legend stays visible.
  */
 export function ProgressChart({
   points,
@@ -76,7 +78,7 @@ export function ProgressChart({
               // biome-ignore lint/suspicious/noArrayIndexKey: one marker per session, in order
               key={`c${i}`}
               data-marker="cold"
-              className="absolute size-2 -translate-1/2 border-2 border-muted-foreground bg-raised"
+              className="absolute size-2 -translate-1/2 bg-muted-foreground"
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
             />
           ))}

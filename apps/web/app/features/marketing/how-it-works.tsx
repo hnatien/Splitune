@@ -50,7 +50,7 @@ export function HowItWorks() {
           <ol className="flex flex-wrap justify-center gap-2">
             {steps.map((step, i) => (
               <li key={step.title}>
-                <a href={`#how-step-${i + 1}`} className={buttonVariants({ variant: 'secondary' })}>
+                <a href={`#how-step-${i + 1}`} className={buttonVariants({ variant: 'outline' })}>
                   {step.short}
                 </a>
               </li>

@@ -127,7 +127,7 @@ export function PlanSettings({
                     </Button>
                   )}
                   <Button
-                    variant="ghost"
+                    variant="quiet"
                     loading={pending === 'manage'}
                     disabled={pending !== undefined}
                     onClick={() => run('manage')}

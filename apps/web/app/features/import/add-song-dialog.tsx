@@ -194,7 +194,7 @@ export default function AddSongDialog({
             <DialogClose
               render={
                 <Button
-                  variant="ghost"
+                  variant="quiet"
                   size="icon"
                   aria-label={m['system.close']()}
                   className="-mt-2 -mr-2"
@@ -210,7 +210,7 @@ export default function AddSongDialog({
             className="min-h-0 flex-1 gap-0"
           >
             <div className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-5">
-              <TabsList look="segmented">
+              <TabsList look="pill">
                 {tabs.map(({ value, label, Icon }) => (
                   <TabsTrigger key={value} value={value}>
                     <Icon aria-hidden />

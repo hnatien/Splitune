@@ -4,8 +4,9 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
-// Doc 26 §12.1 (`.sheet` + `.overlay`): --raised, a --border edge, 22 px corners, --elevation-dialog over
-// the --scrim. At most one dialog at a time; AlertDialog is for irreversible actions only.
+// Doc 26 §12.1 (`.sheet` + `.overlay`), s47 direction §4: a floating layer is --raised with one
+// --border hairline, the dialog radius (20 px) and --elevation-dialog, over the --scrim. Nothing
+// inside it casts a shadow. At most one dialog at a time; AlertDialog is for irreversible actions.
 
 function Dialog(props: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -61,7 +62,7 @@ function DialogContent({
           <DialogPrimitive.Close
             data-slot="dialog-close"
             aria-label={closeLabel}
-            render={<Button variant="ghost" className="absolute top-3 right-3" size="icon" />}
+            render={<Button variant="quiet" className="absolute top-3 right-3" size="icon" />}
           >
             <XIcon aria-hidden />
           </DialogPrimitive.Close>

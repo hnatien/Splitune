@@ -3,6 +3,9 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
+// Select (doc 26 §12.1): the trigger is a field (10 px corners, a 1 px --edge that turns to the ink
+// on hover, focus and while open; 16 px on coarse pointers so iOS doesn't zoom). The popup
+// is a floating layer like a menu, and the chosen option carries a check, never a fill.
 const Select = SelectPrimitive.Root
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
@@ -38,7 +41,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex min-h-control w-fit items-center justify-between gap-2 rounded-field border border-edge bg-background py-2 pr-3 pl-4 text-body whitespace-nowrap transition-colors select-none focus-visible:-outline-offset-1 disabled:cursor-not-allowed disabled:bg-panel disabled:text-faint-foreground aria-invalid:border-destructive data-placeholder:text-faint-foreground data-[size=sm]:text-body-sm *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
+        "flex min-h-control w-fit items-center justify-between gap-2 rounded-field border border-edge bg-background py-2 pr-3 pl-4 text-body whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard select-none hover:border-foreground focus-visible:border-foreground focus-visible:-outline-offset-1 data-popup-open:border-foreground pointer-coarse:text-field disabled:cursor-not-allowed disabled:border-edge disabled:bg-transparent disabled:text-faint-foreground aria-invalid:border-destructive data-placeholder:text-faint-foreground data-[size=sm]:pointer-fine:text-body-sm *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
         className,
       )}
       {...props}
@@ -59,6 +62,7 @@ function SelectContent({
   align = 'center',
   alignOffset = 0,
   alignItemWithTrigger = true,
+  'aria-label': listLabel,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -85,7 +89,8 @@ function SelectContent({
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List>{children}</SelectPrimitive.List>
+          {/* The list is the listbox, so it carries the name (a trigger without a visible label). */}
+          <SelectPrimitive.List aria-label={listLabel}>{children}</SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>

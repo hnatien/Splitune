@@ -66,7 +66,7 @@ export function SavedPage() {
             <Link
               to="/library"
               search={{ add: 'file' }}
-              className={buttonVariants({ variant: 'primary', size: 'practice-2' })}
+              className={buttonVariants({ variant: 'primary', size: 'practice' })}
             >
               <UploadIcon aria-hidden />
               {m['nav.add_song']()}
@@ -74,7 +74,7 @@ export function SavedPage() {
             <Link
               to="/library"
               search={{ add: 'record' }}
-              className={buttonVariants({ variant: 'outline', size: 'practice-2' })}
+              className={buttonVariants({ variant: 'outline', size: 'practice' })}
             >
               <MicIcon aria-hidden />
               {m['start.record']()}
@@ -83,7 +83,7 @@ export function SavedPage() {
               <Link
                 to="/songs/$songId/practice"
                 params={{ songId }}
-                className={buttonVariants({ variant: 'ghost', size: 'practice-2' })}
+                className={buttonVariants({ variant: 'quiet', size: 'practice' })}
               >
                 <PlayIcon aria-hidden />
                 {m['start.keep_practising']()}

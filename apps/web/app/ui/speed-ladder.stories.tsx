@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { contrastRatio, inkEdgeOf, insetRings, rgbOf, sameColour, tokenColour } from './fixtures.ts'
 import { Popover } from './popover.tsx'
+import { PopoverContent } from './popover-content.tsx'
 import { SpeedControl } from './speed-control.tsx'
 import { LadderChip, LadderIcon, SpeedLadder } from './speed-ladder.tsx'
 import {
@@ -21,7 +23,7 @@ const meta = {
   args: { rungs: RUNGS, current: 1, label: '70 percent done, 75 percent now, 80 percent next' },
   decorators: [
     (Story) => (
-      <div className="w-81 rounded-field border border-border bg-raised p-3.5">
+      <div className="w-81 rounded-panel bg-panel p-3.5">
         <Story />
       </div>
     ),
@@ -35,8 +37,9 @@ const rung = (frame: HTMLElement, text: string) =>
     (node) => node.textContent === text,
   ) as HTMLElement
 
-/** Doc 26 §12.2 `.ladder` (Main.dc.html): 70 done, 75 current, the rest upcoming, rising to the
- * goal. Done has the ink fill and a 1 px --signal edge, current the soft wash and a 2 px ring. */
+/** Doc 26 §12.2, s47 §4: 70 done, 75 current, the rest upcoming, rising to the goal. Done is the
+ * ink fill, current a 2 px ink edge with no fill, upcoming a hairline --edge (≥ 3:1) with no fill:
+ * each state differs by fill and edge width, never by a grey fill or colour alone. */
 export const LadderClimbing: Story = {
   globals: BOTH_THEMES,
   play: async ({ canvasElement }) => {
@@ -52,14 +55,28 @@ export const LadderClimbing: Story = {
       const heights = RUNGS.map((pct) => rung(frame, String(pct)).getBoundingClientRect().height)
       await expect(Math.round(heights.at(-1) ?? 0)).toBe(70)
       await expect(heights.every((h, i) => i === 0 || h > (heights[i - 1] ?? 0))).toBe(true)
-      // Labels: tabular figures, 11 px, never smaller (V10).
-      const style = getComputedStyle(rung(frame, '80'))
-      await expect(style.fontSize).toBe('11px')
-      await expect(style.fontFamily).toMatch(/^"?Figtree/)
-      await expect(style.fontVariantNumeric).toContain('tabular-nums')
-      // Done differs from upcoming by its edge as well as its fill (V16): an inset ring.
-      await expect(getComputedStyle(rung(frame, '70')).boxShadow).not.toBe('none')
-      await expect(getComputedStyle(rung(frame, '80')).boxShadow).toBe('none')
+      // Labels: 11 px tabular figures, never smaller (V10).
+      const label = getComputedStyle(rung(frame, '80').firstElementChild as Element)
+      await expect(label.fontSize).toBe('11px')
+      await expect(label.fontFamily).toMatch(/^"?Figtree/)
+      await expect(label.fontVariantNumeric).toContain('tabular-nums')
+      const panel = tokenColour('--panel', frame)
+      // Done: the ink fill, ≥ 3:1 on the panel, its label in the paper colour.
+      const done = getComputedStyle(rung(frame, '70'))
+      await expect(sameColour(done.backgroundColor, tokenColour('--primary', frame))).toBe(true)
+      await expect(contrastRatio(done.backgroundColor, panel)).toBeGreaterThanOrEqual(3)
+      // Current: a 2 px ink edge, ≥ 3:1, and no fill at all.
+      const current = inkEdgeOf(rung(frame, '75'))
+      await expect([current.width, current.fill]).toEqual([2, 0])
+      await expect(contrastRatio(tokenColour('--selected', frame), panel)).toBeGreaterThanOrEqual(3)
+      // Upcoming: a 1 px --edge ring (the rung's only boundary, ≥ 3:1) and no fill.
+      const upcoming = rung(frame, '80')
+      const edge = tokenColour('--edge', frame)
+      await expect(
+        insetRings(upcoming).some((ring) => ring.width === 1 && sameColour(ring.colour, edge)),
+      ).toBe(true)
+      await expect(rgbOf(getComputedStyle(upcoming).backgroundColor)[3]).toBe(0)
+      await expect(contrastRatio(edge, panel)).toBeGreaterThanOrEqual(3)
     }
   },
 }
@@ -127,7 +144,8 @@ export const LongValuesAtGoal: Story = {
 export const Daylight: Story = { globals: DAYLIGHT }
 export const IncreasedContrast: Story = { globals: BOTH_THEMES_MORE_CONTRAST }
 
-/** The parameter chips (`.chip`): a 30 px pill in a 48 px box in practice density (26 §8). */
+/** The parameter chips: a 32 px pill with a hairline edge in a 48 px box in practice density
+ * (26 §8); while a chip's stepper is open its edge is the 1.5 px ink. */
 export const Chips: Story = {
   globals: { ...BOTH_THEMES, density: 'practice' },
   render: () => (
@@ -140,6 +158,9 @@ export const Chips: Story = {
         {['Start 70 %', 'Goal 100 %', 'Step 5 %', '3 clean passes', 'More'].map((chip) => (
           <Popover key={chip}>
             <LadderChip>{chip}</LadderChip>
+            <PopoverContent side="top" aria-label={chip} className="w-auto">
+              {chip}
+            </PopoverContent>
           </Popover>
         ))}
       </div>
@@ -152,14 +173,19 @@ export const Chips: Story = {
       for (const chip of chips) {
         await expect(Math.round(chip.getBoundingClientRect().height)).toBe(48)
         const face = chip.firstElementChild as HTMLElement
-        await expect(Math.round(face.getBoundingClientRect().height)).toBe(30)
+        await expect(Math.round(face.getBoundingClientRect().height)).toBe(32)
       }
     }
+    const [frame] = themeFrames(canvasElement)
+    const goal = within(frame as HTMLElement).getByRole('button', { name: 'Goal 100 %' })
+    await userEvent.click(goal)
+    await expect(goal).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(inkEdgeOf(goal.firstElementChild as HTMLElement).width).toBe(1.5))
   },
 }
 
-/** The dock's speed readout with the ladder on (27 §3.7.1, §5.3): "72 BPM · → 100", the goal in
- * the readout's name; −/+ stay 64 px. */
+/** The speed control shows the ladder's state (27 §3.7.1, §5.3): the ladder mark and "→ 100"
+ * after the BPM, the goal in the readout's name; −/+ stay 48 px. */
 export const SpeedReadoutWithGoal: Story = {
   globals: { ...BOTH_THEMES, density: 'practice' },
   decorators: [],
@@ -184,13 +210,15 @@ export const SpeedReadoutWithGoal: Story = {
       const readout = canvas.getByRole('button', {
         name: /^Speed: 75\s% · 72\sBPM · → 100, ladder goal 100\s%$/,
       })
-      await expect(readout).toHaveTextContent(/72\sBPM · → 100$/)
+      await expect(readout).toHaveAttribute('data-ladder')
+      await expect(readout.querySelector('[aria-hidden]')).toHaveTextContent(/72\sBPM · → 100$/)
+      await expect(readout.querySelector('.lucide-ladder')).toBeVisible()
       await expectTargets(
         [
           canvas.getByRole('button', { name: 'Slower by 5 %' }),
           canvas.getByRole('button', { name: 'Faster by 5 %' }),
         ],
-        64,
+        48,
       )
     }
   },

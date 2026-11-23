@@ -6,10 +6,25 @@ import { Slider } from './slider.tsx'
 import {
   BOTH_THEMES,
   BOTH_THEMES_MORE_CONTRAST,
+  contrast,
   DAYLIGHT,
+  edgeOf,
+  expectFocusRing,
   expectTargets,
   StateGrid,
+  surfaceOf,
+  themeFrames,
 } from './story-kit.tsx'
+
+// Doc 26 §12.1 `.range`: a 6 px pill track whose only boundary is a 1 px --edge (≥ 3:1), filled
+// with the ink up to the value; the thumb's own box is the target and paints a 20 px ink knob.
+// Always paired with steppers or a field (WCAG 2.5.7).
+
+const parts = (root: Element) => ({
+  track: root.querySelector('[data-slot=slider-track]') as HTMLElement,
+  range: root.querySelector('[data-slot=slider-range]') as HTMLElement,
+  thumb: root.querySelector('[data-slot=slider-thumb]') as HTMLElement,
+})
 
 const meta = {
   title: 'Base/Slider',
@@ -48,6 +63,18 @@ function SpeedSlider() {
 export const Horizontal: Story = {
   render: () => <SpeedSlider />,
   play: async ({ canvasElement }) => {
+    const { track, range, thumb: knob } = parts(canvasElement)
+    await expect(track.getBoundingClientRect().height).toBe(6)
+    await expect(edgeOf(track)?.width).toBe(1)
+    await expect(
+      contrast(edgeOf(track)?.color ?? '', surfaceOf(canvasElement)),
+    ).toBeGreaterThanOrEqual(3)
+    // The fill and the knob are the ink, ≥ 3:1 on the page.
+    for (const ink of [range, knob]) {
+      await expect(
+        contrast(getComputedStyle(ink).backgroundColor, surfaceOf(canvasElement)),
+      ).toBeGreaterThanOrEqual(3)
+    }
     const thumb = within(canvasElement).getByRole('slider', { name: 'Speed' })
     thumb.focus()
     await userEvent.keyboard('{ArrowRight}')
@@ -91,6 +118,7 @@ export const Range: Story = {
   },
 }
 
+/** Disabled: the fill and knob turn grey, the track keeps its ≥ 3:1 edge, nothing fades. */
 export const Disabled: Story = {
   globals: BOTH_THEMES,
   render: () => (
@@ -98,6 +126,18 @@ export const Disabled: Story = {
       <Slider defaultValue={70} min={50} max={100} disabled thumbLabels={['Speed, unavailable']} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const { track, thumb } = parts(frame)
+      const slider = within(frame).getByRole('slider', { name: 'Speed, unavailable' })
+      await expect(slider).toBeDisabled()
+      await expect(getComputedStyle(thumb).opacity).toBe('1')
+      await expect(contrast(edgeOf(track)?.color ?? '', surfaceOf(frame))).toBeGreaterThanOrEqual(3)
+      await expect(
+        contrast(getComputedStyle(thumb).backgroundColor, surfaceOf(frame)),
+      ).toBeGreaterThanOrEqual(3)
+    }
+  },
 }
 
 /** The thumb's own box is the target (44 browse, 48 practice); it paints a 20 px knob. */
@@ -131,7 +171,10 @@ export const Focus: Story = {
   ),
   play: async ({ canvasElement }) => {
     await userEvent.tab()
-    await expect(within(canvasElement).getByRole('slider', { name: 'Speed' })).toHaveFocus()
+    const slider = within(canvasElement).getByRole('slider', { name: 'Speed' })
+    await expect(slider).toHaveFocus()
+    // The ring sits on the thumb's box (the input inside it is visually hidden).
+    await expectFocusRing(parts(canvasElement).thumb)
   },
 }
 export const FocusDaylight: Story = { ...Focus, globals: DAYLIGHT }

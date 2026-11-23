@@ -3,9 +3,12 @@ import { cn } from '@/lib/utils'
 
 /**
  * `.range` (doc 26 §12.1): horizontal, vertical (faders) and range (loop A/B) on Base UI Slider.
- * Always paired with a NumberField or steppers (WCAG 2.5.7). A 6 px --hover track with an --edge
- * edge and a --signal fill; each thumb is a control-size box (44 browse, 48 practice: the target,
- * §8) painting a 20 px --signal knob. Page Up/Down move by `largeStep` (10).
+ * Always paired with a NumberField or steppers (WCAG 2.5.7). A 6 px pill track whose only boundary
+ * is its 1 px --edge (≥ 3:1), filled with the ink up to the value; each thumb is a control-size box
+ * (44 browse, 48 practice: the target, §8) painting a 20 px ink knob that grows while dragged.
+ * Focus lands on the thumb's hidden input, so the thumb draws the ink outline round the knob while
+ * its input has keyboard focus. Disabled turns the fill and knob to --edge and --faint-foreground.
+ * Page Up/Down move by `largeStep` (10).
  */
 function Slider({
   className,
@@ -51,7 +54,7 @@ function Slider({
             // biome-ignore lint/suspicious/noArrayIndexKey: one thumb per value index
             key={index}
             aria-label={thumbLabels[index] ?? thumbLabels[0]}
-            className="block size-control shrink-0 rounded-full border-[calc((var(--control-size)-1.25rem)/2)] border-transparent bg-signal bg-clip-padding select-none focus-visible:outline-offset-[calc(2px-(var(--control-size)-1.25rem)/2)] data-disabled:bg-faint-foreground data-dragging:scale-110"
+            className="block size-control shrink-0 rounded-full border-[calc((var(--control-size)-1.25rem)/2)] border-transparent bg-signal bg-clip-padding transition-transform duration-(--duration-fast) ease-standard select-none has-focus-visible:outline-(length:--focus-width) has-focus-visible:outline-offset-[calc(2px-(var(--control-size)-1.25rem)/2)] has-focus-visible:outline-ring has-focus-visible:outline-solid data-disabled:bg-faint-foreground data-dragging:scale-110"
           />
         ))}
       </SliderPrimitive.Control>

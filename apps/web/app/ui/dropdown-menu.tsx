@@ -2,6 +2,12 @@ import { Menu as MenuPrimitive } from '@base-ui/react/menu'
 import { CheckIcon, ChevronRightIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
+import { Kbd } from '@/ui/kbd'
+
+// Menus (doc 26 §12.1): a floating layer (--raised, one hairline, 14 px corners,
+// --elevation-popover). Items are 44 px rows (48 in practice density) with 10 px corners inside the
+// 14 px popup; the highlighted item steps to --hover and keyboard focus adds the ink outline inside
+// it. A chosen item carries a check, never a fill.
 
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />
@@ -220,17 +226,9 @@ function DropdownMenuSeparator({ className, ...props }: MenuPrimitive.Separator.
   )
 }
 
-function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'span'>) {
-  return (
-    <span
-      data-slot="dropdown-menu-shortcut"
-      className={cn(
-        'ml-auto font-mono text-caption text-faint-foreground group-focus/dropdown-menu-item:text-muted-foreground',
-        className,
-      )}
-      {...props}
-    />
-  )
+/** The item's key, printed as a key cap at the end of the row (every action shows its key). */
+function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<typeof Kbd>) {
+  return <Kbd data-slot="dropdown-menu-shortcut" className={cn('ml-auto', className)} {...props} />
 }
 
 export {

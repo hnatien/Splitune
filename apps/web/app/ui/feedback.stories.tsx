@@ -1,15 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import {
-  CircleCheckIcon,
-  InfoIcon,
-  LibraryIcon,
-  OctagonXIcon,
-  RepeatIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+import { LibraryIcon, RepeatIcon } from 'lucide-react'
 import { useState } from 'react'
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
-import { Badge } from './badge.tsx'
 import { Button } from './button.tsx'
 import { EmptyState } from './empty-state.tsx'
 import { COPY } from './fixtures.ts'
@@ -17,9 +9,23 @@ import { PEDAL_HUD_MS, PedalHud } from './pedal-hud.tsx'
 import { Progress, ProgressLabel, ProgressValue } from './progress.tsx'
 import { Skeleton } from './skeleton.tsx'
 import { type Stage, StageList } from './stage-list.tsx'
+import { Status, type StatusKind } from './status.tsx'
 import { Banner, InlineError } from './status-message.tsx'
+import {
+  BOTH_THEMES,
+  BOTH_THEMES_MORE_CONTRAST,
+  contrast,
+  isClear,
+  shadowsOf,
+  surfaceOf,
+  themeFrames,
+} from './story-kit.tsx'
 import { WorkerStatus } from './worker-status.tsx'
 
+// Doc 26 §12.2, §13, 27 §4–§5.4, s47 direction §4: feedback is a glyph and words. Stage lists,
+// inline errors, banners, the worker's state and the empty state have no box and no tint; the
+// glyph's shape says the state, hue joins in only for success and failure, and the one filled
+// control in a view is its next step.
 const meta = { title: 'Kit/Feedback' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -64,16 +70,6 @@ export const HudVisibleStage: Story = {
   },
 }
 
-// What the browser reports for `transparent`, read from a probe element.
-const transparent = () => {
-  const probe = document.createElement('div')
-  probe.className = 'bg-transparent'
-  document.body.append(probe)
-  const { backgroundColor } = getComputedStyle(probe)
-  probe.remove()
-  return backgroundColor
-}
-
 const STAGES: Stage[] = [
   {
     id: 'decode',
@@ -112,37 +108,47 @@ const STAGES: Stage[] = [
   },
 ]
 
+const StagesDemo = () => (
+  <StageList
+    stages={STAGES}
+    progress={46}
+    progressLabel="Analysing your song"
+    className="max-w-lg"
+  />
+)
+
+/**
+ * One overall bar (27 §3.7.3), then each stage as a glyph and words: a circled check when done, the
+ * filling ring while running, a dashed circle while waiting. No filled dots.
+ */
 export const Stages: Story = {
-  render: () => (
-    <StageList
-      stages={STAGES}
-      progress={46}
-      progressLabel="Analysing your song"
-      className="max-w-lg"
-    />
-  ),
+  render: StagesDemo,
+  globals: BOTH_THEMES,
   play: async ({ canvasElement }) => {
-    // One overall bar (27 §3.7.3); each stage says its state by icon and words, never colour alone.
-    await expect(within(canvasElement).getAllByRole('progressbar')).toHaveLength(1)
-    await expect(
-      canvasElement.querySelector('[data-status=running] [data-slot=spinner]'),
-    ).not.toBeNull()
-    await expect(canvasElement.querySelectorAll('[data-status=done] svg')).toHaveLength(2)
-    await expect(canvasElement.querySelector('[data-status=queued] svg')).toBeNull()
-    await expect(within(canvasElement).getByText('Separating guitar from the band')).toBeVisible()
+    for (const frame of themeFrames(canvasElement)) {
+      await expect(within(frame).getAllByRole('progressbar')).toHaveLength(1)
+      const glyphs = [...frame.querySelectorAll<HTMLElement>('[data-slot=stage-glyph]')]
+      await expect(glyphs).toHaveLength(STAGES.length)
+      for (const glyph of glyphs) {
+        await expect(glyph.querySelector('svg')).not.toBeNull()
+        await expect(isClear(getComputedStyle(glyph).backgroundColor)).toBe(true)
+      }
+      const shape = (status: string) =>
+        frame.querySelector(`[data-status=${status}] [data-slot=stage-glyph]`)?.innerHTML
+      await expect(new Set([shape('done'), shape('running'), shape('queued')]).size).toBe(3)
+      // A waiting stage's name is faint but still text (≥ 4.5:1); its state is also in words.
+      const waiting = within(frame).getByText('Working out the chords')
+      await expect(
+        contrast(getComputedStyle(waiting).color, surfaceOf(frame)),
+      ).toBeGreaterThanOrEqual(4.5)
+      await expect(within(frame).getAllByText('Waiting')).toHaveLength(2)
+      await expect(within(frame).getByText('Separating guitar from the band')).toBeVisible()
+    }
   },
 }
-export const StagesDark: Story = {
-  render: () => (
-    <StageList
-      stages={STAGES}
-      progress={46}
-      progressLabel="Analysing your song"
-      className="max-w-lg"
-    />
-  ),
-  globals: { appearance: 'dark' },
-}
+export const StagesStage: Story = { render: StagesDemo, globals: { appearance: 'stage' } }
+
+/** A fallback is a triangle in grey and a failure a crossed circle in red, each with its words. */
 export const StagesWithFallback: Story = {
   render: () => (
     <StageList
@@ -162,12 +168,26 @@ export const StagesWithFallback: Story = {
           id: 'notes',
           label: 'Writing the tab',
           status: 'failed',
-          statusText: 'Not available — showing chords',
+          statusText: 'Not available, showing chords',
         },
       ]}
     />
   ),
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const failed = frame.querySelector('[data-status=failed] [data-slot=stage-glyph] svg')
+      const fallback = frame.querySelector('[data-status=fallback] [data-slot=stage-glyph] svg')
+      await expect(failed?.innerHTML).not.toBe(fallback?.innerHTML)
+      await expect(
+        contrast(getComputedStyle(failed as Element).color, surfaceOf(frame)),
+      ).toBeGreaterThanOrEqual(3)
+      await expect(within(frame).getByText('Not available, showing chords')).toBeVisible()
+    }
+  },
 }
+
+/** The worker being offline is a calm line in the ink with a clock: not a box and not an error. */
 export const WorkerOffline: Story = {
   render: () => (
     <div className="flex max-w-lg flex-col gap-4">
@@ -179,27 +199,61 @@ export const WorkerOffline: Story = {
       />
     </div>
   ),
+  globals: BOTH_THEMES,
   play: async ({ canvasElement }) => {
-    const status = within(canvasElement).getByRole('status')
-    // A card-style banner (26 §12.2, s34): the card surface with its --border edge, not an error.
-    await expect(getComputedStyle(status).backgroundColor).not.toBe(transparent())
-    await expect(getComputedStyle(status).borderTopColor).not.toBe(transparent())
+    for (const frame of themeFrames(canvasElement)) {
+      const status = within(frame).getByRole('status')
+      const style = getComputedStyle(status)
+      await expect(isClear(style.backgroundColor)).toBe(true)
+      await expect(style.borderTopWidth).toBe('0px')
+      await expect(status.querySelector('svg')).not.toBeNull()
+      await expect(status).toHaveTextContent(COPY.queuedOffline)
+      await expect(contrast(style.color, surfaceOf(frame))).toBeGreaterThanOrEqual(7)
+    }
   },
 }
 export const WorkerOnline: Story = {
   render: () => <WorkerStatus online text={COPY.workerOnline} />,
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const status = within(frame).getByRole('status')
+      await expect(isClear(getComputedStyle(status).backgroundColor)).toBe(true)
+      await expect(status).toHaveAttribute('data-online', 'true')
+    }
+  },
 }
 
+const EmptyDemo = ({ title }: { title?: string }) => (
+  <EmptyState
+    icon={<LibraryIcon aria-hidden />}
+    title={title}
+    description={COPY.libraryEmpty}
+    action={<Button variant="primary">{COPY.importSong}</Button>}
+    secondaryAction={<Button variant="outline">{COPY.tryExample}</Button>}
+  />
+)
+
+/** No box, no fill behind the icon; a heading, one sentence and one filled action. */
 export const Empty: Story = {
-  render: () => (
-    <EmptyState
-      icon={<LibraryIcon aria-hidden />}
-      description={COPY.libraryEmpty}
-      action={<Button variant="primary">{COPY.importSong}</Button>}
-      secondaryAction={<Button variant="outline">{COPY.tryExample}</Button>}
-    />
-  ),
+  render: () => <EmptyDemo title="No songs yet" />,
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const empty = frame.querySelector('[data-slot=empty-state]') as HTMLElement
+      await expect(isClear(getComputedStyle(empty).backgroundColor)).toBe(true)
+      await expect(getComputedStyle(empty).borderTopWidth).toBe('0px')
+      const icon = frame.querySelector('[data-slot=empty-state-icon]') as HTMLElement
+      await expect(isClear(getComputedStyle(icon).backgroundColor)).toBe(true)
+      await expect(within(frame).getByRole('heading', { level: 2 })).toHaveTextContent(
+        'No songs yet',
+      )
+      const filled = frame.querySelectorAll('button[data-variant=primary]')
+      await expect(filled).toHaveLength(1)
+    }
+  },
 }
+export const EmptyWithoutTitle: Story = { render: () => <EmptyDemo />, globals: BOTH_THEMES }
 
 export const Errors: Story = {
   render: () => (
@@ -210,6 +264,7 @@ export const Errors: Story = {
       />
       <InlineError
         title={COPY.unreadable}
+        description="It may be damaged, or in a format this browser can't open."
         actions={
           <>
             <Button variant="primary">{COPY.tryAnotherFile}</Button>
@@ -219,6 +274,20 @@ export const Errors: Story = {
       />
     </div>
   ),
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const alerts = within(frame).getAllByRole('alert')
+      await expect(alerts).toHaveLength(2)
+      for (const alert of alerts) {
+        await expect(isClear(getComputedStyle(alert).backgroundColor)).toBe(true)
+        const glyph = alert.querySelector('svg') as SVGElement
+        await expect(
+          contrast(getComputedStyle(glyph).color, surfaceOf(frame)),
+        ).toBeGreaterThanOrEqual(3)
+      }
+    }
+  },
 }
 
 function Banners() {
@@ -242,7 +311,7 @@ function Banners() {
           </Button>
         }
       />
-      <Banner tone="success" title="You're on Plus!" />
+      <Banner tone="success" title="You're on Plus" description="Full analyses are on." />
     </div>
   )
 }
@@ -251,7 +320,9 @@ export const BannerStates: Story = {
   render: Banners,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: COPY.dismiss }))
+    const dismiss = canvas.getByRole('button', { name: COPY.dismiss })
+    await expect(dismiss.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+    await userEvent.click(dismiss)
     await expect(canvas.queryByText(COPY.offline)).not.toBeInTheDocument()
   },
 }
@@ -280,31 +351,36 @@ const StatusTones = () => (
   </div>
 )
 
+/**
+ * Inline messages and banners in every tone: no surface and no box, a glyph whose shape differs by
+ * tone (≥ 3:1 on the page), the title in the ink. Banners keep one hairline below.
+ */
 export const StatusTonesLight: Story = {
   render: StatusTones,
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const page = getComputedStyle(document.body).backgroundColor
-    const boxes = canvasElement.querySelectorAll<HTMLElement>(
-      '[data-slot=inline-error], [data-slot=banner]',
-    )
+    const boxes = [
+      ...canvasElement.querySelectorAll<HTMLElement>(
+        '[data-slot=inline-error], [data-slot=banner]',
+      ),
+    ]
     await expect(boxes).toHaveLength(8)
     for (const box of boxes) {
       const style = getComputedStyle(box)
-      await expect(box.querySelector('svg')).not.toBeNull()
-      // Banners are one quiet line: no surface, the tone in the icon, a hairline below.
-      if (box.getAttribute('data-slot') === 'banner') {
-        await expect(style.backgroundColor).toBe(transparent())
-        await expect(style.borderTopWidth).toBe('0px')
-        await expect(style.borderBottomColor).not.toBe(transparent())
-        continue
-      }
-      // Inline messages: a surface off the page and an icon carry the tone; they wait for
-      // increased contrast for their hairline.
-      await expect(style.backgroundColor).not.toBe(page)
-      await expect(style.backgroundColor).not.toBe(transparent())
-      await expect(style.borderTopColor).toBe(transparent())
+      await expect(isClear(style.backgroundColor)).toBe(true)
+      await expect(style.borderTopWidth).toBe('0px')
+      await expect(shadowsOf(box)).toEqual([])
+      const glyph = box.querySelector('svg') as SVGElement
+      await expect(contrast(getComputedStyle(glyph).color, surfaceOf(box))).toBeGreaterThanOrEqual(
+        3,
+      )
+      if (box.getAttribute('data-slot') === 'banner')
+        await expect(style.borderBottomWidth).toBe('1px')
     }
+    // Four tones, four glyph shapes.
+    const inline = boxes.filter((box) => box.getAttribute('data-slot') === 'inline-error')
+    await expect(new Set(inline.map((box) => box.querySelector('svg')?.innerHTML)).size).toBe(4)
     await expect(
       canvas.getByText(TONE_COPY.error, { selector: 'p' }).closest('[role=alert]'),
     ).not.toBeNull()
@@ -319,57 +395,54 @@ export const StatusTonesIncreasedContrast: Story = {
   render: StatusTones,
   globals: { contrast: 'more' },
   play: async ({ canvasElement }) => {
-    const boxes = canvasElement.querySelectorAll<HTMLElement>(
-      '[data-slot=inline-error], [data-slot=banner]',
-    )
-    for (const box of boxes) {
-      // Inline messages get their hairline back; a banner's is the rule below it.
-      const side = box.getAttribute('data-slot') === 'banner' ? 'Bottom' : 'Top'
-      const style = getComputedStyle(box)
-      await expect(style[`border${side}Color`]).not.toBe(transparent())
-      await expect(style[`border${side}Width`]).toBe('1px')
+    // The banner's rule moves one step up the ramp; the words and glyphs keep their contrast.
+    for (const banner of canvasElement.querySelectorAll<HTMLElement>('[data-slot=banner]')) {
+      await expect(getComputedStyle(banner).borderBottomWidth).toBe('1px')
+    }
+    for (const description of canvasElement.querySelectorAll<HTMLElement>(
+      '[data-slot=inline-error] p + p',
+    )) {
+      await expect(
+        contrast(getComputedStyle(description).color, surfaceOf(description)),
+      ).toBeGreaterThanOrEqual(7)
     }
   },
 }
 
-const StatusBadges = () => (
-  <div className="flex flex-wrap gap-2">
-    <Badge variant="success">
-      <CircleCheckIcon aria-hidden />
-      Ready
-    </Badge>
-    <Badge variant="warning">
-      <TriangleAlertIcon aria-hidden />
-      Rough tab
-    </Badge>
-    <Badge variant="info">
-      <InfoIcon aria-hidden />
-      Analysing
-    </Badge>
-    <Badge variant="destructive">
-      <OctagonXIcon aria-hidden />
-      Failed
-    </Badge>
+const STATUS_LINES: [StatusKind, string][] = [
+  ['ready', 'Ready'],
+  ['attention', 'Rough tab'],
+  ['working', 'Analysing'],
+  ['failed', 'Failed'],
+  ['offline', 'Processing machine offline'],
+]
+
+const StatusLines = () => (
+  <div className="flex flex-wrap gap-x-6 gap-y-3">
+    {STATUS_LINES.map(([kind, words]) => (
+      <Status key={kind} kind={kind}>
+        {words}
+      </Status>
+    ))}
   </div>
 )
 
-export const StatusBadgeStates: Story = {
-  render: StatusBadges,
+/** What replaced the status badge: a glyph and words, with no surface behind either. */
+export const StatusLineStates: Story = {
+  render: StatusLines,
+  globals: BOTH_THEMES_MORE_CONTRAST,
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    for (const name of ['Ready', 'Rough tab', 'Analysing', 'Failed']) {
-      const badge = canvas.getByText(name)
-      await expect(getComputedStyle(badge).backgroundColor).not.toBe(
-        getComputedStyle(document.body).backgroundColor,
-      )
-      // `.badge` (26 §12.1): the status surface and an icon carry the tone; no outline.
-      await expect(getComputedStyle(badge).borderTopWidth).toBe('0px')
-      await expect(badge.querySelector('svg')).not.toBeNull()
+    for (const frame of themeFrames(canvasElement)) {
+      for (const [, words] of STATUS_LINES) {
+        const status = within(frame).getByText(words).closest('[data-slot=status]') as HTMLElement
+        await expect(isClear(getComputedStyle(status).backgroundColor)).toBe(true)
+        await expect(getComputedStyle(status).borderTopWidth).toBe('0px')
+        await expect(status.querySelector('svg')).not.toBeNull()
+      }
     }
   },
 }
-export const StatusBadgesDark: Story = { render: StatusBadges, globals: { appearance: 'dark' } }
-export const StatusBadgesStage: Story = { render: StatusBadges, globals: { appearance: 'stage' } }
+export const StatusLinesStage: Story = { render: StatusLines, globals: { appearance: 'stage' } }
 
 const IndeterminateProgress = () => (
   <Progress value={null} className="max-w-md">
@@ -405,6 +478,10 @@ export const ProgressIndeterminateReducedMotion: Story = {
 export const ProgressIndeterminateStage: Story = {
   render: IndeterminateProgress,
   globals: { appearance: 'stage' },
+  play: async ({ canvasElement }) => {
+    // Waiting with no estimate still says so in words beside the bar.
+    await expect(within(canvasElement).getByText('No estimate yet')).toBeVisible()
+  },
 }
 
 export const SkeletonShimmer: Story = {
@@ -437,6 +514,6 @@ const Gallery = () => (
     <Banners />
   </div>
 )
-export const Dark: Story = { render: Gallery, globals: { appearance: 'dark' } }
+export const AllStates: Story = { render: Gallery, globals: BOTH_THEMES }
 export const StageAppearance: Story = { render: Gallery, globals: { appearance: 'stage' } }
-export const IncreasedContrast: Story = { render: Gallery, globals: { contrast: 'more' } }
+export const IncreasedContrast: Story = { render: Gallery, globals: BOTH_THEMES_MORE_CONTRAST }

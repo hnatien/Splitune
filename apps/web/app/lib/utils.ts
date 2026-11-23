@@ -6,12 +6,30 @@ import { extendTailwindMerge } from 'tailwind-merge'
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
-      spacing: ['target-min', 'target-min', 'target', 'target-practice', 'target-play', 'control'],
-      shadow: ['1', '2', '3'],
+      spacing: [
+        'target-min',
+        'target',
+        'target-practice',
+        'target-play',
+        'target-stand',
+        'control',
+      ],
+      shadow: ['popover', 'dialog'],
+      radius: ['media', 'field', 'panel', 'dialog'],
       text: [
-        'button-lg',
+        'kbd',
+        'caption',
+        'label-sm',
+        'body-sm',
+        'label',
+        'body',
+        'field',
+        'title',
         'lead',
+        'heading',
+        'readout',
         'display',
+        'hero',
         'read-tab',
         'read-chord-current',
         'read-chord-next',
@@ -22,7 +40,7 @@ const twMerge = extendTailwindMerge({
         'read-label',
       ],
       font: ['reading'],
-      ease: ['standard', 'enter', 'exit', 'spring'],
+      ease: ['standard', 'enter', 'exit'],
     },
   },
 })

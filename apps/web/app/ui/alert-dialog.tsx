@@ -4,6 +4,10 @@ import { cn } from '@/lib/utils'
 
 import { Button } from '@/ui/button'
 
+// Doc 26 §13: only for deleting a song or the account. The same floating layer as Dialog (--raised,
+// one hairline, 20 px corners, --elevation-dialog); the media slot is the warning glyph in
+// --destructive with no tinted box, and the confirm is `destructiveSolid`, the view's one fill.
+
 function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
 }
@@ -83,7 +87,7 @@ function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) 
     <div
       data-slot="alert-dialog-media"
       className={cn(
-        "mb-2 inline-flex size-10 items-center justify-center rounded-field bg-destructive-surface text-destructive sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-5",
+        "mb-1 inline-flex size-10 items-center justify-center text-destructive sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-6 [&_.lucide]:stroke-[1.8]",
         className,
       )}
       {...props}

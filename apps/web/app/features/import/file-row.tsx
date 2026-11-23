@@ -70,7 +70,7 @@ export function FileRow({
           </p>
         </div>
         <Button
-          variant="ghost"
+          variant="quiet"
           size="icon"
           aria-label={m['import.remove_file']()}
           onClick={onRemove}

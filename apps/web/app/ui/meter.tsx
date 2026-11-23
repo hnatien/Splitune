@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 /**
  * A measurement within a known range (allowance used, stem level), drawn like `.bar` (doc 26
  * §12.1) with a --muted-foreground fill: it is not task progress, so it isn't the ink (§4.5).
+ * The value is always in words beside it, so the fill never carries the number alone.
  */
 function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
   return (
@@ -15,7 +16,7 @@ function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
       {children}
       <MeterPrimitive.Track
         data-slot="meter-track"
-        className="relative h-1.5 w-full overflow-hidden rounded-full bg-hover in-data-[slot=card]:h-1"
+        className="relative h-1.5 w-full overflow-hidden rounded-full bg-border"
       >
         <MeterPrimitive.Indicator
           data-slot="meter-indicator"
@@ -30,7 +31,7 @@ function MeterLabel({ className, ...props }: MeterPrimitive.Label.Props) {
   return (
     <MeterPrimitive.Label
       data-slot="meter-label"
-      className={cn('text-body-sm font-medium', className)}
+      className={cn('text-label-sm', className)}
       {...props}
     />
   )

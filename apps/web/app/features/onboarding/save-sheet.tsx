@@ -43,7 +43,7 @@ export function SaveSheet({ open, onClose }: { open: boolean; onClose: () => voi
             </p>
           </div>
           <DrawerFooter>
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="quiet" onClick={onClose}>
               {m['start.not_now']()}
             </Button>
           </DrawerFooter>

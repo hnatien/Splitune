@@ -44,7 +44,7 @@ export function MarketingShell({
             className="flex flex-1 flex-wrap items-center justify-end gap-1"
           >
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" className="sm:hidden" />}>
+              <DropdownMenuTrigger render={<Button variant="quiet" className="sm:hidden" />}>
                 <MenuIcon aria-hidden />
                 {m['nav.menu']()}
               </DropdownMenuTrigger>
@@ -73,13 +73,13 @@ export function MarketingShell({
             </DropdownMenu>
             <Link
               to="/how-it-works"
-              className={cn(buttonVariants({ variant: 'ghost' }), 'text-foreground max-sm:hidden')}
+              className={cn(buttonVariants({ variant: 'quiet' }), 'text-foreground max-sm:hidden')}
             >
               {m['nav.how_it_works']()}
             </Link>
             <Link
               to="/pricing"
-              className={cn(buttonVariants({ variant: 'ghost' }), 'text-foreground max-sm:hidden')}
+              className={cn(buttonVariants({ variant: 'quiet' }), 'text-foreground max-sm:hidden')}
             >
               {m['nav.pricing']()}
             </Link>
@@ -94,7 +94,7 @@ export function MarketingShell({
               <>
                 <Link
                   to="/auth/sign-in"
-                  className={cn(buttonVariants({ variant: 'secondary' }), 'ml-2 max-sm:hidden')}
+                  className={cn(buttonVariants({ variant: 'outline' }), 'ml-2 max-sm:hidden')}
                 >
                   {m['nav.sign_in']()}
                 </Link>

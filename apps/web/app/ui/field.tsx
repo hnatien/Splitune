@@ -6,6 +6,11 @@ import { cn } from '@/lib/utils'
 import { Label } from '@/ui/label'
 import { Separator } from '@/ui/separator'
 
+// Forms (doc 26 §12.1, s47 direction §6): one column, labels above fields, each field saving on its
+// own. An error sits under its field with an icon and words. A choice whose whole row is the label
+// (FieldLabel around a Field) is a ChoiceRow in all but markup: a --border-strong edge at rest and
+// the 1.5 px ink edge when its control is checked, never a fill.
+
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
   return (
     <fieldset
@@ -29,7 +34,7 @@ function FieldLegend({
       data-slot="field-legend"
       data-variant={variant}
       className={cn(
-        'mb-1.5 font-medium data-[variant=label]:text-body-sm data-[variant=legend]:text-title',
+        'mb-1.5 data-[variant=label]:text-label-sm data-[variant=legend]:text-title',
         className,
       )}
       {...props}
@@ -84,7 +89,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="field-content"
-      className={cn('group/field-content flex flex-1 flex-col gap-0.5 leading-snug', className)}
+      className={cn('group/field-content flex flex-1 flex-col gap-0.5', className)}
       {...props}
     />
   )
@@ -95,7 +100,7 @@ function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>)
     <Label
       data-slot="field-label"
       className={cn(
-        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:text-faint-foreground has-data-checked:border-signal has-data-checked:bg-wash has-data-checked:inset-ring has-data-checked:inset-ring-signal forced-colors:has-data-checked:bg-raised has-[>[data-slot=field]]:rounded-panel has-[>[data-slot=field]]:border has-[>[data-slot=field]]:border-border has-[>[data-slot=field]]:bg-raised has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-panel *:data-[slot=field]:p-3.5',
+        'group/field-label peer/field-label flex w-fit gap-2 group-data-[disabled=true]/field:text-faint-foreground has-[>[data-slot=field]]:rounded-field has-[>[data-slot=field]]:inset-ring has-[>[data-slot=field]]:inset-ring-border-strong has-[>[data-slot=field]]:transition-[background-color,box-shadow] has-[>[data-slot=field]]:duration-(--duration-fast) has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-hover has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled],[data-checked]]:hover:inset-ring-edge has-[>[data-slot=field]]:has-data-checked:inset-ring-[1.5px] has-[>[data-slot=field]]:has-data-checked:inset-ring-selected *:data-[slot=field]:px-3 *:data-[slot=field]:py-1',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col',
         className,
       )}
@@ -122,7 +127,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
     <p
       data-slot="field-description"
       className={cn(
-        'text-left text-body-sm leading-5 font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5',
+        'text-left text-body-sm text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5',
         'last:mt-0 nth-last-2:-mt-1',
         '[&>a]:text-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:decoration-2',
         className,
@@ -202,10 +207,7 @@ function FieldError({
     <div
       role="alert"
       data-slot="field-error"
-      className={cn(
-        'flex items-start gap-1.5 text-body-sm font-normal text-destructive',
-        className,
-      )}
+      className={cn('flex items-start gap-1.5 text-body-sm text-destructive', className)}
       {...props}
     >
       <CircleAlertIcon aria-hidden strokeWidth={1.8} className="mt-px size-4 shrink-0" />

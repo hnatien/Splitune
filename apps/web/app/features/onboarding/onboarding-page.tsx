@@ -116,7 +116,7 @@ export function StepFrame({
       {m['start.back']()}
     </>
   )
-  const ghost = buttonVariants({ variant: 'ghost', size: 'sm' })
+  const ghost = buttonVariants({ variant: 'quiet', size: 'sm' })
   return (
     <div data-density="browse" className="flex min-h-dvh flex-col">
       <SkipLink />
@@ -124,7 +124,7 @@ export function StepFrame({
         <div className="grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-2 sm:px-4 lg:px-6">
           <div className="justify-self-start">
             {onBack ? (
-              <Button variant="ghost" size="sm" onClick={onBack}>
+              <Button variant="quiet" size="sm" onClick={onBack}>
                 {back}
               </Button>
             ) : (
@@ -333,7 +333,7 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
           {m['start.continue']()}
         </Button>
         <Button
-          variant="ghost"
+          variant="quiet"
           size="lg"
           onClick={() => {
             update(before.current)

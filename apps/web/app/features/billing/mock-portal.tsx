@@ -67,7 +67,7 @@ export function MockPortal({ session }: { session: string }) {
       setPending(undefined)
     }
   }
-  const button = (action: PortalAction, label: string, variant: 'primary' | 'secondary') => (
+  const button = (action: PortalAction, label: string, variant: 'primary' | 'outline') => (
     <Button
       variant={variant}
       size="lg"
@@ -114,7 +114,7 @@ export function MockPortal({ session }: { session: string }) {
                   subscription.plan === 'paid_yearly'
                     ? m['billing.switch_monthly']()
                     : m['billing.switch_yearly'](),
-                  'secondary',
+                  'outline',
                 )}
               </div>
             )}
@@ -128,14 +128,14 @@ export function MockPortal({ session }: { session: string }) {
                 {m['billing.simulations']()}
               </h2>
               <div className="flex flex-col gap-2">
-                {button('payment_failed', m['billing.simulate_payment_failure'](), 'secondary')}
-                {button('refund', m['billing.simulate_refund'](), 'secondary')}
+                {button('payment_failed', m['billing.simulate_payment_failure'](), 'outline')}
+                {button('refund', m['billing.simulate_refund'](), 'outline')}
               </div>
             </section>
           )}
           <Link
             to={details.data.return_url}
-            className={buttonVariants({ variant: 'ghost', className: 'self-start' })}
+            className={buttonVariants({ variant: 'quiet', className: 'self-start' })}
           >
             {m['billing.back_to_settings']()}
           </Link>

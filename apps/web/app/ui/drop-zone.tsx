@@ -3,9 +3,11 @@ import { useId, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
-// Large file target (27 §3.6, `.drop`): a quiet --panel panel with a thin dashed --border-strong
-// edge and 24 px corners; dragging turns the edge solid --signal over a --wash wash (shape
-// and colour). "Drop an audio or video file, or choose a file" plus the formats line. The page can accept drops anywhere; it passes `dragging` so the zone shows the drop state.
+// Large file target (27 §3.6, `.drop`): the --panel well with a dashed --edge (≥ 3:1, its only
+// boundary) and the panel radius; dragging turns the edge into a solid 1.5 px ink edge over the
+// --wash (shape, not a shade: dashed becomes solid) and lifts the zone a little. "Drop an audio or
+// video file, or choose a file" plus the formats line. The page can accept drops anywhere; it
+// passes `dragging` so the zone shows the drop state.
 // Picking with the button is the non-drag alternative (WCAG 2.5.7); a click anywhere else on the
 // zone opens the picker too (a pointer shortcut, so the zone is not a second tab stop).
 
@@ -47,12 +49,12 @@ function DropZone({
         input.current?.click()
       }}
       className={cn(
-        'flex min-h-56 flex-col items-center justify-center gap-3 rounded-dialog border border-dashed border-border-strong bg-panel px-6 py-10 text-center transition-[scale,background-color,border-color] duration-(--duration-base) ease-enter data-dragging:scale-[1.01] data-dragging:border-solid data-dragging:border-signal data-dragging:bg-wash forced-colors:data-dragging:bg-raised',
+        'flex min-h-56 flex-col items-center justify-center gap-3 rounded-panel border border-dashed border-edge bg-panel px-6 py-10 text-center transition-[scale,background-color,border-color,box-shadow] duration-(--duration-base) ease-enter data-dragging:scale-[1.01] data-dragging:border-solid data-dragging:border-selected data-dragging:bg-wash data-dragging:inset-ring-[0.5px] data-dragging:inset-ring-selected forced-colors:data-dragging:bg-raised',
         !disabled && 'cursor-pointer',
         className,
       )}
     >
-      <span className="grid size-14 place-items-center rounded-full bg-background text-muted-foreground [&_svg]:size-6">
+      <span className="grid size-14 place-items-center text-muted-foreground [&_svg]:size-8">
         <FileAudioIcon aria-hidden strokeWidth={1.8} />
       </span>
       {dragging ? (

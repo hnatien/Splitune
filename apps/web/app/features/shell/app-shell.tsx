@@ -73,7 +73,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
                   to={to}
                   aria-current={current ? 'page' : undefined}
                   className={cn(
-                    buttonVariants({ variant: 'ghost' }),
+                    buttonVariants({ variant: 'quiet' }),
                     'px-3',
                     current &&
                       'bg-panel text-foreground forced-colors:bg-hover forced-colors:text-foreground',
@@ -89,7 +89,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
                 <button
                   type="button"
                   className={cn(
-                    buttonVariants({ variant: 'ghost' }),
+                    buttonVariants({ variant: 'quiet' }),
                     'px-3 data-popup-open:bg-panel data-popup-open:text-foreground',
                   )}
                 >
@@ -100,7 +100,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
           </nav>
           <div className="flex-1 max-sm:hidden" />
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={openPalette}
             className="w-81 min-w-0 shrink justify-start px-4 font-normal text-muted-foreground max-lg:hidden [&>span]:w-full [&>span]:min-w-0"
           >
@@ -109,7 +109,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
             <Kbd>{paletteKey()}</Kbd>
           </Button>
           <Button
-            variant="ghost"
+            variant="quiet"
             size="icon"
             aria-label={m['nav.search']()}
             onClick={openPalette}
@@ -119,7 +119,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
           </Button>
           <div className="flex-1 max-lg:hidden" />
           <UploadPill />
-          <Button variant="secondary" onClick={() => openAddSong()} className="max-sm:hidden">
+          <Button variant="outline" onClick={() => openAddSong()} className="max-sm:hidden">
             <PlusIcon aria-hidden className="size-4" />
             {m['nav.add_song']()}
           </Button>

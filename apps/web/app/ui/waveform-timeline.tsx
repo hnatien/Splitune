@@ -3,20 +3,23 @@ import type * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §4.7, §12.2 (Main.dc.html "Song map"): the song's overview on a canvas — a 40 px row of
-// waveform bars from your part (or the song before stems) in `--waveform-peak`, the bars already
-// played in `--waveform-played` and those inside the loop in `--waveform-loop`; the loop band
-// painted beneath the bars (`--loop-fill`, V17) with 2 px `--loop-edge` edges; the unsure hatch as
-// a striped band above the bars (a pattern, never colour alone, 26 §5); the 2 px now-line; and a
-// 14 px mono ruler (bar numbers every 8 bars, or seconds before the beat is known). The loop's edges
-// are ≥ 44 px handles that the arrow keys nudge (dragging is the secondary way). Tap seeks and a
-// drag across the map scrubs (pointer capture keeps it going past the edges). The
-// waveform is drawn when its data changes; during playback only the now-line moves (transform) and
-// the played part is revealed by a clip on a second canvas, so no frame reads layout (28 §3.1).
-// The loop band eases in, out and between ranges over --duration-base (straight to the end state
-// under reduced motion). `compact` (phone landscape, 27 §3.7.2) keeps the ruler with the band and
-// the now-line in 32 px. The canvas is decorative for assistive tech: seeking and the loop are
-// reachable through the transport and the handles' keys.
+// Doc 26 §4.7, §12.2, s47 direction §3, §6: the song map. Section chips over the waveform (a chip
+// loops its section; 24 px tall on fine pointers, 44 on coarse ones; the looped section's chip has
+// a 2 px ink line), then a 30 px row of waveform bars from your part (or the song before stems) on
+// a canvas: unplayed bars in `--waveform-peak`, the part already played in the stronger
+// `--waveform-played`, and the bars inside the loop in the ink. The loop is an ink-edged band
+// (`--loop-fill` beneath the bars, 2 px `--loop-edge` edges), the playhead a 2 px ink line that
+// follows the audio clock, and unsure bars a striped band above the waveform (a pattern, never
+// colour alone, 26 §5). Without sections a ruler names the bars every 8 bars (or the seconds before
+// the beat is known). The loop's edges are ≥ 44 px handles that the arrow keys nudge (dragging is
+// the secondary way). Tap seeks and a drag across the map scrubs (the caller snaps it to bars);
+// pointer capture keeps it going past the edges. The waveform is drawn when its data changes;
+// during playback only the playhead moves (transform) and the played part is revealed by a clip on
+// a second canvas, so no frame reads layout (28 §3.1). The loop band eases in, out and between
+// ranges over --duration-base (straight to the end state under reduced motion). `compact` (phone
+// landscape, 27 §3.7.2) keeps the band and the playhead over bar ticks in 32 px. The canvas is
+// decorative for assistive tech: seeking and the loop are reachable through the transport, the
+// section chips and the handles' keys.
 
 export interface TimelineLane {
   id: string
@@ -33,6 +36,13 @@ export interface TimelineBar {
   label: string
 }
 
+/** A named part of the song ("Verse"), in seconds on the decoded-PCM timeline. */
+export interface TimelineSection {
+  start: number
+  end: number
+  label: string
+}
+
 type WaveformTimelineProps = {
   lanes: TimelineLane[]
   duration: number
@@ -40,6 +50,10 @@ type WaveformTimelineProps = {
   bars?: TimelineBar[] | undefined
   loop?: { start: number; end: number } | null
   unsure?: { start: number; end: number }[]
+  /** Section chips over the waveform; without them the map shows a bar ruler. */
+  sections?: TimelineSection[] | undefined
+  /** Loops a section (its chip was pressed); chips are plain labels without it. */
+  onLoopSection?: ((section: TimelineSection) => void) | undefined
   /** Heard position (seconds), read every animation frame. */
   position: () => number
   /** Pressing seeks; dragging across the map keeps seeking (`scrubbing`) until release. */
@@ -50,6 +64,8 @@ type WaveformTimelineProps = {
   labels: {
     loopStart: string
     loopEnd: string
+    /** Names the row of section chips ("Sections"). */
+    sections?: string
   }
   /** Ruler only (phone landscape, 27 §3.7.2). */
   compact?: boolean
@@ -58,16 +74,29 @@ type WaveformTimelineProps = {
 
 /** The loop band's ease, in milliseconds: `--duration-base`, which a canvas can't take from CSS. */
 const BAND_MS = 200
-// Rows of the map's canvas (Main.dc.html): the hatch band, then the 40 px waveform with the loop band
-// 3 px beyond it on both sides and the now-line 5 px beyond it.
-const HOST_PX = 54
-const HATCH = { top: 0, height: 5 }
-const MAP = { top: 9, height: 40 }
+// Rows of the map's canvas: the 4 px hatch band, then the 30 px waveform with the loop band 2 px
+// beyond it on both sides; the playhead runs from 3 px down to the foot.
+const HOST_PX = 40
+const HATCH = { top: 0, height: 4 }
+const MAP = { top: 7, height: 30 }
+const BAND_OVER = 2
 const COLUMN_PX = 5
 const COMPACT_PX = 32
 // Bar numbers every 8 bars (27 §3.7.1), thinned further when they'd crowd.
 const RULER_EVERY = 8
 const RULER_GAP_PX = 28
+
+/** A loop within this many seconds of a section's ends is that section's loop. */
+const SAME_S = 0.05
+
+/** Pointer capture, where the platform grants it (synthetic and some pen pointers are refused). */
+function capture(element: Element, pointer: number) {
+  try {
+    element.setPointerCapture(pointer)
+  } catch {
+    // The drag still runs from the pressed pointer's moves inside the map.
+  }
+}
 
 /** The loop band as drawn: the range and how opaque it is, so it can ease in, out and between. */
 interface Band {
@@ -81,8 +110,9 @@ function reducedMotion() {
   return motion === 'reduce' || (!motion && matchMedia('(prefers-reduced-motion: reduce)').matches)
 }
 
-function colors() {
-  const read = (name: TokenName) => readColor(name)
+/** The map's colours as its own subtree resolves them (a themed subtree may differ from the page). */
+function colors(element?: Element) {
+  const read = (name: TokenName) => readColor(name, element)
   return {
     peak: read('--waveform-peak'),
     played: read('--waveform-played'),
@@ -120,6 +150,8 @@ function WaveformTimeline({
   bars,
   loop = null,
   unsure = [],
+  sections,
+  onLoopSection,
   position,
   onSeek,
   onNudgeLoop,
@@ -133,7 +165,7 @@ function WaveformTimeline({
   const played = useRef<HTMLCanvasElement>(null)
   const nowLine = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
-  const [palette, setPalette] = useState(colors)
+  const [palette, setPalette] = useState<ReturnType<typeof colors> | null>(null)
   const band = useRef<Band | null>(loop && { ...loop, alpha: 1 })
   const tween = useRef<{ from: Band; to: Band; at: number } | null>(null)
   const redraw = useRef(() => {})
@@ -148,7 +180,8 @@ function WaveformTimeline({
     if (!element) return
     const resize = new ResizeObserver(([entry]) => setWidth(entry?.contentRect.width ?? 0))
     resize.observe(element)
-    const theme = new MutationObserver(() => setPalette(colors()))
+    setPalette(colors(element))
+    const theme = new MutationObserver(() => setPalette(colors(element)))
     theme.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-appearance', 'data-contrast'],
@@ -163,7 +196,7 @@ function WaveformTimeline({
   useEffect(() => {
     const canvases = [base.current, played.current]
     const contexts = canvases.map((c) => c?.getContext('2d') ?? null)
-    if (width === 0 || contexts.some((c) => !c)) return
+    if (width === 0 || !palette || contexts.some((c) => !c)) return
     const ratio = window.devicePixelRatio || 1
     canvases.forEach((c, i) => {
       if (!c) return
@@ -180,8 +213,8 @@ function WaveformTimeline({
       front.clearRect(0, 0, width, height)
       const shown = band.current
       const at = (seconds: number) => (seconds / Math.max(1e-6, duration)) * width
-      const bandTop = compact ? 0 : MAP.top - 3
-      const bandHeight = compact ? height : MAP.height + 6
+      const bandTop = compact ? 0 : MAP.top - BAND_OVER
+      const bandHeight = compact ? height : MAP.height + 2 * BAND_OVER
       if (shown) {
         back.globalAlpha = shown.alpha
         back.fillStyle = palette.loopFill
@@ -304,12 +337,16 @@ function WaveformTimeline({
     return () => cancelAnimationFrame(frame)
   })
 
+  // The pointer that pressed the map; its moves scrub until it is released. Capture keeps the moves
+  // coming past the map's edges where the platform supports it, but the drag never depends on it.
+  const pressed = useRef<number | null>(null)
   const seekAt = (event: React.PointerEvent<HTMLDivElement>, scrubbing: boolean) => {
     const box = event.currentTarget.getBoundingClientRect()
     const fraction = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width))
     onSeek(fraction * duration, scrubbing)
   }
 
+  const dragging = useRef<{ edge: 'start' | 'end'; pointer: number } | null>(null)
   const handle = (edge: 'start' | 'end') => {
     if (!loop || compact) return null
     const at = x(loop[edge])
@@ -319,7 +356,7 @@ function WaveformTimeline({
         type="button"
         aria-label={edge === 'start' ? labels.loopStart : labels.loopEnd}
         data-slot="loop-handle"
-        className="group/handle absolute top-1.5 z-10 flex size-11 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-field focus-visible:outline-2 focus-visible:outline-ring"
+        className="group/handle absolute top-1/2 z-10 flex size-target -translate-1/2 cursor-ew-resize items-center justify-center rounded-full"
         style={{ left: at }}
         onKeyDown={(event) => {
           const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
@@ -330,11 +367,19 @@ function WaveformTimeline({
         }}
         onPointerDown={(event) => {
           event.stopPropagation()
-          event.currentTarget.setPointerCapture(event.pointerId)
+          dragging.current = { edge, pointer: event.pointerId }
+          capture(event.currentTarget, event.pointerId)
         }}
-        onPointerUp={(event) => event.stopPropagation()}
+        onPointerUp={(event) => {
+          event.stopPropagation()
+          dragging.current = null
+        }}
+        onPointerCancel={() => {
+          dragging.current = null
+        }}
         onPointerMove={(event) => {
-          if (!onDragLoop || !event.currentTarget.hasPointerCapture(event.pointerId)) return
+          const drag = dragging.current
+          if (!onDragLoop || drag?.edge !== edge || drag.pointer !== event.pointerId) return
           const box = host.current?.getBoundingClientRect()
           if (!box) return
           onDragLoop(edge, ((event.clientX - box.left) / box.width) * duration)
@@ -342,7 +387,7 @@ function WaveformTimeline({
       >
         <span
           aria-hidden
-          className="h-5 w-1.5 rounded-full bg-loop-edge opacity-0 transition-opacity duration-(--duration-fast) group-hover/handle:opacity-100 group-focus-visible/handle:opacity-100"
+          className="h-6 w-1.5 rounded-full bg-loop-edge opacity-0 transition-opacity duration-(--duration-fast) ease-standard group-hover/handle:opacity-100 group-focus-visible/handle:opacity-100"
         />
       </button>
     )
@@ -350,7 +395,8 @@ function WaveformTimeline({
 
   // Ruler marks: every 8th bar from the first (or each half minute before the beat is known).
   const marks: { at: number; label: string }[] = []
-  if (!compact && width > 0) {
+  const chips = !compact && sections && sections.length > 0 ? sections : null
+  if (!compact && !chips && width > 0) {
     const ticks = bars
       ? bars.filter((b) => b.bar >= 0 && b.bar % RULER_EVERY === 0)
       : Array.from({ length: Math.floor(duration / 30) + 1 }, (_, i) => ({
@@ -366,19 +412,79 @@ function WaveformTimeline({
     }
   }
 
+  const span = Math.max(1e-6, duration)
+  const looped = (section: TimelineSection) =>
+    loop !== null &&
+    Math.abs(loop.start - section.start) < SAME_S &&
+    Math.abs(loop.end - section.end) < SAME_S
+  const chipRow = chips?.map((section) => {
+    const style = {
+      left: `${(Math.max(0, section.start) / span) * 100}%`,
+      width: `${((Math.min(duration, section.end) - Math.max(0, section.start)) / span) * 100}%`,
+    }
+    const face =
+      'absolute inset-y-0 flex min-w-0 items-center truncate border-l border-edge pr-1 pl-1.5 text-label-sm whitespace-nowrap'
+    return onLoopSection ? (
+      <button
+        key={`${section.label}-${section.start}`}
+        type="button"
+        data-slot="section-chip"
+        aria-pressed={looped(section)}
+        className={cn(
+          face,
+          'text-muted-foreground transition-colors duration-(--duration-fast) ease-standard after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-hover hover:text-foreground focus-visible:-outline-offset-2 aria-pressed:text-foreground aria-pressed:after:bg-selected',
+        )}
+        style={style}
+        onClick={() => onLoopSection(section)}
+      >
+        <span className="truncate">{section.label}</span>
+      </button>
+    ) : (
+      <span
+        key={`${section.label}-${section.start}`}
+        data-slot="section-chip"
+        className={cn(face, 'text-muted-foreground')}
+        style={style}
+      >
+        <span className="truncate">{section.label}</span>
+      </span>
+    )
+  })
   return (
     <div data-slot="waveform-timeline" className={cn('flex flex-col', className)}>
+      {chipRow &&
+        (onLoopSection ? (
+          <fieldset aria-label={labels.sections} className="m-0 min-w-0 border-0 p-0">
+            <div
+              data-slot="sections"
+              className="relative h-target-min w-full pointer-coarse:h-target"
+            >
+              {chipRow}
+            </div>
+          </fieldset>
+        ) : (
+          <div data-slot="sections" className="relative h-target-min w-full">
+            {chipRow}
+          </div>
+        ))}
       <div
         ref={host}
         className="relative w-full cursor-pointer touch-pan-y"
         style={{ height }}
         onPointerDown={(event) => {
           if (event.button !== 0) return
-          event.currentTarget.setPointerCapture(event.pointerId)
+          pressed.current = event.pointerId
+          capture(event.currentTarget, event.pointerId)
           seekAt(event, false)
         }}
         onPointerMove={(event) => {
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) seekAt(event, true)
+          if (pressed.current === event.pointerId) seekAt(event, true)
+        }}
+        onPointerUp={(event) => {
+          if (pressed.current === event.pointerId) pressed.current = null
+        }}
+        onPointerCancel={() => {
+          pressed.current = null
         }}
       >
         <canvas ref={base} aria-hidden className="absolute inset-0 h-full w-full" />
@@ -394,17 +500,17 @@ function WaveformTimeline({
           data-slot="now-line"
           className={cn(
             'pointer-events-none absolute left-0 w-0.5 -translate-x-px rounded-full bg-now-line will-change-transform',
-            compact ? 'inset-y-0' : 'top-1 bottom-0',
+            compact ? 'inset-y-0' : 'top-0.75 bottom-0',
           )}
         />
         {handle('start')}
         {handle('end')}
       </div>
-      {!compact && (
+      {!compact && !chips && (
         <div
           aria-hidden
           data-slot="ruler"
-          className="relative h-3.5 text-kbd leading-3.5 font-normal text-faint-foreground tabular-nums"
+          className="relative h-4 text-caption text-faint-foreground tabular-nums"
         >
           {marks.map((mark) => (
             <span

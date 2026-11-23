@@ -9,6 +9,9 @@ type DrawerContextProps = {
   swipeDirection: NonNullable<DrawerPrimitive.Root.Props['swipeDirection']>
 }
 
+// Sheets (doc 26 §12.1, s47 direction §6): a floating layer like Dialog (--raised, one hairline on
+// the edge that faces the page, the dialog radius on the corners that face it, --elevation-dialog
+// over the --scrim). On the phone the one tools panel is a bottom sheet of this kind.
 const DrawerContext = React.createContext<DrawerContextProps | null>(null)
 
 function useDrawer() {
@@ -110,7 +113,7 @@ function DrawerContent({ className, children, ...props }: DrawerPrimitive.Popup.
             // Nested.
             'data-nested-drawer-open:overflow-hidden data-nested-drawer-open:brightness-95',
             // Bleed.
-            'after:pointer-events-none after:absolute after:bg-(--drawer-bleed-background,var(--color-popover)) data-[swipe-axis=x]:after:inset-y-0 data-[swipe-axis=x]:after:w-(--bleed) data-[swipe-axis=y]:after:inset-x-0 data-[swipe-axis=y]:after:h-(--bleed) data-[swipe-direction=down]:after:top-full data-[swipe-direction=left]:after:right-full data-[swipe-direction=right]:after:left-full data-[swipe-direction=up]:after:bottom-full',
+            'after:pointer-events-none after:absolute after:bg-(--drawer-bleed-background,var(--color-raised)) data-[swipe-axis=x]:after:inset-y-0 data-[swipe-axis=x]:after:w-(--bleed) data-[swipe-axis=y]:after:inset-x-0 data-[swipe-axis=y]:after:h-(--bleed) data-[swipe-direction=down]:after:top-full data-[swipe-direction=left]:after:right-full data-[swipe-direction=right]:after:left-full data-[swipe-direction=up]:after:bottom-full',
             // Sizing.
             '[--drawer-content-height:var(--drawer-height,auto)] data-[swipe-axis=x]:[--drawer-content-width:75%] data-[swipe-axis=y]:[--drawer-content-max-height:calc(100dvh-6rem)] data-[swipe-axis=y]:data-snap-points:[--drawer-content-height:100dvh] data-[swipe-axis=x]:sm:[--drawer-content-width:24rem]',
             // Stack.

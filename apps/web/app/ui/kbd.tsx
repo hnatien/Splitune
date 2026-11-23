@@ -2,15 +2,16 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * `.kbd` (doc 26 §12.1): JetBrains Mono 12 (it has ⌘ ⇧ ⌥ ↵), 22 tall, a --panel fill and a
- * flat 1 px --border-strong edge. Tooltips and the shortcuts list ("Space", "⇧ ←").
+ * `.kbd` (doc 26 §12.1): a key cap. 11 px at 500 in the mono face (it has ⌘ ⇧ ⌥ ↵), 20 px tall,
+ * a flat 1 px --border-strong edge and no fill, so a cap printed on a control reads as a label
+ * and not as a second button. Beside every action that has a key, in tooltips and in the list.
  */
 function Kbd({ className, ...props }: React.ComponentProps<'kbd'>) {
   return (
     <kbd
       data-slot="kbd"
       className={cn(
-        "pointer-events-none inline-flex h-5.5 w-fit min-w-5.5 items-center justify-center gap-1 rounded-media border border-border-strong bg-panel px-1.5 font-mono text-caption leading-none font-normal text-muted-foreground tabular-nums select-none [&_svg:not([class*='size-'])]:size-3",
+        "pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-media border border-border-strong px-1 font-mono text-kbd leading-none text-muted-foreground tabular-nums select-none [&_svg:not([class*='size-'])]:size-3",
         className,
       )}
       {...props}
