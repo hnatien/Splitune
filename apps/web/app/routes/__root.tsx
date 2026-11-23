@@ -78,18 +78,26 @@ function Root() {
   // uploader stays out of pages that never upload.
   // The service worker and device telemetry start after the first render, outside the route
   // budgets (10 §9).
+  // A navigation while either chunk loads cancels it (WebKit then reports the import as failed);
+  // the next page load starts both again, and pending uploads stay stored until then.
   useEffect(() => {
-    void import('@/lib/after-render').then((page) => page.afterFirstRender())
+    void import('@/lib/after-render').then(
+      (page) => page.afterFirstRender(),
+      () => undefined,
+    )
   }, [])
   // Pages reached in the app (not loaded from the server) are kept for offline use too.
   const href = useRouterState({ select: (state) => state.location.href })
   useEffect(() => usePwa.getState().cachePage(href), [href])
   useEffect(() => {
     if (!me) return
-    void import('@/features/import/upload-manager').then((uploads) => {
-      uploads.connectUploads(queryClient)
-      return uploads.resumePendingUploads()
-    })
+    void import('@/features/import/upload-manager').then(
+      (uploads) => {
+        uploads.connectUploads(queryClient)
+        return uploads.resumePendingUploads()
+      },
+      () => undefined,
+    )
   }, [me, queryClient])
   return (
     <CSPProvider nonce={nonce}>
