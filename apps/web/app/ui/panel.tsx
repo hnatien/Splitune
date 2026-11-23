@@ -34,13 +34,13 @@ function PanelHeader({
   className,
   children,
   ...props
-}: React.ComponentProps<'header'> & {
+}: React.ComponentProps<'div'> & {
   onClose?: () => void
   closeLabel?: string
   closeShortcut?: string
 }) {
   return (
-    <header
+    <div
       data-slot="panel-header"
       className={cn('flex min-h-13 shrink-0 items-center gap-2 pr-2 pl-4', className)}
       {...props}
@@ -57,7 +57,7 @@ function PanelHeader({
           <XIcon />
         </Button>
       )}
-    </header>
+    </div>
   )
 }
 
