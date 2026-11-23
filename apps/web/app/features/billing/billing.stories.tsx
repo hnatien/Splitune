@@ -109,7 +109,7 @@ export const UpgradePhone: Story = {
 export const UpgradePricesFailed: Story = {
   // Plans left unseeded: the request fails against Storybook's own server.
   render: sheet((client) => client.setQueryData(meQuery.queryKey, ME_CAPPED)),
-  globals: { ...DESKTOP, ...DAYLIGHT },
+  globals: { ...DESKTOP, appearance: 'dark' },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
@@ -127,6 +127,10 @@ export const UpgradePricesFailed: Story = {
       }),
     ).toBeDisabled()
   },
+}
+export const UpgradePricesFailedDaylight: Story = {
+  ...UpgradePricesFailed,
+  globals: { ...DESKTOP, ...DAYLIGHT },
 }
 
 const bare = (children: React.ReactNode, seedWith: (client: QueryClient) => void) => () => (
@@ -243,7 +247,7 @@ export const PortalCancelling: Story = {
 }
 export const PortalPastDue: Story = {
   render: portal(ME_PLUS_PAST_DUE),
-  globals: { ...PHONE, ...DAYLIGHT },
+  globals: { ...PHONE, appearance: 'dark' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const line = await canvas.findByText(/The last \(simulated\) payment failed/)
@@ -252,4 +256,8 @@ export const PortalPastDue: Story = {
     await expect(message).toHaveAttribute('data-tone', 'warning')
     await expect(canvas.getByRole('button', { name: 'Switch to monthly' })).toBeVisible()
   },
+}
+export const PortalPastDueDaylight: Story = {
+  ...PortalPastDue,
+  globals: { ...PHONE, ...DAYLIGHT },
 }
