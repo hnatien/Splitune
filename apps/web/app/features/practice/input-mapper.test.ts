@@ -27,6 +27,7 @@ const practice = {
     speedPct: 70,
     countIn: false,
     countInBars: 1,
+    metronome: false,
   },
   state: 'ready',
   send: vi.fn(),
@@ -225,6 +226,24 @@ describe('input mapper: a loop and a speed in one key each', () => {
     expect(practice.setSpeed).toHaveBeenLastCalledWith(70)
     press('0', true, 'Digit0')
     expect(practice.setSpeed).toHaveBeenLastCalledWith(100)
+  })
+
+  it('T turns the click on and off and says which', () => {
+    practice.player.metronome = false
+    press('t')
+    expect(practice.send).toHaveBeenLastCalledWith({ type: 'SET_METRONOME', on: true })
+    expect(usePracticeUi.getState().hud).toMatchObject({ message: 'Click on', source: 'Key T' })
+    practice.player.metronome = true
+    press('t')
+    expect(practice.send).toHaveBeenLastCalledWith({ type: 'SET_METRONOME', on: false })
+    expect(usePracticeUi.getState().hud.message).toBe('Click off')
+  })
+
+  it('T says the bars are not there yet before the beat is found', () => {
+    practice.layers.beats = false
+    press('t')
+    expect(usePracticeUi.getState().hud.message).toBe('Bars arrive when the beat is found')
+    practice.layers.beats = true
   })
 
   it('S opens the speed panel, says so, and is inert with single keys off', () => {

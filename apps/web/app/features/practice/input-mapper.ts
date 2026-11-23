@@ -205,6 +205,16 @@ export function useInputMapper({
           )
           return
         }
+        case 'click': {
+          if (!practice.layers.beats) {
+            showHud(m['practice.hud_no_beats']())
+            return
+          }
+          const on = !player.metronome
+          practice.send({ type: 'SET_METRONOME', on })
+          showHud(on ? m['practice.hud_click_on']() : m['practice.hud_click_off']())
+          return
+        }
         case 'speed':
           usePracticeUi.setState({ speedOpen: true })
           showHud(m['shortcuts.speed']())
@@ -359,6 +369,8 @@ export function actionLabel(action: Action): string {
       return m['shortcuts.loop_forward']()
     case 'countIn':
       return m['shortcuts.count_in']()
+    case 'click':
+      return m['shortcuts.click']()
     case 'speed':
       return m['shortcuts.speed']()
     case 'tools':

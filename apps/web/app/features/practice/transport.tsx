@@ -463,6 +463,7 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
       icon={<MetronomeIcon aria-hidden />}
       label={m['practice.metronome']()}
       showLabel={false}
+      shortcut="T"
       pressed={player.metronome && layers.beats}
       disabled={!layers.beats}
       onPressedChange={(on) => send({ type: 'SET_METRONOME', on })}

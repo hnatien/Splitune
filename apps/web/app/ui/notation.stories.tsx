@@ -335,6 +335,10 @@ export const Fretboards: Story = {
     await expect(open.querySelectorAll('[data-slot=fret-ring]')).toHaveLength(4)
     // The next shape's B-string 1st fret is already held: only the new fingers are ghosted.
     await expect(open.querySelectorAll('[data-slot=fret-next]')).toHaveLength(2)
+    // "Next" is a solid hollow ring: dashes and dots are kept for confidence.
+    for (const ring of open.querySelectorAll('[data-slot=fret-next] circle')) {
+      await expect(ring.getAttribute('stroke-dasharray')).toBeNull()
+    }
     const up = canvas.getByRole('img', { name: /^Seventh position/ })
     await expect(up.querySelector('[data-slot=fret-shift]')).toHaveTextContent('Fret 12 →')
     // The 12th fret is outside the window: no ghost for it, the cue instead.

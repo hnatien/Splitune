@@ -24,7 +24,7 @@ const GROUPS: { title: () => string; actions: Action[] }[] = [
   },
   {
     title: () => m['shortcuts.group_loop'](),
-    actions: ['toggleLoop', 'loopBack', 'loopForward', 'countIn'],
+    actions: ['toggleLoop', 'loopBack', 'loopForward', 'countIn', 'click'],
   },
   { title: () => m['shortcuts.group_speed'](), actions: ['slower', 'faster', 'speed'] },
   { title: () => m['shortcuts.group_pass'](), actions: ['clean', 'notYet'] },

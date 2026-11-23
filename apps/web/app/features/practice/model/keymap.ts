@@ -30,6 +30,7 @@ export const ACTIONS = [
   'loopBack',
   'loopForward',
   'countIn',
+  'click',
   'mutePart',
   'tools',
   'view',
@@ -63,6 +64,8 @@ export const DEFAULT_KEYS: Record<Action, string[]> = {
   loopBack: ['Shift+ArrowLeft'],
   loopForward: ['Shift+ArrowRight'],
   countIn: ['i'],
+  // The click (metronome): T, as in tick.
+  click: ['t'],
   mutePart: ['m'],
   tools: ['x'],
   view: ['v'],
