@@ -498,6 +498,9 @@ export const About: Story = {
     await expect(basic).not.toBeVisible()
     await userEvent.click(canvas.getByText(/^Show all \d+ models$/))
     await expect(basic).toBeVisible()
+    // Open, the label says what pressing it does now.
+    await expect(canvas.getByText('Hide the models')).toBeVisible()
+    await expect(canvas.getByText(/^Show all \d+ models$/)).not.toBeVisible()
   },
 }
 export const AboutDaylight: Story = {

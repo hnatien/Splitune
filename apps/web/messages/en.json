@@ -1010,6 +1010,7 @@
   "settings.about_built": "Built {date}",
   "settings.about_fonts": "Font licences",
   "settings.about_models": "Transcription models",
+  "settings.about_models_hide": "Hide the models",
   "settings.about_models_show": "Show all {count} models",
   "settings.about_ofl": "SIL Open Font License 1.1",
   "settings.about_personal": "Personal mode: payments are simulated; analyses run on the owner's machine.",
