@@ -361,12 +361,12 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
         }))}
         onChange={(rest) => {
           send({ type: 'SET_REST', rest, restSeconds: restSeconds(grid ?? null, loop, rest) })
+          // The player has the new value already; a save that fails (offline) leaves the clip's
+          // stored one, as the loop's own saves do (practice-context), never an unhandled error.
           if (practice.clip) {
-            void client.loops.update({
-              id: practice.songId,
-              loop_id: practice.clip.id,
-              rest_between: rest,
-            })
+            void client.loops
+              .update({ id: practice.songId, loop_id: practice.clip.id, rest_between: rest })
+              .catch(() => undefined)
           }
         }}
       />
@@ -387,11 +387,9 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
           const bars = Number(value)
           send({ type: 'SET_COUNT_IN', on: bars > 0, ...(bars > 0 ? { bars } : {}) })
           if (practice.clip) {
-            void client.loops.update({
-              id: practice.songId,
-              loop_id: practice.clip.id,
-              count_in_bars: bars,
-            })
+            void client.loops
+              .update({ id: practice.songId, loop_id: practice.clip.id, count_in_bars: bars })
+              .catch(() => undefined)
           }
         }}
       />
