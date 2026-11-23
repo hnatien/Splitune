@@ -10,6 +10,25 @@ import type { ExampleSong } from './examples'
 type InstrumentName = z.infer<typeof Instrument>
 type LevelName = z.infer<typeof Level>
 
+/**
+ * The answers /start begins with, so a visitor can go straight to a song: guitar (most learners,
+ * and the examples' fallback) and "just started" (the slowest starting speed). Changed on the page
+ * or later in Settings.
+ */
+export const DEFAULT_INSTRUMENT: InstrumentName = 'guitar'
+export const DEFAULT_LEVEL: LevelName = 'just_started'
+
+/** The answers in effect: what the visitor chose, else the defaults. */
+export function answersOf(search: {
+  instrument?: InstrumentName | undefined
+  level?: LevelName | undefined
+}): { instrument: InstrumentName; level: LevelName } {
+  return {
+    instrument: search.instrument ?? DEFAULT_INSTRUMENT,
+    level: search.level ?? DEFAULT_LEVEL,
+  }
+}
+
 export function tabLevelFor(
   instrument: InstrumentName | null,
   songInstrument: InstrumentName,
