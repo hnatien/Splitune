@@ -11,12 +11,14 @@ import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
+import { Kbd } from '@/ui/kbd'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
 import { Toggle } from '@/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { OptionSegments } from '../common/option-segments'
 import { nextInBeats } from './bar-text'
+import { keyLabel } from './input-mapper'
 import { type GuideLevel, guideLevel, withGuide } from './model/mixer'
 import { loopedPhrase, phraseAtTime } from './model/phrases'
 import { spelledNote } from './model/view-model'
@@ -42,7 +44,7 @@ interface Now {
   entered: number
 }
 
-const label = 'text-caption font-medium text-conf-medium'
+const label = 'text-caption font-medium text-muted-foreground'
 
 /** "bars 10–13", or "bar 4" for a phrase inside one bar (1-based, as the UI shows bars). */
 export function phraseBars(startBar: number, endBar: number): string {
@@ -131,7 +133,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
         >
           {current ? letter(current) : '—'}
           {current && (
-            <span className="text-read-label font-medium text-conf-medium">
+            <span className="text-read-label font-medium text-muted-foreground">
               {phraseBars(current.startBar, current.endBar)}
             </span>
           )}
@@ -144,7 +146,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
             <span className={label}>{m['practice.phrase_starts_on']()}</span>
             <span data-slot="phrase-start" className="font-reading text-read-chord font-medium">
               {name(startNote.pitch)}{' '}
-              <span className="text-read-label text-conf-medium">
+              <span className="text-read-label text-muted-foreground">
                 ({degreeName(startNote.pitch, tonic)})
               </span>
             </span>
@@ -152,8 +154,8 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
           <Button
             variant="outline"
             size={compact ? 'icon-practice' : 'practice'}
-            className="bg-paper text-ink inset-ring-staff hover:bg-bar-current"
             aria-label={m['practice.first_note_label']({ note: name(startNote.pitch) })}
+            aria-keyshortcuts="P"
             onClick={cueNote}
           >
             <Volume2Icon aria-hidden />
@@ -169,7 +171,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
             <span className={label}>{nextLabel}</span>
             <span data-slot="phrase-next" className="font-reading text-read-chord font-medium">
               {now.next + 1} · {letter(next)}{' '}
-              <span className="text-read-label text-conf-medium">
+              <span className="text-read-label text-muted-foreground">
                 {m['practice.phrase_on']({ note: name(nextFirst.pitch) })}
               </span>
             </span>
@@ -178,35 +180,20 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
       )}
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        {melody.range && !compact && (
-          <span
-            data-slot="vocal-range"
-            className="hidden items-baseline gap-2 rounded-full border border-staff px-3.5 py-2 font-reading text-read-label @5xl:flex"
-          >
-            <span className="sr-only">
-              {m['practice.range_label']({
-                low: name(melody.range.low),
-                high: name(melody.range.high),
-              })}
-            </span>
-            <span aria-hidden className="text-conf-medium">
-              {m['practice.range']()}
-            </span>
-            <span aria-hidden className="font-medium">
-              {name(melody.range.low)}–{name(melody.range.high)}
-            </span>
-          </span>
-        )}
         {loopTarget >= 0 && (
           <Toggle
             variant="outline"
             size="practice"
-            className="rounded-full bg-paper px-0 text-ink inset-ring-staff hover:bg-bar-current data-pressed:bg-score-loop-fill data-pressed:text-ink data-pressed:inset-ring-score-loop-edge"
+            dot
             pressed={looped >= 0}
             onPressedChange={() => loopPhrase(looped >= 0 ? looped : loopTarget)}
             aria-label={m['practice.loop_phrase']()}
+            aria-keyshortcuts="L"
           >
-            <RepeatIcon aria-hidden className="size-6" />
+            <RepeatIcon aria-hidden />
+            <Kbd aria-hidden className="pointer-coarse:hidden">
+              {keyLabel('l')}
+            </Kbd>
           </Toggle>
         )}
         {guide && !compact && (
@@ -230,16 +217,32 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
             ))}
           </ToggleGroup>
         )}
-        {!compact && <MelodyOptions guide={guide} />}
+        {!compact && (
+          <MelodyOptions
+            guide={guide}
+            range={
+              melody.range
+                ? { low: name(melody.range.low), high: name(melody.range.high) }
+                : undefined
+            }
+          />
+        )}
       </div>
     </div>
   )
 }
 
-// The melody's options: what the notes say, the pitch range shown, and (where the strip has no
-// room for its switch) the guide vocal. Practice defaults, this device. It sits on the paper with
-// the score's ink, and Stage keeps it out, as piano's options do.
-function MelodyOptions({ guide }: { guide: GuideLevel | null }) {
+// The melody's options: the singer's range (read here, so the strip keeps to the phrase, its
+// first note, the loop and the guide), what the notes say, the pitch range shown, and (where the
+// strip has no room for its switch) the guide vocal. Practice defaults, this device. It sits on
+// the paper with the score's ink, and Stage keeps it out, as piano's options do.
+function MelodyOptions({
+  guide,
+  range,
+}: {
+  guide: GuideLevel | null
+  range: { low: string; high: string } | undefined
+}) {
   const { channels, mix, setMix } = usePractice()
   const labels = usePracticeDefaults((s) => s.melodyLabels)
   const pitchWindow = usePracticeDefaults((s) => s.melodyWindow)
@@ -251,7 +254,7 @@ function MelodyOptions({ guide }: { guide: GuideLevel | null }) {
           <Button
             variant="outline"
             size="practice"
-            className="shrink-0 bg-paper text-ink inset-ring-staff hover:bg-bar-current in-data-[appearance=stage]:hidden"
+            className="shrink-0 in-data-[appearance=stage]:hidden"
             aria-label={m['practice.melody_options']()}
           />
         }
@@ -261,6 +264,11 @@ function MelodyOptions({ guide }: { guide: GuideLevel | null }) {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] gap-4">
         <PopoverTitle>{m['practice.melody_options']()}</PopoverTitle>
+        {range && (
+          <p data-slot="vocal-range" className="text-body-sm text-muted-foreground">
+            {m['practice.range_label'](range)}
+          </p>
+        )}
         <OptionSegments
           label={m['practice.melody_labels']()}
           value={labels}

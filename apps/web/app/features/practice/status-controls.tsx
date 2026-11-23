@@ -6,7 +6,7 @@ import { ConfidenceLegendPopover } from '@/ui/confidence-legend'
 import { Kbd } from '@/ui/kbd'
 import { Status } from '@/ui/status'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
-import { statsQuery } from '../library/queries'
+import { statsQuery, workerStatusQuery } from '../library/queries'
 import { handsLabel } from './display-options'
 import { keyLabel } from './input-mapper'
 import { isPhone, type PracticeLayout } from './layout'
@@ -48,19 +48,23 @@ export function StatusControls({ layout }: { layout: PracticeLayout }) {
 function AnalysingBadge() {
   const { data } = usePractice()
   const stats = useQuery(statsQuery)
+  const worker = useQuery(workerStatusQuery)
   const analysis = data.analysis.data
   if (!analysis) return null
   const step = analysingStep(analysis)
-  const minutes = etaMinutes(remaining(analysis, stats.data?.stages ?? []))
+  // Queued behind an offline machine: no time is promised (26 §13).
+  const queued = data.live.waitingFor !== undefined || worker.data?.online === false
+  const minutes = queued ? undefined : etaMinutes(remaining(analysis, stats.data?.stages ?? []))
   return (
     <Status
       kind="working"
       progress={step.total > 0 ? (step.current - 1) / step.total : 0}
       data-slot="analysing"
-      className="whitespace-nowrap"
+      // It truncates in its own column, so on a phone it never reaches the back link.
+      className="max-w-full"
     >
       {m['practice.analysing_badge']({ done: String(step.current), total: String(step.total) })}
-      {minutes && ` · ${m['analysis.eta_inline']({ minutes })}`}
+      {minutes && <span className="max-sm:hidden"> · {m['analysis.eta_inline']({ minutes })}</span>}
     </Status>
   )
 }

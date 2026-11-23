@@ -113,7 +113,7 @@ export function DrumNotes({
         className,
       )}
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 gap-3">
+      <div className="mx-auto flex min-h-0 w-full flex-1 gap-3">
         <ul
           aria-label={m['practice.drum_lanes']()}
           className="flex shrink-0 flex-col text-read-label"
@@ -142,7 +142,7 @@ export function DrumNotes({
           />
         )}
       </div>
-      <p className="mx-auto w-full max-w-page pt-2 text-read-label">{m['practice.drum_key']()}</p>
+      <p className="mx-auto w-full pt-2 text-read-label">{m['practice.drum_key']()}</p>
     </section>
   )
 }

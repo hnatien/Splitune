@@ -161,7 +161,7 @@ export function VocalMelody({
       <div
         role="img"
         aria-label={label || description}
-        className="mx-auto flex min-h-0 w-full max-w-page flex-1"
+        className="mx-auto flex min-h-0 w-full flex-1"
       >
         {tokens && (
           <MelodyRoll

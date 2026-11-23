@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
-import { InlineError } from '@/ui/status-message'
+
 import { toast } from '@/ui/toast'
 import { FocusShell } from '../shell/focus-shell'
 import { type PaletteAction, parseLoopQuery, usePaletteActions } from '../shell/palette-store'
@@ -19,7 +19,7 @@ import {
   type PracticeSearch,
   usePractice,
 } from './practice-context'
-import { PracticeLoading } from './practice-loading'
+import { PracticeError, PracticeLoading } from './practice-loading'
 import { openTab, usePracticeUi } from './practice-store'
 import { PracticeTimeline } from './practice-timeline'
 import { PracticeStatus } from './status-bar'
@@ -123,12 +123,18 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
     return <PracticeLoading slowText={m['practice.loading']()} />
   }
   if (song.isError) {
+    // A song that is gone can't be fetched again; anything else is usually the connection.
+    const gone = errorCode(song.error) === 'not_found'
     return (
-      <FocusShell exit={practice.guest}>
-        <div className="mx-auto w-full max-w-page px-4 py-6">
-          <InlineError title={apiErrorMessage(errorCode(song.error))} />
-        </div>
-      </FocusShell>
+      <PracticeError
+        guest={practice.guest}
+        title={gone ? apiErrorMessage('not_found') : m['practice.load_failed']()}
+        description={gone ? undefined : m['practice.load_failed_hint']()}
+        onRetry={gone ? undefined : () => void song.refetch()}
+        retrying={song.isFetching}
+        retryLabel={m['common.try_again']()}
+        backLabel={practice.guest ? m['nav.exit']() : m['practice.back_to_library']()}
+      />
     )
   }
   return (
