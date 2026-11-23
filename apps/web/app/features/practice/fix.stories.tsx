@@ -9,8 +9,10 @@ import { configureCorrections, useCorrections } from './model/corrections'
 import { memoryOutbox } from './model/outbox-memory'
 import type { PracticeSearch } from './practice-context'
 import { PracticePage } from './practice-page'
+import { rememberedTab } from './practice-store'
 import {
   ALL,
+  coarse,
   FIX_CHORDS,
   FIX_CHORDS_LONG,
   FIX_CHORDS_REPEAT,
@@ -39,6 +41,9 @@ const VIEWPORTS = {
     styles: { width: '1180px', height: '820px' },
     type: 'desktop',
   },
+  laptop900: { name: 'Narrow 900', styles: { width: '900px', height: '800px' }, type: 'desktop' },
+  tablet768: { name: 'Tablet 768', styles: { width: '768px', height: '1024px' }, type: 'tablet' },
+  phone375: { name: 'Phone 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
 }
 const meta = {
   title: 'Screens/Practice Fix',
@@ -100,14 +105,23 @@ const atLeast = async (element: HTMLElement, size: number) => {
   await expect(Math.round(box.width)).toBeGreaterThanOrEqual(size)
 }
 
-/** Nothing marked unsure (27 §4): the tab says so; Fix mode is on, with the usual transport. */
+/** Nothing marked unsure (27 §4): Fix mode is on with the usual transport; Tools opens the tab,
+ * which says so with the ready glyph and words. */
 export const Empty: Story = {
   render: screen({ notes: FIX_NOTES_SURE }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(
-      await canvas.findByText(m['practice.fix_empty'](), undefined, { timeout: 20_000 }),
-    ).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
+      timeout: 20_000,
+    })
+    const tools = canvas
+      .getByRole('toolbar', { name: 'Playback' })
+      .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
+    if (!tools) throw new Error('No Tools in the transport')
+    await userEvent.click(tools)
+    const empty = await canvas.findByText(m['practice.fix_empty']())
+    await expect(empty).toBeVisible()
+    await expect(empty.closest('[data-slot=status]')).toHaveAttribute('data-kind', 'ready')
     await expect(await canvas.findByText(m['fix.fixing']())).toBeVisible()
     await expect(canvas.getByRole('button', { name: m['fix.done']() })).toBeVisible()
     await expect(canvas.getByRole('tab', { name: /^Fix$/ })).toBeVisible()
@@ -142,9 +156,17 @@ export const NoteSpot: Story = {
   play: async ({ canvasElement }) => {
     const { canvas, panel, body } = await fixing(canvasElement)
     const card = within(panel.getByRole('region', { name: 'Bar 4 · note 2' }))
-    await expect(
-      card.getByRole('button', { name: 'C3 · string 5, fret 3, Unsure', pressed: true }),
-    ).toBeVisible()
+    const unsure = card.getByRole('button', {
+      name: 'C3 · string 5, fret 3, Unsure',
+      pressed: true,
+    })
+    await expect(unsure).toBeVisible()
+    // Unsure is a dashed edge and "?", never colour alone: the text stays ink.
+    const face = unsure.firstElementChild as HTMLElement
+    await expect(getComputedStyle(face).borderTopStyle).toBe('dashed')
+    await expect(face).toHaveTextContent(/\?$/)
+    const ink = getComputedStyle(panel.getByRole('heading', { name: /^Spot 1/ })).color
+    await expect(getComputedStyle(face).color).toBe(ink)
     await expect(card.getByRole('textbox', { name: 'String' })).toHaveValue('5')
     await expect(card.getByRole('textbox', { name: 'Fret' })).toHaveValue('3')
     await expect(card.getByRole('button', { name: 'Delete note' })).toBeVisible()
@@ -206,7 +228,16 @@ export const KeysOnly: Story = {
     await expect(await panel.findByRole('heading', { name: 'Spot 2 of 2 · bar 3–4' })).toBeVisible()
     await press('{Escape}')
     await waitFor(() => expect(canvas.queryByText(m['fix.fixing']())).toBeNull())
-    await expect(canvas.getByRole('tab', { name: 'Loop' })).toHaveAttribute('aria-selected', 'true')
+    // Back on the tab this device used before Fix (Loop on a fresh device).
+    const before = { loop: 'Loop', mix: 'Mix', progress: 'Progress', fix: 'Fix' }[rememberedTab()]
+    await expect(canvas.getByRole('tab', { name: new RegExp(`^${before}`) })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    await expect(canvas.getByRole('tab', { name: /^Fix/ })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    )
   },
 }
 
@@ -232,6 +263,34 @@ export const EnterByKey: Story = {
     await expect(
       await within(canvasElement.ownerDocument.body).findByText('Edit saved · bar 4'),
     ).toBeVisible()
+  },
+}
+
+/** Y accepts the suggested fix (s47 direction §7): on a note spot "It's right", on a chord spot
+ * its first alternative; the button carries the Y key cap, so the key and the button are one. */
+export const AcceptByKey: Story = {
+  render: screen(),
+  play: async ({ canvasElement }) => {
+    const { canvas, panel, body } = await fixing(canvasElement)
+    const note = within(panel.getByRole('region', { name: 'Bar 4 · note 2' }))
+    await expect(note.getByRole('button', { name: "It's right" })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Y',
+    )
+    await press('y')
+    await expect(await body.findByText('Edit saved · bar 4')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('tab', { name: /^Fix/ })).toHaveTextContent('2'))
+    await press('j')
+    const chord = within(await panel.findByRole('region', { name: 'Bar 7 · chord' }))
+    await expect(chord.getByRole('button', { name: 'Use Em' })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Y',
+    )
+    // Only the spot's own suggestion answers Y.
+    await expect(canvasElement.querySelectorAll('[data-fix-primary]')).toHaveLength(1)
+    await press('y')
+    // The first edit couldn't be sent here, so this one may say where it is kept.
+    await expect(await body.findByText(/bar 7, G → Em$/)).toBeVisible()
   },
 }
 
@@ -399,8 +458,8 @@ export const ListenTo: Story = {
   },
 }
 
-/** Fix-mode targets (26 §8, V11): Play and speed − / + 64, Listen to items 48, nothing in the tab
- * under 44. */
+/** Fix-mode targets (26 §8): Play 64, the speed − / + and Listen to items 48 like the transport,
+ * nothing in the tab under 44. Play is the screen's one filled control: Done and Use are outline. */
 export const Targets: Story = {
   render: screen(),
   globals: { viewport: { value: 'desktop1440' } },
@@ -408,9 +467,14 @@ export const Targets: Story = {
     const { canvas, panel, dock } = await fixing(canvasElement)
     await userEvent.click(panel.getByRole('button', { name: 'Next unsure spot' }))
     await panel.findByRole('region', { name: 'Bar 7 · chord' })
-    for (const name of [/^Play bars 7 to 8$/, /^Slower/, /^Faster/]) {
-      await atLeast(dock.getByRole('button', { name }), 64)
+    await atLeast(dock.getByRole('button', { name: /^Play bars 7 to 8$/ }), 64)
+    for (const name of [/^Slower/, /^Faster/]) {
+      await atLeast(dock.getByRole('button', { name }), 48)
     }
+    const filled = [
+      ...canvasElement.querySelectorAll('[data-variant=primary], [data-tone=primary]'),
+    ].filter((element) => element.getBoundingClientRect().width > 0)
+    await expect(filled).toEqual([dock.getByRole('button', { name: /^Play bars 7 to 8$/ })])
     for (const item of within(dock.getByRole('group', { name: 'Listen to' })).getAllByRole(
       'button',
     )) {
@@ -476,15 +540,86 @@ export const DaylightIncreasedContrast: Story = {
   globals: { appearance: 'light', contrast: 'more' },
 }
 
+// A phone as its feature queries report it: touch, portrait, ≤ 640 wide.
+const phone = () => coarse({ '(max-width: 640px)': true, '(orientation: landscape)': false })
+
+/** The touch editor sheet (s47 direction §6): E opens the bar that's playing in a sheet above the
+ * transport that leaves the music in view, says where it is in the queue, steps through the
+ * unsure spots from inside the sheet, and closes with a visible Close. */
+export const EditorSheetPhone: Story = {
+  beforeEach: phone,
+  render: screen(FIX, {}),
+  globals: { viewport: { value: 'phone375' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
+      timeout: 20_000,
+    })
+    await press('e')
+    const body = within(canvasElement.ownerDocument.body)
+    const sheet = await body.findByRole('dialog', { name: m['editor.title']() }, { timeout: 5_000 })
+    const inSheet = within(sheet)
+    const queueHead = () =>
+      within(sheet.querySelector('[data-slot=fix-queue]') as HTMLElement).getByRole('heading')
+    await waitFor(() => expect(queueHead()).toHaveTextContent(/^Pickup$/))
+    const transport = canvas.getByRole('toolbar', { name: 'Playback' })
+    const box = sheet.getBoundingClientRect()
+    expect(box.bottom).toBeLessThanOrEqual(transport.getBoundingClientRect().top + 1)
+    expect(box.height).toBeLessThanOrEqual(window.innerHeight * 0.6 + 1)
+    await expect(inSheet.getByRole('button', { name: 'Next unsure spot' })).toBeVisible()
+    await userEvent.click(inSheet.getByRole('button', { name: 'Next unsure spot' }))
+    await waitFor(() => expect(queueHead()).toHaveTextContent(/^Spot 1 of 3 · bar 4$/))
+    await userEvent.click(inSheet.getByRole('button', { name: m['system.close']() }))
+    await waitFor(() =>
+      expect(body.queryByRole('dialog', { name: m['editor.title']() })).toBeNull(),
+    )
+  },
+}
+export const EditorSheetPhoneLight: Story = {
+  ...EditorSheetPhone,
+  globals: { appearance: 'light', viewport: { value: 'phone375' } },
+}
+
+/** On a tablet (768, touch) the same sheet; E takes the bar that's playing. */
+export const EditorSheetTablet: Story = {
+  beforeEach: () => coarse({ '(orientation: landscape)': false }),
+  render: screen(FIX, {}),
+  globals: { viewport: { value: 'tablet768' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
+      timeout: 20_000,
+    })
+    await press('e')
+    const sheet = within(
+      await within(canvasElement.ownerDocument.body).findByRole(
+        'dialog',
+        { name: m['editor.title']() },
+        { timeout: 5_000 },
+      ),
+    )
+    await userEvent.click(sheet.getByRole('button', { name: 'Next unsure spot' }))
+    await expect(await sheet.findByRole('region', { name: 'Bar 4 · note 2' })).toBeVisible()
+    await expect(sheet.getByRole('region', { name: m['practice.beat_off']() })).toBeVisible()
+    await expect(sheet.getByRole('button', { name: m['system.close']() })).toBeVisible()
+  },
+}
+export const EditorSheetTabletLight: Story = {
+  ...EditorSheetTablet,
+  globals: { appearance: 'light', viewport: { value: 'tablet768' } },
+}
+
 /** The desktop editor (27 §3.8): Fix mode on a page of its own, from the same components. */
+const editor = () => (
+  <Toaster closeLabel={m['system.close']()}>
+    <AppStory path={`/songs/${SONG_ID}/edit`} seed={seed(ALL, FIX)}>
+      <EditPage songId={SONG_ID} fetchAudio={tone} />
+    </AppStory>
+  </Toaster>
+)
+
 export const Editor: Story = {
-  render: () => (
-    <Toaster closeLabel={m['system.close']()}>
-      <AppStory path={`/songs/${SONG_ID}/edit`} seed={seed(ALL, FIX)}>
-        <EditPage songId={SONG_ID} fetchAudio={tone} />
-      </AppStory>
-    </Toaster>
-  ),
+  render: editor,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const inspector = within(
@@ -514,3 +649,26 @@ export const Editor: Story = {
 }
 
 export const EditorDaylight: Story = { ...Editor, globals: { appearance: 'light' } }
+
+/** Below 1024 px the editor's panel sits under the notation, so the music keeps the width. */
+export const EditorNarrow: Story = {
+  render: editor,
+  globals: { viewport: { value: 'laptop900' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const inspector = await canvas.findByRole(
+      'complementary',
+      { name: 'Bar and note details' },
+      { timeout: 20_000 },
+    )
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    expect(inspector.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      tab.getBoundingClientRect().bottom - 1,
+    )
+    expect(Math.round(tab.getBoundingClientRect().width)).toBeGreaterThanOrEqual(800)
+  },
+}
+export const EditorNarrowDaylight: Story = {
+  ...EditorNarrow,
+  globals: { appearance: 'light', viewport: { value: 'laptop900' } },
+}

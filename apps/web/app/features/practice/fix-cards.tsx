@@ -7,6 +7,7 @@ import {
   HeadphonesIcon,
   PlayIcon,
   ScissorsIcon,
+  Trash2Icon,
 } from 'lucide-react'
 import type * as React from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -16,9 +17,12 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import { ChordSymbol, chordText } from '@/ui/chord-chip'
 import { Input } from '@/ui/input'
+import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
+import { PanelSection } from '@/ui/panel'
 import { useFix } from './fix-store'
 import { playOnce } from './fix-synth'
+import { keyLabel } from './input-mapper'
 import { parseChordInput } from './model/chord-input'
 import {
   beatFix,
@@ -37,16 +41,20 @@ import { type ChordModel, chordsInBar, type NoteModel, spelledNote } from './mod
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// The Fix components (26 §12.2, 27 §3.7.4, Practice-Fix.dc.html): the spot header (FixQueue) with
-// its --unsure progress and previous / next; the chord card — the guess, how often a guess like it
-// is wrong, the other likely chords as frequencies with "Hear over the loop" and Use
-// (AlternativeRow), Type a chord and Split; the note card — the note, "or play it as", String and
-// Fret, It's right, Delete note, Report wrong; and the metronome fixes with their consequence
-// line. The Fix tab, the tablet's editor sheet and the desktop editor are built from them. Every
-// change is a correction op, applied at once, named in the toast with Undo.
-
-export const eyebrow = 'text-body-sm text-muted-foreground'
-const card = 'flex flex-col gap-2.5 rounded-field border border-border bg-raised p-3.5'
+// The Fix components (26 §5, §12.2; 27 §3.7.4; s47 direction §7): the spot header (FixQueue)
+// with where the selection sits in the queue and previous / next (K / J); the chord section — the
+// guess, how often a guess like it is wrong, the other likely chords as frequencies with "Hear over
+// the loop" and Use (AlternativeRow), Type a chord and Split; the note section — the notes of the
+// bar, "or play it as", String and Fret, Length, It's right, Delete note, Report wrong; and the
+// metronome fixes with their consequence line. The Fix tab, the touch editor sheet and the full
+// editor are built from them. Sections are divided by hairlines, never boxed.
+//
+// Confidence is shape, never hue alone: unsure is a dashed edge and "?", probably a dotted edge,
+// edited a 2 px underline, and every digit and chord name stays ink. The suggested fix of the spot
+// (its first alternative, else "It's right") carries `data-fix-primary` and the Y key cap: Y and
+// the button are one path. `data-fix-focus` marks the spot's first action, which a key's
+// selection focuses so Enter hears or confirms it. Every change is a correction op, applied at
+// once, named in the toast with Undo.
 
 /** The bar as the UI names it (1-based; the pickup by name). */
 export const barLabel = (bar: number) => (bar < 0 ? m['practice.pickup']() : String(bar + 1))
@@ -54,6 +62,9 @@ export const barLabel = (bar: number) => (bar < 0 ? m['practice.pickup']() : Str
 /** "27" or "27–28". */
 export const barsLabel = (bar: number, endBar: number = bar) =>
   endBar > bar ? `${barLabel(bar)}–${barLabel(endBar)}` : barLabel(bar)
+
+/** The suggested fix's marks: the Y key cap, and the attribute Y clicks (input-mapper.ts). */
+const accept = (on: boolean) => (on ? { shortcut: keyLabel('y'), 'data-fix-primary': '' } : {})
 
 const barsOf = (bar: number, endBar: number = bar) =>
   Array.from({ length: Math.max(1, endBar - bar + 1) }, (_, i) => bar + i)
@@ -67,7 +78,18 @@ export interface Selection {
 
 export type Select = (patch: { chordId?: string | undefined; noteId?: string | undefined }) => void
 
-// FixQueue (26 §12.2): "Spot 2 of 6 · bar 27–28" over a --unsure progress, with previous / next.
+/** The section's quiet head: what it is about, and an action at the end of the line. */
+function Head({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex min-h-target-practice items-center justify-between gap-2">
+      <h4 className="text-label-sm text-muted-foreground tabular-nums">{title}</h4>
+      {action}
+    </div>
+  )
+}
+
+// FixQueue (26 §12.2): "Spot 2 of 6 · bar 27–28" over an ink line showing how far through the
+// queue the selection is, with previous (K) and next (J).
 export function SpotHeader({
   title,
   position,
@@ -81,9 +103,9 @@ export function SpotHeader({
   onStep: (direction: 1 | -1) => void
 }) {
   return (
-    <div className="flex items-center gap-2.5" data-slot="fix-queue">
+    <div className="flex items-center gap-2" data-slot="fix-queue">
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h3 className="truncate text-title tabular-nums">{title}</h3>
+        <h3 className="text-title text-pretty tabular-nums">{title}</h3>
         {total > 0 && (
           <div
             role="progressbar"
@@ -91,10 +113,10 @@ export function SpotHeader({
             aria-valuemin={0}
             aria-valuemax={total}
             aria-valuenow={position}
-            className="h-1.5 overflow-hidden rounded-full bg-hover"
+            className="h-1 overflow-hidden rounded-full bg-hover inset-ring inset-ring-border"
           >
             <div
-              className="h-full origin-left rounded-full bg-unsure transition-transform duration-(--duration-base)"
+              className="h-full origin-left rounded-full bg-foreground transition-transform duration-(--duration-base)"
               style={{ transform: `scaleX(${position / total})` }}
             />
           </div>
@@ -102,48 +124,59 @@ export function SpotHeader({
       </div>
       <Button
         variant="outline"
-        size="icon"
-        aria-label={m['shortcuts.previous_unsure']()}
+        size="practice"
+        className="px-3"
+        shortcut={keyLabel('k')}
         disabled={total === 0}
         onClick={() => onStep(-1)}
       >
         <ChevronLeftIcon aria-hidden />
+        <span className="sr-only">{m['shortcuts.previous_unsure']()}</span>
       </Button>
       <Button
         variant="outline"
-        size="icon"
-        aria-label={m['shortcuts.next_unsure']()}
+        size="practice"
+        className="px-3"
+        shortcut={keyLabel('j')}
         disabled={total === 0}
         onClick={() => onStep(1)}
       >
         <ChevronRightIcon aria-hidden />
+        <span className="sr-only">{m['shortcuts.next_unsure']()}</span>
       </Button>
     </div>
   )
 }
 
-// AlternativeRow (26 §12.2): "Am7 · about 1 in 3", Hear over the loop, Use. The first row's Use is
-// the card's one primary action.
+// AlternativeRow (26 §12.2): "Am7 · about 1 in 3", Hear over the loop, Use. The first row's Use
+// is the spot's suggested fix (Y).
 function AlternativeRow({
   name,
   prob,
-  primary,
+  suggested,
+  first,
   hearing,
   onHear,
   onUse,
 }: {
   name: string
   prob: number
-  primary: boolean
+  /** The suggested fix: Y does it. */
+  suggested: boolean
+  /** The first row: its first action is where a key's selection puts focus. */
+  first: boolean
   hearing: boolean
-  /** Absent where nothing loops under the card (the tablet's editor sheet). */
+  /** Absent where nothing loops under the card (the touch editor sheet). */
   onHear?: (() => void) | undefined
   onUse: () => void
 }) {
   const spoken = chordText(name)
   return (
-    <li data-slot="alternative-row" className="flex items-center gap-2.5 py-1.5">
-      <span className="min-w-14 shrink-0 text-title font-medium">
+    <li
+      data-slot="alternative-row"
+      className="flex min-h-target-practice items-center gap-2 border-b border-border last:border-b-0"
+    >
+      <span className="min-w-14 shrink-0 text-title">
         <ChordSymbol name={name} />
       </span>
       <span className="min-w-0 flex-1 text-body-sm text-muted-foreground tabular-nums">
@@ -152,29 +185,40 @@ function AlternativeRow({
       {onHear && (
         <Button
           variant={hearing ? 'selected' : 'quiet'}
-          size="icon"
+          size="icon-practice"
           aria-pressed={hearing}
           aria-label={m['fix.hear_over_loop']({ chord: spoken })}
-          data-fix-primary={primary ? '' : undefined}
+          data-fix-focus={first ? '' : undefined}
           onClick={onHear}
         >
           <HeadphonesIcon aria-hidden />
         </Button>
       )}
       <Button
-        size="sm"
-        variant={primary ? 'primary' : 'outline'}
-        aria-label={m['fix.use_named']({ chord: spoken })}
-        data-fix-primary={primary && !onHear ? '' : undefined}
+        size="practice"
+        variant="outline"
+        {...accept(suggested)}
+        data-fix-focus={first && !onHear ? '' : undefined}
         onClick={onUse}
       >
-        {m['fix.use']()}
+        <span aria-hidden>{m['fix.use']()}</span>
+        <span className="sr-only">{m['fix.use_named']({ chord: spoken })}</span>
       </Button>
     </li>
   )
 }
 
-export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSelect: Select }) {
+export function ChordCard({
+  bar,
+  endBar,
+  chordId,
+  onSelect,
+  active = true,
+}: Selection & {
+  onSelect: Select
+  /** The spot is about this chord: its suggested fix answers Y. */
+  active?: boolean
+}) {
   const practice = usePractice()
   const { grid, view, music, data, edit, editAll } = practice
   const fixing = usePracticeUi((s) => s.fixing)
@@ -194,6 +238,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
   if (!chord || !segment) return null
 
   const at = barLabel(chord.bar)
+  const title = chord.bar < 0 ? m['fix.pickup_chord']() : m['fix.bar_chord']({ bar: at })
   const edited = data.ops.chords.ops.some(
     (op) =>
       (op.op === 'set_chord' || op.op === 'split_chord') &&
@@ -201,6 +246,8 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
   )
   const raw = music?.displayChords.find((c) => c.id === chord.id)?.confidence
   const guessed = chord.confidence !== 'high' && raw !== undefined ? wrongOneIn(raw) : null
+  const unsure = chord.confidence !== 'high'
+  const alternatives = chord.alternatives.slice(0, 4)
   // Where a second chord most likely starts: the beat of the chord's first bar nearest the middle
   // of what it holds of that bar.
   const barEnd = Math.min(segment.t1, grid.barEnd(chord.bar))
@@ -236,22 +283,26 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
       : []
 
   return (
-    <section aria-label={m['fix.bar_chord']({ bar: at })} className={card} data-slot="chord-card">
-      <div className="flex items-center justify-between gap-2">
-        <span className={cn(eyebrow, 'tabular-nums')}>{m['fix.bar_chord']({ bar: at })}</span>
-        <Button variant="quiet" size="sm" onClick={() => practice.hearBar(chord.bar)}>
-          <PlayIcon aria-hidden />
-          {m['fix.hear_bar']()}
-        </Button>
-      </div>
+    <PanelSection aria-label={title} data-slot="chord-card" className="gap-2">
+      <Head
+        title={title}
+        action={
+          <Button variant="quiet" size="sm" onClick={() => practice.hearBar(chord.bar)}>
+            <PlayIcon aria-hidden />
+            {m['fix.hear_bar']()}
+          </Button>
+        }
+      />
       {chords.length > 1 && (
-        <ul aria-label={m['fix.chords_in_bar']()} className="-my-1 flex flex-wrap gap-x-1.5">
+        <ul
+          aria-label={m['fix.chords_in_bar']()}
+          className="m-0 flex list-none flex-wrap gap-1 p-0"
+        >
           {chords.map((c) => (
             <li key={c.id}>
               <Chip
                 selected={c.id === chord.id}
-                unsure={c.confidence === 'low'}
-                dashed={c.confidence !== 'high'}
+                confidence={c.confidence}
                 aria-label={chordText(c.name)}
                 onClick={() => onSelect({ chordId: c.id })}
               >
@@ -261,7 +312,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
           ))}
         </ul>
       )}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 py-1">
         <Guess chord={chord} edited={edited} />
         {(guessed !== null || edited) && (
           <p className="min-w-0 text-body-sm text-muted-foreground">
@@ -271,11 +322,11 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
           </p>
         )}
       </div>
-      {chord.alternatives.length > 0 && (
-        <>
-          <p className="mt-1 text-body-sm text-faint-foreground">{m['editor.alternatives']()}</p>
-          <ul className="-mt-1 flex flex-col divide-y divide-border">
-            {chord.alternatives.slice(0, 4).map((alt, index) => {
+      {alternatives.length > 0 && (
+        <div className="flex flex-col">
+          <p className="text-label-sm text-muted-foreground">{m['editor.alternatives']()}</p>
+          <ul className="m-0 flex list-none flex-col p-0">
+            {alternatives.map((alt, index) => {
               const hearing = audition?.chordId === chord.id && audition.label === alt.label
               const hear = () => {
                 useFix.setState({
@@ -290,7 +341,8 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
                   key={alt.label}
                   name={alt.name}
                   prob={alt.prob}
-                  primary={index === 0}
+                  suggested={active && index === 0}
+                  first={index === 0}
                   hearing={hearing}
                   onHear={fixing ? hear : undefined}
                   onUse={() => change({ label: alt.label }, alt.name)}
@@ -298,7 +350,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
               )
             })}
           </ul>
-        </>
+        </div>
       )}
       {others.length > 0 && replaceable && (
         <div className="flex flex-col items-start gap-1" data-slot="replace-all">
@@ -310,7 +362,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
             })}
           </p>
           <Button
-            size="sm"
+            size="practice"
             variant="outline"
             onClick={() => {
               editAll(
@@ -339,12 +391,13 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
           )
         }}
       />
-      <div className="-my-1 flex flex-wrap gap-x-2">
-        {chord.confidence !== 'high' && (
+      <div className="flex flex-wrap gap-2">
+        {unsure && (
           <Button
-            size="sm"
+            size="practice"
             variant="outline"
-            data-fix-primary={chord.alternatives.length === 0 ? '' : undefined}
+            {...accept(active && alternatives.length === 0)}
+            data-fix-focus={alternatives.length === 0 ? '' : undefined}
             onClick={() =>
               edit(markCorrect('chords', segment.id), m['fix.detail_bar']({ bar: at }))
             }
@@ -353,37 +406,46 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
             {m['fix.its_right']()}
           </Button>
         )}
-        <Button size="sm" variant="quiet" onClick={() => edit(reportWrong('chords', segment.id))}>
+        <Button
+          size="practice"
+          variant="quiet"
+          onClick={() => edit(reportWrong('chords', segment.id))}
+        >
           <FlagIcon aria-hidden />
           {m['editor.report_wrong']()}
         </Button>
       </div>
-    </section>
+    </PanelSection>
   )
 }
 
-// The guess (26 §5): unsure in --unsure with a dashed outline and "?", probably with a dashed
-// faint outline, edited underlined; never colour alone.
+/** The mark of a confidence (26 §5): dashed and "?" for unsure, dotted for probably. */
+const MARK = {
+  low: 'outline-[1.5px] outline-offset-4 outline-conf-low-edge outline-dashed',
+  medium: 'outline-[1.5px] outline-offset-4 outline-conf-medium-edge outline-dotted',
+  high: '',
+} as const
+
+// The guess (26 §5): ink in every state; unsure has a dashed edge and "?", probably a dotted
+// edge, edited a 2 px underline. With the marks hidden (U) it is plain ink.
 function Guess({ chord, edited }: { chord: ChordModel; edited: boolean }) {
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
-  const low = showUncertainty && chord.confidence === 'low'
-  const medium = showUncertainty && chord.confidence === 'medium'
+  const mark = showUncertainty ? chord.confidence : 'high'
   return (
     <span
       data-slot="chord-guess"
       data-confidence={chord.confidence}
       className={cn(
-        'shrink-0 rounded-media px-1 text-hero leading-none font-medium whitespace-nowrap',
-        low && 'text-unsure outline-[1.5px] outline-offset-4 outline-unsure outline-dashed',
-        medium && 'outline-[1.5px] outline-offset-4 outline-conf-medium-edge outline-dashed',
-        edited && 'text-edited underline decoration-2 underline-offset-[3px]',
+        'shrink-0 rounded-media px-1 text-readout whitespace-nowrap text-foreground',
+        MARK[mark],
+        edited && 'underline decoration-edited decoration-2 underline-offset-4',
       )}
     >
       <ChordSymbol name={chord.name} />
-      {low && (
-        <sup aria-hidden className="ml-0.5 text-caption font-medium">
+      {mark === 'low' && (
+        <span aria-hidden className="ml-1 align-super text-label-sm text-conf-low-edge">
           ?
-        </sup>
+        </span>
       )}
       {chord.confidence !== 'high' && (
         <span className="sr-only">
@@ -394,33 +456,46 @@ function Guess({ chord, edited }: { chord: ChordModel; edited: boolean }) {
   )
 }
 
-// `.chip` (26 §12.1): the pill is painted inside the control-size box; dashed when the mark is
-// uncertain, with "?" and the --unsure ink when unsure (26 §5).
+// A chord or note of the selection: a pill painted inside the practice target. Its edge says its
+// confidence (dashed and "?" unsure, dotted probably, the hairline when sure); the chosen one has
+// the 1.5 px ink edge. Text stays ink.
 function Chip({
   selected,
-  unsure = false,
-  dashed = false,
+  confidence = 'high',
   className,
   children,
   ...props
-}: React.ComponentProps<'button'> & { selected?: boolean; unsure?: boolean; dashed?: boolean }) {
+}: React.ComponentProps<'button'> & {
+  selected?: boolean
+  confidence?: 'low' | 'medium' | 'high'
+}) {
   return (
     <button
       type="button"
       data-slot="fix-chip"
+      data-confidence={confidence}
       aria-pressed={selected}
-      className={cn('group/chip inline-flex min-h-control items-center rounded-full', className)}
+      className={cn(
+        'group/chip inline-flex min-h-target-practice items-center rounded-full focus-visible:outline-offset-[-4px]',
+        className,
+      )}
       {...props}
     >
       <span
         className={cn(
-          'inline-flex h-7.5 items-center gap-1 rounded-full border border-border-strong px-3 text-body-sm font-medium whitespace-nowrap tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-hover group-aria-pressed/chip:border-selected group-aria-pressed/chip:bg-wash group-aria-pressed/chip:text-foreground',
-          dashed && 'border-[1.5px] border-dashed',
-          unsure && 'border-unsure text-unsure',
+          'inline-flex h-9 items-center gap-1 rounded-full border px-3 text-label-sm whitespace-nowrap text-foreground tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-hover',
+          confidence === 'low' && 'border-[1.5px] border-dashed border-conf-low-edge',
+          confidence === 'medium' && 'border-[1.5px] border-dotted border-conf-medium-edge',
+          confidence === 'high' && 'border-border-strong',
+          'group-aria-pressed/chip:inset-ring-[1.5px] group-aria-pressed/chip:inset-ring-selected',
         )}
       >
         {children}
-        {unsure && <span aria-hidden>?</span>}
+        {confidence === 'low' && (
+          <span aria-hidden className="text-conf-low-edge">
+            ?
+          </span>
+        )}
       </span>
     </button>
   )
@@ -439,6 +514,7 @@ function TypeChord({
   const [text, setText] = useState('')
   const [invalid, setInvalid] = useState(false)
   const id = useId()
+  const hintId = useId()
   const errorId = useId()
   const parsed = parseChordInput(text)
   const submit = (then: (chord: { label: string; bass?: string }, name: string) => void) => {
@@ -452,29 +528,26 @@ function TypeChord({
   }
   return (
     <form
-      className="flex flex-col gap-1.5"
+      className="flex flex-col gap-1.5 pt-1"
       onSubmit={(event) => {
         event.preventDefault()
         submit(onChord)
       }}
     >
-      <div className="flex gap-2">
-        <label htmlFor={id} className="sr-only">
-          {m['editor.type_chord']()}
-        </label>
+      <Label htmlFor={id}>{m['editor.type_chord']()}</Label>
+      <div className="flex flex-wrap gap-2">
         <Input
           id={id}
           value={text}
-          placeholder={m['fix.type_chord']()}
           enterKeyHint="done"
           autoCapitalize="off"
           autoComplete="off"
           spellCheck={false}
           aria-invalid={invalid || undefined}
-          aria-describedby={invalid ? errorId : undefined}
+          aria-describedby={invalid ? errorId : hintId}
           onChange={(event) => setText(event.target.value)}
           onBlur={() => setInvalid(text.trim() !== '' && !parsed)}
-          className="min-w-0 flex-1"
+          className="min-w-0 flex-1 basis-32"
         />
         {splitBeat !== undefined && (
           <Button type="button" variant="outline" onClick={() => submit(onSplit)}>
@@ -483,16 +556,30 @@ function TypeChord({
           </Button>
         )}
       </div>
-      {invalid && (
+      {invalid ? (
         <p id={errorId} className="text-body-sm text-destructive">
           {m['editor.chord_invalid']()}
+        </p>
+      ) : (
+        <p id={hintId} className="text-body-sm text-muted-foreground">
+          {m['fix.type_chord_hint']()}
         </p>
       )}
     </form>
   )
 }
 
-export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSelect: Select }) {
+export function NoteCard({
+  bar,
+  endBar,
+  noteId,
+  onSelect,
+  active = true,
+}: Selection & {
+  onSelect: Select
+  /** The spot is about these notes: its suggested fix answers Y. */
+  active?: boolean
+}) {
   const practice = usePractice()
   const { grid, view, music, edit, editAll, player, audio } = practice
   const volumePct = usePracticeDefaults((s) => s.volumePct)
@@ -521,12 +608,16 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
         (music?.tab?.notes ?? []).filter((n) => shakyIds.has(n.id)).map((n) => n.confidence),
       )
     : null
+  const nth = note ? String(notes.filter((n) => n.bar === note.bar).indexOf(note) + 1) : ''
+  // The pickup is named as itself ("Pickup · note 2"), never "Bar Pickup".
   const title = note
-    ? m['fix.bar_note']({
-        bar: at,
-        n: String(notes.filter((n) => n.bar === note.bar).indexOf(note) + 1),
-      })
-    : m['fix.bar_notes']({ bar: barsLabel(bar, last) })
+    ? note.bar < 0
+      ? m['fix.pickup_note']({ n: nth })
+      : m['fix.bar_note']({ bar: at, n: nth })
+    : bar < 0 && last === bar
+      ? m['fix.pickup_notes']()
+      : m['fix.bar_notes']({ bar: barsLabel(bar, last) })
+  const confirmable = (note && note.confidence !== 'high') || shaky
 
   const place = (to: { string: number; fret: number }) => {
     if (!effective || !placed) return
@@ -539,36 +630,37 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
   }
 
   return (
-    <section aria-label={title} className={card} data-slot="note-card">
-      <div className="flex items-center justify-between gap-2">
-        <span className={cn(eyebrow, 'tabular-nums')}>{title}</span>
-        <Button
-          variant="quiet"
-          size="sm"
-          onClick={() => {
-            practice.send({ type: 'PAUSE' })
-            void playOnce(noteEvents(notes), grid.barStart(bar), player.speedPct / 100, {
-              context: () => audio.engine?.context ?? null,
-              volume: () => (volumePct / 100) ** 2,
-            })
-          }}
-        >
-          <PlayIcon aria-hidden />
-          {m['editor.hear_tab']()}
-        </Button>
-      </div>
+    <PanelSection aria-label={title} data-slot="note-card" className="gap-2">
+      <Head
+        title={title}
+        action={
+          <Button
+            variant="quiet"
+            size="sm"
+            onClick={() => {
+              practice.send({ type: 'PAUSE' })
+              void playOnce(noteEvents(notes), grid.barStart(bar), player.speedPct / 100, {
+                context: () => audio.engine?.context ?? null,
+                volume: () => (volumePct / 100) ** 2,
+              })
+            }}
+          >
+            <PlayIcon aria-hidden />
+            {m['editor.hear_tab']()}
+          </Button>
+        }
+      />
       {shakyN !== null && (
         <p className="text-body-sm text-muted-foreground">
           {m['fix.shaky_bar']({ n: String(shakyN) })}
         </p>
       )}
-      <ul aria-label={m['fix.notes_in_bar']()} className="-my-1 flex flex-wrap gap-x-1.5">
+      <ul aria-label={m['fix.notes_in_bar']()} className="m-0 flex list-none flex-wrap gap-1 p-0">
         {notes.map((n) => (
           <li key={n.id}>
             <Chip
               selected={n.id === note?.id}
-              unsure={n.confidence === 'low'}
-              dashed={n.confidence !== 'high'}
+              confidence={n.confidence}
               aria-label={
                 n.confidence === 'low'
                   ? `${noteText(n, names)}, ${m['practice.unsure']()}`
@@ -582,8 +674,8 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
         ))}
       </ul>
       {note && placed && (event?.alt_fingerings?.length ?? 0) > 0 && (
-        <div className="-my-1 flex flex-wrap items-center gap-x-2">
-          <span className="text-body-sm text-faint-foreground">{m['fix.or_play_as']()}</span>
+        <div className="flex flex-wrap items-center gap-x-1">
+          <span className="pr-1 text-body-sm text-muted-foreground">{m['fix.or_play_as']()}</span>
           {event?.alt_fingerings?.map((alt) => (
             <Chip
               key={`${alt.string}-${alt.fret}`}
@@ -596,7 +688,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
       )}
       {note && effective && placed && (
         <>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <Stepper
               label={m['editor.string']()}
               down={m['editor.string_down']()}
@@ -616,15 +708,15 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
               onChange={(fret) => place({ string: placed.string, fret })}
             />
           </div>
-          <div className="-my-1 flex items-center gap-2">
-            <span className="flex-1 text-body-sm font-medium text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <span className="flex-1 text-label-sm text-muted-foreground">
               {m['editor.length']()}
             </span>
             {([-1, 1] as const).map((direction) => (
               <Button
                 key={direction}
-                size="sm"
-                variant="outline"
+                size="practice"
+                variant="quiet"
                 onClick={() => {
                   const tick = timeToTick(grid.grid, effective.offset_s) + (direction * PPQ) / 4
                   const next = setNoteEnd(effective, tickToTime(grid.grid, tick))
@@ -638,28 +730,20 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
         </>
       )}
       {(note || shaky) && (
-        <div className="-my-1 flex flex-wrap gap-x-2">
-          {note && note.confidence !== 'high' && (
+        <div className="flex flex-wrap gap-2">
+          {confirmable && (
             <Button
-              size="sm"
+              size="practice"
               variant="outline"
-              data-fix-primary=""
-              onClick={() => edit(markCorrect('notes', note.id), m['fix.detail_bar']({ bar: at }))}
-            >
-              <CheckIcon aria-hidden />
-              {m['fix.its_right']()}
-            </Button>
-          )}
-          {shaky && (
-            <Button
-              size="sm"
-              variant="outline"
-              data-fix-primary=""
+              {...accept(active)}
+              data-fix-focus=""
               onClick={() =>
-                editAll(
-                  unsureInBar.map((n) => markCorrect('notes', n.id)),
-                  m['fix.detail_bar']({ bar: at }),
-                )
+                note
+                  ? edit(markCorrect('notes', note.id), m['fix.detail_bar']({ bar: at }))
+                  : editAll(
+                      unsureInBar.map((n) => markCorrect('notes', n.id)),
+                      m['fix.detail_bar']({ bar: at }),
+                    )
               }
             >
               <CheckIcon aria-hidden />
@@ -669,24 +753,30 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
           {note && effective && (
             <>
               <Button
-                size="sm"
+                size="practice"
                 variant="quiet"
+                onClick={() => edit(reportWrong('notes', note.id))}
+              >
+                <FlagIcon aria-hidden />
+                {m['editor.report_wrong']()}
+              </Button>
+              <Button
+                size="practice"
+                variant="destructive"
+                className="ml-auto"
                 onClick={() => {
                   edit(deleteNote(effective), m['fix.detail_bar']({ bar: at }))
                   onSelect({ noteId: undefined })
                 }}
               >
+                <Trash2Icon aria-hidden />
                 {m['editor.delete_note']()}
-              </Button>
-              <Button size="sm" variant="quiet" onClick={() => edit(reportWrong('notes', note.id))}>
-                <FlagIcon aria-hidden />
-                {m['editor.report_wrong']()}
               </Button>
             </>
           )}
         </div>
       )}
-    </section>
+    </PanelSection>
   )
 }
 
@@ -717,8 +807,8 @@ function Stepper({
   onChange: (value: number) => void
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <span aria-hidden className="text-body-sm font-medium text-muted-foreground">
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span aria-hidden className="text-label-sm text-muted-foreground">
         {label}
       </span>
       <NumberField
@@ -754,18 +844,20 @@ export function BeatFixes() {
     edit(beatFix(kind))
   }
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-2" data-slot="beat-fixes">
-      <h3 id={titleId} className="text-body-sm font-normal text-muted-foreground">
-        {m['practice.beat_off']()}
-      </h3>
-      <div className="-my-1.5 flex flex-wrap gap-x-2">
-        <Button size="sm" variant="outline" onClick={() => fix('half')}>
+    <PanelSection
+      aria-labelledby={titleId}
+      title={<span id={titleId}>{m['practice.beat_off']()}</span>}
+      data-slot="beat-fixes"
+      className="gap-2"
+    >
+      <div className="flex flex-wrap gap-1">
+        <Button size="practice" variant="quiet" onClick={() => fix('half')}>
           {m['practice.half_tempo']()}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => fix('double')}>
+        <Button size="practice" variant="quiet" onClick={() => fix('double')}>
           {m['practice.double_tempo']()}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => fix('shift')}>
+        <Button size="practice" variant="quiet" onClick={() => fix('shift')}>
           {m['practice.move_downbeat']()}
         </Button>
       </div>
@@ -778,7 +870,7 @@ export function BeatFixes() {
         >
           <span className="flex-1">{m['fix.rebarred']({ n: String(result.bars) })}</span>
           <Button
-            size="sm"
+            size="practice"
             variant="quiet"
             onClick={() => {
               undo()
@@ -789,6 +881,6 @@ export function BeatFixes() {
           </Button>
         </div>
       )}
-    </section>
+    </PanelSection>
   )
 }

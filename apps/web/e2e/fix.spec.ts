@@ -46,9 +46,10 @@ test.afterAll(async () => {
 })
 
 test('J enters Fix mode on the unsure spot, and "It\'s right" survives a reload', async () => {
-  await expect(page.getByRole('tab', { name: /^Fix/ })).toHaveAccessibleName(/1 unsure/)
+  // The tools panel is closed until asked for: J opens it on Fix.
   await page.locator('#main').focus()
   await page.keyboard.press('j')
+  await expect(page.getByRole('tab', { name: /^Fix/ })).toHaveAccessibleName(/1 unsure/)
   await expect(panel().getByRole('heading', { name: 'Spot 1 of 1 · bar 4' })).toBeVisible()
   await expect(pill()).toBeVisible()
   // The selected bar loops in the Fix dock.
@@ -65,6 +66,8 @@ test('J enters Fix mode on the unsure spot, and "It\'s right" survives a reload'
 
   await page.reload()
   await ready()
+  await page.locator('#main').focus()
+  await page.keyboard.press('x')
   await expect(page.getByRole('tab', { name: 'Fix', exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'Fix', exact: true }).click()
   await expect(pill()).toBeVisible()
