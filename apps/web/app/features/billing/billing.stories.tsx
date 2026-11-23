@@ -113,9 +113,11 @@ export const UpgradePricesFailed: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
-    await expect(
-      await body.findByText("We couldn't load the prices.", undefined, { timeout: 10_000 }),
-    ).toBeVisible()
+    const failed = await body.findByText("We couldn't load the prices.", undefined, {
+      timeout: 10_000,
+    })
+    // It can land while the dialog is still fading in (seen in WebKit).
+    await waitFor(() => expect(failed).toBeVisible())
     // What Plus adds stays, and Continue says why it can't be used yet.
     await expect(body.getByText('Priority processing')).toBeVisible()
     await expect(body.getByRole('button', { name: 'Try again' })).toBeVisible()
