@@ -134,13 +134,13 @@ export async function expectNoHorizontalScroll(page: Page) {
 /**
  * Billing pages never render card fields, even fake ones (25 §2): no text-like input, select or
  * textarea at all, and nothing that names or autocompletes card data. `scope` limits the scan to
- * part of the page (the upgrade sheet over the import screen). Returns how many form controls it
- * found (radios only).
+ * part of the page (the upgrade sheet over Add song, whose dialog is open under it). Returns how
+ * many form controls it found (radios only).
  */
-export async function expectNoCardInputs(page: Page, scope = 'body') {
-  const scan = await page.evaluate((selector) => {
-    const root = document.querySelector(selector) ?? document.body
-    const controls = [...root.querySelectorAll('input, select, textarea')]
+export async function expectNoCardInputs(page: Page, scope: string | Locator = 'body') {
+  const root = typeof scope === 'string' ? page.locator(scope).first() : scope
+  const scan = await root.evaluate((element) => {
+    const controls = [...element.querySelectorAll('input, select, textarea')]
     const textLike = controls.filter(
       (el) =>
         !(el instanceof HTMLInputElement && ['radio', 'checkbox', 'hidden'].includes(el.type)),
@@ -156,12 +156,12 @@ export async function expectNoCardInputs(page: Page, scope = 'body') {
       textLike: textLike.map((el) => el.outerHTML.slice(0, 120)),
       cardish: cardish.map((el) => el.outerHTML.slice(0, 120)),
     }
-  }, scope)
+  })
   expect(scan.textLike).toEqual([])
   expect(scan.cardish).toEqual([])
   test.info().annotations.push({
     type: 'card-input scan',
-    description: `${new URL(page.url()).pathname} ${scope}: ${scan.controls} form controls, 0 card or text inputs`,
+    description: `${new URL(page.url()).pathname} ${String(scope)}: ${scan.controls} form controls, 0 card or text inputs`,
   })
   return scan.controls
 }
