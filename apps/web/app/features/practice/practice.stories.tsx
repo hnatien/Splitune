@@ -57,6 +57,11 @@ const VIEWPORTS = {
     styles: { width: '1440px', height: '900px' },
     type: 'desktop',
   },
+  desktop1280: {
+    name: 'Desktop 1280',
+    styles: { width: '1280px', height: '720px' },
+    type: 'desktop',
+  },
   desktop1180: {
     name: 'Desktop 1180',
     styles: { width: '1180px', height: '820px' },
@@ -196,6 +201,37 @@ const toolsFrame = async (canvasElement: HTMLElement, tab: RegExp) => {
   return panel
 }
 
+/** The transport keeps every control whole: side by side, inside its own edge and the viewport,
+ * and at least 44 px each way. */
+const transportWhole = async (canvasElement: HTMLElement) => {
+  const canvas = within(canvasElement)
+  const view = canvasElement.ownerDocument.defaultView as Window
+  const transport = canvas.getByRole('toolbar', { name: 'Playback' })
+  await expect(transport.scrollWidth).toBeLessThanOrEqual(transport.clientWidth)
+  const edge = transport.getBoundingClientRect()
+  const controls = [...transport.querySelectorAll<HTMLElement>('button, [role=slider]')]
+    .filter((control) => control.offsetParent !== null)
+    .map((control) => ({
+      name: control.getAttribute('aria-label') ?? control.textContent ?? '',
+      box: control.getBoundingClientRect(),
+    }))
+  await expect(controls.length).toBeGreaterThan(4)
+  for (const { name, box } of controls) {
+    await expect(Math.round(box.width), name).toBeGreaterThanOrEqual(44)
+    await expect(Math.round(box.height), name).toBeGreaterThanOrEqual(44)
+    await expect(box.left, name).toBeGreaterThanOrEqual(edge.left - 0.5)
+    await expect(box.right, name).toBeLessThanOrEqual(Math.min(edge.right, view.innerWidth) + 0.5)
+  }
+  for (const [i, a] of controls.entries()) {
+    for (const b of controls.slice(i + 1)) {
+      const overlap =
+        Math.min(a.box.right, b.box.right) - Math.max(a.box.left, b.box.left) > 1 &&
+        Math.min(a.box.bottom, b.box.bottom) - Math.max(a.box.top, b.box.top) > 1
+      await expect(overlap, `${a.name} / ${b.name}`).toBe(false)
+    }
+  }
+}
+
 /**
  * The music leads (26 §1.2, s47 direction §2): the notation takes at least `share` of the
  * viewport's height, and the transport keeps every control whole, side by side, inside its own
@@ -227,30 +263,7 @@ const layoutHolds = async (canvasElement: HTMLElement, share: number | null, bar
     },
     { timeout: 10_000 },
   )
-  const transport = canvas.getByRole('toolbar', { name: 'Playback' })
-  await expect(transport.scrollWidth).toBeLessThanOrEqual(transport.clientWidth)
-  const edge = transport.getBoundingClientRect()
-  const controls = [...transport.querySelectorAll<HTMLElement>('button, [role=slider]')]
-    .filter((control) => control.offsetParent !== null)
-    .map((control) => ({
-      name: control.getAttribute('aria-label') ?? control.textContent ?? '',
-      box: control.getBoundingClientRect(),
-    }))
-  await expect(controls.length).toBeGreaterThan(4)
-  for (const { name, box } of controls) {
-    await expect(Math.round(box.width), name).toBeGreaterThanOrEqual(44)
-    await expect(Math.round(box.height), name).toBeGreaterThanOrEqual(44)
-    await expect(box.left, name).toBeGreaterThanOrEqual(edge.left - 0.5)
-    await expect(box.right, name).toBeLessThanOrEqual(Math.min(edge.right, view.innerWidth) + 0.5)
-  }
-  for (const [i, a] of controls.entries()) {
-    for (const b of controls.slice(i + 1)) {
-      const overlap =
-        Math.min(a.box.right, b.box.right) - Math.max(a.box.left, b.box.left) > 1 &&
-        Math.min(a.box.bottom, b.box.bottom) - Math.max(a.box.top, b.box.top) > 1
-      await expect(overlap, `${a.name} / ${b.name}`).toBe(false)
-    }
-  }
+  await transportWhole(canvasElement)
 }
 
 /** A ready song at 1440 × 900: the notation takes at least 70 % of the height; the transport
@@ -2592,6 +2605,36 @@ export const PassPromptOpen: Story = {
     )
   },
 }
+
+/** The pass question fits the transport at every desktop width: the readouts step aside for it,
+ * and its two answers never sit under (or over) the controls beside them. */
+const passQuestionFits: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  const canvas = await playable(canvasElement)
+  usePracticeUi.setState({ promptPass: 2 })
+  const prompt = await canvas.findByRole('group', { name: /^Pass 2 at 70\s% — how was it\?$/ })
+  await waitFor(() =>
+    expect(within(prompt).getByRole('button', { name: /^Felt clean/ })).toBeVisible(),
+  )
+  await transportWhole(canvasElement)
+  // Both answers can be reached by a pointer: nothing lies over their centres.
+  const doc = canvasElement.ownerDocument
+  for (const name of [/^Not yet/, /^Felt clean/]) {
+    const answer = within(prompt).getByRole('button', { name })
+    const box = answer.getBoundingClientRect()
+    const hit = doc.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    await expect(hit !== null && answer.contains(hit), String(name)).toBe(true)
+  }
+}
+const passQuestionAt = (viewport: keyof typeof VIEWPORTS): Story => ({
+  beforeEach: () => () => usePracticeUi.setState({ promptPass: 0 }),
+  render: screen(ALL, {}, { loop: '5-6', speed: 70 }),
+  globals: { viewport: { value: viewport } },
+  play: passQuestionFits,
+})
+export const PassQuestion1440: Story = passQuestionAt('desktop1440')
+export const PassQuestion1280: Story = passQuestionAt('desktop1280')
+export const PassQuestion1180: Story = passQuestionAt('desktop1180')
+export const PassQuestion1100: Story = passQuestionAt('desktop1100')
 
 /** The pass prompt in the transport after a pass (27 §3.7.1): "Pass 2 at 70 % — how was it?",
  * Felt clean and Not yet at the 48 px practice target, in the loop line's place; it never covers

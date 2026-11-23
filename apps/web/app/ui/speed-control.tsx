@@ -153,18 +153,22 @@ function SpeedControl({
               {shown}
               {NBSP}%
             </span>
-            {(bpm !== undefined || goal) && (
-              <span className="flex items-center gap-1 text-caption whitespace-nowrap text-muted-foreground tabular-nums">
-                {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
-                {goal && (
-                  <>
-                    {bpm !== undefined && ' · '}
-                    <LadderIcon aria-hidden className="size-3.5 stroke-[1.8]" />
-                    {goal.text}
-                  </>
-                )}
-              </span>
-            )}
+            {/* The line is kept before the tempo is known, so the control (and the transport
+                with it) is the same height when the beat arrives. */}
+            <span
+              data-slot="speed-detail"
+              className="flex items-center gap-1 text-caption whitespace-nowrap text-muted-foreground tabular-nums"
+            >
+              {bpm === undefined && !goal && NBSP}
+              {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
+              {goal && (
+                <>
+                  {bpm !== undefined && ' · '}
+                  <LadderIcon aria-hidden className="size-3.5 stroke-[1.8]" />
+                  {goal.text}
+                </>
+              )}
+            </span>
           </span>
           {shortcuts?.open && (
             <Kbd aria-hidden className="pointer-coarse:hidden">

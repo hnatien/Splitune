@@ -651,6 +651,25 @@ export const NoInlinePresetsOnTablets: Story = {
   },
 }
 
+/** The readout is the same height before the tempo is known as after, so the transport never
+ * moves when the beat arrives. */
+export const SameHeightBeforeTheBeat: Story = {
+  render: () => (
+    <div className="flex items-start gap-6">
+      <SpeedControl value={70} onValueChange={fn()} labels={SPEED_LABELS} />
+      <SpeedControl value={70} onValueChange={fn()} bpm={100} labels={SPEED_LABELS} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const [before, after] = [
+      ...canvasElement.querySelectorAll<HTMLElement>('[data-slot=speed-readout]'),
+    ] as [HTMLElement, HTMLElement]
+    await expect(before.getBoundingClientRect().height).toBe(after.getBoundingClientRect().height)
+    await expect(before).not.toHaveTextContent(/BPM/)
+    await expect(after).toHaveTextContent(/70\sBPM/)
+  },
+}
+
 /** The loop line's four states, told apart by edge, icon and words, never by a fill. */
 const LoopBadges = () => (
   <StateGrid
