@@ -287,7 +287,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
             <Button
               variant="primary"
               size="lg"
-              shortcut={wide ? ADD_SONG_KEY : undefined}
+              {...(wide ? { shortcut: ADD_SONG_KEY } : {})}
               aria-keyshortcuts={ADD_SONG_KEY}
               onClick={() => openAddSong()}
             >
