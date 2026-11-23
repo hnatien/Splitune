@@ -180,6 +180,14 @@ export function fixCommand(command: FixCommand) {
   }))
 }
 
+/** J / K for the touch editor sheet while it is open: the same command, without Fix mode (which
+ * is the tools panel's, on screens that dock it). */
+export function sheetCommand(command: FixCommand) {
+  usePracticeUi.setState((state) => ({
+    fixCommand: { ...command, sequence: (state.fixCommand?.sequence ?? 0) + 1 },
+  }))
+}
+
 /** Done or Esc: back to the tab used before Fix. */
 export function leaveFix() {
   openTab(rememberedTab())

@@ -295,12 +295,27 @@ describe('input mapper: the two pedal sides', () => {
   it('steps through the unsure spots in Fix and rates nothing there', () => {
     usePracticeUi.setState({ fixing: true, promptPass: 2 })
     practice.player.loop = { startBar: 4, endBar: 7 }
+    // The editor sheet is open on a spot: each side asks it for the next or the previous one.
+    usePracticeUi.setState({ editor: { kind: 'bar', bar: 2 } })
     press('PageDown')
-    // From bar 7 (index 6) the next unsure bar is index 9.
-    expect(usePracticeUi.getState().editor).toMatchObject({ kind: 'bar', bar: 9 })
+    expect(usePracticeUi.getState().fixCommand).toMatchObject({ kind: 'next' })
     press('PageUp')
-    expect(usePracticeUi.getState().editor).toMatchObject({ kind: 'bar', bar: 2 })
+    expect(usePracticeUi.getState().fixCommand).toMatchObject({ kind: 'previous' })
     expect(practice.markPass).not.toHaveBeenCalled()
+  })
+
+  it('on a touch layout J steps the open editor sheet without entering Fix mode', () => {
+    usePracticeUi.setState({ editor: { kind: 'bar', bar: 2 } })
+    press('j')
+    // Fix mode would hand the selection back to the first unsure spot (practice-page).
+    expect(usePracticeUi.getState()).toMatchObject({ fixing: false, inspectorOpen: false })
+    expect(usePracticeUi.getState().fixCommand).toMatchObject({ kind: 'next' })
+  })
+
+  it('on a touch layout J asks for the first unsure spot while the editor sheet is closed', () => {
+    press('j')
+    // practice-page's useSheetFix answers `fixing` by opening the sheet on that spot.
+    expect(usePracticeUi.getState()).toMatchObject({ fixing: true, editor: null, fixCommand: null })
   })
 
   it('works with single keys off, because a pedal sends no character', () => {

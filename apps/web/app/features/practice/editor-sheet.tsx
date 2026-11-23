@@ -1,4 +1,5 @@
 import { XIcon } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
@@ -23,6 +24,14 @@ export function EditorSheet({ side }: { side: boolean }) {
   const editor = usePracticeUi((s) => s.editor)
   const showOriginal = usePracticeUi((s) => s.showOriginal)
   const { queue, spot, position } = useFixQueue()
+  // J, K and the pedal (12 §8) step through the same queue as the sheet's own ‹ › while it is open.
+  const command = usePracticeUi((s) => s.fixCommand)
+  const taken = useRef(command?.sequence ?? 0)
+  useEffect(() => {
+    if (!command || command.sequence === taken.current) return
+    taken.current = command.sequence
+    if (command.kind !== 'bar') stepSelection(queue, spot, command.kind === 'next' ? 1 : -1)
+  }, [command, queue, spot])
   const bars = editor ? barsLabel(editor.bar, editor.endBar) : ''
   return (
     <Drawer

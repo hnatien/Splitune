@@ -20,7 +20,7 @@ import {
   usePractice,
 } from './practice-context'
 import { PracticeError, PracticeLoading } from './practice-loading'
-import { openTab, usePracticeUi } from './practice-store'
+import { openTab, showHud, usePracticeUi } from './practice-store'
 import { PracticeTimeline } from './practice-timeline'
 import { PracticeStatus } from './status-bar'
 import { Transport } from './transport'
@@ -282,6 +282,7 @@ function useSheetFix(compact: boolean) {
           ? { bar: note.bar, noteId: note.id }
           : undefined
     usePracticeUi.setState({ fixing: false, editor: first ? { kind: 'bar', ...first } : null })
+    if (!first) showHud(m['practice.hud_no_unsure']())
   }, [compact, wanted, view])
 }
 
