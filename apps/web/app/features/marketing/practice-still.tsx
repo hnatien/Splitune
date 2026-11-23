@@ -161,94 +161,102 @@ export function ReadingTab({
 
 /**
  * The practice transport: Play (the one filled control) between the bar steps, the position, the
- * loop line or, after a looped pass, the pass prompt in its place, then count-in and speed.
+ * loop line or, after a looped pass, the pass prompt in its place, then count-in and speed. It
+ * answers to its own width, not the window's (the still is narrower than the page): where one row
+ * can't hold the loop line whole, the loop takes a status row above, as on a narrow practice
+ * screen, and the position, count-in and bar steps drop out as the width shrinks.
  */
 export function StillTransport({ after = 'loop' }: { after?: 'loop' | 'pass' }) {
   const speed = 70
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border px-2 py-2 max-sm:[&_[data-slot=kbd]]:hidden sm:px-3">
-      <div className="flex items-center gap-1">
-        <TransportButton
-          icon={<SkipBackIcon aria-hidden />}
-          label={m['practice.previous_bar']()}
-          showLabel={false}
-          shortcut="←"
-          className="max-sm:hidden"
-        />
-        <TransportButton
-          tone="primary"
-          icon={<PlayIcon aria-hidden />}
-          label={m['practice.play']()}
-          showLabel={false}
-          shortcut={m['practice.key_space']()}
-        />
-        <TransportButton
-          icon={<SkipForwardIcon aria-hidden />}
-          label={m['shortcuts.next']()}
-          showLabel={false}
-          shortcut="→"
-          className="max-sm:hidden"
-        />
-        <span className="flex w-24 flex-col px-2 max-md:hidden">
-          <span className="text-title tabular-nums">
-            7.3<span className="text-body-sm text-muted-foreground"> / {BARS}</span>
-          </span>
-          <span className="text-caption text-muted-foreground tabular-nums">0:15 / 1:55</span>
-        </span>
-      </div>
-      <div
-        className={cn(
-          'flex min-w-0 flex-1 justify-center max-sm:order-first max-sm:basis-full max-sm:justify-start',
-          // The pass prompt and its answers take the status row, as on a narrow practice screen.
-          after === 'pass' && 'order-first basis-full justify-start border-b border-border pb-2',
-        )}
-      >
-        {after === 'loop' ? (
-          <LoopBadge
-            state="active"
-            shortcut="L"
-            detail={`${m['practice.loop_pass']({ pass: '3' })} · ${m['practice.loop_rest_beat']()}`}
-            className="max-w-full"
-          >
-            {m['practice.loop_badge']({ bars: '5–8' })}
-          </LoopBadge>
-        ) : (
-          <PassControl
-            labels={{
-              prompt: m['practice.pass_rate'](),
-              clean: m['practice.felt_clean'](),
-              notYet: m['practice.not_yet'](),
-            }}
-            best={m['practice.best_tempo']({ pct: String(speed) })}
-            shortcuts={{ notYet: 'N', clean: 'C' }}
-            onClean={noop}
-            onNotYet={noop}
+    <div
+      data-slot="still-transport"
+      className="@container border-t border-border px-2 py-2 max-sm:[&_[data-slot=kbd]]:hidden sm:px-3"
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="flex items-center gap-1">
+          <TransportButton
+            icon={<SkipBackIcon aria-hidden />}
+            label={m['practice.previous_bar']()}
+            showLabel={false}
+            shortcut="←"
+            className="@max-md:hidden"
           />
-        )}
-      </div>
-      <div className="flex items-center gap-1 max-sm:ml-auto">
-        <TransportButton
-          icon={<CountInIcon aria-hidden />}
-          label={m['practice.count_in']()}
-          showLabel={false}
-          shortcut="I"
-          pressed
-          className="max-md:hidden"
-        />
-        <SpeedControl
-          compact
-          value={speed}
-          bpm={100}
-          onValueChange={noop}
-          inlinePresets={false}
-          labels={{
-            speed: m['practice.speed'](),
-            decrease: m['shortcuts.slower'](),
-            increase: m['shortcuts.faster'](),
-            presets: m['practice.speed_presets'](),
-          }}
-          shortcuts={{ decrease: ',', increase: '.', open: 'S' }}
-        />
+          <TransportButton
+            tone="primary"
+            icon={<PlayIcon aria-hidden />}
+            label={m['practice.play']()}
+            showLabel={false}
+            shortcut={m['practice.key_space']()}
+          />
+          <TransportButton
+            icon={<SkipForwardIcon aria-hidden />}
+            label={m['shortcuts.next']()}
+            showLabel={false}
+            shortcut="→"
+            className="@max-md:hidden"
+          />
+          <span className="flex w-24 flex-col px-2 @max-2xl:hidden">
+            <span className="text-title tabular-nums">
+              7.3<span className="text-body-sm text-muted-foreground"> / {BARS}</span>
+            </span>
+            <span className="text-caption text-muted-foreground tabular-nums">0:15 / 1:55</span>
+          </span>
+        </div>
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 justify-center @max-5xl:order-first @max-5xl:basis-full @max-5xl:justify-start',
+            // The pass prompt and its answers take the status row, as on a narrow practice screen.
+            after === 'pass' && 'order-first basis-full justify-start border-b border-border pb-2',
+          )}
+        >
+          {after === 'loop' ? (
+            <LoopBadge
+              state="active"
+              shortcut="L"
+              detail={`${m['practice.loop_pass']({ pass: '3' })} · ${m['practice.loop_rest_beat']()}`}
+              className="max-w-full"
+            >
+              {m['practice.loop_badge']({ bars: '5–8' })}
+            </LoopBadge>
+          ) : (
+            <PassControl
+              labels={{
+                prompt: m['practice.pass_rate'](),
+                clean: m['practice.felt_clean'](),
+                notYet: m['practice.not_yet'](),
+              }}
+              best={m['practice.best_tempo']({ pct: String(speed) })}
+              shortcuts={{ notYet: 'N', clean: 'C' }}
+              onClean={noop}
+              onNotYet={noop}
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-1 @max-5xl:ml-auto">
+          <TransportButton
+            icon={<CountInIcon aria-hidden />}
+            label={m['practice.count_in']()}
+            showLabel={false}
+            shortcut="I"
+            pressed
+            className="@max-xl:hidden"
+          />
+          <SpeedControl
+            compact
+            value={speed}
+            bpm={100}
+            onValueChange={noop}
+            inlinePresets={false}
+            labels={{
+              speed: m['practice.speed'](),
+              decrease: m['shortcuts.slower'](),
+              increase: m['shortcuts.faster'](),
+              presets: m['practice.speed_presets'](),
+            }}
+            shortcuts={{ decrease: ',', increase: '.', open: 'S' }}
+          />
+        </div>
       </div>
     </div>
   )
