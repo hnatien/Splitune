@@ -16,6 +16,7 @@ import {
   BOTH_THEMES,
   BOTH_THEMES_MORE_CONTRAST,
   contrast,
+  edgeOf,
   isClear,
   resolve,
   StateGrid,
@@ -163,6 +164,11 @@ export const Progresses: Story = {
       await expect(getComputedStyle(meterFill).backgroundColor).toBe(
         resolve(meterFill, 'backgroundColor', '--muted-foreground'),
       )
+      // An empty meter still shows its range: the track's own edge is ≥ 3:1 on the page (1.4.11).
+      const meterTrack = meter.querySelector('[data-slot="meter-track"]') as HTMLElement
+      await expect(
+        contrast(edgeOf(meterTrack)?.color ?? 'transparent', surfaceOf(frame)),
+      ).toBeGreaterThanOrEqual(3)
     }
   },
 }
