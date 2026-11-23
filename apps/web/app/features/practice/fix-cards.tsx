@@ -45,8 +45,8 @@ import { usePracticeUi } from './practice-store'
 // line. The Fix tab, the tablet's editor sheet and the desktop editor are built from them. Every
 // change is a correction op, applied at once, named in the toast with Undo.
 
-export const eyebrow = 'text-sm text-muted-foreground'
-const card = 'flex flex-col gap-2.5 rounded-xl border border-border bg-card p-3.5'
+export const eyebrow = 'text-body-sm text-muted-foreground'
+const card = 'flex flex-col gap-2.5 rounded-field border border-border bg-raised p-3.5'
 
 /** The bar as the UI names it (1-based; the pickup by name). */
 export const barLabel = (bar: number) => (bar < 0 ? m['practice.pickup']() : String(bar + 1))
@@ -83,7 +83,7 @@ export function SpotHeader({
   return (
     <div className="flex items-center gap-2.5" data-slot="fix-queue">
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h3 className="truncate text-lg tabular-nums">{title}</h3>
+        <h3 className="truncate text-title tabular-nums">{title}</h3>
         {total > 0 && (
           <div
             role="progressbar"
@@ -91,7 +91,7 @@ export function SpotHeader({
             aria-valuemin={0}
             aria-valuemax={total}
             aria-valuenow={position}
-            className="h-1.5 overflow-hidden rounded-full bg-accent"
+            className="h-1.5 overflow-hidden rounded-full bg-hover"
           >
             <div
               className="h-full origin-left rounded-full bg-unsure transition-transform duration-(--duration-base)"
@@ -143,10 +143,10 @@ function AlternativeRow({
   const spoken = chordText(name)
   return (
     <li data-slot="alternative-row" className="flex items-center gap-2.5 py-1.5">
-      <span className="min-w-14 shrink-0 text-lg font-medium">
+      <span className="min-w-14 shrink-0 text-title font-medium">
         <ChordSymbol name={name} />
       </span>
-      <span className="min-w-0 flex-1 text-sm text-muted-foreground tabular-nums">
+      <span className="min-w-0 flex-1 text-body-sm text-muted-foreground tabular-nums">
         {m['fix.about_one_in']({ n: String(oneIn(prob)) })}
       </span>
       {onHear && (
@@ -264,7 +264,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
       <div className="flex items-center gap-3">
         <Guess chord={chord} edited={edited} />
         {(guessed !== null || edited) && (
-          <p className="min-w-0 text-sm text-muted-foreground">
+          <p className="min-w-0 text-body-sm text-muted-foreground">
             {guessed !== null
               ? m['fix.first_guess']({ n: String(guessed) })
               : m['practice.edited']()}
@@ -273,7 +273,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
       </div>
       {chord.alternatives.length > 0 && (
         <>
-          <p className="mt-1 text-sm text-faint-foreground">{m['editor.alternatives']()}</p>
+          <p className="mt-1 text-body-sm text-faint-foreground">{m['editor.alternatives']()}</p>
           <ul className="-mt-1 flex flex-col divide-y divide-border">
             {chord.alternatives.slice(0, 4).map((alt, index) => {
               const hearing = audition?.chordId === chord.id && audition.label === alt.label
@@ -302,7 +302,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
       )}
       {others.length > 0 && replaceable && (
         <div className="flex flex-col items-start gap-1" data-slot="replace-all">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-body-sm text-muted-foreground">
             {m['fix.replace_all_hint']({
               chord: replaceable.fromName,
               to: replaceable.toName,
@@ -373,7 +373,7 @@ function Guess({ chord, edited }: { chord: ChordModel; edited: boolean }) {
       data-slot="chord-guess"
       data-confidence={chord.confidence}
       className={cn(
-        'shrink-0 rounded-sm px-1 text-3xl leading-none font-medium whitespace-nowrap',
+        'shrink-0 rounded-media px-1 text-hero leading-none font-medium whitespace-nowrap',
         low && 'text-unsure outline-[1.5px] outline-offset-4 outline-unsure outline-dashed',
         medium && 'outline-[1.5px] outline-offset-4 outline-conf-medium-edge outline-dashed',
         edited && 'text-edited underline decoration-2 underline-offset-[3px]',
@@ -381,7 +381,7 @@ function Guess({ chord, edited }: { chord: ChordModel; edited: boolean }) {
     >
       <ChordSymbol name={chord.name} />
       {low && (
-        <sup aria-hidden className="ml-0.5 text-xs font-semibold">
+        <sup aria-hidden className="ml-0.5 text-caption font-medium">
           ?
         </sup>
       )}
@@ -414,7 +414,7 @@ function Chip({
     >
       <span
         className={cn(
-          'inline-flex h-7.5 items-center gap-1 rounded-full border border-border-strong px-3 text-sm font-medium whitespace-nowrap tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-accent group-aria-pressed/chip:border-primary-line group-aria-pressed/chip:bg-primary-soft group-aria-pressed/chip:text-primary-ink',
+          'inline-flex h-7.5 items-center gap-1 rounded-full border border-border-strong px-3 text-body-sm font-medium whitespace-nowrap tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-hover group-aria-pressed/chip:border-selected group-aria-pressed/chip:bg-wash group-aria-pressed/chip:text-foreground',
           dashed && 'border-[1.5px] border-dashed',
           unsure && 'border-unsure text-unsure',
         )}
@@ -484,7 +484,7 @@ function TypeChord({
         )}
       </div>
       {invalid && (
-        <p id={errorId} className="text-sm text-destructive">
+        <p id={errorId} className="text-body-sm text-destructive">
           {m['editor.chord_invalid']()}
         </p>
       )}
@@ -558,7 +558,9 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
         </Button>
       </div>
       {shakyN !== null && (
-        <p className="text-sm text-muted-foreground">{m['fix.shaky_bar']({ n: String(shakyN) })}</p>
+        <p className="text-body-sm text-muted-foreground">
+          {m['fix.shaky_bar']({ n: String(shakyN) })}
+        </p>
       )}
       <ul aria-label={m['fix.notes_in_bar']()} className="-my-1 flex flex-wrap gap-x-1.5">
         {notes.map((n) => (
@@ -581,7 +583,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
       </ul>
       {note && placed && (event?.alt_fingerings?.length ?? 0) > 0 && (
         <div className="-my-1 flex flex-wrap items-center gap-x-2">
-          <span className="text-sm text-faint-foreground">{m['fix.or_play_as']()}</span>
+          <span className="text-body-sm text-faint-foreground">{m['fix.or_play_as']()}</span>
           {event?.alt_fingerings?.map((alt) => (
             <Chip
               key={`${alt.string}-${alt.fret}`}
@@ -615,7 +617,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
             />
           </div>
           <div className="-my-1 flex items-center gap-2">
-            <span className="flex-1 text-sm font-medium text-muted-foreground">
+            <span className="flex-1 text-body-sm font-medium text-muted-foreground">
               {m['editor.length']()}
             </span>
             {([-1, 1] as const).map((direction) => (
@@ -716,7 +718,7 @@ function Stepper({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span aria-hidden className="text-sm font-medium text-muted-foreground">
+      <span aria-hidden className="text-body-sm font-medium text-muted-foreground">
         {label}
       </span>
       <NumberField
@@ -753,7 +755,7 @@ export function BeatFixes() {
   }
   return (
     <section aria-labelledby={titleId} className="flex flex-col gap-2" data-slot="beat-fixes">
-      <h3 id={titleId} className="text-sm font-normal text-muted-foreground">
+      <h3 id={titleId} className="text-body-sm font-normal text-muted-foreground">
         {m['practice.beat_off']()}
       </h3>
       <div className="-my-1.5 flex flex-wrap gap-x-2">
@@ -772,7 +774,7 @@ export function BeatFixes() {
           role="status"
           data-slot="rebarred"
           data-requantize-ms={result.ms.toFixed(0)}
-          className="flex items-center gap-2 text-sm text-muted-foreground tabular-nums"
+          className="flex items-center gap-2 text-body-sm text-muted-foreground tabular-nums"
         >
           <span className="flex-1">{m['fix.rebarred']({ n: String(result.bars) })}</span>
           <Button

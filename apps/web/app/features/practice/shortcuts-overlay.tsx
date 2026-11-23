@@ -17,7 +17,7 @@ export function ShortcutsOverlay() {
           <DialogDescription>{m['shortcuts.description']()}</DialogDescription>
         </DialogHeader>
         <KeyBindings />
-        <ul className="flex flex-col gap-2 text-base">
+        <ul className="flex flex-col gap-2 text-body">
           <li>
             <Kbd>{m['nav.palette_key_mac']()}</Kbd> / <Kbd>{m['nav.palette_key']()}</Kbd>{' '}
             {m['shortcuts.palette']()}

@@ -47,7 +47,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, at)}
-      <strong className="font-semibold">{text.slice(at, at + query.length)}</strong>
+      <strong className="font-medium">{text.slice(at, at + query.length)}</strong>
       {text.slice(at + query.length)}
     </>
   )
@@ -253,12 +253,12 @@ export default function CommandPalette() {
               setActive(0)
             }}
             onKeyDown={onKeyDown}
-            className="min-w-0 flex-1 self-stretch bg-transparent text-lg font-normal text-foreground focus-visible:outline-none placeholder:text-faint-foreground"
+            className="min-w-0 flex-1 self-stretch bg-transparent text-title font-normal text-foreground focus-visible:-outline-offset-2 placeholder:text-faint-foreground"
           />
           <Kbd aria-hidden>{m['nav.key_escape']()}</Kbd>
         </div>
         {rows.length === 0 && (
-          <p role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">
+          <p role="status" className="px-3 py-6 text-center text-body-sm text-muted-foreground">
             {m['nav.palette_empty']()}
           </p>
         )}
@@ -283,7 +283,7 @@ export default function CommandPalette() {
                 <p
                   role="presentation"
                   id={`${listId}-${group}`}
-                  className="px-3 pt-2.5 pb-1 text-sm text-faint-foreground"
+                  className="px-3 pt-2.5 pb-1 text-body-sm text-faint-foreground"
                 >
                   {heading[group]}
                   {group === 'songs' && !online && ` · ${m['nav.palette_offline']()}`}
@@ -300,7 +300,7 @@ export default function CommandPalette() {
                     onMouseMove={() => index !== selected && setActive(index)}
                     onClick={() => run(row)}
                     className={cn(
-                      'flex min-h-target cursor-pointer items-center gap-3 rounded-lg px-3 py-1.5 text-base aria-selected:bg-muted forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-faint-foreground',
+                      'flex min-h-target cursor-pointer items-center gap-3 rounded-field px-3 py-1.5 text-body aria-selected:bg-panel forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-faint-foreground',
                     )}
                   >
                     {row.tile ?? row.icon}

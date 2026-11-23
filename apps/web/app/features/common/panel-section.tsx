@@ -10,7 +10,7 @@ export function PanelSection({ title, children }: { title: string; children: Rea
       aria-labelledby={id}
       className="flex flex-col gap-3 border-t border-border pt-4 first-of-type:border-t-0 first-of-type:pt-0"
     >
-      <h3 id={id} className="text-sm font-medium text-muted-foreground">
+      <h3 id={id} className="text-body-sm font-medium text-muted-foreground">
         {title}
       </h3>
       {children}

@@ -74,7 +74,7 @@ function InstrumentTile({
       data-slot="instrument-tile"
       aria-hidden
       className={cn(
-        'grid shrink-0 place-items-center rounded-md text-tile-foreground contrast-more:border contrast-more:border-current forced-colors:border forced-colors:border-current in-data-unavailable:bg-accent in-data-unavailable:text-muted-foreground',
+        'grid shrink-0 place-items-center rounded-media text-tile-foreground contrast-more:border contrast-more:border-current forced-colors:border forced-colors:border-current in-data-unavailable:bg-hover in-data-unavailable:text-muted-foreground',
         size === 'md' ? 'size-10' : 'size-8',
         TILE_FILL[stem],
         className,
@@ -93,7 +93,7 @@ function Status({ song, unavailable }: { song: SongSummary; unavailable?: string
         {song.status.icon}
         {song.status.label}
       </Badge>
-      {meta && <span className="text-sm text-faint-foreground">{meta}</span>}
+      {meta && <span className="text-body-sm text-faint-foreground">{meta}</span>}
     </span>
   )
 }
@@ -116,7 +116,7 @@ function SongCard({
       data-slot="song-card"
       data-unavailable={unavailable ? '' : undefined}
       className={cn(
-        'relative flex flex-col gap-3.5 rounded-xl border border-border p-4 transition-colors duration-(--duration-fast) hover:border-border-strong data-unavailable:text-muted-foreground',
+        'relative flex flex-col gap-3.5 rounded-field border border-border p-4 transition-colors duration-(--duration-fast) hover:border-border-strong data-unavailable:text-muted-foreground',
         className,
       )}
     >
@@ -126,13 +126,13 @@ function SongCard({
           href: song.href,
           title: song.title,
           className: cn(
-            'flex min-h-11 min-w-0 flex-1 flex-col gap-0.5 after:rounded-xl focus-visible:after:outline-offset-2',
+            'flex min-h-11 min-w-0 flex-1 flex-col gap-0.5 after:rounded-field focus-visible:after:outline-offset-2',
             LINK_FOCUS,
           ),
           children: (
             <>
-              <h3 className="line-clamp-2 text-base font-medium break-words">{song.title}</h3>
-              <span className="truncate text-sm text-muted-foreground">{song.subtitle}</span>
+              <h3 className="line-clamp-2 text-body font-medium break-words">{song.title}</h3>
+              <span className="truncate text-body-sm text-muted-foreground">{song.subtitle}</span>
             </>
           ),
         })}
@@ -161,7 +161,7 @@ function SongRow({
       data-slot="song-row"
       data-unavailable={unavailable ? '' : undefined}
       className={cn(
-        'relative flex min-h-15 items-center gap-3 rounded-xl px-2 py-2.5 has-data-[slot=song-progress]:items-start transition-colors duration-(--duration-fast) hover:bg-muted data-unavailable:text-muted-foreground',
+        'relative flex min-h-15 items-center gap-3 rounded-field px-2 py-2.5 has-data-[slot=song-progress]:items-start transition-colors duration-(--duration-fast) hover:bg-panel data-unavailable:text-muted-foreground',
         className,
       )}
     >
@@ -171,13 +171,13 @@ function SongRow({
           href: song.href,
           title: song.title,
           className: cn(
-            'flex min-h-11 min-w-0 flex-col justify-center after:rounded-xl focus-visible:after:-outline-offset-2',
+            'flex min-h-11 min-w-0 flex-col justify-center after:rounded-field focus-visible:after:-outline-offset-2',
             LINK_FOCUS,
           ),
           children: (
             <>
-              <h3 className="truncate text-base font-medium">{song.title}</h3>
-              <span className="truncate text-sm text-muted-foreground">{meta}</span>
+              <h3 className="truncate text-body font-medium">{song.title}</h3>
+              <span className="truncate text-body-sm text-muted-foreground">{meta}</span>
             </>
           ),
         })}

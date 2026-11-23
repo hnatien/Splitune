@@ -1,45 +1,42 @@
 /*
  * Tier 1 — primitives (docs/specs/26-design-system.md §3, §4).
  * Static OKLCH literals: L and C to three decimals, H in whole degrees, every one inside sRGB
- * (saturated values are clamped here by lowering chroma at the same L and H). Only the semantic
- * roles in themes.css reference these; Tailwind never sees them and components never use them.
- * Neutrals are named by lightness × 1000.
+ * (saturated values are clamped here by lowering chroma at the same L and H). Only the ramp steps
+ * and semantic roles in themes.css reference these; Tailwind never sees them and components never
+ * use them.
  */
 :root {
-  /* Neutrals: pure black and white with achromatic steps between them (§4.1). The interface has no
-     brand hue; everything that is not a status, a stem or a hand is one of these. */
-  --black: oklch(0 0 0);
-  --gray-159: oklch(0.159 0 0);
-  --gray-182: oklch(0.182 0 0);
-  --gray-218: oklch(0.218 0 0);
-  --gray-239: oklch(0.239 0 0);
-  --gray-269: oklch(0.269 0 0);
-  --gray-285: oklch(0.285 0 0);
-  --gray-321: oklch(0.321 0 0);
-  --gray-360: oklch(0.36 0 0);
-  --gray-420: oklch(0.42 0 0);
-  --gray-478: oklch(0.478 0 0);
-  --gray-510: oklch(0.51 0 0);
-  --gray-520: oklch(0.52 0 0);
-  --gray-545: oklch(0.545 0 0);
-  --gray-625: oklch(0.625 0 0);
-  --gray-650: oklch(0.65 0 0);
-  --gray-670: oklch(0.67 0 0);
-  --gray-715: oklch(0.715 0 0);
-  --gray-770: oklch(0.77 0 0);
-  --gray-845: oklch(0.845 0 0);
-  --gray-885: oklch(0.885 0 0);
-  --gray-922: oklch(0.922 0 0);
-  --gray-943: oklch(0.943 0 0);
-  --gray-970: oklch(0.97 0 0);
-  --white: oklch(1 0 0);
+  /* Neutral ramps (§4.1): twelve achromatic steps per theme, numbered by the job a step does, not
+     by its lightness. A step has the same job in Dark and Light; the two ramps are tuned apart
+     rather than mirrored (Light's step 3, the raised layer, is lighter than its page). The
+     interface has no brand hue: everything that is not a status, a stem or a hand is one of these.
+       1 page · 2 panel · 3 raised · 4 hover and wash · 5 pressed · 6 hairline · 7 strong hairline
+       8 control edge · 9 dimmed text · 10 secondary text · 11 ink hover · 12 ink */
+  --dark-1: oklch(0.168 0 0);
+  --dark-2: oklch(0.195 0 0);
+  --dark-3: oklch(0.225 0 0);
+  --dark-4: oklch(0.255 0 0);
+  --dark-5: oklch(0.285 0 0);
+  --dark-6: oklch(0.31 0 0);
+  --dark-7: oklch(0.4 0 0);
+  --dark-8: oklch(0.545 0 0);
+  --dark-9: oklch(0.68 0 0);
+  --dark-10: oklch(0.8 0 0);
+  --dark-11: oklch(0.885 0 0);
+  --dark-12: oklch(0.955 0 0);
 
-  /* Washes and hairlines of the ink itself (§4.2): a selected or "on" surface is the ink at low
-     opacity, its edge the ink at half. */
-  --white-soft: oklch(1 0 0 / 0.12);
-  --white-line: oklch(1 0 0 / 0.5);
-  --ink-soft: oklch(0.159 0 0 / 0.08);
-  --ink-line: oklch(0.159 0 0 / 0.5);
+  --light-1: oklch(0.988 0 0);
+  --light-2: oklch(0.968 0 0);
+  --light-3: oklch(1 0 0);
+  --light-4: oklch(0.945 0 0);
+  --light-5: oklch(0.905 0 0);
+  --light-6: oklch(0.92 0 0);
+  --light-7: oklch(0.83 0 0);
+  --light-8: oklch(0.6 0 0);
+  --light-9: oklch(0.52 0 0);
+  --light-10: oklch(0.4 0 0);
+  --light-11: oklch(0.32 0 0);
+  --light-12: oklch(0.19 0 0);
 
   /* Status (§4.3): unsure blue, ok green, bad red, each with its opaque surface. */
   --unsure-dark: oklch(0.72 0.137 255);
@@ -61,7 +58,7 @@
   --teal-light: oklch(0.51 0.087 195);
   --violet-dark: oklch(0.756 0.145 307);
   --violet-light: oklch(0.546 0.181 303);
-  --sky-dark: oklch(0.85 0.077 216);
+  --sky-dark: oklch(0.87 0.077 225);
   --sky-light: oklch(0.364 0.052 223);
   --pink-dark: oklch(0.712 0.186 350);
   --pink-light: oklch(0.583 0.205 354);

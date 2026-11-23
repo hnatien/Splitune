@@ -22,15 +22,15 @@ const TONES: Record<
   },
   warning: {
     icon: <TriangleAlertIcon aria-hidden />,
-    text: 'text-warning',
-    surface: 'bg-warning-surface',
-    border: 'contrast-more:border-warning',
+    text: 'text-muted-foreground',
+    surface: 'bg-panel',
+    border: 'contrast-more:border-muted-foreground',
   },
   info: {
     icon: <InfoIcon aria-hidden />,
-    text: 'text-info',
-    surface: 'bg-info-surface',
-    border: 'contrast-more:border-info',
+    text: 'text-muted-foreground',
+    surface: 'bg-panel',
+    border: 'contrast-more:border-muted-foreground',
   },
   success: {
     icon: <CircleCheckIcon aria-hidden />,
@@ -65,7 +65,7 @@ function InlineError({
       data-slot="inline-error"
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex gap-3 rounded-xl border border-transparent p-4',
+        'flex gap-3 rounded-field border border-transparent p-4',
         style.surface,
         style.border,
         className,
@@ -73,8 +73,8 @@ function InlineError({
     >
       <span className={cn('mt-0.5 shrink-0 [&_svg]:size-5', style.text)}>{style.icon}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="text-base font-medium text-foreground">{title}</p>
-        {description && <p className="text-sm text-foreground">{description}</p>}
+        <p className="text-body font-medium text-foreground">{title}</p>
+        {description && <p className="text-body-sm text-foreground">{description}</p>}
         {actions && <div className="mt-2 flex flex-wrap gap-3">{actions}</div>}
       </div>
     </div>
@@ -104,7 +104,7 @@ function Banner({ tone, title, description, actions, icon, dismiss, className }:
       )}
     >
       <span className={cn('shrink-0 [&_svg]:size-4.5', style.text)}>{icon ?? style.icon}</span>
-      <p className="min-w-0 flex-1 basis-3xs py-2 text-sm text-foreground">
+      <p className="min-w-0 flex-1 basis-3xs py-2 text-body-sm text-foreground">
         <span className={cn(description && 'font-medium')}>{title}</span>
         {description && <span className="text-muted-foreground"> {description}</span>}
       </p>

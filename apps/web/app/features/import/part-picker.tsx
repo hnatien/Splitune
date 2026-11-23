@@ -28,12 +28,12 @@ export function PartPicker({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex min-h-target items-center justify-between gap-3">
-        <span id={`${id}-part`} className="text-md font-medium">
+        <span id={`${id}-part`} className="text-label font-medium">
           {m['import.your_part']()}
         </span>
         {FRETTED.has(instrument) && (
           <span className="flex items-center gap-2">
-            <span id={`${id}-hand`} className="text-sm text-muted-foreground">
+            <span id={`${id}-hand`} className="text-body-sm text-muted-foreground">
               {m['import.hand']()}
             </span>
             <ToggleGroup
@@ -44,10 +44,10 @@ export function PartPicker({
                 if (next) onHandChange(next)
               }}
             >
-              <ToggleGroupItem value="right" className="px-3 text-sm">
+              <ToggleGroupItem value="right" className="px-3 text-body-sm">
                 {m['import.hand_right']()}
               </ToggleGroupItem>
-              <ToggleGroupItem value="left" className="px-3 text-sm">
+              <ToggleGroupItem value="left" className="px-3 text-body-sm">
                 {m['import.hand_left']()}
               </ToggleGroupItem>
             </ToggleGroup>

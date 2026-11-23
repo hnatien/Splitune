@@ -28,11 +28,11 @@ function EmptyState({
       data-slot="empty-state"
       className={cn('flex flex-col items-center gap-3 px-6 py-16 text-center', className)}
     >
-      <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground [&_svg]:size-6">
+      <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-panel text-muted-foreground [&_svg]:size-6">
         {icon}
       </span>
-      {title && <h2 className="text-xl text-balance">{title}</h2>}
-      <p className="max-w-sm text-base text-pretty text-muted-foreground">{description}</p>
+      {title && <h2 className="text-heading text-balance">{title}</h2>}
+      <p className="max-w-sm text-body text-pretty text-muted-foreground">{description}</p>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         {action}
         {secondaryAction}

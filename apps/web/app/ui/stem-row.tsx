@@ -77,8 +77,8 @@ type StemRowProps = {
 
 // The painted face and the focus ring hugging it (inset by the transparent padding around it).
 const FACE = {
-  row: { box: 'focus-visible:outline-offset-[-6px]', face: 'size-8 text-xs' },
-  tools: { box: 'focus-visible:outline-offset-0', face: 'size-11 text-sm' },
+  row: { box: 'focus-visible:outline-offset-[-6px]', face: 'size-8 text-caption' },
+  tools: { box: 'focus-visible:outline-offset-0', face: 'size-11 text-body-sm' },
 } as const
 
 function StemToggle({
@@ -102,13 +102,13 @@ function StemToggle({
       aria-label={label}
       data-slot="stem-ms"
       className={cn(
-        'group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-full',
+        'group/ms inline-grid size-target-practice shrink-0 place-items-center rounded-full',
         FACE[size].box,
       )}
     >
       <span
         className={cn(
-          'grid place-items-center rounded-full border border-border-strong font-semibold text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal',
+          'grid place-items-center rounded-full border border-border-strong font-medium text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-raised forced-colors:group-data-pressed/ms:border-signal',
           FACE[size].face,
         )}
       >
@@ -150,7 +150,7 @@ function StemRow({
     >
       <span aria-hidden className={cn('row-span-2 h-8.5 w-1.5 rounded-full', STEM_RULE[stem])} />
       <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="truncate text-md font-medium">{name}</span>
+        <span className="truncate text-label font-medium">{name}</span>
         {yourPart && <Badge variant="primary">{yourPart}</Badge>}
         {rough && (
           <WithTooltip label={rough.reason}>
@@ -192,7 +192,7 @@ function StemRow({
         <Popover>
           <PopoverTrigger
             aria-label={`${labels.volume} ${name}: ${readout}`}
-            className="inline-flex min-h-target-practice-2 w-16 shrink-0 items-center justify-end rounded-lg px-1 text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground"
+            className="inline-flex min-h-target-practice w-16 shrink-0 items-center justify-end rounded-field px-1 text-body-sm text-muted-foreground tabular-nums hover:bg-panel hover:text-foreground"
           >
             {readout}
           </PopoverTrigger>
@@ -228,8 +228,8 @@ function StemRowSkeleton({ className }: { className?: string }) {
       <Skeleton className="row-span-2 h-8.5 w-1.5" />
       <Skeleton className="h-5 w-32" />
       <span className="row-span-2 flex gap-1">
-        <Skeleton className="size-target-practice-2" />
-        <Skeleton className="size-target-practice-2" />
+        <Skeleton className="size-target-practice" />
+        <Skeleton className="size-target-practice" />
       </span>
       <Skeleton className="h-2" />
     </div>

@@ -52,7 +52,7 @@ function AnalysingBadge() {
   const step = analysingStep(analysis)
   const minutes = etaMinutes(remaining(analysis, stats.data?.stages ?? []))
   return (
-    <Badge variant="primary" className="h-7 gap-2 px-3 text-xs whitespace-nowrap">
+    <Badge variant="primary" className="h-7 gap-2 px-3 text-caption whitespace-nowrap">
       <Spinner className="size-3" />
       {m['practice.analysing_badge']({ done: String(step.current), total: String(step.total) })}
       {minutes && ` · ${m['analysis.eta_inline']({ minutes })}`}

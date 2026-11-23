@@ -11,8 +11,8 @@ export function LegalPage({ page }: { page: string }) {
   return (
     <div className="mx-auto grid w-full max-w-marketing gap-x-12 px-4 pt-20 pb-24 sm:px-6 sm:pt-24 lg:grid-cols-[1fr_minmax(0,var(--container-reading))_1fr]">
       <header className="flex flex-col gap-3 lg:col-start-2">
-        <h1 className="text-4xl text-balance max-sm:text-3xl">{content.title}</h1>
-        <p className="text-sm text-faint-foreground">
+        <h1 className="text-hero text-balance max-sm:text-hero">{content.title}</h1>
+        <p className="text-body-sm text-faint-foreground">
           {m['legal.updated']({ date: formatDate(UPDATED, UPDATED) })}
         </p>
       </header>
@@ -20,7 +20,7 @@ export function LegalPage({ page }: { page: string }) {
         aria-labelledby="toc"
         className="mt-10 border-y border-border py-4 lg:sticky lg:top-24 lg:col-start-1 lg:row-start-2 lg:mt-14 lg:self-start lg:justify-self-end lg:border-0 lg:py-0"
       >
-        <h2 id="toc" className="text-sm font-medium text-muted-foreground">
+        <h2 id="toc" className="text-body-sm font-medium text-muted-foreground">
           {m['legal.toc']()}
         </h2>
         <ol className="mt-1 flex flex-col">
@@ -28,7 +28,7 @@ export function LegalPage({ page }: { page: string }) {
             <li key={section.id}>
               <a
                 href={`#${section.id}`}
-                className="inline-flex min-h-target items-center text-md text-muted-foreground transition-colors hover:text-foreground"
+                className="inline-flex min-h-target items-center text-label text-muted-foreground transition-colors hover:text-foreground"
               >
                 {section.title}
               </a>
@@ -43,7 +43,7 @@ export function LegalPage({ page }: { page: string }) {
             id={section.id}
             className="flex scroll-mt-20 flex-col gap-3 pt-12 lg:pt-14"
           >
-            <h2 className="text-2xl">{section.title}</h2>
+            <h2 className="text-display">{section.title}</h2>
             <p className="text-lead text-pretty">{section.body}</p>
           </section>
         ))}

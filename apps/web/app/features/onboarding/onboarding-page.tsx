@@ -226,7 +226,9 @@ function LevelStep({ onPick }: { onPick: (level: LevelName) => void }) {
 
 /** A step's question, centred: 32 px on phones, 44 px from `sm`. */
 export function StepTitle({ children }: { children: React.ReactNode }) {
-  return <h1 className="max-w-2xl text-center text-2xl text-balance sm:text-3xl">{children}</h1>
+  return (
+    <h1 className="max-w-2xl text-center text-display text-balance sm:text-hero">{children}</h1>
+  )
 }
 
 // Chord names are notation, not copy: the same in every language.
@@ -298,17 +300,17 @@ function ScreenStep({ onDone }: { onDone: () => void }) {
       </RadioCardGroup>
       <section
         aria-labelledby={sampleId}
-        className="flex w-full max-w-3xl flex-wrap items-center gap-8 rounded-xl border border-border bg-card p-6"
+        className="flex w-full max-w-3xl flex-wrap items-center gap-8 rounded-field border border-border bg-raised p-6"
       >
         <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-3">
-          <h2 id={sampleId} className="text-lg">
+          <h2 id={sampleId} className="text-title">
             {m['start.read_title']()}
           </h2>
-          <p className="text-sm text-muted-foreground">{m['start.read_hint']()}</p>
+          <p className="text-body-sm text-muted-foreground">{m['start.read_hint']()}</p>
           <div className="flex max-w-90 flex-col gap-2">
             <div className="flex items-baseline justify-between gap-3">
               <Label id={sizeId}>{m['settings.calibration']()}</Label>
-              <span className="text-sm font-medium text-muted-foreground tabular-nums">
+              <span className="text-body-sm font-medium text-muted-foreground tabular-nums">
                 {formatPercent(calibration * 100)}
               </span>
             </div>
@@ -375,7 +377,7 @@ function ReadingSample() {
         {SAMPLE_TAB.map((note, i) => (
           <span
             key={note.string}
-            className="absolute -translate-1/2 rounded-sm bg-card px-0.75 leading-none"
+            className="absolute -translate-1/2 rounded-media bg-raised px-0.75 leading-none"
             style={{ left: `${12 + i * 20}%`, top: `${note.string * STRING_GAP_EM}em` }}
           >
             {note.fret}

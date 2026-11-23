@@ -25,11 +25,11 @@ export function SettingsLayout({ children }: { children: React.ReactNode }) {
             <li key={section.to}>
               <Link
                 to={section.to}
-                // The current section is the `.navlink` --muted fill with --foreground text; forced
+                // The current section is the `.navlink` --panel fill with --foreground text; forced
                 // colours pair Highlight with its text.
                 className={cn(
                   buttonVariants({ variant: 'ghost' }),
-                  'w-full justify-start px-3 aria-[current=page]:bg-muted aria-[current=page]:text-foreground forced-colors:aria-[current=page]:bg-accent forced-colors:aria-[current=page]:text-accent-foreground',
+                  'w-full justify-start px-3 aria-[current=page]:bg-panel aria-[current=page]:text-foreground forced-colors:aria-[current=page]:bg-hover forced-colors:aria-[current=page]:text-foreground',
                 )}
                 activeProps={{ 'aria-current': 'page' }}
               >

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import { Spinner } from '@/ui/spinner'
 
-// Doc 26 §12.1 (`.toast`), §13: an --accent chip with a --border-strong edge (errors a --destructive
+// Doc 26 §12.1 (`.toast`), §13: an --hover chip with a --border-strong edge (errors a --destructive
 // edge) that confirms and offers Undo; a toast with an action never auto-dismisses, and a toast
 // is never the only place an error appears.
 const manager = ToastPrimitive.createToastManager()
@@ -44,7 +44,7 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
     <ToastPrimitive.Root
       data-slot="toast"
       className={cn(
-        'group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-2xl border border-border-strong bg-accent text-accent-foreground shadow-2 will-change-transform select-none data-[type=error]:border-destructive',
+        'group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-panel border border-border-strong bg-hover text-foreground shadow-popover will-change-transform select-none data-[type=error]:border-destructive',
         '[--gap:0.75rem] [--height:var(--toast-frontmost-height,var(--toast-height))] [--offset-y:calc(var(--toast-offset-y)*-1+calc(var(--toast-index)*var(--gap)*-1)+var(--toast-swipe-movement-y))] [--peek:0.75rem] [--scale:calc(max(0,1-(var(--toast-index)*0.1)))] [--shrink:calc(1-var(--scale))]',
         'h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_var(--duration-slow)_var(--ease-standard),opacity_var(--duration-slow)_var(--ease-standard),height_var(--duration-fast)_var(--ease-standard)]',
         "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
@@ -81,7 +81,11 @@ function ToastContent({ className, ...props }: ToastPrimitive.Content.Props) {
 
 function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
   return (
-    <ToastPrimitive.Title data-slot="toast-title" className={cn('text-md', className)} {...props} />
+    <ToastPrimitive.Title
+      data-slot="toast-title"
+      className={cn('text-label', className)}
+      {...props}
+    />
   )
 }
 
@@ -89,7 +93,7 @@ function ToastDescription({ className, ...props }: ToastPrimitive.Description.Pr
   return (
     <ToastPrimitive.Description
       data-slot="toast-description"
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-body-sm text-muted-foreground', className)}
       {...props}
     />
   )
@@ -136,11 +140,11 @@ function ToastIcon({ type }: { type: string | undefined }) {
   }
 
   if (type === 'info') {
-    icon = <InfoIcon className="text-info" aria-hidden="true" />
+    icon = <InfoIcon className="text-muted-foreground" aria-hidden="true" />
   }
 
   if (type === 'warning') {
-    icon = <TriangleAlertIcon className="text-warning" aria-hidden="true" />
+    icon = <TriangleAlertIcon className="text-muted-foreground" aria-hidden="true" />
   }
 
   if (type === 'error') {

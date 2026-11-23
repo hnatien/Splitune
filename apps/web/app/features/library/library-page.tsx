@@ -290,7 +290,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
         <section aria-labelledby="songs-title" className="flex flex-col gap-4">
           {/* biome-ignore lint/a11y/useSemanticElements: <search> is newer than the Safari 16.4 floor (24 §2) */}
           <div role="search" className="flex flex-wrap items-center gap-2.5">
-            <h2 id="songs-title" className={cn('text-xl', !wide && 'sr-only')}>
+            <h2 id="songs-title" className={cn('text-heading', !wide && 'sr-only')}>
               {m['library.songs_heading']()}
               {songs.isSuccess && (
                 <span className="text-faint-foreground tabular-nums">
@@ -310,7 +310,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
                 type="search"
                 aria-label={m['library.filter_title']()}
                 placeholder={m['library.filter_title']()}
-                className="rounded-full pl-9 text-md"
+                className="rounded-full pl-9 text-label"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />

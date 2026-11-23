@@ -38,7 +38,7 @@ export function ProgressChart({
               style={{ top: `${i * 50}%` }}
             >
               {i < 2 && (
-                <span className="absolute top-0.5 -right-9 w-8 text-right text-xs text-faint-foreground tabular-nums">
+                <span className="absolute top-0.5 -right-9 w-8 text-right text-caption text-faint-foreground tabular-nums">
                   {formatPercent(tick)}
                 </span>
               )}
@@ -76,7 +76,7 @@ export function ProgressChart({
               // biome-ignore lint/suspicious/noArrayIndexKey: one marker per session, in order
               key={`c${i}`}
               data-marker="cold"
-              className="absolute size-2 -translate-1/2 border-2 border-muted-foreground bg-card"
+              className="absolute size-2 -translate-1/2 border-2 border-muted-foreground bg-raised"
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
             />
           ))}
@@ -94,7 +94,7 @@ export function ProgressChart({
           ))}
         </div>
       </div>
-      <ul className="flex list-none flex-col gap-1 p-0 text-sm text-muted-foreground">
+      <ul className="flex list-none flex-col gap-1 p-0 text-body-sm text-muted-foreground">
         <li className="flex items-center gap-2">
           <span aria-hidden className="h-0.75 w-4.5 rounded-full bg-signal" />
           {legend.best}

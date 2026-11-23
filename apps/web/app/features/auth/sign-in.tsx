@@ -192,17 +192,17 @@ export function AuthScreen({
     <>
       <div className="my-auto flex flex-col gap-6 py-10 sm:py-16">
         <div className="flex flex-col gap-2 text-center">
-          <h1 className="text-2xl text-balance">
+          <h1 className="text-display text-balance">
             {signUp ? m['auth.sign_up_title']() : m['auth.sign_in_title']()}
           </h1>
-          <p className="text-base text-muted-foreground">
+          <p className="text-body text-muted-foreground">
             {signUp ? m['auth.sign_up_lead']() : m['auth.sign_in_lead']()}
           </p>
         </div>
         <CredentialsForm mode={mode} next={next} />
         {google && (
           <>
-            <p className="flex items-center gap-3 text-sm text-faint-foreground">
+            <p className="flex items-center gap-3 text-body-sm text-faint-foreground">
               <span aria-hidden className="h-px flex-1 bg-border" />
               {m['auth.or']()}
               <span aria-hidden className="h-px flex-1 bg-border" />
@@ -217,7 +217,7 @@ export function AuthScreen({
             </Button>
           </>
         )}
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-body-sm text-muted-foreground">
           {signUp ? m['auth.have_account']() : m['auth.new_here']()}{' '}
           <Link to={signUp ? '/auth/sign-in' : '/auth/sign-up'} search={{ next }} className={LINK}>
             {signUp ? m['auth.sign_in_title']() : m['auth.sign_up_title']()}
@@ -225,7 +225,7 @@ export function AuthScreen({
           {signUp ? null : m['auth.no_email']()}
         </p>
       </div>
-      <p className="pb-6 text-center text-sm text-faint-foreground">
+      <p className="pb-6 text-center text-body-sm text-faint-foreground">
         {m['auth.small_print']()}{' '}
         <Link to="/legal/$page" params={{ page: 'terms' }} className={SMALL_LINK}>
           {m['legal.terms_title']()}

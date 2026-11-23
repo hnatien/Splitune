@@ -85,10 +85,12 @@ export function PracticeStatus({
       {/* Phones keep the controls, read from the stand, whole: the title is for screen readers
           there, as in Stage. */}
       <div className="flex min-w-0 shrink flex-col leading-tight max-sm:sr-only in-data-[appearance=stage]:sr-only">
-        <span className="truncate text-button-lg font-medium" title={song?.title}>
+        <span className="truncate text-title font-medium" title={song?.title}>
           {song?.title}
         </span>
-        {partLine && <span className="truncate text-sm text-muted-foreground">{partLine}</span>}
+        {partLine && (
+          <span className="truncate text-body-sm text-muted-foreground">{partLine}</span>
+        )}
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-center gap-2 max-lg:justify-end">
         <Suspense fallback={null}>

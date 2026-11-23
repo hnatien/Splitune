@@ -66,12 +66,12 @@ function PassControl({
         data-slot="pass-prompt"
         inert={inert}
         className={cn(
-          'm-0 flex items-center gap-3 rounded-full border border-border bg-card py-2.5 pr-2.5 pl-5 whitespace-nowrap shadow-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-(--duration-base) motion-safe:ease-enter',
+          'm-0 flex items-center gap-3 rounded-full border border-border bg-raised py-2.5 pr-2.5 pl-5 whitespace-nowrap shadow-popover motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-(--duration-base) motion-safe:ease-enter',
           className,
         )}
       >
         <legend className="sr-only">{labels.prompt}</legend>
-        {question && <span className="text-base font-medium">{question}</span>}
+        {question && <span className="text-body font-medium">{question}</span>}
         <Button
           size="practice"
           variant="primary"
@@ -114,13 +114,13 @@ function PassControl({
       {(best || (prompting && question)) && (
         <div className="mx-2 flex flex-col items-end">
           {prompting && question && (
-            <p aria-hidden className="text-read-label font-semibold text-foreground">
+            <p aria-hidden className="text-read-label font-medium text-foreground">
               {question}
             </p>
           )}
           {best && (
             <p
-              className="flex items-center gap-1 text-sm text-muted-foreground tabular-nums"
+              className="flex items-center gap-1 text-body-sm text-muted-foreground tabular-nums"
               aria-live="polite"
             >
               {improved && <CheckDrawIcon key={best} aria-hidden className="size-5 text-success" />}

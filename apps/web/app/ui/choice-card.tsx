@@ -29,7 +29,7 @@ function ChoiceCard({
       aria-disabled={unavailable || undefined}
       onClick={unavailable ? undefined : onClick}
       className={cn(
-        'flex min-h-target-practice w-full items-center gap-4 rounded-xl border border-border bg-background px-5 py-4 text-left transition-colors duration-(--duration-base) ease-standard hover:border-border-strong hover:bg-muted contrast-more:border-input aria-disabled:cursor-not-allowed aria-disabled:border-transparent aria-disabled:bg-muted aria-disabled:hover:border-transparent [&_svg]:size-6 [&_svg]:shrink-0',
+        'flex min-h-target-play w-full items-center gap-4 rounded-field border border-border bg-background px-5 py-4 text-left transition-colors duration-(--duration-base) ease-standard hover:border-border-strong hover:bg-panel contrast-more:border-edge aria-disabled:cursor-not-allowed aria-disabled:border-transparent aria-disabled:bg-panel aria-disabled:hover:border-transparent [&_svg]:size-6 [&_svg]:shrink-0',
         className,
       )}
       {...props}
@@ -40,8 +40,8 @@ function ChoiceCard({
         </span>
       )}
       <span className="flex min-w-0 flex-col gap-1">
-        <span className="text-lg in-aria-disabled:text-muted-foreground">{title}</span>
-        {description && <span className="text-sm text-muted-foreground">{description}</span>}
+        <span className="text-title in-aria-disabled:text-muted-foreground">{title}</span>
+        {description && <span className="text-body-sm text-muted-foreground">{description}</span>}
       </span>
     </button>
   )

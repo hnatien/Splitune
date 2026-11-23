@@ -85,12 +85,12 @@ export function MockPortal({ session }: { session: string }) {
   return (
     <>
       <Banner tone="info" title={m['billing.demo']()} />
-      <h1 className="text-2xl">{m['billing.portal_title']()}</h1>
+      <h1 className="text-display">{m['billing.portal_title']()}</h1>
       {details.isError || me === null ? (
         <SessionExpired />
       ) : !details.data || !me ? (
         <div className="flex flex-col gap-3" aria-hidden>
-          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-field" />
           <Skeleton className="h-12" />
         </div>
       ) : (
@@ -100,7 +100,7 @@ export function MockPortal({ session }: { session: string }) {
             note={plus ? periodLine(me, zone) : undefined}
           >
             {plus && subscription.status === 'past_due' && (
-              <p className="text-base">{m['billing.status_past_due']()}</p>
+              <p className="text-body">{m['billing.status_past_due']()}</p>
             )}
             {done && <InlineError tone="success" title={confirmation(done, me)} />}
             {failed && <InlineError title={m['billing.action_failed']()} />}
@@ -124,7 +124,7 @@ export function MockPortal({ session }: { session: string }) {
               aria-labelledby="simulations"
               className="flex flex-col gap-4 border-t border-border pt-6"
             >
-              <h2 id="simulations" className="text-lg">
+              <h2 id="simulations" className="text-title">
                 {m['billing.simulations']()}
               </h2>
               <div className="flex flex-col gap-2">

@@ -25,7 +25,7 @@ import {
 import { COPY } from './fixtures.ts'
 import { DAYLIGHT } from './story-kit.tsx'
 
-// Doc 26 §12.1 `.sheet` + `.overlay`: 22 px corners, --elevation-3, the --scrim behind; the delete
+// Doc 26 §12.1 `.sheet` + `.overlay`: 22 px corners, --elevation-dialog, the --scrim behind; the delete
 // confirm is the one solid destructive button (V9: graphite text on red in Night).
 const meta = { title: 'Base/Dialog' } satisfies Meta
 export default meta

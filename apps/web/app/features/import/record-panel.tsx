@@ -18,7 +18,7 @@ function Elapsed({ since }: { since: number | undefined }) {
     return () => clearInterval(timer)
   }, [since])
   return (
-    <span className="text-4xl leading-none font-medium tabular-nums">
+    <span className="text-hero leading-none font-medium tabular-nums">
       {formatDuration(since === undefined ? 0 : Math.max(0, now - since) / 1000)}
     </span>
   )
@@ -54,7 +54,7 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
   if (state.phase === 'idle' || state.phase === 'requesting' || state.phase === 'denied') {
     return (
       <div className="flex flex-col items-start gap-4">
-        <p className="text-base text-muted-foreground">{m['import.record_explainer']()}</p>
+        <p className="text-body text-muted-foreground">{m['import.record_explainer']()}</p>
         {state.phase === 'denied' && <InlineError title={m['record.permission_denied']()} />}
         <Button loading={state.phase === 'requesting'} onClick={recorder.requestMicrophone}>
           <MicIcon aria-hidden />
@@ -65,8 +65,8 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
   }
   if (state.phase === 'review') {
     return (
-      <div className="flex flex-col gap-3 rounded-xl bg-muted p-4">
-        <p className="text-base font-medium">
+      <div className="flex flex-col gap-3 rounded-field bg-panel p-4">
+        <p className="text-body font-medium">
           {m['import.review']({ duration: formatDuration(state.durationS) })}
         </p>
         {/* biome-ignore lint/a11y/useMediaCaption: the user's own instrument recording has no speech */}
@@ -81,7 +81,7 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
   const recording = state.phase === 'recording'
   return (
     <div className="flex flex-col gap-4.5">
-      <div className="flex flex-col items-center gap-4 rounded-xl bg-muted px-4 py-6">
+      <div className="flex flex-col items-center gap-4 rounded-field bg-panel px-4 py-6">
         {recording && (
           <Badge variant="destructive" className="h-7 px-3">
             <span aria-hidden className="size-2 rounded-full bg-destructive" />
@@ -89,7 +89,7 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
           </Badge>
         )}
         {state.phase === 'counting' ? (
-          <p role="status" className="text-4xl leading-none font-medium tabular-nums">
+          <p role="status" className="text-hero leading-none font-medium tabular-nums">
             {m['import.counting']({ beat: String(state.beat) })}
           </p>
         ) : (
@@ -102,7 +102,7 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
           getAriaValueText={() => `${level} %`}
           className="w-full gap-y-1.5"
         >
-          <MeterLabel className="text-sm font-normal text-faint-foreground">
+          <MeterLabel className="text-body-sm font-normal text-faint-foreground">
             {m['import.input_level']()}
           </MeterLabel>
         </Meter>
@@ -113,7 +113,7 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
             className={ROUND}
             onClick={recorder.stop}
           >
-            <span aria-hidden className="size-7.5 rounded-md bg-destructive" />
+            <span aria-hidden className="size-7.5 rounded-media bg-destructive" />
           </Button>
         ) : (
           <Button
@@ -147,7 +147,7 @@ export function RecordPanel({ onRecording }: { onRecording: (file: File | undefi
           </div>
         </div>
       </div>
-      <p className="text-sm text-muted-foreground">{m['import.headset_hint']()}</p>
+      <p className="text-body-sm text-muted-foreground">{m['import.headset_hint']()}</p>
     </div>
   )
 }

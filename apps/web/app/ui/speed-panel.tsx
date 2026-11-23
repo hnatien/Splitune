@@ -85,7 +85,9 @@ export function SpeedPanel({
         className="w-full justify-between"
       />
       {goal && (
-        <p className="text-sm text-muted-foreground first-letter:uppercase tabular-nums">{goal}</p>
+        <p className="text-body-sm text-muted-foreground first-letter:uppercase tabular-nums">
+          {goal}
+        </p>
       )}
     </PopoverContent>
   )

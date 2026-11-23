@@ -7,16 +7,16 @@ import { cn } from '@/lib/utils'
 // optionally an icon or a Spinner; status colour is the text on its own surface, never colour alone
 // (§4.3, §4.8, §5). Warnings and info are neutral with their icon.
 const badgeVariants = cva(
-  'group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.25 overflow-hidden rounded-full px-2.5 text-xs whitespace-nowrap [&_[data-slot=spinner]]:size-3 [&>svg]:pointer-events-none [&>svg]:size-3.5 [&_.lucide]:stroke-[1.8]',
+  'group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1.25 overflow-hidden rounded-full px-2.5 text-caption whitespace-nowrap [&_[data-slot=spinner]]:size-3 [&>svg]:pointer-events-none [&>svg]:size-3.5 [&_.lucide]:stroke-[1.8]',
   {
     variants: {
       variant: {
-        neutral: 'bg-muted text-muted-foreground',
+        neutral: 'bg-panel text-muted-foreground',
         outline: 'bg-transparent text-muted-foreground inset-ring inset-ring-border-strong',
-        primary: 'bg-primary-soft text-primary-ink inset-ring inset-ring-border-strong',
+        primary: 'bg-wash text-foreground inset-ring inset-ring-border-strong',
         success: 'bg-success-surface text-success',
-        warning: 'bg-warning-surface text-warning',
-        info: 'bg-info-surface text-info inset-ring inset-ring-border',
+        warning: 'bg-panel text-muted-foreground',
+        info: 'bg-panel text-muted-foreground inset-ring inset-ring-border',
         destructive: 'bg-destructive-surface text-destructive',
         unsure: 'bg-unsure-surface text-unsure',
       },

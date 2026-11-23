@@ -107,7 +107,7 @@ const ProgressesDemo = () => (
   </div>
 )
 
-/** `.bar`: 6 px --accent track and --signal fill; the stage is named in aria-valuetext. */
+/** `.bar`: 6 px --hover track and --signal fill; the stage is named in aria-valuetext. */
 export const Progresses: Story = {
   render: ProgressesDemo,
   globals: BOTH_THEMES,
@@ -144,7 +144,7 @@ export const Loading: Story = {
       <Skeleton className="h-6 w-2/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
-      <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+      <span className="inline-flex items-center gap-2 text-body-sm text-muted-foreground">
         <Spinner />
         Loading your song…
       </span>
@@ -180,7 +180,7 @@ const CardsDemo = () => (
   </div>
 )
 
-/** `.card`: --card, a 1 px --border edge, 16 px corners, no shadow; `emphasis` on --muted. */
+/** `.card`: --raised, a 1 px --border edge, 16 px corners, no shadow; `emphasis` on --panel. */
 export const Cards: Story = {
   render: CardsDemo,
   globals: BOTH_THEMES,
@@ -200,7 +200,7 @@ export const Scrolling: Story = {
   render: () => (
     <div className="flex items-stretch gap-4">
       <ScrollArea
-        className="h-48 w-72 rounded-lg border border-border"
+        className="h-48 w-72 rounded-field border border-border"
         tabIndex={0}
         aria-label="Bars"
       >
@@ -213,7 +213,7 @@ export const Scrolling: Story = {
         </ol>
       </ScrollArea>
       <Separator orientation="vertical" />
-      <div className="flex w-40 flex-col gap-3 text-sm">
+      <div className="flex w-40 flex-col gap-3 text-body-sm">
         Above
         <Separator />
         Below

@@ -28,10 +28,10 @@ export function SettingsPage({
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="flex-1 text-2xl">{title}</h1>
+          <h1 className="flex-1 text-display">{title}</h1>
           {badge}
         </div>
-        {intro && <p className="text-base text-muted-foreground">{intro}</p>}
+        {intro && <p className="text-body text-muted-foreground">{intro}</p>}
       </div>
       {children}
     </div>
@@ -62,12 +62,12 @@ export function SettingSection({
     >
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h2 id={`${id}-title`} className="flex-1 text-lg">
+          <h2 id={`${id}-title`} className="flex-1 text-title">
             {title}
           </h2>
           {aside}
         </div>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        {description && <p className="text-body-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
     </section>
@@ -111,11 +111,11 @@ function LabelColumn({
   state: SaveState
 }) {
   const text = htmlFor ? (
-    <label id={labelId} htmlFor={htmlFor} className="text-base">
+    <label id={labelId} htmlFor={htmlFor} className="text-body">
       {label}
     </label>
   ) : (
-    <span id={labelId} className="text-base">
+    <span id={labelId} className="text-body">
       {label}
     </span>
   )
@@ -131,7 +131,7 @@ function LabelColumn({
         />
       </div>
       {hint && (
-        <span id={hintId} className="text-sm text-muted-foreground">
+        <span id={hintId} className="text-body-sm text-muted-foreground">
           {hint}
         </span>
       )}

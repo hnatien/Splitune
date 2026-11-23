@@ -436,7 +436,7 @@ export function AlphaTabView({
                 data-slot="loop-shade"
                 className={
                   armed && !inLoop
-                    ? 'absolute rounded-xs border-2 border-dashed border-score-loop-edge'
+                    ? 'absolute rounded-media border-2 border-dashed border-score-loop-edge'
                     : 'absolute bg-score-loop-fill'
                 }
                 style={boxStyle(barBody(bar))}
@@ -465,7 +465,7 @@ export function AlphaTabView({
                 <span
                   key={`shaky-${bar.index}-${bar.system}`}
                   data-slot="shaky-bar"
-                  className="absolute rounded-xs border-[1.5px] border-dashed border-unsure"
+                  className="absolute rounded-media border-[1.5px] border-dashed border-unsure"
                   style={boxStyle(barBody(bar))}
                 >
                   <Unsure />
@@ -492,7 +492,7 @@ export function AlphaTabView({
               <span
                 key={`8-${note.noteId}`}
                 title={note.octave === '8va' ? labels.octaveUp : labels.octaveDown}
-                className="absolute text-xs leading-none font-semibold"
+                className="absolute text-caption leading-none font-medium"
                 style={{ left: note.x + note.w, top: note.y - 10 }}
               >
                 {note.octave}
@@ -502,7 +502,7 @@ export function AlphaTabView({
           {overlay.markers.map((marker) => (
             <span
               key={`m-${marker.noteId}`}
-              className="absolute -translate-x-1/2 text-sm leading-none font-bold"
+              className="absolute -translate-x-1/2 text-body-sm leading-none font-medium"
               style={{ left: marker.x, top: marker.y + 2 }}
             >
               {marker.label}
@@ -515,7 +515,7 @@ export function AlphaTabView({
             data-style={playhead}
             className={
               playhead === 'block'
-                ? 'absolute top-0 left-0 size-3 rounded-xs bg-score-playhead will-change-transform'
+                ? 'absolute top-0 left-0 size-3 rounded-media bg-score-playhead will-change-transform'
                 : playhead === 'bar'
                   ? 'hidden'
                   : 'absolute top-0 left-0 w-0.5 rounded-full bg-score-playhead will-change-transform'
@@ -542,7 +542,7 @@ export function AlphaTabView({
               }
               onClick={() => onBarActivate(timeline.firstBar + bar.index)}
               onKeyDown={onBarKey(bar.index)}
-              className="absolute cursor-pointer rounded-sm bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+              className="absolute cursor-pointer rounded-media bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
               style={boxStyle(barBody(bar))}
             />
           ))}
@@ -557,7 +557,7 @@ export function AlphaTabView({
                 aria-label={noteLabel?.(note.noteId) ?? note.noteId}
                 aria-pressed={selectedNoteId === note.noteId}
                 onClick={() => onNoteActivate?.(note.noteId)}
-                className="absolute min-h-6 min-w-6 cursor-pointer rounded-sm bg-transparent aria-pressed:outline-2 aria-pressed:outline-ring focus-visible:outline-2 focus-visible:outline-ring"
+                className="absolute min-h-6 min-w-6 cursor-pointer rounded-media bg-transparent aria-pressed:outline-2 aria-pressed:outline-ring focus-visible:outline-2 focus-visible:outline-ring"
                 style={{
                   ...boxStyle(note),
                   left: note.x + note.w / 2,
@@ -591,13 +591,13 @@ function LoopBracket({
     <>
       <span
         data-slot="loop-bracket"
-        className="absolute h-3 rounded-t-sm border-2 border-b-0 border-score-loop-edge"
+        className="absolute h-3 rounded-t-media border-2 border-b-0 border-score-loop-edge"
         style={{ left: span.x, top: span.y - 16, width: span.w }}
       />
       {label && (
         <span
           data-slot="loop-badge"
-          className="absolute inline-flex h-5.5 items-center rounded-full bg-paper px-2 text-xs font-semibold whitespace-nowrap text-primary-ink tabular-nums inset-ring inset-ring-primary-line"
+          className="absolute inline-flex h-5.5 items-center rounded-full bg-paper px-2 text-caption font-medium whitespace-nowrap text-foreground tabular-nums inset-ring inset-ring-selected"
           style={{ left: span.x + 14, top: span.y - 38 }}
         >
           {label}
@@ -614,7 +614,7 @@ function boxStyle(box: { x: number; y: number; w: number; h: number }): CSSPrope
 /** The superscript "?" of an unsure mark (26 §5: 10 px, 700, `--unsure`). */
 function Unsure() {
   return (
-    <sup className="absolute -top-2.5 -right-2.5 text-2xs leading-none font-bold text-conf-low">
+    <sup className="absolute -top-2.5 -right-2.5 text-kbd leading-none font-medium text-conf-low">
       ?
     </sup>
   )
@@ -636,7 +636,7 @@ function NoteMarks({ note }: { note: NoteBox }) {
       data-slot="note-mark"
       data-confidence={note.level}
       className={[
-        'absolute rounded-xs',
+        'absolute rounded-media',
         note.level === 'medium' ? 'border-[1.5px] border-dashed border-conf-medium-edge' : '',
         note.level === 'low' ? 'border-[1.5px] border-dashed border-conf-low' : '',
         note.timingFlagged && note.level === 'high'
@@ -662,7 +662,7 @@ function showSounding(container: HTMLElement | null, beat: CursorPosition['beat'
     const fill = document.createElement('span')
     fill.setAttribute('data-slot', 'sounding-note')
     fill.className =
-      'absolute grid place-items-center rounded-xs bg-primary font-reading-mono text-read-tab leading-none font-semibold text-primary-foreground'
+      'absolute grid place-items-center rounded-media bg-primary font-reading-mono text-read-tab leading-none font-medium text-primary-foreground'
     fill.style.left = `${box.x - 3}px`
     fill.style.top = `${box.y - 1}px`
     fill.style.width = `${box.w + 6}px`

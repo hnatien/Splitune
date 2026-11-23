@@ -110,9 +110,7 @@ function EditScreen() {
       fill
       status={
         <>
-          <span className="min-w-0 truncate text-button-lg font-medium">
-            {data.song.data?.title}
-          </span>
+          <span className="min-w-0 truncate text-title font-medium">{data.song.data?.title}</span>
           <div className="flex min-w-0 flex-1 items-center justify-center">
             <FixPill onDone={done} />
           </div>
@@ -154,7 +152,7 @@ function EditScreen() {
         </div>
         <aside
           aria-label={m['edit.inspector']()}
-          className="flex min-h-0 flex-col overflow-y-auto border-l border-border bg-card p-4.5"
+          className="flex min-h-0 flex-col overflow-y-auto border-l border-border bg-raised p-4.5"
         >
           <FixTab fullEditor={false} empty={m['edit.empty']()} />
         </aside>

@@ -80,23 +80,25 @@ export function PlanSettings({
         <div className="flex flex-col divide-y divide-border border-y border-border">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-5">
             <div className="flex min-w-0 grow basis-65 flex-col gap-1">
-              <p className="text-lg">
+              <p className="text-title">
                 {plus ? planName(subscription.plan) : m['billing.plan_free']()}
               </p>
               {plus ? (
                 <>
-                  <p className="text-sm text-muted-foreground">{periodLine(current)}</p>
+                  <p className="text-body-sm text-muted-foreground">{periodLine(current)}</p>
                   {subscription.status === 'past_due' && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm text-muted-foreground">
                       {m['billing.status_past_due']()}
                     </p>
                   )}
                   {lite.cap === null && (
-                    <p className="text-sm text-muted-foreground">{m['billing.lite_unlimited']()}</p>
+                    <p className="text-body-sm text-muted-foreground">
+                      {m['billing.lite_unlimited']()}
+                    </p>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-body-sm text-muted-foreground">
                   {current.usage.welcome_available
                     ? m['billing.welcome_unused']()
                     : m['billing.welcome_used']()}

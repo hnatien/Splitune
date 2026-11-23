@@ -30,7 +30,7 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
     <div className="flex flex-col gap-4">
       <table className="w-full border-collapse text-left">
         <thead>
-          <tr className="border-b border-border text-sm text-muted-foreground">
+          <tr className="border-b border-border text-body-sm text-muted-foreground">
             <th scope="col" className="py-2 pr-4 font-medium">
               {m['shortcuts.action']()}
             </th>
@@ -47,7 +47,7 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
         <tbody>
           {ACTIONS.map((action) => (
             <tr key={action} className="border-b border-border">
-              <th scope="row" className="py-2 pr-4 text-base font-normal">
+              <th scope="row" className="py-2 pr-4 text-body font-normal">
                 {actionLabel(action)}
               </th>
               <td className="py-2 pr-4">
@@ -78,7 +78,7 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
           ))}
         </tbody>
       </table>
-      <p aria-live="polite" className="text-sm text-muted-foreground">
+      <p aria-live="polite" className="text-body-sm text-muted-foreground">
         {learning ? m['shortcuts.learning']({ action: actionLabel(learning) }) : ''}
       </p>
       {learnable && (

@@ -20,7 +20,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// Doc 26 §12.1 `.stepper`: a 40 px --background well with an --input edge and a mono value; each
+// Doc 26 §12.1 `.stepper`: a 40 px --background well with an --edge edge and a mono value; each
 // step half is a 44 × 44 box (48 in practice density) around its 36 px face (V12).
 export const Default: Story = { globals: BOTH_THEMES }
 export const Disabled: Story = {

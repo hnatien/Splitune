@@ -128,7 +128,7 @@ export function PianoChart({
             <span className="sr-only">{`${m['practice.bar_prefix']()} ${number}`}</span>
           )}
           {item.noChord && (
-            <span className="absolute top-[24%] left-3 font-reading text-read-chord-sheet leading-none font-bold text-conf-medium">
+            <span className="absolute top-[24%] left-3 font-reading text-read-chord-sheet leading-none font-medium text-conf-medium">
               <span className="sr-only">, {m['practice.no_chord']()}</span>
               <span aria-hidden>{m['practice.no_chord_short']()}</span>
             </span>
@@ -145,7 +145,7 @@ export function PianoChart({
                 <span
                   data-slot="chart-chord"
                   className={cn(
-                    'shrink-0 font-reading text-read-chord-sheet leading-none font-bold',
+                    'shrink-0 font-reading text-read-chord-sheet leading-none font-medium',
                     ink[chord.confidence],
                     uncertain && 'border-b-2 border-dashed border-current pb-0.5',
                   )}
@@ -175,7 +175,7 @@ export function PianoChart({
                 // biome-ignore lint/suspicious/noArrayIndexKey: beats are positional
                 key={beat}
                 className={cn(
-                  'flex-1 text-center font-reading text-read-chord leading-none font-bold transition-colors duration-(--duration-fast)',
+                  'flex-1 text-center font-reading text-read-chord leading-none font-medium transition-colors duration-(--duration-fast)',
                   current && beat === at.beat ? 'text-ink' : 'text-staff',
                 )}
               >

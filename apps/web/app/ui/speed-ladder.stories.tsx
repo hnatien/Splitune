@@ -21,7 +21,7 @@ const meta = {
   args: { rungs: RUNGS, current: 1, label: '70 percent done, 75 percent now, 80 percent next' },
   decorators: [
     (Story) => (
-      <div className="w-81 rounded-xl border border-border bg-card p-3.5">
+      <div className="w-81 rounded-field border border-border bg-raised p-3.5">
         <Story />
       </div>
     ),
@@ -72,7 +72,7 @@ export const EachRung: Story = {
     <StateGrid
       states={RUNGS.map((pct, current) => [
         `At ${pct} %`,
-        <div key={pct} className="w-81 rounded-xl border border-border bg-card p-3.5">
+        <div key={pct} className="w-81 rounded-field border border-border bg-raised p-3.5">
           <SpeedLadder rungs={RUNGS} current={current} label={`Now at ${pct} percent`} />
         </div>,
       ])}
@@ -133,8 +133,8 @@ export const Chips: Story = {
   render: () => (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
-        <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-primary-ink" />
-        <span className="text-md font-medium">Speed ladder</span>
+        <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-foreground" />
+        <span className="text-label font-medium">Speed ladder</span>
       </div>
       <div className="flex flex-wrap gap-x-1.5">
         {['Start 70 %', 'Goal 100 %', 'Step 5 %', '3 clean passes', 'More'].map((chip) => (

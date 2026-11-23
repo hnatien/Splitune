@@ -19,7 +19,7 @@ function Miniature({ appearance }: { appearance: 'dark' | 'light' }) {
       data-appearance={appearance}
       className="flex h-full flex-1 items-center gap-2.5 bg-background px-3.5 text-foreground"
     >
-      <span className="text-3xl font-medium">{MINIATURE_CHORD}</span>
+      <span className="text-hero font-medium">{MINIATURE_CHORD}</span>
       <span className="flex h-10 flex-1 flex-col justify-between">
         {[0, 1, 2, 3, 4].map((line) => (
           <span key={line} className="h-px bg-staff" />
@@ -62,13 +62,13 @@ function AppearanceCard({ value, label, hint }: { value: Choice; label: string; 
     // biome-ignore lint/a11y/noLabelWithoutControl: Base UI's Radio renders the control inside
     <label
       className={cn(
-        'flex cursor-pointer flex-col gap-3 rounded-xl border border-border p-3 transition-colors duration-(--duration-fast) pointer-fine:hover:bg-muted contrast-more:border-input',
+        'flex cursor-pointer flex-col gap-3 rounded-field border border-border p-3 transition-colors duration-(--duration-fast) pointer-fine:hover:bg-panel contrast-more:border-edge',
         'has-data-checked:border-signal has-data-checked:inset-ring has-data-checked:inset-ring-signal',
         'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring',
         'forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-solid',
       )}
     >
-      <span aria-hidden className="flex h-21 overflow-hidden rounded-md border border-border">
+      <span aria-hidden className="flex h-21 overflow-hidden rounded-media border border-border">
         {value === 'system' ? (
           <>
             <span data-appearance="dark" className="flex-1 bg-background" />
@@ -85,10 +85,10 @@ function AppearanceCard({ value, label, hint }: { value: Choice; label: string; 
         className="sr-only"
       />
       <span className="flex min-w-0 flex-col">
-        <span id={labelId} className="text-base font-medium">
+        <span id={labelId} className="text-body font-medium">
           {label}
         </span>
-        <span id={hintId} className="text-sm text-muted-foreground">
+        <span id={hintId} className="text-body-sm text-muted-foreground">
           {hint}
         </span>
       </span>

@@ -147,7 +147,7 @@ export const Pressed: Story = {
   },
 }
 
-/** 26 §12.3: --muted fill, --faint-foreground text, a ≥ 3:1 edge and "Unavailable" in the name. */
+/** 26 §12.3: --panel fill, --faint-foreground text, a ≥ 3:1 edge and "Unavailable" in the name. */
 export const Disabled: Story = {
   args: { variant: 'primary', disabled: true, unavailableLabel: 'unavailable' },
   globals: BOTH_THEMES,

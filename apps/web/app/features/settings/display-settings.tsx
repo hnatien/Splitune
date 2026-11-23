@@ -202,7 +202,7 @@ function ReadingSize() {
             {m['settings.calibration']()}
           </Label>
           <SaveStatusSlot state={save.state} />
-          <span className="text-sm text-muted-foreground tabular-nums">{size}</span>
+          <span className="text-body-sm text-muted-foreground tabular-nums">{size}</span>
         </div>
         <Slider
           aria-labelledby={id}
@@ -215,7 +215,7 @@ function ReadingSize() {
           value={calibration}
           onValueChange={(value) => save.run(() => update({ calibration: Number(value) }))}
         />
-        <span id={hintId} className="text-sm text-muted-foreground">
+        <span id={hintId} className="text-body-sm text-muted-foreground">
           {m['settings.calibration_hint']()}
         </span>
       </div>
@@ -225,12 +225,12 @@ function ReadingSize() {
         aria-label={m['settings.sample_label']({ size })}
         className="flex items-center gap-5 text-foreground"
       >
-        <span aria-hidden className="text-read-chord-sheet font-semibold">
+        <span aria-hidden className="text-read-chord-sheet font-medium">
           {m['settings.sample_chord']()}
         </span>
         <span
           aria-hidden
-          className="font-reading text-read-tab font-semibold tracking-widest tabular-nums"
+          className="font-reading text-read-tab font-medium tracking-widest tabular-nums"
         >
           {m['settings.sample_tab']()}
         </span>

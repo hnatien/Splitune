@@ -6,7 +6,7 @@ import { Spinner } from '@/ui/spinner'
 
 // Doc 26 §12.2, §13, 27 §3.7.3 (Practice-Ready.dc.html): the overall bar with "Analysing your song"
 // and the ETA beside it, then the stages in order — a 22 px status dot (done: --success with a
-// check; running: a spinner on --primary-soft; waiting: an --input ring; a fallback or failure
+// check; running: a spinner on --wash; waiting: an --edge ring; a fallback or failure
 // carries its icon), the stage's name (600; faint while waiting), a detail line naming the
 // artefact it leaves ("84 BPM in 4/4, starts on a pickup bar") and its status in words ("Done",
 // "about 2 min", "Waiting"). The list is not a live region; callers announce stage milestones once.
@@ -30,12 +30,12 @@ const DOT: Record<StageStatus, { className: string; icon: React.ReactNode }> = {
     icon: <CheckIcon aria-hidden strokeWidth={2.6} className="size-3.5" />,
   },
   running: {
-    className: 'bg-primary-soft text-primary-ink',
+    className: 'bg-wash text-foreground',
     icon: <Spinner className="size-3.5" />,
   },
-  queued: { className: 'border-2 border-input', icon: null },
+  queued: { className: 'border-2 border-edge', icon: null },
   fallback: {
-    className: 'bg-warning-surface text-warning',
+    className: 'bg-panel text-muted-foreground',
     icon: <TriangleAlertIcon aria-hidden className="size-3.5" />,
   },
   failed: {
@@ -64,10 +64,10 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
         {...(valueText ? { getAriaValueText: () => valueText } : {})}
         className="gap-y-1.5"
       >
-        <ProgressLabel className="text-sm font-normal text-muted-foreground">
+        <ProgressLabel className="text-body-sm font-normal text-muted-foreground">
           {progressLabel}
         </ProgressLabel>
-        {eta && <span className="ml-auto text-sm tabular-nums">{eta}</span>}
+        {eta && <span className="ml-auto text-body-sm tabular-nums">{eta}</span>}
       </Progress>
       <ol className="flex flex-col">
         {stages.map((stage) => (
@@ -87,17 +87,19 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
             <span className="flex min-w-0 flex-col gap-0.5">
               <span
                 className={cn(
-                  'text-base font-medium',
+                  'text-body font-medium',
                   stage.status === 'queued' && 'text-faint-foreground',
                 )}
               >
                 {stage.label}
               </span>
               {stage.detail && (
-                <span className="text-sm text-faint-foreground">{stage.detail}</span>
+                <span className="text-body-sm text-faint-foreground">{stage.detail}</span>
               )}
             </span>
-            <span className="text-sm text-muted-foreground tabular-nums">{stage.statusText}</span>
+            <span className="text-body-sm text-muted-foreground tabular-nums">
+              {stage.statusText}
+            </span>
           </li>
         ))}
       </ol>

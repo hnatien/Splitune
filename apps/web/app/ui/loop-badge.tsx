@@ -11,13 +11,13 @@ import { cn } from '@/lib/utils'
 export type LoopState = 'off' | 'armed' | 'active' | 'resting'
 
 const styles: Record<LoopState, string> = {
-  off: 'bg-muted text-foreground inset-ring-border-strong hover:bg-accent',
+  off: 'bg-panel text-foreground inset-ring-border-strong hover:bg-hover',
   armed:
-    'border-2 border-dashed border-loop-edge bg-muted text-foreground inset-ring-transparent hover:bg-accent',
+    'border-2 border-dashed border-loop-edge bg-panel text-foreground inset-ring-transparent hover:bg-hover',
   active:
-    'bg-primary-soft text-primary-ink inset-ring-primary-line forced-colors:bg-card forced-colors:inset-ring-signal',
+    'bg-wash text-foreground inset-ring-selected forced-colors:bg-raised forced-colors:inset-ring-signal',
   resting:
-    'bg-primary-soft text-primary-ink inset-ring-primary-line forced-colors:bg-card forced-colors:inset-ring-signal',
+    'bg-wash text-foreground inset-ring-selected forced-colors:bg-raised forced-colors:inset-ring-signal',
 }
 
 function LoopBadge({
@@ -40,7 +40,7 @@ function LoopBadge({
       data-slot="loop-badge"
       data-state={state}
       className={cn(
-        'inline-flex min-h-target-practice min-w-0 items-center gap-2.5 rounded-full px-5 text-left text-md font-medium whitespace-nowrap inset-ring transition-colors duration-(--duration-fast) [&_svg]:size-5 [&_svg]:shrink-0',
+        'inline-flex min-h-target-play min-w-0 items-center gap-2.5 rounded-full px-5 text-left text-label font-medium whitespace-nowrap inset-ring transition-colors duration-(--duration-fast) [&_svg]:size-5 [&_svg]:shrink-0',
         styles[state],
         className,
       )}
@@ -54,7 +54,7 @@ function LoopBadge({
               text painted clear: Chrome reads a positioned or inline-block one with a space before. */}
           {detail && <span className="opacity-0 select-none">,</span>}
         </span>
-        {detail && <span className="truncate text-sm font-medium tabular-nums">{detail}</span>}
+        {detail && <span className="truncate text-body-sm font-medium tabular-nums">{detail}</span>}
       </span>
     </button>
   )

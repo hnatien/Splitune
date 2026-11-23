@@ -143,7 +143,7 @@ export function TransportBar({ layout }: { layout: PracticeLayout }) {
       role="toolbar"
       aria-label={m['practice.transport']()}
       data-slot="transport-bar"
-      className="flex shrink-0 items-center gap-3 border-t border-border bg-card px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-6"
+      className="flex shrink-0 items-center gap-3 border-t border-border bg-raised px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-6"
     >
       <div
         className={cn(
@@ -297,7 +297,7 @@ export function VolumeControl({ popover = false }: { popover?: boolean }) {
       <Popover>
         <PopoverTrigger
           aria-label={`${label}: ${formatPercent(volume)}`}
-          className="inline-grid size-13 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-5"
+          className="inline-grid size-13 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-panel hover:text-foreground [&_svg]:size-5"
         >
           <Icon aria-hidden strokeWidth={1.8} />
         </PopoverTrigger>

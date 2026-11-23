@@ -36,7 +36,7 @@ import { useWeeklyGoal } from './progress-goal'
 
 type Clip = z.infer<typeof LoopClip>
 
-const heading = 'text-sm font-medium text-muted-foreground'
+const heading = 'text-body-sm font-medium text-muted-foreground'
 
 const bars = (clip: Clip) => `${barNumber(clip.start_bar)}–${barNumber(clip.end_bar)}`
 
@@ -87,7 +87,7 @@ function Empty() {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
       <TrendingUpIcon aria-hidden strokeWidth={1.8} className="size-7 text-faint-foreground" />
-      <p className="text-md text-muted-foreground">{m['practice.progress_empty']()}</p>
+      <p className="text-label text-muted-foreground">{m['practice.progress_empty']()}</p>
     </div>
   )
 }
@@ -115,9 +115,9 @@ function ClipProgress({
     <>
       <div className="flex flex-col gap-0.5">
         <span className={heading}>{m['progress.clip']()}</span>
-        <h2 className="text-xl">{clipName(clip)}</h2>
+        <h2 className="text-heading">{clipName(clip)}</h2>
         {clip.name !== null && (
-          <p className="text-sm text-faint-foreground">
+          <p className="text-body-sm text-faint-foreground">
             {m['progress.bars']({ bars: bars(clip) })}
           </p>
         )}
@@ -128,13 +128,15 @@ function ClipProgress({
         <>
           <section
             aria-labelledby="progress-30"
-            className="flex flex-col gap-2.5 rounded-xl border border-border p-3.5"
+            className="flex flex-col gap-2.5 rounded-field border border-border p-3.5"
           >
             <div className="flex items-baseline justify-between gap-3">
-              <h3 id="progress-30" className="text-md">
+              <h3 id="progress-30" className="text-label">
                 {m['progress.last_30_days']()}
               </h3>
-              <span className="text-sm text-faint-foreground">{m['progress.clean_speed']()}</span>
+              <span className="text-body-sm text-faint-foreground">
+                {m['progress.clean_speed']()}
+              </span>
             </div>
             {points.length > 0 ? (
               <ProgressChart
@@ -144,7 +146,7 @@ function ClipProgress({
                 legend={{ best: m['progress.legend_best'](), cold: m['progress.legend_cold']() }}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">{m['practice.progress_empty']()}</p>
+              <p className="text-body-sm text-muted-foreground">{m['practice.progress_empty']()}</p>
             )}
           </section>
           <StatCards>
@@ -176,7 +178,7 @@ function SessionList({ sessions, now }: { sessions: ClipSession[]; now: Date }) 
         {[...sessions].reverse().map((s) => {
           const minutes = formatPracticeTime(s.session.minutes)
           return (
-            <li key={s.session.id} className="flex items-baseline gap-2.5 py-1.5 text-sm">
+            <li key={s.session.id} className="flex items-baseline gap-2.5 py-1.5 text-body-sm">
               <span className="w-24 shrink-0">{sessionDate(s.session.startedAt, now)}</span>
               <span className="min-w-0 flex-1 text-faint-foreground tabular-nums">
                 {s.passes === 1
@@ -202,10 +204,10 @@ function SongClips({ clips, onPick }: { clips: Clip[]; onPick: (clip: Clip) => v
   return (
     <section aria-labelledby="progress-clips" className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
-        <h2 id="progress-clips" className="text-xl">
+        <h2 id="progress-clips" className="text-heading">
           {m['progress.clips']()}
         </h2>
-        <p className="text-sm text-muted-foreground">{m['progress.clips_hint']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['progress.clips_hint']()}</p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
         {clips.map((c) => (
@@ -213,17 +215,17 @@ function SongClips({ clips, onPick }: { clips: Clip[]; onPick: (clip: Clip) => v
             <button
               type="button"
               onClick={() => onPick(c)}
-              className="flex min-h-target-practice-2 w-full items-center gap-3 rounded-lg px-2 text-left transition-colors duration-(--duration-fast) hover:bg-muted focus-visible:outline-offset-0"
+              className="flex min-h-target-practice w-full items-center gap-3 rounded-field px-2 text-left transition-colors duration-(--duration-fast) hover:bg-panel focus-visible:outline-offset-0"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-md">{clipName(c)}</span>
+                <span className="block truncate text-label">{clipName(c)}</span>
                 {c.name !== null && (
-                  <span className="block text-sm text-faint-foreground">
+                  <span className="block text-body-sm text-faint-foreground">
                     {m['progress.bars']({ bars: bars(c) })}
                   </span>
                 )}
               </span>
-              <span className="text-sm tabular-nums text-muted-foreground">
+              <span className="text-body-sm tabular-nums text-muted-foreground">
                 {c.best_clean_tempo_pct === null
                   ? m['progress.no_clean']()
                   : m['progress.clip_best']({ pct: formatPercent(c.best_clean_tempo_pct) })}
@@ -244,10 +246,12 @@ function WeeklyGoal({ sessions, now }: { sessions: SessionStats[]; now: Date }) 
   const { on, days, setOn, setDays } = useWeeklyGoal()
   return (
     <section className="mt-auto flex flex-col gap-3 border-t border-border pt-3.5">
-      <div className="flex min-h-target-practice-2 items-center gap-3">
+      <div className="flex min-h-target-practice items-center gap-3">
         <span className="flex min-w-0 flex-1 flex-col">
           <Label htmlFor={id}>{m['progress.weekly_goal']()}</Label>
-          <span className="text-sm text-faint-foreground">{m['progress.weekly_goal_hint']()}</span>
+          <span className="text-body-sm text-faint-foreground">
+            {m['progress.weekly_goal_hint']()}
+          </span>
         </span>
         <Switch id={id} checked={on} onCheckedChange={setOn} />
       </div>
@@ -264,7 +268,7 @@ function WeeklyGoal({ sessions, now }: { sessions: SessionStats[]; now: Date }) 
             incrementLabel={m['progress.goal_more']()}
             onValueChange={(next) => next !== null && setDays(next)}
           />
-          <p role="status" className="basis-full text-sm text-muted-foreground tabular-nums">
+          <p role="status" className="basis-full text-body-sm text-muted-foreground tabular-nums">
             {m['progress.goal_status']({
               n: String(Math.min(days, daysThisWeek(sessions, now))),
               goal: String(days),

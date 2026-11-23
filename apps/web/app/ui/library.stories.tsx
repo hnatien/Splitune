@@ -164,9 +164,9 @@ export const Loading: Story = {
   render: () => (
     <ul aria-busy="true" className={GRID}>
       {['a', 'b', 'c'].map((key) => (
-        <li key={key} className="flex flex-col gap-3.5 rounded-xl border border-border p-4">
+        <li key={key} className="flex flex-col gap-3.5 rounded-field border border-border p-4">
           <div className="flex items-start gap-3">
-            <Skeleton className="size-10 shrink-0 rounded-md" />
+            <Skeleton className="size-10 shrink-0 rounded-media" />
             <div className="flex flex-1 flex-col gap-2 pt-0.5">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3.5 w-1/2" />

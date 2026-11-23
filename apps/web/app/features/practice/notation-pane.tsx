@@ -249,12 +249,12 @@ function TabView({
 // row of its own under the score so it never hides a note.
 function MarksKey() {
   const sample =
-    'inline-grid min-w-5 place-items-center rounded-xs px-0.5 font-reading-mono leading-5 font-semibold'
+    'inline-grid min-w-5 place-items-center rounded-media px-0.5 font-reading-mono leading-5 font-medium'
   return (
     <div
       aria-hidden
       data-slot="marks-key"
-      className="flex h-10 shrink-0 items-center gap-3.5 bg-paper px-12 text-sm text-faint-foreground"
+      className="flex h-10 shrink-0 items-center gap-3.5 bg-paper px-12 text-body-sm text-faint-foreground"
     >
       <span className="inline-flex items-center gap-1.5">
         <span className={cn(sample, 'border-[1.5px] border-dashed border-conf-low text-conf-low')}>

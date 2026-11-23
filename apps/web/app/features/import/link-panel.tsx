@@ -61,7 +61,7 @@ export function LinkPanel({
         {invalid && <FieldError id={`${id}-error`}>{m['import.url_invalid']()}</FieldError>}
       </Field>
       <div className="flex items-center justify-between gap-3">
-        <Label htmlFor={`${id}-video`} className="text-md font-normal text-foreground">
+        <Label htmlFor={`${id}-video`} className="text-label font-normal text-foreground">
           {m['import.download_video']()}
         </Label>
         <Switch

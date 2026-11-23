@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * `.range` (doc 26 §12.1): horizontal, vertical (faders) and range (loop A/B) on Base UI Slider.
- * Always paired with a NumberField or steppers (WCAG 2.5.7). A 6 px --accent track with an --input
+ * Always paired with a NumberField or steppers (WCAG 2.5.7). A 6 px --hover track with an --edge
  * edge and a --signal fill; each thumb is a control-size box (44 browse, 48 practice: the target,
  * §8) painting a 20 px --signal knob. Page Up/Down move by `largeStep` (10).
  */
@@ -37,11 +37,11 @@ function Slider({
       <SliderPrimitive.Control className="relative flex min-h-control w-full touch-none items-center select-none data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:min-w-control data-vertical:flex-col">
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="relative grow rounded-full bg-accent inset-ring inset-ring-input select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5"
+          className="relative grow rounded-full bg-hover inset-ring inset-ring-edge select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
-            className="rounded-full bg-signal select-none data-horizontal:h-full data-vertical:w-full data-disabled:bg-input"
+            className="rounded-full bg-signal select-none data-horizontal:h-full data-vertical:w-full data-disabled:bg-edge"
           />
         </SliderPrimitive.Track>
         {values.map((_, index) => (

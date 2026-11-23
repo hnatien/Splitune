@@ -23,7 +23,7 @@ import { TransportButton } from './transport-button.tsx'
 
 // Doc 26 §12.2 TransportButton and SpeedControl, §8 / V11: main practice controls are 64 painted
 // and hit in every layout, secondary ones paint 52 (`.ib.lg`); Play is the `.play` disc. On and
-// active are `.ib.on` (wash + --primary-line edge), never colour alone.
+// active are `.ib.on` (wash + --selected edge), never colour alone.
 const meta = { title: 'Kit/TransportButton' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
@@ -154,7 +154,7 @@ export const Focus: Story = {
 }
 export const FocusDaylight: Story = { ...Focus, globals: DAYLIGHT }
 
-/** On: the wash, the --primary-line edge and the state in the accessible name. */
+/** On: the wash, the --selected edge and the state in the accessible name. */
 export const On: Story = {
   render: () => <Metronome />,
   globals: BOTH_THEMES,

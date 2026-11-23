@@ -10,7 +10,7 @@ const css = (text) => checkRawValues('apps/web/app/ui/sample.css', text)
 
 describe('arbitrary colours', () => {
   it('passes token utilities and token references', () => {
-    expect(tsx(`<div className="bg-card text-primary-ink border-(--stem-guitar)" />`)).toEqual([])
+    expect(tsx(`<div className="bg-raised text-foreground border-(--stem-guitar)" />`)).toEqual([])
     expect(
       tsx(`<div className="bg-[var(--loop-fill)] bg-size-[200%_100%] bg-clip-padding" />`),
     ).toEqual([])
@@ -33,15 +33,15 @@ describe('arbitrary colours', () => {
 
 describe('arbitrary radii', () => {
   it('passes the scale, inherit and values built from tokens', () => {
-    expect(tsx(`<div className="rounded-3xl rounded-t-4xl rounded-[inherit]" />`)).toEqual([])
+    expect(tsx(`<div className="rounded-panel rounded-t-dialog rounded-[inherit]" />`)).toEqual([])
     expect(tsx(`<div className="rounded-[calc(var(--r)+var(--pad))]" />`)).toEqual([])
-    expect(css('.a { border-radius: var(--radius-lg); }')).toEqual([])
+    expect(css('.a { border-radius: var(--radius-field); }')).toEqual([])
   })
   it('fails raw lengths in utilities, CSS and style props', () => {
     expect(tsx(`<div className="rounded-[9px]" />`)).toEqual([
-      'apps/web/app/ui/sample.tsx:1: arbitrary radius rounded-[9px] — use the rounded-* scale (26 §9)',
+      'apps/web/app/ui/sample.tsx:1: arbitrary radius rounded-[9px] — use rounded-media, -field, -panel, -dialog or -full (26 §9)',
     ])
-    expect(tsx(`<div className="rounded-tl-[calc(var(--radius-xl)-3px)]" />`)).toHaveLength(1)
+    expect(tsx(`<div className="rounded-tl-[calc(var(--radius-field)-3px)]" />`)).toHaveLength(1)
     expect(css('.a { border-top-left-radius: 24px; }')).toHaveLength(1)
     expect(tsx(`<div style={{ borderRadius: 6 }} />`)).toHaveLength(1)
   })
@@ -49,9 +49,11 @@ describe('arbitrary radii', () => {
 
 describe('arbitrary font sizes', () => {
   it('passes tokens and em multiples of the surrounding token size', () => {
-    expect(tsx(`<span className="text-md text-(length:--read-tab) text-[0.68em]" />`)).toEqual([])
+    expect(tsx(`<span className="text-label text-(length:--read-tab) text-[0.68em]" />`)).toEqual(
+      [],
+    )
     expect(tsx(`<span className="text-[length:var(--read-chord)]" />`)).toEqual([])
-    expect(css('.a { font-size: var(--text-sm); }')).toEqual([])
+    expect(css('.a { font-size: var(--text-body-sm); }')).toEqual([])
   })
   it('fails raw sizes in utilities, CSS and style props', () => {
     expect(tsx(`<span className="text-[13px]" />`)).toEqual([
@@ -71,7 +73,7 @@ describe('arbitrary shadows', () => {
   })
   it('fails one-off shadows', () => {
     expect(tsx(`<div className="shadow-[0_1px_2px_var(--scrim)]" />`)).toEqual([
-      'apps/web/app/ui/sample.tsx:1: arbitrary shadow shadow-[0_1px_2px_var(--scrim)] — use shadow-1…3 or --glow (26 §9)',
+      'apps/web/app/ui/sample.tsx:1: arbitrary shadow shadow-[0_1px_2px_var(--scrim)] — use shadow-popover or shadow-dialog (26 §9)',
     ])
     expect(tsx(`<div className="drop-shadow-[0_6px_20px_var(--primary)]" />`)).toHaveLength(1)
     expect(css('.a { box-shadow: 0 6px 20px var(--primary); }')).toHaveLength(1)
@@ -83,7 +85,7 @@ describe('style-prop colour literals', () => {
   it('passes token references, currentColor and keywords', () => {
     expect(
       tsx(
-        "const a = <span style={{ color: `var(--stem-guitar)`, background: 'var(--card)', fill: 'currentColor', stroke: 'none' }} />",
+        "const a = <span style={{ color: `var(--stem-guitar)`, background: 'var(--raised)', fill: 'currentColor', stroke: 'none' }} />",
       ),
     ).toEqual([])
     expect(tsx(`<path fill="none" stroke="currentColor" />`)).toEqual([])
@@ -105,7 +107,7 @@ describe('base rules', () => {
   it('still flag raw colour literals, palette classes and bare outline-none everywhere', () => {
     const file = 'apps/web/app/features/sample.tsx'
     expect(
-      checkBase(file, `<div className="bg-card outline-none focus-visible:outline-2" />`),
+      checkBase(file, `<div className="bg-raised outline-none focus-visible:outline-2" />`),
     ).toEqual([])
     expect(checkBase(file, `<div style={{ color: 'oklch(0.5 0.1 60)' }} />`)).toHaveLength(1)
     expect(checkBase(file, `<div className="bg-red-500" />`)).toHaveLength(1)
@@ -136,5 +138,61 @@ describe('--path', () => {
   it('rejects unknown arguments and a --path without a directory', () => {
     expect(run('--scope').code).toBe(1)
     expect(run('--path').code).toBe(1)
+  })
+})
+
+describe('retired names (s47)', () => {
+  const base = (text) => checkBase('apps/web/app/features/sample.tsx', text)
+  it('passes the roles, sizes, radii, shadows and weights the system defines', () => {
+    expect(
+      base(
+        `<div className="bg-raised hover:bg-hover border-edge text-muted-foreground text-label text-body-sm rounded-field rounded-t-panel shadow-popover font-medium size-target-practice ease-standard" style={{ color: 'var(--foreground)' }} />`,
+      ),
+    ).toEqual([])
+  })
+  it('fails a retired colour role and names the one that took its job', () => {
+    expect(base(`<div className="hover:bg-accent" />`)).toEqual([
+      'apps/web/app/features/sample.tsx:1: retired colour hover:bg-accent — use bg-… hover plus an ink edge (26 §3)',
+    ])
+    for (const name of [
+      'bg-card',
+      'bg-popover',
+      'bg-muted',
+      'border-input',
+      'bg-primary-soft',
+      'text-warning',
+    ]) {
+      expect([name, base(`<div className="${name}" />`).length]).toEqual([name, 1])
+    }
+  })
+  it('keeps the roles that only share a prefix with a retired one', () => {
+    expect(
+      base(`<div className="text-muted-foreground bg-primary text-primary-foreground" />`),
+    ).toEqual([])
+  })
+  it('fails retired sizes, radii, shadows, eases and targets', () => {
+    for (const name of [
+      'text-sm',
+      'text-2xl',
+      'rounded-lg',
+      'rounded-t-xl',
+      'shadow-2',
+      'ease-snappy',
+      'size-target-practice-2',
+    ]) {
+      expect([name, base(`<div className="${name}" />`).length]).toEqual([name, 1])
+    }
+  })
+  it('fails retired tokens read through var() or by name', () => {
+    expect(base(`const fill = 'var(--card)'`)).toHaveLength(1)
+    expect(base(`readColor('--primary-soft')`)).toHaveLength(1)
+    expect(base(`readColor('--muted-foreground')`)).toEqual([])
+  })
+  it('fails weights other than 400 and 500', () => {
+    expect(base(`<b className="font-semibold" />`)).toEqual([
+      'apps/web/app/features/sample.tsx:1: weight font-semibold — Figtree is set at font-normal and font-medium only (26 §6.1)',
+    ])
+    expect(base(`<b className="font-[650]" />`)).toHaveLength(1)
+    expect(base(`<b className="font-normal font-medium font-reading font-mono" />`)).toEqual([])
   })
 })

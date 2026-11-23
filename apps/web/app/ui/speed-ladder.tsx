@@ -5,8 +5,8 @@ import { PopoverTrigger } from '@/ui/popover'
 
 // Doc 26 §12.2, §12.3 (`.ladder`, Main.dc.html): the speed ladder's rungs from start to goal, 70 px
 // tall and rising to the goal. Done = the ink fill with a 1 px --signal edge and paper label (the
-// edge keeps done apart from upcoming in Light, V16), current = --primary-soft with a 2 px inset
-// --signal ring, upcoming = --accent. Fill, edge and ring differ, so the state never rests on
+// edge keeps done apart from upcoming in Light, V16), current = --wash with a 2 px inset
+// --signal ring, upcoming = --hover. Fill, edge and ring differ, so the state never rests on
 // colour alone (forced colours draw the ring as a border: thin for done, thick for current); the
 // group's name says it in words ("70 percent done, 75 percent now, 80 percent
 // next"). Labels are mono 11 px (V10). A long ladder shows the rungs around the current one.
@@ -55,12 +55,12 @@ function SpeedLadder({ rungs, current, label, className }: SpeedLadderProps) {
               height: `${FIRST_HEIGHT_PCT + ((100 - FIRST_HEIGHT_PCT) * index) / last}%`,
             }}
             className={cn(
-              'flex min-w-0 flex-1 items-start justify-center rounded-xs pt-1.25 text-2xs tabular-nums transition-colors duration-(--duration-fast)',
+              'flex min-w-0 flex-1 items-start justify-center rounded-media pt-1.25 text-kbd tabular-nums transition-colors duration-(--duration-fast)',
               state === 'done' &&
                 'bg-primary text-primary-foreground inset-ring inset-ring-signal forced-colors:border',
               state === 'current' &&
-                'bg-primary-soft text-primary-ink inset-ring-2 inset-ring-signal forced-colors:border-3',
-              state === 'upcoming' && 'bg-accent text-faint-foreground',
+                'bg-wash text-foreground inset-ring-2 inset-ring-signal forced-colors:border-3',
+              state === 'upcoming' && 'bg-hover text-faint-foreground',
             )}
           >
             {pct}
@@ -88,12 +88,12 @@ function LadderChip({
     <PopoverTrigger
       data-slot="ladder-chip"
       className={cn(
-        'group/chip inline-flex min-h-target-practice-2 items-center rounded-full focus-visible:outline-offset-[-7px]',
+        'group/chip inline-flex min-h-target-practice items-center rounded-full focus-visible:outline-offset-[-7px]',
         className,
       )}
       {...props}
     >
-      <span className="inline-flex h-7.5 items-center rounded-full border border-border-strong px-2.75 text-sm font-medium whitespace-nowrap text-muted-foreground tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-muted group-hover/chip:text-foreground group-aria-expanded/chip:border-primary-line group-aria-expanded/chip:bg-primary-soft group-aria-expanded/chip:text-primary-ink">
+      <span className="inline-flex h-7.5 items-center rounded-full border border-border-strong px-2.75 text-body-sm font-medium whitespace-nowrap text-muted-foreground tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-panel group-hover/chip:text-foreground group-aria-expanded/chip:border-selected group-aria-expanded/chip:bg-wash group-aria-expanded/chip:text-foreground">
         {children}
       </span>
     </PopoverTrigger>

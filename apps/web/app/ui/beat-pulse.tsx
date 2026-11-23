@@ -41,7 +41,7 @@ function BeatPulse({ beats, current, size = 'sm', label, className }: BeatPulseP
           className={cn(
             'block shrink-0 border-2',
             SIZES[size],
-            beat === 0 ? 'rounded-xs' : 'rounded-full',
+            beat === 0 ? 'rounded-media' : 'rounded-full',
             beat < current && 'border-beat-done bg-beat-done',
             beat === current && 'border-beat-now bg-beat-now',
             beat > current && 'border-beat-slot',

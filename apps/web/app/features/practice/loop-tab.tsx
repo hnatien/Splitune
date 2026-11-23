@@ -37,31 +37,31 @@ import { usePracticeUi } from './practice-store'
 
 type Clip = z.infer<typeof LoopClip>
 
-const heading = 'text-sm font-medium text-muted-foreground'
+const heading = 'text-body-sm font-medium text-muted-foreground'
 
 export function LoopTab() {
   const practice = usePractice()
   const { player, grid, best } = practice
   const loop = player.loop
   if (!grid) {
-    return <p className="text-sm text-muted-foreground">{m['practice.loop_needs_beats']()}</p>
+    return <p className="text-body-sm text-muted-foreground">{m['practice.loop_needs_beats']()}</p>
   }
   return (
     <>
       <div className="flex flex-col gap-2.5">
         {loop ? (
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-xl">
+            <h2 className="text-heading">
               {m['practice.loop_bars']({ bars: `${loop.startBar + 1}–${loop.endBar + 1}` })}
             </h2>
             {best !== null && (
-              <p className="text-sm text-muted-foreground tabular-nums">
+              <p className="text-body-sm text-muted-foreground tabular-nums">
                 {m['practice.best_tempo']({ pct: String(best) })}
               </p>
             )}
           </div>
         ) : (
-          <p className="text-md text-muted-foreground">{m['practice.loop_empty']()}</p>
+          <p className="text-label text-muted-foreground">{m['practice.loop_empty']()}</p>
         )}
         <LoopBars />
         {loop && <QuickMoves loop={loop} />}
@@ -120,7 +120,7 @@ function LoopBars() {
     <div className="grid grid-cols-2 gap-2.5">
       {edges.map(({ edge, label, earlier, later, value, set }) => (
         <div key={edge} className="flex min-w-0 flex-col gap-1.5">
-          <span aria-hidden className="text-sm font-medium text-muted-foreground">
+          <span aria-hidden className="text-body-sm font-medium text-muted-foreground">
             {label}
           </span>
           <NumberField
@@ -189,7 +189,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
   ]
   return (
     <details className="group/fine flex flex-col gap-2">
-      <summary className="flex min-h-target-practice-2 cursor-pointer items-center gap-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground">
+      <summary className="flex min-h-target-practice cursor-pointer items-center gap-2 rounded-field text-body-sm font-medium text-muted-foreground hover:text-foreground">
         <ChevronRightIcon
           aria-hidden
           className="size-4 transition-transform duration-(--duration-fast) group-open/fine:rotate-90"
@@ -199,7 +199,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
       <div className="flex flex-col gap-2 pl-6">
         {edges.map(({ edge, name }) => (
           <div key={edge} className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 text-sm">{name}</span>
+            <span className="min-w-0 flex-1 text-body-sm">{name}</span>
             <Button
               size="icon"
               variant="secondary"
@@ -218,7 +218,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
             </Button>
           </div>
         ))}
-        <p className="text-sm text-muted-foreground">{m['practice.nudge_hint']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['practice.nudge_hint']()}</p>
       </div>
     </details>
   )
@@ -282,7 +282,7 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
           }
         }}
       />
-      <div className="flex min-h-target-practice-2 items-center gap-3">
+      <div className="flex min-h-target-practice items-center gap-3">
         <Switch
           id={promptId}
           checked={passPrompt}
@@ -314,7 +314,7 @@ function SavedClips() {
   if (!unsaved && named.length === 0) return null
   return (
     <section className="flex flex-col gap-1 border-t border-border pt-2">
-      <div className="flex min-h-target-practice-2 items-center justify-between gap-2">
+      <div className="flex min-h-target-practice items-center justify-between gap-2">
         <h3 className={heading}>{m['practice.clips']()}</h3>
         {unsaved && !naming && (
           <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>
@@ -399,7 +399,7 @@ function ClipRow({
       <button
         type="button"
         aria-current={active ? 'true' : undefined}
-        className="flex min-h-target-practice-2 min-w-0 flex-1 items-center gap-3 rounded-lg px-1.5 py-2 text-left hover:bg-muted"
+        className="flex min-h-target-practice min-w-0 flex-1 items-center gap-3 rounded-field px-1.5 py-2 text-left hover:bg-panel"
         onClick={() => practice.selectClip(clip, 'clip')}
       >
         <span
@@ -410,8 +410,8 @@ function ClipRow({
           )}
         />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-md font-medium">{clip.name}</span>
-          <span className="text-sm text-faint-foreground tabular-nums">
+          <span className="truncate text-label font-medium">{clip.name}</span>
+          <span className="text-body-sm text-faint-foreground tabular-nums">
             {clip.best_clean_tempo_pct === null
               ? m['practice.clip_bars']({ bars })
               : m['practice.clip_bars_best']({ bars, pct: String(clip.best_clean_tempo_pct) })}

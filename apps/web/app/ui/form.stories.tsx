@@ -58,7 +58,7 @@ function Email({ invalid = false, disabled = false }: { invalid?: boolean; disab
   )
 }
 
-/** `.field` 44 tall on the --background well with an --input edge; `.label` 13/600 muted. */
+/** `.field` 44 tall on the --background well with an --edge edge; `.label` 13/600 muted. */
 export const InputDefault: Story = {
   render: () => <Email />,
   globals: BOTH_THEMES,
@@ -121,7 +121,7 @@ function SwitchRows({ disabled = false }: { disabled?: boolean }) {
         </Field>
       </FieldLabel>
       <Field orientation="horizontal" className="min-h-11 items-center">
-        <Label htmlFor={id} className="flex-1 text-base text-foreground">
+        <Label htmlFor={id} className="flex-1 text-body text-foreground">
           Increase contrast
         </Label>
         <Switch id={id} disabled={disabled} />
@@ -176,13 +176,13 @@ function Choices({ disabled = false }: { disabled?: boolean }) {
     <FieldGroup className="max-w-md gap-2">
       <Field orientation="horizontal" className="items-center gap-1">
         <Checkbox id={`${id}-hints`} defaultChecked disabled={disabled} />
-        <Label htmlFor={`${id}-hints`} className="text-base text-foreground">
+        <Label htmlFor={`${id}-hints`} className="text-body text-foreground">
           Show fingering hints
         </Label>
       </Field>
       <Field orientation="horizontal" className="items-center gap-1">
         <Checkbox id={`${id}-left`} disabled={disabled} />
-        <Label htmlFor={`${id}-left`} className="text-base text-foreground">
+        <Label htmlFor={`${id}-left`} className="text-body text-foreground">
           Left-handed diagrams
         </Label>
       </Field>
@@ -201,7 +201,7 @@ function Choices({ disabled = false }: { disabled?: boolean }) {
           ].map(([value, label]) => (
             <Field key={value} orientation="horizontal" className="items-center gap-1">
               <RadioGroupItem id={`${id}-${value}`} value={value as string} />
-              <Label htmlFor={`${id}-${value}`} className="text-base text-foreground">
+              <Label htmlFor={`${id}-${value}`} className="text-body text-foreground">
                 {label}
               </Label>
             </Field>

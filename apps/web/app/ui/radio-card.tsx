@@ -33,7 +33,7 @@ function RadioCard({ title, description, meta, media, className, ...props }: Rad
     <label
       data-slot="radio-card"
       className={cn(
-        'flex cursor-pointer flex-col gap-3.5 rounded-xl border border-border bg-background p-4 transition-colors duration-(--duration-base) ease-standard hover:border-border-strong hover:bg-muted contrast-more:border-input has-data-checked:border-foreground has-data-checked:bg-primary-soft has-data-checked:inset-ring has-data-checked:inset-ring-foreground forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-foreground forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:border-transparent has-data-disabled:bg-muted',
+        'flex cursor-pointer flex-col gap-3.5 rounded-field border border-border bg-background p-4 transition-colors duration-(--duration-base) ease-standard hover:border-border-strong hover:bg-panel contrast-more:border-edge has-data-checked:border-foreground has-data-checked:bg-wash has-data-checked:inset-ring has-data-checked:inset-ring-foreground forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-foreground forced-colors:has-data-checked:outline-solid has-data-disabled:cursor-not-allowed has-data-disabled:border-transparent has-data-disabled:bg-panel',
         className,
       )}
     >
@@ -44,7 +44,7 @@ function RadioCard({ title, description, meta, media, className, ...props }: Rad
       )}
       <span className="flex min-w-0 gap-3">
         <RadioPrimitive.Root
-          className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-input bg-background data-checked:border-2 data-checked:border-primary"
+          className="group/radio relative mt-0.5 flex size-5 shrink-0 rounded-full border border-edge bg-background data-checked:border-2 data-checked:border-primary"
           {...props}
         >
           <RadioPrimitive.Indicator className="flex size-full animate-pop-in items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -52,9 +52,9 @@ function RadioCard({ title, description, meta, media, className, ...props }: Rad
           </RadioPrimitive.Indicator>
         </RadioPrimitive.Root>
         <span className="flex min-w-0 flex-col gap-1">
-          <span className="text-base font-medium">{title}</span>
-          <span className="text-sm text-muted-foreground">{description}</span>
-          {meta && <span className="text-sm text-foreground">{meta}</span>}
+          <span className="text-body font-medium">{title}</span>
+          <span className="text-body-sm text-muted-foreground">{description}</span>
+          {meta && <span className="text-body-sm text-foreground">{meta}</span>}
         </span>
       </span>
     </label>

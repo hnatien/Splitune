@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { BOTH_THEMES, DAYLIGHT, expectTargets, StateGrid, themeFrames } from './story-kit.tsx'
 import { WithTooltip } from './tooltip.tsx'
 
-// Doc 26 §12.1 `.sheet`: --card, a --border edge, --elevation-2; popovers 16 px corners, menus and
+// Doc 26 §12.1 `.sheet`: --raised, a --border edge, --elevation-popover; popovers 16 px corners, menus and
 // the select list 14. Popups portal to <body>, so each open state has a Light story of its own
 // (the side-by-side frames theme only their subtree).
 const meta = { title: 'Base/Overlays' } satisfies Meta
@@ -197,7 +197,7 @@ function Triggers() {
   )
 }
 
-/** Closed triggers in both themes: the select is a `.field` (44 tall, --input edge). */
+/** Closed triggers in both themes: the select is a `.field` (44 tall, --edge edge). */
 export const AllStates: Story = {
   render: Triggers,
   globals: BOTH_THEMES,

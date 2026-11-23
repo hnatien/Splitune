@@ -21,7 +21,7 @@ export function SystemCard({
     <div className={cn('my-auto flex flex-col items-center gap-6 py-12 text-center', className)}>
       {aside}
       <div className="flex min-w-0 flex-col items-center gap-2">
-        <h1 className="text-2xl text-balance">{title}</h1>
+        <h1 className="text-display text-balance">{title}</h1>
         {children}
       </div>
       {actions && (
@@ -33,5 +33,5 @@ export function SystemCard({
 
 /** The sentence under a system page's heading. */
 export function SystemText({ children }: { children: React.ReactNode }) {
-  return <p className="text-base text-pretty text-muted-foreground">{children}</p>
+  return <p className="text-body text-pretty text-muted-foreground">{children}</p>
 }

@@ -33,7 +33,7 @@ function SwitchRow({
 }) {
   const id = useId()
   return (
-    <div className="flex min-h-target-practice-2 items-center gap-3">
+    <div className="flex min-h-target-practice items-center gap-3">
       <Switch id={id} checked={checked} onCheckedChange={onChange} />
       <Label htmlFor={id}>{label}</Label>
     </div>
@@ -80,7 +80,7 @@ export function DisplayPanel() {
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-3">
           <Label id={calibrationId}>{m['settings.calibration']()}</Label>
-          <span className="text-sm font-medium tabular-nums">
+          <span className="text-body-sm font-medium tabular-nums">
             {formatPercent(display.calibration * 100)}
           </span>
         </div>

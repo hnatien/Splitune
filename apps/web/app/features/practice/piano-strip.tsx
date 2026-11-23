@@ -55,7 +55,7 @@ function beatsBetween(times: readonly number[], from: number, to: number) {
   return Math.max(0, after(to + EPS) - after(from))
 }
 
-const label = 'text-xs font-medium text-conf-medium'
+const label = 'text-caption font-medium text-conf-medium'
 
 export function PianoStrip({
   chip,
@@ -133,7 +133,7 @@ export function PianoStrip({
         {current ? (
           chip(current, 'current')
         ) : (
-          <span className="inline-flex min-h-target-practice-2 items-center border-2 border-transparent px-3 font-reading text-read-chord-current leading-none font-bold text-conf-medium">
+          <span className="inline-flex min-h-target-practice items-center border-2 border-transparent px-3 font-reading text-read-chord-current leading-none font-medium text-conf-medium">
             {m['practice.no_chord_short']()}
           </span>
         )}
@@ -194,7 +194,7 @@ export function PianoStrip({
         {then.length > 0 && (
           <div className="hidden flex-col items-end gap-1 @6xl:flex">
             <span className={label}>{m['practice.then']()}</span>
-            <span className="flex gap-4 font-reading text-read-chord font-semibold text-conf-medium">
+            <span className="flex gap-4 font-reading text-read-chord font-medium text-conf-medium">
               {then.map((chord) => (
                 <ChordSymbol key={chord.id} name={chord.name} />
               ))}
@@ -212,7 +212,7 @@ function Hand({ hand, notes }: { hand: 'left' | 'right'; notes: string }) {
     <span className="flex items-center gap-1.5">
       <span
         className={cn(
-          'grid size-[1.4em] place-items-center rounded-md text-[0.8em] font-semibold',
+          'grid size-[1.4em] place-items-center rounded-media text-[0.8em] font-medium',
           hand === 'left' ? 'bg-key-left text-key-left-fg' : 'bg-key-right text-key-right-fg',
         )}
       >

@@ -39,7 +39,7 @@ export function PlusBenefits({ fullPerPeriod }: { fullPerPeriod: number }) {
   return (
     <ul className="flex list-none flex-col gap-3 p-0">
       {items.map((item) => (
-        <li key={item} className="flex items-start gap-3 text-md">
+        <li key={item} className="flex items-start gap-3 text-label">
           <CheckIcon aria-hidden strokeWidth={1.5} className="size-5 shrink-0 text-foreground" />
           <span>{item}</span>
         </li>
@@ -101,7 +101,7 @@ export function UpgradeSheet({
                     onChange={setPlan}
                     className="grid-cols-2"
                   />
-                  <p className="text-sm text-muted-foreground">{m['plan.cancel_anytime']()}</p>
+                  <p className="text-body-sm text-muted-foreground">{m['plan.cancel_anytime']()}</p>
                 </div>
               </>
             ) : plans.isError ? (

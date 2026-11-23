@@ -19,12 +19,12 @@ export function OptionSegments<T extends string>({
   const id = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={id} className="text-sm">
+      <span id={id} className="text-body-sm">
         {label}
       </span>
       <ToggleGroup
         aria-labelledby={id}
-        className="w-full flex-wrap rounded-2xl"
+        className="w-full flex-wrap rounded-panel"
         value={[value]}
         onValueChange={(next) => {
           const picked = next[0]
@@ -35,7 +35,7 @@ export function OptionSegments<T extends string>({
           <ToggleGroupItem
             key={option.value}
             value={option.value}
-            className="flex-auto rounded-xl px-3 text-sm"
+            className="flex-auto rounded-field px-3 text-body-sm"
           >
             {option.label}
           </ToggleGroupItem>

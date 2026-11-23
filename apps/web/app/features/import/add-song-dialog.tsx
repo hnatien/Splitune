@@ -187,7 +187,9 @@ export default function AddSongDialog({
           <div className="flex shrink-0 items-start gap-3 px-4 pt-[calc(env(safe-area-inset-top)+--spacing(4))] sm:px-6 sm:pt-6">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <DialogTitle>{m['import.title']()}</DialogTitle>
-              <DialogDescription className="text-md">{m['import.opens_now']()}</DialogDescription>
+              <DialogDescription className="text-label">
+                {m['import.opens_now']()}
+              </DialogDescription>
             </div>
             <DialogClose
               render={
@@ -320,7 +322,7 @@ export default function AddSongDialog({
               </PopoverTrigger>
               <PopoverContent
                 aria-label={m['import.works_best']()}
-                className="flex w-80 flex-col gap-2 text-sm"
+                className="flex w-80 flex-col gap-2 text-body-sm"
               >
                 <p>{m['import.works_best_with']()}</p>
                 <p className="text-muted-foreground">{m['import.has_trouble_with']()}</p>
