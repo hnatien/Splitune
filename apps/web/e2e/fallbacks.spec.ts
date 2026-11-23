@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type BrowserContext, expect, type Page, test } from '@playwright/test'
-import { collectErrors, openExample, projectContext, signIn, wav } from './helpers'
+import { collectErrors, openExample, passQuestion, projectContext, signIn, wav } from './helpers'
 
 // Step 16, the fallback audit (24 §3): each capability that isn't universal is removed before the
 // app's scripts run, and its fallback must work end to end. Missing hard requirements (24 §2) lead
@@ -79,8 +79,6 @@ function removeMediaRecorder() {
 const decodeWorkers = (page: Page) =>
   page.evaluate(() => window.__workers.filter((url) => /decode\.worker/.test(url)))
 
-const loopBadge = (page: Page) => page.getByRole('button', { name: /^Loop · bars \d+–\d+/ })
-
 /** A short AAC file in MP4 (what phones record and most downloads are), encoded by FFmpeg. */
 function aac(seconds: number): Buffer {
   const dir = mkdtempSync(join(tmpdir(), 'splitune-e2e-aac-'))
@@ -108,7 +106,7 @@ test.describe('the example song, as a visitor', () => {
     test.skip(!webCodecs, 'no WebCodecs in this engine: the next test is its path')
     expect(await decodeWorkers(page)).not.toEqual([])
     await play.click()
-    await expect(loopBadge(page)).toHaveText(/pass 1/, { timeout: 60_000 })
+    await expect(passQuestion(page, 1)).toBeVisible({ timeout: 60_000 })
     expect(errors).toEqual([])
     await context.close()
   })
@@ -140,7 +138,7 @@ test.describe('the example song, as a visitor', () => {
     expect(await decodeWorkers(page)).toEqual([])
     // The clock runs on getOutputTimestamp() (or currentTime) alone: the loop wraps on time.
     await play.click()
-    await expect(loopBadge(page)).toHaveText(/pass 1/, { timeout: 60_000 })
+    await expect(passQuestion(page, 1)).toBeVisible({ timeout: 60_000 })
     // No Wake Lock: the "keep screen on" tip, from the first play.
     await expect(
       page.getByText("This browser can't keep your screen on.", { exact: false }),
