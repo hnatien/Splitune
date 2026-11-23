@@ -43,6 +43,9 @@ const stories = (
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    // Only the import screen's hash worker imports hash-wasm, so Vite found it mid-run and reloaded
+    // every open story ("Invalid hook call") on each run; pre-bundled, it is there from the start.
+    optimizeDeps: { include: ['hash-wasm'] },
     test: {
       projects: [
         {
