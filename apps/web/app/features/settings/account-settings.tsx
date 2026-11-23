@@ -70,7 +70,6 @@ function Profile({ me }: { me: MeData }) {
   const instrument = useSaveState()
   const [displayName, setDisplayName] = useState(current.display_name ?? '')
   const nameId = useId()
-  const usernameId = useId()
   const instrumentId = useId()
   return (
     <SettingSection id="profile" title={m['settings.profile']()}>
@@ -95,19 +94,16 @@ function Profile({ me }: { me: MeData }) {
             }}
           />
         </SettingRow>
+        {/* Read-only, so plain text beside its label rather than a field that looks editable. */}
         {current.username && (
           <SettingRow
             label={m['auth.username_label']()}
             hint={m['settings.username_hint']()}
-            htmlFor={usernameId}
             state="idle"
           >
-            <Input
-              id={usernameId}
-              value={current.username}
-              readOnly
-              className="text-muted-foreground sm:w-72"
-            />
+            <span data-slot="username" className="text-body text-foreground sm:w-72">
+              {current.username}
+            </span>
           </SettingRow>
         )}
         <SettingRow

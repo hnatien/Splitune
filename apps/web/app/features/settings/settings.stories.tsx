@@ -168,6 +168,11 @@ export const Account: Story = {
     await expect(await canvas.findByRole('heading', { level: 1, name: 'Account' })).toBeVisible()
     await expect(canvas.getByLabelText('Name')).toHaveValue('Ana')
     await expect(canvas.getByText("You sign in with this. It can't be changed here.")).toBeVisible()
+    // The username can't be changed here, so it reads as text, not as a field.
+    await expect(canvas.queryByRole('textbox', { name: 'Username' })).toBeNull()
+    const username = canvasElement.querySelector('[data-slot=username]') as HTMLElement
+    await expect(username).toHaveTextContent('Ana')
+    await expect(getComputedStyle(username).borderTopWidth).toBe('0px')
     await expect(canvas.getByRole('combobox', { name: 'Main instrument' })).toHaveTextContent(
       'Guitar',
     )
@@ -194,7 +199,17 @@ const playAccountNarrow: Story['play'] = async (context) => {
 export const AccountPhone: Story = {
   render: privacy(NO_EXPORT),
   globals: PHONE,
-  play: playAccountNarrow,
+  play: async (context) => {
+    await playAccountNarrow(context)
+    // The tabs cut off at the edge fade out there, so the line reads as one to scroll.
+    const line = within(context.canvasElement)
+      .getByRole('navigation', { name: 'Settings sections' })
+      .querySelector('ul') as HTMLElement
+    await waitFor(() => expect(line).toHaveAttribute('data-more-end'))
+    await expect(line).not.toHaveAttribute('data-more-start')
+    const look = getComputedStyle(line)
+    await expect(look.maskImage || look.webkitMaskImage).toMatch(/gradient/)
+  },
 }
 export const AccountPhoneDaylight: Story = { ...AccountPhone, globals: { ...PHONE, ...DAYLIGHT } }
 export const AccountTablet: Story = {
@@ -314,6 +329,25 @@ export const PrivacyDeleteConfirm: Story = {
 export const PrivacyDeleteConfirmDaylight: Story = {
   ...PrivacyDeleteConfirm,
   globals: DAYLIGHT,
+}
+/** On a phone the buttons stack with Cancel on top, the destructive action under it. */
+const deleteStacked: Story['play'] = async (context) => {
+  await PrivacyDeleteConfirm.play?.(context)
+  const dialog = within(context.canvasElement.ownerDocument.body).getByRole('alertdialog')
+  const cancel = within(dialog).getByRole('button', { name: 'Cancel' }).getBoundingClientRect()
+  const remove = within(dialog)
+    .getByRole('button', { name: 'Delete account' })
+    .getBoundingClientRect()
+  await expect(cancel.bottom).toBeLessThanOrEqual(remove.top)
+}
+export const PrivacyDeleteConfirmPhone: Story = {
+  render: privacy(NO_EXPORT),
+  globals: PHONE,
+  play: deleteStacked,
+}
+export const PrivacyDeleteConfirmPhoneDaylight: Story = {
+  ...PrivacyDeleteConfirmPhone,
+  globals: { ...PHONE, ...DAYLIGHT },
 }
 export const PrivacyDeleteReauth: Story = {
   render: privacy(NO_EXPORT, { dialog: 'reauth' }),
