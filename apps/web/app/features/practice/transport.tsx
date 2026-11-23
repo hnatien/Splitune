@@ -26,7 +26,7 @@ import { Slider } from '@/ui/slider'
 import { SpeedControl } from '@/ui/speed-control'
 import { TransportButton } from '@/ui/transport-button'
 import { pedalMoment } from './input-mapper'
-import { isPhone, type PracticeLayout } from './layout'
+import { isPhone, type PracticeLayout, useTransportStacked } from './layout'
 import { presetName } from './mix-copy'
 import { presetOf } from './model/mixer'
 import { usePractice } from './practice-context'
@@ -393,7 +393,8 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
   const playing = PLAYING.has(state)
   const loopActive = player.loop !== null
   const ready = audioStatus === 'ready' && state !== 'loading'
-  const compact = isPhone(layout)
+  const phone = isPhone(layout)
+  const compact = useTransportStacked(layout)
   const pass = usePass()
   const loopLine = useLoopPill()
   const speedOpen = usePracticeUi((s) => s.speedOpen)
@@ -454,9 +455,20 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
       onPressedChange={(on) => send({ type: 'SET_COUNT_IN', on })}
     />
   )
+  const click = (
+    <TransportButton
+      size="practice"
+      icon={<MetronomeIcon aria-hidden />}
+      label={m['practice.metronome']()}
+      showLabel={false}
+      pressed={player.metronome && layers.beats}
+      disabled={!layers.beats}
+      onPressedChange={(on) => send({ type: 'SET_METRONOME', on })}
+    />
+  )
   const speed = (
     <SpeedControl
-      compact={compact}
+      compact={phone}
       value={player.speedPct}
       onValueChange={(value) => practice.setSpeed(value)}
       bpm={grid?.bpm}
@@ -498,41 +510,43 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
         aria-label={m['practice.transport']()}
         data-slot="transport"
         data-layout="compact"
-        // Two rows at 375 px leave no room for key caps; the keys still work and are named to AT.
+        // Two rows leave no room for key caps; the keys still work and are named to AT. A phone
+        // keeps the click in the Mix tab and uses the device's volume; wider screens have room.
         className="flex shrink-0 flex-col border-t border-border bg-background pb-[env(safe-area-inset-bottom)] [&_[data-slot=kbd]]:hidden"
       >
-        <div
-          data-slot="transport-status"
-          className="relative flex min-h-14 items-center gap-2 border-b border-border px-3"
-        >
-          <Hud className="top-1/2 right-3 -translate-y-1/2" />
-          {pass.asking ? (
-            <PassControl {...pass.props} compact className="w-full justify-between" />
-          ) : (
-            <button
-              type="button"
-              data-slot="loop-line"
-              onClick={() => openTab('loop')}
-              className="flex min-h-target min-w-0 flex-1 items-center rounded-field px-1 text-left text-label-sm text-muted-foreground hover:bg-hover"
-            >
-              <span className="truncate">
-                <span className="text-foreground">{loopLine.text}</span>
-                {loopLine.detail && ` · ${loopLine.detail}`}
-              </span>
-            </button>
-          )}
+        <div data-slot="transport-status" className="border-b border-border px-3">
+          <div className="relative mx-auto flex min-h-14 w-full max-w-xl items-center gap-2">
+            <Hud className="top-1/2 right-0 -translate-y-1/2" />
+            {pass.asking ? (
+              <PassControl {...pass.props} compact className="w-full justify-between" />
+            ) : (
+              <button
+                type="button"
+                data-slot="loop-line"
+                onClick={() => openTab('loop')}
+                className="flex min-h-target min-w-0 flex-1 items-center rounded-field px-1 text-left text-label-sm text-muted-foreground hover:bg-hover"
+              >
+                <span className="truncate">
+                  <span className="text-foreground">{loopLine.text}</span>
+                  {loopLine.detail && ` · ${loopLine.detail}`}
+                </span>
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center justify-between gap-1 px-2 pt-2">
+        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-1 px-2 pt-2">
           <LoopToggle ready={ready} />
           {countIn}
           {speed}
         </div>
-        <div className="flex items-center justify-between gap-1 px-2 py-2">
+        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-1 px-2 py-2">
           <ToolsButton compact />
+          {!phone && click}
           {previous}
           {play}
           {next}
           {restart}
+          {!phone && <VolumeControl />}
         </div>
         {announce}
       </div>
@@ -545,7 +559,8 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
       aria-label={m['practice.transport']()}
       data-slot="transport"
       data-layout="wide"
-      className="relative flex h-20 shrink-0 items-center gap-2 border-t border-border bg-background px-4 pb-[env(safe-area-inset-bottom)]"
+      // Key caps need the room a docked panel needs: they show from 1180 px.
+      className="relative flex h-20 shrink-0 items-center gap-2 border-t border-border bg-background px-4 pb-[env(safe-area-inset-bottom)] max-[1180px]:[&_[data-slot=kbd]]:hidden"
     >
       <Hud className="bottom-full left-1/2 mb-0.5 -translate-x-1/2" />
       <fieldset
@@ -557,10 +572,10 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
         {play}
         {next}
       </fieldset>
-      <div className="max-lg:hidden">
+      <div className="max-xl:hidden">
         <Position />
       </div>
-      <PedalLegend className="max-xl:hidden" />
+      <PedalLegend className="max-2xl:hidden" />
       <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
         {pass.asking ? <PassControl {...pass.props} /> : <LoopControl ready={ready} />}
       </div>
@@ -569,15 +584,7 @@ export function Transport({ layout }: { layout: PracticeLayout }) {
         className="m-0 flex shrink-0 items-center gap-1 border-0 p-0"
       >
         {countIn}
-        <TransportButton
-          size="practice"
-          icon={<MetronomeIcon aria-hidden />}
-          label={m['practice.metronome']()}
-          showLabel={false}
-          pressed={player.metronome && layers.beats}
-          disabled={!layers.beats}
-          onPressedChange={(on) => send({ type: 'SET_METRONOME', on })}
-        />
+        {click}
       </fieldset>
       {speed}
       <ToolsButton compact={false} />
