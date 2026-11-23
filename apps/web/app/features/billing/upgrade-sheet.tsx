@@ -122,7 +122,7 @@ export function UpgradeSheet({
             {failed && <InlineError title={m['billing.action_failed']()} />}
           </div>
           <DrawerFooter>
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="quiet" onClick={onClose}>
               {m['plan.not_now']()}
             </Button>
             <Button variant="primary" disabled={!plans.data} loading={pending} onClick={proceed}>

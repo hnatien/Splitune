@@ -2,6 +2,7 @@ import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
+/** A floating layer (s47 direction §4): --raised, one hairline, 14 px corners, --elevation-popover. */
 function PopoverContent({
   className,
   align = 'center',

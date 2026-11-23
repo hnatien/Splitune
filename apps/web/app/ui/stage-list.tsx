@@ -1,15 +1,16 @@
-import { CheckIcon, CircleXIcon, TriangleAlertIcon } from 'lucide-react'
+import { CircleCheckIcon, CircleDashedIcon, CircleXIcon, TriangleAlertIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Progress, ProgressLabel } from '@/ui/progress'
-import { Spinner } from '@/ui/spinner'
+import { ProgressRing } from '@/ui/status'
 
-// Doc 26 §12.2, §13, 27 §3.7.3 (Practice-Ready.dc.html): the overall bar with "Analysing your song"
-// and the ETA beside it, then the stages in order — a 22 px status dot (done: --success with a
-// check; running: a spinner on --wash; waiting: an --edge ring; a fallback or failure
-// carries its icon), the stage's name (600; faint while waiting), a detail line naming the
-// artefact it leaves ("84 BPM in 4/4, starts on a pickup bar") and its status in words ("Done",
-// "about 2 min", "Waiting"). The list is not a live region; callers announce stage milestones once.
+// Doc 26 §12.2, §13, 27 §3.7.3: the overall bar with "Analysing your song" and the ETA beside it,
+// then the stages in order. Each stage is a Status-style glyph (done: a circled check in --success;
+// running: the ring that fills; waiting: a dashed circle; a fallback: a triangle; failed: a crossed
+// circle in --destructive), no filled dots, then the stage's name (faint while waiting), a detail
+// line naming the artefact it leaves ("84 BPM in 4/4, starts on a pickup bar") and its status in
+// words ("Done", "about 2 min", "Waiting"). The list is not a live region; callers announce stage
+// milestones once.
 
 export type StageStatus = 'queued' | 'running' | 'done' | 'fallback' | 'failed'
 
@@ -24,24 +25,12 @@ export type Stage = {
   detail?: string | undefined
 }
 
-const DOT: Record<StageStatus, { className: string; icon: React.ReactNode }> = {
-  done: {
-    className: 'bg-success text-background',
-    icon: <CheckIcon aria-hidden strokeWidth={2.6} className="size-3.5" />,
-  },
-  running: {
-    className: 'bg-wash text-foreground',
-    icon: <Spinner className="size-3.5" />,
-  },
-  queued: { className: 'border-2 border-edge', icon: null },
-  fallback: {
-    className: 'bg-panel text-muted-foreground',
-    icon: <TriangleAlertIcon aria-hidden className="size-3.5" />,
-  },
-  failed: {
-    className: 'bg-destructive-surface text-destructive',
-    icon: <CircleXIcon aria-hidden className="size-3.5" />,
-  },
+const GLYPH: Record<StageStatus, React.ReactNode> = {
+  done: <CircleCheckIcon aria-hidden className="text-success" />,
+  running: <ProgressRing />,
+  queued: <CircleDashedIcon aria-hidden className="text-faint-foreground" />,
+  fallback: <TriangleAlertIcon aria-hidden className="text-muted-foreground" />,
+  failed: <CircleXIcon aria-hidden className="text-destructive" />,
 }
 
 type StageListProps = {
@@ -64,7 +53,7 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
         {...(valueText ? { getAriaValueText: () => valueText } : {})}
         className="gap-y-1.5"
       >
-        <ProgressLabel className="text-body-sm font-normal text-muted-foreground">
+        <ProgressLabel className="text-body-sm text-muted-foreground">
           {progressLabel}
         </ProgressLabel>
         {eta && <span className="ml-auto text-body-sm tabular-nums">{eta}</span>}
@@ -74,27 +63,25 @@ function StageList({ stages, progress, progressLabel, eta, valueText, className 
           <li
             key={stage.id}
             data-status={stage.status}
-            className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-start gap-x-2.5 py-1.75"
+            className="grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-3 py-2"
           >
             <span
-              className={cn(
-                'mt-px grid size-5.5 place-items-center rounded-full',
-                DOT[stage.status].className,
-              )}
+              data-slot="stage-glyph"
+              className="mt-0.5 grid size-5 place-items-center [&_svg]:size-4 [&_.lucide]:stroke-[1.8]"
             >
-              {DOT[stage.status].icon}
+              {GLYPH[stage.status]}
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">
               <span
                 className={cn(
-                  'text-body font-medium',
-                  stage.status === 'queued' && 'text-faint-foreground',
+                  'text-label',
+                  stage.status === 'queued' ? 'text-faint-foreground' : 'text-foreground',
                 )}
               >
                 {stage.label}
               </span>
               {stage.detail && (
-                <span className="text-body-sm text-faint-foreground">{stage.detail}</span>
+                <span className="text-body-sm text-muted-foreground">{stage.detail}</span>
               )}
             </span>
             <span className="text-body-sm text-muted-foreground tabular-nums">

@@ -113,12 +113,12 @@ export function UsageSettings({ me }: { me: MeData }) {
             </div>
             <div className="flex flex-wrap gap-3">
               {plus ? (
-                <Link to="/settings/plan" className={buttonVariants({ variant: 'secondary' })}>
+                <Link to="/settings/plan" className={buttonVariants({ variant: 'outline' })}>
                   {m['settings.view_plan']()}
                 </Link>
               ) : (
                 <>
-                  <Link to="/settings/plan" className={buttonVariants({ variant: 'ghost' })}>
+                  <Link to="/settings/plan" className={buttonVariants({ variant: 'quiet' })}>
                     {m['settings.view_plan']()}
                   </Link>
                   <Button variant="primary" onClick={() => setUpgrading(true)}>

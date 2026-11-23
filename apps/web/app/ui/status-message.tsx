@@ -3,41 +3,18 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
-// Doc 26 §12.2, 27 §5.4: status icon + what happened + what it means (optional) + what you can do.
-// Status colour is the icon and, for inline messages, a tinted surface (a hairline border returns
-// under increased contrast); banners are a plain line. Never a saturated fill, and the title
-// carries the meaning.
+// Doc 26 §12.2, 27 §5.4, s47 direction §4: a status glyph + what happened + what it means
+// (optional) + what you can do. Status is a glyph and words, never a tinted box: the glyph's shape
+// says the tone (a cross in a circle, a triangle, an "i", a check), its hue only joins in for error
+// and success, and the title carries the meaning. Nothing here is filled or boxed.
 
 export type StatusTone = 'error' | 'warning' | 'info' | 'success'
 
-const TONES: Record<
-  StatusTone,
-  { icon: React.ReactNode; text: string; surface: string; border: string }
-> = {
-  error: {
-    icon: <CircleXIcon aria-hidden />,
-    text: 'text-destructive',
-    surface: 'bg-destructive-surface',
-    border: 'contrast-more:border-destructive',
-  },
-  warning: {
-    icon: <TriangleAlertIcon aria-hidden />,
-    text: 'text-muted-foreground',
-    surface: 'bg-panel',
-    border: 'contrast-more:border-muted-foreground',
-  },
-  info: {
-    icon: <InfoIcon aria-hidden />,
-    text: 'text-muted-foreground',
-    surface: 'bg-panel',
-    border: 'contrast-more:border-muted-foreground',
-  },
-  success: {
-    icon: <CircleCheckIcon aria-hidden />,
-    text: 'text-success',
-    surface: 'bg-success-surface',
-    border: 'contrast-more:border-success',
-  },
+const TONES: Record<StatusTone, { icon: React.ReactNode; text: string }> = {
+  error: { icon: <CircleXIcon aria-hidden />, text: 'text-destructive' },
+  warning: { icon: <TriangleAlertIcon aria-hidden />, text: 'text-foreground' },
+  info: { icon: <InfoIcon aria-hidden />, text: 'text-muted-foreground' },
+  success: { icon: <CircleCheckIcon aria-hidden />, text: 'text-success' },
 }
 
 type StatusMessageProps = {
@@ -51,7 +28,10 @@ type StatusMessageProps = {
   className?: string
 }
 
-/** In place of content that failed to load, or under a form; announced as an alert for errors. */
+/**
+ * In place of content that failed to load, or under a form: the glyph, a title in the label role,
+ * the explanation and the actions, on whatever surface it sits on. Announced as an alert for errors.
+ */
 function InlineError({
   tone = 'error',
   title,
@@ -63,19 +43,17 @@ function InlineError({
   return (
     <div
       data-slot="inline-error"
+      data-tone={tone}
       role={tone === 'error' ? 'alert' : 'status'}
-      className={cn(
-        'flex gap-3 rounded-field border border-transparent p-4',
-        style.surface,
-        style.border,
-        className,
-      )}
+      className={cn('flex gap-3 py-2', className)}
     >
-      <span className={cn('mt-0.5 shrink-0 [&_svg]:size-5', style.text)}>{style.icon}</span>
+      <span className={cn('mt-0.5 shrink-0 [&_svg]:size-5 [&_.lucide]:stroke-[1.8]', style.text)}>
+        {style.icon}
+      </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="text-body font-medium text-foreground">{title}</p>
-        {description && <p className="text-body-sm text-foreground">{description}</p>}
-        {actions && <div className="mt-2 flex flex-wrap gap-3">{actions}</div>}
+        <p className="text-label text-foreground">{title}</p>
+        {description && <p className="text-body-sm text-muted-foreground">{description}</p>}
+        {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
       </div>
     </div>
   )
@@ -97,20 +75,23 @@ function Banner({ tone, title, description, actions, icon, dismiss, className }:
   return (
     <div
       data-slot="banner"
+      data-tone={tone}
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
         'flex animate-rise-in flex-wrap items-center gap-x-3 gap-y-1 border-b border-border py-1.5 sm:flex-nowrap',
         className,
       )}
     >
-      <span className={cn('shrink-0 [&_svg]:size-4.5', style.text)}>{icon ?? style.icon}</span>
+      <span className={cn('shrink-0 [&_svg]:size-4.5 [&_.lucide]:stroke-[1.8]', style.text)}>
+        {icon ?? style.icon}
+      </span>
       <p className="min-w-0 flex-1 basis-3xs py-2 text-body-sm text-foreground">
-        <span className={cn(description && 'font-medium')}>{title}</span>
+        <span className={cn(description && 'text-label-sm')}>{title}</span>
         {description && <span className="text-muted-foreground"> {description}</span>}
       </p>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       {dismiss && (
-        <Button variant="ghost" size="icon" aria-label={dismiss.label} onClick={dismiss.onDismiss}>
+        <Button variant="quiet" size="icon" aria-label={dismiss.label} onClick={dismiss.onDismiss}>
           <XIcon aria-hidden />
         </Button>
       )}

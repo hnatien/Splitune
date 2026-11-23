@@ -34,7 +34,7 @@ function CoachMark({
         className="size-5 shrink-0 text-muted-foreground"
       />
       <p className="min-w-0 flex-1 py-2 text-body">{children}</p>
-      <Button size="sm" variant="secondary" onClick={onDismiss}>
+      <Button size="sm" variant="outline" onClick={onDismiss}>
         {dismissLabel}
       </Button>
     </div>

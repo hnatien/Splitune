@@ -75,13 +75,13 @@ export function UsagePopover({
               <Link
                 to="/settings/plan"
                 onClick={close}
-                className={buttonVariants({ variant: plus ? 'secondary' : 'ghost', size: 'sm' })}
+                className={buttonVariants({ variant: plus ? 'outline' : 'quiet', size: 'sm' })}
               >
                 {m['settings.view_plan']()}
               </Link>
               {!plus && (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     close()

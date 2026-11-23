@@ -53,7 +53,7 @@ export function AccountSettings({
     <SettingsPage title={m['settings.account']()}>
       <Profile me={me} />
       <PrivacySettings me={me} deleteDialog={deleteDialog} />
-      <Button variant="ghost" className="self-start" onClick={signOut}>
+      <Button variant="quiet" className="self-start" onClick={signOut}>
         <LogOutIcon aria-hidden />
         {m['nav.sign_out']()}
       </Button>

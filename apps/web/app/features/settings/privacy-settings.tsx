@@ -100,7 +100,7 @@ function DataExport({ disabled }: { disabled: boolean }) {
   })
   const start = (
     <Button
-      variant={status === 'ready' ? 'ghost' : 'secondary'}
+      variant={status === 'ready' ? 'quiet' : 'outline'}
       loading={request.isPending}
       disabled={disabled}
       onClick={() => request.mutate()}
@@ -131,7 +131,7 @@ function DataExport({ disabled }: { disabled: boolean }) {
         </p>
       </div>
       {ready?.url && (
-        <a href={ready.url} download className={buttonVariants({ variant: 'secondary' })}>
+        <a href={ready.url} download className={buttonVariants({ variant: 'outline' })}>
           <DownloadIcon aria-hidden />
           {m['privacy.export_download']()}
         </a>

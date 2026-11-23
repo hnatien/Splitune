@@ -279,7 +279,7 @@ export function SongEntry({
       <DropdownMenuTrigger
         render={
           <Button
-            variant="ghost"
+            variant="quiet"
             size="icon-sm"
             aria-label={m['library.song_menu']({ title: song.title })}
           />

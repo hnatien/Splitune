@@ -45,7 +45,7 @@ export function AccountMenu({ name }: { name: string }) {
       <DropdownMenuTrigger
         render={
           <Button
-            variant="box"
+            variant="outline"
             size="icon"
             aria-label={m['nav.account']()}
             className="font-medium text-foreground"

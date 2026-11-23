@@ -104,7 +104,7 @@ function KeysTable() {
                   <td className="py-1 text-right">
                     <Button
                       size="sm"
-                      variant={learning === action ? 'on' : 'ghost'}
+                      variant={learning === action ? 'selected' : 'quiet'}
                       aria-pressed={learning === action}
                       aria-label={
                         learning === action

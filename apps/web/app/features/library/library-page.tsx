@@ -281,7 +281,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
             </Button>
           }
           secondaryAction={
-            <Link to="/start" className={buttonVariants({ variant: 'secondary' })}>
+            <Link to="/start" className={buttonVariants({ variant: 'outline' })}>
               {m['library.try_example']()}
             </Link>
           }
@@ -317,7 +317,7 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
             </div>
             {sortMenu}
             {filtered && (
-              <Button variant="ghost" size="sm" className="animate-pop-in" onClick={clearFilters}>
+              <Button variant="quiet" size="sm" className="animate-pop-in" onClick={clearFilters}>
                 <XIcon aria-hidden />
                 {m['library.clear_filters']()}
               </Button>

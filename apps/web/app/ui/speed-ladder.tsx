@@ -3,13 +3,13 @@ import { cn } from '@/lib/utils'
 import { createIcon } from '@/ui/icons/create'
 import { PopoverTrigger } from '@/ui/popover'
 
-// Doc 26 §12.2, §12.3 (`.ladder`, Main.dc.html): the speed ladder's rungs from start to goal, 70 px
-// tall and rising to the goal. Done = the ink fill with a 1 px --signal edge and paper label (the
-// edge keeps done apart from upcoming in Light, V16), current = --wash with a 2 px inset
-// --signal ring, upcoming = --hover. Fill, edge and ring differ, so the state never rests on
-// colour alone (forced colours draw the ring as a border: thin for done, thick for current); the
-// group's name says it in words ("70 percent done, 75 percent now, 80 percent
-// next"). Labels are mono 11 px (V10). A long ladder shows the rungs around the current one.
+// Doc 26 §12.2, §12.3, s47 direction §4: the speed ladder's rungs from start to goal, 70 px tall
+// and rising to the goal. Done = the ink fill with a paper label; current = a 2 px ink edge, ink
+// label, no fill; upcoming = a hairline --edge (≥ 3:1) with a faint label, no fill. Fill, edge
+// width and label differ, so the state never rests on colour alone (forced colours draw the edges
+// as borders); the group's name says it in words ("70 percent done, 75 percent now, 80 percent
+// next"). Labels are 11 px tabular figures, never smaller. A long ladder shows the rungs around
+// the current one.
 
 /** The most rungs drawn at once; a longer ladder shows a window around the current rung. */
 const MAX_RUNGS = 9
@@ -55,15 +55,16 @@ function SpeedLadder({ rungs, current, label, className }: SpeedLadderProps) {
               height: `${FIRST_HEIGHT_PCT + ((100 - FIRST_HEIGHT_PCT) * index) / last}%`,
             }}
             className={cn(
-              'flex min-w-0 flex-1 items-start justify-center rounded-media pt-1.25 text-kbd tabular-nums transition-colors duration-(--duration-fast)',
+              'flex min-w-0 flex-1 items-start justify-center rounded-media pt-1.25 transition-[background-color,box-shadow] duration-(--duration-fast) ease-standard',
               state === 'done' &&
-                'bg-primary text-primary-foreground inset-ring inset-ring-signal forced-colors:border',
+                'bg-primary text-primary-foreground inset-ring inset-ring-primary forced-colors:border',
               state === 'current' &&
-                'bg-wash text-foreground inset-ring-2 inset-ring-signal forced-colors:border-3',
-              state === 'upcoming' && 'bg-hover text-faint-foreground',
+                'text-foreground inset-ring-2 inset-ring-selected forced-colors:border-3',
+              state === 'upcoming' &&
+                'text-faint-foreground inset-ring inset-ring-edge forced-colors:border',
             )}
           >
-            {pct}
+            <span className="text-kbd tabular-nums">{pct}</span>
           </div>
         )
       })}
@@ -75,9 +76,9 @@ function SpeedLadder({ rungs, current, label, className }: SpeedLadderProps) {
 const LadderIcon = createIcon('ladder', [['path', { d: 'M4 20h4v-4h4v-4h4V8h4', key: 'steps' }]])
 
 /**
- * A ladder parameter chip (`.chip`: "Start 70 %", "Goal 100 %", "Step 5 %", "3 clean passes",
- * "More") that opens its stepper: a 30 px pill painted inside a 48 px box, the secondary practice
- * target (§8, V12).
+ * A ladder parameter chip ("Start 70 %", "Goal 100 %", "Step 5 %", "3 clean passes", "More")
+ * that opens its stepper: a 32 px pill with a hairline edge painted inside a 48 px box (§8); while
+ * its stepper is open the edge is the 1.5 px ink.
  */
 function LadderChip({
   className,
@@ -88,12 +89,12 @@ function LadderChip({
     <PopoverTrigger
       data-slot="ladder-chip"
       className={cn(
-        'group/chip inline-flex min-h-target-practice items-center rounded-full focus-visible:outline-offset-[-7px]',
+        'group/chip inline-flex min-h-target-practice items-center rounded-full focus-visible:outline-offset-[-6px]',
         className,
       )}
       {...props}
     >
-      <span className="inline-flex h-7.5 items-center rounded-full border border-border-strong px-2.75 text-body-sm font-medium whitespace-nowrap text-muted-foreground tabular-nums transition-colors duration-(--duration-fast) group-hover/chip:bg-panel group-hover/chip:text-foreground group-aria-expanded/chip:border-selected group-aria-expanded/chip:bg-wash group-aria-expanded/chip:text-foreground">
+      <span className="inline-flex h-8 items-center rounded-full px-3 text-label-sm whitespace-nowrap text-muted-foreground tabular-nums inset-ring inset-ring-border-strong transition-[color,background-color,box-shadow] duration-(--duration-fast) ease-standard group-hover/chip:bg-hover group-hover/chip:text-foreground group-aria-expanded/chip:text-foreground group-aria-expanded/chip:inset-ring-[1.5px] group-aria-expanded/chip:inset-ring-selected">
         {children}
       </span>
     </PopoverTrigger>

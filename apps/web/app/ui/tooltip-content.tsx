@@ -4,7 +4,8 @@ import { Kbd } from '@/ui/kbd'
 
 /**
  * Doc 26 §12.1: tooltips name the action and show its keyboard shortcut. They supplement a visible
- * label or `aria-label`; never put the only name of a control in a tooltip.
+ * label or `aria-label`; never put the only name of a control in a tooltip. A floating layer:
+ * --raised, one hairline, the popover radius and shadow.
  */
 export function TooltipContent({
   className,
@@ -33,7 +34,7 @@ export function TooltipContent({
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            'inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-2 rounded-field border border-border bg-raised px-2.5 py-1.5 text-body-sm font-medium text-foreground shadow-popover duration-(--duration-base) data-[instant]:duration-0 data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0',
+            'inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-2 rounded-panel border border-border bg-raised px-3 py-1.5 text-label-sm text-foreground shadow-popover duration-(--duration-base) data-[instant]:duration-0 data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0',
             className,
           )}
           {...props}

@@ -100,7 +100,7 @@ export function AnalysisChoice({
               <>
                 {seePlus('cap_full')}
                 {available.lite && type === 'full' && (
-                  <Button variant="ghost" onClick={() => onTypeChange('lite')}>
+                  <Button variant="quiet" onClick={() => onTypeChange('lite')}>
                     {m['plan.use_lite']()}
                   </Button>
                 )}

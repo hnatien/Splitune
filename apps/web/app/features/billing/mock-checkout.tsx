@@ -56,7 +56,7 @@ export function MockCheckout({ session }: { session: string }) {
       setPending(undefined)
     }
   }
-  const button = (outcome: Outcome, label: string, variant: 'primary' | 'secondary' | 'ghost') => (
+  const button = (outcome: Outcome, label: string, variant: 'primary' | 'outline' | 'quiet') => (
     <Button
       variant={variant}
       size="lg"
@@ -94,8 +94,8 @@ export function MockCheckout({ session }: { session: string }) {
           {failed && <InlineError title={m['billing.action_failed']()} />}
           <div className="flex flex-col gap-2">
             {button('success', m['billing.simulate_success'](), 'primary')}
-            {button('declined', m['billing.simulate_declined'](), 'secondary')}
-            {button('cancel', m['common.cancel'](), 'ghost')}
+            {button('declined', m['billing.simulate_declined'](), 'outline')}
+            {button('cancel', m['common.cancel'](), 'quiet')}
           </div>
         </BillingCard>
       ) : plans.isError ? (

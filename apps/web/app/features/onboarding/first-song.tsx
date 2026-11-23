@@ -92,7 +92,7 @@ function SignedInSong({
         {claim.isError && <InlineError title={m['system.error']()} />}
         <Button
           variant="primary"
-          size="practice"
+          size="play"
           block
           loading={claim.isPending}
           onClick={() => claim.mutate()}

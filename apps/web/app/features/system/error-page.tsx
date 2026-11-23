@@ -48,7 +48,7 @@ export function ErrorPage({ error }: { error: unknown }) {
               <RotateCwIcon aria-hidden />
               {m['system.reload']()}
             </Button>
-            <Link to="/library" className={buttonVariants({ variant: 'ghost' })}>
+            <Link to="/library" className={buttonVariants({ variant: 'quiet' })}>
               {m['system.go_library']()}
             </Link>
           </>
@@ -59,7 +59,7 @@ export function ErrorPage({ error }: { error: unknown }) {
             {m['system.error_id']({ id })}
           </p>
           <Button
-            variant="ghost"
+            variant="quiet"
             size="sm"
             onClick={async () => {
               await navigator.clipboard.writeText(id).catch(() => undefined)

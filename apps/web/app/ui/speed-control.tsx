@@ -1,19 +1,22 @@
 import { MinusIcon, PlusIcon } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { Kbd } from '@/ui/kbd'
 import { Popover, PopoverTrigger } from '@/ui/popover'
+import { LadderIcon } from '@/ui/speed-ladder'
 import { TransportButton } from '@/ui/transport-button'
 
-// Doc 26 §12.2, 27 §5.3: −/+ steppers (5 %, 1 % with Shift), tap the readout for the slider
-// (50–100 %, 25–200 % advanced) and the presets, which may also sit inline from `2xl`; readout
-// "70 %" over "84 BPM", and with the speed ladder on its goal after the BPM ("72 BPM · → 100").
-// Round −/+ (`.ib.lg.box`, icons only, 26 §11) around a quiet pill readout button; all three are
-// main practice controls, 64 px in every layout (§8, V11).
+// Doc 26 §12.2, 27 §5.3, s47 direction §6–§7: − / readout / +, the steppers quiet 48 px circles
+// (5 %, 1 % with Shift) with their key caps. The readout is "70 %" over "70 BPM" in tabular
+// figures and a fixed width, so the transport never moves as the speed changes; it opens the speed
+// panel (presets and a typed field, focused on open, so S → type → Enter sets a speed). While the
+// speed ladder is on, the readout says so on the control: the ladder mark and its goal after the
+// BPM ("72 BPM · → 100"). The presets may also sit inline from `2xl` (tablet transport).
 
 export const SPEED_STEP = 5
 export const SPEED_FINE_STEP = 1
 
-// The slider and presets load on first open, so the transport stays light (12 §10 route budget).
+// The panel and presets load on first open, so the transport stays light (12 §10 route budget).
 const SpeedPanel = lazy(() => import('./speed-panel').then((m) => ({ default: m.SpeedPanel })))
 const SpeedPresets = lazy(() => import('./speed-panel').then((m) => ({ default: m.SpeedPresets })))
 
@@ -27,21 +30,30 @@ type SpeedControlProps = {
   goal?: { text: string; label: string } | undefined
   advanced?: boolean
   labels: {
-    /** Accessible name of the readout button and slider, e.g. "Speed". */
+    /** Accessible name of the readout button and the panel, e.g. "Speed". */
     speed: string
     decrease: string
     increase: string
     presets: string
+    /** The typed field's name, e.g. "Speed in percent"; defaults to `speed`. */
+    field?: string
   }
-  shortcuts?: { decrease?: string; increase?: string }
-  /** Phones: a narrower readout so the transport fits two rows (the steppers stay 64 px, V11). */
+  /** Key caps: −/+ steppers and the key that opens the panel ("S"). */
+  shortcuts?: { decrease?: string; increase?: string; open?: string }
+  /**
+   * The panel's open state, for opening it from a key (`S`); uncontrolled when omitted. On open
+   * the typed field has focus with its text selected; Enter sets the speed and closes it.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Phones: a narrower readout so the transport fits two rows. */
   compact?: boolean
   /** The presets inline from `2xl` too (tablet transport); the desktop dock leaves them out. */
   inlinePresets?: boolean
   className?: string
 }
 
-const NBSP = ' '
+const NBSP = ' '
 
 /** The readout's number counts from the old speed to the new one over the base duration. */
 function useTweened(target: number) {
@@ -86,6 +98,8 @@ function SpeedControl({
   advanced = false,
   labels,
   shortcuts,
+  open,
+  onOpenChange,
   compact = false,
   inlinePresets = true,
   className,
@@ -93,38 +107,69 @@ function SpeedControl({
   const [min, max] = advanced ? [25, 200] : [50, 100]
   const shown = useTweened(value)
   const set = (next: number) => onValueChange(Math.min(max, Math.max(min, next)))
+  // Open by its trigger, or by the caller (the `S` key) when `open` is given.
+  const [ownOpen, setOwnOpen] = useState(false)
+  const field = useRef<HTMLInputElement>(null)
+  const shownOpen = open ?? ownOpen
+  const setOpen = (next: boolean) => {
+    if (open === undefined) setOwnOpen(next)
+    onOpenChange?.(next)
+  }
   const step = (direction: 1 | -1) => (event: React.MouseEvent) =>
     set(value + direction * (event.shiftKey ? SPEED_FINE_STEP : SPEED_STEP))
 
   return (
-    <div data-slot="speed-control" className={cn('inline-flex items-center gap-1', className)}>
+    <div data-slot="speed-control" className={cn('inline-flex items-center', className)}>
       <TransportButton
         icon={<MinusIcon aria-hidden />}
         label={labels.decrease}
         showLabel={false}
-        tone="box"
         shortcut={shortcuts?.decrease}
         disabled={value <= min}
         onClick={step(-1)}
       />
-      <Popover>
+      <Popover
+        open={shownOpen}
+        onOpenChange={setOpen}
+        // Once open (and focused), the typed speed is selected, so "70" and Enter replace it.
+        onOpenChangeComplete={(opened) => {
+          if (opened) field.current?.select()
+        }}
+      >
         <PopoverTrigger
-          aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}${goal ? ` · ${goal.text}, ${goal.label}` : ''}`}
+          data-slot="speed-readout"
+          data-ladder={goal ? '' : undefined}
+          aria-keyshortcuts={shortcuts?.open}
           className={cn(
-            'flex min-h-target-play flex-col items-center justify-center rounded-full px-3 text-center transition-colors hover:bg-hover aria-expanded:bg-hover',
-            compact ? 'min-w-20' : 'min-w-26',
+            'inline-flex min-h-target-practice items-center justify-center gap-2 rounded-full px-3 text-center inset-ring inset-ring-transparent transition-[background-color,box-shadow] duration-(--duration-fast) ease-standard hover:bg-hover aria-expanded:inset-ring-[1.5px] aria-expanded:inset-ring-selected',
+            compact ? 'min-w-18' : 'min-w-24',
           )}
         >
-          <span className="font-reading text-read-readout tabular-nums">
-            {shown}
-            {NBSP}%
+          <span className="sr-only">
+            {`${labels.speed}: ${formatSpeed(value, bpm)}${goal ? ` · ${goal.text}, ${goal.label}` : ''}`}
           </span>
-          {(bpm !== undefined || goal) && (
-            <span className="text-body-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
-              {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
-              {bpm !== undefined && goal && ' · '}
-              {goal?.text}
+          <span aria-hidden className="flex flex-col items-center leading-none">
+            <span className="min-w-[5ch] text-center font-reading text-read-readout tabular-nums">
+              {shown}
+              {NBSP}%
             </span>
+            {(bpm !== undefined || goal) && (
+              <span className="flex items-center gap-1 text-caption whitespace-nowrap text-muted-foreground tabular-nums">
+                {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
+                {goal && (
+                  <>
+                    {bpm !== undefined && ' · '}
+                    <LadderIcon aria-hidden className="size-3.5 stroke-[1.8]" />
+                    {goal.text}
+                  </>
+                )}
+              </span>
+            )}
+          </span>
+          {shortcuts?.open && (
+            <Kbd aria-hidden className="pointer-coarse:hidden">
+              {shortcuts.open}
+            </Kbd>
           )}
         </PopoverTrigger>
         <Suspense fallback={null}>
@@ -133,8 +178,16 @@ function SpeedControl({
             min={min}
             max={max}
             onValueChange={set}
-            labels={{ speed: labels.speed, presets: labels.presets }}
+            labels={{
+              speed: labels.speed,
+              presets: labels.presets,
+              field: labels.field ?? labels.speed,
+              decrease: labels.decrease,
+              increase: labels.increase,
+            }}
             goal={goal?.label}
+            onDone={() => setOpen(false)}
+            fieldRef={field}
           />
         </Suspense>
       </Popover>
@@ -142,20 +195,14 @@ function SpeedControl({
         icon={<PlusIcon aria-hidden />}
         label={labels.increase}
         showLabel={false}
-        tone="box"
         shortcut={shortcuts?.increase}
         disabled={value >= max}
         onClick={step(1)}
       />
       {inlinePresets && (
-        <div className="hidden 2xl:block">
-          <Suspense fallback={<div aria-hidden className="h-target-practice w-75" />}>
-            <SpeedPresets
-              value={value}
-              onValueChange={set}
-              label={labels.presets}
-              className="bg-transparent p-0"
-            />
+        <div className="ml-2 hidden 2xl:block">
+          <Suspense fallback={<div aria-hidden className="h-target-practice w-96" />}>
+            <SpeedPresets value={value} onValueChange={set} label={labels.presets} />
           </Suspense>
         </div>
       )}

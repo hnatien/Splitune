@@ -28,7 +28,7 @@ export function SettingsLayout({ children }: { children: React.ReactNode }) {
                 // The current section is the `.navlink` --panel fill with --foreground text; forced
                 // colours pair Highlight with its text.
                 className={cn(
-                  buttonVariants({ variant: 'ghost' }),
+                  buttonVariants({ variant: 'quiet' }),
                   'w-full justify-start px-3 aria-[current=page]:bg-panel aria-[current=page]:text-foreground forced-colors:aria-[current=page]:bg-hover forced-colors:aria-[current=page]:text-foreground',
                 )}
                 activeProps={{ 'aria-current': 'page' }}

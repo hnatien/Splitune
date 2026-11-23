@@ -184,7 +184,7 @@ function Menu({ title }: { title: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${title}`} />}
+        render={<Button variant="quiet" size="icon-sm" aria-label={`More for ${title}`} />}
       >
         <EllipsisIcon aria-hidden />
       </DropdownMenuTrigger>

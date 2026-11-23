@@ -38,7 +38,7 @@ export function UnsupportedBrowser() {
             <CopyIcon aria-hidden />
             {copied ? m['system.link_copied']() : m['system.copy_link']()}
           </Button>
-          <Link to="/library" className={buttonVariants({ variant: 'ghost' })}>
+          <Link to="/library" className={buttonVariants({ variant: 'quiet' })}>
             {m['system.library_still']()}
           </Link>
         </>

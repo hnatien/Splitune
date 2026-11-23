@@ -135,7 +135,7 @@ export function OnboardingGuide() {
           {example && <SongSummary example={example} />}
           <Button
             variant="primary"
-            size="practice"
+            size="play"
             loading={!ready}
             disabled={!ready}
             onClick={() => {
@@ -147,7 +147,7 @@ export function OnboardingGuide() {
             <PlayIcon aria-hidden />
             {ready ? m['start.play_part']() : m['start.song_loading']()}
           </Button>
-          <Button variant="ghost" onClick={back}>
+          <Button variant="quiet" onClick={back}>
             {m['start.back']()}
           </Button>
         </DialogContent>
