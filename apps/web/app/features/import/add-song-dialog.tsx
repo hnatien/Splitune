@@ -45,8 +45,9 @@ type Problem = 'no_file' | 'file' | 'duplicate' | 'link' | 'no_recording' | 'all
 // Add song (27 §3.6; AddSong and Phone-Add): one 640 px column over the library, a full-screen
 // sheet on phones. The title with its one promise ("It opens right away"), File · Link · Record
 // as compact tabs (the last one used remembered; focus starts on the chosen tab), the source,
-// then Your part and Analysis under a hairline. The body is one scrolling column whose parts keep
-// their own height, so nothing in a tab can draw over the part rows. The primary is never
+// then Your part and Analysis under a hairline. The tabs stay put above the body, one scrolling
+// column whose parts keep their own height, so nothing in a tab can draw over the part rows and a
+// scroll to what a submit points at never takes the tabs out of view. The primary is never
 // disabled in advance: pressed too early it says what is missing beside it and moves focus there.
 // It opens Practice at once while the upload and the analysis carry on (27 §2 "Add a file"), and
 // an upload keeps going after the dialog closes.
@@ -81,6 +82,7 @@ export default function AddSongDialog({
   const [waitingOnline, setWaitingOnline] = useState(false)
   const [upgrade, setUpgrade] = useState<Trigger | undefined>()
   const fieldId = useId()
+  const head = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
 
   const onFile = useCallback(
@@ -229,7 +231,7 @@ export default function AddSongDialog({
         <DialogContent
           data-slot="add-song"
           initialFocus={() =>
-            body.current?.querySelector<HTMLElement>('[data-slot=tabs-trigger][data-active]') ??
+            head.current?.querySelector<HTMLElement>('[data-slot=tabs-trigger][data-active]') ??
             null
           }
           className="flex max-h-[calc(100dvh-4rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-160 max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0"
@@ -257,8 +259,8 @@ export default function AddSongDialog({
             onValueChange={(value) => changeTab(value as AddTab)}
             className="min-h-0 flex-1 gap-0"
           >
-            <div ref={body} className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
-              <TabsList look="pill" className="mt-4 mb-4 sm:mt-5">
+            <div ref={head} className="shrink-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-5">
+              <TabsList look="pill">
                 {tabs.map(({ value, label, Icon }) => (
                   <TabsTrigger key={value} value={value}>
                     <Icon aria-hidden />
@@ -266,6 +268,12 @@ export default function AddSongDialog({
                   </TabsTrigger>
                 ))}
               </TabsList>
+            </div>
+            <div
+              ref={body}
+              data-slot="add-song-body"
+              className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6"
+            >
               <TabsContent value="file" className="flex flex-col gap-4">
                 {file.picked ? (
                   <>
