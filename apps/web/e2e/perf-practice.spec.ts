@@ -47,8 +47,10 @@ const SELECTORS = {
   slower: { role: 'button', name: /^Slower( by 5\s%)?$/ },
   faster: { role: 'button', name: /^Faster( by 5\s%)?$/ },
   loopStartEdge: { role: 'button', name: /^Loop start, bar \d+$/ },
-  // Desktop's dock has the mix pill since s35, named by its preset (27 §3.7.1); touch keeps "Mix".
-  mixer: { role: 'button', name: /^(Mix|Your part loud|Minus-one|Original)\b/ },
+  // The transport's Tools opens the tools panel and names the mix in play (27 §3.7.1, s47);
+  // the stem faders are on its Mix tab.
+  mixer: { role: 'button', name: /^(Tools|Your part loud|Minus-one|Rhythm only|Original)\b/ },
+  mixTab: { role: 'tab', name: /^Mix/ },
   // The stem faders ("Volume Guitar", "Volume Band"), not the master "Volume".
   fader: { role: 'slider', name: /^Volume / },
   countIn: { css: '[data-slot=count-in]' },
@@ -57,7 +59,7 @@ const SELECTORS = {
   notNow: { role: 'button', name: /^Not now$/ },
 } as const satisfies Record<
   string,
-  { role: 'button' | 'slider' | 'dialog'; name: RegExp } | { css: string }
+  { role: 'button' | 'slider' | 'dialog' | 'tab'; name: RegExp } | { css: string }
 >
 
 type Selector = (typeof SELECTORS)[keyof typeof SELECTORS]
@@ -466,6 +468,7 @@ async function recordRun(
     await press(find(page, SELECTORS.playPause))
     await expect(find(page, SELECTORS.pause)).toBeVisible()
     await press(find(page, SELECTORS.mixer))
+    await press(find(page, SELECTORS.mixTab))
     const fader = find(page, SELECTORS.fader).first()
     await expect(fader).toBeVisible()
     latency.faderStep = await latencies(page, async (i) => {
