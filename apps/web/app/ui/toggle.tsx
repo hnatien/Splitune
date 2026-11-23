@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 // one- and two-letter toggles (M, S) where an edge alone is too slight. `dot` adds a hollow dot
 // that fills when on, for toggles that name a setting rather than a choice.
 const toggleVariants = cva(
-  "group/toggle inline-flex min-h-(--box) min-w-(--box) shrink-0 items-center justify-center gap-1.5 rounded-full border-(length:--pad) border-transparent bg-clip-padding whitespace-nowrap inset-ring transition-[color,background-color,box-shadow] duration-(--duration-fast) ease-standard select-none [--pad:calc((var(--box)-var(--face))/2)] focus-visible:outline-offset-[calc(2px-var(--pad))] not-data-pressed:hover:bg-hover not-data-pressed:hover:text-foreground disabled:pointer-events-none disabled:text-faint-foreground disabled:inset-ring-edge data-pressed:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
+  "group/toggle inline-flex min-h-(--box) min-w-(--box) shrink-0 items-center justify-center gap-1.5 rounded-full border-(length:--pad) border-transparent bg-clip-padding whitespace-nowrap inset-ring transition-[color,background-color,box-shadow] duration-(--duration-fast) ease-standard select-none [--pad:calc((var(--box)-var(--face))/2)] focus-visible:outline-offset-[calc(2px-var(--pad))] not-data-pressed:hover:bg-hover not-data-pressed:hover:text-foreground disabled:pointer-events-none disabled:text-faint-foreground disabled:inset-ring-transparent disabled:outline-1 disabled:-outline-offset-1 disabled:outline-dashed disabled:outline-edge data-pressed:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
   {
     variants: {
       variant: {

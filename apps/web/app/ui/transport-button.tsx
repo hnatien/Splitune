@@ -11,11 +11,12 @@ import { WithTooltip } from '@/ui/tooltip'
 // its key cap on fine pointers (hidden on coarse pointers; the key still works) and names it in
 // the tooltip. Pass `pressed` to make it a toggle (loop, count-in, metronome); `active` marks a
 // running loop without toggling. On and active are the 1.5 px ink edge with ink text, never a
-// fill. Disabled is faint text inside a ≥ 3:1 edge with no fill (never an opacity fade), and
+// fill. Disabled is faint text inside a dashed ≥ 3:1 edge with no fill (never an opacity fade,
+// and never a solid ring, which would read as "on"), and
 // `unavailableLabel` says why in the name and the tooltip ("Unavailable · after the beat is found").
 
 const base =
-  'group/transport relative inline-flex min-h-target-practice min-w-target-practice shrink-0 items-center justify-center gap-2 rounded-full px-3 text-label whitespace-nowrap inset-ring transition-[color,background-color,box-shadow,transform] duration-(--duration-fast) ease-standard select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-transparent disabled:text-faint-foreground disabled:inset-ring-edge [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
+  'group/transport relative inline-flex min-h-target-practice min-w-target-practice shrink-0 items-center justify-center gap-2 rounded-full px-3 text-label whitespace-nowrap inset-ring transition-[color,background-color,box-shadow,transform] duration-(--duration-fast) ease-standard select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-transparent disabled:text-faint-foreground disabled:inset-ring-transparent disabled:outline-1 disabled:-outline-offset-1 disabled:outline-dashed disabled:outline-edge [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
 
 const on =
   'data-pressed:text-foreground data-pressed:inset-ring-[1.5px] data-pressed:inset-ring-selected data-[active]:text-foreground data-[active]:inset-ring-[1.5px] data-[active]:inset-ring-selected'
