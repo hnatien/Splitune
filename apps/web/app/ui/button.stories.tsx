@@ -13,6 +13,7 @@ import {
   expectTargets,
   expectUnavailable,
   isClear,
+  resolve,
   StateGrid,
   surfaceOf,
   themeFrames,
@@ -297,6 +298,10 @@ export const Loading: Story = {
   play: async ({ canvasElement, args }) => {
     const button = within(canvasElement).getByRole('button')
     await expect(button).toHaveAttribute('aria-busy', 'true')
+    // Busy is not unavailable: the primary keeps its ink fill and its label's colour.
+    const style = getComputedStyle(button)
+    await expect(style.backgroundColor).toBe(resolve(button, 'backgroundColor', '--primary'))
+    await expect(style.color).toBe(resolve(button, 'backgroundColor', '--primary-foreground'))
     const label = within(canvasElement).getByText('Email me a link')
     await expect(label).toBeVisible()
     await expect(button.querySelector('[data-slot=spinner]')).toBeNull()
