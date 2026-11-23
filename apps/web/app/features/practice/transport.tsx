@@ -45,8 +45,9 @@ const VolumePanel = lazy(() =>
 // the loop line, which opens the Loop tab; after a looped pass the pass prompt takes this place,
 // so it never covers the music. Right: Count-in, Click, speed − / "70 %" / +, Tools and the volume.
 //
-// Phones: a status row (the loop line or the pass prompt) over two rows, loop · count-in · speed
-// and Tools · previous · Play · next · from the top. Every control keeps its own 48 px target and
+// Phones and screens under 1024 px: a status row (the loop line or the pass prompt) over two rows,
+// loop · count-in · speed and Tools · previous · Play · next · from the top (with the click and the
+// volume where there is room). Every control keeps its own 48 px target and
 // nothing wraps or overflows at 375 px.
 
 const PLAYING = new Set(['countIn', 'playing', 'loopRest', 'assess', 'audition'])

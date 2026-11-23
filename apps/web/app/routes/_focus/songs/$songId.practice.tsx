@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 import { z } from 'zod'
-import { PracticeLoading } from '@/features/practice/practice-loading'
+import { PracticeError, PracticeLoading } from '@/features/practice/practice-loading'
 import { PracticePage } from '@/features/practice/practice-page'
 import { m } from '@/lib/i18n'
 import { requireAudioEngine } from '@/lib/require-audio'
@@ -50,8 +50,27 @@ export const Route = createFileRoute('/_focus/songs/$songId/practice')({
   },
   head: () => ({ meta: [{ title: m['meta.page']({ page: m['practice.title']() }) }] }),
   pendingComponent: PracticeLoading,
+  errorComponent: PracticeRouteError,
   component: Practice,
 })
+
+// A failure while the screen opens stays inside the focus shell with a way on: Try again, or
+// back to the library (27 §5.4), instead of the app's root error page.
+function PracticeRouteError({ reset }: { reset: () => void }) {
+  const router = useRouter()
+  return (
+    <PracticeError
+      title={m['practice.load_failed']()}
+      description={m['practice.load_failed_hint']()}
+      onRetry={() => {
+        reset()
+        void router.invalidate()
+      }}
+      retryLabel={m['common.try_again']()}
+      backLabel={m['practice.back_to_library']()}
+    />
+  )
+}
 
 function Practice() {
   const { songId } = Route.useParams()

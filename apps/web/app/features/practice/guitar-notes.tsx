@@ -269,7 +269,7 @@ export function GuitarNotes({
         className,
       )}
     >
-      <div ref={setBox} className="relative mx-auto flex min-h-0 w-full max-w-page flex-1">
+      <div ref={setBox} className="relative mx-auto flex min-h-0 w-full flex-1">
         {sized && height > 0 && now && (
           <FretboardDiagram
             className="shrink-0"
@@ -321,7 +321,7 @@ export function GuitarNotes({
           >
             <ChordSymbol name={now.chord} />
             {now.nextChord && (
-              <span className="text-[0.7em] text-conf-medium">
+              <span className="text-[0.7em] text-muted-foreground">
                 → <ChordSymbol name={now.nextChord} />
               </span>
             )}
