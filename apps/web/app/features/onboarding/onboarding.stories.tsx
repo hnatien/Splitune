@@ -130,25 +130,37 @@ export const Setup: Story = {
 }
 export const SetupDaylight: Story = { ...Setup, globals: LIGHT }
 
-/** Changing an answer changes the suggestion and what the bar says will happen. */
+/** The songs offered are the chosen instrument's own: each listed once, none for another part. */
+const songRows = (canvasElement: HTMLElement) =>
+  within(within(canvasElement).getByRole('radiogroup', { name: 'Choose a song' })).getAllByRole(
+    'radio',
+  )
+
+/** Changing an answer changes the suggestion, the songs offered and what the bar says. */
 export const SetupAnswers: Story = {
   render: start(),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    await expect(songRows(canvasElement).map((row) => row.textContent)).not.toContainEqual(
+      expect.stringMatching(/bass line/),
+    )
     await userEvent.click(canvas.getByRole('radio', { name: /^Bass/ }))
     await expect(
       await canvas.findByRole('radio', { name: /^Stitch Up.*Suggested.*bass line/ }),
     ).toBeChecked()
+    await expect(songRows(canvasElement)).toHaveLength(1)
     await expect(canvas.getByRole('radio', { name: /^Guitar/ })).not.toBeChecked()
     await userEvent.click(canvas.getByRole('radio', { name: /^A few songs/ }))
     await expect(bar(canvasElement).getByText('bass line · bars 3–6 at 80 %')).toBeVisible()
-    // A song picked by hand stays picked, and the keyboard moves through the rows.
-    const illFate = canvas.getByRole('radio', { name: /^Ill Fate/ })
-    await userEvent.click(illFate)
-    await expect(illFate).toBeChecked()
-    await expect(bar(canvasElement).getByText('Ill Fate')).toBeVisible()
-    await userEvent.keyboard('{ArrowDown}')
-    await expect(canvas.getByRole('radio', { name: /^Stitch Up.*guitar rhythm/ })).toBeChecked()
+    // Back on guitar, a song picked by hand stays picked, and the keyboard moves through the rows.
+    await userEvent.click(canvas.getByRole('radio', { name: /^Guitar/ }))
+    await expect(songRows(canvasElement)).toHaveLength(2)
+    const stitchUp = canvas.getByRole('radio', { name: /^Stitch Up.*guitar rhythm/ })
+    await userEvent.click(stitchUp)
+    await expect(stitchUp).toBeChecked()
+    await expect(bar(canvasElement).getByText('Stitch Up')).toBeVisible()
+    await userEvent.keyboard('{ArrowUp}')
+    await expect(canvas.getByRole('radio', { name: /^Ill Fate.*Suggested/ })).toBeChecked()
   },
 }
 
@@ -163,6 +175,10 @@ export const SetupPhone: Story = {
     const box = action.getBoundingClientRect()
     await expect(box.bottom).toBeLessThanOrEqual(window.innerHeight)
     await expect(box.top).toBeGreaterThanOrEqual(0)
+    // What it will do wraps beside the action rather than being cut off.
+    const plan = bar(canvasElement).getByText('guitar rhythm · bars 3–6 at 70 %')
+    await expect(plan.scrollWidth).toBeLessThanOrEqual(plan.clientWidth)
+    await expect(getComputedStyle(plan).textOverflow).not.toBe('ellipsis')
   },
 }
 export const SetupPhoneDaylight: Story = { ...SetupPhone, globals: { ...PHONE, ...LIGHT } }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { answersOf, examplePractice, tabLevelFor } from './defaults'
-import { type ExampleSong, exampleFor } from './examples'
+import { type ExampleSong, exampleFor, examplesFor } from './examples'
 
 const example = {
   instrument: 'guitar',
@@ -58,5 +58,14 @@ describe('exampleFor', () => {
     expect(exampleFor(examples, 'bass', 'just_started')?.id).toBe('bass')
     expect(exampleFor(examples, 'other', null)?.id).toBe('riff')
     expect(exampleFor([], 'guitar', null)).toBeUndefined()
+  })
+
+  it('offers only the instrument’s own examples, and the guitar ones for something else', () => {
+    expect(examplesFor(examples, 'guitar').map((e) => e.id)).toEqual(['riff', 'rhythm'])
+    expect(examplesFor(examples, 'bass').map((e) => e.id)).toEqual(['bass'])
+    expect(examplesFor(examples, 'other').map((e) => e.id)).toEqual(['riff', 'rhythm'])
+    expect(examplesFor([song('bass', 'bass', 'bass_line')], 'other').map((e) => e.id)).toEqual([
+      'bass',
+    ])
   })
 })
