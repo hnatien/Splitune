@@ -69,7 +69,7 @@ const playSignedOut: Play = async ({ canvasElement }) => {
   await waitFor(() => expect(inkEdgeOf(yearly).width).toBeGreaterThanOrEqual(1.5))
   await expect(inkEdgeOf(yearly).contrast).toBeGreaterThanOrEqual(3)
   await waitFor(() => expect(inkEdgeOf(monthly).width).toBe(0))
-  await expect(canvas.getByRole('rowheader', { name: /Slow down to 25/ })).toBeVisible()
+  await expect(canvas.getByRole('rowheader', { name: /Slow down to 50/ })).toBeVisible()
   // One filled control: Get Plus; the Free row's way in is an outline pill.
   const filled = filledControls(canvasElement)
   await expect(filled).toHaveLength(1)
