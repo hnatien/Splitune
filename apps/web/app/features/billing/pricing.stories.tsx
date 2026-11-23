@@ -153,6 +153,11 @@ export const PricesFailed: Story = {
 }
 export const PricesFailedPhone: Story = {
   render: unavailable(false),
+  globals: { ...PHONE, appearance: 'dark' },
+  play: playUnavailable,
+}
+export const PricesFailedPhoneDaylight: Story = {
+  render: unavailable(false),
   globals: { ...PHONE, ...DAYLIGHT },
   play: playUnavailable,
 }
