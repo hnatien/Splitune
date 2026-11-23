@@ -118,6 +118,10 @@ const NO_BARS: ReadonlySet<number> = new Set()
 const SYSTEM_TOP_PX = 44
 const SYSTEM_BOTTOM_PX = 10
 const PADDING_PX = SYSTEM_TOP_PX + SYSTEM_BOTTOM_PX
+// The page's padding (alphaTab's default is 35 all round): the sides and the end keep it.
+const PAGE_SIDE_PX = 35
+const PAGE_TOP_PX = 4
+const PAGE_BOTTOM_PX = 35
 
 function createApi(host: HTMLElement, scroll: boolean, barsPerRow: number): alphaTab.AlphaTabApi {
   const settings = new alphaTab.Settings()
@@ -130,6 +134,8 @@ function createApi(host: HTMLElement, scroll: boolean, barsPerRow: number): alph
   // Systems of a fixed number of bars (Page) with room above each for the loop bracket
   // (27 §3.7.1).
   if (!scroll) settings.display.barsPerRow = barsPerRow
+  // The page's own top padding would add a blank band above the first system's bracket room.
+  settings.display.padding = [PAGE_SIDE_PX, PAGE_TOP_PX, PAGE_SIDE_PX, PAGE_BOTTOM_PX]
   settings.display.firstSystemPaddingTop = SYSTEM_TOP_PX
   settings.display.systemPaddingTop = SYSTEM_TOP_PX
   settings.display.systemPaddingBottom = SYSTEM_BOTTOM_PX
