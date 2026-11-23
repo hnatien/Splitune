@@ -62,10 +62,20 @@ export async function expectTargets(elements: Iterable<Element>, min: Size = 44)
   await expect(short, `targets under ${width} × ${height}`).toEqual([])
 }
 
-/** 26 §12.3: disabled controls keep full opacity and say "Unavailable" in their accessible name. */
-export async function expectUnavailable(element: Element, name: string) {
-  await expect(getComputedStyle(element).opacity).toBe('1')
+/**
+ * 26 §12.3: disabled controls keep full opacity and say "Unavailable" in their accessible name.
+ * Pass `dashed` for buttons and toggles: their edge is dashed, never the solid ring of "on".
+ */
+export async function expectUnavailable(element: Element, name: string, dashed = false) {
+  const style = getComputedStyle(element)
+  await expect(style.opacity).toBe('1')
   await expect(element).toHaveAccessibleName(expect.stringContaining(name))
+  if (!dashed) return
+  await expect(style.outlineStyle).toBe('dashed')
+  await expect(
+    contrast(style.outlineColor, surfaceOf(element.parentElement ?? element)),
+  ).toBeGreaterThanOrEqual(3)
+  await expect(isClear(edgeOf(element)?.color ?? 'transparent')).toBe(true)
 }
 
 /** WCAG 2.x contrast of two computed CSS colours (any syntax the browser serialises). */

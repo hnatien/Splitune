@@ -66,9 +66,8 @@ export const Disabled: Story = {
   play: async ({ canvasElement }) => {
     for (const frame of themeFrames(canvasElement)) {
       const chip = within(frame).getByRole('button')
-      await expectUnavailable(chip, 'unavailable')
-      // Faint text and a ≥ 3:1 --edge ring, never an opacity fade.
-      await expect(contrast(edgeOf(chip)?.color ?? '', surfaceOf(frame))).toBeGreaterThanOrEqual(3)
+      // Faint text and a dashed ≥ 3:1 --edge, never an opacity fade or the solid ring of "on".
+      await expectUnavailable(chip, 'unavailable', true)
     }
   },
 }

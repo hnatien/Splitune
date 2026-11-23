@@ -280,11 +280,8 @@ export const Disabled: Story = {
     for (const frame of themeFrames(canvasElement)) {
       const button = within(frame).getByRole('button')
       await expect(button).toBeDisabled()
-      await expectUnavailable(button, 'unavailable')
+      await expectUnavailable(button, 'unavailable', true)
       await expect(isClear(getComputedStyle(button).backgroundColor)).toBe(true)
-      await expect(contrast(edgeOf(button)?.color ?? '', surfaceOf(frame))).toBeGreaterThanOrEqual(
-        3,
-      )
     }
   },
 }

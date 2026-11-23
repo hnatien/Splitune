@@ -309,8 +309,11 @@ export const Unavailable: Story = {
     await expect(style.opacity).toBe('1')
     await expect(rgbOf(style.backgroundColor)[3]).toBe(0)
     await expect(sameColour(style.color, tokenColour('--faint-foreground', mix))).toBe(true)
-    const edge = insetRings(mix).find((ring) => sameColour(ring.colour, tokenColour('--edge', mix)))
-    await expect(edge?.width).toBe(1)
+    // A dashed edge, never the solid ring that marks "on".
+    await expect(style.outlineStyle).toBe('dashed')
+    await expect(sameColour(style.outlineColor, tokenColour('--edge', mix))).toBe(true)
+    const ring = insetRings(mix).find((r) => sameColour(r.colour, tokenColour('--edge', mix)))
+    await expect(ring).toBeUndefined()
     await expect(contrastRatio(tokenColour('--edge', mix), surfaceOf(mix))).toBeGreaterThanOrEqual(
       3,
     )

@@ -242,8 +242,11 @@ export const Disabled: Story = {
       await expect(style.opacity).toBe('1')
       await expect(rgbOf(style.backgroundColor)[3]).toBe(0)
       await expect(sameColour(style.color, tokenColour('--faint-foreground', mix))).toBe(true)
+      // A dashed edge, never the solid ring that marks "on".
       const edge = tokenColour('--edge', mix)
-      await expect(insetRings(mix).some((ring) => sameColour(ring.colour, edge))).toBe(true)
+      await expect(style.outlineStyle).toBe('dashed')
+      await expect(sameColour(style.outlineColor, edge)).toBe(true)
+      await expect(insetRings(mix).some((ring) => sameColour(ring.colour, edge))).toBe(false)
       await expect(contrastRatio(edge, tokenColour('--background', mix))).toBeGreaterThanOrEqual(3)
     }
   },
