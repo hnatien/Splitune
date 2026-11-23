@@ -379,7 +379,7 @@ function Hud({ className }: { className?: string }) {
       action={
         hud.setUp
           ? (content, chip) => (
-              <Link to="/settings/keyboard" tabIndex={-1} className={chip}>
+              <Link to="/settings/keyboard" hash="pedal" tabIndex={-1} className={chip}>
                 {content}
               </Link>
             )
