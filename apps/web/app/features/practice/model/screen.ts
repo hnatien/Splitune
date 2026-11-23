@@ -207,3 +207,19 @@ function viewSwitch(
   const second = layers.roll || layers.drums ? 'staff' : 'notes'
   return { items, selected: shown === 'tab' && view === second ? second : shown }
 }
+
+/** A bar of tab needs about 11 digit heights of width before rests and fret digits start to
+ * touch: 264 px at the desk's 24 px digit, more at the stand's and the floor's reading sizes. */
+const BAR_WIDTH_IN_DIGITS = 11
+/** The score's own side margins inside its pane. */
+const SCORE_MARGIN_PX = 64
+
+/**
+ * Bars a system holds (27 §3.7.1): as many as fit legibly in the pane, one to four. It follows
+ * the pane's width, not the device, so a docked panel, a tablet upright on a stand and a larger
+ * reading size all get fewer, wider bars instead of digits that run together.
+ */
+export function barsPerSystem(paneWidth: number, digitPx: number): number {
+  const fit = Math.floor((paneWidth - SCORE_MARGIN_PX) / (digitPx * BAR_WIDTH_IN_DIGITS))
+  return Math.min(4, Math.max(1, fit))
+}

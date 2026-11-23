@@ -1,13 +1,12 @@
 import type { AlphaTabViewHandle, NoteMark } from '@splitune/notation'
-import { lazy, Suspense, useId, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
-import { useMediaQuery } from '@/lib/use-media-query'
 import { cn } from '@/lib/utils'
 import { Kbd } from '@/ui/kbd'
 import { barText } from './bar-text'
 import type { PracticeLayout } from './layout'
-import { resolveScreen, type Screen } from './model/screen'
+import { barsPerSystem, resolveScreen, type Screen } from './model/screen'
 import { chordsInBar, noteName } from './model/view-model'
 import { useLoopLabel, useNotationMotion } from './notation-motion'
 import { usePractice } from './practice-context'
@@ -141,8 +140,6 @@ function TabView({
   const practice = usePractice()
   const { music, grid, view, audio, player, musicState, data } = practice
   const { scoreTools } = useScreen('desktop')
-  // Two bars a line where four would run the digits together (27 §3.7.2).
-  const narrow = useMediaQuery('(max-width: 640px)', false)
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
   const motion = useNotationMotion()
   const loopLabel = useLoopLabel()
@@ -151,6 +148,7 @@ function TabView({
   const fixing = usePracticeUi((s) => s.fixing)
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const theme = useScoreTheme(host)
+  const paneWidth = useWidth(host)
   const ref = useRef<AlphaTabViewHandle>(null)
   const tab = music?.tab
   // Notes the learner edited carry the edited mark (26 §5); "Show original" shows none.
@@ -193,7 +191,7 @@ function TabView({
     host?.setAttribute('data-update-ms', total.toFixed(0))
   }
 
-  if (!tab || !grid || !view || !theme || !marks) {
+  if (!tab || !grid || !view || !theme || !marks || paneWidth === 0) {
     return (
       <div ref={setHost} className={cn('min-h-0 flex-1 bg-paper', className)} aria-busy="true" />
     )
@@ -215,7 +213,7 @@ function TabView({
           times={grid.times}
           theme={theme}
           layout={motion.layout}
-          barsPerRow={narrow ? 2 : 4}
+          barsPerRow={barsPerSystem(paneWidth, theme.tabPx)}
           playhead={motion.playhead}
           stepped={motion.stepped}
           shakyBars={view.unsureBars}
@@ -257,6 +255,19 @@ function TabView({
 // The key row under the score (27 §3.7.1), in a row of its own so it never hides a note: samples
 // of the unsure, probably and sounding marks, how to make a loop with its key, and the level and
 // capo at the end. Phones keep the level and capo only, so the notation keeps the height.
+/** The element's width as it changes (0 until it is measured). */
+function useWidth(element: HTMLElement | null): number {
+  const [width, setWidth] = useState(0)
+  useLayoutEffect(() => {
+    if (!element) return
+    setWidth(element.clientWidth)
+    const observer = new ResizeObserver(() => setWidth(element.clientWidth))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [element])
+  return width
+}
+
 function KeyRow({ marks, capo }: { marks: boolean; capo?: boolean | undefined }) {
   const sample =
     'inline-grid min-w-5 place-items-center rounded-media px-0.5 font-reading-mono leading-5 font-medium text-ink'
