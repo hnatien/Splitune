@@ -123,6 +123,11 @@ export async function expectAccessible(page: Page) {
   return results.violations.length
 }
 
+/** The pass question that takes the loop's place in the transport after pass `pass` (27 §3.7.4):
+ * "Pass 1 at 70 % — how was it?" with Not yet and Felt clean. */
+export const passQuestion = (page: Page, pass: number) =>
+  page.getByRole('group', { name: new RegExp(`^Pass ${pass} at \\d+\\s%`) })
+
 /** Content reflows to the viewport: no horizontal scrolling (WCAG 1.4.10). */
 export async function expectNoHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(

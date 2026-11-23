@@ -6,6 +6,7 @@ import {
   e2eUsername,
   expectAccessible,
   expectNoHorizontalScroll,
+  passQuestion,
   submitPastRateLimit,
 } from './helpers'
 
@@ -69,8 +70,9 @@ test('a fresh visitor reaches a slowed loop of their part without signing in', a
   await play.click()
   await expect(loopBadge()).toBeVisible()
   await expect(page.getByText(/We've looped bars \d+–\d+ at 70\s%/)).toBeVisible()
-  await expect(loopBadge()).toHaveText(/pass 1/, { timeout: 60_000 })
   const bars = (await loopBadge().innerText()).match(/bars (\d+–\d+)/)?.[1] ?? ''
+  // After the first pass the transport asks how it went, in the loop's place.
+  await expect(passQuestion(page, 1)).toBeVisible({ timeout: 60_000 })
   looped = { bars, ms: Date.now() - started }
   info.annotations.push({
     type: 'time to first slowed loop',
