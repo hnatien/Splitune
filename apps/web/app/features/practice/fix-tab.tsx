@@ -4,6 +4,8 @@ import type * as React from 'react'
 import { useEffect, useRef } from 'react'
 import { m } from '@/lib/i18n'
 import { buttonVariants } from '@/ui/button'
+import { PanelSection } from '@/ui/panel'
+import { Status } from '@/ui/status'
 import { EditorContent } from './editor-content'
 import { BeatFixes, barsLabel, SpotHeader } from './fix-cards'
 import { EditHistory } from './fix-history'
@@ -12,10 +14,11 @@ import { useFix } from './fix-store'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// The Fix tab (27 §3.7.4, Practice-Fix.dc.html): the spot header, the selected spot's chord and
-// note cards, the metronome fixes and Your edits. With nothing marked unsure it says so; the
-// metronome fixes and the history stay. The arrows step through the spots while focus is in the
-// tab (not in a field), as J / K do everywhere.
+// The Fix tab (27 §3.7.4; s47 direction §7): the spot header (where the selection sits in the
+// queue, K / J), the selected spot's chord and note sections, the metronome fixes and Your edits,
+// divided by hairlines. With nothing marked unsure it says so with the ready glyph; the metronome
+// fixes and the history stay. The arrows step through the spots while focus is in the tab (not in
+// a field), as J / K and the pedal do everywhere.
 export function FixTab({
   fullEditor = true,
   empty = m['practice.fix_empty'](),
@@ -31,12 +34,10 @@ export function FixTab({
   const { queue, spot, position } = useFixQueue()
 
   // A selection made by key (J / K / E) puts focus on its first action: Hear for a chord with
-  // alternatives, It's right for a note or a shaky bar. A selection with nothing to confirm leaves focus where it is.
-  // The tab may still be on its way in (its panel takes focus only once it is shown), so the
-  // hand-off is tried for a few frames.
+  // alternatives, It's right for a note or a shaky bar, in the section the spot is about. A
+  // selection with nothing to confirm leaves focus where it is. The tab may still be on its way in
+  // (its panel takes focus only once it is shown), so the hand-off is tried for a few frames.
   const root = useRef<HTMLDivElement>(null)
-  // The card the selection is about: a chord spot's chord, else the note (or shaky bar).
-  const card = spot?.kind === 'chord' ? 'chord-card' : 'note-card'
   const focus = useFix((s) => s.focus)
   useEffect(() => {
     if (!focus) return
@@ -44,9 +45,7 @@ export function FixTab({
     let tries = 0
     const hand = () => {
       const cards = root.current?.querySelector('[data-slot=editor]')
-      const first =
-        root.current?.querySelector<HTMLElement>(`[data-slot=${card}] [data-fix-primary]`) ??
-        root.current?.querySelector<HTMLElement>('[data-fix-primary]')
+      const first = cards?.querySelector<HTMLElement>('[data-fix-focus]')
       first?.focus()
       if ((cards && !first) || (first && document.activeElement === first) || ++tries > 30) {
         useFix.setState({ focus: false })
@@ -54,7 +53,7 @@ export function FixTab({
     }
     hand()
     return () => cancelAnimationFrame(frame)
-  }, [focus, card])
+  }, [focus])
 
   const onKeyDown = (event: React.KeyboardEvent) => {
     const direction =
@@ -74,25 +73,40 @@ export function FixTab({
   const bars = target ? barsLabel(target.bar, target.endBar) : ''
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: arrow keys for the controls inside, which keep their own roles
-    <div ref={root} data-slot="fix-tab" className="flex flex-col gap-3.5" onKeyDown={onKeyDown}>
+    <div
+      ref={root}
+      data-slot="fix-tab"
+      className="flex flex-col [&>section:first-child]:pt-0"
+      onKeyDown={onKeyDown}
+    >
       {queue.length === 0 && !target ? (
-        <p className="text-label text-muted-foreground">{empty}</p>
+        <PanelSection>
+          <Status kind="ready" className="text-body-sm text-foreground">
+            {empty}
+          </Status>
+        </PanelSection>
       ) : (
-        <SpotHeader
-          title={
-            spot
-              ? m['fix.spot']({ n: String(position), total: String(queue.length), bars })
-              : target && target.bar < 0 && !target.endBar
-                ? m['practice.pickup']()
-                : m['fix.bar_one']({ bar: bars })
-          }
-          position={position}
-          total={queue.length}
-          onStep={(direction) => stepSelection(queue, spot, direction)}
-        />
+        <PanelSection className="pb-4">
+          <SpotHeader
+            title={
+              spot
+                ? m['fix.spot']({ n: String(position), total: String(queue.length), bars })
+                : target && target.bar < 0 && !target.endBar
+                  ? m['practice.pickup']()
+                  : m['fix.bar_one']({ bar: bars })
+            }
+            position={position}
+            total={queue.length}
+            onStep={(direction) => stepSelection(queue, spot, direction)}
+          />
+        </PanelSection>
       )}
       {showOriginal ? (
-        <p className="text-body-sm text-muted-foreground">{m['fix.showing_original']()}</p>
+        <PanelSection>
+          <Status kind="paused" className="text-body-sm [&>span:last-child]:whitespace-normal">
+            {m['fix.showing_original']()}
+          </Status>
+        </PanelSection>
       ) : (
         target && (
           <EditorContent
@@ -106,14 +120,16 @@ export function FixTab({
       {!showOriginal && <BeatFixes />}
       <EditHistory />
       {fullEditor && !guest && (
-        <Link
-          to="/songs/$songId/edit"
-          params={{ songId }}
-          className={buttonVariants({ variant: 'quiet', size: 'sm', className: 'self-start' })}
-        >
-          <PencilRulerIcon aria-hidden />
-          {m['fix.open_editor']()}
-        </Link>
+        <PanelSection>
+          <Link
+            to="/songs/$songId/edit"
+            params={{ songId }}
+            className={buttonVariants({ variant: 'quiet', className: 'self-start' })}
+          >
+            <PencilRulerIcon aria-hidden />
+            {m['fix.open_editor']()}
+          </Link>
+        </PanelSection>
       )}
     </div>
   )

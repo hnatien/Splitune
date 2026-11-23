@@ -27,7 +27,12 @@ test.beforeAll(async ({ browser }, info) => {
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled({
     timeout: 90_000,
   })
-  await expect(page.getByRole('button', { name: /3 stems/ })).toBeEnabled({ timeout: 90_000 })
+  // X opens the tools panel on Mix; its presets appear once the stems play through the mixer.
+  await page.locator('#main').focus()
+  await page.keyboard.press('x')
+  await expect(page.getByRole('tabpanel').getByRole('radiogroup', { name: 'Mix' })).toBeVisible({
+    timeout: 90_000,
+  })
 })
 
 test.afterAll(async () => {
@@ -36,14 +41,17 @@ test.afterAll(async () => {
 
 const panel = () => page.getByRole('tabpanel')
 
-test('every stem has a row, your part first, and the dock counts them', async () => {
-  await page.getByRole('button', { name: /3 stems/ }).click()
+test('every stem has a row, your part first, and soloing one leaves the others not heard', async () => {
   await expect(panel().getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
   const names = await panel().locator('[data-slot=stem-row] .truncate').allInnerTexts()
   expect(names).toEqual(['Guitar', 'Drums', 'Other'])
   await expect(panel().getByText('Band', { exact: true })).toHaveCount(0)
   // The fixture's run has no bass, so no Rhythm only.
   await expect(panel().getByRole('radio')).toHaveCount(3)
+  await panel().getByRole('button', { name: 'Solo Drums' }).click()
+  await expect(panel().getByRole('button', { name: 'Volume Guitar: Not heard' })).toBeVisible()
+  await panel().getByRole('button', { name: 'Solo Drums' }).click()
+  await expect(panel().getByRole('button', { name: 'Volume Guitar: Not heard' })).toHaveCount(0)
 })
 
 test('faders set by a click on the track and by the readout’s stepper, without a drag', async () => {
