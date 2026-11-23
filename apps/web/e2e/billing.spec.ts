@@ -28,6 +28,8 @@ async function importLink(type: 'Full' | 'Lite') {
   await page.getByRole('radio', { name: new RegExp(`^${type}`) }).check()
   await page.getByRole('button', { name: 'Add and analyse' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
+  // Practice has opened (WebKit lets the next goto race the route's own settling otherwise).
+  await expect(page.getByRole('toolbar', { name: 'Playback' })).toBeVisible()
   const songId = new URL(page.url()).pathname.split('/')[2] as string
   songs.push(songId)
   return songId
