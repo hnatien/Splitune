@@ -21,12 +21,12 @@ import {
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
 import { ListRow } from '@/ui/list-row'
-import { MusicStrip } from '@/ui/music-strip'
 import { Status, type StatusKind } from '@/ui/status'
 import { toast } from '@/ui/toast'
 import { UpgradeSheet } from '../billing/upgrade-sheet'
 import { analysisAvailability } from '../import/analysis-choice'
 import { isUploading, uploadPercent, useUploads } from '../import/upload-store'
+import { INSTRUMENT_ICON } from './instrument-icon'
 import { statsQuery } from './queries'
 import { DeleteSongDialog, RenameSongDialog } from './song-dialogs'
 import { type CardStatus, cardStatus, isInProgress } from './song-status'
@@ -139,11 +139,12 @@ function useDetail(song: Song, status: CardStatus, workerOffline: boolean): stri
   }
 }
 
-// One song in the library (s47 direction §6, 26 §12.2 ListRow): its music strip (from 1024 px),
-// the title linking to Practice across the whole row, one meta line, the status as a glyph and
-// words with the line that explains it, at most one action (Try again, Re-create stems) and the ⋯
-// menu (Rename, Analyse again or with stems + tab, Delete). Below 640 px the status and its line
-// sit under the title, so the title keeps the width and only the action and ⋯ stay beside it.
+// One song in the library (s47 direction §6, 26 §12.2 ListRow): its instrument's drawing (from
+// 1024 px), the title linking to Practice across the whole row, one meta line, the status as a
+// glyph and words with the line that explains it, at most one action (Try again, Re-create stems)
+// and the ⋯ menu (Rename, Analyse again or with stems + tab, Delete). Below 640 px the status and
+// its line sit under the title, so the title keeps the width and only the action and ⋯ stay
+// beside it.
 export function SongRow({
   song,
   layout,
@@ -151,7 +152,8 @@ export function SongRow({
   unavailable = false,
 }: {
   song: Song
-  /** `compact` below 640 px, `wide` with room for the status column, `full` with the strip. */
+  /** `compact` below 640 px, `wide` with room for the status column, `full` with the instrument's
+   * drawing. */
   layout: 'compact' | 'wide' | 'full'
   /** The processing machine is offline: queued rows say they start on their own. */
   workerOffline?: boolean
@@ -273,6 +275,7 @@ export function SongRow({
     .filter(Boolean)
     .join(' · ')
   const compact = layout === 'compact'
+  const Instrument = INSTRUMENT_ICON[song.instrument]
 
   return (
     <>
@@ -281,7 +284,7 @@ export function SongRow({
         render={
           <Link to="/songs/$songId/practice" params={{ songId: song.id }} title={song.title} />
         }
-        media={layout === 'full' ? <MusicStrip sections={[]} /> : undefined}
+        media={layout === 'full' ? <Instrument aria-hidden className="size-5" /> : undefined}
         title={song.title}
         meta={
           compact ? (

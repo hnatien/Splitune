@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { MoreHorizontalIcon, MusicIcon } from 'lucide-react'
+import { GuitarIcon, MoreHorizontalIcon, MusicIcon } from 'lucide-react'
 import { useState } from 'react'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from './button.tsx'
 import { ChoiceRow, ChoiceRowGroup } from './choice-row.tsx'
+import { BassIcon } from './icons/bass.tsx'
 import { ListGroup, ListRow } from './list-row.tsx'
-import { MusicStrip, stripColumns } from './music-strip.tsx'
 import { Panel, PanelBody, PanelHeader, PanelSection, PanelTitle } from './panel.tsx'
 import { Stat, Stats } from './stat.tsx'
 import { Status, type StatusKind } from './status.tsx'
@@ -16,14 +16,6 @@ import { BOTH_THEMES, expectTargets, StateGrid, themeFrames } from './story-kit.
 const meta = { title: 'Base/Structure', parameters: { layout: 'padded' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
-
-const LEVELS = Array.from({ length: 96 }, (_, i) => 0.25 + 0.7 * Math.abs(Math.sin(i * 0.37)))
-const SECTIONS = [
-  { start: 0, end: 0.12, label: 'Intro' },
-  { start: 0.12, end: 0.45, label: 'Verse' },
-  { start: 0.45, end: 0.8, label: 'Chorus' },
-  { start: 0.8, end: 1, label: 'Outro' },
-]
 
 const STATUSES: [StatusKind, string][] = [
   ['ready', 'Ready'],
@@ -69,7 +61,7 @@ function Rows() {
     <div className="mx-auto flex max-w-library flex-col gap-8">
       <ListGroup title="Getting ready" count={1}>
         <ListRow
-          media={<MusicStrip sections={SECTIONS} />}
+          media={<BassIcon aria-hidden className="size-5" />}
           title="Walking bass in F"
           meta="Bass · 3:34"
           aside={
@@ -83,7 +75,7 @@ function Rows() {
         <ListRow
           current
           render={<a href="#riff" />}
-          media={<MusicStrip levels={LEVELS} sections={SECTIONS} progress={0.4} />}
+          media={<GuitarIcon aria-hidden className="size-5" />}
           title="Riff in A minor"
           meta="Guitar · A minor · 100 BPM · 3:34"
           aside={
@@ -97,7 +89,7 @@ function Rows() {
         />
         <ListRow
           render={<a href="#ballad" />}
-          media={<MusicStrip levels={LEVELS} sections={SECTIONS} />}
+          media={<GuitarIcon aria-hidden className="size-5" />}
           title="A very long song title that runs past the width of the row and has to be cut short"
           meta="Guitar · 3:34"
           aside={<Status kind="partial">Chords only</Status>}
@@ -227,28 +219,3 @@ export const DockedPanel: Story = {
   },
 }
 export const DockedPanelLight: Story = { ...DockedPanel, globals: { appearance: 'light' } }
-
-export const MusicStrips: Story = {
-  globals: BOTH_THEMES,
-  render: () => (
-    <StateGrid
-      states={[
-        ['Waveform and sections', <MusicStrip key="a" levels={LEVELS} sections={SECTIONS} />],
-        [
-          'Practised so far',
-          <MusicStrip key="b" levels={LEVELS} sections={SECTIONS} progress={0.4} />,
-        ],
-        ['Sections only (no waveform yet)', <MusicStrip key="c" sections={SECTIONS} />],
-        ['Labelled', <MusicStrip key="d" levels={LEVELS} label="Riff in A minor, 4 sections" />],
-      ]}
-    />
-  ),
-  play: async ({ canvasElement }) => {
-    await expect(stripColumns([0.2, 1, 0.4, 0.1], 2)).toEqual([1, 0.4])
-    await expect(stripColumns([], 4)).toEqual([])
-    const frame = themeFrames(canvasElement)[0] as HTMLElement
-    const strips = frame.querySelectorAll('[data-slot=music-strip]')
-    await expect(strips[0]).toHaveAttribute('aria-hidden', 'true')
-    await expect(within(frame).getByRole('img', { name: /Riff in A minor/ })).toBeVisible()
-  },
-}

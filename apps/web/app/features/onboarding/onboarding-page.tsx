@@ -21,7 +21,6 @@ import { Button } from '@/ui/button'
 import { ChoiceRow, ChoiceRowGroup } from '@/ui/choice-row'
 import { BassIcon } from '@/ui/icons/bass'
 import { ListGroup, ListRow } from '@/ui/list-row'
-import { MusicStrip } from '@/ui/music-strip'
 import { Skeleton } from '@/ui/skeleton'
 import { InlineError } from '@/ui/status-message'
 import { FocusShell } from '../shell/focus-shell'
@@ -214,7 +213,6 @@ export function OnboardingPage({
                         ? `${m['start.suggested']()} · ${exampleMeta(example)}`
                         : exampleMeta(example)
                     }
-                    trailing={<MusicStrip className="w-16 sm:w-28" />}
                   />
                 ))}
               </ChoiceRowGroup>
