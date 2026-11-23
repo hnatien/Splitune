@@ -13,14 +13,16 @@ import { FileRow } from './file-row'
 import type { PickedFile } from './use-picked-file'
 
 // Add song states (27 §3.6, §4; AddSong and Phone-Add): the one-column dialog over the library (a
-// full-screen sheet on phones) on each tab, a picked file with its card, Title and Artist, the part
-// chips with Hand for fretted parts, Welcome, cap reached, and the file card's own states (reading,
-// warnings, preview after upload, duplicate, too long, unreadable), in Dark and Light.
+// full-screen sheet on phones) on each tab, a picked file with Title and Artist, the part rows
+// with Hand for fretted parts, Welcome, cap reached, recording not available, what a too-early
+// submit says, and the file's own states (reading, warnings, preview after upload, duplicate, too
+// long, unreadable), in Dark and Light.
 const meta = { title: 'Screens/Import', parameters: { layout: 'fullscreen' } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
 const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+const TABLET = { viewport: { value: 'tablet', isRotated: false } }
 const DAYLIGHT = { appearance: 'light' }
 
 const seed = (me: MeData) => (client: QueryClient) => {
@@ -57,12 +59,20 @@ const dialog = async () => {
   return within(add)
 }
 
+// The primary is never disabled in advance (s47 direction §6): pressed too early, it says what is
+// missing beside the cause and moves focus there.
 const playDropZone: Story['play'] = async () => {
   const add = await dialog()
-  await expect(add.getByRole('heading', { name: 'Add a song' })).toBeVisible()
-  await expect(await add.findByRole('button', { name: 'choose a file' })).toBeVisible()
-  await expect(add.getByRole('tab', { name: 'File' })).toHaveAttribute('aria-selected', 'true')
-  await expect(add.getByRole('button', { name: 'Start practising' })).toBeDisabled()
+  const file = add.getByRole('tab', { name: 'File' })
+  await expect(file).toHaveAttribute('aria-selected', 'true')
+  // Focus starts on the chosen tab, not the close button.
+  await waitFor(() => expect(file).toHaveFocus())
+  const choose = await add.findByRole('button', { name: 'choose a file' })
+  const start = add.getByRole('button', { name: 'Start practising' })
+  await expect(start).toBeEnabled()
+  await userEvent.click(start)
+  await expect(await add.findByText('Choose or drop a file first.')).toBeVisible()
+  await waitFor(() => expect(choose).toHaveFocus())
 }
 
 export const DropZone: Story = {
@@ -71,7 +81,10 @@ export const DropZone: Story = {
     await playDropZone(context)
     const add = await dialog()
     // Your part comes from the profile; the Welcome analysis is the default (27 §3.6).
-    await expect(add.getByRole('radio', { name: 'Guitar' })).toBeChecked()
+    const guitar = add.getByRole('radio', { name: 'Guitar' })
+    await expect(guitar).toBeChecked()
+    // Chosen is the ink edge and a check, not a wash (26 §12.1 ChoiceRow).
+    await expect(getComputedStyle(guitar).boxShadow).toContain('1.5px')
     await expect(add.getByRole('radio', { name: /^Full/ })).toBeChecked()
     await expect(add.getByText('Welcome · free')).toBeVisible()
     await expect(add.getByText('4 of 5 left')).toBeVisible()
@@ -81,6 +94,10 @@ export const DropZone: Story = {
     ).toBeVisible()
     await userEvent.click(add.getByRole('button', { name: 'Use it now' }))
     await expect(add.getByRole('radio', { name: /^Full/ })).toBeChecked()
+    // One filled control in the dialog.
+    await expect(
+      document.querySelectorAll('[data-slot=add-song] [data-variant=primary]'),
+    ).toHaveLength(1)
   },
 }
 export const DropZoneDaylight: Story = { render: page(), play: playDropZone, globals: DAYLIGHT }
@@ -88,12 +105,13 @@ export const DropZoneDaylight: Story = { render: page(), play: playDropZone, glo
 const playSheet: Story['play'] = async () => {
   const add = await dialog()
   const sheet = document.querySelector<HTMLElement>('[data-slot=add-song]') as HTMLElement
-  // Phone-Add: a full-screen sheet with the same column; the segmented tabs keep 44 px targets.
+  // Phone-Add: a full-screen sheet with the same column; the tabs keep 44 px targets.
   await waitFor(() => expect(sheet.getBoundingClientRect().width).toBe(window.innerWidth))
   await expect(add.getByRole('tab', { name: 'Record' }).getBoundingClientRect().height).toBe(44)
   await expect(add.getByRole('radio', { name: /^Full/ })).toBeVisible()
   await expect(add.getByRole('radio', { name: /^Lite/ })).toBeVisible()
   await expect(add.queryByRole('button', { name: 'Cancel' })).toBeNull()
+  await expect(sheet.scrollWidth).toBeLessThanOrEqual(sheet.clientWidth)
 }
 export const Sheet: Story = { render: page(ME, 'record'), play: playSheet, globals: PHONE }
 export const SheetDaylight: Story = {
@@ -102,6 +120,8 @@ export const SheetDaylight: Story = {
   globals: { ...PHONE, ...DAYLIGHT },
 }
 
+// Cap reached (23 §5): each used-up row says "Unavailable", the reason and the way to Plus sit
+// right under the rows, and a submit moves focus there.
 export const CapReached: Story = {
   render: page(ME_CAPPED),
   play: async () => {
@@ -109,8 +129,15 @@ export const CapReached: Story = {
     await expect(await add.findByText(/Full analyses are part of Plus/)).toBeVisible()
     await expect(add.getByText(/You've used this month's 5 Lite analyses/)).toBeVisible()
     await expect(add.getAllByRole('button', { name: 'See Plus' })).toHaveLength(2)
+    await expect(add.getAllByText('Unavailable')).toHaveLength(2)
+    for (const name of [/^Full/, /^Lite/]) {
+      await expect(add.getByRole('radio', { name })).toHaveAttribute('aria-disabled', 'true')
+    }
+    await userEvent.click(add.getByRole('button', { name: 'Start practising' }))
+    await waitFor(() => expect(add.getAllByRole('button', { name: 'See Plus' })[0]).toHaveFocus())
   },
 }
+export const CapReachedDaylight: Story = { ...CapReached, globals: DAYLIGHT }
 
 export const PlusCapReached: Story = {
   render: page(ME_PLUS_CAPPED),
@@ -139,13 +166,21 @@ const playHand: Story['play'] = async () => {
 export const PartAndHand: Story = { render: page(), play: playHand }
 export const PartAndHandDaylight: Story = { render: page(), play: playHand, globals: DAYLIGHT }
 
+// A bad link says what to enter under the field, on blur and on submit, and submit moves focus to
+// the field (WCAG 3.3.1).
 const playLink: Story['play'] = async () => {
   const add = await dialog()
-  await userEvent.type(add.getByLabelText('Link to a video or song'), 'not a link')
+  const field = add.getByLabelText('Link to a video or song')
+  await userEvent.click(add.getByRole('button', { name: 'Add and analyse' }))
+  await expect(await add.findByText('Enter a link that starts with https://')).toBeVisible()
+  await waitFor(() => expect(field).toHaveFocus())
+  await expect(field).toHaveAttribute('aria-invalid', 'true')
+  await userEvent.type(field, 'not a link')
   await userEvent.tab()
   await expect(add.getByText('Enter a link that starts with https://')).toBeVisible()
   await expect(add.getByRole('switch', { name: 'Also download the video' })).toBeChecked()
-  await expect(add.getByRole('button', { name: 'Add and analyse' })).toBeDisabled()
+  await expect(add.getByText(/Takes longer to download/)).toBeVisible()
+  await expect(add.getByRole('button', { name: 'Add and analyse' })).toBeEnabled()
 }
 export const LinkTab: Story = { render: page(ME, 'link'), play: playLink }
 export const LinkTabDaylight: Story = {
@@ -153,17 +188,22 @@ export const LinkTabDaylight: Story = {
   play: playLink,
   globals: DAYLIGHT,
 }
+export const LinkTabPhone: Story = { render: page(ME, 'link'), play: playLink, globals: PHONE }
 
-/** A file picked: hashed, decoded locally, the file card, Title from the name, "Start practising". */
+/** A file picked: hashed, decoded locally, the file, Title from the name, "Start practising". */
 const playFileSelected: Story['play'] = async () => {
   const add = await dialog()
   const wav = new File([toneWav()], 'Riff in A minor.wav', { type: 'audio/wav' })
   const input = document.querySelector<HTMLInputElement>('[data-slot=add-song] input[type=file]')
   if (!input) throw new Error('no file input')
   await userEvent.upload(input, wav)
-  await waitFor(() => expect(add.getByRole('button', { name: 'Start practising' })).toBeEnabled(), {
-    timeout: 10_000,
-  })
+  await waitFor(
+    () => expect(add.getByRole('img', { name: /^Waveform of Riff in A minor\.wav/ })).toBeVisible(),
+    { timeout: 10_000 },
+  )
+  await expect(add.getByRole('button', { name: 'Start practising' })).not.toHaveAttribute(
+    'aria-busy',
+  )
   await expect(add.getByText('Riff in A minor.wav')).toBeVisible()
   await expect(add.getByLabelText('Title')).toHaveValue('Riff in A minor')
   await expect(add.getByPlaceholderText('Who plays it')).toBeVisible()
@@ -175,11 +215,17 @@ export const FileSelectedDaylight: Story = {
   play: playFileSelected,
   globals: DAYLIGHT,
 }
+export const FileSelectedTablet: Story = {
+  render: page(),
+  play: playFileSelected,
+  globals: TABLET,
+}
 
 // Browsers without MediaRecorder (Playwright's WebKit) get the unsupported note instead.
 const canRecord = () =>
   typeof MediaRecorder === 'function' && typeof navigator.mediaDevices?.getUserMedia === 'function'
 
+// The Record tab never draws over Your part: the part rows start below the panel at any width.
 const playRecord: Story['play'] = async () => {
   const add = await dialog()
   await expect(
@@ -187,13 +233,37 @@ const playRecord: Story['play'] = async () => {
       ? add.getByRole('button', { name: 'Allow microphone' })
       : add.getByText(/Recording isn't available in this browser/),
   ).toBeVisible()
-  await expect(add.getByRole('button', { name: 'Use this recording' })).toBeDisabled()
+  const panel = document.querySelector('[data-record]') as HTMLElement
+  const part = add.getByText('Your part')
+  await expect(part.getBoundingClientRect().top).toBeGreaterThan(
+    panel.getBoundingClientRect().bottom,
+  )
+  await userEvent.click(add.getByRole('button', { name: 'Use this recording' }))
+  await expect(await add.findByText('Record a take first, then use it.')).toBeVisible()
 }
 export const RecordTab: Story = { render: page(ME, 'record'), play: playRecord }
 export const RecordTabDaylight: Story = {
   render: page(ME, 'record'),
   play: playRecord,
   globals: DAYLIGHT,
+}
+
+// No recording in this browser: the note points to the other two ways in.
+export const RecordUnsupported: Story = {
+  render: page(ME, 'record'),
+  beforeEach: () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'MediaRecorder')
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: undefined })
+    return () => {
+      if (original) Object.defineProperty(window, 'MediaRecorder', original)
+    }
+  },
+  play: async () => {
+    const add = await dialog()
+    await expect(add.getByText(/Recording isn't available in this browser/)).toBeVisible()
+    await userEvent.click(add.getByRole('button', { name: 'Paste a link' }))
+    await expect(add.getByRole('tab', { name: 'Link' })).toHaveAttribute('aria-selected', 'true')
+  },
 }
 
 // "Works best with" (27 §3.6): a disclosure in the footer; G4 checks its place with the owner.
@@ -236,11 +306,20 @@ export const FileReading: Story = {
   render: row({ file, status: 'reading', issues: [], unreadable: false }),
 }
 export const FileReady: Story = { render: row(decoded()) }
+// Checks that don't block are a glyph and words each, never a tinted badge.
+const playWarnings: Story['play'] = async ({ canvasElement }) => {
+  const checks = within(within(canvasElement).getByRole('list', { name: 'File checks' }))
+  await expect(checks.getAllByRole('listitem')).toHaveLength(2)
+  await expect(checks.getByText(/very quiet/)).toBeVisible()
+  await expect(canvasElement.querySelector('[data-slot=badge]')).toBeNull()
+}
 export const FileWarnings: Story = {
   render: row(decoded({ issues: [{ kind: 'quiet' }, { kind: 'clipping' }] })),
+  play: playWarnings,
 }
 export const FileWarningsDaylight: Story = {
   render: row(decoded({ issues: [{ kind: 'quiet' }, { kind: 'clipping' }] })),
+  play: playWarnings,
   globals: DAYLIGHT,
 }
 export const FilePreviewAfterUpload: Story = {
@@ -255,8 +334,15 @@ export const FileDuplicate: Story = {
     await expect(canvas.getByRole('button', { name: 'Add anyway' })).toBeVisible()
   },
 }
+// A file that can't be used says why, what works, and offers another file.
+const playBlocked: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  await expect(canvas.getByRole('alert')).toHaveTextContent(/MP3, M4A, WAV/)
+  await expect(canvas.getByRole('button', { name: 'Choose another file' })).toBeVisible()
+}
 export const FileTooLong: Story = {
   render: row(decoded({ issues: [{ kind: 'too_long', durationS: 1500 }] })),
+  play: playBlocked,
 }
 export const FileUnreadable: Story = {
   render: row({
@@ -266,4 +352,6 @@ export const FileUnreadable: Story = {
     issues: [],
     unreadable: true,
   }),
+  play: playBlocked,
 }
+export const FileUnreadableDaylight: Story = { ...FileUnreadable, globals: DAYLIGHT }

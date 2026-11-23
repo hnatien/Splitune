@@ -39,10 +39,26 @@ export function RenameSongDialog({
   }, [open, song.title])
   const rename = useMutation({
     mutationFn: (value: string) => client.songs.update({ id: song.id, title: value }),
-    onSuccess: () => {
+    onSuccess: (_song, value) => {
       onOpenChange(false)
       onRenamed()
-      toast.add({ title: m['library.renamed'](), type: 'success' })
+      // The toast names the new title and offers the old one back (27 §5, 26 §13 undo).
+      const previous = song.title
+      const id = toast.add({
+        title: m['library.renamed_to']({ title: value }),
+        type: 'success',
+        actionProps: {
+          children: m['library.rename_undo'](),
+          onClick: () => {
+            toast.close(id)
+            void client.songs
+              .update({ id: song.id, title: previous })
+              .then(onRenamed, () =>
+                toast.add({ title: m['library.rename_undo_failed'](), type: 'error' }),
+              )
+          },
+        },
+      })
     },
   })
   return (

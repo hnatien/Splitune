@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/ui/alert-dialog'
 import { Button, buttonVariants } from '@/ui/button'
-import { Field, FieldLabel } from '@/ui/field'
+import { Field, FieldError, FieldLabel } from '@/ui/field'
 import { Input } from '@/ui/input'
 import { InlineError } from '@/ui/status-message'
 import { WorkerStatus } from '@/ui/worker-status'
@@ -30,9 +30,10 @@ import { SettingRows, SettingSection, SwitchSetting } from './setting-row'
 
 // Settings → Account → Privacy (27 §3.9, 15 §4, Settings-Account): the training opt-in (stored
 // only; nothing trains on it yet), the "Download my data" row (the node worker prepares a file kept
-// for 24 h) and the "Delete my account" row (27 §5.6 `delete.account_confirm`; a sign-in within 10
+// for 24 h) and the "Delete my account" row (its confirmation lists what goes; a sign-in within 10
 // minutes is required, so a stale session asks for the password again, or for Google again on an
-// account without one). The page's one primary is See Plus (26 §4.5), so these actions aren't.
+// account without one). None of these is a filled control (26 §4.5). Offline, each control says
+// "Unavailable offline" in its name and the line above the rows says why.
 
 // Its own client (contracts `privacyContract`): only this page carries the privacy schemas.
 const privacyClient = clientFor(privacyContract)
@@ -103,6 +104,7 @@ function DataExport({ disabled }: { disabled: boolean }) {
       variant={status === 'ready' ? 'quiet' : 'outline'}
       loading={request.isPending}
       disabled={disabled}
+      unavailableLabel={m['settings.unavailable_offline']()}
       onClick={() => request.mutate()}
     >
       {status === 'ready' || status === 'failed'
@@ -111,15 +113,17 @@ function DataExport({ disabled }: { disabled: boolean }) {
     </Button>
   )
   const ready = status === 'ready' && state.data?.url ? state.data : undefined
+  // A failed file says so with the way to try again inside the message, not before it.
+  const failed = status === 'failed' || request.isError
   return (
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
       <DownloadIcon
         aria-hidden
         strokeWidth={1.8}
-        className={cn('size-6 shrink-0', ready ? 'text-success' : 'text-muted-foreground')}
+        className={cn('size-5 shrink-0', ready ? 'text-success' : 'text-muted-foreground')}
       />
       <div className="flex min-w-0 grow basis-75 flex-col gap-0.5">
-        <h3 className="text-body font-medium">{m['privacy.export_title']()}</h3>
+        <h3 className="text-label">{m['privacy.export_title']()}</h3>
         <p role="status" className="text-body-sm text-muted-foreground">
           {status === 'pending'
             ? m['privacy.export_pending']()
@@ -136,7 +140,11 @@ function DataExport({ disabled }: { disabled: boolean }) {
           {m['privacy.export_download']()}
         </a>
       )}
-      {!(state.isError && !state.data) && status !== undefined && status !== 'pending' && start}
+      {!(state.isError && !state.data) &&
+        status !== undefined &&
+        status !== 'pending' &&
+        !failed &&
+        start}
       {state.isError && !state.data && (
         <InlineError
           className="basis-full"
@@ -151,8 +159,8 @@ function DataExport({ disabled }: { disabled: boolean }) {
       {status === 'pending' && worker.data && !worker.data.runners.node.online && (
         <WorkerStatus online={false} text={m['privacy.export_offline']()} className="basis-full" />
       )}
-      {(status === 'failed' || request.isError) && (
-        <InlineError className="basis-full" title={m['privacy.export_failed']()} />
+      {failed && (
+        <InlineError className="basis-full" title={m['privacy.export_failed']()} actions={start} />
       )}
     </div>
   )
@@ -170,6 +178,7 @@ function DeleteAccount({
   const [open, setOpen] = useState(initial !== undefined)
   const [step, setStep] = useState<DeleteStep>(initial ?? 'confirm')
   const [password, setPassword] = useState('')
+  const [missing, setMissing] = useState(false)
   const [reauthFailure, setReauthFailure] = useState<string | undefined>()
   const passwordId = useId()
   const remove = useMutation({
@@ -198,17 +207,23 @@ function DeleteAccount({
     if (!next) {
       setStep('confirm')
       setPassword('')
+      setMissing(false)
       setReauthFailure(undefined)
       remove.reset()
     }
   }
   return (
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
       <div className="flex min-w-0 grow basis-75 flex-col gap-0.5">
-        <h3 className="text-body font-medium">{m['privacy.delete_title']()}</h3>
+        <h3 className="text-label">{m['privacy.delete_title']()}</h3>
         <p className="text-body-sm text-muted-foreground">{m['privacy.delete_body']()}</p>
       </div>
-      <Button variant="destructive" disabled={disabled} onClick={() => setOpen(true)}>
+      <Button
+        variant="destructive"
+        disabled={disabled}
+        unavailableLabel={m['settings.unavailable_offline']()}
+        onClick={() => setOpen(true)}
+      >
         {m['privacy.delete_action']()}
       </Button>
       <AlertDialog open={open} onOpenChange={close}>
@@ -217,7 +232,7 @@ function DeleteAccount({
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>{m['privacy.delete_title']()}</AlertDialogTitle>
-                <AlertDialogDescription>{m['delete.account_confirm']()}</AlertDialogDescription>
+                <AlertDialogDescription>{m['privacy.delete_body']()}</AlertDialogDescription>
               </AlertDialogHeader>
               {remove.isError && !reauthRequired(remove.error) && (
                 <InlineError title={m['privacy.delete_failed']()} />
@@ -239,22 +254,37 @@ function DeleteAccount({
               className="flex flex-col gap-4"
               onSubmit={(event) => {
                 event.preventDefault()
-                if (password) reauth.mutate()
+                if (password) {
+                  reauth.mutate()
+                  return
+                }
+                setMissing(true)
+                document.getElementById(passwordId)?.focus()
               }}
             >
               <AlertDialogHeader>
                 <AlertDialogTitle>{m['privacy.reauth_title']()}</AlertDialogTitle>
                 <AlertDialogDescription>{m['privacy.reauth_body']()}</AlertDialogDescription>
               </AlertDialogHeader>
-              <Field>
+              <Field data-invalid={missing || undefined}>
                 <FieldLabel htmlFor={passwordId}>{m['auth.password_label']()}</FieldLabel>
                 <Input
                   id={passwordId}
                   type="password"
                   autoComplete="current-password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  aria-invalid={missing || undefined}
+                  aria-describedby={missing ? `${passwordId}-missing` : undefined}
+                  onChange={(event) => {
+                    setPassword(event.target.value)
+                    setMissing(false)
+                  }}
                 />
+                {missing && (
+                  <FieldError id={`${passwordId}-missing`}>
+                    {m['auth.password_missing']()}
+                  </FieldError>
+                )}
               </Field>
               {reauthFailure && <InlineError title={reauthFailure} />}
               {remove.isError && !reauthRequired(remove.error) && (
@@ -265,7 +295,6 @@ function DeleteAccount({
                 <Button
                   type="submit"
                   variant="destructiveSolid"
-                  disabled={!password}
                   loading={reauth.isPending || remove.isPending}
                 >
                   {m['privacy.reauth_send']()}

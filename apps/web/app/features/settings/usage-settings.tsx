@@ -104,7 +104,7 @@ export function UsageSettings({ me }: { me: MeData }) {
         <SettingRows>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div className="flex min-w-0 grow basis-50 flex-col gap-0.5">
-              <p className="text-body">
+              <p className="text-label">
                 {plus && current.subscription
                   ? planName(current.subscription.plan)
                   : m['billing.plan_free']()}
@@ -174,10 +174,7 @@ function UsageMeter({
         '*:data-[slot=meter-track]:col-span-2 sm:*:data-[slot=meter-track]:col-span-1 sm:*:data-[slot=meter-track]:col-start-2 sm:*:data-[slot=meter-track]:row-start-1',
       )}
     >
-      <LabelColumn
-        label={<MeterLabel className="text-body font-normal">{label}</MeterLabel>}
-        hint={hint}
-      />
+      <LabelColumn label={<MeterLabel className="text-label">{label}</MeterLabel>} hint={hint} />
       <MeterValue className="text-right sm:col-start-3">{() => value}</MeterValue>
     </Meter>
   )
@@ -195,7 +192,7 @@ function UsageNote({
 }) {
   return (
     <div className={ROW}>
-      <LabelColumn label={<span className="text-body">{label}</span>} hint={hint} />
+      <LabelColumn label={<span className="text-label">{label}</span>} hint={hint} />
       <p className="text-right text-body-sm text-muted-foreground sm:col-span-2">{note}</p>
     </div>
   )

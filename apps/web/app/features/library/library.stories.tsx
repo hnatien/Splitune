@@ -4,6 +4,7 @@ import { useRouterState } from '@tanstack/react-router'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { orpc } from '@/lib/api'
 import { meQuery } from '@/lib/session'
+import { expectTargets } from '@/ui/story-kit'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { memoryOutbox } from '../practice/model/outbox-memory'
 import { configurePracticeSync } from '../practice/model/practice-sync'
@@ -23,12 +24,12 @@ import { LibraryPage, type LibrarySearch } from './library-page'
 import { LibrarySkeleton } from './library-skeleton'
 import { libraryQuery, statsQuery, workerStatusQuery } from './queries'
 import { RevisitList } from './revisit-list'
-import { WeekStrip, WeekStripCompact } from './week-strip'
+import { WeekStrip } from './week-strip'
 
-// Library screen states (27 §3.5, §4; Library, Phone-Library, States): the Continue card with its
-// clip, badges and sparkline, This week, Worth a revisit (s39, from the progress fixture below) and
-// every card status, phone rows, empty, no results, loading, load error, offline and the
-// worker-offline banner, in Dark and Light.
+// Library screen states (s47 direction §6, 27 §3.5, §4): the Continue block with its clip, notes
+// and sparkline beside This week, Worth a revisit, and the songs as hairline rows grouped by what
+// each needs, every status a glyph and words; phone and tablet rows, empty, no results, loading,
+// load error, offline and the worker-offline line, in Dark and Light.
 const meta = {
   title: 'Screens/Library',
   parameters: { layout: 'fullscreen' },
@@ -39,9 +40,10 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const PHONE = { viewport: { value: 'mobile2', isRotated: false } }
+const TABLET = { viewport: { value: 'tablet', isRotated: false } }
 const DAYLIGHT = { appearance: 'light' }
 
-// Entries and empty states rise in (26 §10); wait for the entrance rather than sampling mid-way.
+// Empty states rise in (26 §10); wait for the entrance rather than sampling mid-way.
 const settled = (element: HTMLElement) => waitFor(() => expect(element).toBeVisible())
 
 // Progress (s39): "Chorus riff" (bars 17–20 of Riff in A minor) climbed from 60 to 85 % over nine
@@ -145,8 +147,21 @@ const populated = () => (
   </AppStory>
 )
 
+const main = (canvasElement: HTMLElement) =>
+  within(canvasElement.querySelector('main') as HTMLElement)
+
+/** The titles of the rows in one group, by its name. */
+const groupTitles = (canvasElement: HTMLElement, name: string) =>
+  [
+    ...within(canvasElement)
+      .getByRole('region', { name })
+      .querySelectorAll('[data-slot=list-row-title]'),
+  ].map((title) => title.textContent)
+
 const playPopulated: Story['play'] = async ({ canvasElement }) => {
-  const canvas = within(canvasElement)
+  const canvas = main(canvasElement)
+  await expect(await canvas.findByRole('heading', { level: 1, name: 'Library' })).toBeVisible()
+  // Every status is a glyph and words (26 §12.2), never a tinted pill.
   for (const label of [
     'Ready',
     'Analysing 3/8',
@@ -155,13 +170,31 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
     'Partial',
     'Stems expired',
     'Failed',
+    'Upload not finished',
   ]) {
-    await settled(await canvas.findByText(label))
+    const words = await canvas.findByText(label)
+    await expect(words.closest('[data-slot=status]')?.querySelector('svg')).not.toBeNull()
   }
-  // The Continue card: the most recently opened song is the page's h1, with the clip practised
-  // last, its ladder, best and yesterday's first clean pass, and the 30-day sparkline (27 §3.5).
+  await expect(canvasElement.querySelector('[data-slot=badge]')).toBeNull()
+  // Rows are grouped by what each song needs (s47 direction §6), each group in the list's order.
+  await expect(groupTitles(canvasElement, 'Getting ready')).toEqual([
+    'Walking bass in F',
+    'Campfire strumming',
+  ])
+  await expect(groupTitles(canvasElement, 'Needs you')).toEqual([
+    'Old practice take',
+    'Corrupted voice memo',
+    'Song from the bus',
+  ])
+  await expect(groupTitles(canvasElement, 'Ready to practise')).toEqual([
+    'Riff in A minor',
+    'Ballad with a capo',
+    expect.stringMatching(/^Indie Rock/),
+  ])
+  // Continue: the most recently opened song, its clip and bars, what it works towards and the
+  // 30-day sparkline (27 §3.5), with no box around it.
   const lead = within(canvas.getByRole('region', { name: 'Pick up where you left off' }))
-  await expect(lead.getByRole('heading', { level: 1, name: 'Riff in A minor' })).toBeVisible()
+  await expect(lead.getByRole('heading', { level: 2, name: 'Riff in A minor' })).toBeVisible()
   await expect(lead.getByText('Chorus riff', { selector: 'strong' })).toBeVisible()
   await expect(lead.getByText(/bars 17–20 · yesterday, 24\smin$/)).toBeVisible()
   await expect(lead.getByText(/^Ladder at 75\s% → 100\s%$/)).toBeVisible()
@@ -170,12 +203,13 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
   await expect(
     lead.getByRole('img', { name: 'Best clean speed rose from 60 to 85 percent over 9 sessions' }),
   ).toBeVisible()
-  // This week: four practised days, never a streak or a missed day.
+  // This week: figures and seven day bars, never a streak or a missed day.
   const week = within(canvas.getByRole('region', { name: 'This week' }))
   await expect(week.getByRole('img', { name: 'Practised on 4 of the last 7 days' })).toBeVisible()
   await expect(week.getByText('+10 %')).toBeVisible()
   await expect(week.getByText('on Chorus riff')).toBeVisible()
   await expect(week.getByText('1 h 14')).toBeVisible()
+  await expect(canvasElement.textContent).not.toMatch(/streak|missed|in a row/i)
   // Worth a revisit: three clips, the newest first, each opening Practice on its bars.
   const revisit = within(canvas.getByRole('region', { name: 'Worth a revisit' }))
   const links = revisit.getAllByRole('link')
@@ -188,33 +222,33 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
     'href',
     `/songs/${songId(4)}/practice?loop=3-4&tab=progress`,
   )
-  await expect(canvasElement.textContent).not.toMatch(/streak|missed|in a row/i)
-  await expect(canvas.getByRole('link', { name: 'Resume practice' })).toHaveAttribute(
-    'href',
-    '/songs/00000000-0000-4000-8000-000000000001/practice',
-  )
+  // What each state means and what to do, beside it.
   await expect(canvas.getAllByText('You can loop it already').length).toBeGreaterThan(0)
   await expect(canvas.getByText('Add stems + tab with a Full analysis')).toBeVisible()
   await settled(await canvas.findByText(/Isolating your part · about \d+ min left/))
-  // The analysing card's bar follows the list's stage count (3 of 8).
-  await expect(canvas.getByRole('progressbar', { name: /Isolating your part/ })).toHaveAttribute(
-    'aria-valuenow',
-    '38',
-  )
-  const entries = canvasElement.querySelectorAll<HTMLElement>('li[data-vt-song]')
-  await expect(entries).toHaveLength(8)
-  await expect(entries[3]?.style.getPropertyValue('--i')).toBe('3')
+  await settled(await canvas.findByText(/This didn't use an analysis\./))
   await expect(
-    canvasElement.querySelectorAll('li[data-vt-song] [data-slot=instrument-tile]'),
-  ).toHaveLength(8)
-  await settled(await canvas.findByText("This didn't use an analysis."))
-  // Resume practice is the page's lead action: the ink pill (--primary fill), not a quiet fill.
-  const fill = (el: Element) => getComputedStyle(el).backgroundColor
+    canvas.getByRole('button', { name: 'Try again: Corrupted voice memo' }),
+  ).toBeVisible()
+  await expect(
+    canvas.getByRole('button', { name: 'Re-create stems: Old practice take' }),
+  ).toBeVisible()
+  // The whole row opens Practice; its own controls are 44 px targets above it.
+  const riff = canvas.getByRole('link', { name: /^Riff in A minor/ })
+  await expect(riff).toHaveAttribute('href', `/songs/${songId(1)}/practice`)
+  await expectTargets(canvas.getAllByRole('button', { name: /^More for / }))
+  // Resume practice is the page's one filled control.
+  const resume = canvas.getByRole('link', { name: 'Resume practice' })
+  await expect(resume).toHaveAttribute('href', `/songs/${songId(1)}/practice`)
   const ink = document.createElement('span')
   ink.className = 'bg-primary'
   canvasElement.append(ink)
-  await expect(fill(canvas.getByRole('link', { name: 'Resume practice' }))).toBe(fill(ink))
+  const fill = getComputedStyle(ink).backgroundColor
   ink.remove()
+  const filled = [...canvasElement.querySelectorAll('main a, main button')].filter(
+    (control) => getComputedStyle(control).backgroundColor === fill,
+  )
+  await expect(filled).toEqual([resume])
 }
 
 export const Populated: Story = { render: populated, play: playPopulated }
@@ -234,21 +268,28 @@ export const PopulatedDaylightIncreasedContrast: Story = {
   globals: { ...DAYLIGHT, contrast: 'more' },
 }
 
+// Phones (27 §3.5 Phone): the status sits under the title, so titles keep the row's width and
+// never share it with the status; the instrument filter is a menu; no revisit rows.
 const playPhone: Story['play'] = async ({ canvasElement }) => {
-  const canvas = within(canvasElement)
-  await settled(await canvas.findByText('Analysing 3/8'))
-  // Phone-Library: the compact Continue card is one link; entries are rows of at least 60 px.
-  await expect(canvas.getByRole('link', { name: /Pick up where you left off/ })).toHaveTextContent(
-    /Chorus riff · bars 17–20 · ladder at 75\s%/,
+  const canvas = main(canvasElement)
+  const walking = await canvas.findByRole('link', { name: /^Walking bass in F/ })
+  const row = walking.closest('[data-slot=list-row]') as HTMLElement
+  const title = row.querySelector('[data-slot=list-row-title]') as HTMLElement
+  const status = within(row).getByText('Analysing 3/8')
+  await expect(status.getBoundingClientRect().top).toBeGreaterThan(
+    title.getBoundingClientRect().bottom - 1,
   )
-  // The phone's This week row: seven 22 px dots and the week's time.
+  await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth)
+  await expect(canvas.getByRole('region', { name: 'Pick up where you left off' })).toBeVisible()
+  // Resume practice takes the row's width on a phone.
+  const resume = canvas.getByRole('link', { name: 'Resume practice' })
+  await expect(resume.getBoundingClientRect().width).toBeGreaterThan(window.innerWidth - 40)
   await expect(canvas.getByRole('img', { name: 'Practised on 4 of the last 7 days' })).toBeVisible()
-  await expect(canvas.getByText('1 h 14')).toBeVisible()
   await expect(canvas.queryByRole('region', { name: 'Worth a revisit' })).toBeNull()
-  const rows = canvasElement.querySelectorAll<HTMLElement>('[data-slot=song-row]')
-  await expect(rows).toHaveLength(8)
-  for (const row of rows) await expect(row.getBoundingClientRect().height).toBeGreaterThan(59)
-  await expect(canvas.getByRole('group', { name: 'Instrument' })).toBeVisible()
+  await expect(canvas.getByRole('combobox', { name: 'Instrument' })).toBeVisible()
+  await expect(canvas.getByRole('searchbox', { name: 'Filter by title' })).toBeVisible()
+  // Nothing is wider than the screen.
+  await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
 }
 export const PopulatedPhone: Story = { render: populated, play: playPhone, globals: PHONE }
 export const PopulatedPhoneDaylight: Story = {
@@ -257,70 +298,30 @@ export const PopulatedPhoneDaylight: Story = {
   globals: { ...PHONE, ...DAYLIGHT },
 }
 
-export const PopulatedList: Story = {
-  render: () => (
-    <AppStory path="/library?view=list" seed={seed()}>
-      <Screen search={{ view: 'list' }} />
-    </AppStory>
-  ),
+// Tablet: no rail, the status column beside the title, no music strip yet.
+export const PopulatedTablet: Story = {
+  render: populated,
+  globals: TABLET,
+  play: async ({ canvasElement }) => {
+    const canvas = main(canvasElement)
+    const row = (await canvas.findByRole('link', { name: /^Walking bass in F/ })).closest(
+      '[data-slot=list-row]',
+    ) as HTMLElement
+    await expect(row.querySelector('[data-slot=music-strip]')).toBeNull()
+    await expect(within(row).getByText('Analysing 3/8')).toBeVisible()
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
+  },
+}
+export const PopulatedTabletDaylight: Story = {
+  ...PopulatedTablet,
+  globals: { ...TABLET, ...DAYLIGHT },
 }
 
-// The filters come from the router here, so chips, the menu and Grid/List navigate like the app: a
-// library-reorder view transition morphs each card into its row while the capsule slides.
+// The filters come from the router here, so the instrument pills and the Show and sort menus
+// navigate like the app; each control names its current value.
 function RoutedScreen() {
   const search = useRouterState({ select: (state) => state.location.search as LibrarySearch })
   return <Screen search={search} />
-}
-
-export const ViewSwitch: Story = {
-  render: () => (
-    <AppStory path="/library" seed={seed()}>
-      <RoutedScreen />
-    </AppStory>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const view = await canvas.findByRole('group', { name: 'View' })
-    const list = within(view).getByRole('button', { name: 'List' })
-    const capsule = () => view.querySelector<HTMLElement>('[data-slot="toggle-group-capsule"]')
-    await waitFor(() => expect(capsule()).not.toBeNull())
-    await userEvent.click(list)
-    await waitFor(() =>
-      expect(canvasElement.querySelectorAll('[data-slot=song-row]')).toHaveLength(8),
-    )
-    await expect(list).toHaveAttribute('aria-pressed', 'true')
-    await waitFor(() =>
-      expect(capsule()?.style.translate).toBe(`${list.offsetLeft}px ${list.offsetTop}px`),
-    )
-    await userEvent.click(within(view).getByRole('button', { name: 'Grid' }))
-    await waitFor(() =>
-      expect(canvasElement.querySelectorAll('[data-slot=song-card]')).toHaveLength(8),
-    )
-  },
-}
-
-// Instrument chips and the sort and status menu write the URL (27 §3.5).
-export const Filters: Story = {
-  render: () => (
-    <AppStory path="/library" seed={seed()}>
-      <RoutedScreen />
-      <SearchProbe />
-    </AppStory>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const chips = await canvas.findByRole('group', { name: 'Instrument' })
-    await expect(within(chips).getByRole('button', { name: 'All' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-    await userEvent.click(within(chips).getByRole('button', { name: 'Bass' }))
-    await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"bass"'))
-    await userEvent.click(canvas.getByRole('button', { name: /Sort and show/ }))
-    const menu = within(await within(document.body).findByRole('menu'))
-    await userEvent.click(await menu.findByRole('menuitemradio', { name: 'Title' }))
-    await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"title"'))
-  },
 }
 
 function SearchProbe() {
@@ -332,6 +333,35 @@ function SearchProbe() {
   )
 }
 
+export const Filters: Story = {
+  render: () => (
+    <AppStory path="/library" seed={seed()}>
+      <RoutedScreen />
+      <SearchProbe />
+    </AppStory>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const chips = await canvas.findByRole('group', { name: 'Instrument' })
+    const all = within(chips).getByRole('button', { name: 'All' })
+    await expect(all).toHaveAttribute('aria-pressed', 'true')
+    // The chosen pill is the ink edge, not a fill (26 §4.5).
+    await expect(getComputedStyle(all).boxShadow).toContain('1.5px')
+    await userEvent.click(within(chips).getByRole('button', { name: 'Bass' }))
+    await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"bass"'))
+    // What is shown is its own control, and its trigger names the filter that is on.
+    await userEvent.click(canvas.getByRole('button', { name: 'Show: All' }))
+    const show = within(await within(document.body).findByRole('menu'))
+    await userEvent.click(await show.findByRole('menuitemradio', { name: 'Failed' }))
+    await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"failed"'))
+    await expect(await canvas.findByRole('button', { name: 'Show: Failed' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: /^Sort by: / }))
+    const sort = within(await within(document.body).findByRole('menu'))
+    await userEvent.click(await sort.findByRole('menuitemradio', { name: 'Title' }))
+    await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"title"'))
+  },
+}
+
 export const WorkerOffline: Story = {
   render: () => (
     <AppStory path="/library" seed={seed(LIBRARY, WORKER_OFFLINE)}>
@@ -339,13 +369,15 @@ export const WorkerOffline: Story = {
     </AppStory>
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = main(canvasElement)
     await expect(
       await canvas.findByText(
         'Processing machine offline. Your song is queued and starts automatically.',
       ),
     ).toBeVisible()
-    await settled(canvas.getByText('Processing machine offline. Starts automatically.'))
+    await expect(
+      canvas.getByText('Processing machine offline. Starts automatically.'),
+    ).toBeVisible()
   },
 }
 
@@ -355,17 +387,22 @@ const empty = () => (
   </AppStory>
 )
 const playEmpty: Story['play'] = async ({ canvasElement }) => {
-  const canvas = within(canvasElement)
+  const canvas = main(canvasElement)
   await settled(
     await canvas.findByRole('heading', { name: 'Bring the first song you want to learn' }),
   )
   await expect(
     canvas.getByText('Drop a file anywhere on this page, paste a link, or record it.'),
   ).toBeVisible()
+  // One filled control: Add song, with its key printed on it.
+  const add = canvas.getByRole('button', { name: 'Add song' })
+  await expect(add).toHaveAttribute('aria-keyshortcuts', 'A')
+  await expect(add).toHaveAttribute('data-variant', 'primary')
   await expect(canvas.getByRole('link', { name: 'Try an example' })).toHaveAttribute(
     'href',
     '/start',
   )
+  await expect(canvasElement.querySelectorAll('[data-variant=primary]')).toHaveLength(1)
 }
 export const Empty: Story = { render: empty, play: playEmpty }
 export const EmptyDaylight: Story = { render: empty, play: playEmpty, globals: DAYLIGHT }
@@ -378,12 +415,17 @@ export const NoResults: Story = {
     </AppStory>
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await settled(await canvas.findByText('No songs match. Try another search or filter.'))
-    await expect(canvas.getAllByRole('button', { name: 'Clear filters' }).length).toBeGreaterThan(0)
+    const canvas = main(canvasElement)
+    await settled(await canvas.findByRole('heading', { name: 'No matching songs' }))
+    await expect(canvas.getByText('No songs match. Try another search or filter.')).toBeVisible()
+    // One way out, and it isn't a filled control competing with the page's.
+    const clear = canvas.getAllByRole('button', { name: 'Clear filters' })
+    await expect(clear).toHaveLength(1)
+    await expect(clear[0]).not.toHaveAttribute('data-variant', 'primary')
   },
 }
 
+// The skeleton is the final layout: the title, the Continue block, the toolbar and hairline rows.
 const loading = () => (
   <AppStory path="/library">
     <AppShell me={ME}>
@@ -391,8 +433,16 @@ const loading = () => (
     </AppShell>
   </AppStory>
 )
-export const Loading: Story = { render: loading }
-export const LoadingDaylight: Story = { render: loading, globals: DAYLIGHT }
+const playLoading: Story['play'] = async ({ canvasElement }) => {
+  const canvas = main(canvasElement)
+  await expect(canvas.getByRole('heading', { level: 1, name: 'Library' })).toBeVisible()
+  await expect(canvas.getByRole('list', { name: 'Loading your library' })).toHaveAttribute(
+    'aria-busy',
+    'true',
+  )
+}
+export const Loading: Story = { render: loading, play: playLoading }
+export const LoadingDaylight: Story = { render: loading, play: playLoading, globals: DAYLIGHT }
 
 // Nothing seeded: the list request fails against Storybook's server.
 export const LoadError: Story = {
@@ -402,16 +452,17 @@ export const LoadError: Story = {
     </AppStory>
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = main(canvasElement)
     // The failing request goes to Storybook's server; give it time under a busy test run.
     await expect(
       await canvas.findByText("We couldn't load your library.", undefined, { timeout: 5_000 }),
     ).toBeVisible()
+    await expect(canvas.getByText(/Songs you've opened on this device still play/)).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 
-// Offline (27 §4): cached cards stay; the ones that need the server are dimmed.
+// Offline (27 §4): cached rows stay; the ones that need the server say so.
 const goOffline = () => {
   const online = Object.getOwnPropertyDescriptor(Navigator.prototype, 'onLine')
   Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false })
@@ -423,13 +474,15 @@ export const Offline: Story = {
   render: populated,
   beforeEach: goOffline,
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await settled((await canvas.findAllByText('Needs connection'))[0] as HTMLElement)
-    await expect(canvasElement.querySelectorAll('[data-unavailable]').length).toBeGreaterThan(0)
+    const canvas = main(canvasElement)
+    const needs = await canvas.findAllByText('Needs connection')
+    await expect(needs[0]?.closest('[data-slot=status]')?.getAttribute('data-kind')).toBe('offline')
+    await expect(canvasElement.querySelectorAll('[data-unavailable]').length).toBe(needs.length)
   },
 }
 
-// This week and Worth a revisit wait for progress data (s39): their layouts with fixture data.
+// This week and Worth a revisit on their own, with fixture data: a day's bar grows with its
+// minutes (height, not lightness), and a day without practice is a dash.
 const WEEK = [
   { letter: 'M', minutes: 0 },
   { letter: 'T', minutes: 18 },
@@ -461,7 +514,7 @@ const CLIPS = [
 ]
 const progressSections = () => (
   <AppStory>
-    <div className="flex max-w-library flex-col gap-7 p-6">
+    <div className="flex max-w-library flex-col gap-10 p-6">
       <WeekStrip
         days={WEEK}
         stats={[
@@ -469,21 +522,26 @@ const progressSections = () => (
           { value: '23', label: 'clean passes' },
           { value: '+10 %', label: 'on Chorus riff' },
         ]}
-        className="max-w-sm"
       />
-      <WeekStripCompact days={WEEK} total="1 h 20" />
       <RevisitList
         clips={CLIPS}
-        renderLink={({ clip: _clip, ...props }) => <a href="#clip" {...props} />}
+        // biome-ignore lint/a11y/useAnchorContent: the row fills the link with its title and meta
+        renderLink={(clip) => <a href={`#${clip.id}`} />}
       />
     </div>
   </AppStory>
 )
 const playProgress: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement)
-  await expect(
-    canvas.getAllByRole('img', { name: 'Practised on 4 of the last 7 days' }),
-  ).toHaveLength(2)
+  await expect(canvas.getByRole('img', { name: 'Practised on 4 of the last 7 days' })).toBeVisible()
+  const bars = [...canvasElement.querySelectorAll<HTMLElement>('[data-minutes]')]
+  const height = (minutes: number) =>
+    bars.find((bar) => bar.dataset['minutes'] === String(minutes))?.getBoundingClientRect()
+      .height ?? 0
+  await expect(bars).toHaveLength(4)
+  await expect(height(31)).toBeGreaterThan(height(24))
+  await expect(height(24)).toBeGreaterThan(height(18))
+  await expect(height(18)).toBeGreaterThan(height(7))
   await expect(canvas.getByRole('heading', { name: 'Worth a revisit' })).toBeVisible()
   await expect(canvas.getAllByRole('link')).toHaveLength(3)
 }

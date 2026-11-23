@@ -1,12 +1,13 @@
 import { Link } from '@tanstack/react-router'
-import { CloudOffIcon, UploadIcon } from 'lucide-react'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { Badge } from '@/ui/badge'
+import { buttonVariants } from '@/ui/button'
+import { Status } from '@/ui/status'
 import { uploadPercent, useUploads } from './upload-store'
 
 // "Uploading 42 %" (27 §3.6 primary action): uploads continue in the background while the learner
-// practises; the pill shows the newest unfinished one and leads to its song.
+// practises; the shells show the newest unfinished one as a quiet link to its song, its state a
+// glyph and words (a ring that fills, or a struck cloud while it waits for the connection).
 export function UploadPill() {
   const item = useUploads((state) =>
     Object.values(state.items).find(
@@ -15,14 +16,21 @@ export function UploadPill() {
   )
   if (!item) return null
   const offline = item.phase === 'waiting_online'
+  const pct = uploadPercent(item)
   return (
-    <Link to="/songs/$songId/practice" params={{ songId: item.songId }} className="rounded-full">
-      <Badge variant="info" className="h-8 px-3 text-body-sm tabular-nums">
-        {offline ? <CloudOffIcon aria-hidden /> : <UploadIcon aria-hidden />}
-        {offline
-          ? m['upload.waiting_online']()
-          : m['upload.uploading']({ pct: formatPercent(uploadPercent(item)) })}
-      </Badge>
+    <Link
+      to="/songs/$songId/practice"
+      params={{ songId: item.songId }}
+      data-slot="upload-pill"
+      className={buttonVariants({ variant: 'quiet', size: 'sm', className: 'min-w-0 px-2.5' })}
+    >
+      {offline ? (
+        <Status kind="offline">{m['upload.waiting_online']()}</Status>
+      ) : (
+        <Status kind="working" progress={pct / 100}>
+          {m['upload.uploading']({ pct: formatPercent(pct) })}
+        </Status>
+      )}
     </Link>
   )
 }
