@@ -388,7 +388,7 @@ All in `apps/web/app/ui`, each with stories in both themes (doc 28 §2).
 | Pressed | scale 0.97 or `--pressed` |
 | Focus | the 2 px ink outline |
 | Selected, current, on | §4.5 |
-| Disabled | faint text, an `--edge` boundary, no fill, never opacity; "Unavailable" in the accessible name and the reason in words where there is room |
+| Disabled | faint text, a **dashed** `--edge` boundary on buttons and toggles (a solid ring means "on"), no fill, never opacity; "Unavailable" in the accessible name and the reason in words where there is room |
 | Loading | the label stays; a spinner after 300 ms |
 | Invalid | a `--destructive` edge, an icon and the message under the field |
 

@@ -126,6 +126,7 @@ Context: speed, playback key, loop (start/end s), ladder state (rung, clean coun
 | Speed 50 … 90 %, 100 % | Shift `5` … `9`, Shift `0` | — | s47; read from the key's position, so every keyboard layout works |
 | Open the speed panel on its typed field | `S` | — | s47 |
 | Count-in: off, 1 bar, 2 bars | `I` | — | s47 |
+| Click (metronome) on / off | `T` | — | s47 |
 | ↑ / ↓ | **No speed change.** Until a pedal is set up, PedalHud shows "Pedal detected? Set it up"; after setup they act only if they were learned | — | AirTurn BT200S mode 2 and iRig BlueTurn send ↑/↓ out of the box |
 | Felt clean / Not yet | `C` / `N` | Right / left side while the pass question is up | |
 | Loop on/off | `L` | — | No loop: the hint on how to pick bars (vocals: loops the phrase) |
@@ -256,7 +257,7 @@ All in `model/screen.ts` (`resolveScreen`, table-tested in `screen.test.ts`) and
 - **Layouts:** `usePracticeLayout` still reads pointer, size and orientation; a fine-pointer window ≤ 640 px wide now gets the phone arrangement. `useTransportStacked` stacks the transport under 1024 px on any pointer. Tab is the default view everywhere; the glance view is the phone's Chords view (`model/screen.ts`).
 - **Keys** (`model/keymap.ts`, `input-mapper.ts`): the new actions of §8. `keyOf` reads Shift + digit from `event.code`, so `Shift` + `7` is 70 % on every keyboard layout. `pedalMoment` decides what the two pedal sides do. Popups own their keys unless they carry `data-practice-keys` (the tools sheet, the bar editor).
 - **Confirmation:** `PedalHud` is placed by the transport (the key row above the single row; the end of the status row when stacked), never over the notation.
-- **Notation** (`packages/notation`): `barsPerRow` (four, two on narrow screens); printed bar numbers follow the song's own count (`bar-numbers.ts`); unsure is a dashed box with "?" in `--conf-low-edge`, probably a dotted `--conf-medium-edge`, the bar playing a 2 px ink line.
+- **Notation** (`packages/notation`): `barsPerRow` from the pane's width and the digit size (`barsPerSystem` in `model/screen.ts`: one to four); the page's top padding is 4 px; printed bar numbers follow the song's own count (`bar-numbers.ts`); unsure is a dashed box with "?" in `--conf-low-edge`, probably a dotted `--conf-medium-edge`, the bar playing a 2 px ink line.
 
 ## Open questions
 - Page vs Scroll as the default follow mode at different tempos (QX13); Page is the default until tested.
