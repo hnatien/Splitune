@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { collectErrors, expectAccessible, signIn, wav } from './helpers'
+import { collectErrors, expectAccessible, passQuestion, signIn, wav } from './helpers'
 
 // Step 12 acceptance (prompt 12): the practice screen with the mock-mode artefacts (the contracts'
 // 8-bar Am–F–C–G fixture at 100 BPM) and the real audio engine. Desktop and tablet projects run
@@ -127,14 +127,16 @@ test('play, loop bars 3–4 with a count-in, 70 %, felt clean by keyboard, mix a
   await page.keyboard.press('Space')
   await expect(page.locator('[data-slot=count-in]')).toBeVisible()
   await expect(page.locator('[data-slot=count-in]')).toBeHidden({ timeout: 10_000 })
-  // Bars 3–4 last 4.8 s at 100 %, 6.9 s at 70 %.
-  await expect(loopBadge()).toHaveAccessibleName('Loop · bars 3–4, pass 1', { timeout: 20_000 })
+  // Bars 3–4 last 4.8 s at 100 %, 6.9 s at 70 %: then the transport asks how the pass went.
+  await expect(passQuestion(page, 1)).toHaveAccessibleName(/^Pass 1 at 70\s%/, {
+    timeout: 20_000,
+  })
 
   const synced = page.waitForResponse(
     (r) => r.url().includes('/v1/practice/sync') && r.request().method() === 'POST' && r.ok(),
   )
   await page.keyboard.press('c')
-  await expect(page.getByText(/Best clean pass: 70\s%/)).toBeVisible()
+  await expect(page.getByText('Key C · Felt clean').first()).toBeVisible()
   await synced
   await page.keyboard.press('Space')
 
