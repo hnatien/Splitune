@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { examplePractice, tabLevelFor } from './defaults'
+import { answersOf, examplePractice, tabLevelFor } from './defaults'
 import { type ExampleSong, exampleFor } from './examples'
 
 const example = {
@@ -29,6 +29,17 @@ describe('onboarding defaults', () => {
     expect(tabLevelFor('bass', 'bass', 'returning')).toBe('full')
     expect(tabLevelFor('other', 'guitar', 'few_songs')).toBe('chords_only')
     expect(tabLevelFor('piano', 'guitar', null)).toBe('chords_only')
+  })
+})
+
+describe('answersOf', () => {
+  it('starts a visitor on guitar, just started, and keeps what they chose', () => {
+    expect(answersOf({})).toEqual({ instrument: 'guitar', level: 'just_started' })
+    expect(answersOf({ instrument: 'bass' })).toEqual({ instrument: 'bass', level: 'just_started' })
+    expect(answersOf({ instrument: 'other', level: 'returning' })).toEqual({
+      instrument: 'other',
+      level: 'returning',
+    })
   })
 })
 
