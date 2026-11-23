@@ -240,7 +240,7 @@ export default function CommandPalette() {
         className="top-[12dvh] translate-y-0 gap-0 p-2 sm:max-w-170"
       >
         <DialogPrimitive.Title className="sr-only">{m['nav.search']()}</DialogPrimitive.Title>
-        <div className="flex h-13 items-center gap-2.5 border-b border-border px-3">
+        <div className="flex h-13 items-center gap-1 border-b border-border px-3">
           <SearchIcon aria-hidden className="size-5 shrink-0 text-faint-foreground" />
           <input
             role="combobox"
@@ -256,7 +256,7 @@ export default function CommandPalette() {
               setActive(0)
             }}
             onKeyDown={onKeyDown}
-            className="min-w-0 flex-1 self-stretch bg-transparent text-title font-normal text-foreground focus-visible:-outline-offset-2 placeholder:text-faint-foreground"
+            className="my-1.5 min-w-0 flex-1 self-stretch rounded-field bg-transparent px-2 text-title font-normal text-foreground focus-visible:outline-offset-0 placeholder:text-faint-foreground"
           />
           <Kbd aria-hidden>{m['nav.key_escape']()}</Kbd>
         </div>
