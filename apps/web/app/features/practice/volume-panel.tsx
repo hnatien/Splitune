@@ -1,6 +1,6 @@
 import { m } from '@/lib/i18n'
 import { PopoverContent } from '@/ui/popover-content'
-import { VolumeFields } from './transport-bar'
+import { VolumeFields } from './transport'
 
 // The narrow dock's volume popover (26 §7: below 1280 px the volume leaves the dock), loaded on
 // first open so the popover's positioning stays out of the route's JS budget (12 §10).

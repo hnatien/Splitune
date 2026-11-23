@@ -23,16 +23,8 @@ export function usePracticeLayout(): PracticeLayout {
 export const isPhone = (layout: PracticeLayout) =>
   layout === 'phone-portrait' || layout === 'phone-landscape'
 
-/**
- * Desktop region behaviour by width (27 §3.7.1, fine pointer): from 1180 px the inspector is
- * docked; below it the inspector is a drawer opened from "Tools"; below 1024 px the Now column
- * also becomes a strip above the notation. Below 1440 px (the width `Main.dc.html` is drawn at) the
- * dock's mix pill keeps only its icon and the volume moves into a popover (26 §7), so the loop pill
- * keeps its words.
- */
-export function useDesktopRegions() {
-  const docked = useMediaQuery('(min-width: 1180px)', true)
-  const column = useMediaQuery('(min-width: 1024px)', true)
-  const roomy = useMediaQuery('(min-width: 1440px)', true)
-  return { docked, nowColumn: column, roomyDock: roomy }
+/** From 1180 px a fine-pointer screen has room to dock the tools panel beside the music
+ * (27 §3.7.1); below that, and on touch layouts, the panel is a drawer or a sheet. */
+export function usePanelDocked() {
+  return useMediaQuery('(min-width: 1180px)', true)
 }

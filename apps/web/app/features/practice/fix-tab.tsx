@@ -109,7 +109,7 @@ export function FixTab({
         <Link
           to="/songs/$songId/edit"
           params={{ songId }}
-          className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'self-start' })}
+          className={buttonVariants({ variant: 'quiet', size: 'sm', className: 'self-start' })}
         >
           <PencilRulerIcon aria-hidden />
           {m['fix.open_editor']()}

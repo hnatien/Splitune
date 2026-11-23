@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { bravuraWoff2 } from './assets.ts'
+import { renumberBars } from './bar-numbers.ts'
 import { externalMediaHandler, externalOutput, type MediaTarget } from './external-media.ts'
 import {
   type BarBox,
@@ -67,6 +68,9 @@ export interface AlphaTabViewProps {
    * scroll = one line under a fixed now-line; off = it doesn't move (reading and fixing).
    */
   layout: FollowMode
+  /** Bars in a system on Page and Off (27 §3.7.1): four where there is the width, two on a
+   * phone, so the digits never run into each other. */
+  barsPerRow?: number
   /** A 2 px line, a small block on the beat, or only the current bar's wash (12 §3). */
   playhead?: PlayheadStyle
   /** Reduced motion (26 §10): the playhead steps by beat. */
@@ -115,7 +119,7 @@ const SYSTEM_TOP_PX = 44
 const SYSTEM_BOTTOM_PX = 10
 const PADDING_PX = SYSTEM_TOP_PX + SYSTEM_BOTTOM_PX
 
-function createApi(host: HTMLElement, scroll: boolean): alphaTab.AlphaTabApi {
+function createApi(host: HTMLElement, scroll: boolean, barsPerRow: number): alphaTab.AlphaTabApi {
   const settings = new alphaTab.Settings()
   settings.core.engine = 'svg'
   settings.core.useWorkers = true
@@ -123,8 +127,9 @@ function createApi(host: HTMLElement, scroll: boolean): alphaTab.AlphaTabApi {
   settings.core.smuflFontSources = new Map([[alphaTab.FontFileFormat.Woff2, bravuraWoff2]])
   settings.core.logLevel = alphaTab.LogLevel.Warning
   settings.display.layoutMode = scroll ? alphaTab.LayoutMode.Horizontal : alphaTab.LayoutMode.Page
-  // Systems of four bars (Page) with room above each for the loop bracket (27 §3.7.1).
-  if (!scroll) settings.display.barsPerRow = 4
+  // Systems of a fixed number of bars (Page) with room above each for the loop bracket
+  // (27 §3.7.1).
+  if (!scroll) settings.display.barsPerRow = barsPerRow
   settings.display.firstSystemPaddingTop = SYSTEM_TOP_PX
   settings.display.systemPaddingTop = SYSTEM_TOP_PX
   settings.display.systemPaddingBottom = SYSTEM_BOTTOM_PX
@@ -162,6 +167,7 @@ export function AlphaTabView({
   times,
   theme,
   layout,
+  barsPerRow = 4,
   playhead = 'line',
   stepped = false,
   clock,
@@ -224,11 +230,12 @@ export function AlphaTabView({
   // Page and Off share alphaTab's page layout; only Scrolling needs the horizontal one.
   const scroll = layout === 'scroll'
 
-  // One API per mounted view and layout mode (alphaTab switches layout only at creation).
+  // One API per mounted view, layout mode and system width (alphaTab lays its systems out at
+  // creation).
   useEffect(() => {
     const element = host.current
     if (!element) return
-    const api = createApi(element, scroll)
+    const api = createApi(element, scroll, barsPerRow)
     apiRef.current = api
     const handler = externalMediaHandler({ duration: () => latest.current.media.duration() })
     const attach = () => {
@@ -247,7 +254,7 @@ export function AlphaTabView({
       api.destroy()
       apiRef.current = null
     }
-  }, [scroll])
+  }, [scroll, barsPerRow])
 
   // A changed score, ink, timeline or theme re-renders; overlay-only props don't.
   useEffect(() => {
@@ -265,6 +272,24 @@ export function AlphaTabView({
     renderStarted.current = performance.now()
     api.renderScore(score, [0])
   }, [tex, noteMap, marks, times, theme])
+
+  // Bar numbers count from the first full bar (bar-numbers.ts). alphaTab adds its SVG a chunk at
+  // a time as systems come into view, so each chunk is renumbered as it lands; a score that
+  // starts on grid bar 0 prints the right numbers already and is left alone.
+  useEffect(() => {
+    const element = host.current
+    if (!element || timeline.firstBar === 0) return
+    renumberBars(element, timeline.firstBar)
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node instanceof Element) renumberBars(node, timeline.firstBar)
+        }
+      }
+    })
+    observer.observe(element, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [timeline.firstBar])
 
   // Marks and markers follow the latest render's bounds.
   useEffect(() => {
@@ -446,7 +471,7 @@ export function AlphaTabView({
           <div
             ref={wash}
             data-slot="current-bar"
-            className="absolute top-0 left-0 bg-bar-current will-change-transform"
+            className="absolute top-0 left-0 border-b-2 border-score-playhead bg-bar-current will-change-transform"
           />
         </div>
         <div ref={host} className="relative z-10" />
@@ -611,17 +636,18 @@ function boxStyle(box: { x: number; y: number; w: number; h: number }): CSSPrope
   return { left: box.x, top: box.y, width: box.w, height: box.h }
 }
 
-/** The superscript "?" of an unsure mark (26 §5: 10 px, 700, `--unsure`). */
+/** The superscript "?" of an unsure mark (26 §5): 12 px at 500, in the unsure hue. */
 function Unsure() {
   return (
-    <sup className="absolute -top-2.5 -right-2.5 text-kbd leading-none font-medium text-conf-low">
+    <sup className="absolute -top-3 -right-2.5 text-caption leading-none font-medium text-conf-low-edge">
       ?
     </sup>
   )
 }
 
-// Confidence marks (26 §5): Probably a 1.5 px dashed `--conf-medium-edge` box 1 px off the digit,
-// Unsure a dashed `--unsure` box with "?", a timing flag a dotted underline.
+// Confidence marks (26 §5), by shape: Probably a 1.5 px dotted `--conf-medium-edge` box 1 px off
+// the digit, Unsure a dashed box with "?" in `--conf-low-edge` (the unsure hue's only place), a
+// timing flag a dotted underline. The digit itself is always ink.
 function NoteMarks({ note }: { note: NoteBox }) {
   if (note.level === 'high' && !note.timingFlagged) return null
   const pad = 2.5
@@ -637,8 +663,8 @@ function NoteMarks({ note }: { note: NoteBox }) {
       data-confidence={note.level}
       className={[
         'absolute rounded-media',
-        note.level === 'medium' ? 'border-[1.5px] border-dashed border-conf-medium-edge' : '',
-        note.level === 'low' ? 'border-[1.5px] border-dashed border-conf-low' : '',
+        note.level === 'medium' ? 'border-[1.5px] border-dotted border-conf-medium-edge' : '',
+        note.level === 'low' ? 'border-[1.5px] border-dashed border-conf-low-edge' : '',
         note.timingFlagged && note.level === 'high'
           ? 'border-b-[1.5px] border-dotted border-ink'
           : '',

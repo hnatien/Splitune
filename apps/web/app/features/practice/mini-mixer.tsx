@@ -63,7 +63,7 @@ function Row({
         onPressedChange={onMuted}
         label={`${m['mixer.mute']()} ${name}`}
       >
-        M
+        {m['mixer.mute_letter']()}
       </StemToggle>
     </div>
   )
@@ -117,7 +117,7 @@ export function MiniMixer({ onAllStems }: { onAllStems: () => void }) {
           onMuted={(muted) => setMix(withBandMuted(channels, mix, muted))}
         />
       )}
-      <Button variant="ghost" size="sm" className="self-start" onClick={onAllStems}>
+      <Button variant="quiet" size="sm" className="self-start" onClick={onAllStems}>
         {m['mixer.all_stems']({ count: String(channels.length) })}
       </Button>
     </section>

@@ -30,7 +30,7 @@ export function LevelToggle({ capo }: { capo: boolean }) {
     <div className="flex flex-wrap items-center gap-3">
       <ToggleGroup
         aria-label={m['practice.level']()}
-        size="practice-2"
+        size="practice"
         value={[options.level]}
         onValueChange={(next) => {
           const level = next[0]

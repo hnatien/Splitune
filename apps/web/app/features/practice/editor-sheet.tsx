@@ -21,6 +21,7 @@ export function EditorSheet({ side }: { side: boolean }) {
       modal={!side}
     >
       <DrawerContent
+        data-practice-keys=""
         className={side ? 'data-[swipe-axis=x]:sm:[--drawer-content-width:25rem]' : ''}
       >
         <DrawerHeader>

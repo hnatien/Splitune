@@ -105,7 +105,7 @@ export function GlanceView() {
       {grid && !player.loop && (
         <Button
           variant="outline"
-          size="practice-2"
+          size="practice"
           onClick={() => {
             usePracticeUi.setState({ selection: { kind: 'none' } })
             tapBar(now.bar)

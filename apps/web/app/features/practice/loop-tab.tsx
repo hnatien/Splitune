@@ -72,7 +72,7 @@ export function LoopTab() {
       <SavedClips />
       {loop && (
         <Button
-          variant="ghost"
+          variant="quiet"
           className="self-start"
           onClick={() => {
             practice.setLoop(null)
@@ -157,7 +157,7 @@ function QuickMoves({ loop }: { loop: LoopRange }) {
         return (
           <Button
             key={move}
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={next === loop}
             className={cn(move !== 'next' && 'tabular-nums')}
@@ -202,7 +202,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
             <span className="min-w-0 flex-1 text-body-sm">{name}</span>
             <Button
               size="icon"
-              variant="secondary"
+              variant="outline"
               aria-label={m['practice.nudge_earlier']({ edge: name })}
               onClick={() => practice.setLoop(nudge(grid, loop, edge, -1))}
             >
@@ -210,7 +210,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
             </Button>
             <Button
               size="icon"
-              variant="secondary"
+              variant="outline"
               aria-label={m['practice.nudge_later']({ edge: name })}
               onClick={() => practice.setLoop(nudge(grid, loop, edge, 1))}
             >
@@ -317,7 +317,7 @@ function SavedClips() {
       <div className="flex min-h-target-practice items-center justify-between gap-2">
         <h3 className={heading}>{m['practice.clips']()}</h3>
         {unsaved && !naming && (
-          <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>
+          <Button variant="quiet" size="sm" onClick={() => setNaming(true)}>
             {m['practice.save_this_loop']()}
           </Button>
         )}
@@ -350,7 +350,7 @@ function SavedClips() {
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary" disabled={name.trim() === ''}>
+          <Button type="submit" variant="outline" disabled={name.trim() === ''}>
             {m['practice.save_clip']()}
           </Button>
         </form>
@@ -422,7 +422,7 @@ function ClipRow({
         <DropdownMenuTrigger
           render={
             <Button
-              variant="ghost"
+              variant="quiet"
               size="icon"
               aria-label={m['practice.clip_more']({ name: clip.name ?? '' })}
             />
@@ -471,10 +471,10 @@ function RenameClip({ clip, onDone }: { clip: Clip; onDone: (name: string | null
         maxLength={100}
         onChange={(e) => setName(e.target.value)}
       />
-      <Button type="submit" variant="secondary" size="sm" disabled={name.trim() === ''}>
+      <Button type="submit" variant="outline" size="sm" disabled={name.trim() === ''}>
         {m['practice.clip_rename_save']()}
       </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => onDone(null)}>
+      <Button type="button" variant="quiet" size="sm" onClick={() => onDone(null)}>
         {m['common.cancel']()}
       </Button>
     </form>

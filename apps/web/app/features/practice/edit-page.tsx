@@ -120,7 +120,7 @@ function EditScreen() {
             aria-label={m['edit.toolbar']()}
           >
             <Button
-              variant="ghost"
+              variant="quiet"
               size="icon"
               aria-label={m['editor.redo']()}
               disabled={redoCount === 0}
@@ -129,7 +129,7 @@ function EditScreen() {
               <Redo2Icon aria-hidden />
             </Button>
             <Button
-              variant="ghost"
+              variant="quiet"
               disabled={!target}
               onClick={() => target && practice.hearBar(target.bar)}
             >

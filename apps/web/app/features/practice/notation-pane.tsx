@@ -2,7 +2,9 @@ import type { AlphaTabViewHandle, NoteMark } from '@splitune/notation'
 import { lazy, Suspense, useId, useMemo, useRef, useState } from 'react'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
+import { useMediaQuery } from '@/lib/use-media-query'
 import { cn } from '@/lib/utils'
+import { Kbd } from '@/ui/kbd'
 import { barText } from './bar-text'
 import type { PracticeLayout } from './layout'
 import { resolveScreen, type Screen } from './model/screen'
@@ -18,6 +20,9 @@ const ChordSheet = lazy(() =>
 )
 const AlphaTabView = lazy(() =>
   import('@splitune/notation/view').then((view) => ({ default: view.AlphaTabView })),
+)
+const ScoreTools = lazy(() =>
+  import('./score-tools').then((module) => ({ default: module.ScoreTools })),
 )
 // The progressive state's card loads while the notation is empty (27 §3.7.3).
 const GettingReady = lazy(() =>
@@ -135,6 +140,9 @@ function TabView({
 }) {
   const practice = usePractice()
   const { music, grid, view, audio, player, musicState, data } = practice
+  const { scoreTools } = useScreen('desktop')
+  // Two bars a line where four would run the digits together (27 §3.7.2).
+  const narrow = useMediaQuery('(max-width: 640px)', false)
   const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
   const motion = useNotationMotion()
   const loopLabel = useLoopLabel()
@@ -207,6 +215,7 @@ function TabView({
           times={grid.times}
           theme={theme}
           layout={motion.layout}
+          barsPerRow={narrow ? 2 : 4}
           playhead={motion.playhead}
           stepped={motion.stepped}
           shakyBars={view.unsureBars}
@@ -240,32 +249,53 @@ function TabView({
           smoothScroll={motion.smoothScroll}
         />
       </Suspense>
-      {showUncertainty && !fixing && <MarksKey />}
+      {!fixing && <KeyRow marks={showUncertainty} capo={scoreTools?.capo} />}
     </div>
   )
 }
 
-// The key at the canvas' bottom left (27 §3.7.1): samples of the unsure and sounding marks, in a
-// row of its own under the score so it never hides a note.
-function MarksKey() {
+// The key row under the score (27 §3.7.1), in a row of its own so it never hides a note: samples
+// of the unsure, probably and sounding marks, how to make a loop with its key, and the level and
+// capo at the end. Phones keep the level and capo only, so the notation keeps the height.
+function KeyRow({ marks, capo }: { marks: boolean; capo?: boolean | undefined }) {
   const sample =
-    'inline-grid min-w-5 place-items-center rounded-media px-0.5 font-reading-mono leading-5 font-medium'
+    'inline-grid min-w-5 place-items-center rounded-media px-0.5 font-reading-mono leading-5 font-medium text-ink'
   return (
     <div
-      aria-hidden
-      data-slot="marks-key"
-      className="flex h-10 shrink-0 items-center gap-3.5 bg-paper px-12 text-body-sm text-faint-foreground"
+      data-slot="key-row"
+      className="flex min-h-9 shrink-0 items-center gap-4 bg-paper px-3 text-caption text-muted-foreground sm:px-4"
     >
-      <span className="inline-flex items-center gap-1.5">
-        <span className={cn(sample, 'border-[1.5px] border-dashed border-conf-low text-conf-low')}>
-          3
-        </span>
-        {m['practice.unsure_key']()}
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className={cn(sample, 'bg-primary text-primary-foreground')}>0</span>
-        {m['practice.sounding_key']()}
-      </span>
+      {marks && (
+        <div aria-hidden data-slot="marks-key" className="flex items-center gap-4 max-sm:hidden">
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn(sample, 'border-[1.5px] border-dashed border-conf-low-edge')}>
+              3
+            </span>
+            {m['practice.unsure_key']()}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn(sample, 'border-[1.5px] border-dotted border-conf-medium-edge')}>
+              5
+            </span>
+            {m['practice.probably_key']()}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn(sample, 'bg-primary text-primary-foreground')}>0</span>
+            {m['practice.sounding_key']()}
+          </span>
+        </div>
+      )}
+      <p className="ml-auto flex items-center gap-1.5 pointer-coarse:hidden max-lg:hidden">
+        {m['practice.loop_hint']()}
+        <span aria-hidden>·</span>
+        <Kbd>4</Kbd>
+        {m['practice.loop_hint_key']()}
+      </p>
+      {capo !== undefined && (
+        <Suspense fallback={null}>
+          <ScoreTools capo={capo} />
+        </Suspense>
+      )}
     </div>
   )
 }
