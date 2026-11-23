@@ -53,6 +53,7 @@ describe('key map', () => {
     expect(actionFor('r', {})).toBe('fromTop')
     expect(actionFor('Home', {})).toBe('fromTop')
     expect(actionFor('i', {})).toBe('countIn')
+    expect(actionFor('t', {})).toBe('click')
     expect(actionFor('x', {})).toBe('tools')
     expect(actionFor('s', {})).toBe('speed')
     expect(actionFor('S', {})).toBe('speed')

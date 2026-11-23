@@ -242,19 +242,14 @@ export function FretboardDiagram({
             data-slot="fret-next"
             style={place(dotX(p.fret), rowAt(rows, p.string))}
           >
-            <circle
-              r={r}
-              fill="var(--paper)"
-              stroke="var(--conf-medium)"
-              strokeWidth={2}
-              strokeDasharray="4 3"
-            />
+            {/* A solid hollow ring: a dashed or dotted edge means confidence (26 §5), never "next". */}
+            <circle r={r} fill="var(--paper)" stroke="var(--staff-more)" strokeWidth={1.5} />
             <text
               fontSize={r * 1.05}
               fontWeight={600}
               textAnchor="middle"
               dominantBaseline="central"
-              fill="var(--conf-medium)"
+              fill="var(--staff-more)"
             >
               {p.fret}
             </text>
