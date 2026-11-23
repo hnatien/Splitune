@@ -91,12 +91,12 @@ const tab = async (canvasElement: HTMLElement) => {
   await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
     timeout: 20_000,
   })
-  // The panel is closed until asked for: Tools (X) opens it on the tab `?tab=` chose.
+  // `?tab=progress` opens the panel on that tab (27 §3.7.1): Tools (X) shows it open.
   const tools = canvas
     .getByRole('toolbar', { name: 'Playback' })
     .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
   if (!tools) throw new Error('No Tools in the transport')
-  await userEvent.click(tools)
+  await expect(tools).toHaveAttribute('aria-pressed', 'true')
   const panel = await canvas.findByRole('tabpanel')
   // The tab's body loads when it is first shown, then its progress.
   await waitFor(() => expect(panel.querySelector('[data-slot=progress-tab]')).not.toBeNull(), {

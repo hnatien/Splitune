@@ -54,7 +54,7 @@ const mixTab =
     </AppStory>
   )
 
-/** The transport's Tools (X): opens the closed panel on the tab `?tab=` chose. */
+/** `?tab=mix` opens the panel on Mix (27 §3.7.1): the transport's Tools (X) shows it open. */
 const openTools = async (canvasElement: HTMLElement) => {
   const canvas = within(canvasElement)
   await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
@@ -64,7 +64,7 @@ const openTools = async (canvasElement: HTMLElement) => {
     .getByRole('toolbar', { name: 'Playback' })
     .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
   if (!tools) throw new Error('No Tools in the transport')
-  await userEvent.click(tools)
+  await expect(tools).toHaveAttribute('aria-pressed', 'true')
 }
 
 /** The Mix tab's panel once the stems play through the mixer. */

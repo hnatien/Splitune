@@ -35,7 +35,7 @@ const screen = (search: PracticeSearch) => () => (
   </AppStory>
 )
 
-/** Tools (X) opens the closed panel on the Loop tab. */
+/** `?tab=loop` opens the panel on the Loop tab (27 §3.7.1): Tools (X) shows it open. */
 const loopTab = async (canvasElement: HTMLElement) => {
   const canvas = within(canvasElement)
   await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
@@ -45,7 +45,7 @@ const loopTab = async (canvasElement: HTMLElement) => {
     .getByRole('toolbar', { name: 'Playback' })
     .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
   if (!tools) throw new Error('No Tools in the transport')
-  await userEvent.click(tools)
+  await expect(tools).toHaveAttribute('aria-pressed', 'true')
   const panel = await within(canvasElement.ownerDocument.body).findByRole('tabpanel')
   // The tab's body loads when it is first shown.
   await within(panel).findByRole('heading', { name: /^Bars / }, { timeout: 15_000 })
