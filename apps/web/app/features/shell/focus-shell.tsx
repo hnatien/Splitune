@@ -39,12 +39,14 @@ export function FocusShell({
             className={buttonVariants({
               variant: 'quiet',
               size: 'sm',
-              className: 'shrink-0 max-sm:min-w-target max-sm:px-0',
+              className: fill
+                ? 'shrink-0 max-lg:min-w-target max-lg:px-0'
+                : 'shrink-0 max-sm:min-w-target max-sm:px-0',
             })}
           >
             <ChevronLeftIcon aria-hidden />
-            {/* Icon only on phones, so the page's status keeps its room. */}
-            <span className="max-sm:sr-only">
+            {/* Icon only where the page's status needs the room: phones, and practice under 1024. */}
+            <span className={fill ? 'max-lg:sr-only' : 'max-sm:sr-only'}>
               {exit ? m['nav.exit']() : m['nav.back_to_library']()}
             </span>
           </Link>

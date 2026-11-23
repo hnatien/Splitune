@@ -84,7 +84,7 @@ export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
           </span>
         )}
       </div>
-      <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+      <div className="flex flex-1 shrink-0 items-center justify-center gap-2">
         <Suspense fallback={null}>
           {fixing ? <FixPill /> : <StatusControls layout={layout} />}
         </Suspense>
