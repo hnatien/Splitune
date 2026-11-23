@@ -145,8 +145,8 @@ test('billing: a declined payment changes nothing, a successful one upgrades to 
   await page.getByRole('button', { name: 'See Plus' }).first().click()
   await expect(page.getByRole('heading', { name: 'Plus gives you' })).toBeVisible()
   await expect(page.getByRole('radio', { name: /Monthly/ })).toBeChecked()
-  // A dialog on wide screens, a bottom sheet on phones: both are role=dialog.
-  await expectNoCardInputs(page, '[role=dialog]')
+  // A dialog on wide screens, a bottom sheet on phones: both are role=dialog, over Add song's.
+  await expectNoCardInputs(page, page.getByRole('dialog', { name: 'Plus gives you' }))
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Continue to checkout' }).click()
 
