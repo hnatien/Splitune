@@ -335,7 +335,16 @@ export const AfterUse: Story = {
     await userEvent.click(panel.getByRole('button', { name: 'Next unsure spot' }))
     const card = within(await panel.findByRole('region', { name: 'Bar 7 · chord' }))
     await userEvent.click(card.getByRole('button', { name: 'Use Em' }))
-    await expect(await body.findByText('Edit saved · bar 7, G → Em')).toBeVisible()
+    const saved = await body.findByText('Edit saved · bar 7, G → Em')
+    await expect(saved).toBeVisible()
+    // The toast sits above the Fix dock, never over Play or the Listen to choice.
+    const dock = within(canvasElement).getByRole('toolbar', { name: m['practice.transport']() })
+    const toast = saved.closest('[data-slot=toast]') as HTMLElement
+    await waitFor(() =>
+      expect(toast.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        dock.getBoundingClientRect().top,
+      ),
+    )
     await expect(await card.findByText(m['practice.edited']())).toBeVisible()
     const edits = within(await panel.findByRole('region', { name: 'Your edits' }))
     await expect(edits.getByText('Changed a chord · bar 7 · G → Em')).toBeVisible()

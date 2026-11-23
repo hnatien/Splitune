@@ -80,7 +80,8 @@ export function PracticePage({
   /** A visitor's example song (onboarding): exits to Home, no editor. */
   guest?: boolean
   fetchAudio?: FetchAudio
-  /** Extra layers inside the practice screen (onboarding's coach marks and save sheet). */
+  /** The caller's own line above the song map and its dialogs (onboarding's guide and save
+   * sheet). */
   children?: React.ReactNode
 }) {
   return (
@@ -139,6 +140,8 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
   }
   return (
     <FocusShell fill exit={practice.guest} status={<PracticeStatus layout={layout} />}>
+      {/* The caller's own line (onboarding's guide) comes first, in view and in Tab order. */}
+      {children}
       {/* Notices sit in one slim stack above the music; it takes no room when there are none. */}
       <div className="flex shrink-0 flex-col gap-2 px-3 py-2 empty:hidden sm:px-4 [&>[data-slot=banner]]:py-1.5">
         <Suspense fallback={null}>
@@ -162,7 +165,6 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
         )}
       </div>
       <Overlays layout={layout} />
-      {children}
     </FocusShell>
   )
 }

@@ -437,6 +437,9 @@ export function AlphaTabView({
     <section
       ref={scroller}
       aria-label={labels.region}
+      // The bar that takes Tab is inside; while none does (the score is still being laid out, or
+      // the playhead is before the first bar) the region takes it, so it can always be reached.
+      tabIndex={overlay.bars.some((bar) => bar.index === focusIndex) ? undefined : 0}
       data-slot="alphatab-view"
       data-layout={layout}
       data-playhead={playhead}
