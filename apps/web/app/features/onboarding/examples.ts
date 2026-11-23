@@ -20,17 +20,25 @@ export function practiseAsGuest(examples: ExampleSong[]) {
 }
 
 /**
- * The example for the onboarding answers: the instrument's own part (guitar: chords for someone
- * who just started, the riff otherwise), else a guitar one ("Something else").
+ * The examples offered for an instrument: its own parts, else the guitar ones ("Something else"),
+ * so a song is listed once and never for another instrument's part.
+ */
+export function examplesFor(examples: ExampleSong[], instrument: string | null): ExampleSong[] {
+  const own = examples.filter((e) => e.instrument === instrument)
+  const guitar = examples.filter((e) => e.instrument === 'guitar')
+  return own.length > 0 ? own : guitar.length > 0 ? guitar : examples
+}
+
+/**
+ * The example for the onboarding answers: of the instrument's examples, chords for someone who
+ * just started and the riff otherwise.
  */
 export function exampleFor(
   examples: ExampleSong[],
   instrument: string | null,
   level: string | null,
 ): ExampleSong | undefined {
-  const own = examples.filter((e) => e.instrument === instrument)
-  const guitar = examples.filter((e) => e.instrument === 'guitar')
-  const pool = own.length > 0 ? own : guitar.length > 0 ? guitar : examples
+  const pool = examplesFor(examples, instrument)
   const part = level === 'just_started' ? 'rhythm' : 'riff'
   return pool.find((e) => e.part === part) ?? pool[0]
 }

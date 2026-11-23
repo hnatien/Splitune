@@ -237,7 +237,8 @@ function DeleteAccount({
               {remove.isError && !reauthRequired(remove.error) && (
                 <InlineError title={m['privacy.delete_failed']()} />
               )}
-              <AlertDialogFooter>
+              {/* Cancel stays on top when the buttons stack on a phone. */}
+              <AlertDialogFooter className="max-sm:flex-col">
                 <AlertDialogCancel>{m['common.cancel']()}</AlertDialogCancel>
                 <Button
                   variant="destructiveSolid"
@@ -290,7 +291,8 @@ function DeleteAccount({
               {remove.isError && !reauthRequired(remove.error) && (
                 <InlineError title={m['privacy.delete_failed']()} />
               )}
-              <AlertDialogFooter>
+              {/* Cancel stays on top when the buttons stack on a phone. */}
+              <AlertDialogFooter className="max-sm:flex-col">
                 <AlertDialogCancel>{m['common.cancel']()}</AlertDialogCancel>
                 <Button
                   type="submit"

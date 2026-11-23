@@ -132,7 +132,8 @@ export function DeleteSongDialog({
           <AlertDialogDescription>{m['delete.song_confirm_body']()}</AlertDialogDescription>
         </AlertDialogHeader>
         {remove.isError && <InlineError title={apiErrorMessage(errorCode(remove.error))} />}
-        <AlertDialogFooter>
+        {/* Cancel stays on top when the buttons stack on a phone. */}
+        <AlertDialogFooter className="max-sm:flex-col">
           <AlertDialogCancel>{m['common.cancel']()}</AlertDialogCancel>
           <Button
             variant="destructiveSolid"

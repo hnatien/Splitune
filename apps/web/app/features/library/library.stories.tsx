@@ -158,6 +158,16 @@ const groupTitles = (canvasElement: HTMLElement, name: string) =>
       .querySelectorAll('[data-slot=list-row-title]'),
   ].map((title) => title.textContent)
 
+/** Each row's line that explains its state is shown whole: it wraps in its column, never cut off. */
+const linesWhole = async (canvasElement: HTMLElement) => {
+  const lines = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot=song-status-line]')]
+  await expect(lines.length).toBeGreaterThan(3)
+  for (const line of lines) {
+    await expect(line.scrollWidth, line.textContent ?? '').toBeLessThanOrEqual(line.clientWidth)
+    await expect(getComputedStyle(line).textOverflow).not.toBe('ellipsis')
+  }
+}
+
 const playPopulated: Story['play'] = async ({ canvasElement }) => {
   const canvas = main(canvasElement)
   await expect(await canvas.findByRole('heading', { level: 1, name: 'Library' })).toBeVisible()
@@ -227,6 +237,7 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
   await expect(canvas.getByText('Add stems + tab with a Full analysis')).toBeVisible()
   await settled(await canvas.findByText(/Isolating your part · about \d+ min left/))
   await settled(await canvas.findByText(/This didn't use an analysis\./))
+  await linesWhole(canvasElement)
   await expect(
     canvas.getByRole('button', { name: 'Try again: Corrupted voice memo' }),
   ).toBeVisible()
@@ -280,6 +291,8 @@ const playPhone: Story['play'] = async ({ canvasElement }) => {
     title.getBoundingClientRect().bottom - 1,
   )
   await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth)
+  await settled(await canvas.findByText(/This didn't use an analysis\./))
+  await linesWhole(canvasElement)
   await expect(canvas.getByRole('region', { name: 'Pick up where you left off' })).toBeVisible()
   // Resume practice takes the row's width on a phone.
   const resume = canvas.getByRole('link', { name: 'Resume practice' })
@@ -390,12 +403,20 @@ const playEmpty: Story['play'] = async ({ canvasElement }) => {
   await settled(
     await canvas.findByRole('heading', { name: 'Bring the first song you want to learn' }),
   )
+  const phone = window.innerWidth < 640
+  // A phone has no page to drop a file on: it says what it can do instead.
   await expect(
-    canvas.getByText('Drop a file anywhere on this page, paste a link, or record it.'),
+    canvas.getByText(
+      phone
+        ? 'Choose a file, paste a link, or record it.'
+        : 'Drop a file anywhere on this page, paste a link, or record it.',
+    ),
   ).toBeVisible()
-  // One filled control: Add song, with its key printed on it.
+  // One filled control: Add song, with its key printed on it from 640 px (its key works at any
+  // width).
   const add = canvas.getByRole('button', { name: 'Add song' })
   await expect(add).toHaveAttribute('aria-keyshortcuts', 'A')
+  await expect(add.querySelector('[data-slot=kbd]') === null).toBe(phone)
   await expect(add).toHaveAttribute('data-variant', 'primary')
   await expect(canvas.getByRole('link', { name: 'Try an example' })).toHaveAttribute(
     'href',
@@ -406,6 +427,11 @@ const playEmpty: Story['play'] = async ({ canvasElement }) => {
 export const Empty: Story = { render: empty, play: playEmpty }
 export const EmptyDaylight: Story = { render: empty, play: playEmpty, globals: DAYLIGHT }
 export const EmptyPhone: Story = { render: empty, play: playEmpty, globals: PHONE }
+export const EmptyPhoneDaylight: Story = {
+  render: empty,
+  play: playEmpty,
+  globals: { ...PHONE, ...DAYLIGHT },
+}
 
 export const NoResults: Story = {
   render: () => (
@@ -424,7 +450,8 @@ export const NoResults: Story = {
   },
 }
 
-// The skeleton is the final layout: the title, the Continue block, the toolbar and hairline rows.
+// The skeleton is the final layout: the title, the Continue block with This week beside it, the
+// instrument chips (from 640 px), the toolbar, a group head and hairline rows.
 const loading = () => (
   <AppStory path="/library">
     <AppShell me={ME}>
@@ -435,13 +462,19 @@ const loading = () => (
 const playLoading: Story['play'] = async ({ canvasElement }) => {
   const canvas = main(canvasElement)
   await expect(canvas.getByRole('heading', { level: 1, name: 'Library' })).toBeVisible()
-  await expect(canvas.getByRole('list', { name: 'Loading your library' })).toHaveAttribute(
-    'aria-busy',
-    'true',
-  )
+  const list = canvas.getByRole('list', { name: 'Loading your library' })
+  await expect(list).toHaveAttribute('aria-busy', 'true')
+  const root = canvasElement.querySelector('main') as HTMLElement
+  const week = root.querySelector('[data-slot=week-skeleton]') as HTMLElement
+  await expect(week.querySelectorAll('[data-slot=skeleton]').length).toBeGreaterThan(7)
+  const chips = root.querySelector('[data-slot=chips-skeleton]') as HTMLElement
+  await expect(chips.offsetParent !== null).toBe(window.innerWidth >= 640)
+  // A group head over the rows, as the loaded list has.
+  await expect(list.previousElementSibling).toHaveClass('border-b')
 }
 export const Loading: Story = { render: loading, play: playLoading }
 export const LoadingDaylight: Story = { render: loading, play: playLoading, globals: DAYLIGHT }
+export const LoadingPhone: Story = { render: loading, play: playLoading, globals: PHONE }
 
 // Nothing seeded: the list request fails against Storybook's server.
 export const LoadError: Story = {

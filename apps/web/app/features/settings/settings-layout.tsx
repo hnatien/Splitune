@@ -1,13 +1,14 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import type * as React from 'react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { m } from '@/lib/i18n'
 import { RAIL_ITEM } from '../shell/app-shell'
 
 // Settings (s47 direction §6, 27 §3.9): one column at the settings width. From 768 px the section
 // list sits beside the section as quiet rows, the current one marked by the rail's 2 px ink line;
 // below that it is one line of tabs under a hairline that scrolls sideways, the current section
-// underlined in ink and scrolled into view, so the section's own h1 stays near the top.
+// underlined in ink and scrolled into view, so the section's own h1 stays near the top; an edge
+// with more tabs past it fades out, so a cut-off tab reads as more to scroll to.
 
 const SECTIONS = [
   { to: '/settings/account', label: () => m['settings.account']() },
@@ -24,18 +25,38 @@ const LINE_TAB =
 export function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const line = useRef<HTMLUListElement>(null)
+  const [more, setMore] = useState({ start: false, end: false })
   // biome-ignore lint/correctness/useExhaustiveDependencies: follows the section on navigation
   useEffect(() => {
     line.current
       ?.querySelector('[aria-current=page]')
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [pathname])
+  useEffect(() => {
+    const tabs = line.current
+    if (!tabs) return
+    const measure = () =>
+      setMore({
+        start: tabs.scrollLeft > 1,
+        end: tabs.scrollLeft + tabs.clientWidth < tabs.scrollWidth - 1,
+      })
+    measure()
+    tabs.addEventListener('scroll', measure, { passive: true })
+    const resize = new ResizeObserver(measure)
+    resize.observe(tabs)
+    return () => {
+      tabs.removeEventListener('scroll', measure)
+      resize.disconnect()
+    }
+  }, [])
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-10">
       <nav aria-label={m['settings.sections']()} className="md:w-48 md:shrink-0">
         <ul
           ref={line}
-          className="m-0 -mx-4 flex list-none overflow-x-auto border-b border-border px-4 md:hidden"
+          data-more-start={more.start || undefined}
+          data-more-end={more.end || undefined}
+          className="m-0 -mx-4 flex list-none overflow-x-auto border-b border-border px-4 data-more-end:mask-r-from-[calc(100%-var(--spacing)*10)] data-more-start:mask-l-from-[calc(100%-var(--spacing)*10)] md:hidden"
         >
           {SECTIONS.map((section) => (
             <li key={section.to} className="-mb-px">

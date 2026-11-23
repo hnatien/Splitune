@@ -109,7 +109,7 @@ export const UpgradePhone: Story = {
 export const UpgradePricesFailed: Story = {
   // Plans left unseeded: the request fails against Storybook's own server.
   render: sheet((client) => client.setQueryData(meQuery.queryKey, ME_CAPPED)),
-  globals: { ...DESKTOP, ...DAYLIGHT },
+  globals: { ...DESKTOP, appearance: 'dark' },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     // The failure is Storybook's server answering; under load that takes longer than the 1 s default.
@@ -127,6 +127,10 @@ export const UpgradePricesFailed: Story = {
       }),
     ).toBeDisabled()
   },
+}
+export const UpgradePricesFailedDaylight: Story = {
+  ...UpgradePricesFailed,
+  globals: { ...DESKTOP, ...DAYLIGHT },
 }
 
 const bare = (children: React.ReactNode, seedWith: (client: QueryClient) => void) => () => (
@@ -205,13 +209,24 @@ export const CheckoutExpiredSignedOut: Story = {
 
 const portal = (me: typeof ME) => bare(<MockPortal session={SESSION} />, seed(me, 'portal'))
 
-/** Cancelling is an outline button: an active subscription leaves nothing filled. */
+/** Cancelling is an outline button, after switching: an active subscription leaves nothing
+ * filled. Back to Plan lines up with the column's text. */
 const playPortal: Play = async ({ canvasElement }) => {
   const canvas = within(canvasElement)
   await expect(await canvas.findByText('Renews on 22 Nov')).toBeVisible()
-  await expect(canvas.getByRole('button', { name: 'Cancel Plus' })).toBeVisible()
+  const cancel = canvas.getByRole('button', { name: 'Cancel Plus' })
+  await expect(cancel).toBeVisible()
   await expect(filledControls(canvasElement)).toHaveLength(0)
-  await expect(canvas.getByRole('button', { name: 'Switch to yearly' })).toBeVisible()
+  const change = canvas.getByRole('button', { name: 'Switch to yearly' })
+  await expect(change).toBeVisible()
+  await expect(change.compareDocumentPosition(cancel) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
+  )
+  const back = canvas.getByRole('link', { name: 'Back to Plan' })
+  const label = document.createRange()
+  label.selectNodeContents(back)
+  const title = canvas.getByRole('heading', { level: 1 }).getBoundingClientRect()
+  await expect(Math.abs(label.getBoundingClientRect().left - title.left)).toBeLessThanOrEqual(1)
   const simulations = within(canvas.getByRole('region', { name: 'Simulations' }))
   await expect(simulations.getByRole('button', { name: 'Simulate payment failure' })).toBeVisible()
   await expect(simulations.getByRole('button', { name: 'Simulate refund' })).toBeVisible()
@@ -243,7 +258,7 @@ export const PortalCancelling: Story = {
 }
 export const PortalPastDue: Story = {
   render: portal(ME_PLUS_PAST_DUE),
-  globals: { ...PHONE, ...DAYLIGHT },
+  globals: { ...PHONE, appearance: 'dark' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const line = await canvas.findByText(/The last \(simulated\) payment failed/)
@@ -252,4 +267,8 @@ export const PortalPastDue: Story = {
     await expect(message).toHaveAttribute('data-tone', 'warning')
     await expect(canvas.getByRole('button', { name: 'Switch to monthly' })).toBeVisible()
   },
+}
+export const PortalPastDueDaylight: Story = {
+  ...PortalPastDue,
+  globals: { ...PHONE, ...DAYLIGHT },
 }

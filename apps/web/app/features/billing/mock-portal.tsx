@@ -127,11 +127,12 @@ export function MockPortal({ session }: { session: string }) {
               </div>
             )}
             {failed && <InlineError title={m['billing.action_failed']()} />}
+            {/* Resume leads when Plus is ending; otherwise switching comes first and
+                cancelling last. */}
             {plus && (
               <div className="flex flex-col gap-2">
-                {subscription.cancel_at_period_end
-                  ? button('resume', m['billing.resume_plus'](), 'primary')
-                  : button('cancel', m['billing.cancel_plus'](), 'outline')}
+                {subscription.cancel_at_period_end &&
+                  button('resume', m['billing.resume_plus'](), 'primary')}
                 {button(
                   'switch',
                   subscription.plan === 'paid_yearly'
@@ -139,6 +140,8 @@ export function MockPortal({ session }: { session: string }) {
                     : m['billing.switch_yearly'](),
                   'outline',
                 )}
+                {!subscription.cancel_at_period_end &&
+                  button('cancel', m['billing.cancel_plus'](), 'outline')}
               </div>
             )}
           </BillingCard>
@@ -160,7 +163,8 @@ export function MockPortal({ session }: { session: string }) {
           )}
           <Link
             to={details.data.return_url}
-            className={buttonVariants({ variant: 'quiet', className: 'mt-4 self-start' })}
+            // Lined up with the column's text, not indented by its padding and edge.
+            className={buttonVariants({ variant: 'quiet', className: 'mt-4 -ms-5 self-start' })}
           >
             {m['billing.back_to_settings']()}
           </Link>

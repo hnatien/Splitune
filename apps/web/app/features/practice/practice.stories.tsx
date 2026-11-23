@@ -1,7 +1,11 @@
+import type { Analysis } from '@splitune/contracts'
 import chords from '@splitune/contracts/fixtures/chords.json'
 import summary from '@splitune/contracts/fixtures/summary.json'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { QueryClient } from '@tanstack/react-query'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import type { z } from 'zod'
+import { orpc } from '@/lib/api'
 import { useDisplay, usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { Toaster } from '@/ui/toast'
@@ -451,8 +455,18 @@ export const PartQuestion: Story = {
     const yes = canvas.getByRole('button', { name: 'Yes, guitar' })
     await expect(isFilled(yes, canvas.getByRole('button', { name: 'Pick another' }))).toBe(false)
     await expect(canvas.getByRole('button', { name: 'Pick another' })).toBeVisible()
+  },
+}
+
+/** Yes, guitar answers the question: it leaves the paper, and the stages carry on. */
+export const PartQuestionAnswered: Story = {
+  ...PartQuestion,
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const yes = await canvas.findByRole('button', { name: 'Yes, guitar' }, { timeout: 10_000 })
     await userEvent.click(yes)
     await expect(canvas.queryByText('Is guitar the part you play?')).toBeNull()
+    await expect(canvas.getByRole('region', { name: m['practice.getting_ready']() })).toBeVisible()
   },
 }
 
@@ -497,7 +511,8 @@ export const PartQuestionDaylight: Story = {
 }
 
 /** The processing machine is offline: said once, with what happens next, never a stalled bar and
- * never a time it can't keep. */
+ * never a time it can't keep. What works now says Waiting with the queued glyph, and nothing in
+ * it turns. */
 export const WorkerOffline: Story = {
   render: screen(['beats'], { workerOffline: true }),
   play: async ({ canvasElement }) => {
@@ -505,41 +520,126 @@ export const WorkerOffline: Story = {
     await expect(await canvas.findByText(m['analysis.queued_offline']())).toBeVisible()
     await expect(canvas.queryByText(/min left/)).toBeNull()
     await expect(canvas.queryByText(/^~\d/)).toBeNull()
+    const works = canvas.getByRole('region', { name: m['practice.what_works_now']() })
+    await expect(within(works).queryByText(/^In about/)).toBeNull()
+    await expect(works.querySelector('[data-slot=status][data-kind=working]')).toBeNull()
+    const waiting = within(works).getAllByText(m['practice.unlock_queued']())
+    await expect(waiting.length).toBeGreaterThan(0)
+    for (const word of waiting) {
+      await expect(word.closest('[data-slot=status]')).toHaveAttribute('data-kind', 'queued')
+    }
+    await expect(within(works).getAllByText(m['practice.unlock_queued_when']()).length).toBe(
+      waiting.length,
+    )
   },
 }
 
-/** A failed analysis (27 §3.11): what happened and why in one unboxed message, Try again and the
- * way back; Play stays the screen's one filled control. */
+export const WorkerOfflineDaylight: Story = {
+  ...WorkerOffline,
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
+}
+
+/** A failed run whose decode stage ends with `code` (the fixture's failure is unsupported_media). */
+const failedWith = (code: string) => (client: QueryClient) => {
+  seed([], { analysisFailed: true })(client)
+  const song = client.getQueryData<{ latest_analysis?: { id: string } | null }>(
+    orpc.songs.get.queryKey({ input: { id: SONG_ID } }),
+  )
+  const key = orpc.analyses.get.queryKey({ input: { id: song?.latest_analysis?.id ?? '' } })
+  client.setQueryData(
+    key,
+    (run: z.infer<typeof Analysis> | undefined) =>
+      run && {
+        ...run,
+        stages: { ...run.stages, decode: { status: 'failed' as const, error_code: code } },
+      },
+  )
+}
+
+/** A failed analysis (27 §3.11): what happened as the title, and below it why and that it used no
+ * analysis, in one unboxed message; Try again and the way back. Play stays the screen's one filled
+ * control. */
+const analysisFailed: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  const failure = await canvas.findByRole('alert', undefined, { timeout: 20_000 })
+  await expect(within(failure).getByText(m['analysis.failed_title']())).toBeVisible()
+  await expect(within(failure).getByText(m['library.didnt_use']())).toBeVisible()
+  const retry = within(failure).getByRole('button', { name: m['common.try_again']() })
+  await expect(retry).toBeVisible()
+  await expect(
+    isFilled(retry, within(failure).getByRole('link', { name: 'Back to the library' })),
+  ).toBe(false)
+  await expect(
+    within(failure).getByRole('link', { name: m['practice.back_to_library']() }),
+  ).toBeVisible()
+  await expect(getComputedStyle(failure).borderTopWidth).toBe('0px')
+}
+
 export const AnalysisFailed: Story = {
+  render: () => (
+    <AppStory path={`/songs/${SONG_ID}/practice`} seed={failedWith('worker_lost')}>
+      <PracticePage songId={SONG_ID} search={{}} fetchAudio={tone} />
+    </AppStory>
+  ),
+  play: analysisFailed,
+}
+
+export const AnalysisFailedDaylight: Story = {
+  ...AnalysisFailed,
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
+}
+
+/** A file that can't be decoded or isn't a supported format: running it again can't help, so the
+ * failure leads with Choose another file, back into Add song's File tab; the title says what
+ * happened and the description why, and that it used no analysis. */
+const fileUnreadable: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  const failure = await canvas.findByRole('alert', undefined, { timeout: 20_000 })
+  const title = within(failure).getByText(m['analysis.failed_title']())
+  await expect(title).not.toHaveTextContent(m['library.didnt_use']())
+  await expect(
+    within(failure).getByText(`${m['import.unreadable']()} ${m['library.didnt_use']()}`),
+  ).toBeVisible()
+  const links = within(failure).getAllByRole('link')
+  await expect(links[0]).toHaveAccessibleName(m['import.choose_another']())
+  await expect(links[0]).toHaveAttribute('href', '/library?add=file')
+  await expect(within(failure).queryByRole('button', { name: m['common.try_again']() })).toBeNull()
+  await expect(
+    within(failure).getByRole('link', { name: m['practice.back_to_library']() }),
+  ).toBeVisible()
+}
+
+export const AnalysisFileUnreadable: Story = {
   render: screen([], { analysisFailed: true }),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const failure = await canvas.findByRole('alert', undefined, { timeout: 20_000 })
-    await expect(within(failure).getByText(m['analysis.failed']())).toBeVisible()
-    const retry = within(failure).getByRole('button', { name: m['common.try_again']() })
-    await expect(retry).toBeVisible()
-    await expect(
-      isFilled(retry, within(failure).getByRole('link', { name: 'Back to the library' })),
-    ).toBe(false)
-    await expect(
-      within(failure).getByRole('link', { name: m['practice.back_to_library']() }),
-    ).toBeVisible()
-    await expect(getComputedStyle(failure).borderTopWidth).toBe('0px')
-  },
+  play: fileUnreadable,
+}
+
+export const AnalysisFileUnreadableDaylight: Story = {
+  ...AnalysisFileUnreadable,
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
 }
 
 /** The failure on a phone: the same message in the paper, above the transport. */
+const analysisFailedPhone: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  const failure = await canvas.findByRole('alert', undefined, { timeout: 20_000 })
+  await expect(
+    within(failure).getByRole('link', { name: m['import.choose_another']() }),
+  ).toBeVisible()
+  const transport = canvas.getByRole('toolbar', { name: 'Playback' }).getBoundingClientRect()
+  await expect(failure.getBoundingClientRect().bottom).toBeLessThanOrEqual(transport.top)
+}
+
 export const AnalysisFailedPhone: Story = {
   beforeEach: phone,
   render: screen([], { analysisFailed: true }),
+  globals: { appearance: 'dark', ...PHONE_375 },
+  play: analysisFailedPhone,
+}
+
+export const AnalysisFailedPhoneDaylight: Story = {
+  ...AnalysisFailedPhone,
   globals: { appearance: 'light', ...PHONE_375 },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const failure = await canvas.findByRole('alert', undefined, { timeout: 20_000 })
-    await expect(within(failure).getByRole('button', { name: 'Try again' })).toBeVisible()
-    const transport = canvas.getByRole('toolbar', { name: 'Playback' }).getBoundingClientRect()
-    await expect(failure.getBoundingClientRect().bottom).toBeLessThanOrEqual(transport.top)
-  },
 }
 
 /** Pedal presses that can't act yet still answer in the PedalHud (12 §8): no loop, no stems. */
@@ -608,15 +708,25 @@ export const ChordSheetMarksDaylight: Story = {
   play: chordSheetMarks,
 }
 
-/** Separation failed (27 §3.7.3): beat and chords are ready, the reason where the stems would be. */
+/** Separation failed (27 §3.7.3): one plain line says what's ready, with Try again (a re-run, which
+ * uses no allowance), and no allowance jargon. */
 export const StemsUnavailable: Story = {
   render: screen(['beats', 'chords'], { failedStage: 'separate' }),
   play: async ({ canvasElement }) => {
     const canvas = await playable(canvasElement)
+    const line = await canvas.findByText(m['practice.stems_unavailable']())
+    await expect(line).toBeVisible()
+    await expect(canvas.queryByText(/didn't use an analysis/)).toBeNull()
+    const banner = line.closest('[data-slot=banner]') as HTMLElement
     await expect(
-      await canvas.findByText(/Stems are unavailable right now; chords and beat are ready/),
+      within(banner).getByRole('button', { name: m['common.try_again']() }),
     ).toBeVisible()
   },
+}
+
+export const StemsUnavailableDaylight: Story = {
+  ...StemsUnavailable,
+  globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
 }
 
 /** + tab: everything (the primary state). */
@@ -825,8 +935,21 @@ export const ScreenMayLock: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
     const tip = await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 })
     await waitFor(() => expect(tip).toBeVisible())
+    await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
+    await expect(tip).toBeVisible()
+  },
+}
+
+/** Close puts the tip away for good on this device. */
+export const ScreenMayLockClosed: Story = {
+  ...ScreenMayLock,
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+    await canvas.findByText(m['practice.screen_tip'](), undefined, { timeout: 10_000 })
     await userEvent.click(canvas.getByRole('button', { name: 'Close' }))
     await expect(canvas.queryByText(m['practice.screen_tip']())).toBeNull()
+    await expect(localStorage.getItem('splitune.screen-tip')).toBe('shown')
     await userEvent.click(canvas.getByRole('button', { name: 'Pause' }))
   },
 }
