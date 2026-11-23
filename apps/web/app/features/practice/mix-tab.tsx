@@ -18,7 +18,7 @@ import { type MixPreset, presetOf, presetsFor } from './model/mixer'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 import { stemKind, stemName } from './stem-names'
-import { VolumeFields } from './transport'
+import { VolumeFields } from './volume-panel'
 
 // The Mix tab (27 §3.7.4; s47 direction §8): the presets as a list of rows with a check (Your part
 // loud · Minus-one · Original · Rhythm only, the last when bass and drums are stems of their own;
