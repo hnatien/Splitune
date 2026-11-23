@@ -16,7 +16,10 @@ export function MorePanel({
   desktop,
   editor,
   songId,
+  onChosen,
 }: {
+  /** A row that opens something over the page was chosen: the popover gets out of its way. */
+  onChosen: () => void
   desktop: boolean
   /** The desktop editor needs an account (not for a visitor's example song). */
   editor: boolean
@@ -30,7 +33,10 @@ export function MorePanel({
         variant="quiet"
         className="justify-start"
         aria-keyshortcuts="?"
-        onClick={() => usePracticeUi.setState({ shortcutsOpen: true })}
+        onClick={() => {
+          onChosen()
+          usePracticeUi.setState({ shortcutsOpen: true })
+        }}
       >
         <KeyboardIcon aria-hidden />
         {m['practice.shortcuts']()}
@@ -52,10 +58,13 @@ export function MorePanel({
         <Button
           variant="quiet"
           className="justify-start sm:hidden"
-          onClick={() => usePalette.getState().setOpen(true)}
+          onClick={() => {
+            onChosen()
+            usePalette.getState().setOpen(true)
+          }}
         >
           <SearchIcon aria-hidden />
-          {m['nav.search']()}
+          {m['nav.search_short']()}
           <Kbd aria-hidden className="ml-auto pointer-coarse:hidden">
             {m['nav.palette_key']()}
           </Kbd>

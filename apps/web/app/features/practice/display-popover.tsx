@@ -82,7 +82,8 @@ export function DisplayPanel() {
     <PopoverContent
       align="end"
       aria-label={m['nav.display_reading']()}
-      className="max-h-[80dvh] w-[min(26rem,calc(100vw-2rem))] gap-4 overflow-y-auto"
+      // It ends above the transport on every layout and scrolls inside itself (2.4.11).
+      className="max-h-[calc(100dvh-var(--transport-height,0px)-5rem)] w-[min(26rem,calc(100vw-2rem))] gap-4 overflow-y-auto"
     >
       <PopoverTitle>{m['nav.display_reading']()}</PopoverTitle>
       <Group>

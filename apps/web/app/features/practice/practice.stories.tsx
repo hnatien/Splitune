@@ -1644,6 +1644,8 @@ export const ShortcutsOverlayPhone: Story = {
     await waitFor(() => expect(dialog).toBeVisible())
     const view = canvasElement.ownerDocument.defaultView as Window
     await expect(dialog.getBoundingClientRect().right).toBeLessThanOrEqual(view.innerWidth)
+    // The ⋯ popover gets out of the way of what it opened.
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'More' })).toBeNull())
   },
 }
 
@@ -1658,7 +1660,7 @@ export const MorePanelPhone: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const more = await body.findByRole('dialog', { name: 'More' }, { timeout: 10_000 })
     // Popups fade in (26 §10).
-    for (const name of ['Keyboard shortcuts', 'Search songs, clips and actions', 'Video']) {
+    for (const name of ['Keyboard shortcuts', 'Search', 'Video']) {
       await waitFor(() => expect(within(more).getByRole('button', { name })).toBeVisible())
     }
     await expect(within(more).getByRole('link', { name: 'Keyboard & pedal' })).toBeVisible()
@@ -1684,6 +1686,9 @@ export const DisplayPopoverPhone: Story = {
     const box = popup.getBoundingClientRect()
     await expect(box.left).toBeGreaterThanOrEqual(0)
     await expect(box.right).toBeLessThanOrEqual(view.innerWidth)
+    // It ends above the transport and scrolls inside itself, so Play stays in reach.
+    const transport = canvas.getByRole('toolbar', { name: 'Playback' })
+    await expect(box.bottom).toBeLessThanOrEqual(transport.getBoundingClientRect().top)
     await expect(within(popup).getByRole('switch', { name: 'Show uncertainty' })).toHaveAttribute(
       'aria-keyshortcuts',
       'U',
