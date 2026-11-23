@@ -8,8 +8,13 @@ import { actionLabel, keyLabel } from './input-mapper'
 import { useKeys } from './keys-store'
 import { ACTIONS, keysFor, LOOP_BARS, SPEED_KEYS } from './model/keymap'
 
-// The binding table of 12 §8 with "Learn this pedal" per row (Settings → Keyboard & pedal and the
-// `?` overlay): press the button, then the pedal; Escape cancels.
+// The binding list of 12 §8 (Settings → Keyboard & pedal and the `?` overlay; s47 direction §7):
+// one hairline row per action with its name, its key caps (wrapping, never clipped at 375 px) and
+// a quiet "Learn" that takes the next key or pedal press for it; the row being learned has the
+// ink edge and says "Press it now". Escape cancels. The digit keys for loops and speeds close the
+// list; they are fixed, not learnable.
+
+const ROW = 'border-b border-border align-middle'
 
 export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
   const { learned, learning, startLearning, reset, bind, cancel } = useKeys()
@@ -30,11 +35,11 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
     <div className="flex flex-col gap-4">
       <table className="w-full border-collapse text-left">
         <thead>
-          <tr className="border-b border-border text-body-sm text-muted-foreground">
-            <th scope="col" className="py-2 pr-4 font-medium">
+          <tr className="border-b border-border text-label-sm text-muted-foreground">
+            <th scope="col" className="py-2 pr-3 font-medium">
               {m['shortcuts.action']()}
             </th>
-            <th scope="col" className="py-2 pr-4 font-medium">
+            <th scope="col" className="py-2 pr-3 font-medium">
               {m['shortcuts.keys']()}
             </th>
             {learnable && (
@@ -45,56 +50,62 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
           </tr>
         </thead>
         <tbody>
-          {ACTIONS.map((action) => (
-            <tr key={action} className="border-b border-border">
-              <th scope="row" className="py-2 pr-4 text-body font-normal">
-                {actionLabel(action)}
-              </th>
-              <td className="py-2 pr-4">
-                <KbdGroup>
-                  {keysFor(action, learned).map((key) => (
-                    <Kbd key={key}>{keyLabel(key)}</Kbd>
-                  ))}
-                </KbdGroup>
-              </td>
-              {learnable && (
-                <td className="py-2">
-                  <Button
-                    variant={learning === action ? 'primary' : 'outline'}
-                    aria-pressed={learning === action}
-                    aria-label={
-                      learning === action
-                        ? m['shortcuts.press_for']({ action: actionLabel(action) })
-                        : m['shortcuts.learn_for']({ action: actionLabel(action) })
-                    }
-                    onClick={() => startLearning(action)}
-                  >
-                    <PedalIcon aria-hidden />
-                    {learning === action ? m['shortcuts.press_pedal']() : m['shortcuts.learn']()}
-                  </Button>
+          {ACTIONS.map((action) => {
+            const now = learning === action
+            return (
+              <tr key={action} className={ROW} data-learning={now || undefined}>
+                <th scope="row" className="py-1.5 pr-3 text-body-sm font-normal">
+                  {actionLabel(action)}
+                </th>
+                <td className="py-1.5 pr-3">
+                  <KbdGroup className="flex-wrap">
+                    {keysFor(action, learned).map((key) => (
+                      <Kbd key={key}>{keyLabel(key)}</Kbd>
+                    ))}
+                  </KbdGroup>
                 </td>
-              )}
-            </tr>
-          ))}
+                {learnable && (
+                  <td className="py-1 text-right">
+                    <Button
+                      variant={now ? 'selected' : 'quiet'}
+                      size="sm"
+                      aria-pressed={now}
+                      aria-label={
+                        now
+                          ? m['shortcuts.press_for']({ action: actionLabel(action) })
+                          : m['shortcuts.learn_for']({ action: actionLabel(action) })
+                      }
+                      onClick={() => startLearning(action)}
+                    >
+                      <PedalIcon aria-hidden />
+                      <span className="max-sm:sr-only">
+                        {now ? m['shortcuts.press_pedal']() : m['shortcuts.learn_short']()}
+                      </span>
+                    </Button>
+                  </td>
+                )}
+              </tr>
+            )
+          })}
           {/* The digit keys: fixed, not learnable, and off with single keys like every character. */}
-          <tr className="border-b border-border">
-            <th scope="row" className="py-2 pr-4 text-body font-normal">
+          <tr className={ROW}>
+            <th scope="row" className="py-2 pr-3 text-body-sm font-normal">
               {m['shortcuts.loop_bars']()}
             </th>
-            <td className="py-2 pr-4" colSpan={learnable ? 2 : 1}>
-              <KbdGroup>
+            <td className="py-2 pr-3" colSpan={learnable ? 2 : 1}>
+              <KbdGroup className="flex-wrap">
                 {LOOP_BARS.map((bars) => (
                   <Kbd key={bars}>{bars}</Kbd>
                 ))}
               </KbdGroup>
             </td>
           </tr>
-          <tr className="border-b border-border">
-            <th scope="row" className="py-2 pr-4 text-body font-normal">
+          <tr className={ROW}>
+            <th scope="row" className="py-2 pr-3 text-body-sm font-normal">
               {m['shortcuts.speed_keys']()}
             </th>
-            <td className="py-2 pr-4" colSpan={learnable ? 2 : 1}>
-              <KbdGroup>
+            <td className="py-2 pr-3" colSpan={learnable ? 2 : 1}>
+              <KbdGroup className="flex-wrap">
                 {Object.keys(SPEED_KEYS).map((key) => (
                   <Kbd key={key}>{keyLabel(key)}</Kbd>
                 ))}

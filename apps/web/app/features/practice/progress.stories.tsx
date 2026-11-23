@@ -8,7 +8,7 @@ import { memoryOutbox } from './model/outbox-memory'
 import { configurePracticeSync } from './model/practice-sync'
 import type { Progress } from './model/progress-metrics'
 import { PracticePage } from './practice-page'
-import { ALL, type Patch, SONG_ID, seed, storyClip, tone } from './practice-story-data'
+import { ALL, coarse, type Patch, SONG_ID, seed, storyClip, tone } from './practice-story-data'
 import { progressQuery } from './progress-data'
 import { useWeeklyGoal } from './progress-goal'
 import { climb, type StorySession, storyProgress } from './progress-story-data'
@@ -29,6 +29,7 @@ const VIEWPORTS = {
     styles: { width: '1180px', height: '820px' },
     type: 'desktop',
   },
+  phone375: { name: 'Phone 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
 }
 const meta = {
   title: 'Screens/Practice Progress',
@@ -90,8 +91,29 @@ const tab = async (canvasElement: HTMLElement) => {
   await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
     timeout: 20_000,
   })
-  return within(await canvas.findByRole('tabpanel'))
+  // The panel is closed until asked for: Tools (X) opens it on the tab `?tab=` chose.
+  const tools = canvas
+    .getByRole('toolbar', { name: 'Playback' })
+    .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
+  if (!tools) throw new Error('No Tools in the transport')
+  await userEvent.click(tools)
+  const panel = await canvas.findByRole('tabpanel')
+  // The tab's body loads when it is first shown, then its progress.
+  await waitFor(() => expect(panel.querySelector('[data-slot=progress-tab]')).not.toBeNull(), {
+    timeout: 10_000,
+  })
+  return within(panel)
 }
+
+/** Today's figure named `label` (a Stat: the figure over its label, no card). */
+const todayFigure = (panel: ReturnType<typeof within>, label: string) => {
+  const group = panel.getByRole('group', { name: m['progress.today']() })
+  const stat = within(group).getByText(label).closest('[data-slot=stat]')
+  return stat?.firstElementChild?.textContent
+}
+
+/** The hairline row holding `name` (its title is the row's button; the best sits beside it). */
+const rowOf = (element: HTMLElement) => element.closest('[data-slot=list-row]') as HTMLElement
 
 const nineLabel =
   'Best clean speed rose from 60 to 80 percent over 9 sessions. First clean pass rose from 50 to 70 percent.'
@@ -106,11 +128,17 @@ export const NineSessions: Story = {
     await expect(panel.getByText('bars 5–6')).toBeVisible()
     const chart = panel.getByRole('img', { name: nineLabel })
     await expect(chart.querySelectorAll('[data-marker=best]')).toHaveLength(9)
+    // The chart is a section of the panel divided by a hairline, not a card inside it.
+    const section = chart.closest('[data-slot=panel-section]') as HTMLElement
+    await expect(section).toHaveAccessibleName(m['progress.last_30_days']())
+    await expect(getComputedStyle(section).borderTopWidth).toBe('1px')
+    await expect(getComputedStyle(section).borderBottomWidth).toBe('0px')
     await expect(panel.getByText(m['progress.legend_cold']())).toBeVisible()
-    // Stat cards: today's cold start, clean passes of passes, minutes.
-    await expect(panel.getByText('70 %', { selector: 'dd' })).toBeVisible()
-    await expect(panel.getByText('3 / 7', { selector: 'dd' })).toBeVisible()
-    await expect(panel.getByText('18 min', { selector: 'dd' })).toBeVisible()
+    // Today in three figures, no cards: the cold start, clean passes of passes, minutes.
+    expect(todayFigure(panel, m['progress.cold_today']())).toMatch(/^70\s%$/)
+    expect(todayFigure(panel, m['progress.clean_passes']())).toBe('3 / 7')
+    expect(todayFigure(panel, m['progress.today']())).toMatch(/^18\smin$/)
+    await expect(canvasElement.querySelector('[data-slot=stat-card]')).toBeNull()
     const rows = within(panel.getByRole('region', { name: m['progress.sessions']() })).getAllByRole(
       'listitem',
     )
@@ -183,8 +211,8 @@ export const NoCleanPass: Story = {
     const panel = await tab(canvasElement)
     await expect(await panel.findByText(m['practice.progress_empty']())).toBeVisible()
     await expect(panel.queryByRole('img')).toBeNull()
-    await expect(panel.getByText('0 / 2', { selector: 'dd' })).toBeVisible()
-    await expect(panel.getByText('–', { selector: 'dd' })).toBeVisible()
+    expect(todayFigure(panel, m['progress.clean_passes']())).toBe('0 / 2')
+    expect(todayFigure(panel, m['progress.cold_today']())).toBe('–')
     await expect(panel.getByText(m['progress.no_clean']())).toBeVisible()
   },
 }
@@ -196,10 +224,12 @@ export const NoClip: Story = {
     const panel = await tab(canvasElement)
     await expect(await panel.findByRole('heading', { name: m['progress.clips']() })).toBeVisible()
     const row = panel.getByRole('button', { name: /Bridge bends/ })
-    await expect(row).toHaveTextContent(/best 65\s%/)
-    await expect(panel.getByRole('button', { name: /Bars 7–8/ })).toHaveTextContent(
+    await expect(rowOf(row)).toHaveTextContent(/best 65\s%/)
+    await expect(rowOf(panel.getByRole('button', { name: /Bars 7–8/ }))).toHaveTextContent(
       m['progress.no_clean'](),
     )
+    // The whole row is the target: the button stretches over it, at least a practice target tall.
+    await expect(rowOf(row).getBoundingClientRect().height).toBeGreaterThanOrEqual(48)
     await userEvent.click(row)
     await expect(await panel.findByRole('heading', { name: 'Bridge bends' })).toBeVisible()
   },
@@ -252,6 +282,44 @@ export const WeeklyGoalOn: Story = {
     await expect(panel.getByRole('status')).toHaveTextContent(/^\d of 4 days this week$/)
     await expect(useWeeklyGoal.getState()).toMatchObject({ on: true, days: 4 })
   },
+}
+
+/** On a phone (375, touch) Progress is a tab of the one Tools sheet above the transport: the
+ * figures and the sessions are reachable there too. */
+export const PhoneSheet: Story = {
+  beforeEach: () => coarse({ '(max-width: 640px)': true, '(orientation: landscape)': false }),
+  render: () => (
+    <AppStory path={`/songs/${SONG_ID}/practice`} seed={withProgress(progress(NINE))}>
+      <PracticePage songId={SONG_ID} search={{}} fetchAudio={tone} />
+    </AppStory>
+  ),
+  globals: { viewport: { value: 'phone375' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
+      timeout: 20_000,
+    })
+    await userEvent.click(canvas.getByRole('button', { name: m['practice.tools']() }))
+    const sheet = await within(canvasElement.ownerDocument.body).findByRole('dialog', {
+      name: m['practice.tools_label'](),
+    })
+    await userEvent.click(within(sheet).getByRole('tab', { name: m['practice.tab_progress']() }))
+    const panel = within(await within(sheet).findByRole('tabpanel'))
+    await expect(await panel.findByRole('heading', { name: 'Chorus riff' })).toBeVisible()
+    expect(todayFigure(panel, m['progress.clean_passes']())).toBe('3 / 7')
+    const transport = canvas.getByRole('toolbar', { name: 'Playback' })
+    // Once the sheet has slid in, it stops above the transport.
+    await waitFor(() =>
+      expect(sheet.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        transport.getBoundingClientRect().top + 2,
+      ),
+    )
+    expect(sheet.getBoundingClientRect().height).toBeLessThanOrEqual(window.innerHeight * 0.6 + 1)
+  },
+}
+export const PhoneSheetLight: Story = {
+  ...PhoneSheet,
+  globals: { appearance: 'light', viewport: { value: 'phone375' } },
 }
 
 export const Wide: Story = { ...NineSessions, globals: { viewport: { value: 'desktop1440' } } }
