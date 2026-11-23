@@ -71,7 +71,13 @@ export function AboutSettings() {
               strokeWidth={1.8}
               className="size-4 shrink-0 text-muted-foreground transition-transform duration-(--duration-fast) group-open/models:rotate-90"
             />
-            {m['settings.about_models_show']({ count: String(build.models.length) })}
+            {/* The label says what pressing it does: show while closed, hide while open. */}
+            <span className="group-open/models:hidden">
+              {m['settings.about_models_show']({ count: String(build.models.length) })}
+            </span>
+            <span className="hidden group-open/models:inline">
+              {m['settings.about_models_hide']()}
+            </span>
           </summary>
           <ListGroup>
             {build.models.map((model) => (
