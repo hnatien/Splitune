@@ -190,6 +190,16 @@ export function learn(learned: LearnedKeys, action: Action, key: string): Learne
   return next
 }
 
+/** Whether the keyboard put focus here (`:focus-visible`). Unknown counts as yes, so a control
+ * is never taken over by mistake. */
+function keyboardFocused(control: HTMLElement): boolean {
+  try {
+    return control.matches(':focus-visible')
+  } catch {
+    return true
+  }
+}
+
 /** Keys the mapper never takes: typing in fields, browser and OS shortcuts. */
 export function ignoredTarget(
   event: Pick<KeyboardEvent, 'target' | 'key' | 'altKey' | 'ctrlKey' | 'metaKey'>,
@@ -200,12 +210,14 @@ export function ignoredTarget(
   if (target.closest('input, textarea, select, [contenteditable="true"], [role="slider"]')) {
     return true
   }
-  // Space and Enter activate a focused button or link; everything else stays global.
-  if (
-    (event.key === ' ' || event.key === 'Enter') &&
-    target.closest('button, a, [role="button"], [role="menuitem"], [role="tab"], [role="switch"]')
-  ) {
-    return true
+  // Space and Enter activate a control the keyboard is on; everything else stays global. A
+  // control that only holds focus because it was clicked or tapped doesn't count: after a click on
+  // Loop or a panel tab, Space still plays.
+  if (event.key === ' ' || event.key === 'Enter') {
+    const control = target.closest<HTMLElement>(
+      'button, a, [role="button"], [role="menuitem"], [role="tab"], [role="switch"]',
+    )
+    if (control && keyboardFocused(control)) return true
   }
   // Popups (menus, dialogs, sheets) own their keys, except the practice screen's own sheets (the
   // tools and the bar editor), which sit beside the music: the keys and the pedal keep working
