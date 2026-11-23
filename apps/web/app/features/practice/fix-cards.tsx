@@ -101,7 +101,7 @@ export function SpotHeader({
         )}
       </div>
       <Button
-        variant="box"
+        variant="outline"
         size="icon"
         aria-label={m['shortcuts.previous_unsure']()}
         disabled={total === 0}
@@ -110,7 +110,7 @@ export function SpotHeader({
         <ChevronLeftIcon aria-hidden />
       </Button>
       <Button
-        variant="box"
+        variant="outline"
         size="icon"
         aria-label={m['shortcuts.next_unsure']()}
         disabled={total === 0}
@@ -151,7 +151,7 @@ function AlternativeRow({
       </span>
       {onHear && (
         <Button
-          variant={hearing ? 'on' : 'ghost'}
+          variant={hearing ? 'selected' : 'quiet'}
           size="icon"
           aria-pressed={hearing}
           aria-label={m['fix.hear_over_loop']({ chord: spoken })}
@@ -163,7 +163,7 @@ function AlternativeRow({
       )}
       <Button
         size="sm"
-        variant={primary ? 'primary' : 'secondary'}
+        variant={primary ? 'primary' : 'outline'}
         aria-label={m['fix.use_named']({ chord: spoken })}
         data-fix-primary={primary && !onHear ? '' : undefined}
         onClick={onUse}
@@ -239,7 +239,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
     <section aria-label={m['fix.bar_chord']({ bar: at })} className={card} data-slot="chord-card">
       <div className="flex items-center justify-between gap-2">
         <span className={cn(eyebrow, 'tabular-nums')}>{m['fix.bar_chord']({ bar: at })}</span>
-        <Button variant="ghost" size="sm" onClick={() => practice.hearBar(chord.bar)}>
+        <Button variant="quiet" size="sm" onClick={() => practice.hearBar(chord.bar)}>
           <PlayIcon aria-hidden />
           {m['fix.hear_bar']()}
         </Button>
@@ -311,7 +311,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
           </p>
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
             onClick={() => {
               editAll(
                 others,
@@ -343,7 +343,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
         {chord.confidence !== 'high' && (
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
             data-fix-primary={chord.alternatives.length === 0 ? '' : undefined}
             onClick={() =>
               edit(markCorrect('chords', segment.id), m['fix.detail_bar']({ bar: at }))
@@ -353,7 +353,7 @@ export function ChordCard({ bar, endBar, chordId, onSelect }: Selection & { onSe
             {m['fix.its_right']()}
           </Button>
         )}
-        <Button size="sm" variant="ghost" onClick={() => edit(reportWrong('chords', segment.id))}>
+        <Button size="sm" variant="quiet" onClick={() => edit(reportWrong('chords', segment.id))}>
           <FlagIcon aria-hidden />
           {m['editor.report_wrong']()}
         </Button>
@@ -477,7 +477,7 @@ function TypeChord({
           className="min-w-0 flex-1"
         />
         {splitBeat !== undefined && (
-          <Button type="button" variant="secondary" onClick={() => submit(onSplit)}>
+          <Button type="button" variant="outline" onClick={() => submit(onSplit)}>
             <ScissorsIcon aria-hidden />
             {m['fix.split_at']({ beat: String(splitBeat) })}
           </Button>
@@ -543,7 +543,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
       <div className="flex items-center justify-between gap-2">
         <span className={cn(eyebrow, 'tabular-nums')}>{title}</span>
         <Button
-          variant="ghost"
+          variant="quiet"
           size="sm"
           onClick={() => {
             practice.send({ type: 'PAUSE' })
@@ -624,7 +624,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
               <Button
                 key={direction}
                 size="sm"
-                variant="secondary"
+                variant="outline"
                 onClick={() => {
                   const tick = timeToTick(grid.grid, effective.offset_s) + (direction * PPQ) / 4
                   const next = setNoteEnd(effective, tickToTime(grid.grid, tick))
@@ -642,7 +642,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
           {note && note.confidence !== 'high' && (
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               data-fix-primary=""
               onClick={() => edit(markCorrect('notes', note.id), m['fix.detail_bar']({ bar: at }))}
             >
@@ -653,7 +653,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
           {shaky && (
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               data-fix-primary=""
               onClick={() =>
                 editAll(
@@ -670,7 +670,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
             <>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => {
                   edit(deleteNote(effective), m['fix.detail_bar']({ bar: at }))
                   onSelect({ noteId: undefined })
@@ -678,7 +678,7 @@ export function NoteCard({ bar, endBar, noteId, onSelect }: Selection & { onSele
               >
                 {m['editor.delete_note']()}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => edit(reportWrong('notes', note.id))}>
+              <Button size="sm" variant="quiet" onClick={() => edit(reportWrong('notes', note.id))}>
                 <FlagIcon aria-hidden />
                 {m['editor.report_wrong']()}
               </Button>
@@ -759,13 +759,13 @@ export function BeatFixes() {
         {m['practice.beat_off']()}
       </h3>
       <div className="-my-1.5 flex flex-wrap gap-x-2">
-        <Button size="sm" variant="secondary" onClick={() => fix('half')}>
+        <Button size="sm" variant="outline" onClick={() => fix('half')}>
           {m['practice.half_tempo']()}
         </Button>
-        <Button size="sm" variant="secondary" onClick={() => fix('double')}>
+        <Button size="sm" variant="outline" onClick={() => fix('double')}>
           {m['practice.double_tempo']()}
         </Button>
-        <Button size="sm" variant="secondary" onClick={() => fix('shift')}>
+        <Button size="sm" variant="outline" onClick={() => fix('shift')}>
           {m['practice.move_downbeat']()}
         </Button>
       </div>
@@ -779,7 +779,7 @@ export function BeatFixes() {
           <span className="flex-1">{m['fix.rebarred']({ n: String(result.bars) })}</span>
           <Button
             size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => {
               undo()
               setResult(null)

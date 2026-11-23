@@ -133,7 +133,7 @@ export function EditHistory() {
               {inverse && target && !showOriginal ? (
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={() => edit({ kind, op: inverse, inverse: op })}
                 >
                   {m['edit.revert']()}

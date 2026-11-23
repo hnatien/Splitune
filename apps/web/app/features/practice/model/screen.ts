@@ -91,7 +91,8 @@ export function resolveScreen(input: ScreenInput): Screen {
   const { instrument, layers, view, forceTab, chordsOnly, layout } = input
   const notation = hasNotation(layers)
   const shown = shownView(input)
-  const glance = layout === 'phone-portrait' && shown === 'chords'
+  // Only where there are chords to glance at: Getting ready keeps the paper on every layout.
+  const glance = layout === 'phone-portrait' && shown === 'chords' && layers.chords
   const compactNotes = layout === 'phone-landscape' && view === 'notes'
   // Notes rather than a tab: piano's roll, vocals' melody, drums' grid.
   const notes = layers.roll || layers.melody || layers.drums
@@ -107,13 +108,17 @@ export function resolveScreen(input: ScreenInput): Screen {
           : null
   // The phrases follow the melody while it is shown.
   const phrases = layers.melody && shown === 'tab'
-  const tools = !isPhone(layout) && (scoreTools !== null || pianoOptions !== null)
+  const paper = paperFor(input)
+  // The tab prints its chord names over the staff, so it needs no strip above it; the other
+  // papers keep theirs (the lanes, the chord sheet's Now and Next, piano's keyboard, the phrases).
+  const chordStrip = layers.chords && paper !== 'tab'
+  const tools = !isPhone(layout) && pianoOptions !== null
   return {
     shown,
     glance,
-    paper: paperFor(input),
+    paper,
     compactNotes,
-    strip: !glance && !(compactNotes && shown === 'tab') && (layers.chords || phrases || tools),
+    strip: !glance && !(compactNotes && shown === 'tab') && (chordStrip || phrases || tools),
     scoreTools,
     pianoOptions,
     legend: layers.chords || notation,
@@ -140,8 +145,9 @@ const held = ({ layers, forceTab, chordsOnly }: ScreenInput) =>
   chordsOnly && layers.chords && !forceTab
 
 function shownView(input: ScreenInput) {
-  const { layers, view, layout } = input
-  const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
+  const { layers, view } = input
+  // The notation leads on every layout; a phone's glance view is the Chords choice there.
+  const wanted = view ?? 'tab'
   if (wanted === 'chords' && layers.chords) return 'chords'
   return hasNotation(layers) && !held(input) ? 'tab' : 'chords'
 }

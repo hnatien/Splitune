@@ -109,11 +109,11 @@ export function MixTab({
       <Helpers />
       <div className="flex-1" />
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" onClick={resetMix}>
+        <Button variant="outline" size="sm" onClick={resetMix}>
           <RotateCcwIcon aria-hidden />
           {m['mixer.reset']()}
         </Button>
-        <Button variant="ghost" size="sm" onClick={saveDefaultMix}>
+        <Button variant="quiet" size="sm" onClick={saveDefaultMix}>
           {m['mixer.use_default']({ part })}
         </Button>
       </div>

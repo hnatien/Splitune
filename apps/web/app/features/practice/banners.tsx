@@ -91,7 +91,7 @@ export function PracticeBanners() {
           }
           actions={
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => {
                 usePracticeUi.setState({ forceTab: true })
@@ -113,7 +113,7 @@ export function PracticeBanners() {
           title={m['practice.rough_part']()}
           actions={
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => {
                 usePracticeUi.setState({ view: 'chords', forceTab: false })
@@ -166,7 +166,7 @@ function StemsExpired() {
       actions={
         analysisId && (
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             loading={busy}
             onClick={async () => {

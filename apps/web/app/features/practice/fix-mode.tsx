@@ -10,6 +10,7 @@ import { TransportButton } from '@/ui/transport-button'
 import { barLabel, barsLabel } from './fix-cards'
 import { useFix } from './fix-store'
 import { FixSynth } from './fix-synth'
+import { keyLabel } from './input-mapper'
 import { useCorrections } from './model/corrections'
 import { FIX_LISTEN, type FixListen, listensToSynth } from './model/fix-listen'
 import { buildQueue, type Spot, spotFor, stepSpot } from './model/fix-queue'
@@ -292,8 +293,8 @@ export function FixKey() {
         {m['practice.edited']()}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <Kbd>J</Kbd>
-        <Kbd>K</Kbd>
+        <Kbd>{keyLabel('j')}</Kbd>
+        <Kbd>{keyLabel('k')}</Kbd>
         {m['fix.key_keys']()}
       </span>
     </div>
@@ -379,8 +380,8 @@ export function FixDock() {
       )}
       <div className="flex items-center gap-1" data-slot="fix-speed">
         <Button
-          variant="box"
-          size="icon-practice"
+          variant="outline"
+          size="icon-play"
           aria-label={m['shortcuts.slower']()}
           disabled={player.speedPct <= 50}
           onClick={() => speed(-5)}
@@ -391,8 +392,8 @@ export function FixDock() {
           {formatPercent(player.speedPct)}
         </span>
         <Button
-          variant="box"
-          size="icon-practice"
+          variant="outline"
+          size="icon-play"
           aria-label={m['shortcuts.faster']()}
           disabled={player.speedPct >= 100}
           onClick={() => speed(5)}

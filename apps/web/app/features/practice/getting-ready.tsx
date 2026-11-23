@@ -215,7 +215,7 @@ export function GettingReady() {
                   )
             }
             actions={
-              <Button variant="secondary" onClick={() => void retryUpload(songId)}>
+              <Button variant="outline" onClick={() => void retryUpload(songId)}>
                 {m['common.retry']()}
               </Button>
             }
@@ -251,7 +251,7 @@ export function GettingReady() {
             />
             {askPart && <PartQuestion heard={heard} onConfirm={() => confirmPart(songId)} />}
             <div className="flex flex-wrap gap-2.5">
-              <Link to="/library" className={buttonVariants({ variant: 'ghost' })}>
+              <Link to="/library" className={buttonVariants({ variant: 'quiet' })}>
                 {m['practice.back_to_library']()}
               </Link>
             </div>
@@ -334,7 +334,7 @@ function PartQuestion({ heard, onConfirm }: { heard: InstrumentName[]; onConfirm
           {m['practice.yes_instrument']({ instrument: part })}
         </Button>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button size="sm" variant="secondary" />}>
+          <DropdownMenuTrigger render={<Button size="sm" variant="outline" />}>
             {m['practice.pick_another']()}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" aria-label={m['practice.pick_part']()}>
@@ -368,7 +368,7 @@ function FailureCard({ retrying, onRetry }: { retrying: boolean; onRetry: () => 
           <RotateCwIcon aria-hidden />
           {m['common.try_again']()}
         </Button>
-        <Link to="/library" className={buttonVariants({ variant: 'ghost' })}>
+        <Link to="/library" className={buttonVariants({ variant: 'quiet' })}>
           {m['practice.back_to_library']()}
         </Link>
       </div>

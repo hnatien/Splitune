@@ -151,7 +151,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
           </div>
           <Button
             variant="outline"
-            size={compact ? 'icon-practice-2' : 'practice-2'}
+            size={compact ? 'icon-practice' : 'practice'}
             className="bg-paper text-ink inset-ring-staff hover:bg-bar-current"
             aria-label={m['practice.first_note_label']({ note: name(startNote.pitch) })}
             onClick={cueNote}
@@ -200,7 +200,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
         {loopTarget >= 0 && (
           <Toggle
             variant="outline"
-            size="practice-2"
+            size="practice"
             className="rounded-full bg-paper px-0 text-ink inset-ring-staff hover:bg-bar-current data-pressed:bg-score-loop-fill data-pressed:text-ink data-pressed:inset-ring-score-loop-edge"
             pressed={looped >= 0}
             onPressedChange={() => loopPhrase(looped >= 0 ? looped : loopTarget)}
@@ -250,7 +250,7 @@ function MelodyOptions({ guide }: { guide: GuideLevel | null }) {
         render={
           <Button
             variant="outline"
-            size="practice-2"
+            size="practice"
             className="shrink-0 bg-paper text-ink inset-ring-staff hover:bg-bar-current in-data-[appearance=stage]:hidden"
             aria-label={m['practice.melody_options']()}
           />

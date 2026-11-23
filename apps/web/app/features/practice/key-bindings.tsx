@@ -6,7 +6,7 @@ import { PedalIcon } from '@/ui/icons'
 import { Kbd, KbdGroup } from '@/ui/kbd'
 import { actionLabel, keyLabel } from './input-mapper'
 import { useKeys } from './keys-store'
-import { ACTIONS, keysFor } from './model/keymap'
+import { ACTIONS, keysFor, LOOP_BARS, SPEED_KEYS } from './model/keymap'
 
 // The binding table of 12 §8 with "Learn this pedal" per row (Settings → Keyboard & pedal and the
 // `?` overlay): press the button, then the pedal; Escape cancels.
@@ -76,13 +76,38 @@ export function KeyBindings({ learnable = true }: { learnable?: boolean }) {
               )}
             </tr>
           ))}
+          {/* The digit keys: fixed, not learnable, and off with single keys like every character. */}
+          <tr className="border-b border-border">
+            <th scope="row" className="py-2 pr-4 text-body font-normal">
+              {m['shortcuts.loop_bars']()}
+            </th>
+            <td className="py-2 pr-4" colSpan={learnable ? 2 : 1}>
+              <KbdGroup>
+                {LOOP_BARS.map((bars) => (
+                  <Kbd key={bars}>{bars}</Kbd>
+                ))}
+              </KbdGroup>
+            </td>
+          </tr>
+          <tr className="border-b border-border">
+            <th scope="row" className="py-2 pr-4 text-body font-normal">
+              {m['shortcuts.speed_keys']()}
+            </th>
+            <td className="py-2 pr-4" colSpan={learnable ? 2 : 1}>
+              <KbdGroup>
+                {Object.keys(SPEED_KEYS).map((key) => (
+                  <Kbd key={key}>{keyLabel(key)}</Kbd>
+                ))}
+              </KbdGroup>
+            </td>
+          </tr>
         </tbody>
       </table>
       <p aria-live="polite" className="text-body-sm text-muted-foreground">
         {learning ? m['shortcuts.learning']({ action: actionLabel(learning) }) : ''}
       </p>
       {learnable && (
-        <Button variant="ghost" className="self-start" onClick={reset}>
+        <Button variant="quiet" className="self-start" onClick={reset}>
           <RotateCcwIcon aria-hidden />
           {m['shortcuts.reset']()}
         </Button>
