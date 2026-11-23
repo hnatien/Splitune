@@ -1,5 +1,5 @@
 import type { AlphaTabViewHandle, NoteMark } from '@splitune/notation'
-import { lazy, Suspense, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -148,7 +148,8 @@ function TabView({
   const fixing = usePracticeUi((s) => s.fixing)
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const theme = useScoreTheme(host)
-  const paneWidth = useWidth(host)
+  const pane = useSize(host)
+  const paneWidth = pane.width
   const ref = useRef<AlphaTabViewHandle>(null)
   const tab = music?.tab
   // Notes the learner edited carry the edited mark (26 §5); "Show original" shows none.
@@ -182,8 +183,18 @@ function TabView({
     )
   }, [grid, view])
 
+  // The bar being fixed stays in view: when it is chosen, and again when the score is drawn anew
+  // or its pane changes size (the touch editor sheet takes its room from the stage).
+  const editingBar = usePracticeUi((s) => s.editor?.bar)
+  const [rendered, setRendered] = useState(0)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `rendered` and the pane's size say when the bar may have moved
+  useEffect(() => {
+    if (host && editingBar !== undefined) revealBar(host, editingBar, motion.smoothScroll)
+  }, [host, editingBar, rendered, pane.width, pane.height, motion.smoothScroll])
+
   // Re-render timing after an edit or a capo/level change (12 §10: ≤150 / ≤300 ms).
   const onRendered = (renderMs: number) => {
+    setRendered((count) => count + 1)
     const started = musicState.requestedAt
     if (started === undefined) return
     const total = performance.now() - started
@@ -255,17 +266,38 @@ function TabView({
 // The key row under the score (27 §3.7.1), in a row of its own so it never hides a note: samples
 // of the unsure, probably and sounding marks, how to make a loop with its key, and the level and
 // capo at the end. Phones keep the level and capo only, so the notation keeps the height.
-/** The element's width as it changes (0 until it is measured). */
-function useWidth(element: HTMLElement | null): number {
-  const [width, setWidth] = useState(0)
+/** The element's size as it changes (0 × 0 until it is measured). */
+function useSize(element: HTMLElement | null): { width: number; height: number } {
+  const [size, setSize] = useState({ width: 0, height: 0 })
   useLayoutEffect(() => {
     if (!element) return
-    setWidth(element.clientWidth)
-    const observer = new ResizeObserver(() => setWidth(element.clientWidth))
+    const read = () =>
+      setSize((before) =>
+        before.width === element.clientWidth && before.height === element.clientHeight
+          ? before
+          : { width: element.clientWidth, height: element.clientHeight },
+      )
+    read()
+    const observer = new ResizeObserver(read)
     observer.observe(element)
     return () => observer.disconnect()
   }, [element])
-  return width
+  return size
+}
+
+/** Scrolls the score, and only the score, by the least that brings `bar` whole into its view. */
+function revealBar(host: HTMLElement, bar: number, smooth: boolean) {
+  const scroller = host.querySelector<HTMLElement>('[data-slot=alphatab-view]')
+  const target = scroller?.querySelector<HTMLElement>(`[data-slot=bar-target][data-bar="${bar}"]`)
+  if (!scroller || !target) return
+  const view = scroller.getBoundingClientRect()
+  const box = target.getBoundingClientRect()
+  const least = (start: number, end: number, from: number, to: number) =>
+    start < from ? start - from : end > to ? Math.min(end - to, start - from) : 0
+  const top = least(box.top, box.bottom, view.top, view.bottom)
+  const left = least(box.left, box.right, view.left, view.right)
+  if (top !== 0 || left !== 0)
+    scroller.scrollBy({ top, left, behavior: smooth ? 'smooth' : 'auto' })
 }
 
 function KeyRow({ marks, capo }: { marks: boolean; capo?: boolean | undefined }) {

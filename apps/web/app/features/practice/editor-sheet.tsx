@@ -1,7 +1,6 @@
 import { XIcon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { m } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/ui/drawer'
 import { PanelSection } from '@/ui/panel'
@@ -9,6 +8,7 @@ import { EditorContent } from './editor-content'
 import { BeatFixes, barsLabel, SpotHeader } from './fix-cards'
 import { EditHistory } from './fix-history'
 import { stepSelection, useFixQueue } from './fix-mode'
+import { EDITOR_SHEET } from './layout'
 import { usePracticeUi } from './practice-store'
 
 // EditorSheet (27 §3.7.2; s47 direction §6): the Fix sections for the bar chosen by tapping a
@@ -43,11 +43,7 @@ export function EditorSheet({ side }: { side: boolean }) {
       <DrawerContent
         data-practice-keys=""
         data-slot="editor-sheet"
-        className={cn(
-          side
-            ? 'data-[swipe-axis=x]:top-13! data-[swipe-axis=x]:bottom-(--transport-height)! data-[swipe-axis=x]:[--drawer-content-width:25rem]'
-            : 'bottom-(--transport-height)! [--drawer-height:min(60dvh,34rem)]',
-        )}
+        className={side ? EDITOR_SHEET.side.sheet : EDITOR_SHEET.bottom.sheet}
       >
         <div className="flex shrink-0 items-center gap-2 pt-2 pr-2 pl-4">
           <DrawerTitle className="min-w-0 flex-1 truncate text-label text-muted-foreground">

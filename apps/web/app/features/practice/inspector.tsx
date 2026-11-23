@@ -133,10 +133,11 @@ export function Inspector({ docked, layout }: { docked: boolean; layout: Practic
       <DrawerContent
         data-slot="inspector"
         data-practice-keys=""
-        // Between the top bar and the transport: the panel never covers the transport (2.4.11).
+        // Between the top bar and the transport: the panel never covers the transport (2.4.11),
+        // so the sheet has no bleed under it either (it would paint over the status row).
         className={
           sheet
-            ? 'bottom-(--transport-height)! [--drawer-height:min(60dvh,34rem)]'
+            ? 'bottom-(--transport-height)! [--bleed:0px] [--drawer-height:min(60dvh,34rem)]'
             : 'data-[swipe-axis=x]:top-13! data-[swipe-axis=x]:bottom-(--transport-height)! data-[swipe-axis=x]:[--drawer-content-width:21.25rem]'
         }
       >

@@ -554,8 +554,9 @@ export const DaylightIncreasedContrast: Story = {
 const phone = () => coarse({ '(max-width: 640px)': true, '(orientation: landscape)': false })
 
 /** The touch editor sheet (s47 direction §6): E opens the bar that's playing in a sheet above the
- * transport that leaves the music in view, says where it is in the queue, steps through the
- * unsure spots from inside the sheet, and closes with a visible Close. */
+ * transport that takes its room from the stage, so the bar being fixed stays in view; it says
+ * where it is in the queue, steps through the unsure spots from inside the sheet, and closes
+ * with a visible Close. */
 export const EditorSheetPhone: Story = {
   beforeEach: phone,
   render: screen(FIX, {}),
@@ -575,10 +576,23 @@ export const EditorSheetPhone: Story = {
     const transport = canvas.getByRole('toolbar', { name: 'Playback' })
     const box = sheet.getBoundingClientRect()
     expect(box.bottom).toBeLessThanOrEqual(transport.getBoundingClientRect().top + 1)
-    expect(box.height).toBeLessThanOrEqual(window.innerHeight * 0.6 + 1)
+    expect(box.height).toBeLessThanOrEqual(window.innerHeight * 0.4 + 1)
     await expect(inSheet.getByRole('button', { name: 'Next unsure spot' })).toBeVisible()
     await userEvent.click(inSheet.getByRole('button', { name: 'Next unsure spot' }))
     await waitFor(() => expect(queueHead()).toHaveTextContent(/^Spot 1 of 3 · bar 4$/))
+    // The bar being fixed is in view above the sheet, never under it, and the sheet has no bleed
+    // over the transport's status row.
+    const score = canvasElement.querySelector('[data-slot=alphatab-view]') as HTMLElement
+    const barFour = [...score.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].find(
+      (target) => /^Bar 4\b/.test(target.getAttribute('aria-label') ?? ''),
+    )
+    if (!barFour) throw new Error('No bar 4 in the score')
+    await waitFor(() => {
+      const bar = barFour.getBoundingClientRect()
+      expect(bar.top).toBeGreaterThanOrEqual(score.getBoundingClientRect().top - 1)
+      expect(bar.bottom).toBeLessThanOrEqual(sheet.getBoundingClientRect().top + 1)
+    })
+    await expect(getComputedStyle(sheet, '::after').height).toBe('0px')
     // J and K walk the same queue as the sheet's own buttons, single notes and chords included.
     await press('j')
     await waitFor(() => expect(queueHead()).toHaveTextContent(/^Spot 2 of 3 · /))
