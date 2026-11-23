@@ -194,9 +194,9 @@ export function OnboardingGuide() {
           ref={box}
           role="status"
           data-slot="onboarding-guide"
-          // First in the page's column, above the song map: it takes its own room. The actions
-          // never wrap under the words, so on a phone the line stays as short as it can.
-          className="order-first flex shrink-0 items-center gap-3 border-b border-border px-3 py-1 sm:px-4"
+          // First in the practice page's column, above the song map: it takes its own room. The
+          // actions never wrap under the words, so on a phone the line stays as short as it can.
+          className="flex shrink-0 items-center gap-3 border-b border-border px-3 py-1 sm:px-4"
         >
           <LightbulbIcon
             aria-hidden
