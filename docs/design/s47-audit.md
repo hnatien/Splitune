@@ -1345,3 +1345,87 @@ Top 5 issues for the group:
 5. **How it works scenes shrink below legibility on phones** (high). SVG text scales with the `viewBox` to about 6–7 px at 375 (estimate), so the page's only product evidence is unreadable on the device most learners use. `docs/design/s47-before/public/how-it-works--default--light--375.png`
 
 Runners-up: two filled ink pills per view across marketing pages, no current-page or current-section indicator in nav and TOCs, 15 px inputs on phones, and a loading submit that loses its label.
+
+## Scores after the redesign
+
+Scored by a reviewer who took no part in the build (Phase 5c, 2026-11-24), from 260 screenshots in
+`docs/design/s47-after/` (not tracked, like the before set) and the code, against the same checklist
+and on the same 1–5 scale. The full review, with every finding and its evidence, is
+`docs/design/s47-qa.md`. These scores were given **before** the fixes that followed the review
+(listed under the table), so the screens those fixes touch may now deserve more; they were not
+scored again.
+
+| Group | Screen | Before | After |
+|---|---|---|---|
+| Public | Home | 2 | 4 |
+| Public | How it works | 3 | 4 |
+| Public | Pricing | 3 | 4 |
+| Public | Legal | 4 | 5 |
+| Public | Sign in / Sign up | 4 | 5 |
+| Public | Mock checkout | 4 | 5 |
+| Public | Mock portal | 3 | 4 |
+| Public | Account deleted | 4 | 5 |
+| Public | Unsupported browser | 3 | 4 |
+| Public | Not found / error boundary | 3 | 4 |
+| Public | Marketing shell and system banners | 3 | 4 |
+| Signed-in app | Library | 3 | 4 |
+| Signed-in app | Add song: File | 3 | 4 |
+| Signed-in app | Add song: Link | 3 | 4 |
+| Signed-in app | Add song: Record | 2 | 4 |
+| Signed-in app | Settings: Account | 3 | 4 |
+| Signed-in app | Settings: Privacy / data export | 4 | 4 |
+| Signed-in app | Settings: Delete account | 4 | 4 |
+| Signed-in app | Settings: Usage | 3 | 4 |
+| Signed-in app | Settings: Plan | 3 | 4 |
+| Signed-in app | Settings: Display & practice | 3 | 4 |
+| Signed-in app | Settings: Keyboard & pedal | 2 | 4 |
+| Signed-in app | Settings: About | 3 | 4 |
+| Signed-in app | App shell: top bar and phone bottom nav | 3 | 4 |
+| Signed-in app | Command palette | 4 | 4 |
+| Signed-in app | Account menu | 4 | 4 |
+| Signed-in app | Usage popover | 3 | 4 |
+| Signed-in app | Upgrade sheet | 3 | 4 |
+| Signed-in app | Toasts, drop overlay and system banners | 3 | 3 |
+| Onboarding, Getting ready, Fix, editor | Onboarding steps 1–4 | 4 | 4 |
+| Onboarding, Getting ready, Fix, editor | Onboarding guide and coach marks | 3 | 4 |
+| Onboarding, Getting ready, Fix, editor | Save progress sheet and Saved | 4 | 4 |
+| Onboarding, Getting ready, Fix, editor | Practice loading and error | 3 | 4 |
+| Onboarding, Getting ready, Fix, editor | Getting ready / analysing | 2 | 3 |
+| Onboarding, Getting ready, Fix, editor | Partial analysis states and their banners | 3 | 3 |
+| Onboarding, Getting ready, Fix, editor | Fix tab and unsure-spot queue | 3 | 4 |
+| Onboarding, Getting ready, Fix, editor | Editor sheet (touch) | 2 | 3 |
+| Onboarding, Getting ready, Fix, editor | Full editor | 3 | 4 |
+| Onboarding, Getting ready, Fix, editor | Focus shell bar | 2 | 4 |
+| Practice | Desktop layout (≥ 1180) | 3 | 4 |
+| Practice | Narrow desktop / tablet layout | 2 | 3 |
+| Practice | Phone layout | 1 | 3 |
+| Practice | Song map | 3 | 3 |
+| Practice | Notation views | 3 | 3 |
+| Practice | Transport dock / bar (now the one transport) | 2 | 4 |
+| Practice | Now column / strip (now chords over the tab and the chord strip) | 3 | 4 |
+| Practice | Inspector: Loop | 3 | 4 |
+| Practice | Inspector: Mix, mixer drawer and mini-mixer (now the Mix tab and phone mini-mixer) | 3 | 4 |
+| Practice | Inspector: Progress | 3 | 4 |
+| Practice | Speed panel and speed ladder | 3 | 4 |
+| Practice | Count-in and pass prompt (now the pass question in the transport) | 2 | 4 |
+| Practice | Confidence marks and legend | 2 | 4 |
+| Practice | Display and More popovers | 3 | 3 |
+| Practice | Shortcuts overlay and pedal HUD | 3 | 4 |
+| Practice | Banners / loading / error | 2 | 3 |
+
+| Group | Screens | Before (mean) | After (mean) |
+|---|---|---|---|
+| Public | 11 | 3.27 | 4.36 |
+| Signed-in app | 18 | 3.11 | 3.94 |
+| Onboarding, Getting ready, Fix, editor | 10 | 2.90 | 3.70 |
+| Practice | 16 | 2.56 | 3.63 |
+| All | 55 | 2.95 | 3.89 |
+
+The review found no critical issue, 3 high, 22 medium and 36 low. Fixed after it, each with a test:
+
+- **High:** rests ran into fret digits at 1180 px with the panel docked, at 768 px and on phones (bars per system now follow the pane's width and the digit size); the touch editor sheet hid the bar being fixed (it takes its room from the stage and the score scrolls the bar into view); Pricing and Home promised a slow-down range the app does not have (the copy now says 50 %).
+- **Medium, practice:** sheets painted over the transport's status row; unavailable controls drew the solid ring of "on" (now dashed); Space re-pressed a clicked control instead of playing; the lead-in read as bar 0; the More menu stayed open over what it opened; the Display panel ran over the transport on phones; a blank band sat above the first system; the loop grips were invisible until hovered; the click had no key (`T`); the fretboard's next shape used the "probably" dash.
+- **Medium, other screens:** Getting ready promised a time while the processing machine was offline; an unreadable file led with Try again; "stems unavailable" had no action; the Keyboard & pedal page left out the keys that cannot be learned and its pedal heading could not be pressed; Add song's tabs scrolled away; the library's state line was cut off; the Home still's transport collapsed at 768 px; the How it works step nav scrolled out of view.
+- **Low:** ten of the 36, among them the onboarding examples for another instrument, the library skeleton, the phone empty state, the delete dialogs' button order on phones and the settings tab line.
+
+Left as they are, with the reason: section chips on the phone song map (sections reach the app with s41b); the Back link as a bare chevron below 1024 px (a label there squeezes the song title); the position readout's bar total against a score that prints a trailing bar; the number field's 40 px well (its step targets are 48 px); the vocal phrase strip's own loop toggle; the pricing table wrapping at 375 px; the remaining lows in `s47-qa.md`.
