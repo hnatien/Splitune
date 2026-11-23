@@ -3,13 +3,20 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
+import { cn } from '@/lib/utils'
 
 import { toast } from '@/ui/toast'
 import { FocusShell } from '../shell/focus-shell'
 import { type PaletteAction, parseLoopQuery, usePaletteActions } from '../shell/palette-store'
 import { ChordStrip } from './chord-strip'
 import { useInputMapper } from './input-mapper'
-import { isPhone, type PracticeLayout, usePanelDocked, usePracticeLayout } from './layout'
+import {
+  EDITOR_SHEET,
+  isPhone,
+  type PracticeLayout,
+  usePanelDocked,
+  usePracticeLayout,
+} from './layout'
 import { barRange } from './model/loops'
 import { hasNotation, type ViewLabel } from './model/screen'
 import { NotationPane, useScreen } from './notation-pane'
@@ -201,8 +208,16 @@ function Stage({ layout, fixing }: { layout: PracticeLayout; fixing: boolean }) 
   useEffect(() => {
     if (editing && desktop) openTab('fix')
   }, [editing, desktop])
+  // The touch editor sheet takes its room from the stage instead of lying over it, so the bar
+  // being fixed is in view above (or beside) the sheet.
+  const sheetRoom =
+    editing && !desktop
+      ? layout === 'tablet-landscape'
+        ? EDITOR_SHEET.side.stage
+        : EDITOR_SHEET.bottom.stage
+      : undefined
   return (
-    <div className="relative flex min-w-0 flex-1 flex-col">
+    <div className={cn('relative flex min-w-0 flex-1 flex-col', sheetRoom)}>
       {screen.glance ? (
         <Suspense fallback={null}>
           <GlanceView />

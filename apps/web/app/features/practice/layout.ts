@@ -36,3 +36,20 @@ export function useTransportStacked(layout: PracticeLayout) {
 export function usePanelDocked() {
   return useMediaQuery('(min-width: 1180px)', true)
 }
+
+/**
+ * The touch editor sheet's size (27 §3.7.4), and the room the stage gives up for it so the bar
+ * being fixed stays in view: at most 40 % of the height from the bottom, or 25rem at the side on
+ * a tablet in landscape. The sheet and the stage read the same values.
+ */
+export const EDITOR_SHEET = {
+  bottom: {
+    sheet: 'bottom-(--transport-height)! [--bleed:0px] [--drawer-height:min(40dvh,34rem)]',
+    stage: 'pb-[min(40dvh,34rem)]',
+  },
+  side: {
+    sheet:
+      'data-[swipe-axis=x]:top-13! data-[swipe-axis=x]:bottom-(--transport-height)! data-[swipe-axis=x]:[--drawer-content-width:25rem]',
+    stage: 'pr-100',
+  },
+} as const
