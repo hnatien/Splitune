@@ -189,17 +189,14 @@ export async function projectContext(
 }
 
 /**
- * Onboarding's way into the example song without signing in (13 §1): instrument, level, skip the
- * screen step. Returns the card's "Play your part" once the audio is decoded.
+ * Onboarding's way into the example song without signing in (13 §1): /start with its defaults
+ * (guitar, just started, the suggested song), then "Start practising". Returns the practice
+ * screen's Play once the audio is decoded.
  */
 export async function openExample(page: Page) {
   await page.goto('/start')
-  await page.getByRole('button', { name: 'Guitar', exact: true }).click()
-  await page.getByRole('button', { name: 'Just started' }).click()
-  await page.getByRole('button', { name: 'Skip' }).click()
-  const play = page
-    .getByRole('dialog', { name: 'Your first song' })
-    .getByRole('button', { name: 'Play your part' })
+  await page.getByRole('button', { name: 'Start practising' }).click()
+  const play = page.getByRole('button', { name: 'Play', exact: true })
   await expect(play).toBeEnabled({ timeout: 90_000 })
   return play
 }

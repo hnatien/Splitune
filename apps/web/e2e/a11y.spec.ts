@@ -224,17 +224,13 @@ test.describe('keyboard and pedal only', () => {
 
     // Onboarding by Tab and Enter.
     await page.goto('/start')
-    await expect(page.getByRole('heading', { name: 'What do you play?' })).toBeVisible()
-    await (await tabTo(page, /^Guitar$/)).press('Enter')
-    await expect(page.getByRole('heading', { name: /level|How long/i }).first()).toBeVisible()
-    await (await tabTo(page, /^Just started/)).press('Enter')
-    await expect(page.getByRole('heading', { name: "Where's your screen?" })).toBeVisible()
-    await (await tabTo(page, /^Skip for now$/)).press('Enter')
-    const card = page.getByRole('dialog', { name: 'Your first song' })
-    await expect(card.getByRole('button', { name: 'Play your part' })).toBeEnabled({
+    await expect(page.getByRole('heading', { level: 1, name: 'Your first song' })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /^Guitar/ })).toBeChecked()
+    await (await tabTo(page, /^Start practising/)).press('Enter')
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled({
       timeout: 90_000,
     })
-    await (await tabTo(page, /^Play your part$/)).press('Enter')
+    await (await tabTo(page, /^Play$/)).press('Enter')
 
     // The suggested loop at 70 %; from here the keys a page-turner pedal sends (12 §8).
     const badge = page.getByRole('button', { name: /^Loop · bars \d+–\d+/ })
