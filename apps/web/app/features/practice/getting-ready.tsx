@@ -289,7 +289,7 @@ export function GettingReady({ compact = false }: { compact?: boolean }) {
           song.isSuccess && <InlineError tone="info" title={m['practice.not_uploaded']()} />
         )}
       </div>
-      {analysis.data && !failed && <WhatWorksNow />}
+      {analysis.data && !failed && <WhatWorksNow waiting={waiting} />}
     </div>
   )
 }
@@ -367,21 +367,42 @@ function PartQuestion({ heard, onConfirm }: { heard: InstrumentName[]; onConfirm
   )
 }
 
-// A failed run (27 §3.11): what happened and why in one unboxed message, then Try again and the
-// way back. The song's own audio still plays, so Play stays the screen's filled control.
+// Reasons that lie in the file itself: running the analysis again can't fix them, another file can.
+const UNREADABLE = new Set(['unsupported_media', 'decode_failed', 'decode_timeout', 'audio_empty'])
+
+// A failed run (27 §3.11): what happened and why in one unboxed message, the reason and that it
+// used no analysis below the title, then what can fix it (Try again, or Choose another file when
+// the file itself can't be read) and the way back. The song's own audio still plays, so Play stays
+// the screen's filled control.
 function Failure({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
   const { data } = usePractice()
-  const failures = analysisFailures(data)
+  const failure = analysisFailures(data)[0]
+  const said = failure ? stageFailureMessage(failure) : ''
+  // The catch-all already names what failed in the title.
+  const reason = said === m['analysis.failed']() ? '' : said
+  const unused = m['library.didnt_use']()
+  const description = reason.endsWith(unused) ? reason : [reason, unused].filter(Boolean).join(' ')
+  const unreadable = UNREADABLE.has(failure?.errorCode ?? '')
   return (
     <InlineError
-      title={m['analysis.failed']()}
-      description={failures[0] ? stageFailureMessage(failures[0]) : undefined}
+      title={m['analysis.failed_title']()}
+      description={description}
       actions={
         <>
-          <Button variant="outline" loading={retrying} onClick={onRetry}>
-            <RotateCwIcon aria-hidden />
-            {m['common.try_again']()}
-          </Button>
+          {unreadable ? (
+            <Link
+              to="/library"
+              search={{ add: 'file' }}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              {m['import.choose_another']()}
+            </Link>
+          ) : (
+            <Button variant="outline" loading={retrying} onClick={onRetry}>
+              <RotateCwIcon aria-hidden />
+              {m['common.try_again']()}
+            </Button>
+          )}
           <Link to="/library" className={buttonVariants({ variant: 'quiet' })}>
             {m['practice.back_to_library']()}
           </Link>
@@ -401,8 +422,9 @@ const UNLOCK_NAME: Record<Unlock['id'], () => string> = {
 }
 
 // What works now (27 §3.7.3): hairline rows, each with its state as a glyph and a word (Ready ·
-// Soon · Later) and when, never a tinted pill.
-function WhatWorksNow() {
+// Soon · Later) and when, never a tinted pill. While the machine is offline nothing turns and no
+// time is promised: what isn't ready yet is Waiting, with the queued glyph.
+function WhatWorksNow({ waiting }: { waiting: boolean }) {
   const { data, layers, audioStatus, guest } = usePractice()
   const analysis = data.analysis.data
   const stats = useQuery({ ...statsQuery, enabled: running(analysis) && !guest })
@@ -440,20 +462,22 @@ function WhatWorksNow() {
                 : row.id === 'count-in'
                   ? m['practice.unlock_count_in_when']()
                   : m['practice.unlock_now']()
-              : row.minutes
-                ? m['practice.unlock_in']({ minutes: row.minutes })
-                : m['practice.unlock_waiting']()
+              : waiting
+                ? m['practice.unlock_queued_when']()
+                : row.minutes
+                  ? m['practice.unlock_in']({ minutes: row.minutes })
+                  : m['practice.unlock_waiting']()
           }
           aside={
-            <Status
-              kind={row.state === 'ready' ? 'ready' : row.state === 'soon' ? 'working' : 'queued'}
-            >
-              {row.state === 'ready'
-                ? m['practice.unlock_ready']()
-                : row.state === 'soon'
-                  ? m['practice.unlock_soon']()
-                  : m['practice.unlock_later']()}
-            </Status>
+            row.state === 'ready' ? (
+              <Status kind="ready">{m['practice.unlock_ready']()}</Status>
+            ) : waiting ? (
+              <Status kind="queued">{m['practice.unlock_queued']()}</Status>
+            ) : (
+              <Status kind={row.state === 'soon' ? 'working' : 'queued'}>
+                {row.state === 'soon' ? m['practice.unlock_soon']() : m['practice.unlock_later']()}
+              </Status>
+            )
           }
         />
       ))}
