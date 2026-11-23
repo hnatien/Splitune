@@ -9,6 +9,7 @@ import { configureCorrections, useCorrections } from './model/corrections'
 import { memoryOutbox } from './model/outbox-memory'
 import type { PracticeSearch } from './practice-context'
 import { PracticePage } from './practice-page'
+import { rememberedTab } from './practice-store'
 import {
   ALL,
   coarse,
@@ -227,7 +228,16 @@ export const KeysOnly: Story = {
     await expect(await panel.findByRole('heading', { name: 'Spot 2 of 2 · bar 3–4' })).toBeVisible()
     await press('{Escape}')
     await waitFor(() => expect(canvas.queryByText(m['fix.fixing']())).toBeNull())
-    await expect(canvas.getByRole('tab', { name: 'Loop' })).toHaveAttribute('aria-selected', 'true')
+    // Back on the tab this device used before Fix (Loop on a fresh device).
+    const before = { loop: 'Loop', mix: 'Mix', progress: 'Progress', fix: 'Fix' }[rememberedTab()]
+    await expect(canvas.getByRole('tab', { name: new RegExp(`^${before}`) })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    await expect(canvas.getByRole('tab', { name: /^Fix/ })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    )
   },
 }
 
