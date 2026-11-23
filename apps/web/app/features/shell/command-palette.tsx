@@ -25,14 +25,14 @@ import { useOnline } from '@/lib/use-online'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent } from '@/ui/dialog'
 import { Kbd } from '@/ui/kbd'
-import { useOpenAddSong } from '../import/add-song-state'
-import { SongTile } from '../library/song-tile'
+import { ADD_SONG_KEY, useOpenAddSong } from '../import/add-song-state'
+import { INSTRUMENT_ICON } from '../library/instrument-icon'
 import { APPEARANCES } from './account-menu'
 import { type PaletteAction, usePalette } from './palette-store'
 import { useSignOut } from './use-sign-out'
 
 type Song = z.infer<typeof LibrarySong>
-type Row = PaletteAction & { group: 'songs' | 'clips' | 'actions'; tile?: React.ReactNode }
+type Row = PaletteAction & { group: 'songs' | 'clips' | 'actions' }
 
 const SONG_LIMIT = 5
 
@@ -73,9 +73,10 @@ function cachedSongs(client: ReturnType<typeof useQueryClient>): Song[] {
 }
 
 // Command palette (27 §3.12, 26 §12.2): a dialog with the 52 px search field and results grouped
-// Songs, Clips and Actions; ↑/↓ move, Enter runs, the selected row shows its Enter key. Songs come
-// from the library search, or from the cache when offline. Clips and practice actions are the ones
-// the current screen registered (`usePaletteActions`).
+// Songs, Clips and Actions, each action with its key where it has one; ↑/↓ move, Enter runs. The
+// selected row carries the 1.5 px ink edge and its Enter key (never a grey fill); hover is the only
+// wash. Songs come from the library search, or from the cache when offline. Clips and practice
+// actions are the ones the current screen registered (`usePaletteActions`).
 export default function CommandPalette() {
   const setOpen = usePalette((s) => s.setOpen)
   const registered = usePalette((s) => s.registered)
@@ -123,6 +124,7 @@ export default function CommandPalette() {
     {
       id: 'add-song',
       label: m['nav.add_song'](),
+      kbd: ADD_SONG_KEY,
       icon: <PlusIcon aria-hidden />,
       run: () => openAddSong(),
     },
@@ -174,12 +176,13 @@ export default function CommandPalette() {
 
   const rows: Row[] = []
   for (const song of songs) {
+    const Icon = INSTRUMENT_ICON[song.instrument]
     rows.push({
       group: 'songs',
       id: `song-${song.id}`,
       label: song.title,
       context: [song.artist, instrumentLabel(song.instrument)].filter(Boolean).join(' · '),
-      tile: <SongTile instrument={song.instrument} size="sm" />,
+      icon: <Icon aria-hidden />,
       run: () => void navigate({ to: '/songs/$songId/practice', params: { songId: song.id } }),
     })
   }
@@ -283,7 +286,7 @@ export default function CommandPalette() {
                 <p
                   role="presentation"
                   id={`${listId}-${group}`}
-                  className="px-3 pt-2.5 pb-1 text-body-sm text-faint-foreground"
+                  className="px-3 pt-2.5 pb-1 text-label-sm text-muted-foreground"
                 >
                   {heading[group]}
                   {group === 'songs' && !online && ` · ${m['nav.palette_offline']()}`}
@@ -300,14 +303,14 @@ export default function CommandPalette() {
                     onMouseMove={() => index !== selected && setActive(index)}
                     onClick={() => run(row)}
                     className={cn(
-                      'flex min-h-target cursor-pointer items-center gap-3 rounded-field px-3 py-1.5 text-body aria-selected:bg-panel forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-faint-foreground',
+                      'flex min-h-target cursor-pointer items-center gap-3 rounded-field px-3 py-1.5 text-body inset-ring inset-ring-transparent transition-colors duration-(--duration-fast) hover:bg-hover aria-selected:inset-ring-[1.5px] aria-selected:inset-ring-selected forced-colors:aria-selected:outline-2 forced-colors:aria-selected:outline-solid [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground',
                     )}
                   >
-                    {row.tile ?? row.icon}
+                    {row.icon}
                     <span className="min-w-0 flex-1 truncate">
                       <Highlight text={row.label} query={row.parse ? '' : query.trim()} />
                       {row.context && (
-                        <span className="text-faint-foreground"> · {row.context}</span>
+                        <span className="text-muted-foreground"> · {row.context}</span>
                       )}
                     </span>
                     {row.kbd && <Kbd aria-hidden>{row.kbd}</Kbd>}

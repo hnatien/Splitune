@@ -5,10 +5,11 @@ import { useId, useState } from 'react'
 import type { z } from 'zod'
 import { client } from '@/lib/api'
 import { m } from '@/lib/i18n'
-import { INSTRUMENTS, instrumentLabel } from '@/lib/instruments'
+import { INSTRUMENTS, type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import { type MeData, meQuery } from '@/lib/session'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 import { useSignOut } from '../shell/use-sign-out'
 import { type DeleteStep, PrivacySettings } from './privacy-settings'
 import {
@@ -21,7 +22,8 @@ import {
 import { useSaveState } from './use-save-state'
 
 // Settings → Account (27 §3.9, Settings-Account): Profile, Privacy, then Sign out. The old Profile
-// and Privacy URLs land on the section anchors (#profile, #privacy); Plan is its own section.
+// and Privacy URLs land on the section anchors (#profile, #privacy); Plan is its own section. The
+// main instrument is a menu (six pills would wrap on a phone); the level is three pills.
 
 type Patch = z.infer<typeof UpdateMeInput>
 
@@ -53,7 +55,7 @@ export function AccountSettings({
     <SettingsPage title={m['settings.account']()}>
       <Profile me={me} />
       <PrivacySettings me={me} deleteDialog={deleteDialog} />
-      <Button variant="quiet" className="self-start" onClick={signOut}>
+      <Button className="self-start" onClick={signOut}>
         <LogOutIcon aria-hidden />
         {m['nav.sign_out']()}
       </Button>
@@ -65,16 +67,23 @@ function Profile({ me }: { me: MeData }) {
   const current = useQuery({ ...meQuery, initialData: me }).data ?? me
   const update = useUpdateMe()
   const name = useSaveState()
+  const instrument = useSaveState()
   const [displayName, setDisplayName] = useState(current.display_name ?? '')
   const nameId = useId()
   const usernameId = useId()
+  const instrumentId = useId()
   return (
     <SettingSection id="profile" title={m['settings.profile']()}>
       <SettingRows>
-        <SettingRow label={m['settings.name']()} htmlFor={nameId} state={name.state}>
+        <SettingRow
+          label={m['settings.name']()}
+          hint={m['settings.name_hint']()}
+          htmlFor={nameId}
+          state={name.state}
+        >
           <Input
             id={nameId}
-            className="sm:w-80"
+            className="sm:w-72"
             value={displayName}
             maxLength={100}
             autoComplete="name"
@@ -87,21 +96,43 @@ function Profile({ me }: { me: MeData }) {
           />
         </SettingRow>
         {current.username && (
-          <SettingRow label={m['auth.username_label']()} htmlFor={usernameId} state="idle">
+          <SettingRow
+            label={m['auth.username_label']()}
+            hint={m['settings.username_hint']()}
+            htmlFor={usernameId}
+            state="idle"
+          >
             <Input
               id={usernameId}
               value={current.username}
               readOnly
-              className="text-muted-foreground sm:w-80"
+              className="text-muted-foreground sm:w-72"
             />
           </SettingRow>
         )}
-        <SegmentSetting
+        <SettingRow
           label={m['settings.instrument']()}
-          value={current.primary_instrument ?? 'guitar'}
-          options={INSTRUMENTS.map((value) => ({ value, label: instrumentLabel(value) }))}
-          onChange={(value) => update({ primary_instrument: value })}
-        />
+          htmlFor={instrumentId}
+          state={instrument.state}
+        >
+          <Select
+            value={current.primary_instrument ?? 'guitar'}
+            onValueChange={(value) =>
+              void instrument.run(() => update({ primary_instrument: value as InstrumentName }))
+            }
+          >
+            <SelectTrigger id={instrumentId} className="w-full sm:w-72">
+              <SelectValue>{(value: InstrumentName) => instrumentLabel(value)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent aria-label={m['settings.instrument']()}>
+              {INSTRUMENTS.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {instrumentLabel(value)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
         <SegmentSetting
           label={m['settings.level']()}
           value={current.level ?? 'just_started'}

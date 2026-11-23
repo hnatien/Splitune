@@ -14,7 +14,6 @@ const Search = z.object({
   instrument: Instrument.optional().catch(undefined),
   status: LibraryStatusFilter.optional().catch(undefined),
   sort: LibrarySort.optional().catch(undefined),
-  view: z.enum(['grid', 'list']).optional().catch(undefined),
   add: z.enum(['file', 'link', 'record']).optional().catch(undefined),
 })
 

@@ -3,8 +3,9 @@ import { collectErrors, expectAccessible, expectNoHorizontalScroll, signIn, wav 
 
 // Step 10 acceptance (prompt 10), with Add song as a dialog over the library (s34, 27 §3.6): sign
 // up with a username and a password → add a short audio file → stages progress → ready in the
-// library; a link shows its progress; delete works; an upload survives a reload mid-transfer; no
-// console (CORS) errors; axe on landing, library and Add song.
+// library (a hairline row under "Ready to practise", s47); a link shows its progress; delete
+// works; an upload survives a reload mid-transfer; no console (CORS) errors; axe on landing,
+// library and Add song.
 
 test.describe.configure({ mode: 'serial' })
 
@@ -21,6 +22,13 @@ const finished = () =>
     .or(page.getByRole('region', { name: 'Current chord', exact: true }))
     .or(page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' }))
     .first()
+
+/** The library row of the song with this title (the row's link starts with the title). */
+const songRow = (title: string) =>
+  page
+    .getByRole('main')
+    .locator('[data-slot=list-row]')
+    .filter({ has: page.getByRole('link', { name: new RegExp(`^${title}`) }) })
 
 /** The stages of the song's latest analysis, from the API (the page no longer lists them). */
 async function stageStatuses(): Promise<Record<string, string>> {
@@ -103,8 +111,9 @@ test('a short file uploads, analyses and shows as ready', async () => {
     .poll(stageStatuses, { timeout: 15_000 })
     .toMatchObject({ decode: 'done', beats: 'done', finalize: 'done' })
   await page.getByRole('link', { name: 'Back to library' }).click()
-  const card = page.getByRole('article').filter({ hasText: 'Riff in A minor' })
-  await expect(card.getByText('Ready')).toBeVisible()
+  const ready = page.getByRole('region', { name: 'Ready to practise' })
+  await expect(ready.getByRole('link', { name: /^Riff in A minor/ })).toBeVisible()
+  await expect(songRow('Riff in A minor').getByText('Ready', { exact: true })).toBeVisible()
   await expectAccessible(page)
   await expectNoHorizontalScroll(page)
 })
@@ -181,13 +190,13 @@ test('an upload interrupted by a reload resumes instead of restarting', async ()
 
 test('delete removes the song', async () => {
   await page.goto('/library')
-  const card = page.getByRole('article').filter({ hasText: 'Riff in A minor' })
-  await card.getByRole('button', { name: 'More for Riff in A minor' }).click()
+  const row = songRow('Riff in A minor')
+  await row.getByRole('button', { name: 'More for Riff in A minor' }).click()
   await page.getByRole('menuitem', { name: 'Delete song' }).click()
   const dialog = page.getByRole('alertdialog')
   await expect(dialog).toContainText('Delete “Riff in A minor”?')
   await dialog.getByRole('button', { name: 'Delete song' }).click()
-  await expect(card).toHaveCount(0)
+  await expect(row).toHaveCount(0)
 })
 
 test('no console errors, CORS included', async () => {

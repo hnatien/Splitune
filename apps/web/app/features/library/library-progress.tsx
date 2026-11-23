@@ -25,7 +25,7 @@ import type { ContinueSummary } from './continue-card'
 import type { RevisitClip } from './revisit-list'
 import type { WeekDay } from './week-strip'
 
-// The library's progress (27 §3.5, §5.5; s39): the Continue card's clip, badges and 30-day
+// The library's progress (27 §3.5, §5.5; s39): the Continue block's clip, notes and 30-day
 // sparkline, This week and Worth a revisit, from the progress the Progress tab uses (GET
 // /v1/progress plus passes not sent yet). Clip bars and ladders come from each song's loop list,
 // revisit titles from the song; only the songs these strips name are asked for.
@@ -64,22 +64,16 @@ function songSummary(song: Song): ContinueSummary {
   return {
     title: song.title,
     meta,
-    compact: meta,
     when: formatRelativeDate(new Date(song.last_opened_at ?? song.created_at)),
-    badges: best
-      ? [
-          {
-            label: m['library.best_clean']({ pct: formatPercent(best.tempo_pct) }),
-            variant: 'neutral',
-          },
-        ]
+    notes: best
+      ? [{ label: m['library.best_clean']({ pct: formatPercent(best.tempo_pct) }), lead: false }]
       : [],
   }
 }
 
 export type LibraryProgress = {
   continueCard: (song: Song) => { summary: ContinueSummary; chart: React.ReactNode }
-  week: { days: WeekDay[]; total: string; stats: { value: string; label: string }[] } | null
+  week: { days: WeekDay[]; stats: { value: string; label: string }[] } | null
   revisit: (RevisitClip & { songId: string; loop: string })[]
 }
 
@@ -132,7 +126,7 @@ export function useLibraryProgress(last: Song | undefined, now = new Date()): Li
     const ladderPct = ladder?.current_pct ?? ladder?.start_pct
     const first = latestFirstClean(bySession)
     const best = current.best_clean_tempo_pct
-    const badges: ContinueSummary['badges'] = [
+    const notes: ContinueSummary['notes'] = [
       ...(ladder && ladderPct !== undefined
         ? [
             {
@@ -140,19 +134,14 @@ export function useLibraryProgress(last: Song | undefined, now = new Date()): Li
                 current: formatPercent(ladderPct),
                 goal: formatPercent(ladder.end_pct),
               }),
-              variant: 'primary' as const,
+              lead: true,
             },
           ]
         : []),
       ...(best === null
         ? []
-        : [
-            {
-              label: m['library.best_clean']({ pct: formatPercent(best) }),
-              variant: 'neutral' as const,
-            },
-          ]),
-      ...(first ? [{ label: firstCleanBadge(first, now), variant: 'neutral' as const }] : []),
+        : [{ label: m['library.best_clean']({ pct: formatPercent(best) }), lead: false }]),
+      ...(first ? [{ label: firstCleanBadge(first, now), lead: false }] : []),
     ]
     const head = [song.artist, instrumentLabel(song.instrument)].filter(Boolean).join(' · ')
     return {
@@ -163,22 +152,13 @@ export function useLibraryProgress(last: Song | undefined, now = new Date()): Li
             {head} · {clipMeta}
           </>
         ),
-        compact: [
-          current.name ?? range,
-          current.name === null ? null : range,
-          ladder && ladderPct !== undefined
-            ? m['library.ladder_short']({ pct: formatPercent(ladderPct) })
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' · '),
         when: lastSession
           ? m['library.when_minutes']({
               when: formatRelativeDate(lastSession.startedAt, now),
               minutes: formatPracticeTime(lastSession.minutes),
             })
           : formatRelativeDate(new Date(song.last_opened_at ?? song.created_at), now),
-        badges,
+        notes,
       },
       chart:
         points.length > 0 ? (
@@ -202,7 +182,6 @@ export function useLibraryProgress(last: Song | undefined, now = new Date()): Li
         ? null
         : {
             days: week.days.map((d) => ({ letter: d.letter, minutes: d.minutes })),
-            total,
             stats: [
               { value: total, label: m['library.week_practised']() },
               { value: String(week.clean), label: m['library.week_clean']() },

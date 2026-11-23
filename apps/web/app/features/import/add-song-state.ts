@@ -7,6 +7,9 @@ import { create } from 'zustand'
 
 export type AddTab = 'file' | 'link' | 'record'
 
+/** The single key that opens Add song from anywhere in the app shell (s47 direction §6). */
+export const ADD_SONG_KEY = 'A'
+
 const TAB_KEY = 'splitune.import.tab'
 
 /** The tab used last (27 §3.6), File when nothing is remembered. */
