@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Layers, resolveScreen, type ScreenInput } from './screen'
+import { barsPerSystem, type Layers, resolveScreen, type ScreenInput } from './screen'
 
 const NONE: Layers = {
   beats: true,
@@ -260,5 +260,31 @@ describe('the chords-only banner', () => {
   it('names the notation for analytics', () => {
     expect(screen({ layers: { tab: true } }).notationEvent).toBe('tab')
     expect(screen({ instrument: 'vocals', layers: { melody: true } }).notationEvent).toBe('notes')
+  })
+})
+
+describe('barsPerSystem', () => {
+  // 24 px is the desk's tab digit, 36 the music stand's, 54 the floor's (26 §6.3).
+  it('gives a wide desktop four bars and never more', () => {
+    expect(barsPerSystem(1440, 24)).toBe(4)
+    expect(barsPerSystem(2560, 24)).toBe(4)
+  })
+
+  it('drops bars as the pane narrows: a docked panel, an upright tablet, a phone', () => {
+    expect(barsPerSystem(1024, 24)).toBe(3)
+    // 1180 px with the 340 px tools panel docked.
+    expect(barsPerSystem(840, 24)).toBe(2)
+    expect(barsPerSystem(768, 24)).toBe(2)
+    expect(barsPerSystem(375, 24)).toBe(1)
+  })
+
+  it('gives larger reading sizes fewer, wider bars', () => {
+    expect(barsPerSystem(1440, 36)).toBe(3)
+    expect(barsPerSystem(768, 36)).toBe(1)
+    expect(barsPerSystem(1440, 54)).toBe(2)
+  })
+
+  it('never returns less than one bar, even before the pane is measured', () => {
+    expect(barsPerSystem(0, 24)).toBe(1)
   })
 })

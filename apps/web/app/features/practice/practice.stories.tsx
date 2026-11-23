@@ -197,7 +197,7 @@ const toolsFrame = async (canvasElement: HTMLElement, tab: RegExp) => {
  * viewport's height, and the transport keeps every control whole, side by side, inside its own
  * edge and the viewport, and at least 44 px each way.
  */
-const layoutHolds = async (canvasElement: HTMLElement, share: number | null) => {
+const layoutHolds = async (canvasElement: HTMLElement, share: number | null, bars: number) => {
   const canvas = await playable(canvasElement)
   const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
   await waitFor(() => expect(tab).toBeVisible())
@@ -210,6 +210,15 @@ const layoutHolds = async (canvasElement: HTMLElement, share: number | null) => 
       ),
     )
   }
+  // As many bars a system as fit legibly: each is wide enough that rests and digits stay apart.
+  await waitFor(() => {
+    const targets = [...tab.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].map((target) =>
+      target.getBoundingClientRect(),
+    )
+    const first = targets.filter((box) => Math.abs(box.top - (targets[0]?.top ?? 0)) < 1)
+    expect(first).toHaveLength(bars)
+    for (const box of first) expect(box.width).toBeGreaterThanOrEqual(240)
+  })
   const transport = canvas.getByRole('toolbar', { name: 'Playback' })
   await expect(transport.scrollWidth).toBeLessThanOrEqual(transport.clientWidth)
   const edge = transport.getBoundingClientRect()
@@ -241,37 +250,37 @@ const layoutHolds = async (canvasElement: HTMLElement, share: number | null) => 
 export const LayoutDesktop: Story = {
   render: screen(ALL, {}, { loop: '5-6' }),
   globals: { viewport: { value: 'desktop1440' } },
-  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.7),
+  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.7, 4),
 }
 
 export const LayoutDesktopDaylight: Story = {
   render: screen(ALL, {}, { loop: '5-6' }),
   globals: { appearance: 'light', viewport: { value: 'desktop1440' } },
-  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.7),
+  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.7, 4),
 }
 
-/** A ready song on a 375 × 812 phone: the tab at two bars a line takes at least 55 % of the
+/** A ready song on a 375 × 812 phone: the tab at one bar a line takes at least 55 % of the
  * height; the status row and two transport rows fit with nothing overlapping. */
 export const LayoutPhone: Story = {
   beforeEach: phone,
   render: screen(ALL, {}, { loop: '5-6' }),
   globals: { ...PHONE_375 },
-  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.55),
+  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.55, 1),
 }
 
 export const LayoutPhoneDaylight: Story = {
   beforeEach: phone,
   render: screen(ALL, {}, { loop: '5-6' }),
   globals: { appearance: 'light', ...PHONE_375 },
-  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.55),
+  play: ({ canvasElement }) => layoutHolds(canvasElement, 0.55, 1),
 }
 
-/** An upright 768 px tablet: the one-row transport still fits with 44 px targets. */
+/** An upright 768 px tablet: two bars a line, and the stacked transport fits with 44 px targets. */
 export const LayoutTablet: Story = {
   beforeEach: () => coarse({ '(orientation: landscape)': false }),
   render: screen(ALL, {}, { loop: '5-6' }),
   globals: { ...TABLET_768 },
-  play: ({ canvasElement }) => layoutHolds(canvasElement, null),
+  play: ({ canvasElement }) => layoutHolds(canvasElement, null, 2),
 }
 
 /** Loading (27 §4): the screen's own regions as skeletons (the song map, the paper with its
