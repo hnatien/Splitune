@@ -5,8 +5,8 @@ import { COPY } from './fixtures.ts'
 import { DAYLIGHT } from './story-kit.tsx'
 import { Toaster, toast } from './toast.tsx'
 
-// Doc 26 §12.1 `.toast`: an --accent chip with a --border-strong edge, 14 px corners and
-// --elevation-2; an error toast has a --destructive edge as well as its icon.
+// Doc 26 §12.1 `.toast`: an --hover chip with a --border-strong edge, 14 px corners and
+// --elevation-popover; an error toast has a --destructive edge as well as its icon.
 const meta = { title: 'Base/Toast' } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>

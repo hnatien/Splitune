@@ -236,7 +236,7 @@ export function FixPill({ onDone = leaveFix }: { onDone?: () => void }) {
       className="flex h-11 items-center gap-2.5 rounded-full bg-unsure-surface pr-1 pl-3.5 text-unsure"
     >
       <PencilIcon aria-hidden className="size-4.5 shrink-0" strokeWidth={1.8} />
-      <span className="text-md font-medium whitespace-nowrap max-lg:sr-only">
+      <span className="text-label font-medium whitespace-nowrap max-lg:sr-only">
         {m['fix.fixing']()}
       </span>
       <Button
@@ -258,7 +258,7 @@ export function FixPill({ onDone = leaveFix }: { onDone?: () => void }) {
 export function FixKey() {
   const { music, view } = usePractice()
   const sample =
-    'inline-grid min-w-5 place-items-center rounded-xs px-0.5 font-reading-mono leading-5 font-semibold'
+    'inline-grid min-w-5 place-items-center rounded-media px-0.5 font-reading-mono leading-5 font-medium'
   // How often the song's unsure marks are wrong, from their own confidences.
   const n = useMemo(() => {
     if (!music || !view) return null
@@ -271,7 +271,7 @@ export function FixKey() {
   return (
     <div
       data-slot="fix-key"
-      className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-5 gap-y-1 bg-paper px-12 py-1 text-sm text-muted-foreground"
+      className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-5 gap-y-1 bg-paper px-12 py-1 text-body-sm text-muted-foreground"
     >
       <span className="inline-flex items-center gap-2">
         <span
@@ -331,7 +331,7 @@ export function FixDock() {
       role="toolbar"
       aria-label={m['practice.transport']()}
       data-slot="fix-dock"
-      className="flex h-20 shrink-0 items-center gap-3.5 border-t border-border bg-card px-5"
+      className="flex h-20 shrink-0 items-center gap-3.5 border-t border-border bg-raised px-5"
     >
       <TransportButton
         tone="primary"
@@ -351,13 +351,15 @@ export function FixDock() {
         onClick={() => practice.togglePlay()}
       />
       {bar !== undefined && endBar !== undefined && (
-        <span className="text-base font-medium whitespace-nowrap tabular-nums">
+        <span className="text-body font-medium whitespace-nowrap tabular-nums">
           {many
             ? m['fix.bars']({ bars: barsLabel(bar, endBar) })
             : m['fix.bar_one']({ bar: barLabel(bar) })}
         </span>
       )}
-      <span className="min-w-0 truncate text-sm text-faint-foreground">{m['fix.dock_hint']()}</span>
+      <span className="min-w-0 truncate text-body-sm text-faint-foreground">
+        {m['fix.dock_hint']()}
+      </span>
       <div className="flex-1" />
       {choices.length > 1 && (
         <ToggleGroup
@@ -385,7 +387,7 @@ export function FixDock() {
         >
           <MinusIcon aria-hidden />
         </Button>
-        <span aria-live="polite" className="w-16 text-center text-lg font-normal tabular-nums">
+        <span aria-live="polite" className="w-16 text-center text-title font-normal tabular-nums">
           {formatPercent(player.speedPct)}
         </span>
         <Button

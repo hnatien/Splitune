@@ -13,7 +13,7 @@ import {
 } from './drawer.tsx'
 import { DAYLIGHT } from './story-kit.tsx'
 
-// Doc 26 §12.1: bottom sheets with a 40 × 5 grabber and 24 px top corners (`rounded-t-5xl`), side
+// Doc 26 §12.1: bottom sheets with a 40 × 5 grabber and 24 px top corners (`rounded-t-dialog`), side
 // drawers for the inspector with the 22 px sheet radius.
 const meta = { title: 'Base/Drawer' } satisfies Meta
 export default meta

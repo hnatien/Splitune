@@ -106,7 +106,7 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
       // chord sheet's size.
       style={{ '--fit': `calc(100cqi / ${Math.max(2, name.length) * 0.62})` } as CSSProperties}
       className={cn(
-        'block font-display text-[length:max(var(--read-chord-sheet),min(var(--read-chord-current),var(--fit)))] leading-[0.85] font-semibold tracking-tight whitespace-nowrap text-ink',
+        'block font-display text-[length:max(var(--read-chord-sheet),min(var(--read-chord-current),var(--fit)))] leading-[0.85] font-medium tracking-tight whitespace-nowrap text-ink',
         current && showUncertainty && current.confidence === 'low' && 'text-unsure',
       )}
     >
@@ -126,7 +126,7 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
               ? m['practice.now_pickup']()
               : m['practice.now_bar']({ bar: String(now.bar + 1) })}
           </span>
-          <span className="font-display text-read-chord font-semibold text-ink">
+          <span className="font-display text-read-chord font-medium text-ink">
             {current ? <ChordSymbol name={current.name} /> : name}
           </span>
         </span>
@@ -136,7 +136,7 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
             <span className="text-read-label font-medium text-faint-foreground">
               {nextInBeats(inBeats ?? 1)}
             </span>
-            <span className="text-read-chord font-semibold text-ink">
+            <span className="text-read-chord font-medium text-ink">
               <ChordSymbol name={next.name} />
             </span>
           </span>
@@ -177,10 +177,10 @@ export function NowColumn({ strip = false }: { strip?: boolean }) {
             {nextInBeats(inBeats ?? 1)}
           </p>
           <p className="flex items-baseline gap-2.5">
-            <span className="text-read-chord-next leading-none font-semibold tracking-tight text-ink">
+            <span className="text-read-chord-next leading-none font-medium tracking-tight text-ink">
               <ChordSymbol name={next.name} />
             </span>
-            <span className="text-sm text-faint-foreground tabular-nums">
+            <span className="text-body-sm text-faint-foreground tabular-nums">
               {m['practice.now_at_bar']({ bar: String(next.bar + 1) })}
             </span>
           </p>
@@ -242,10 +242,10 @@ function LevelCard({ capo }: { capo: boolean }) {
     <div className="flex flex-col border-t border-border pt-2">
       {rows.map((row) => (
         <Popover key={row.label}>
-          <PopoverTrigger className="-mx-2 flex min-h-target-practice-2 items-center gap-3 rounded-lg px-2 text-left hover:bg-muted">
+          <PopoverTrigger className="-mx-2 flex min-h-target-practice items-center gap-3 rounded-field px-2 text-left hover:bg-panel">
             {capo && <span className="sr-only">{title}: </span>}
-            <span className="w-11 shrink-0 text-sm text-faint-foreground">{row.label}</span>{' '}
-            <span className="min-w-0 flex-1 py-2 text-md leading-tight font-medium">
+            <span className="w-11 shrink-0 text-body-sm text-faint-foreground">{row.label}</span>{' '}
+            <span className="min-w-0 flex-1 py-2 text-label leading-tight font-medium">
               {row.value}
             </span>
             <ChevronDownIcon aria-hidden className="size-4 shrink-0 text-faint-foreground" />

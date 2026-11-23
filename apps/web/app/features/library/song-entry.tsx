@@ -178,7 +178,7 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
     if (!analysis) return null
     const failed = Object.entries(analysis.stages).find(([, s]) => s.status === 'failed')
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-body-sm text-muted-foreground">
         {failed
           ? stageFailureMessage({ stage: failed[0], errorCode: failed[1].error_code })
           : m['analysis.failed']()}
@@ -212,7 +212,7 @@ function AnalysisLine({ song, status }: { song: Song; status: CardStatus }) {
     )
   }
   if (!line) return null
-  return <p className="text-sm text-muted-foreground tabular-nums">{line}</p>
+  return <p className="text-body-sm text-muted-foreground tabular-nums">{line}</p>
 }
 
 export function SongEntry({
@@ -309,7 +309,7 @@ export function SongEntry({
     status.kind === 'failed' ? (
       <div className="relative flex flex-col items-start gap-2">
         <AnalysisLine song={song} status={status} />
-        <p className="text-sm text-muted-foreground">{m['library.didnt_use']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['library.didnt_use']()}</p>
         {song.latest_analysis && (
           <Button
             size="md"
@@ -323,7 +323,7 @@ export function SongEntry({
       </div>
     ) : status.kind === 'stems_expired' ? (
       <div className="relative flex flex-col items-start gap-2">
-        <p className="text-sm text-muted-foreground">{m['practice.stems_expired']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['practice.stems_expired']()}</p>
         <Button
           variant="outline"
           loading={analyse.isPending}

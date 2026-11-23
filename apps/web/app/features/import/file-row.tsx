@@ -25,7 +25,7 @@ function issueText(issue: PreflightIssue): string {
   }
 }
 
-// The picked file (27 §3.6, AddSong): a --muted card with the file tile, name, size and duration
+// The picked file (27 §3.6, AddSong): a --panel card with the file tile, name, size and duration
 // (mono), Remove, the 44 px waveform from the local decode, the warning badges that don't block,
 // blocking errors inline and the duplicate notice (Open it / Add anyway).
 export function FileRow({
@@ -50,20 +50,20 @@ export function FileRow({
     <section
       aria-label={file.name}
       data-slot="file-card"
-      className="flex flex-col gap-3 rounded-xl bg-muted p-4"
+      className="flex flex-col gap-3 rounded-field bg-panel p-4"
     >
       <div className="flex items-center gap-3">
         <span
           aria-hidden
-          className="grid size-10 shrink-0 place-items-center rounded-md bg-background text-muted-foreground"
+          className="grid size-10 shrink-0 place-items-center rounded-media bg-background text-muted-foreground"
         >
           <MusicIcon className="size-5" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="truncate text-base font-medium" title={file.name}>
+          <p className="truncate text-body font-medium" title={file.name}>
             {file.name}
           </p>
-          <p className="text-sm text-faint-foreground tabular-nums">
+          <p className="text-body-sm text-faint-foreground tabular-nums">
             {[formatBytes(file.size), duration === undefined ? undefined : formatDuration(duration)]
               .filter(Boolean)
               .join(' · ')}
@@ -80,7 +80,7 @@ export function FileRow({
       </div>
 
       {picked.status === 'reading' ? (
-        <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+        <p role="status" className="flex items-center gap-2 text-body-sm text-muted-foreground">
           <Spinner aria-hidden />
           {m['import.file_reading']()}
         </p>
@@ -94,7 +94,7 @@ export function FileRow({
           })}
         />
       ) : audio?.kind === 'needs_upload' ? (
-        <p className="text-sm text-muted-foreground">{m['import.preview_after_upload']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['import.preview_after_upload']()}</p>
       ) : null}
 
       {warnings.length > 0 && (

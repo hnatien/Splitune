@@ -16,7 +16,7 @@ export function NotFoundPage() {
       <SystemCard
         title={m['system.not_found']()}
         aside={
-          <span aria-hidden className="text-lg text-faint-foreground tabular-nums">
+          <span aria-hidden className="text-title text-faint-foreground tabular-nums">
             404
           </span>
         }
@@ -55,7 +55,9 @@ export function ErrorPage({ error }: { error: unknown }) {
         }
       >
         <div className="flex flex-wrap items-center justify-center gap-x-1">
-          <p className="font-mono text-sm text-faint-foreground">{m['system.error_id']({ id })}</p>
+          <p className="font-mono text-body-sm text-faint-foreground">
+            {m['system.error_id']({ id })}
+          </p>
           <Button
             variant="ghost"
             size="sm"

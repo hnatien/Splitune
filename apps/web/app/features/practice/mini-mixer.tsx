@@ -42,7 +42,7 @@ function Row({
     >
       <span aria-hidden className={cn('h-6 w-1.5 rounded-full', rule)} />
       <span className="flex min-w-0 flex-col gap-1">
-        <span className="truncate text-sm font-medium">
+        <span className="truncate text-body-sm font-medium">
           {name}
           {muted && <span className="text-muted-foreground"> · {m['mixer.muted']()}</span>}
         </span>
@@ -72,7 +72,7 @@ function Row({
 export function MiniMixer({ onAllStems }: { onAllStems: () => void }) {
   const { channels, mix, setMix, applyPreset, data, layers } = usePractice()
   if (!layers.stems) {
-    return <p className="text-md text-muted-foreground">{m['practice.mix_wait']()}</p>
+    return <p className="text-label text-muted-foreground">{m['practice.mix_wait']()}</p>
   }
   const part = channels.find((c) => c.role === 'part')
   const partState = part && mix[part.stemId]

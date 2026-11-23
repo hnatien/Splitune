@@ -90,7 +90,7 @@ function colors() {
     loopFill: read('--loop-fill'),
     loopEdge: read('--loop-edge'),
     hatch: read('--hatch'),
-    rule: read('--input'),
+    rule: read('--edge'),
   }
 }
 
@@ -319,7 +319,7 @@ function WaveformTimeline({
         type="button"
         aria-label={edge === 'start' ? labels.loopStart : labels.loopEnd}
         data-slot="loop-handle"
-        className="group/handle absolute top-1.5 z-10 flex size-11 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
+        className="group/handle absolute top-1.5 z-10 flex size-11 -translate-x-1/2 cursor-ew-resize items-center justify-center rounded-field focus-visible:outline-2 focus-visible:outline-ring"
         style={{ left: at }}
         onKeyDown={(event) => {
           const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
@@ -404,12 +404,12 @@ function WaveformTimeline({
         <div
           aria-hidden
           data-slot="ruler"
-          className="relative h-3.5 text-2xs leading-3.5 font-normal text-faint-foreground tabular-nums"
+          className="relative h-3.5 text-kbd leading-3.5 font-normal text-faint-foreground tabular-nums"
         >
           {marks.map((mark) => (
             <span
               key={mark.at}
-              className="absolute top-0 border-l border-input pl-0.75 tabular-nums"
+              className="absolute top-0 border-l border-edge pl-0.75 tabular-nums"
               style={{ left: mark.at }}
             >
               {mark.label}

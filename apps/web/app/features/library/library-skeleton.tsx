@@ -16,11 +16,11 @@ export function SongsSkeleton() {
       {['a', 'b', 'c', 'd', 'e', 'f'].map((key, index) => (
         <li
           key={key}
-          className="flex animate-rise-in flex-col gap-3.5 rounded-xl border border-border p-4"
+          className="flex animate-rise-in flex-col gap-3.5 rounded-field border border-border p-4"
           style={{ '--i': index } as CSSProperties}
         >
           <div className="flex items-start gap-3">
-            <Skeleton className="size-10 shrink-0 rounded-md" />
+            <Skeleton className="size-10 shrink-0 rounded-media" />
             <div className="flex flex-1 flex-col gap-2 pt-0.5">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3.5 w-1/2" />
@@ -37,7 +37,10 @@ export function SongsSkeleton() {
 export function LibrarySkeleton() {
   return (
     <div className="flex flex-col gap-5 sm:gap-10">
-      <div aria-hidden className="flex flex-col gap-3 rounded-xl border border-border p-6 sm:p-8">
+      <div
+        aria-hidden
+        className="flex flex-col gap-3 rounded-field border border-border p-6 sm:p-8"
+      >
         <Skeleton className="h-3.5 w-48" />
         <Skeleton className="h-8 w-2/3" />
         <Skeleton className="h-4 w-1/2" />

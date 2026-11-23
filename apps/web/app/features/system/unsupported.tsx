@@ -47,8 +47,8 @@ export function UnsupportedBrowser() {
       <SystemText>
         {m['system.unsupported']({ missing: LIST.format(listed.map((r) => NAMES[r]())) })}
       </SystemText>
-      <details className="group flex flex-col items-center text-sm text-muted-foreground">
-        <summary className="inline-flex min-h-target cursor-pointer items-center rounded-full px-3 font-medium text-foreground hover:bg-muted">
+      <details className="group flex flex-col items-center text-body-sm text-muted-foreground">
+        <summary className="inline-flex min-h-target cursor-pointer items-center rounded-full px-3 font-medium text-foreground hover:bg-panel">
           {m['system.details']()}
         </summary>
         <p>{m['system.supported_browsers']()}</p>

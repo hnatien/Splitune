@@ -25,7 +25,7 @@ function Tabs({ className, orientation = 'horizontal', ...props }: TabsPrimitive
  *
  * `look="segmented"` draws the tabs as a segmented control (§12.1, like `ToggleGroup`): a quiet
  * 40 px pill track with equal items, and the selected tab on a raised capsule that slides between
- * them on --ease-snappy (the capsule is the non-colour cue). For switching views of one task, such
+ * them on --ease-standard (the capsule is the non-colour cue). For switching views of one task, such
  * as Add song's File · Link · Record.
  */
 function TabsList({
@@ -41,7 +41,7 @@ function TabsList({
       data-look={look}
       className={cn(
         segmented
-          ? 'group/tabs-list relative isolate flex items-center gap-0.5 px-0.75 [--box:var(--control-size)] before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.5rem)/2)] before:-z-10 before:rounded-full before:bg-muted contrast-more:before:border contrast-more:before:border-border-strong forced-colors:before:border forced-colors:before:border-border'
+          ? 'group/tabs-list relative isolate flex items-center gap-0.5 px-0.75 [--box:var(--control-size)] before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.5rem)/2)] before:-z-10 before:rounded-full before:bg-panel contrast-more:before:border contrast-more:before:border-border-strong forced-colors:before:border forced-colors:before:border-border'
           : 'group/tabs-list relative flex items-stretch gap-1 border-b border-border text-muted-foreground group-data-vertical/tabs:flex-col group-data-vertical/tabs:border-b-0 group-data-vertical/tabs:border-l',
         className,
       )}
@@ -51,7 +51,7 @@ function TabsList({
       {segmented && (
         <TabsPrimitive.Indicator
           data-slot="tabs-capsule"
-          className="pointer-events-none absolute top-(--active-tab-top) left-(--active-tab-left) -z-10 h-(--active-tab-height) w-(--active-tab-width) transition-[left,width] duration-(--duration-slower) ease-snappy before:absolute before:inset-x-0 before:inset-y-[calc((var(--active-tab-height)-2.125rem)/2)] before:rounded-full before:bg-capsule before:shadow-capsule forced-colors:before:bg-card forced-colors:before:inset-ring forced-colors:before:inset-ring-signal"
+          className="pointer-events-none absolute top-(--active-tab-top) left-(--active-tab-left) -z-10 h-(--active-tab-height) w-(--active-tab-width) transition-[left,width] duration-(--duration-slower) ease-standard before:absolute before:inset-x-0 before:inset-y-[calc((var(--active-tab-height)-2.125rem)/2)] before:rounded-full before:bg-raised before:shadow-raised forced-colors:before:bg-raised forced-colors:before:inset-ring forced-colors:before:inset-ring-signal"
         />
       )}
     </TabsPrimitive.List>
@@ -59,9 +59,9 @@ function TabsList({
 }
 
 const TRIGGER = {
-  line: '-mb-px border-b-2 border-transparent px-3.5 text-md group-data-vertical/tabs:-ml-px group-data-vertical/tabs:mb-0 group-data-vertical/tabs:justify-start group-data-vertical/tabs:border-b-0 group-data-vertical/tabs:border-l-2 data-active:border-signal',
+  line: '-mb-px border-b-2 border-transparent px-3.5 text-label group-data-vertical/tabs:-ml-px group-data-vertical/tabs:mb-0 group-data-vertical/tabs:justify-start group-data-vertical/tabs:border-b-0 group-data-vertical/tabs:border-l-2 data-active:border-signal',
   segmented:
-    'min-h-(--box) flex-1 rounded-full px-4 text-md font-medium text-muted-foreground forced-colors:data-active:underline',
+    'min-h-(--box) flex-1 rounded-full px-4 text-label font-medium text-muted-foreground forced-colors:data-active:underline',
 } as const
 
 function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
@@ -83,7 +83,7 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
       data-slot="tabs-content"
-      className={cn('flex-1 text-base', className)}
+      className={cn('flex-1 text-body', className)}
       {...props}
     />
   )

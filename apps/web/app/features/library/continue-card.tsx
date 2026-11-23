@@ -19,7 +19,7 @@ export type ContinueSummary = {
 type LinkRenderer = (props: React.ComponentProps<'a'>) => React.ReactElement
 
 // "Pick up where you left off" (27 §3.5, 26 §12.2 ContinueCard). Desktop: the page's lead, one quiet
-// --muted panel with 12 px corners, the song as the page's h1 (the section's name is spoken, not
+// --panel panel with 12 px corners, the song as the page's h1 (the section's name is spoken, not
 // shown), its meta line with when it was last practised, its badges, and Resume
 // practice as the page's primary pill. `chart` is the 30-day sparkline (s39). Phone: one compact
 // link with a round ink play mark.
@@ -38,21 +38,21 @@ export function ContinueCard({
     <section
       aria-labelledby="pick-up"
       data-slot="continue-card"
-      className={cn('flex min-w-0 flex-col gap-3 rounded-xl bg-muted p-6 sm:p-8', className)}
+      className={cn('flex min-w-0 flex-col gap-3 rounded-field bg-panel p-6 sm:p-8', className)}
     >
       <span id="pick-up" className="sr-only">
         {m['library.pick_up']()}
       </span>
       <div className="flex flex-wrap items-end gap-x-8 gap-y-6">
         <div className="flex min-w-0 flex-[1_1_20rem] flex-col gap-1">
-          <h1 className="text-2xl">{song.title}</h1>
-          <p className="text-base text-muted-foreground">
+          <h1 className="text-display">{song.title}</h1>
+          <p className="text-body text-muted-foreground">
             {song.meta} · {song.when}
           </p>
           {song.badges.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {song.badges.map((badge) => (
-                // On the --muted panel a neutral badge takes the outline, so it keeps its edge.
+                // On the --panel panel a neutral badge takes the outline, so it keeps its edge.
                 <Badge
                   key={badge.label}
                   variant={badge.variant === 'neutral' ? 'outline' : badge.variant}
@@ -87,14 +87,16 @@ export function ContinueCardCompact({
   renderLink: LinkRenderer
 }) {
   return renderLink({
-    className: 'flex flex-col rounded-xl bg-muted p-4 focus-visible:outline-offset-2',
+    className: 'flex flex-col rounded-field bg-panel p-4 focus-visible:outline-offset-2',
     children: (
       <>
         <span className="sr-only">{m['library.pick_up']()}</span>
         <span className="flex items-center gap-3">
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-lg">{song.title}</span>
-            <span className="block truncate text-sm text-muted-foreground">{song.compact}</span>
+            <span className="block truncate text-title">{song.title}</span>
+            <span className="block truncate text-body-sm text-muted-foreground">
+              {song.compact}
+            </span>
           </span>
           <span
             aria-hidden

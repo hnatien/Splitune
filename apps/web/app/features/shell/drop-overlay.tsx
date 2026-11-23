@@ -48,7 +48,7 @@ export function DropOverlay({ onFile }: { onFile: (file: File) => void }) {
     >
       <p
         role="status"
-        className="grid min-h-56 w-full max-w-xl place-items-center rounded-4xl border-2 border-solid border-signal bg-card px-6 text-xl"
+        className="grid min-h-56 w-full max-w-xl place-items-center rounded-dialog border-2 border-solid border-signal bg-raised px-6 text-heading"
       >
         {m['import.drop_here']()}
       </p>

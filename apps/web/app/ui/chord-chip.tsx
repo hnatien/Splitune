@@ -62,14 +62,14 @@ function ChordChip({
           uncertain && confidenceText ? `${chordText(label)}, ${confidenceText}` : undefined
         }
         className={cn(
-          'group/chip inline-flex min-h-target-practice-2 items-center rounded-full',
+          'group/chip inline-flex min-h-target-practice items-center rounded-full',
           className,
         )}
         {...props}
       >
         <span
           className={cn(
-            'inline-flex items-center gap-1 rounded-full border border-border-strong px-3 py-1 font-reading text-read-chord leading-none font-bold whitespace-nowrap transition-colors duration-(--duration-fast) group-hover/chip:bg-accent',
+            'inline-flex items-center gap-1 rounded-full border border-border-strong px-3 py-1 font-reading text-read-chord leading-none font-medium whitespace-nowrap transition-colors duration-(--duration-fast) group-hover/chip:bg-hover',
             ink[confidence],
             uncertain && outline[confidence],
             uncertain && 'border-[1.5px]',
@@ -78,7 +78,7 @@ function ChordChip({
         >
           <ChordSymbol name={label} />
           {uncertain && confidence === 'low' && (
-            <span aria-hidden className="text-[0.55em] font-semibold">
+            <span aria-hidden className="text-[0.55em] font-medium">
               ?
             </span>
           )}
@@ -98,11 +98,11 @@ function ChordChip({
         uncertain && confidenceText ? `${chordText(label)}, ${confidenceText}` : undefined
       }
       className={cn(
-        'relative inline-flex min-h-target-practice-2 items-center justify-center rounded-lg border border-transparent bg-paper px-2 py-px font-reading leading-none font-semibold whitespace-nowrap transition-[border-color,background-color] duration-(--duration-base) ease-spring hover:bg-bar-current',
+        'relative inline-flex min-h-target-practice items-center justify-center rounded-field border border-transparent bg-paper px-2 py-px font-reading leading-none font-medium whitespace-nowrap transition-[border-color,background-color] duration-(--duration-base) ease-enter hover:bg-bar-current',
         ink[confidence],
         uncertain && outline[confidence],
         timing === 'current'
-          ? 'min-w-[1.6em] border-2 border-solid border-score-loop-edge bg-bar-current px-3 text-read-chord-current font-bold'
+          ? 'min-w-[1.6em] border-2 border-solid border-score-loop-edge bg-bar-current px-3 text-read-chord-current font-medium'
           : 'text-read-chord',
         selected && 'outline-2 outline-offset-2 outline-ring outline-solid',
         className,
@@ -111,7 +111,7 @@ function ChordChip({
     >
       <ChordSymbol name={label} />
       {uncertain && confidence === 'low' && (
-        <sup aria-hidden className="ml-0.5 text-[0.55em] font-semibold">
+        <sup aria-hidden className="ml-0.5 text-[0.55em] font-medium">
           ?
         </sup>
       )}

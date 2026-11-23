@@ -104,12 +104,12 @@ export function UsageSettings({ me }: { me: MeData }) {
         <SettingRows>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div className="flex min-w-0 grow basis-50 flex-col gap-0.5">
-              <p className="text-base">
+              <p className="text-body">
                 {plus && current.subscription
                   ? planName(current.subscription.plan)
                   : m['billing.plan_free']()}
               </p>
-              {plus && <p className="text-sm text-muted-foreground">{periodLine(current)}</p>}
+              {plus && <p className="text-body-sm text-muted-foreground">{periodLine(current)}</p>}
             </div>
             <div className="flex flex-wrap gap-3">
               {plus ? (
@@ -145,7 +145,7 @@ function LabelColumn({ label, hint }: { label: ReactNode; hint?: string | undefi
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       {label}
-      {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-body-sm text-muted-foreground">{hint}</span>}
     </div>
   )
 }
@@ -175,7 +175,7 @@ function UsageMeter({
       )}
     >
       <LabelColumn
-        label={<MeterLabel className="text-base font-normal">{label}</MeterLabel>}
+        label={<MeterLabel className="text-body font-normal">{label}</MeterLabel>}
         hint={hint}
       />
       <MeterValue className="text-right sm:col-start-3">{() => value}</MeterValue>
@@ -195,8 +195,8 @@ function UsageNote({
 }) {
   return (
     <div className={ROW}>
-      <LabelColumn label={<span className="text-base">{label}</span>} hint={hint} />
-      <p className="text-right text-sm text-muted-foreground sm:col-span-2">{note}</p>
+      <LabelColumn label={<span className="text-body">{label}</span>} hint={hint} />
+      <p className="text-right text-body-sm text-muted-foreground sm:col-span-2">{note}</p>
     </div>
   )
 }

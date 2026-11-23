@@ -45,7 +45,7 @@ export function UsagePopover({
           className="gap-0 p-0"
         >
           <div className="flex flex-col gap-4 p-4">
-            <PopoverTitle className="text-base">{m['settings.usage_limits']()}</PopoverTitle>
+            <PopoverTitle className="text-body">{m['settings.usage_limits']()}</PopoverTitle>
             {usageItems(me).map((item) =>
               'limit' in item ? (
                 <UsageBar key={item.id} {...item} />
@@ -55,7 +55,9 @@ export function UsagePopover({
                     <span>{item.label}</span>
                     <span className="text-right text-muted-foreground">{item.note}</span>
                   </div>
-                  {item.hint && <span className="text-xs text-faint-foreground">{item.hint}</span>}
+                  {item.hint && (
+                    <span className="text-caption text-faint-foreground">{item.hint}</span>
+                  )}
                 </div>
               ),
             )}
@@ -67,7 +69,7 @@ export function UsagePopover({
                   ? planName(me.subscription.plan)
                   : m['billing.plan_free']()}
               </span>
-              {plus && <span className="text-xs text-muted-foreground">{periodLine(me)}</span>}
+              {plus && <span className="text-caption text-muted-foreground">{periodLine(me)}</span>}
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <Link
@@ -128,7 +130,7 @@ function UsageBar({
         <MeterLabel className="font-normal">{label}</MeterLabel>
         <MeterValue>{() => value}</MeterValue>
       </Meter>
-      {hint && <span className="text-xs text-faint-foreground">{hint}</span>}
+      {hint && <span className="text-caption text-faint-foreground">{hint}</span>}
     </div>
   )
 }

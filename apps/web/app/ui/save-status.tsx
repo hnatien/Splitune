@@ -22,7 +22,7 @@ function SaveStatus({ state, savingLabel, savedLabel, errorLabel, className }: S
       data-slot="save-status"
       role="status"
       className={cn(
-        'inline-flex min-h-5.5 items-center gap-1.5 text-sm [&_svg]:size-3.5',
+        'inline-flex min-h-5.5 items-center gap-1.5 text-body-sm [&_svg]:size-3.5',
         className,
       )}
     >

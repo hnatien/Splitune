@@ -25,8 +25,8 @@ const Marks = () => (
         ['Favicon', '/favicon.svg'],
       ].map(([label, src]) => (
         <figure key={src} className="m-0 flex flex-col items-center gap-2">
-          <img src={src} alt="" className="size-24 rounded-2xl border border-border bg-paper" />
-          <figcaption className="text-sm text-muted-foreground">{label}</figcaption>
+          <img src={src} alt="" className="size-24 rounded-panel border border-border bg-paper" />
+          <figcaption className="text-body-sm text-muted-foreground">{label}</figcaption>
         </figure>
       ))}
       <figure className="m-0 flex flex-col items-center gap-2">
@@ -34,7 +34,7 @@ const Marks = () => (
           <img src="/favicon.svg" alt="" className="size-8" />
           <img src="/favicon.svg" alt="" className="size-4" />
         </span>
-        <figcaption className="text-sm text-muted-foreground">32 / 16</figcaption>
+        <figcaption className="text-body-sm text-muted-foreground">32 / 16</figcaption>
       </figure>
     </div>
   </div>
@@ -45,7 +45,7 @@ const Icons = () => (
     {Object.entries(CUSTOM_ICONS).map(([name, Icon]) => (
       <li
         key={name}
-        className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card p-4"
+        className="flex flex-col items-center gap-3 rounded-field border border-border bg-raised p-4"
       >
         <span className="flex items-end gap-3">
           <Icon aria-hidden className="size-4" />
@@ -53,7 +53,7 @@ const Icons = () => (
           <Icon aria-hidden className="size-6" />
           <Icon aria-hidden className="size-8" />
         </span>
-        <span className="text-sm">{name.replace(/Icon$/, '')}</span>
+        <span className="text-body-sm">{name.replace(/Icon$/, '')}</span>
       </li>
     ))}
   </ul>

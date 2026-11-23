@@ -1,5 +1,5 @@
 /*
- * Tier 2 — semantic roles and tier 3 — component tokens, per appearance
+ * Tier 2 — the ramp and the semantic roles, and tier 3 — component tokens, per appearance
  * (docs/specs/26-design-system.md §2–§4.7).
  *
  * <html data-appearance="dark|light|stage" data-contrast="normal|more"> is set before first paint
@@ -8,18 +8,18 @@
  * data-appearance, so a subtree can show the other theme (subtree theming, §2); increased contrast
  * follows into such subtrees.
  *
- * The interface is black, white and the greys between them: the primary action is the ink itself
- * (a white pill on black, a black pill on white) and "now" (playhead, loop edges, current beat) is
- * the ink too. Colour is kept for meaning: status, stems and the two hands.
+ * The interface is the ink and the greys behind it. Each appearance binds --gray-1 … --gray-12 to
+ * its own ramp, and a role points at the same step in both: the role table below is written twice
+ * and tokens.test.ts holds the two copies equal. The filled control, selection, focus and "now"
+ * (playhead, loop edges, current beat) are all the ink, step 12. Nothing is selected by a grey
+ * fill: --wash only ever sits under an ink line. Colour is kept for meaning (status, stems, the
+ * two hands) and never carries it alone.
  *
- * Semantic roles point at primitives or other roles. Component tokens point at a role, or carry
- * their own tuned literal (never a primitive step, so retuning a primitive can't silently move a
+ * Roles point at ramp steps, primitives or other roles. Component tokens point at a role, or carry
+ * their own tuned literal (never a primitive, so retuning a ramp can't silently move a
  * contrast-checked score colour). Every value is contrast-tested in src/contrast.test.ts.
  *
- * "No shadow" (--elevation-1, --elevation-play, and --glow where it is dropped) is a transparent
- * zero shadow, not the keyword none: Tailwind composes shadow-* and ring-* into one box-shadow
- * list, and a none in that list would void the whole declaration, taking a checked card's ring
- * with it.
+ * Increased contrast moves text, lines and boundaries one step up the ramp (the "-more" roles).
  */
 
 /* Dark (the default; stage shares its colours) */
@@ -28,87 +28,86 @@
 [data-appearance="stage"] {
   color-scheme: dark;
 
-  --background: var(--black);
-  --foreground: var(--white);
-  --card: var(--gray-182);
-  --card-foreground: var(--foreground);
-  --popover: var(--gray-218);
-  --popover-foreground: var(--foreground);
-  --primary: var(--white);
-  --primary-foreground: var(--black);
-  --primary-hover: var(--gray-885);
-  --secondary: var(--gray-239);
-  --secondary-foreground: var(--foreground);
-  --muted: var(--gray-239);
-  --muted-foreground: var(--gray-715);
-  --accent: var(--gray-285);
-  --accent-foreground: var(--foreground);
+  --gray-1: var(--dark-1);
+  --gray-2: var(--dark-2);
+  --gray-3: var(--dark-3);
+  --gray-4: var(--dark-4);
+  --gray-5: var(--dark-5);
+  --gray-6: var(--dark-6);
+  --gray-7: var(--dark-7);
+  --gray-8: var(--dark-8);
+  --gray-9: var(--dark-9);
+  --gray-10: var(--dark-10);
+  --gray-11: var(--dark-11);
+  --gray-12: var(--dark-12);
+
+  --background: var(--gray-1);
+  --panel: var(--gray-2);
+  --raised: var(--gray-3);
+  --hover: var(--gray-4);
+  --wash: var(--gray-4);
+  --pressed: var(--gray-5);
+  --border: var(--gray-6);
+  --border-strong: var(--gray-7);
+  --edge: var(--gray-8);
+  --faint-foreground: var(--gray-9);
+  --muted-foreground: var(--gray-10);
+  --primary-hover: var(--gray-11);
+  --foreground: var(--gray-12);
+  --primary: var(--gray-12);
+  --primary-foreground: var(--gray-1);
+  --selected: var(--gray-12);
+  --signal: var(--gray-12);
+  --ring: var(--gray-12);
+  --border-more: var(--gray-7);
+  --border-strong-more: var(--gray-8);
+  --edge-more: var(--gray-9);
+  --faint-foreground-more: var(--gray-10);
+  --muted-foreground-more: var(--gray-11);
+
   --destructive: var(--bad-dark);
-  --destructive-foreground: var(--black);
-  --border: var(--gray-269);
-  --input: var(--gray-545);
-  --ring: var(--foreground);
-  --faint-foreground: var(--gray-670);
-  --border-strong: var(--gray-360);
-  --primary-ink: var(--foreground);
-  --primary-soft: var(--white-soft);
-  --primary-line: var(--white-line);
-  --signal: var(--foreground);
+  --destructive-foreground: var(--gray-1);
+  --destructive-surface: var(--bad-surface-dark);
+  --success: var(--ok-dark);
+  --success-surface: var(--ok-surface-dark);
   --unsure: var(--unsure-dark);
   --unsure-surface: var(--unsure-surface-dark);
-  --success: var(--ok-dark);
-  --warning: var(--muted-foreground);
-  --info: var(--muted-foreground);
   --edited: var(--success);
-  --surface-raised: var(--card);
-  --surface-sunken: var(--background);
-  --success-surface: var(--ok-surface-dark);
-  --warning-surface: var(--accent);
-  --info-surface: var(--card);
-  --destructive-surface: var(--bad-surface-dark);
   --paper: var(--background);
   --ink: var(--foreground);
   --conf-medium: var(--ink);
   --conf-medium-edge: var(--faint-foreground);
-  --conf-low: var(--unsure);
+  --conf-low: var(--ink);
+  --conf-low-edge: var(--unsure);
   --stem-guitar: var(--teal-dark);
   --stem-bass: var(--violet-dark);
   --stem-drums: var(--sky-dark);
   --stem-vocals: var(--pink-dark);
   --stem-keys: var(--lime-dark);
   --stem-other: var(--stone-dark);
-  --muted-foreground-more: var(--gray-845);
-  --faint-foreground-more: var(--gray-770);
-  --border-more: var(--gray-360);
-  --border-strong-more: var(--gray-478);
-  --input-more: var(--gray-650);
-  --elevation-1: 0 0 0 0 transparent;
-  --elevation-2: 0 2px 6px oklch(0 0 0 / 0.3), 0 16px 40px oklch(0 0 0 / 0.5);
-  --elevation-3: 0 2px 6px oklch(0 0 0 / 0.3), 0 24px 64px oklch(0 0 0 / 0.6);
-  --elevation-capsule: 0 1px 2px oklch(0 0 0 / 0.12);
-  --elevation-play: 0 0 0 0 transparent;
-  --glow: 0 0 0 1px var(--primary-line);
+  --elevation-popover: 0 2px 6px oklch(0 0 0 / 0.3), 0 16px 40px oklch(0 0 0 / 0.5);
+  --elevation-dialog: 0 2px 6px oklch(0 0 0 / 0.3), 0 24px 64px oklch(0 0 0 / 0.6);
   --read-scale: 1;
 
-  --bar-current: oklch(0.239 0 0);
-  --loop-fill: var(--bar-current);
-  --score-loop-fill: oklch(0.191 0 0);
+  --bar-current: var(--wash);
+  --loop-fill: var(--wash);
+  --score-loop-fill: var(--panel);
   --loop-edge: var(--signal);
   --playhead: var(--signal);
   --score-loop-edge: var(--signal);
   --score-playhead: var(--signal);
-  --now-line: var(--foreground);
-  --staff: oklch(0.555 0 0);
+  --now-line: var(--signal);
+  --staff: var(--edge);
   --staff-more: oklch(0.62 0 0);
-  --waveform-peak: oklch(0.53 0 0);
-  --waveform-peak-more: oklch(0.65 0 0);
+  --waveform-peak: var(--edge);
+  --waveform-peak-more: var(--edge-more);
   --waveform-rms: var(--muted-foreground);
   --waveform-played: var(--muted-foreground);
   --waveform-loop: var(--signal);
   --hatch: var(--unsure);
   --beat-now: var(--signal);
   --beat-done: var(--faint-foreground);
-  --beat-slot: var(--input);
+  --beat-slot: var(--edge);
   --key-white: oklch(0.95 0 0);
   --key-black: oklch(0.165 0 0);
   --key-left: oklch(0.59 0.11 230);
@@ -120,9 +119,7 @@
   --melody-vocals: var(--stem-vocals);
   --tile-foreground: var(--primary-foreground);
   --scrim: oklch(0 0 0 / 0.7);
-  --capsule: var(--accent);
-  --hud-bg: var(--accent);
-  --hud-bg-more: var(--accent);
+  --hud-bg: var(--raised);
   --hud-fg: var(--foreground);
 }
 
@@ -135,87 +132,86 @@
 [data-appearance="light"] {
   color-scheme: light;
 
-  --background: var(--white);
-  --foreground: var(--gray-159);
-  --card: var(--white);
-  --card-foreground: var(--foreground);
-  --popover: var(--white);
-  --popover-foreground: var(--foreground);
-  --primary: var(--gray-159);
-  --primary-foreground: var(--white);
-  --primary-hover: var(--gray-321);
-  --secondary: var(--gray-970);
-  --secondary-foreground: var(--foreground);
-  --muted: var(--gray-970);
-  --muted-foreground: var(--gray-420);
-  --accent: var(--gray-943);
-  --accent-foreground: var(--foreground);
+  --gray-1: var(--light-1);
+  --gray-2: var(--light-2);
+  --gray-3: var(--light-3);
+  --gray-4: var(--light-4);
+  --gray-5: var(--light-5);
+  --gray-6: var(--light-6);
+  --gray-7: var(--light-7);
+  --gray-8: var(--light-8);
+  --gray-9: var(--light-9);
+  --gray-10: var(--light-10);
+  --gray-11: var(--light-11);
+  --gray-12: var(--light-12);
+
+  --background: var(--gray-1);
+  --panel: var(--gray-2);
+  --raised: var(--gray-3);
+  --hover: var(--gray-4);
+  --wash: var(--gray-4);
+  --pressed: var(--gray-5);
+  --border: var(--gray-6);
+  --border-strong: var(--gray-7);
+  --edge: var(--gray-8);
+  --faint-foreground: var(--gray-9);
+  --muted-foreground: var(--gray-10);
+  --primary-hover: var(--gray-11);
+  --foreground: var(--gray-12);
+  --primary: var(--gray-12);
+  --primary-foreground: var(--gray-1);
+  --selected: var(--gray-12);
+  --signal: var(--gray-12);
+  --ring: var(--gray-12);
+  --border-more: var(--gray-7);
+  --border-strong-more: var(--gray-8);
+  --edge-more: var(--gray-9);
+  --faint-foreground-more: var(--gray-10);
+  --muted-foreground-more: var(--gray-11);
+
   --destructive: var(--bad-light);
-  --destructive-foreground: var(--white);
-  --border: var(--gray-922);
-  --input: var(--gray-625);
-  --ring: var(--foreground);
-  --faint-foreground: var(--gray-520);
-  --border-strong: var(--gray-845);
-  --primary-ink: var(--foreground);
-  --primary-soft: var(--ink-soft);
-  --primary-line: var(--ink-line);
-  --signal: var(--foreground);
+  --destructive-foreground: var(--gray-1);
+  --destructive-surface: var(--bad-surface-light);
+  --success: var(--ok-light);
+  --success-surface: var(--ok-surface-light);
   --unsure: var(--unsure-light);
   --unsure-surface: var(--unsure-surface-light);
-  --success: var(--ok-light);
-  --warning: var(--muted-foreground);
-  --info: var(--muted-foreground);
   --edited: var(--success);
-  --surface-raised: var(--card);
-  --surface-sunken: var(--background);
-  --success-surface: var(--ok-surface-light);
-  --warning-surface: var(--accent);
-  --info-surface: var(--card);
-  --destructive-surface: var(--bad-surface-light);
   --paper: var(--background);
   --ink: var(--foreground);
   --conf-medium: var(--ink);
   --conf-medium-edge: var(--faint-foreground);
-  --conf-low: var(--unsure);
+  --conf-low: var(--ink);
+  --conf-low-edge: var(--unsure);
   --stem-guitar: var(--teal-light);
   --stem-bass: var(--violet-light);
   --stem-drums: var(--sky-light);
   --stem-vocals: var(--pink-light);
   --stem-keys: var(--lime-light);
   --stem-other: var(--stone-light);
-  --muted-foreground-more: var(--gray-321);
-  --faint-foreground-more: var(--gray-420);
-  --border-more: var(--gray-770);
-  --border-strong-more: var(--gray-650);
-  --input-more: var(--gray-510);
-  --elevation-1: 0 0 0 0 transparent;
-  --elevation-2: 0 2px 6px oklch(0 0 0 / 0.04), 0 12px 32px oklch(0 0 0 / 0.1);
-  --elevation-3: 0 2px 6px oklch(0 0 0 / 0.05), 0 24px 64px oklch(0 0 0 / 0.14);
-  --elevation-capsule: 0 1px 2px oklch(0 0 0 / 0.12);
-  --elevation-play: 0 0 0 0 transparent;
-  --glow: 0 0 0 1px var(--primary-line);
+  --elevation-popover: 0 2px 6px oklch(0 0 0 / 0.04), 0 12px 32px oklch(0 0 0 / 0.1);
+  --elevation-dialog: 0 2px 6px oklch(0 0 0 / 0.05), 0 24px 64px oklch(0 0 0 / 0.14);
   --read-scale: 1;
 
-  --bar-current: oklch(0.943 0 0);
-  --loop-fill: var(--bar-current);
-  --score-loop-fill: oklch(0.97 0 0);
+  --bar-current: var(--wash);
+  --loop-fill: var(--wash);
+  --score-loop-fill: var(--panel);
   --loop-edge: var(--signal);
   --playhead: var(--signal);
   --score-loop-edge: var(--signal);
   --score-playhead: var(--signal);
-  --now-line: var(--foreground);
-  --staff: oklch(0.6 0 0);
+  --now-line: var(--signal);
+  --staff: var(--edge);
   --staff-more: oklch(0.5 0 0);
-  --waveform-peak: oklch(0.63 0 0);
-  --waveform-peak-more: oklch(0.55 0 0);
+  --waveform-peak: var(--edge);
+  --waveform-peak-more: var(--edge-more);
   --waveform-rms: var(--muted-foreground);
   --waveform-played: var(--muted-foreground);
   --waveform-loop: var(--signal);
   --hatch: var(--unsure);
   --beat-now: var(--signal);
   --beat-done: var(--faint-foreground);
-  --beat-slot: var(--input);
+  --beat-slot: var(--edge);
   --key-white: oklch(0.99 0 0);
   --key-black: oklch(0.21 0 0);
   --key-left: oklch(0.59 0.11 230);
@@ -227,9 +223,7 @@
   --melody-vocals: var(--stem-vocals);
   --tile-foreground: oklch(0.99 0 0);
   --scrim: oklch(0 0 0 / 0.5);
-  --capsule: var(--card);
-  --hud-bg: var(--accent);
-  --hud-bg-more: var(--accent);
+  --hud-bg: var(--raised);
   --hud-fg: var(--foreground);
 }
 
@@ -237,26 +231,13 @@
 :root,
 [data-appearance] {
   --stem-mix: var(--foreground);
-  --chart-1: var(--stem-guitar);
-  --chart-2: var(--stem-bass);
-  --chart-3: var(--stem-drums);
-  --chart-4: var(--stem-vocals);
-  --chart-5: var(--stem-keys);
-  --sidebar: var(--card);
-  --sidebar-foreground: var(--card-foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
   --focus-width: 2px;
 }
 
 /*
- * Increased contrast (§2): muted and faint text, borders, field boundaries and staff lines one step
- * further from the ground, the HUD opaque, the focus outline 3 px and no ring glow. It applies on
- * <html> and again on every themed subtree, whose own "-more" values it picks.
+ * Increased contrast (§2): muted and faint text, hairlines, control edges, staff lines and the
+ * waveform one ramp step further from the ground, and the focus outline 3 px. It applies on <html>
+ * and again on every themed subtree, whose own "-more" values it picks.
  */
 :root[data-contrast="more"],
 [data-contrast="more"] [data-appearance] {
@@ -264,12 +245,9 @@
   --faint-foreground: var(--faint-foreground-more);
   --border: var(--border-more);
   --border-strong: var(--border-strong-more);
-  --input: var(--input-more);
+  --edge: var(--edge-more);
   --staff: var(--staff-more);
   --waveform-peak: var(--waveform-peak-more);
-  --hud-bg: var(--hud-bg-more);
-  --glow: 0 0 0 0 transparent;
-  --elevation-play: 0 0 0 0 transparent;
   --focus-width: 3px;
 }
 
@@ -280,64 +258,49 @@
     --faint-foreground: var(--faint-foreground-more);
     --border: var(--border-more);
     --border-strong: var(--border-strong-more);
-    --input: var(--input-more);
+    --edge: var(--edge-more);
     --staff: var(--staff-more);
     --waveform-peak: var(--waveform-peak-more);
-    --hud-bg: var(--hud-bg-more);
-    --glow: 0 0 0 0 transparent;
-    --elevation-play: 0 0 0 0 transparent;
     --focus-width: 3px;
   }
 }
 
 /*
  * Forced colours (Windows High Contrast): roles yield to system colours. The doubled selectors
- * outrank the (0,2,0) contrast blocks above. Components that tint a selected or pressed surface
- * with bg-accent behind ordinary text drop the tint there (forced-colors:…:bg-card): CanvasText on
- * Highlight is unreadable; the Highlight border still marks the state.
+ * outrank the (0,2,0) contrast blocks above. Surfaces and washes become Canvas, so a state shows
+ * through its Highlight edge or line, which is how the system marks it anyway.
  */
 @media (forced-colors: active) {
   :root:root,
   [data-appearance][data-appearance] {
     --background: Canvas;
+    --panel: Canvas;
+    --raised: Canvas;
+    --hover: Canvas;
+    --wash: Canvas;
+    --pressed: Canvas;
     --foreground: CanvasText;
-    --card: Canvas;
-    --card-foreground: CanvasText;
-    --popover: Canvas;
-    --popover-foreground: CanvasText;
+    --muted-foreground: CanvasText;
+    --faint-foreground: CanvasText;
     --primary: Highlight;
     --primary-foreground: HighlightText;
     --primary-hover: Highlight;
-    --secondary: Canvas;
-    --secondary-foreground: CanvasText;
-    --muted: Canvas;
-    --muted-foreground: CanvasText;
-    --faint-foreground: CanvasText;
-    --accent: Highlight;
-    --accent-foreground: HighlightText;
     --border: CanvasText;
     --border-strong: CanvasText;
-    --input: CanvasText;
-    --ring: Highlight;
-    --primary-ink: CanvasText;
-    --primary-soft: Canvas;
-    --primary-line: Highlight;
+    --edge: CanvasText;
+    --selected: Highlight;
     --signal: Highlight;
+    --ring: Highlight;
     --unsure: CanvasText;
     --unsure-surface: Canvas;
-    --surface-raised: Canvas;
-    --surface-sunken: Canvas;
     --success-surface: Canvas;
-    --warning-surface: Canvas;
-    --info-surface: Canvas;
     --destructive-surface: Canvas;
     --paper: Canvas;
     --ink: CanvasText;
     --conf-medium: CanvasText;
     --conf-medium-edge: CanvasText;
     --conf-low: CanvasText;
-    --glow: 0 0 0 0 transparent;
-    --elevation-play: 0 0 0 0 transparent;
+    --conf-low-edge: CanvasText;
     --bar-current: Canvas;
     --loop-fill: Canvas;
     --score-loop-fill: Canvas;
@@ -364,6 +327,5 @@
     --hud-bg: Canvas;
     --hud-fg: CanvasText;
     --scrim: transparent;
-    --capsule: Canvas;
   }
 }

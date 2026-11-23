@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 // Onboarding progress (27 §3.3, 26 §12.2): 8 px dots, the current one a 22 × 8 pill; done and
-// current filled with the ink, upcoming with --input; plus the "Step 2 of 5" text, so progress
+// current filled with the ink, upcoming with --edge; plus the "Step 2 of 5" text, so progress
 // never relies on the dots (colour and shape) alone.
 
 function StepDots({
@@ -30,7 +30,7 @@ function StepDots({
               key={n}
               aria-current={n === step ? 'step' : undefined}
               className={cn(
-                'size-2 rounded-full bg-input transition-[width] duration-(--duration-base) ease-standard forced-colors:border forced-colors:border-current',
+                'size-2 rounded-full bg-edge transition-[width] duration-(--duration-base) ease-standard forced-colors:border forced-colors:border-current',
                 n <= step && 'bg-foreground',
                 n === step && 'w-5.5',
               )}
@@ -40,7 +40,7 @@ function StepDots({
           )
         })}
       </ol>
-      <span className="text-sm text-faint-foreground tabular-nums">{text}</span>
+      <span className="text-body-sm text-faint-foreground tabular-nums">{text}</span>
     </div>
   )
 }

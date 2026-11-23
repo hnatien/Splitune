@@ -19,11 +19,11 @@ export function BillingCard({
   return (
     <section aria-labelledby={id} className="flex flex-col border-t border-border">
       <div className="flex flex-col gap-1.5 py-6">
-        <h2 id={id} className="text-xl">
+        <h2 id={id} className="text-heading">
           {title}
         </h2>
-        {price && <p className="text-2xl tabular-nums">{price}</p>}
-        {note && <p className="text-base text-muted-foreground">{note}</p>}
+        {price && <p className="text-display tabular-nums">{price}</p>}
+        {note && <p className="text-body text-muted-foreground">{note}</p>}
       </div>
       {children && (
         <div className="flex flex-col gap-4 border-t border-border pt-6">{children}</div>

@@ -6,14 +6,7 @@ import { extendTailwindMerge } from 'tailwind-merge'
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
-      spacing: [
-        'target-min',
-        'target-sm',
-        'target',
-        'target-practice-2',
-        'target-practice',
-        'control',
-      ],
+      spacing: ['target-min', 'target-min', 'target', 'target-practice', 'target-play', 'control'],
       shadow: ['1', '2', '3'],
       text: [
         'button-lg',

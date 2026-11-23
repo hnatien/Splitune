@@ -4,7 +4,7 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 
-// Doc 26 §12.1 (`.sheet` + `.overlay`): --card, a --border edge, 22 px corners, --elevation-3 over
+// Doc 26 §12.1 (`.sheet` + `.overlay`): --raised, a --border edge, 22 px corners, --elevation-dialog over
 // the --scrim. At most one dialog at a time; AlertDialog is for irreversible actions only.
 
 function Dialog(props: DialogPrimitive.Root.Props) {
@@ -51,7 +51,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-(--z-overlay) grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-4xl border border-border bg-popover p-6 text-base text-popover-foreground shadow-3 duration-(--duration-slow) sm:max-w-md data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
+          'fixed top-1/2 left-1/2 z-(--z-overlay) grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-dialog border border-border bg-raised p-6 text-body text-foreground shadow-dialog duration-(--duration-slow) sm:max-w-md data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
           className,
         )}
         {...props}
@@ -95,7 +95,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-xl', className)}
+      className={cn('text-heading', className)}
       {...props}
     />
   )
@@ -106,7 +106,7 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        'text-base text-muted-foreground *:[a]:text-primary-ink *:[a]:underline *:[a]:underline-offset-4',
+        'text-body text-muted-foreground *:[a]:text-foreground *:[a]:underline *:[a]:underline-offset-4',
         className,
       )}
       {...props}

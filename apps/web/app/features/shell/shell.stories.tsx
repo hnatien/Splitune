@@ -48,7 +48,7 @@ const seed = (client: QueryClient) => {
 const appShell = (path: string) => () => (
   <AppStory path={path} seed={seed}>
     <AppShell me={ME}>
-      <h1 className="text-3xl">Library</h1>
+      <h1 className="text-hero">Library</h1>
       <p className="mt-2 text-muted-foreground">Page content</p>
     </AppShell>
   </AppStory>
@@ -98,7 +98,7 @@ const appShellAs = (me: typeof ME) => () => (
     }}
   >
     <AppShell me={me}>
-      <h1 className="text-3xl">Library</h1>
+      <h1 className="text-hero">Library</h1>
     </AppShell>
   </AppStory>
 )

@@ -42,7 +42,7 @@ function InspectorTabs() {
     >
       <TabsList className="shrink-0 px-3">
         {INSPECTOR_TABS.map((value) => (
-          <TabsTrigger key={value} value={value} className="min-h-target-practice-2 font-medium">
+          <TabsTrigger key={value} value={value} className="min-h-target-practice font-medium">
             {LABEL[value]()}
             {value === 'mix' && mixChanged && (
               <span data-slot="mix-changed" className="size-1.5 rounded-full bg-foreground">
@@ -93,7 +93,7 @@ export function Inspector({ docked }: { docked: boolean }) {
       <aside
         aria-label={m['practice.tools_label']()}
         data-slot="inspector"
-        className="flex w-95 shrink-0 flex-col border-l border-border bg-card"
+        className="flex w-95 shrink-0 flex-col border-l border-border bg-raised"
       >
         <InspectorTabs />
       </aside>

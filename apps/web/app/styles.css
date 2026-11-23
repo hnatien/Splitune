@@ -75,7 +75,7 @@ html:active-view-transition-type(library-reorder) [data-vt-song] {
 }
 ::view-transition-group(.song-entry) {
   animation-duration: var(--duration-slower);
-  animation-timing-function: var(--ease-smooth);
+  animation-timing-function: var(--ease-standard);
 }
 /* A card and its row are one entry changing shape (matched geometry): the frame springs between
    the two boxes while both images keep their own size, pinned top-left (where tile and title sit

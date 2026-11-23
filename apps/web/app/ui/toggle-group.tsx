@@ -83,14 +83,14 @@ const ToggleGroupContext = React.createContext<GroupStyle>({
 })
 
 /**
- * Segmented control (doc 26 §12.1): a borderless --muted pill track with 3 px padding, painted
+ * Segmented control (doc 26 §12.1): a borderless --panel pill track with 3 px padding, painted
  * 40 px tall behind items whose boxes are the target (44 browse, 48 practice) and whose faces are
- * 34. The pressed item is a raised pill capsule (--capsule: the card colour in Light, --accent in
+ * 34. The pressed item is a raised pill capsule (--raised: the card colour in Light, --hover in
  * Dark) with --foreground text (the capsule is the non-colour cue). `variant` is kept for API
  * compatibility; the track styles every item.
  *
  * The capsule is one element behind the items that slides (and resizes) to the pressed one on
- * --ease-snappy (26 §10), like a segmented Picker's selection. It takes the item's whole box and,
+ * --ease-standard (26 §10), like a segmented Picker's selection. It takes the item's whole box and,
  * like the item, paints only the 34 px face (`::before`, with its 1 px shadow) inside it. With no single pressed item
  * (none chosen, several, or before hydration) items show their own pressed style.
  * `capsuleClassName` recolours the capsule for groups whose items use another palette.
@@ -115,7 +115,7 @@ function ToggleGroup({
       data-capsule={box ? '' : undefined}
       orientation={orientation}
       className={cn(
-        'group/toggle-group relative isolate flex w-fit flex-row items-center gap-0.5 px-0.75 py-px [--box:var(--control-size)] before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.5rem)/2)] before:-z-10 before:rounded-full before:bg-muted contrast-more:before:border contrast-more:before:border-border-strong forced-colors:before:border forced-colors:before:border-border data-[size=practice-2]:[--box:var(--target-practice-2)] data-[size=practice]:[--box:var(--target-practice)] data-vertical:flex-col data-vertical:items-stretch data-vertical:py-0.75 data-vertical:before:inset-y-0 data-vertical:before:rounded-3xl',
+        'group/toggle-group relative isolate flex w-fit flex-row items-center gap-0.5 px-0.75 py-px [--box:var(--control-size)] before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.5rem)/2)] before:-z-10 before:rounded-full before:bg-panel contrast-more:before:border contrast-more:before:border-border-strong forced-colors:before:border forced-colors:before:border-border data-[size=practice-2]:[--box:var(--target-practice)] data-[size=practice]:[--box:var(--target-play)] data-vertical:flex-col data-vertical:items-stretch data-vertical:py-0.75 data-vertical:before:inset-y-0 data-vertical:before:rounded-panel',
         className,
       )}
       {...props}
@@ -125,9 +125,9 @@ function ToggleGroup({
           aria-hidden
           data-slot="toggle-group-capsule"
           className={cn(
-            'pointer-events-none absolute top-0 left-0 before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.125rem)/2)] before:rounded-full before:bg-capsule before:shadow-capsule forced-colors:before:bg-card forced-colors:before:inset-ring forced-colors:before:inset-ring-signal',
+            'pointer-events-none absolute top-0 left-0 before:absolute before:inset-x-0 before:inset-y-[calc((var(--box)-2.125rem)/2)] before:rounded-full before:bg-raised before:shadow-raised forced-colors:before:bg-raised forced-colors:before:inset-ring forced-colors:before:inset-ring-signal',
             box.slide &&
-              'transition-[translate,width,height] duration-(--duration-slower) ease-snappy',
+              'transition-[translate,width,height] duration-(--duration-slower) ease-standard',
             capsuleClassName,
           )}
           style={{
@@ -157,7 +157,7 @@ function ToggleGroupItem({
       data-slot="toggle-group-item"
       className={cn(
         toggleVariants({ variant: context.variant ?? variant, size: context.size ?? size }),
-        'relative rounded-full border-x-0 px-4 text-md font-medium inset-ring-0 [--face:2.125rem] focus-visible:z-10 data-pressed:bg-capsule data-pressed:text-foreground data-pressed:hover:bg-capsule data-pressed:hover:text-foreground data-pressed:inset-ring-0 group-data-capsule/toggle-group:data-pressed:bg-transparent',
+        'relative rounded-full border-x-0 px-4 text-label font-medium inset-ring-0 [--face:2.125rem] focus-visible:z-10 data-pressed:bg-raised data-pressed:text-foreground data-pressed:hover:bg-raised data-pressed:hover:text-foreground data-pressed:inset-ring-0 group-data-capsule/toggle-group:data-pressed:bg-transparent',
         className,
       )}
       {...props}

@@ -40,7 +40,7 @@ const LEGEND = {
 const LABEL = 'Best clean speed rose from 60 to 80 percent over 9 sessions'
 
 function Frame({ children }: { children: React.ReactNode }) {
-  return <div className="w-86 rounded-xl border border-border bg-card p-3.5">{children}</div>
+  return <div className="w-86 rounded-field border border-border bg-raised p-3.5">{children}</div>
 }
 
 const nine = () => (
@@ -120,7 +120,7 @@ export const Sparklines: Story = {
       states={[
         [
           'Nine sessions',
-          <div key="9" className="w-75 rounded-xl bg-muted p-4">
+          <div key="9" className="w-75 rounded-field bg-panel p-4">
             <Sparkline
               values={NINE.map((p) => ({ at: p.at, value: p.best }))}
               domain={DOMAIN}
@@ -130,7 +130,7 @@ export const Sparklines: Story = {
         ],
         [
           'One session',
-          <div key="1" className="w-75 rounded-xl bg-muted p-4">
+          <div key="1" className="w-75 rounded-field bg-panel p-4">
             <Sparkline
               values={[{ at: END, value: 70 }]}
               domain={DOMAIN}

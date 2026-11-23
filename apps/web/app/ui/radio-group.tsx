@@ -13,7 +13,7 @@ function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
 }
 
 /**
- * `.check` as a radio (doc 26 §12.1): an 18 px ring (--input edge) painted in the middle of a
+ * `.check` as a radio (doc 26 §12.1): an 18 px ring (--edge edge) painted in the middle of a
  * 44 px target box; selected fills it with --signal around a --primary-foreground dot.
  */
 function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
@@ -26,7 +26,7 @@ function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
       )}
       {...props}
     >
-      <span className="grid size-4.5 place-items-center rounded-full bg-background inset-ring inset-ring-input transition-colors group-aria-invalid/radio-group-item:inset-ring-destructive group-data-checked/radio-group-item:bg-signal group-data-checked/radio-group-item:inset-ring-signal group-data-disabled/radio-group-item:bg-muted group-data-disabled/radio-group-item:inset-ring-input">
+      <span className="grid size-4.5 place-items-center rounded-full bg-background inset-ring inset-ring-edge transition-colors group-aria-invalid/radio-group-item:inset-ring-destructive group-data-checked/radio-group-item:bg-signal group-data-checked/radio-group-item:inset-ring-signal group-data-disabled/radio-group-item:bg-panel group-data-disabled/radio-group-item:inset-ring-edge">
         <RadioPrimitive.Indicator data-slot="radio-group-indicator" className="grid">
           <span className="size-2 rounded-full bg-primary-foreground group-data-disabled/radio-group-item:bg-faint-foreground" />
         </RadioPrimitive.Indicator>

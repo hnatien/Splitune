@@ -105,7 +105,7 @@ export function EditHistory() {
         <h3 id={titleId} className={`${eyebrow} flex-1`}>
           {m['edit.history']()}
         </h3>
-        <label htmlFor={switchId} className="text-sm text-muted-foreground">
+        <label htmlFor={switchId} className="text-body-sm text-muted-foreground">
           {m['fix.show_original']()}
         </label>
         <Switch
@@ -120,13 +120,13 @@ export function EditHistory() {
           const target = artefactFor(kind)
           return (
             <li key={`${kind}-${index}`} className="flex items-center gap-2.5">
-              <span className="min-w-0 flex-1 text-sm tabular-nums">
+              <span className="min-w-0 flex-1 text-body-sm tabular-nums">
                 {describe(op, inverse, base, grid, music?.noteNames)}
               </span>
               {pending && waiting ? (
                 <Badge variant="neutral">{m['fix.saved_device']()}</Badge>
               ) : (
-                <span className="shrink-0 text-sm text-faint-foreground">
+                <span className="shrink-0 text-body-sm text-faint-foreground">
                   {now - at < HOUR_MS ? m['fix.just_now']() : formatRelativeDate(new Date(at))}
                 </span>
               )}
@@ -145,7 +145,7 @@ export function EditHistory() {
           )
         })}
       </ol>
-      <p className="text-sm text-muted-foreground">{m['practice.fix_saved_note']()}</p>
+      <p className="text-body-sm text-muted-foreground">{m['practice.fix_saved_note']()}</p>
     </section>
   )
 }

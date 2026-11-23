@@ -35,7 +35,7 @@ export function MarketingShell({
           <Link
             to="/"
             aria-label={m['nav.home']()}
-            className="inline-flex min-h-target items-center rounded-md"
+            className="inline-flex min-h-target items-center rounded-media"
           >
             <Wordmark />
           </Link>
@@ -122,9 +122,9 @@ export function SiteFooter() {
     <footer className="mx-auto w-full max-w-marketing px-4 sm:px-6 lg:px-8">
       <nav
         aria-label={m['footer.nav']()}
-        className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-border py-8 text-md"
+        className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-border py-8 text-label"
       >
-        <Wordmark tone="mono" className="mr-auto text-base text-muted-foreground max-sm:w-full" />
+        <Wordmark tone="mono" className="mr-auto text-body text-muted-foreground max-sm:w-full" />
         <Link
           to="/how-it-works"
           className="inline-flex min-h-target items-center text-foreground transition-colors duration-(--duration-base) hover:text-muted-foreground"

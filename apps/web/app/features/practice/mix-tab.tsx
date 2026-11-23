@@ -25,7 +25,7 @@ import { stemKind, stemName } from './stem-names'
 // 0 dBFS whatever the mix (12 §7). Before the stems: "The mixer opens once your part is
 // isolated." The tablet and phone drawers show the same body.
 
-const heading = 'text-sm font-medium text-muted-foreground'
+const heading = 'text-body-sm font-medium text-muted-foreground'
 
 function gloss(preset: MixPreset, part: string): string {
   switch (preset) {
@@ -59,7 +59,7 @@ export function MixTab({
     usePractice()
   const part = instrumentLabel(data.instrument).toLowerCase()
   if (!layers.stems) {
-    return <p className="text-md text-muted-foreground">{m['practice.mix_wait']()}</p>
+    return <p className="text-label text-muted-foreground">{m['practice.mix_wait']()}</p>
   }
   const labels = LABELS()
   return (
@@ -133,15 +133,15 @@ function Helpers() {
   return (
     <section className="flex flex-col gap-1">
       <h3 className={heading}>{m['mixer.helpers']()}</h3>
-      <div className="flex min-h-target-practice-2 items-center gap-2">
-        <Label htmlFor={clickId} className="flex-1 text-md font-medium">
+      <div className="flex min-h-target-practice items-center gap-2">
+        <Label htmlFor={clickId} className="flex-1 text-label font-medium">
           {clickName}
         </Label>
         <Popover>
           <PopoverTrigger
             aria-label={`${level}: ${formatDb(clickDb)}`}
             disabled={!layers.beats}
-            className="inline-flex min-h-target-practice-2 shrink-0 items-center justify-end rounded-lg px-2 text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground disabled:text-faint-foreground"
+            className="inline-flex min-h-target-practice shrink-0 items-center justify-end rounded-field px-2 text-body-sm text-muted-foreground tabular-nums hover:bg-panel hover:text-foreground disabled:text-faint-foreground"
           >
             {formatDb(clickDb)}
           </PopoverTrigger>
@@ -166,12 +166,12 @@ function Helpers() {
           onCheckedChange={(on) => send({ type: 'SET_METRONOME', on })}
         />
       </div>
-      <div className="flex min-h-target-practice-2 items-center gap-2">
+      <div className="flex min-h-target-practice items-center gap-2">
         <span className="flex flex-1 flex-col">
-          <Label htmlFor={chordsId} className="text-md font-medium">
+          <Label htmlFor={chordsId} className="text-label font-medium">
             {m['mixer.hear_chords']()}
           </Label>
-          <span id={chordsHint} className="text-sm text-faint-foreground">
+          <span id={chordsHint} className="text-body-sm text-faint-foreground">
             {m['mixer.hear_chords_hint']()}
           </span>
         </span>

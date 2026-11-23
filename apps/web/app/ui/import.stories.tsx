@@ -95,7 +95,7 @@ export const DropZoneDaylight: Story = {
   globals: DAYLIGHT,
 }
 
-/** `.drop`: rest (1 px dashed --border-strong on --muted), dragging and disabled, in both themes. */
+/** `.drop`: rest (1 px dashed --border-strong on --panel), dragging and disabled, in both themes. */
 export const DropZoneStates: Story = {
   globals: BOTH_THEMES,
   render: () => (
@@ -123,7 +123,7 @@ const PEAKS = Array.from({ length: 400 }, (_, i) => {
 
 export const Waveform: Story = {
   render: () => (
-    <div className="max-w-xl rounded-xl border border-border bg-card p-4">
+    <div className="max-w-xl rounded-field border border-border bg-raised p-4">
       <WaveformPreview peaks={PEAKS} label="Waveform of Riff in A minor.mp3, 3:42" />
     </div>
   ),
@@ -138,7 +138,7 @@ export const WaveformStage: Story = { ...Waveform, globals: { appearance: 'stage
 export const WaveformBothThemes: Story = {
   globals: BOTH_THEMES,
   render: () => (
-    <div className="max-w-xl rounded-xl border border-border bg-card p-4">
+    <div className="max-w-xl rounded-field border border-border bg-raised p-4">
       <WaveformPreview peaks={PEAKS} label="Waveform of Riff in A minor.mp3, 3:42" />
     </div>
   ),
@@ -148,7 +148,7 @@ function AnalysisChoice({ disabled = false }: { disabled?: boolean }) {
   const [value, setValue] = useState('full')
   return (
     <fieldset className="max-w-xl">
-      <legend className="mb-3 text-base font-medium">Analysis</legend>
+      <legend className="mb-3 text-body font-medium">Analysis</legend>
       <RadioCardGroup value={value} onValueChange={(v) => setValue(String(v))}>
         <RadioCard
           value="full"

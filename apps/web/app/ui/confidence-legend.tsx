@@ -33,7 +33,7 @@ type ConfidenceLegendProps = {
 }
 
 const sample =
-  'inline-grid min-w-6 place-items-center rounded-xs px-1 font-reading-mono text-sm leading-6 font-semibold'
+  'inline-grid min-w-6 place-items-center rounded-media px-1 font-reading-mono text-body-sm leading-6 font-medium'
 
 function ConfidenceLegend({
   text,
@@ -48,7 +48,7 @@ function ConfidenceLegend({
     <div
       data-slot="confidence-legend"
       className={cn(
-        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground',
+        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-field border border-border bg-raised px-4 py-2 text-body-sm text-foreground',
         className,
       )}
     >
@@ -85,7 +85,7 @@ function ConfidenceLegend({
                 'border-[1.5px] border-dashed border-conf-low text-conf-low',
               )}
             >
-              3<sup className="absolute -top-2 -right-2 font-sans text-2xs font-semibold">?</sup>
+              3<sup className="absolute -top-2 -right-2 font-sans text-kbd font-medium">?</sup>
             </span>
             {labels.low}
           </span>
@@ -130,14 +130,14 @@ function ConfidenceLegendPopover({
             type="button"
             data-slot="confidence-legend-chip"
             className={cn(
-              'group/legend inline-flex min-h-target-practice-2 min-w-target-practice-2 shrink-0 items-center justify-center',
+              'group/legend inline-flex min-h-target-practice min-w-target-practice shrink-0 items-center justify-center',
               className,
             )}
           />
         }
       >
-        <span className="inline-flex h-7.5 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors duration-(--duration-fast) group-hover/legend:bg-muted group-hover/legend:text-foreground group-aria-expanded/legend:bg-muted">
-          <span aria-hidden className="font-mono font-semibold text-unsure">
+        <span className="inline-flex h-7.5 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 text-body-sm font-medium whitespace-nowrap text-muted-foreground transition-colors duration-(--duration-fast) group-hover/legend:bg-panel group-hover/legend:text-foreground group-aria-expanded/legend:bg-panel">
+          <span aria-hidden className="font-mono font-medium text-unsure">
             ?
           </span>
           <span className="max-md:sr-only">{buttonLabel}</span>

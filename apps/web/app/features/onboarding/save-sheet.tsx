@@ -30,12 +30,12 @@ export function SaveSheet({ open, onClose }: { open: boolean; onClose: () => voi
           </DrawerHeader>
           <div className="flex flex-col gap-4 px-6 pb-4">
             <CredentialsForm key={mode} mode={mode} next={SAVED_PATH} idPrefix="save" />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-body-sm text-muted-foreground">
               {signUp ? m['auth.have_account']() : m['auth.new_here']()}{' '}
               <Button
                 variant="link"
                 // Inline in the sentence, with a 44 px tall hit area for fingers (26 §8).
-                className="relative min-h-0 px-0 align-baseline text-sm after:absolute after:inset-x-0 after:top-1/2 after:h-target after:-translate-y-1/2"
+                className="relative min-h-0 px-0 align-baseline text-body-sm after:absolute after:inset-x-0 after:top-1/2 after:h-target after:-translate-y-1/2"
                 onClick={() => setMode(signUp ? 'sign-in' : 'sign-up')}
               >
                 {signUp ? m['auth.sign_in_title']() : m['auth.sign_up_title']()}

@@ -17,7 +17,7 @@ export function UploadPill() {
   const offline = item.phase === 'waiting_online'
   return (
     <Link to="/songs/$songId/practice" params={{ songId: item.songId }} className="rounded-full">
-      <Badge variant="info" className="h-8 px-3 text-sm tabular-nums">
+      <Badge variant="info" className="h-8 px-3 text-body-sm tabular-nums">
         {offline ? <CloudOffIcon aria-hidden /> : <UploadIcon aria-hidden />}
         {offline
           ? m['upload.waiting_online']()

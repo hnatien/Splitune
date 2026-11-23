@@ -119,8 +119,8 @@ function DataExport({ disabled }: { disabled: boolean }) {
         className={cn('size-6 shrink-0', ready ? 'text-success' : 'text-muted-foreground')}
       />
       <div className="flex min-w-0 grow basis-75 flex-col gap-0.5">
-        <h3 className="text-base font-medium">{m['privacy.export_title']()}</h3>
-        <p role="status" className="text-sm text-muted-foreground">
+        <h3 className="text-body font-medium">{m['privacy.export_title']()}</h3>
+        <p role="status" className="text-body-sm text-muted-foreground">
           {status === 'pending'
             ? m['privacy.export_pending']()
             : ready
@@ -205,8 +205,8 @@ function DeleteAccount({
   return (
     <div className="flex flex-wrap items-center gap-4">
       <div className="flex min-w-0 grow basis-75 flex-col gap-0.5">
-        <h3 className="text-base font-medium">{m['privacy.delete_title']()}</h3>
-        <p className="text-sm text-muted-foreground">{m['privacy.delete_body']()}</p>
+        <h3 className="text-body font-medium">{m['privacy.delete_title']()}</h3>
+        <p className="text-body-sm text-muted-foreground">{m['privacy.delete_body']()}</p>
       </div>
       <Button variant="destructive" disabled={disabled} onClick={() => setOpen(true)}>
         {m['privacy.delete_action']()}

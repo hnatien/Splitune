@@ -42,7 +42,7 @@ interface Now {
   entered: number
 }
 
-const label = 'text-xs font-medium text-conf-medium'
+const label = 'text-caption font-medium text-conf-medium'
 
 /** "bars 10–13", or "bar 4" for a phrase inside one bar (1-based, as the UI shows bars). */
 export function phraseBars(startBar: number, endBar: number): string {
@@ -125,13 +125,13 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
         <span
           data-slot="phrase-now"
           className={cn(
-            'flex items-baseline gap-2 font-reading leading-none font-bold',
+            'flex items-baseline gap-2 font-reading leading-none font-medium',
             compact ? 'text-read-chord' : 'text-read-chord-current',
           )}
         >
           {current ? letter(current) : '—'}
           {current && (
-            <span className="text-read-label font-semibold text-conf-medium">
+            <span className="text-read-label font-medium text-conf-medium">
               {phraseBars(current.startBar, current.endBar)}
             </span>
           )}
@@ -142,7 +142,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex flex-col items-start gap-1">
             <span className={label}>{m['practice.phrase_starts_on']()}</span>
-            <span data-slot="phrase-start" className="font-reading text-read-chord font-semibold">
+            <span data-slot="phrase-start" className="font-reading text-read-chord font-medium">
               {name(startNote.pitch)}{' '}
               <span className="text-read-label text-conf-medium">
                 ({degreeName(startNote.pitch, tonic)})
@@ -167,7 +167,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
           <ArrowRightIcon aria-hidden className="size-6 shrink-0 text-staff" />
           <div className="flex shrink-0 flex-col items-start gap-1">
             <span className={label}>{nextLabel}</span>
-            <span data-slot="phrase-next" className="font-reading text-read-chord font-semibold">
+            <span data-slot="phrase-next" className="font-reading text-read-chord font-medium">
               {now.next + 1} · {letter(next)}{' '}
               <span className="text-read-label text-conf-medium">
                 {m['practice.phrase_on']({ note: name(nextFirst.pitch) })}
@@ -192,7 +192,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
             <span aria-hidden className="text-conf-medium">
               {m['practice.range']()}
             </span>
-            <span aria-hidden className="font-semibold">
+            <span aria-hidden className="font-medium">
               {name(melody.range.low)}–{name(melody.range.high)}
             </span>
           </span>
@@ -220,7 +220,7 @@ export function PhraseStrip({ compact = false }: { compact?: boolean }) {
             className="hidden @4xl:flex"
           >
             {(['on', 'quiet', 'off'] as const).map((level) => (
-              <ToggleGroupItem key={level} value={level} className="px-3 text-sm">
+              <ToggleGroupItem key={level} value={level} className="px-3 text-body-sm">
                 {level === 'on'
                   ? m['practice.guide_on']()
                   : level === 'quiet'

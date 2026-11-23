@@ -94,7 +94,7 @@ export const Levels: Story = {
 /** Chord symbols as charts print them: ♭/♯ glyphs, the quality raised, the slash bass smaller. */
 export const Symbols: Story = {
   render: () => (
-    <div className="flex flex-wrap items-baseline gap-8 bg-paper p-6 font-reading text-read-chord-current font-bold text-ink">
+    <div className="flex flex-wrap items-baseline gap-8 bg-paper p-6 font-reading text-read-chord-current font-medium text-ink">
       {['Ebmaj7', 'Abm7', 'Bb7', 'F#m7b5', 'C/E', 'Am7/G', 'Db', 'N.C.'].map((name) => (
         <ChordSymbol key={name} name={name} />
       ))}

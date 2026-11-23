@@ -76,7 +76,7 @@ export function FixTab({
     // biome-ignore lint/a11y/noStaticElementInteractions: arrow keys for the controls inside, which keep their own roles
     <div ref={root} data-slot="fix-tab" className="flex flex-col gap-3.5" onKeyDown={onKeyDown}>
       {queue.length === 0 && !target ? (
-        <p className="text-md text-muted-foreground">{empty}</p>
+        <p className="text-label text-muted-foreground">{empty}</p>
       ) : (
         <SpotHeader
           title={
@@ -92,7 +92,7 @@ export function FixTab({
         />
       )}
       {showOriginal ? (
-        <p className="text-sm text-muted-foreground">{m['fix.showing_original']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['fix.showing_original']()}</p>
       ) : (
         target && (
           <EditorContent

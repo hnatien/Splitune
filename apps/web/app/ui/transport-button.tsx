@@ -11,24 +11,24 @@ import { WithTooltip } from '@/ui/tooltip'
 // toggling. Main controls are 64 painted and hit (`practice`, V11); secondary ones paint `.ib.lg`
 // at 52 (`practice-2`). Every one is a circle (a pill once a label widens it). `neutral` is
 // `.ib.lg`, `box` is `.ib.lg.box`, `primary` is `.play`, the filled ink circle; on and active are
-// `.ib.on`: the --primary-soft wash, a --primary-line edge and --primary-ink.
+// `.ib.on`: the --wash wash, a --selected edge and --foreground.
 
 const base =
-  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-full font-medium inset-ring transition-[color,background-color,box-shadow,filter,transform] duration-(--duration-fast) ease-spring select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-muted disabled:text-faint-foreground disabled:inset-ring-input [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
+  'group/transport relative inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-full font-medium inset-ring transition-[color,background-color,box-shadow,filter,transform] duration-(--duration-fast) ease-enter select-none active:scale-[0.97] disabled:pointer-events-none disabled:bg-panel disabled:text-faint-foreground disabled:inset-ring-edge [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
 
 const sizes = {
-  practice: "min-h-target-practice min-w-target-practice px-3 [&_svg:not([class*='size-'])]:size-6",
+  practice: "min-h-target-play min-w-target-play px-3 [&_svg:not([class*='size-'])]:size-6",
   'practice-2': "min-h-13 min-w-13 px-2 [&_svg:not([class*='size-'])]:size-5",
 }
 
 const on =
-  'data-pressed:bg-primary-soft data-pressed:text-primary-ink data-pressed:inset-ring-primary-line data-[active]:bg-primary-soft data-[active]:text-primary-ink data-[active]:inset-ring-primary-line forced-colors:data-pressed:bg-card forced-colors:data-[active]:bg-card'
+  'data-pressed:bg-wash data-pressed:text-foreground data-pressed:inset-ring-selected data-[active]:bg-wash data-[active]:text-foreground data-[active]:inset-ring-selected forced-colors:data-pressed:bg-raised forced-colors:data-[active]:bg-raised'
 
 const tones = {
   primary:
     "bg-primary text-primary-foreground inset-ring-transparent hover:bg-primary-hover [&_svg]:fill-current [&_svg:not([class*='size-'])]:size-7",
-  neutral: `text-muted-foreground inset-ring-transparent hover:bg-muted hover:text-foreground ${on}`,
-  box: `bg-card text-muted-foreground inset-ring-border-strong hover:bg-muted hover:text-foreground ${on}`,
+  neutral: `text-muted-foreground inset-ring-transparent hover:bg-panel hover:text-foreground ${on}`,
+  box: `bg-raised text-muted-foreground inset-ring-border-strong hover:bg-panel hover:text-foreground ${on}`,
 }
 
 type TransportButtonProps = {
@@ -75,7 +75,7 @@ function TransportButton({
         <span
           aria-hidden
           className={cn(
-            'hidden text-read-label leading-none group-data-pressed/transport:font-semibold group-data-[active]/transport:font-semibold in-data-[distance=floor]:block in-data-[distance=stand]:block',
+            'hidden text-read-label leading-none group-data-pressed/transport:font-medium group-data-[active]/transport:font-medium in-data-[distance=floor]:block in-data-[distance=stand]:block',
             showLabel === 'wide' ? 'xl:block' : 'md:block',
           )}
         >

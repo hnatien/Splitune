@@ -228,10 +228,10 @@ export function GettingReady() {
           <section
             aria-labelledby="getting-ready"
             data-slot="getting-ready"
-            className="flex flex-col gap-4.5 rounded-xl border border-border bg-card p-6"
+            className="flex flex-col gap-4.5 rounded-field border border-border bg-raised p-6"
           >
             <div className="flex flex-col gap-1.5">
-              <h2 id="getting-ready" className="text-xl">
+              <h2 id="getting-ready" className="text-heading">
                 {m['practice.getting_ready']()}
               </h2>
               {audioStatus === 'ready' && (
@@ -314,12 +314,12 @@ function PartQuestion({ heard, onConfirm }: { heard: InstrumentName[]; onConfirm
   }
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted px-3.5 py-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-field bg-panel px-3.5 py-3">
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-medium">
             {m['analysis.heard']({ instruments: list(heard.map(lower)) })}
           </span>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-body-sm text-muted-foreground">
             {m['analysis.wrong_instrument']({ instrument: part })}
           </span>
         </span>
@@ -358,10 +358,10 @@ function FailureCard({ retrying, onRetry }: { retrying: boolean; onRetry: () => 
   return (
     <section
       role="alert"
-      className="flex flex-col gap-3 rounded-xl border border-border bg-card p-6"
+      className="flex flex-col gap-3 rounded-field border border-border bg-raised p-6"
     >
       <CircleAlertIcon aria-hidden className="size-7 text-destructive" />
-      <h2 className="text-lg">{m['analysis.failed']()}</h2>
+      <h2 className="text-title">{m['analysis.failed']()}</h2>
       {failures[0] && <p className="text-muted-foreground">{stageFailureMessage(failures[0])}</p>}
       <div className="flex flex-wrap gap-2.5">
         <Button variant="primary" loading={retrying} onClick={onRetry}>
@@ -405,9 +405,9 @@ function WhatWorksNow() {
   return (
     <section
       aria-labelledby="works-now"
-      className="relative flex w-full max-w-75 flex-col gap-3 rounded-xl border border-border bg-card p-4.5"
+      className="relative flex w-full max-w-75 flex-col gap-3 rounded-field border border-border bg-raised p-4.5"
     >
-      <h2 id="works-now" className="text-sm font-medium text-muted-foreground">
+      <h2 id="works-now" className="text-body-sm font-medium text-muted-foreground">
         {m['practice.what_works_now']()}
       </h2>
       <ul className="flex flex-col gap-3">
@@ -426,12 +426,12 @@ function WhatWorksNow() {
                   : m['practice.unlock_later']()}
             </Badge>
             <span className="flex min-w-0 flex-col">
-              <span className="text-md font-medium">
+              <span className="text-label font-medium">
                 {row.id === 'notation' && data.instrument !== 'guitar' && data.instrument !== 'bass'
                   ? m['practice.view_notes']()
                   : UNLOCK_NAME[row.id]()}
               </span>
-              <span className="text-sm text-faint-foreground">
+              <span className="text-body-sm text-faint-foreground">
                 {row.state === 'ready'
                   ? row.id === 'loop'
                     ? m['practice.unlock_loop_when']()

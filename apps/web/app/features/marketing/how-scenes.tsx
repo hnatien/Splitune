@@ -85,8 +85,8 @@ function ImportScene() {
           <span
             key={label}
             className={cn(
-              'flex min-w-0 items-center justify-center gap-2 rounded-full px-2 py-2 text-sm font-medium',
-              chosen ? 'bg-primary-soft text-foreground' : 'text-muted-foreground',
+              'flex min-w-0 items-center justify-center gap-2 rounded-full px-2 py-2 text-body-sm font-medium',
+              chosen ? 'bg-wash text-foreground' : 'text-muted-foreground',
             )}
           >
             <Icon aria-hidden className="size-4 shrink-0" />
@@ -94,17 +94,17 @@ function ImportScene() {
           </span>
         ))}
       </div>
-      <div className="flex flex-col gap-4 rounded-xl border border-dashed border-border-strong p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
+      <div className="flex flex-col gap-4 rounded-field border border-dashed border-border-strong p-4">
+        <div className="flex items-center gap-3 rounded-field bg-panel p-3">
           <FileAudioIcon aria-hidden className="size-8 shrink-0 text-muted-foreground" />
           <span className="flex min-w-0 flex-col">
             <span className="truncate font-medium">{m['how.scene_file']()}</span>
-            <span className="text-sm text-muted-foreground">{m['how.scene_file_meta']()}</span>
+            <span className="text-body-sm text-muted-foreground">{m['how.scene_file_meta']()}</span>
           </span>
         </div>
         <Progress value={100} className="justify-between">
           <ProgressLabel>{m['how.scene_uploaded']()}</ProgressLabel>
-          <ProgressValue className="text-sm text-muted-foreground tabular-nums" />
+          <ProgressValue className="text-body-sm text-muted-foreground tabular-nums" />
         </Progress>
       </div>
       <div className="flex flex-col gap-2 border-t border-border pt-4">
@@ -120,7 +120,7 @@ function ImportScene() {
             className="fill-waveform-peak"
           />
         </svg>
-        <span className="flex items-center gap-2 text-sm font-medium">
+        <span className="flex items-center gap-2 text-body-sm font-medium">
           <CheckIcon aria-hidden className="size-4 text-success" />
           {m['how.scene_ready']()}
         </span>
@@ -163,7 +163,7 @@ function SeparateScene() {
             />
             <rect x={0} y={y - 26} width={4} height={52} rx={2} className={STEM_FILL[stem]} />
             <Icon x={14} y={y - 24} width={20} height={20} className="text-foreground" />
-            <text x={40} y={y - 8} className="fill-foreground text-lg font-medium">
+            <text x={40} y={y - 8} className="fill-foreground text-title font-medium">
               {name()}
             </text>
             {yours && (
@@ -174,7 +174,7 @@ function SeparateScene() {
                   y={y + 15}
                   dy="0.35em"
                   textAnchor="middle"
-                  className="fill-primary-foreground text-base font-medium"
+                  className="fill-primary-foreground text-body font-medium"
                 >
                   {m['home.still_your_part']()}
                 </text>
@@ -206,7 +206,7 @@ const CHORDS = [
 ] as const
 
 function RowLabel({ children }: { children: string }) {
-  return <span className="text-sm font-medium text-muted-foreground">{children}</span>
+  return <span className="text-body-sm font-medium text-muted-foreground">{children}</span>
 }
 
 /** Step 3: beats and bar lines on your part, then the chords (the unsure G marked) and the tab. */
@@ -237,7 +237,7 @@ function TranscribeScene() {
             className={beat % 4 === 0 ? 'stroke-foreground' : 'stroke-muted-foreground'}
           />
         ))}
-        <g className="fill-muted-foreground text-xs font-medium tabular-nums">
+        <g className="fill-muted-foreground text-caption font-medium tabular-nums">
           {[5, 6, 7, 8].map((bar, i) => (
             <text key={bar} x={barX(i) + 6} y={14}>
               {bar}
@@ -246,7 +246,7 @@ function TranscribeScene() {
         </g>
       </svg>
       <RowLabel>{m['how.scene_chords']()}</RowLabel>
-      <div className="relative h-12 rounded-xl bg-paper text-ink">
+      <div className="relative h-12 rounded-field bg-paper text-ink">
         {CHORDS.map((chord, i) => (
           <ChordChip
             key={chord.label}
@@ -311,9 +311,9 @@ export function HowStage({ step, className }: { step: number; className?: string
   if (!scene) return null
   const { title, Scene } = scene
   return (
-    <Still className={cn('rounded-xl border border-border bg-card', className)}>
+    <Still className={cn('rounded-field border border-border bg-raised', className)}>
       <div className="border-b border-border px-4 py-3 md:px-6">
-        <span className="text-sm font-medium text-muted-foreground">{title()}</span>
+        <span className="text-body-sm font-medium text-muted-foreground">{title()}</span>
       </div>
       <div className="p-4 md:p-6">
         <Scene />

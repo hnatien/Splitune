@@ -111,7 +111,7 @@ function SpeedControl({
         <PopoverTrigger
           aria-label={`${labels.speed}: ${formatSpeed(value, bpm)}${goal ? ` · ${goal.text}, ${goal.label}` : ''}`}
           className={cn(
-            'flex min-h-target-practice flex-col items-center justify-center rounded-full px-3 text-center transition-colors hover:bg-accent aria-expanded:bg-accent',
+            'flex min-h-target-play flex-col items-center justify-center rounded-full px-3 text-center transition-colors hover:bg-hover aria-expanded:bg-hover',
             compact ? 'min-w-20' : 'min-w-26',
           )}
         >
@@ -120,7 +120,7 @@ function SpeedControl({
             {NBSP}%
           </span>
           {(bpm !== undefined || goal) && (
-            <span className="text-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
+            <span className="text-body-sm font-medium whitespace-nowrap text-faint-foreground tabular-nums">
               {bpm !== undefined && `${Math.round((bpm * shown) / 100)}${NBSP}BPM`}
               {bpm !== undefined && goal && ' · '}
               {goal?.text}
@@ -149,7 +149,7 @@ function SpeedControl({
       />
       {inlinePresets && (
         <div className="hidden 2xl:block">
-          <Suspense fallback={<div aria-hidden className="h-target-practice-2 w-75" />}>
+          <Suspense fallback={<div aria-hidden className="h-target-practice w-75" />}>
             <SpeedPresets
               value={value}
               onValueChange={set}

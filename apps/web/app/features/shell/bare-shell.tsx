@@ -16,7 +16,7 @@ export function BareShell({ children }: { children: React.ReactNode }) {
         <Link
           to="/"
           aria-label={m['nav.home']()}
-          className="inline-flex min-h-target items-center rounded-md"
+          className="inline-flex min-h-target items-center rounded-media"
         >
           <Wordmark />
         </Link>

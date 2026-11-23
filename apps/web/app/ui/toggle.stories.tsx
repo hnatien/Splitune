@@ -15,7 +15,7 @@ import { Toggle } from './toggle.tsx'
 import { ToggleGroup, ToggleGroupItem } from './toggle-group.tsx'
 
 // Doc 26 §12.1 `.chip` (Toggle) and `.seg` (ToggleGroup), §12.3: the chip's on-state cue is its
-// --primary-line edge, the segment's is the raised capsule.
+// --selected edge, the segment's is the raised capsule.
 const meta = { title: 'Base/Toggle', component: Toggle } satisfies Meta<typeof Toggle>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -43,7 +43,7 @@ export const On: Story = {
     for (const frame of themeFrames(canvasElement)) {
       const chip = within(frame).getByRole('button', { name: 'All' })
       await expect(chip).toHaveAttribute('aria-pressed', 'true')
-      // The edge is the cue: an inset ring in --primary-line, not just a wash.
+      // The edge is the cue: an inset ring in --selected, not just a wash.
       await expect(getComputedStyle(chip).boxShadow).toContain('inset')
     }
   },

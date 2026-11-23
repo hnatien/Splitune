@@ -6,7 +6,7 @@ import { Button } from '@/ui/button'
 import { UsagePopover } from './usage-popover'
 
 const TAB =
-  'flex min-h-target min-w-target flex-col items-center justify-center gap-0.5 rounded-lg text-xs text-faint-foreground aria-[current=page]:text-foreground data-popup-open:text-foreground focus-visible:-outline-offset-2 [&_svg]:size-5 [&_.lucide]:stroke-[1.8]'
+  'flex min-h-target min-w-target flex-col items-center justify-center gap-0.5 rounded-field text-caption text-faint-foreground aria-[current=page]:text-foreground data-popup-open:text-foreground focus-visible:-outline-offset-2 [&_svg]:size-5 [&_.lucide]:stroke-[1.8]'
 
 // Phone bottom bar (27 §1, 26 §12.2 BottomNav, Phone-Library): Library · Add song (a 48 px primary
 // pill) · Usage (the allowances and plan in a popover above it), 76 px plus the safe area. Hidden from `sm`, where the top bar has them.

@@ -41,7 +41,7 @@ export function HowItWorks() {
         className={cn(SECTION, 'flex flex-col items-center gap-10 pt-20 text-center sm:pt-24')}
       >
         <div className="flex flex-col items-center gap-4">
-          <h1 className="text-5xl text-balance max-sm:text-4xl">{m['how.title']()}</h1>
+          <h1 className="text-hero text-balance max-sm:text-hero">{m['how.title']()}</h1>
           <p className="max-w-2xl text-lead text-pretty text-muted-foreground">
             {m['how.intro']()}
           </p>
@@ -67,7 +67,7 @@ export function HowItWorks() {
             className="grid scroll-mt-16 items-start gap-10 py-20 sm:py-24 lg:grid-cols-[2fr_3fr] lg:gap-16"
           >
             <div className="flex flex-col gap-4 lg:pt-6">
-              <h2 className="text-3xl text-balance max-sm:text-2xl">{step.title}</h2>
+              <h2 className="text-hero text-balance max-sm:text-display">{step.title}</h2>
               <p className="max-w-reading text-lead text-muted-foreground">{step.body}</p>
             </div>
             <HowStage step={i} />
@@ -79,7 +79,9 @@ export function HowItWorks() {
         className={cn(SECTION, 'flex flex-col items-center gap-8 py-20 text-center sm:py-24')}
       >
         <div className="flex max-w-reading flex-col items-center gap-4">
-          <h2 className="text-3xl text-balance max-sm:text-2xl">{m['how.accuracy_title']()}</h2>
+          <h2 className="text-hero text-balance max-sm:text-display">
+            {m['how.accuracy_title']()}
+          </h2>
           <p className="text-lead text-pretty text-muted-foreground">{m['how.accuracy_body']()}</p>
         </div>
         <Link to="/start" className={buttonVariants({ variant: 'primary', size: 'lg' })}>

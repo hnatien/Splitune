@@ -9,7 +9,7 @@ export type WeekDay = {
 }
 
 // "This week" (27 §3.5, §5.5, 26 §12.2 WeekStrip): seven day dots, filled --signal with an opacity
-// that grows with the minutes practised (at least 0.45) or outlined --input when not practised;
+// that grows with the minutes practised (at least 0.45) or outlined --edge when not practised;
 // never a streak count or a missed day. Fed by the progress data (s39, library-progress.tsx).
 function Dot({ day, size }: { day: WeekDay; size: 'sm' | 'md' }) {
   return (
@@ -17,7 +17,7 @@ function Dot({ day, size }: { day: WeekDay; size: 'sm' | 'md' }) {
       className={cn(
         'shrink-0 rounded-full',
         size === 'md' ? 'size-7.5' : 'size-5.5',
-        day.minutes === 0 ? 'border-2 border-input' : 'bg-signal',
+        day.minutes === 0 ? 'border-2 border-edge' : 'bg-signal',
       )}
       style={day.minutes === 0 ? undefined : { opacity: dayDotOpacity(day.minutes) }}
     />
@@ -41,9 +41,12 @@ export function WeekStrip({
     <section
       data-slot="week-strip"
       aria-labelledby="this-week"
-      className={cn('flex min-w-0 flex-col gap-4 rounded-xl border border-border p-5', className)}
+      className={cn(
+        'flex min-w-0 flex-col gap-4 rounded-field border border-border p-5',
+        className,
+      )}
     >
-      <h2 id="this-week" className="text-sm text-muted-foreground">
+      <h2 id="this-week" className="text-body-sm text-muted-foreground">
         {m['library.this_week']()}
       </h2>
       <div
@@ -55,15 +58,15 @@ export function WeekStrip({
           // biome-ignore lint/suspicious/noArrayIndexKey: the seven days are positional
           <span key={index} className="flex flex-col items-center gap-1.5">
             <Dot day={day} size="md" />
-            <span className="text-sm text-faint-foreground">{day.letter}</span>
+            <span className="text-body-sm text-faint-foreground">{day.letter}</span>
           </span>
         ))}
       </div>
       <dl className="flex gap-4.5">
         {stats.map((stat) => (
           <div key={stat.label} className="flex flex-col-reverse">
-            <dt className="text-sm text-faint-foreground">{stat.label}</dt>
-            <dd className="text-xl font-medium tabular-nums">{stat.value}</dd>
+            <dt className="text-body-sm text-faint-foreground">{stat.label}</dt>
+            <dd className="text-heading font-medium tabular-nums">{stat.value}</dd>
           </div>
         ))}
       </dl>
@@ -75,14 +78,14 @@ export function WeekStrip({
 export function WeekStripCompact({ days, total }: { days: WeekDay[]; total: string }) {
   return (
     <div data-slot="week-strip" className="flex items-center gap-3">
-      <span className="w-18.5 text-sm text-muted-foreground">{m['library.this_week']()}</span>
+      <span className="w-18.5 text-body-sm text-muted-foreground">{m['library.this_week']()}</span>
       <span role="img" aria-label={practisedOn(days)} className="flex flex-1 gap-2">
         {days.map((day, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: the seven days are positional
           <Dot key={index} day={day} size="sm" />
         ))}
       </span>
-      <span className="text-sm text-muted-foreground tabular-nums">{total}</span>
+      <span className="text-body-sm text-muted-foreground tabular-nums">{total}</span>
     </div>
   )
 }

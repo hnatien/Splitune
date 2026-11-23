@@ -52,7 +52,7 @@ function Points({ points }: { points: string[] }) {
   return (
     <ul className="flex flex-col gap-3.5 border-t border-border pt-6">
       {points.map((point) => (
-        <li key={point} className="flex gap-3 text-md">
+        <li key={point} className="flex gap-3 text-label">
           <CheckIcon aria-hidden strokeWidth={1.5} className="size-5 shrink-0 text-foreground" />
           {point}
         </li>
@@ -76,18 +76,18 @@ function PlanColumn({
   return (
     <section
       aria-labelledby={id}
-      className="flex flex-col gap-6 rounded-xl border border-border p-6 sm:p-8"
+      className="flex flex-col gap-6 rounded-field border border-border p-6 sm:p-8"
     >
       <div className="flex flex-col gap-2">
-        <h2 id={id} className="flex flex-wrap items-center gap-3 text-2xl">
+        <h2 id={id} className="flex flex-wrap items-center gap-3 text-display">
           {title}
           {current && (
-            <Badge className="forced-colors:bg-card forced-colors:inset-ring forced-colors:inset-ring-border">
+            <Badge className="forced-colors:bg-raised forced-colors:inset-ring forced-colors:inset-ring-border">
               {m['billing.current_plan']()}
             </Badge>
           )}
         </h2>
-        <p className="text-base text-muted-foreground">{lead}</p>
+        <p className="text-body text-muted-foreground">{lead}</p>
       </div>
       {children}
     </section>
@@ -141,16 +141,16 @@ function PlusPrice({ chosen, other }: { chosen: Plan | undefined; other: Plan | 
   if (!chosen) return null
   return (
     <p className="flex flex-wrap items-baseline gap-x-2">
-      <span className="text-4xl tabular-nums">
+      <span className="text-hero tabular-nums">
         {formatPrice(chosen.price_minor, chosen.currency)}
       </span>{' '}
-      <span className="text-base text-muted-foreground">
+      <span className="text-body text-muted-foreground">
         {chosen.interval === 'year' ? m['pricing.unit_year']() : m['pricing.unit_month']()}
       </span>
       {other && (
         <>
           {' '}
-          <span className="text-sm text-faint-foreground">
+          <span className="text-body-sm text-faint-foreground">
             {m['pricing.or_price']({ price: planPrice(other) })}
           </span>
         </>
@@ -174,14 +174,14 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
     <div className="flex flex-col">
       <p
         role="status"
-        className="flex items-center justify-center gap-2 border-b border-border bg-muted px-4 py-2.5 text-center text-md text-foreground forced-colors:bg-card"
+        className="flex items-center justify-center gap-2 border-b border-border bg-panel px-4 py-2.5 text-center text-label text-foreground forced-colors:bg-raised"
       >
         <InfoIcon aria-hidden strokeWidth={1.5} className="size-4 shrink-0" />
         {m['billing.demo']()}
       </p>
       <div className="mx-auto flex w-full max-w-pricing flex-col px-4 pt-16 pb-24 sm:px-6 sm:pt-20">
         <header className="flex flex-col items-center gap-4 text-center">
-          <h1 className="text-5xl text-balance max-sm:text-4xl">{m['pricing.title']()}</h1>
+          <h1 className="text-hero text-balance max-sm:text-hero">{m['pricing.title']()}</h1>
           <p className="max-w-2xl text-lead text-pretty text-muted-foreground">
             {m['pricing.lead']()}
           </p>
@@ -213,7 +213,7 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
             lead={m['pricing.free_lead']()}
             current={me !== null && !onPlus}
           >
-            <p className="text-4xl">{m['pricing.free_price']()}</p>
+            <p className="text-hero">{m['pricing.free_price']()}</p>
             {!me && (
               <Link to="/start" className={buttonVariants({ size: 'lg', block: true })}>
                 {m['home.cta_example']()}
@@ -246,17 +246,19 @@ export function PricingPage({ me, plans }: { me: MeData | null; plans: Plans }) 
                 m['pricing.plus_point_priority'](),
               ]}
             />
-            <p className="mt-auto text-sm text-faint-foreground">{m['pricing.cancel_note']()}</p>
+            <p className="mt-auto text-body-sm text-faint-foreground">
+              {m['pricing.cancel_note']()}
+            </p>
           </PlanColumn>
         </div>
 
         <section aria-labelledby="compare" className="mt-24 flex flex-col gap-6">
-          <h2 id="compare" className="text-xl">
+          <h2 id="compare" className="text-heading">
             {m['pricing.compare']()}
           </h2>
-          <table className="w-full border-collapse text-left text-base">
+          <table className="w-full border-collapse text-left text-body">
             <thead>
-              <tr className="text-sm text-faint-foreground">
+              <tr className="text-body-sm text-faint-foreground">
                 <th scope="col" className="py-3 pr-4 font-medium">
                   {m['pricing.feature']()}
                 </th>

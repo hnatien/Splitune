@@ -163,7 +163,7 @@ export function TabStill({
         : barX(index(Math.floor(playheadBar))) + (playheadBar % 1) * TAB.bar
   const inLoop = (x: number) => loop && x >= loopStart && x <= loopEnd
   return (
-    <div className={cn('overflow-hidden rounded-xl bg-paper text-ink', className)}>
+    <div className={cn('overflow-hidden rounded-field bg-paper text-ink', className)}>
       <svg
         aria-hidden
         viewBox={`${left} 0 ${right - left} ${TAB.height}`}
@@ -200,7 +200,7 @@ export function TabStill({
           ))}
           <line x1={TAB.width - 2} x2={TAB.width - 2} y1={TAB.top} y2={STAFF_BOTTOM} />
         </g>
-        <text className="fill-ink text-sm font-semibold" textAnchor="middle">
+        <text className="fill-ink text-body-sm font-medium" textAnchor="middle">
           {[...m['home.still_tab_clef']()].map((letter, i) => (
             <tspan key={letter} x={22} y={TAB.top + 14 + i * 20}>
               {letter}
@@ -209,17 +209,17 @@ export function TabStill({
         </text>
         {TAB_BARS.map((b, i) => (
           <g key={b.bar}>
-            <text x={barX(i) + 4} y={TAB.top - 8} className="fill-muted-foreground text-2xs">
+            <text x={barX(i) + 4} y={TAB.top - 8} className="fill-muted-foreground text-kbd">
               {b.bar}
             </text>
             <text
               x={barX(i) + 18}
               y={TAB.top - 8}
-              className={cn('text-base font-semibold', INK[b.chordLevel ?? 'high'])}
+              className={cn('text-body font-medium', INK[b.chordLevel ?? 'high'])}
             >
               {b.chord}
               {b.chordLevel === 'low' && (
-                <tspan dy={-6} className="text-2xs">
+                <tspan dy={-6} className="text-kbd">
                   ?
                 </tspan>
               )}
@@ -247,12 +247,12 @@ export function TabStill({
                     y={y}
                     dy="0.36em"
                     textAnchor="middle"
-                    className={cn('text-xs', INK[level])}
+                    className={cn('text-caption', INK[level])}
                   >
                     {fret}
                   </text>
                   {level === 'low' && (
-                    <text x={x + 8} y={y - 6} className="fill-conf-low text-2xs font-semibold">
+                    <text x={x + 8} y={y - 6} className="fill-conf-low text-kbd font-medium">
                       ?
                     </text>
                   )}

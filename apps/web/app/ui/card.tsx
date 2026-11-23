@@ -2,8 +2,8 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Card (doc 26 §4.8, §9, §12.1): --card with a 1 px --border edge, 12 px corners and no shadow
- * (cards are bordered, not lifted). `emphasis` is a borderless panel one step up on --muted.
+ * Card (doc 26 §4.8, §9, §12.1): --raised with a 1 px --border edge, 12 px corners and no shadow
+ * (cards are bordered, not lifted). `emphasis` is a borderless panel one step up on --panel.
  */
 function Card({
   className,
@@ -15,7 +15,7 @@ function Card({
       data-slot="card"
       data-variant={variant}
       className={cn(
-        'group/card flex flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card py-4 text-sm text-card-foreground has-data-[slot=card-footer]:pb-0 data-[variant=emphasis]:border-transparent data-[variant=emphasis]:bg-muted',
+        'group/card flex flex-col gap-4 overflow-hidden rounded-field border border-border bg-raised py-4 text-body-sm text-foreground has-data-[slot=card-footer]:pb-0 data-[variant=emphasis]:border-transparent data-[variant=emphasis]:bg-panel',
         className,
       )}
       {...props}
@@ -37,14 +37,16 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div data-slot="card-title" className={cn('text-lg leading-snug', className)} {...props} />
+  return (
+    <div data-slot="card-title" className={cn('text-title leading-snug', className)} {...props} />
+  )
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-description"
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-body-sm text-muted-foreground', className)}
       {...props}
     />
   )

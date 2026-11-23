@@ -316,7 +316,7 @@ export function GuitarNotes({
           <p
             aria-hidden
             data-slot="notes-chord"
-            className="pointer-events-none absolute top-0 left-0 flex items-baseline gap-2 leading-none font-semibold"
+            className="pointer-events-none absolute top-0 left-0 flex items-baseline gap-2 leading-none font-medium"
             style={{ fontSize: sized.tabPx }}
           >
             <ChordSymbol name={now.chord} />

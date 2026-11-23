@@ -58,7 +58,7 @@ export function AnalysisChoice({
     !available.plus && <Button onClick={() => onSeePlus(trigger)}>{m['plan.see_plus']()}</Button>
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <span id={legend} className="flex min-h-target items-center text-md font-medium">
+      <span id={legend} className="flex min-h-target items-center text-label font-medium">
         {m['import.analysis_label']()}
       </span>
       <RadioCardGroup

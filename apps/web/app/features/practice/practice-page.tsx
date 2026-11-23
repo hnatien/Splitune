@@ -233,14 +233,14 @@ function DesktopRegions({
         </div>
         <Suspense
           fallback={
-            docked ? <div className="w-95 shrink-0 border-l border-border bg-card" /> : null
+            docked ? <div className="w-95 shrink-0 border-l border-border bg-raised" /> : null
           }
         >
           <Inspector docked={docked} />
         </Suspense>
       </div>
       {fixing && editing ? (
-        <Suspense fallback={<div className="h-20 shrink-0 border-t border-border bg-card" />}>
+        <Suspense fallback={<div className="h-20 shrink-0 border-t border-border bg-raised" />}>
           <FixDock />
         </Suspense>
       ) : (
@@ -353,7 +353,7 @@ function useSheetFix(compact: boolean) {
   }, [compact, wanted, view])
 }
 
-// The visual count-in (27 §3.7.4, 26 §10): the beat number at display size in --primary-ink in the
+// The visual count-in (27 §3.7.4, 26 §10): the beat number at display size in --foreground in the
 // middle of the notation with "Count-in · beat 3 of 4" under it — a number, not a flash, so it
 // stays under 3 changes a second at any tempo that matters, and static under reduced motion.
 function CountInCounter() {
@@ -366,9 +366,9 @@ function CountInCounter() {
     <div
       aria-hidden
       data-slot="count-in"
-      className="pointer-events-none absolute top-1/2 left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-3xl border border-border bg-card px-10 py-5 shadow-2"
+      className="pointer-events-none absolute top-1/2 left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-panel border border-border bg-raised px-10 py-5 shadow-popover"
     >
-      <span className="font-display text-read-chord-current leading-none font-semibold text-primary-ink tabular-nums">
+      <span className="font-display text-read-chord-current leading-none font-medium text-foreground tabular-nums">
         {number}
       </span>
       <span className="text-read-label text-muted-foreground">

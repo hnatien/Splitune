@@ -56,12 +56,12 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
           <Link
             to="/library"
             aria-label={m['nav.library_home']()}
-            className="inline-flex min-h-target items-center gap-2.5 rounded-md max-sm:hidden"
+            className="inline-flex min-h-target items-center gap-2.5 rounded-media max-sm:hidden"
           >
             <Wordmark />
           </Link>
           <BrandMark className="size-6.5 sm:hidden" />
-          <p className="flex-1 truncate text-lg sm:hidden">
+          <p className="flex-1 truncate text-title sm:hidden">
             {isCurrent(pathname, '/settings') ? m['settings.title']() : m['library.title']()}
           </p>
           <nav aria-label={m['nav.main']()} className="ml-3 flex gap-1 max-sm:hidden">
@@ -76,7 +76,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
                     buttonVariants({ variant: 'ghost' }),
                     'px-3',
                     current &&
-                      'bg-muted text-foreground forced-colors:bg-accent forced-colors:text-accent-foreground',
+                      'bg-panel text-foreground forced-colors:bg-hover forced-colors:text-foreground',
                   )}
                 >
                   {label}
@@ -90,7 +90,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
                   type="button"
                   className={cn(
                     buttonVariants({ variant: 'ghost' }),
-                    'px-3 data-popup-open:bg-muted data-popup-open:text-foreground',
+                    'px-3 data-popup-open:bg-panel data-popup-open:text-foreground',
                   )}
                 >
                   {m['nav.usage']()}

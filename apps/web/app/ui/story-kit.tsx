@@ -30,7 +30,7 @@ export function StateGrid({
     <div className={className ?? 'flex flex-wrap items-start gap-x-6 gap-y-5'}>
       {states.map(([label, node]) => (
         <figure key={label} className="m-0 flex flex-col items-start gap-2">
-          <figcaption className="text-xs text-faint-foreground">{label}</figcaption>
+          <figcaption className="text-caption text-faint-foreground">{label}</figcaption>
           {node}
         </figure>
       ))}

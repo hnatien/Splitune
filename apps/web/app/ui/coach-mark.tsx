@@ -24,7 +24,7 @@ function CoachMark({
       data-slot="coach-mark"
       role="status"
       className={cn(
-        'flex max-w-md animate-pop-in items-center gap-3 rounded-2xl border border-border bg-popover py-2 pr-2 pl-4 text-popover-foreground shadow-2',
+        'flex max-w-md animate-pop-in items-center gap-3 rounded-panel border border-border bg-raised py-2 pr-2 pl-4 text-foreground shadow-popover',
         className,
       )}
     >
@@ -33,7 +33,7 @@ function CoachMark({
         strokeWidth={1.8}
         className="size-5 shrink-0 text-muted-foreground"
       />
-      <p className="min-w-0 flex-1 py-2 text-base">{children}</p>
+      <p className="min-w-0 flex-1 py-2 text-body">{children}</p>
       <Button size="sm" variant="secondary" onClick={onDismiss}>
         {dismissLabel}
       </Button>

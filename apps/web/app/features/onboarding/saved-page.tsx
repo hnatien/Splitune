@@ -30,7 +30,7 @@ export function SavedPage() {
     <FocusShell>
       <div className="mx-auto flex w-full max-w-xl flex-col gap-10 px-4 pt-12 pb-16 sm:px-6 sm:pt-20">
         {claim.isPending ? (
-          <p role="status" className="flex items-center justify-center gap-3 text-base">
+          <p role="status" className="flex items-center justify-center gap-3 text-body">
             <Spinner />
             {m['start.saving']()}
           </p>
@@ -44,11 +44,11 @@ export function SavedPage() {
         ) : (
           <section aria-labelledby="saved" className="flex flex-col items-center gap-3 text-center">
             <CircleCheckIcon aria-hidden strokeWidth={1.8} className="size-8 text-success" />
-            <h1 id="saved" className="text-2xl text-balance">
+            <h1 id="saved" className="text-display text-balance">
               {songId ? m['start.saved_title']() : m['start.saved_nothing']()}
             </h1>
             {song.data && (
-              <p className="text-base text-pretty text-muted-foreground">
+              <p className="text-body text-pretty text-muted-foreground">
                 {m['start.saved_body']({ title: song.data.title })}
               </p>
             )}
@@ -58,10 +58,10 @@ export function SavedPage() {
           aria-labelledby="next"
           className="flex flex-col items-center gap-3 border-t border-border pt-10 text-center"
         >
-          <h2 id="next" className="text-xl text-balance">
+          <h2 id="next" className="text-heading text-balance">
             {m['start.next_title']()}
           </h2>
-          <p className="text-base text-pretty text-muted-foreground">{m['start.next_body']()}</p>
+          <p className="text-body text-pretty text-muted-foreground">{m['start.next_body']()}</p>
           <div className="mt-3 flex flex-wrap justify-center gap-3">
             <Link
               to="/library"

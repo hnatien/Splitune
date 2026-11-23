@@ -149,7 +149,7 @@ function MoreChip({
               next !== null && onChange({ drop_after_misses: Math.round(next) })
             }
           />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-body-sm text-muted-foreground">
             {misses === 0
               ? m['ladder.back_down_off']()
               : misses === 1
@@ -157,7 +157,7 @@ function MoreChip({
                 : m['ladder.back_down_hint']({ misses: String(misses) })}
           </p>
         </div>
-        <div className="flex min-h-target-practice-2 items-center gap-3">
+        <div className="flex min-h-target-practice items-center gap-3">
           <Switch
             id={countInId}
             checked={settings.count_in_each_pass}
@@ -196,9 +196,9 @@ export function LadderCard() {
       data-slot="ladder-card"
       className="flex flex-col gap-3 border-t border-border pt-3"
     >
-      <div className="flex min-h-target-practice-2 items-center gap-2.5">
-        <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-primary-ink" />
-        <h3 id={titleId} className="min-w-0 flex-1 text-lg">
+      <div className="flex min-h-target-practice items-center gap-2.5">
+        <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-foreground" />
+        <h3 id={titleId} className="min-w-0 flex-1 text-title">
           {m['ladder.title']()}
         </h3>
         <Switch
@@ -219,7 +219,7 @@ export function LadderCard() {
       {settings && view ? (
         <>
           <SpeedLadder rungs={view.rungs} current={view.current} label={ladderLabel(view)} />
-          <p className="text-sm text-muted-foreground tabular-nums">
+          <p className="text-body-sm text-muted-foreground tabular-nums">
             {summary(settings, view, view.speedPct)}
           </p>
           <div className="-my-2 flex flex-wrap gap-x-1.5">
@@ -278,7 +278,7 @@ export function LadderCard() {
           </div>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">{m['ladder.off_hint']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['ladder.off_hint']()}</p>
       )}
     </section>
   )

@@ -129,7 +129,7 @@ export function OnboardingGuide() {
         <DialogContent>
           <DialogHeader>
             <StepHeading step={4} />
-            <DialogTitle className="text-2xl">{m['start.song_title']()}</DialogTitle>
+            <DialogTitle className="text-display">{m['start.song_title']()}</DialogTitle>
             <DialogDescription className="sr-only">{example?.title}</DialogDescription>
           </DialogHeader>
           {example && <SongSummary example={example} />}

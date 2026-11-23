@@ -47,7 +47,7 @@ function Wordmark({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-2.5 font-sans text-lead leading-none font-semibold tracking-[-0.02em] text-foreground',
+        'inline-flex items-center gap-2.5 font-sans text-lead leading-none font-medium tracking-[-0.02em] text-foreground',
         className,
       )}
       {...props}
