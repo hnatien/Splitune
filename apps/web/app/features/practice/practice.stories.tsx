@@ -2745,6 +2745,13 @@ const ladderCard = async (canvasElement: HTMLElement) => {
     { name: m['ladder.title']() },
     { timeout: 10_000 },
   )
+  // The docked panel narrows the tab, which lays itself out again: wait for its bars to be
+  // buttons once more before the story is checked.
+  const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+  await waitFor(
+    () => expect(tab.querySelectorAll('[data-slot=bar-target]').length).toBeGreaterThan(0),
+    { timeout: 20_000 },
+  )
   const hud = () => canvasElement.ownerDocument.querySelector('[data-slot=pedal-hud]')
   /** The dock's readout once its number has counted to the new speed (26 §10). */
   const speedIs = (pct: number) =>
