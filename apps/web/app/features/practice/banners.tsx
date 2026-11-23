@@ -11,7 +11,9 @@ import { useRecommendedView, useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// Practice banners (27 §3.7.3, §3.11, §5.6), card-style StatusMessage banners: the chords-only
+// Practice banners (27 §3.7.3, §3.11, §5.6), each one quiet line above the music (a glyph, the
+// words and at most one everyday button, never a tinted bar, and never a second filled control
+// beside Play): the chords-only
 // fallback with "Show tab anyway", the rough-part banner ("Your part didn't separate cleanly, so
 // the tab may be rougher." · Show chords instead), stage fallbacks ("Stems are unavailable right
 // now…"), stems removed after 180 days unused with "Re-create stems", "Playback paused by another
@@ -131,7 +133,7 @@ export function PracticeBanners() {
           tone="info"
           title={m['practice.interrupted']()}
           actions={
-            <Button variant="primary" size="sm" onClick={() => togglePlay()}>
+            <Button variant="outline" size="sm" onClick={() => togglePlay()}>
               {m['practice.tap_to_resume']()}
             </Button>
           }
