@@ -54,7 +54,13 @@ function InspectorTabs({ layout }: { layout: PracticeLayout }) {
       onValueChange={(next) => openTab(next as InspectorTab)}
       className="flex min-h-0 flex-1 flex-col gap-0"
     >
-      <PanelHeader className="pr-1 pl-2" onClose={close} closeLabel={m['practice.close_tools']()}>
+      {/* Not a landmark: portalled into a drawer, a <header> would be a second page banner. */}
+      <PanelHeader
+        role="none"
+        className="pr-1 pl-2"
+        onClose={close}
+        closeLabel={m['practice.close_tools']()}
+      >
         <TabsList className="border-b-0">
           {INSPECTOR_TABS.map((value) => (
             <TabsTrigger key={value} value={value}>
