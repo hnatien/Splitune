@@ -4,6 +4,7 @@ import {
   expectAccessible,
   expectNoHorizontalScroll,
   openExample,
+  passQuestion,
   projectContext,
   signIn,
   wav,
@@ -64,12 +65,17 @@ async function expectMode(page: Page, mode: Mode) {
   await expect(root).toHaveAttribute('data-contrast', mode.moreContrast ? 'more' : 'normal')
 }
 
-/** The accessible name (or text) of the focused element; empty when nothing is focused. */
+/** The accessible name (or text) of the focused element; empty when nothing is focused. A
+ * transport control's printed key cap is aria-hidden beside its name, so it is left out. */
 const focusedName = (page: Page) =>
   page.evaluate(() => {
     const el = document.activeElement
     if (!(el instanceof HTMLElement) || el === document.body) return ''
-    return (el.getAttribute('aria-label') ?? el.innerText ?? '').trim()
+    const label = el.getAttribute('aria-label')
+    if (label !== null) return label.trim()
+    const named = el.cloneNode(true) as HTMLElement
+    for (const hidden of named.querySelectorAll('[aria-hidden=true]')) hidden.remove()
+    return (named.textContent ?? '').trim()
   })
 
 /**
@@ -89,8 +95,8 @@ async function tabTo(page: Page, name: RegExp, limit = 60) {
   throw new Error(`Tab never reached ${name}`)
 }
 
-// The dock's Mix pill is named by its preset (27 §3.7.1), "Mix" before the stems.
-const MIX_PILL = /^(Your part loud|Minus-one|Original|Mix)\b/
+// The transport's Tools button names the mix in play (27 §3.7.1), "Tools" before the stems.
+const TOOLS = /^(Tools|Your part loud|Minus-one|Rhythm only|Original)\b/
 
 test.describe('axe in every appearance', () => {
   test.describe.configure({ mode: 'serial' })
@@ -234,9 +240,10 @@ test.describe('keyboard and pedal only', () => {
 
     // The suggested loop at 70 %; from here the keys a page-turner pedal sends (12 §8).
     const badge = page.getByRole('button', { name: /^Loop · bars \d+–\d+/ })
-    await expect(badge).toHaveText(/pass 1/, { timeout: 60_000 })
+    await expect(passQuestion(page, 1)).toBeVisible({ timeout: 60_000 })
     await page.keyboard.press('c')
-    await expect(page.getByText(/Best clean pass: 70\s%/).first()).toBeVisible()
+    // Every key is confirmed in words beside the music (27 §3.7.4).
+    await expect(page.getByText('Key C · Felt clean').first()).toBeVisible()
     await page.keyboard.press('n')
     // Faster is '.' (12 §8): ↑/↓ are the pedal's keys and never change speed.
     await page.keyboard.press('.')
@@ -269,9 +276,8 @@ test.describe('keyboard and pedal only', () => {
     await page.keyboard.press('l')
     await expect(page.getByText('Loop on').first()).toBeVisible()
 
-    // The mixer opens from the keyboard: on desktop it is the inspector's Mix tab, which the
-    // dock's Mix pill (named by its preset) opens (27 §3.7.1).
-    await (await tabTo(page, MIX_PILL, 120)).press('Enter')
+    // The mixer opens from the keyboard: X opens the tools panel on its Mix tab (27 §3.7.6).
+    await page.keyboard.press('x')
     await expect(page.getByRole('tab', { name: /^Mix/ })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     expect(errors).toEqual([])
@@ -297,7 +303,9 @@ test.describe('reduced motion', () => {
     ).toEqual([0, 0, 0])
     await play.click()
     await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: MIX_PILL }).click()
+    // Tools opens the closed tools panel; the mixer is its Mix tab (27 §3.7.1).
+    await page.getByRole('button', { name: TOOLS }).click()
+    await page.getByRole('tab', { name: /^Mix/ }).click()
     await expect(page.getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     // CSS animations and transitions all end at once (26 §10); the score cursor moves by script.
     const running = await page.evaluate(() =>
