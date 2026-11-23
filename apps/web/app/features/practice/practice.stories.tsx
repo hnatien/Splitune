@@ -1729,8 +1729,9 @@ const shortcutsList: NonNullable<Story['play']> = async ({ canvasElement }) => {
   const dialog = await body.findByRole('dialog', undefined, { timeout: 10_000 })
   await waitFor(() => expect(dialog).toBeVisible())
   const rows = dialog.querySelectorAll('[data-slot=shortcut-row]')
-  // Every action in the key map, the loop and speed digits, and the palette, list and undo.
-  await expect(rows.length).toBe(ACTIONS.length + 5)
+  // Every action in the key map, the loop and speed digits, the 1 % steps, and the palette, list
+  // and undo.
+  await expect(rows.length).toBe(ACTIONS.length + 6)
   for (const row of rows) await expect(row.querySelector('kbd')).not.toBeNull()
   await expect(within(dialog).queryByRole('button', { name: /^Learn this pedal/ })).toBeNull()
   await expect(within(dialog).getByRole('link', { name: 'Set up a pedal' })).toBeVisible()

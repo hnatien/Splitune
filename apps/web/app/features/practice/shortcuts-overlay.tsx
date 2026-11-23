@@ -57,6 +57,10 @@ export function ShortcutsOverlay() {
     keys: LOOP_BARS.map(String),
   })
   sections[2]?.rows.push({
+    label: m['shortcuts.fine_speed'](),
+    keys: [keyLabel('Shift+,'), keyLabel('Shift+.')],
+  })
+  sections[2]?.rows.push({
     label: m['shortcuts.speed_keys'](),
     keys: Object.keys(SPEED_KEYS).map(keyLabel),
   })
@@ -110,6 +114,7 @@ export function ShortcutsOverlay() {
         </div>
         <Link
           to="/settings/keyboard"
+          hash="pedal"
           className={buttonVariants({ variant: 'outline', className: 'self-start' })}
           onClick={() => usePracticeUi.setState({ shortcutsOpen: false })}
         >
