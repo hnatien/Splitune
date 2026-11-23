@@ -43,7 +43,8 @@ describe('finalize', () => {
         reasons: [],
       },
     ])
-    expect(summary.rough_stems).toEqual(['drums', 'bass'])
+    // The fixture's only rough stem: its bass extra was left out (c3d24ce).
+    expect(summary.rough_stems).toEqual(['drums'])
     expect(summary.chords_confidence_mean).toBeGreaterThan(0)
   })
 
