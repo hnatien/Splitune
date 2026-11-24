@@ -2886,11 +2886,11 @@ Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at
 - s43 places `MiniMixer` in the Tools sheet and removes the compact transport's Mix button. s30's piece channels build on `mixChannels` (per-drum channels are later scope here).
 - s45 flips the "Every stem has its own fader." / "a mixer for every stem" honesty gates.
 
-## 2026-11-24 — Step s47: full UI audit and redesign, "Calm workspace" (done, not merged; owner review next)
+## 2026-11-24 — Step s47: full UI audit and redesign, "Calm workspace" (done, merged; owner review next)
 
 **Instruction (owner):** a full UI audit and redesign with the lead owning every design decision; the UI before it is a prototype. Rules that held: doc 25, every capability still reachable, WCAG 2.2 AA, confidence and state never by colour alone, every practice action by keyboard and pedal, Dark and Light both first-class, feature detection only, tests rewritten for the new behaviour and never weakened. Step prompt: `docs/steps/s47-full-redesign.md`.
 
-**Branch** `impl/47-full-redesign` from `dev` (`bd2c77e`). Pushed to `origin` at `4c8c927` (the handoff); the verification commits after it are local. No PR, not merged.
+**Branch** `impl/47-full-redesign` from `dev` (`bd2c77e`). Merged into `dev` (`4ba2c16`) and pushed on 2026-11-24 at the owner's word, its commit messages reduced to their subjects as `dev`'s are. `dev` had one commit of its own by then (pointer scrubbing on the song map, `29130dc`), which the rebuilt `waveform-timeline.tsx` already did, so the merge keeps the redesign's file. The branch on `origin` stops at `4c8c927` with the earlier messages; `backup/s47-before-subject-rewrite` (local) has all of them.
 
 **Phases 1–3 (brief, audit, direction).** `docs/design/s47-guidelines.md` and `s47-inventory.md`; every screen and state captured before the change (`docs/design/s47-before/`, kept out of git: about 2,000 images) and scored against the brief in `docs/design/s47-audit.md` (55 screens and regions, top 10 problems). Three prototypes of the practice screen and the library (`docs/design/s47-directions/{a,b,c}/`), judged by a reviewer who saw none of them made (`judge.md`). Chosen: **A, "Calm workspace"**, with C's loop on the score, chord names over the tab and "left = again, right = go" pedal rule, and B's key caps on controls, digit keys and 44/48 px targets (`docs/design/s47-direction.md`).
 
