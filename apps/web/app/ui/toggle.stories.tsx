@@ -218,7 +218,8 @@ const expectChosen = async (group: HTMLElement, chosen: HTMLElement) => {
   await expect(isClear(getComputedStyle(group).backgroundColor)).toBe(true)
   for (const item of within(group).getAllByRole('button')) {
     if (item === chosen) await expectInkEdge(item)
-    else await expect(edgeOf(item)).toBeUndefined()
+    // The edge of the one that was chosen fades out, so it is gone a moment after the click.
+    else await waitFor(() => expect(edgeOf(item)).toBeUndefined())
     await expect(isClear(getComputedStyle(item).backgroundColor)).toBe(true)
   }
 }

@@ -82,15 +82,26 @@ const focusedName = (page: Page) =>
  * Moves focus with Tab alone until the focused element's accessible name matches. Safari on macOS
  * tabs between fields only; Option-Tab reaches every control (as Tab does with "Press Tab to
  * highlight each item"), and Playwright's WebKit on macOS behaves the same.
+ *
+ * After the page's last control Firefox hands focus to its own toolbar, which a learner tabs
+ * through and back into the page, and which Playwright cannot reach: focus stays where it was.
+ * From there the search walks back with Shift+Tab, still by keyboard alone.
  */
 async function tabTo(page: Page, name: RegExp, limit = 60) {
-  const key =
+  let key =
     page.context().browser()?.browserType().name() === 'webkit' && process.platform === 'darwin'
       ? 'Alt+Tab'
       : 'Tab'
   for (let i = 0; i < limit; i++) {
     await page.keyboard.press(key)
     if (name.test(await focusedName(page))) return page.locator(':focus')
+    const moved = await page.evaluate(() => {
+      const seen = window as unknown as { tabToLast?: Element | null }
+      const same = seen.tabToLast === document.activeElement
+      seen.tabToLast = document.activeElement
+      return !same
+    })
+    if (!moved && !key.startsWith('Shift+')) key = `Shift+${key}`
   }
   throw new Error(`Tab never reached ${name}`)
 }
@@ -113,8 +124,17 @@ test.describe('axe in every appearance', () => {
     await page
       .locator('input[type=file]')
       .setInputFiles({ name: 'Axe check.wav', mimeType: 'audio/wav', buffer: wav(3) })
+    // The page hears that its upload is complete before it is closed. Closed sooner (the server
+    // has the analysis first on a slow link), the next page finishes the upload again and the
+    // API's expected 409 lands in its console.
+    const completed = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/v1\/uploads\/[^/]+\/complete$/.test(new URL(response.url()).pathname),
+    )
     await page.getByRole('button', { name: 'Start practising' }).click()
     await expect(page).toHaveURL(/\/practice/)
+    await completed
     await expect
       .poll(
         async () =>

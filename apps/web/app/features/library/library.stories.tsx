@@ -368,8 +368,11 @@ export const Filters: Story = {
     await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"failed"'))
     await expect(await canvas.findByRole('button', { name: 'Show: Failed' })).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: /^Sort by: / }))
-    const sort = within(await within(document.body).findByRole('menu'))
-    await userEvent.click(await sort.findByRole('menuitemradio', { name: 'Title' }))
+    // Looked for in the page, not in "the" menu: the Show menu is still there while it fades
+    // out, and was sometimes taken for the Sort menu.
+    await userEvent.click(
+      await within(document.body).findByRole('menuitemradio', { name: 'Title' }),
+    )
     await waitFor(() => expect(canvas.getByTestId('search').textContent).toContain('"title"'))
   },
 }

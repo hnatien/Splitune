@@ -80,12 +80,13 @@ export async function signIn(page: Page, label: string): Promise<string> {
   return username
 }
 
-// WebKit logs a fetch to the app's own API that a navigation cancels as "/localhost:3000/v1/…
-// due to access control checks." Same-origin requests can't fail CORS, so only those are dropped;
-// cross-origin ones (the bucket's presigned uploads) still count.
+// WebKit logs a fetch to the app's own origin that a navigation cancels as "/localhost:3000/v1/…
+// due to access control checks": the API, and on a slower link the DSP's wasm and the page's own
+// blob URLs too. Same-origin requests can't fail CORS, so only those are dropped; cross-origin
+// ones (the bucket's presigned uploads) still count.
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const CANCELLED_SAME_ORIGIN = new RegExp(
-  `/${escapeRegExp(new URL(APP_URL).host)}/v1/\\S* due to access control checks`,
+  `/${escapeRegExp(new URL(APP_URL).host)}/\\S* due to access control checks`,
 )
 
 /** Console errors and uncaught exceptions on the page (CORS failures show up here). */

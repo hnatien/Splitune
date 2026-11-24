@@ -315,7 +315,10 @@ export const SaveProgress: Story = {
     await userEvent.type(within(sheet).getByLabelText('Username'), 'ab')
     await userEvent.click(within(sheet).getByRole('button', { name: 'Create account' }))
     await expect(within(sheet).getByLabelText('Username')).toHaveAttribute('aria-invalid', 'true')
-    await expect(within(sheet).getByRole('button', { name: 'Not now' })).toBeVisible()
+    // Visible once the dialog has faded in: WebKit gets here while it is still transparent.
+    await waitFor(() =>
+      expect(within(sheet).getByRole('button', { name: 'Not now' })).toBeVisible(),
+    )
     await expect(filled(sheet)).toHaveLength(1)
     // An existing account signs in instead.
     const switchMode = within(sheet).getByRole('button', { name: 'Sign in' })
