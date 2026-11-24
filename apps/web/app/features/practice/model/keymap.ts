@@ -13,6 +13,8 @@
 // until a pedal is set up they only say "Pedal detected? Set it up". Character keys can be
 // switched off (WCAG 2.1.4); the non-character keys pedals send and learned keys keep working.
 
+import { CONTROLS, pointerFocus } from './pointer-focus'
+
 // In 12 §8's order (Settings → Keyboard & pedal lists them as they come here).
 export const ACTIONS = [
   'playPause',
@@ -193,16 +195,6 @@ export function learn(learned: LearnedKeys, action: Action, key: string): Learne
   return next
 }
 
-/** Whether the keyboard put focus here (`:focus-visible`). Unknown counts as yes, so a control
- * is never taken over by mistake. */
-function keyboardFocused(control: HTMLElement): boolean {
-  try {
-    return control.matches(':focus-visible')
-  } catch {
-    return true
-  }
-}
-
 /** Keys the mapper never takes: typing in fields, browser and OS shortcuts. */
 export function ignoredTarget(
   event: Pick<KeyboardEvent, 'target' | 'key' | 'altKey' | 'ctrlKey' | 'metaKey'>,
@@ -215,12 +207,10 @@ export function ignoredTarget(
   }
   // Space and Enter activate a control the keyboard is on; everything else stays global. A
   // control that only holds focus because it was clicked or tapped doesn't count: after a click on
-  // Loop or a panel tab, Space still plays.
+  // Loop or a panel tab, Space still plays (pointer-focus.ts).
   if (event.key === ' ' || event.key === 'Enter') {
-    const control = target.closest<HTMLElement>(
-      'button, a, [role="button"], [role="menuitem"], [role="tab"], [role="switch"]',
-    )
-    if (control && keyboardFocused(control)) return true
+    const control = target.closest<HTMLElement>(CONTROLS)
+    if (control && !pointerFocus.holds(control)) return true
   }
   // Popups (menus, dialogs, sheets) own their keys, except the practice screen's own sheets (the
   // tools and the bar editor), which sit beside the music: the keys and the pedal keep working

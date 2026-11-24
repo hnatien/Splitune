@@ -12,6 +12,7 @@ import {
   resolveKey,
   SPEED_KEYS,
 } from './keymap'
+import { pointerFocus } from './pointer-focus'
 
 const target = (html: string, selector: string) => {
   const host = {
@@ -104,21 +105,38 @@ describe('key map', () => {
   })
 
   it('keeps Space and Enter global on a control that was only clicked', () => {
-    const on = (key: string, keyboard: boolean) => ({
-      target: {
-        closest: (selector: string) =>
-          selector.includes('button') ? { matches: () => keyboard } : null,
-      } as unknown as EventTarget,
+    const control = {}
+    const inside = {
+      closest: (selector: string) => (selector.startsWith('button') ? control : null),
+    } as unknown as EventTarget
+    const on = (key: string) => ({
+      target: inside,
       key,
       altKey: false,
       ctrlKey: false,
       metaKey: false,
     })
-    // Tabbed to: Space presses the control. Clicked: Space plays, so the key stays ours.
-    expect(ignoredTarget(on(' ', true))).toBe(true)
-    expect(ignoredTarget(on('Enter', true))).toBe(true)
-    expect(ignoredTarget(on(' ', false))).toBe(false)
-    expect(ignoredTarget(on('Enter', false))).toBe(false)
+    // Tabbed to, or focused by the app (Fix puts focus on "It's right"): the keys press it.
+    expect(ignoredTarget(on(' '))).toBe(true)
+    expect(ignoredTarget(on('Enter'))).toBe(true)
+    // Clicked or tapped: Space plays, so the keys stay ours.
+    pointerFocus.press(inside)
+    expect(ignoredTarget(on(' '))).toBe(false)
+    expect(ignoredTarget(on('Enter'))).toBe(false)
+    // Focus leaves another control: this one is still the pointer's.
+    pointerFocus.leave({} as unknown as EventTarget)
+    expect(ignoredTarget(on(' '))).toBe(false)
+    // Tab moves focus by keyboard: wherever it lands, the keys press that control.
+    pointerFocus.tab()
+    expect(ignoredTarget(on(' '))).toBe(true)
+    // Focus leaves the clicked control and comes back some other way.
+    pointerFocus.press(inside)
+    pointerFocus.leave(control as unknown as EventTarget)
+    expect(ignoredTarget(on('Enter'))).toBe(true)
+    // A press outside any control takes the pointer's claim away.
+    pointerFocus.press(inside)
+    pointerFocus.press({ closest: () => null } as unknown as EventTarget)
+    expect(ignoredTarget(on(' '))).toBe(true)
   })
 
   it('keeps the keys working inside the practice sheets, and nowhere else that is a popup', () => {
