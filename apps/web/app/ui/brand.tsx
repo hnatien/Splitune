@@ -38,7 +38,10 @@ function BrandMark({ tone = 'colour', className, ...props }: MarkProps) {
   )
 }
 
-/** "splitune" in Figtree 600, −0.02em, with the mark. The name is real text, so it is the label. */
+/**
+ * "splitune" in Figtree 500, −0.02em, with the mark: a logotype outside the type scale (s47
+ * direction §5). The name is real text, so it is the label.
+ */
 function Wordmark({
   tone = 'colour',
   className,
@@ -47,7 +50,7 @@ function Wordmark({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-2.5 font-sans text-lead leading-none font-semibold tracking-[-0.02em] text-foreground',
+        'inline-flex items-center gap-2.5 font-sans text-lead leading-none font-medium tracking-[-0.02em] text-foreground',
         className,
       )}
       {...props}

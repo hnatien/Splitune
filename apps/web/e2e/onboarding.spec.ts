@@ -6,6 +6,7 @@ import {
   e2eUsername,
   expectAccessible,
   expectNoHorizontalScroll,
+  passQuestion,
   submitPastRateLimit,
 } from './helpers'
 
@@ -49,37 +50,33 @@ test.afterAll(async () => {
 test('a fresh visitor reaches a slowed loop of their part without signing in', async () => {
   const info = test.info()
   const started = Date.now()
-  // 1. Land on /start.
+  // 1. Land on /start: one page, guitar and "just started" already chosen.
   await page.goto('/start')
-  await expect(page.getByRole('heading', { name: 'What do you play?' })).toBeVisible()
-  await expect(page.getByText('Step 1 of 5')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Your first song' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: /^Guitar/ })).toBeChecked()
+  await expect(page.getByRole('radio', { name: /^Just started/ })).toBeChecked()
+  await expect(page.getByRole('radio', { name: new RegExp(`^${E2E_EXAMPLE.title}`) })).toBeChecked()
   await expectAccessible(page)
   await expectNoHorizontalScroll(page)
-  // 2. Instrument.
-  await page.getByRole('button', { name: 'Guitar', exact: true }).click()
-  // 3. Level.
-  await page.getByRole('button', { name: 'Just started' }).click()
-  await expect(page.getByRole('heading', { name: "Where's your screen?" })).toBeVisible()
-  await expectAccessible(page)
-  // 4. Skip the screen step (the header's Skip leaves onboarding; this one keeps going).
-  await page.getByRole('button', { name: 'Skip for now' }).click()
-  // The example's practice screen loads behind its card; the card's button starts the audio.
-  const card = page.getByRole('dialog', { name: 'Your first song' })
-  await expect(card).toBeVisible({ timeout: 30_000 })
-  await expect(card.getByText(E2E_EXAMPLE.title).first()).toBeVisible()
-  const play = card.getByRole('button', { name: 'Play your part' })
-  await expect(play).toBeEnabled({ timeout: 90_000 })
+  // 2. Start practising: the example's practice screen, its guide line naming what will play.
+  await page.getByRole('button', { name: 'Start practising' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice\?.*guide=true/)
-  // 5. Play your part: the suggested phrase loops at 70 % with the part loud.
+  await expect(
+    page.getByText(new RegExp(`^${E2E_EXAMPLE.title}: your .* Press Play or Space to start\\.`)),
+  ).toBeVisible({ timeout: 90_000 })
+  const play = page.getByRole('button', { name: 'Play', exact: true })
+  await expect(play).toBeEnabled({ timeout: 90_000 })
+  // 3. Play: the suggested phrase loops at 70 % with the part loud.
   await play.click()
   await expect(loopBadge()).toBeVisible()
   await expect(page.getByText(/We've looped bars \d+–\d+ at 70\s%/)).toBeVisible()
-  await expect(loopBadge()).toHaveText(/pass 1/, { timeout: 60_000 })
   const bars = (await loopBadge().innerText()).match(/bars (\d+–\d+)/)?.[1] ?? ''
+  // After the first pass the transport asks how it went, in the loop's place.
+  await expect(passQuestion(page, 1)).toBeVisible({ timeout: 60_000 })
   looped = { bars, ms: Date.now() - started }
   info.annotations.push({
     type: 'time to first slowed loop',
-    description: `${(looped.ms / 1000).toFixed(1)} s (5 scripted steps, bars ${bars} at 70 %)`,
+    description: `${(looped.ms / 1000).toFixed(1)} s (3 scripted steps, bars ${bars} at 70 %)`,
   })
   console.log(
     `[${info.project.name}] time to first slowed loop: ${(looped.ms / 1000).toFixed(1)} s`,

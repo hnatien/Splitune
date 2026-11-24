@@ -28,11 +28,11 @@ function Readouts() {
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl">Readouts and tab digits</h2>
+        <h2 className="text-heading">Readouts and tab digits</h2>
         <dl className="grid grid-cols-[10rem_1fr] items-baseline gap-x-6 gap-y-3">
           {READOUTS.map(([label, variants, family]) => (
             <div key={label} className="contents">
-              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dt className="text-body-sm text-muted-foreground">{label}</dt>
               <dd className="m-0 flex flex-wrap gap-6" data-readout={label} data-family={family}>
                 {variants.map((text) => (
                   <span key={text} className={`w-fit text-read-readout tabular-nums ${family}`}>
@@ -45,8 +45,8 @@ function Readouts() {
         </dl>
       </section>
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl">Figtree tabular figures</h2>
-        <div className="flex flex-col gap-2 text-2xl">
+        <h2 className="text-heading">Figtree tabular figures</h2>
+        <div className="flex flex-col gap-2 text-display">
           <span data-testid="sans-tnum-ones" className="w-fit tabular-nums">
             1111111111
           </span>
@@ -69,7 +69,7 @@ export const TabularReadouts: Story = {
   play: async ({ canvasElement }) => {
     await document.fonts.ready
     // Measured in the real faces, not the metric-matched fallbacks.
-    await expect(document.fonts.check('600 1em "JetBrains Mono"')).toBe(true)
+    await expect(document.fonts.check('500 1em "JetBrains Mono"')).toBe(true)
     await expect(document.fonts.check('400 1em "Figtree"')).toBe(true)
     for (const row of canvasElement.querySelectorAll('[data-readout]')) {
       const spans = [...row.querySelectorAll('span')]
@@ -116,9 +116,10 @@ function LegibilityCheck() {
   }, [])
   return (
     <div className="flex flex-col gap-8">
-      <p className="max-w-reading text-base text-muted-foreground">
+      <p className="max-w-reading text-body text-muted-foreground">
         Put the screen at each distance and read every row aloud: which digits can you tell apart
-        without leaning in? Tab digits are 600 weight at the distance preset's --read-tab size.
+        without leaning in? Tab digits are 500 weight (the reading role) at the distance preset's
+        --read-tab size.
       </p>
       {DISTANCES.map(([distance, label]) => (
         <section
@@ -127,12 +128,12 @@ function LegibilityCheck() {
           aria-label={label}
           className="flex flex-col gap-4"
         >
-          <h2 className="text-xl">{label}</h2>
+          <h2 className="text-heading">{label}</h2>
           {FAMILIES.map(([name, classes, family]) => (
             <figure key={name} className="m-0 flex flex-col gap-1">
-              <figcaption className="text-sm text-muted-foreground">{name}</figcaption>
+              <figcaption className="text-body-sm text-muted-foreground">{name}</figcaption>
               <div
-                className={`flex flex-wrap gap-x-10 gap-y-2 rounded-lg bg-paper px-4 py-2 text-read-tab text-ink ${classes}`}
+                className={`flex flex-wrap gap-x-10 gap-y-2 rounded-field bg-paper px-4 py-2 text-read-tab text-ink ${classes}`}
                 style={family ? { fontFamily: family } : undefined}
               >
                 {PAIRS.map((pair) => (
@@ -150,10 +151,11 @@ function LegibilityCheck() {
 export const Legibility: Story = {
   render: LegibilityCheck,
   play: async ({ canvasElement }) => {
-    // Each distance block reads at its own preset's tab size (26 §6.3: 24 / 36 / 54 px).
-    const sizes = [...canvasElement.querySelectorAll('section [class*="text-read-tab"]')].map(
-      (element) => getComputedStyle(element).fontSize,
-    )
+    // Each distance block reads at its own preset's tab size (26 §6.3: 24 / 36 / 54 px), at the
+    // reading role's 500 (Figtree's two weights; s47 direction §5).
+    const rows = [...canvasElement.querySelectorAll('section [class*="text-read-tab"]')]
+    const sizes = rows.map((element) => getComputedStyle(element).fontSize)
+    for (const row of rows) await expect(getComputedStyle(row).fontWeight).toBe('500')
     await expect(sizes).toEqual([
       '24px',
       '24px',

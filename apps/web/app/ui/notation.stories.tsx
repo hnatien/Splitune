@@ -22,6 +22,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, fn, waitFor, within } from 'storybook/test'
 import { useScoreTheme } from '../features/practice/score-theme.ts'
+import { contrastRatio, sameColour, tokenColour } from './fixtures.ts'
 
 // packages/notation (12 §3, 26 §5, §12.2): the alphaTab view with the confidence overlay, loop
 // shading, the current bar and the bar targets, on the contracts' 8-bar fixture; the chord diagram
@@ -86,13 +87,45 @@ const rendered = async (canvasElement: HTMLElement) => {
   return canvas
 }
 
-export const Default: Story = {
+/** Confidence by shape (26 §5, s47 §4): Probably a dotted --conf-medium-edge box, Unsure a dashed
+ * box with a "?" in --conf-low-edge, the only place the unsure hue appears, ≥ 4.5:1 on the paper. */
+const marksByShape: NonNullable<Story['play']> = async ({ canvasElement }) => {
+  await rendered(canvasElement)
+  const marks = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot=note-mark]')]
+  await expect(marks.length).toBeGreaterThan(0)
+  const lowEdge = tokenColour('--conf-low-edge', canvasElement)
+  const low = marks.filter((mark) => mark.getAttribute('data-confidence') === 'low')
+  const medium = marks.filter((mark) => mark.getAttribute('data-confidence') === 'medium')
+  await expect(low.length + medium.length).toBe(marks.length)
+  for (const mark of low) {
+    const style = getComputedStyle(mark)
+    // A 1.5 px border, which the browser snaps to whole device pixels (1 px at 1×).
+    await expect(style.borderTopStyle).toBe('dashed')
+    await expect(Number.parseFloat(style.borderTopWidth)).toBeGreaterThanOrEqual(1)
+    await expect(sameColour(style.borderTopColor, lowEdge)).toBe(true)
+    const glyph = mark.querySelector('sup') as HTMLElement
+    await expect(glyph).toHaveTextContent('?')
+    await expect(sameColour(getComputedStyle(glyph).color, lowEdge)).toBe(true)
+    await expect(Number.parseFloat(getComputedStyle(glyph).fontSize)).toBeGreaterThanOrEqual(11)
+  }
+  for (const mark of medium) {
+    const style = getComputedStyle(mark)
+    await expect(style.borderTopStyle).toBe('dotted')
+    await expect(sameColour(style.borderTopColor, tokenColour('--conf-medium-edge', mark))).toBe(
+      true,
+    )
+    await expect(mark.querySelector('sup')).toBeNull()
+  }
+  await expect(
+    contrastRatio(lowEdge, tokenColour('--paper', canvasElement)),
+  ).toBeGreaterThanOrEqual(4.5)
+}
+
+export const Default: Story = { render: () => <Score />, play: marksByShape }
+export const DefaultLight: Story = {
   render: () => <Score />,
-  play: async ({ canvasElement }) => {
-    await rendered(canvasElement)
-    // Medium and low notes carry dashed outlines; low ones the "?" glyph (26 §5).
-    await expect(canvasElement.querySelectorAll('[data-slot=note-mark]').length).toBeGreaterThan(0)
-  },
+  globals: { appearance: 'light' },
+  play: marksByShape,
 }
 
 /** "Show uncertainty" off: the ink stays, the outlines and glyphs go. */
@@ -104,16 +137,30 @@ export const UncertaintyHidden: Story = {
   },
 }
 
+/** A loop is drawn in ink: its bars are pressed, and its bracket and badge carry the ink edge. */
 export const Loop: Story = {
   render: () => <Score loop={{ startBar: 2, endBar: 3 }} />,
+  globals: { appearance: 'light' },
   play: async ({ canvasElement }) => {
     const canvas = await rendered(canvasElement)
     await expect(canvas.getByRole('button', { name: 'Bar 3' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
+    await expect(canvas.getByRole('button', { name: 'Bar 2' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    const bracket = canvasElement.querySelector<HTMLElement>('[data-slot=loop-bracket]')
+    await expect(bracket).not.toBeNull()
+    const edge = getComputedStyle(bracket as HTMLElement).borderTopColor
+    await expect(sameColour(edge, tokenColour('--score-loop-edge', canvasElement))).toBe(true)
+    await expect(contrastRatio(edge, tokenColour('--paper', canvasElement))).toBeGreaterThanOrEqual(
+      3,
+    )
   },
 }
+export const LoopDark: Story = { ...Loop, globals: { appearance: 'dark' } }
 
 /** A bent note: the fixture's last note bends a half step (notes bend_cents → tab bend mark). */
 export const Bend: Story = {
@@ -288,6 +335,10 @@ export const Fretboards: Story = {
     await expect(open.querySelectorAll('[data-slot=fret-ring]')).toHaveLength(4)
     // The next shape's B-string 1st fret is already held: only the new fingers are ghosted.
     await expect(open.querySelectorAll('[data-slot=fret-next]')).toHaveLength(2)
+    // "Next" is a solid hollow ring: dashes and dots are kept for confidence.
+    for (const ring of open.querySelectorAll('[data-slot=fret-next] circle')) {
+      await expect(ring.getAttribute('stroke-dasharray')).toBeNull()
+    }
     const up = canvas.getByRole('img', { name: /^Seventh position/ })
     await expect(up.querySelector('[data-slot=fret-shift]')).toHaveTextContent('Fret 12 →')
     // The 12th fret is outside the window: no ghost for it, the cue instead.

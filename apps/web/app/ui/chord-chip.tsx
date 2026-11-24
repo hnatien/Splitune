@@ -2,26 +2,22 @@ import type { ConfidenceLevel } from '@splitune/ui-tokens'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §5, §12.2. Chips are music, so they sit on the page with ink in every appearance.
-// Confidence is ordinal and never hue alone: a dashed outline (Probably: `--conf-medium-edge`;
-// Unsure: `--unsure` with its ink and "?"). In the strip (`name`) upcoming and past chords are plain
-// names — the outline only appears where a chord is uncertain, so the strip reads as text, not a row
-// of boxes; the current chord is set at the larger reading size on the current-bar wash with a 2 px
-// loop-edge border. `pill` is the Now column's "Then" chip (`.chip`): a bordered pill at
-// `--read-chord`, painted inside a 48 px box (26 §8, V12). One chip can be selected for editing.
+// Doc 26 §5, §12.2, s47 direction §4. Chips are music, so they sit on the page with ink in every
+// appearance, and every chord name stays ink whatever its confidence. Confidence is ordinal and
+// never hue alone: "Probably" adds a 1.5 px dotted box in `--conf-medium-edge`; "Unsure" a 1.5 px
+// dashed box and a "?" in `--conf-low-edge`, the only place the unsure hue appears; "Edited" a
+// 2 px underline in `--edited`. With uncertainty hidden the name is plain ink. In the strip
+// (`name`) the chords are plain names; the current chord is set at the larger reading size on the
+// current-bar wash with a 2 px ink line under it (the wash is never there without the line). The
+// one chip open in the editor (`selected`) has the 1.5 px ink edge. `pill` is the Now column's
+// "Then" chip: a pill with a hairline edge at `--read-chord`, painted inside a 48 px box (26 §8).
 
 export type ChordTiming = 'past' | 'current' | 'upcoming'
 
-const ink: Record<ConfidenceLevel, string> = {
-  high: 'text-ink',
-  medium: 'text-conf-medium',
-  low: 'text-conf-low',
-}
-
 const outline: Record<ConfidenceLevel, string> = {
   high: '',
-  medium: 'border-dashed border-conf-medium-edge',
-  low: 'border-dashed border-conf-low',
+  medium: 'border-[1.5px] border-dotted border-conf-medium-edge',
+  low: 'border-[1.5px] border-dashed border-conf-low-edge',
 }
 
 type ChordChipProps = Omit<React.ComponentProps<'button'>, 'children'> & {
@@ -31,11 +27,28 @@ type ChordChipProps = Omit<React.ComponentProps<'button'>, 'children'> & {
   timing?: ChordTiming
   /** Open in the editor sheet. */
   selected?: boolean
-  /** "Show uncertainty" off removes outlines and the glyph but keeps the ink (§5). */
+  /** Corrected by the learner: a 2 px underline (§5). */
+  edited?: boolean
+  /** "Show uncertainty" off removes the boxes and the glyph but keeps the ink (§5). */
   showUncertainty?: boolean
   /** Spoken after the label for medium/low confidence ("Am, unsure"); the "?" itself is hidden. */
   confidenceText?: string | undefined
+  /** Spoken after the label for an edited chord ("Am, edited"). */
+  editedText?: string | undefined
   variant?: 'name' | 'pill'
+}
+
+/** The "?" after an unsure name, in the unsure hue. */
+function Unsure() {
+  return (
+    <sup
+      aria-hidden
+      data-slot="unsure-glyph"
+      className="ml-0.5 text-[0.55em] font-medium text-conf-low-edge"
+    >
+      ?
+    </sup>
+  )
 }
 
 function ChordChip({
@@ -43,13 +56,29 @@ function ChordChip({
   confidence,
   timing = 'upcoming',
   selected = false,
+  edited = false,
   showUncertainty = true,
   confidenceText,
+  editedText,
   variant = 'name',
   className,
   ...props
 }: ChordChipProps) {
   const uncertain = showUncertainty && confidence !== 'high'
+  const spoken = [
+    chordText(label),
+    uncertain ? confidenceText : undefined,
+    edited ? editedText : undefined,
+  ].filter(Boolean)
+  const name = spoken.length > 1 ? spoken.join(', ') : undefined
+  const symbol = (
+    <span
+      data-slot="chord-name"
+      className={cn(edited && 'underline decoration-edited decoration-2 underline-offset-[0.18em]')}
+    >
+      <ChordSymbol name={label} />
+    </span>
+  )
   if (variant === 'pill') {
     return (
       <button
@@ -58,30 +87,23 @@ function ChordChip({
         data-variant="pill"
         data-confidence={confidence}
         aria-pressed={selected}
-        aria-label={
-          uncertain && confidenceText ? `${chordText(label)}, ${confidenceText}` : undefined
-        }
+        aria-label={name}
         className={cn(
-          'group/chip inline-flex min-h-target-practice-2 items-center rounded-full',
+          'group/chip inline-flex min-h-target-practice items-center rounded-full',
           className,
         )}
         {...props}
       >
         <span
+          data-slot="chord-face"
           className={cn(
-            'inline-flex items-center gap-1 rounded-full border border-border-strong px-3 py-1 font-reading text-read-chord leading-none font-bold whitespace-nowrap transition-colors duration-(--duration-fast) group-hover/chip:bg-accent',
-            ink[confidence],
-            uncertain && outline[confidence],
-            uncertain && 'border-[1.5px]',
-            selected && 'outline-2 outline-offset-2 outline-ring outline-solid',
+            'inline-flex items-center rounded-full px-3 py-1 font-reading text-read-chord leading-none whitespace-nowrap text-ink inset-ring transition-[background-color,box-shadow] duration-(--duration-fast) ease-standard group-hover/chip:bg-hover',
+            uncertain ? outline[confidence] : 'border-[1.5px] border-transparent',
+            selected ? 'inset-ring-[1.5px] inset-ring-selected' : 'inset-ring-border-strong',
           )}
         >
-          <ChordSymbol name={label} />
-          {uncertain && confidence === 'low' && (
-            <span aria-hidden className="text-[0.55em] font-semibold">
-              ?
-            </span>
-          )}
+          {symbol}
+          {uncertain && confidence === 'low' && <Unsure />}
         </span>
       </button>
     )
@@ -94,27 +116,20 @@ function ChordChip({
       data-timing={timing}
       aria-current={timing === 'current' ? 'true' : undefined}
       aria-pressed={selected}
-      aria-label={
-        uncertain && confidenceText ? `${chordText(label)}, ${confidenceText}` : undefined
-      }
+      aria-label={name}
       className={cn(
-        'relative inline-flex min-h-target-practice-2 items-center justify-center rounded-lg border border-transparent bg-paper px-2 py-px font-reading leading-none font-semibold whitespace-nowrap transition-[border-color,background-color] duration-(--duration-base) ease-spring hover:bg-bar-current',
-        ink[confidence],
+        'relative inline-flex min-h-target-practice min-w-target-practice items-center justify-center rounded-field border-[1.5px] border-transparent bg-paper px-2 py-px font-reading leading-none whitespace-nowrap text-ink inset-ring inset-ring-transparent transition-[border-color,background-color,box-shadow] duration-(--duration-base) ease-enter hover:bg-hover',
         uncertain && outline[confidence],
         timing === 'current'
-          ? 'min-w-[1.6em] border-2 border-solid border-score-loop-edge bg-bar-current px-3 text-read-chord-current font-bold'
+          ? 'min-w-[1.6em] bg-bar-current px-3 text-read-chord-current after:pointer-events-none after:absolute after:inset-x-2 after:bottom-1 after:h-0.5 after:rounded-full after:bg-score-loop-edge'
           : 'text-read-chord',
-        selected && 'outline-2 outline-offset-2 outline-ring outline-solid',
+        selected && 'inset-ring-[1.5px] inset-ring-selected',
         className,
       )}
       {...props}
     >
-      <ChordSymbol name={label} />
-      {uncertain && confidence === 'low' && (
-        <sup aria-hidden className="ml-0.5 text-[0.55em] font-semibold">
-          ?
-        </sup>
-      )}
+      {symbol}
+      {uncertain && confidence === 'low' && <Unsure />}
     </button>
   )
 }

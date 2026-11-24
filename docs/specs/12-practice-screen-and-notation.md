@@ -113,26 +113,38 @@ Context: speed, playback key, loop (start/end s), ladder state (rung, clean coun
 - **Later scope (not s32–s45):** per-drum channels ("Kick only", "Drums minus snare", lane focus) and per-hand piano audio need deeper separation.
 
 ## 8. Hands-busy input (M15)
-| Action | Default keys | Pedal (after the wizard, preset "Restart loop · Play/pause") | Notes |
+| Action | Default keys | Pedal | Notes |
 |---|---|---|---|
-| Play / pause | Space, Enter | Right pedal | |
-| Restart loop / back a bar | ←, PageUp | Left pedal | AirTurn mode 3 sends PageUp/PageDown |
-| Next bar | →, PageDown | — | |
+| Play / pause | Space, Enter | Right side, while playing or paused | |
+| Restart loop / back a bar | ← | Left side, while playing or paused | |
+| Next bar | → | — | |
+| Pedal right ("go") / Pedal left ("again") | PageDown / PageUp | The two sides themselves | AirTurn mode 3 sends PageUp/PageDown. What each side does follows the moment: play/pause and restart; Felt clean and Not yet while the pass question is up; next and previous unsure spot in Fix mode (s47) |
+| From the top | `R`, Home | — | Of the loop while one is on, else of the song |
+| Loop 1, 2, 4 or 8 bars from the bar playing | `1` `2` `4` `8` | — | s47 |
+| Move the loop back / forward by its length | Shift ← / Shift → | — | s47; with no loop, the loop hint |
 | Slower / faster 5 % | `,` / `.` (Shift: 1 %) | — | |
-| ↑ / ↓ | **No speed change.** Until a pedal is set up, PedalHud shows "Pedal detected? Set it up" (opens the wizard); after setup they act only if the wizard bound them | — | AirTurn BT200S mode 2 and iRig BlueTurn send ↑/↓ out of the box |
-| Felt clean / Not yet | `C` / `N` | Hold right / hold left (≥ 0.5 s) | |
-| Loop on/off | `L` | — | No loop: loops the current bar (vocals: the phrase) |
+| Speed 50 … 90 %, 100 % | Shift `5` … `9`, Shift `0` | — | s47; read from the key's position, so every keyboard layout works |
+| Open the speed panel on its typed field | `S` | — | s47 |
+| Count-in: off, 1 bar, 2 bars | `I` | — | s47 |
+| Click (metronome) on / off | `T` | — | s47 |
+| ↑ / ↓ | **No speed change.** Until a pedal is set up, PedalHud shows "Pedal detected? Set it up"; after setup they act only if they were learned | — | AirTurn BT200S mode 2 and iRig BlueTurn send ↑/↓ out of the box |
+| Felt clean / Not yet | `C` / `N` | Right / left side while the pass question is up | |
+| Loop on/off | `L` | — | No loop: the hint on how to pick bars (vocals: loops the phrase) |
 | Mute your part | `M` | — | |
-| Next / previous unsure spot | `J` / `K` | — | Enters Fix mode |
+| Tools: open on Mix, or close | `X` | — | s47 |
+| Next view | `V` | — | s47 |
+| Show or hide uncertainty marks | `U` | — | s47 |
+| Next / previous unsure spot | `J` / `K` | Right / left side in Fix mode | Enters Fix mode |
 | Fix the playing bar | `E` | — | |
+| Accept the suggested fix, or "It's right" | `Y` | — | s47 |
 | Previous / next phrase, first note (vocals) | `[` / `]`, `P` | — | |
 | Command palette | ⌘K / Ctrl K | — | Works with single keys off |
 | Undo / redo | ⌘/Ctrl Z, Shift ⌘/Ctrl Z | — | |
 | Shortcuts overlay | `?` | — | Desktop |
 - **Single-key shortcuts** (Settings → Keyboard & pedal, WCAG 2.1.4): one switch, on by default. On: single keys act only while focus is in the practice screen and not in a text field. Off: single keys are inert; modifier chords and learned pedal keys keep working.
-- **Pedal wizard** (s43): step 1 "Press your left pedal", step 2 "Now press your right pedal" (each captures whatever key the device sends: ↑/↓, PageUp/PageDown, Space/Enter…), step 3 choose what they do (Restart loop · Play/pause; Not yet · Felt clean; Back a bar · Next bar); a pedal held ≥ 0.5 s does a second action, so two pedals cover four; conflicting default keys are unassigned automatically; "I only have one pedal"; finish in the test area. Saved per device. The per-action "Learn key" table stays for advanced use. No Web MIDI requirement (Safari has none); a MIDI pad is optional where Web MIDI exists.
+- **Pedal setup:** the two sides are two actions of their own, "Pedal left" and "Pedal right", in Settings → Keyboard & pedal: "Learn" captures whatever key the device sends (↑/↓, PageUp/PageDown, Space/Enter…) for each. The rule is fixed and needs no choosing: left means again, right means go, by the moment (s47; this replaces the s43 plan of presets and held pedals, which was never built). A guided two-step wizard on top of the same two actions is still s43. Saved per device. No Web MIDI requirement (Safari has none).
 - **Focus:** the practice route keeps a focus sink so pedal keys never scroll the page or activate the focused control.
-- **Targets** (`26` §8, the control's own box): the main practice controls are 64 × 64 in every layout, phones and Fix mode included: Play/Pause (phone 72), restart / back a bar, previous and next bar, speed −/+, the loop toggle or pill, count-in, Felt clean / Not yet. Secondary practice controls (click, mix pill, volume, M/S, view switch, inspector tabs) are 48, everything else 44, Stand view's dock buttons 88; every key or pedal action shows PedalHud within 100 ms ("Speed 75 %", "Loop · bars 5–6", "Left pedal · From the top of the loop").
+- **Targets** (`26` §8, the control's own box): Play/Pause is 64 × 64 in every layout; every other practice control (restart, previous and next bar, speed −/+, the loop toggle and pill, count-in, click, Tools, volume, Felt clean / Not yet, M/S, the view tabs, the panel's tabs) is 48, and nothing on the screen is under 44. Every key or pedal action shows PedalHud within 100 ms, naming what pressed it ("Key , · Speed 75 %", "Key 4 · Loop bars 5–8", "Left pedal · From the top of the loop").
 
 ## 9. Accessibility checklist (practice screen)
 WCAG 2.2 AA plus `28` §5: contrast 4.5:1 text / 3:1 graphics in both themes; non-colour cues for confidence, the current bar, the downbeat (square), stems, hands, "Rough" and every on-state; targets per §8; every drag has a single-pointer alternative (2.5.7); the dock, Tools sheet, drawers and pass prompt never fully cover the focused element (2.4.11); single-key shortcuts can be turned off (2.1.4); pausing stops scrolling (2.2.2); no more than 3 flashes a second at any tempo, the beat pulse confined to a small dot, downbeat by shape (2.3.1, 1.4.1); text resize to 200 %; screen-reader labels on all controls with state; a text alternative for notation per bar ("Bar 12: G chord, strum down on 1 and 3; bass notes G2, B2"), read on request, never every note live; processing progress in a polite live region by stage milestone, `role="progressbar"` with `aria-valuetext`, `role="alert"` only for blocking errors.
@@ -196,6 +208,8 @@ All in `model/screen.ts` (`resolveScreen`, table-tested in `screen.test.ts`) and
 - **Regions:** fine pointers get the five regions (`practice-page.tsx` `DesktopRegions`; `layout.ts` `useDesktopRegions`: inspector docked at ≥ 1180, the Now column at ≥ 1024, else a strip; the volume and the Mix pill's words in the dock at ≥ 1440, the width `Main.dc.html` is drawn at; below, an icon and a popover, so the loop pill keeps its words). Coarse pointers keep the earlier arrangement (`CompactRegions`, `transport-bar.tsx`) until s43. While Getting ready shows, the inspector is a drawer at every width.
 - **Inspector:** `practice-store.ts` holds `tab` (`loop` · `mix` · `progress` · `fix`, remembered in `localStorage` `splitune.inspector-tab`; `?tab=` on the route wins), `inspectorOpen` and `openTab(tab)`; J / K / E and the editor open Fix.
 - **Keymap (§8):** `model/keymap.ts` `resolveKey(event, learned, singleKeys)` → an action (with `fine` for Shift), the pedal hint, or nothing. ↑/↓ map to no action; until a pedal key is learned they return the hint. `singleKeys` off leaves Space, Enter, arrows, PageUp / PageDown, learned keys and modifier chords working.
+- **Space and Enter on a focused control (s47):** they press a control the keyboard is on, or one the app gave focus to (Fix puts focus on "It's right"); on a control that only has focus because it was clicked or tapped they stay Play, so Space still plays after a click on Loop or a panel tab. Which is which is recorded from the pointer itself (`model/pointer-focus.ts`: from the press on a control until focus leaves it or Tab moves focus), not read from `:focus-visible`, which Firefox withholds from a control focused by script: there Enter on "It's right" played the song instead of pressing the button.
+- **A new alphaTab layout draws its score (s47):** the view makes a new alphaTab API when the layout mode or the bars per system change (the count follows the pane's width and the reading size), and the score is rendered into it; without that the pane was blank and the playhead frozen after the tools panel docked at the stand's size. The bar being fixed is scrolled into view when the bar buttons are over the newly drawn score (`onBarsPlaced`), which is one update after alphaTab finishes.
 - **Follow (§3):** page turns are decided once per bar from scroller geometry cached by a ResizeObserver and scroll events; the scroll is applied in a task after the frame (`scrollAfterFrame`). The perf record shows no forced layout on desktop and 6 small ones (6.8 ms in the window, against 606 / 73 ms before) on the tablet context, at the loop's page turn. Reduced motion: page turns, a stepped playhead, no smooth scroll; pausing stops scrolling.
 - **Pass prompt:** shown after every pass while a loop is active (`promptPass` > 0), lazy-loaded with its sheet.
 - **Mixer (§7):** presets and faders go through `limitToUnity`: the loudest audible stem plays at 0 dB.
@@ -239,6 +253,13 @@ All in `model/screen.ts` (`resolveScreen`, table-tested in `screen.test.ts`) and
 - **Helpers:** Click is the dock's metronome switch plus a level readout that opens a stepper. **Hear the chords** (`hear-chords.tsx`, lazy, running while its switch is on and Fix mode is off) is s38's synth playing every transcribed chord on each beat it covers, voiced like the chord diagram, scheduled from the engine's clock. The synth now plays into the engine's helpers input (`Engine.input`), so it shares the master volume and the limiter (Fix mode's audition too). The switch lasts for the visit.
 - **Phone mini-mixer** (`mini-mixer.tsx`): preset chips, "{part} · your part" and "Band" rows (Band moves every other channel together, keeping their balance, and reads muted when all of them are) with faders in 3 dB steps (a tap sets them) and the M painted 44 in its 48 box (`StemToggle size="tools"`), and "All {n} stems", which turns the sheet into the full Mix tab. Phones had no way into the mixer since s35 (the compact transport hid the helpers), so the compact transport shows the Mix button until s43's Tools button.
 - **Memory:** every channel is still decoded whole (11 §4's streaming ring isn't built): six stems of a 4-minute song hold ≈ 280 MB of PCM, against ≈ 92 MB for two. Phones need checking at G4.
+
+## Implementation notes (step s47, 2026-11-23)
+- **The screen is the music and one transport.** `features/practice/transport.tsx` replaces the transport dock, the transport bar, the now-column, the floating pass prompt, the mixer drawer and the loop panel. `inspector.tsx` is the tools panel: closed by default, docked from 1180 px (`usePanelDocked`), a drawer below that, a sheet on phones; drawers and the sheet stop above the transport through `--transport-height`, which `practice-page.tsx` measures.
+- **Layouts:** `usePracticeLayout` still reads pointer, size and orientation; a fine-pointer window ≤ 640 px wide now gets the phone arrangement. `useTransportStacked` stacks the transport under 1024 px on any pointer. Tab is the default view everywhere; the glance view is the phone's Chords view (`model/screen.ts`).
+- **Keys** (`model/keymap.ts`, `input-mapper.ts`): the new actions of §8. `keyOf` reads Shift + digit from `event.code`, so `Shift` + `7` is 70 % on every keyboard layout. `pedalMoment` decides what the two pedal sides do. Popups own their keys unless they carry `data-practice-keys` (the tools sheet, the bar editor).
+- **Confirmation:** `PedalHud` is placed by the transport (the key row above the single row; the end of the status row when stacked), never over the notation.
+- **Notation** (`packages/notation`): `barsPerRow` from the pane's width and the digit size (`barsPerSystem` in `model/screen.ts`: one to four); the page's top padding is 4 px; printed bar numbers follow the song's own count (`bar-numbers.ts`); unsure is a dashed box with "?" in `--conf-low-edge`, probably a dotted `--conf-medium-edge`, the bar playing a 2 px ink line.
 
 ## Open questions
 - Page vs Scroll as the default follow mode at different tempos (QX13); Page is the default until tested.

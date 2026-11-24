@@ -104,21 +104,21 @@ export function UsageSettings({ me }: { me: MeData }) {
         <SettingRows>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div className="flex min-w-0 grow basis-50 flex-col gap-0.5">
-              <p className="text-base">
+              <p className="text-label">
                 {plus && current.subscription
                   ? planName(current.subscription.plan)
                   : m['billing.plan_free']()}
               </p>
-              {plus && <p className="text-sm text-muted-foreground">{periodLine(current)}</p>}
+              {plus && <p className="text-body-sm text-muted-foreground">{periodLine(current)}</p>}
             </div>
             <div className="flex flex-wrap gap-3">
               {plus ? (
-                <Link to="/settings/plan" className={buttonVariants({ variant: 'secondary' })}>
+                <Link to="/settings/plan" className={buttonVariants({ variant: 'outline' })}>
                   {m['settings.view_plan']()}
                 </Link>
               ) : (
                 <>
-                  <Link to="/settings/plan" className={buttonVariants({ variant: 'ghost' })}>
+                  <Link to="/settings/plan" className={buttonVariants({ variant: 'quiet' })}>
                     {m['settings.view_plan']()}
                   </Link>
                   <Button variant="primary" onClick={() => setUpgrading(true)}>
@@ -145,7 +145,7 @@ function LabelColumn({ label, hint }: { label: ReactNode; hint?: string | undefi
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       {label}
-      {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-body-sm text-muted-foreground">{hint}</span>}
     </div>
   )
 }
@@ -174,10 +174,7 @@ function UsageMeter({
         '*:data-[slot=meter-track]:col-span-2 sm:*:data-[slot=meter-track]:col-span-1 sm:*:data-[slot=meter-track]:col-start-2 sm:*:data-[slot=meter-track]:row-start-1',
       )}
     >
-      <LabelColumn
-        label={<MeterLabel className="text-base font-normal">{label}</MeterLabel>}
-        hint={hint}
-      />
+      <LabelColumn label={<MeterLabel className="text-label">{label}</MeterLabel>} hint={hint} />
       <MeterValue className="text-right sm:col-start-3">{() => value}</MeterValue>
     </Meter>
   )
@@ -195,8 +192,8 @@ function UsageNote({
 }) {
   return (
     <div className={ROW}>
-      <LabelColumn label={<span className="text-base">{label}</span>} hint={hint} />
-      <p className="text-right text-sm text-muted-foreground sm:col-span-2">{note}</p>
+      <LabelColumn label={<span className="text-label">{label}</span>} hint={hint} />
+      <p className="text-right text-body-sm text-muted-foreground sm:col-span-2">{note}</p>
     </div>
   )
 }

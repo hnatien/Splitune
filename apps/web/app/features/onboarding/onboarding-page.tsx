@@ -1,48 +1,106 @@
 import type { Instrument, Level } from '@splitune/contracts'
-import type { Distance } from '@splitune/ui-tokens'
-import { ClientOnly, Link } from '@tanstack/react-router'
-import { ChevronLeftIcon, DrumIcon, GuitarIcon, Music2Icon, PianoIcon } from 'lucide-react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { Link, useNavigate } from '@tanstack/react-router'
+import {
+  DrumIcon,
+  GuitarIcon,
+  LinkIcon,
+  MicIcon,
+  Music2Icon,
+  PianoIcon,
+  UploadIcon,
+} from 'lucide-react'
 import type * as React from 'react'
-import { lazy, Suspense, useEffect, useId, useRef } from 'react'
+import { useId, useState } from 'react'
 import type { z } from 'zod'
-import { analytics } from '@/lib/analytics'
-import { useDisplay } from '@/lib/display-store'
+import { client } from '@/lib/api'
+import { usePracticeDefaults } from '@/lib/display-store'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { Button, buttonVariants } from '@/ui/button'
-import { ChoiceCard } from '@/ui/choice-card'
+import { Button } from '@/ui/button'
+import { ChoiceRow, ChoiceRowGroup } from '@/ui/choice-row'
 import { BassIcon } from '@/ui/icons/bass'
-import { DistanceIllustration } from '@/ui/icons/distance'
-import { Label } from '@/ui/label'
-import { RadioCard, RadioCardGroup } from '@/ui/radio-card'
-import { Slider } from '@/ui/slider'
-import { StepDots } from '@/ui/step-dots'
-import { PracticeLoading } from '../practice/practice-loading'
-import { PaletteLauncher } from '../shell/palette-launcher'
-import { SkipLink } from '../shell/skip-link'
-import { SystemBanners } from '../system/system-banners'
-import { STEP_COUNT } from './song-parts'
+import { ListGroup, ListRow } from '@/ui/list-row'
+import { Skeleton } from '@/ui/skeleton'
+import { InlineError } from '@/ui/status-message'
+import { FocusShell } from '../shell/focus-shell'
+import { answersOf, examplePractice, startingSpeed } from './defaults'
+import { type ExampleSong, exampleFor, examplesFor, examplesQuery } from './examples'
+import { exampleMeta, partOf, useStepViewed } from './song-parts'
 
-// Onboarding /start (27 §3.3, 13 §1): instrument → level → where's your screen (skippable) → the
-// example song, played with the part loud and looped at the starting speed. The answers live in
-// the URL (Back and reload keep them) and on the device for the claim at sign-in.
+// Onboarding /start (27 §3.3, 13 §1, s47 direction): one page, then the song. What you play and
+// how long you've played start at sensible defaults (defaults.ts) and pick the example and its
+// starting speed as they change; the chosen song and what will happen sit in the bar at the
+// bottom with the one primary action, so a visitor who keeps the defaults is one tap from the
+// practice screen and one more (Play) from hearing their part. The reading distance is not asked:
+// it starts from the device and is changed in practice's display options. A song of one's own
+// (file, link or recording) goes through Add song, after creating an account when signed out.
+// The answers and the song live in the URL (Back and reload keep them).
 
 type InstrumentName = z.infer<typeof Instrument>
 type LevelName = z.infer<typeof Level>
 
-export type StartStep = 'instrument' | 'level' | 'screen' | 'song'
 export interface StartSearch {
-  step?: StartStep | undefined
   instrument?: InstrumentName | undefined
   level?: LevelName | undefined
+  /** The example chosen by hand; otherwise the one suggested for the answers. */
+  song?: string | undefined
 }
 
-const STEP_NUMBER: Record<StartStep, number> = { instrument: 1, level: 2, screen: 3, song: 4 }
+const INSTRUMENTS: {
+  value: InstrumentName
+  icon: React.ReactNode
+  label: () => string
+  unavailable?: boolean
+}[] = [
+  { value: 'guitar', icon: <GuitarIcon />, label: () => m['instrument.guitar']() },
+  { value: 'bass', icon: <BassIcon />, label: () => m['instrument.bass']() },
+  { value: 'piano', icon: <PianoIcon />, label: () => m['instrument.piano'](), unavailable: true },
+  { value: 'drums', icon: <DrumIcon />, label: () => m['instrument.drums'](), unavailable: true },
+  { value: 'other', icon: <Music2Icon />, label: () => m['instrument.other']() },
+]
 
-// The song step resolves the example (and claims it for a signed-in learner) on demand.
-const FirstSong = lazy(() =>
-  import('./first-song').then((module) => ({ default: module.FirstSong })),
-)
+const LEVELS: { value: LevelName; label: () => string; hint: () => string }[] = [
+  {
+    value: 'just_started',
+    label: () => m['settings.level_just_started'](),
+    hint: () => m['start.level_just_started_hint'](),
+  },
+  {
+    value: 'few_songs',
+    label: () => m['settings.level_few_songs'](),
+    hint: () => m['start.level_few_songs_hint'](),
+  },
+  {
+    value: 'returning',
+    label: () => m['settings.level_returning'](),
+    hint: () => m['start.level_returning_hint'](),
+  },
+]
+
+type Source = 'file' | 'link' | 'record'
+
+const SOURCES: { value: Source; icon: React.ReactNode; title: () => string; hint: () => string }[] =
+  [
+    {
+      value: 'file',
+      icon: <UploadIcon aria-hidden />,
+      title: () => m['start.own_file'](),
+      hint: () => m['start.own_file_hint'](),
+    },
+    {
+      value: 'link',
+      icon: <LinkIcon aria-hidden />,
+      title: () => m['start.own_link'](),
+      hint: () => m['start.own_link_hint'](),
+    },
+    {
+      value: 'record',
+      icon: <MicIcon aria-hidden />,
+      title: () => m['start.record'](),
+      hint: () => m['start.own_record_hint'](),
+    },
+  ]
 
 export function OnboardingPage({
   search,
@@ -51,337 +109,268 @@ export function OnboardingPage({
 }: {
   search: StartSearch
   signedIn: boolean
+  /** Replaces the answers in the URL. */
   go: (search: StartSearch) => void
 }) {
-  const step = search.step ?? 'instrument'
-  const { instrument = null, level = null } = search
-  useEffect(() => {
-    if (step === 'song') return // the song step reports itself once the song is known
-    analytics.track('onboarding_step_viewed', { step, instrument, level })
-  }, [step, instrument, level])
+  const answers = answersOf(search)
+  // The funnel starts once, with the answers the visitor arrived with.
+  const [arrived] = useState(() => ({
+    instrument: search.instrument ?? null,
+    level: search.level ?? null,
+  }))
+  useStepViewed('instrument', arrived)
+  const examples = useQuery(examplesQuery)
+  const items = examplesFor(examples.data?.items ?? [], answers.instrument)
+  const suggested = exampleFor(items, answers.instrument, answers.level)
+  const chosen = items.find((e) => e.id === search.song) ?? suggested
+  const songs = suggested ? [suggested, ...items.filter((e) => e !== suggested)] : items
+  const start = useStart({ signedIn, ...answers })
+  const instrumentId = useId()
+  const levelId = useId()
+  const songsId = useId()
 
-  if (step === 'song') {
-    return (
-      <ClientOnly fallback={<PracticeLoading />}>
-        <Suspense fallback={<PracticeLoading />}>
-          <FirstSong
-            instrument={instrument}
-            level={level}
-            signedIn={signedIn}
-            onBack={() => go({ ...search, step: 'screen' })}
-          />
-        </Suspense>
-      </ClientOnly>
-    )
-  }
-  const back =
-    step === 'level'
-      ? () => go({ step: 'instrument' })
-      : step === 'screen'
-        ? () => go({ ...search, step: 'level' })
-        : undefined
   return (
-    <StepFrame step={STEP_NUMBER[step]} signedIn={signedIn} onBack={back}>
-      {step === 'instrument' && (
-        <InstrumentStep onPick={(picked) => go({ step: 'level', instrument: picked })} />
+    <FocusShell exit={!signedIn}>
+      <div className="mx-auto grid w-full max-w-library gap-x-16 gap-y-10 px-4 pt-6 pb-10 sm:px-6 sm:pt-10 lg:grid-cols-2">
+        <header className="flex flex-col gap-2 lg:col-span-2">
+          <h1 className="text-display text-balance">{m['start.title']()}</h1>
+          <p className="max-w-reading text-lead text-pretty text-muted-foreground">
+            {m['start.hint']()}
+          </p>
+        </header>
+        <div className="flex flex-col gap-10">
+          <Question id={instrumentId} title={m['start.instrument_title']()}>
+            <ChoiceRowGroup
+              aria-labelledby={instrumentId}
+              value={answers.instrument}
+              onValueChange={(value) =>
+                go({ ...search, instrument: value as InstrumentName, song: undefined })
+              }
+              className="sm:grid-cols-2"
+            >
+              {INSTRUMENTS.map((instrument) => (
+                <ChoiceRow
+                  key={instrument.value}
+                  value={instrument.value}
+                  icon={instrument.icon}
+                  label={instrument.label()}
+                  description={instrument.unavailable ? m['start.instrument_coming']() : undefined}
+                  disabled={instrument.unavailable}
+                />
+              ))}
+            </ChoiceRowGroup>
+          </Question>
+          <Question id={levelId} title={m['start.level_title']()}>
+            <ChoiceRowGroup
+              aria-labelledby={levelId}
+              value={answers.level}
+              onValueChange={(value) =>
+                go({ ...search, level: value as LevelName, song: undefined })
+              }
+            >
+              {LEVELS.map((level) => (
+                <ChoiceRow
+                  key={level.value}
+                  value={level.value}
+                  label={level.label()}
+                  description={level.hint()}
+                />
+              ))}
+            </ChoiceRowGroup>
+          </Question>
+        </div>
+        <div className="flex flex-col gap-10">
+          <Question id={songsId} title={m['start.song_title']()}>
+            {examples.isPending ? (
+              <div className="grid gap-2" aria-busy="true">
+                <Skeleton className="h-14" />
+                <Skeleton className="h-14" />
+                <Skeleton className="h-14" />
+              </div>
+            ) : examples.isError ? (
+              <InlineError
+                title={m['start.examples_failed']()}
+                description={m['start.examples_failed_body']()}
+                actions={
+                  <Button onClick={() => void examples.refetch()}>{m['common.retry']()}</Button>
+                }
+              />
+            ) : songs.length === 0 ? (
+              <InlineError tone="info" title={m['start.coming']()} />
+            ) : (
+              <ChoiceRowGroup
+                aria-labelledby={songsId}
+                value={chosen?.id ?? null}
+                onValueChange={(value) => go({ ...search, song: value as string })}
+              >
+                {songs.map((example) => (
+                  <ChoiceRow
+                    key={example.id}
+                    value={example.id}
+                    label={example.title}
+                    description={
+                      example === suggested
+                        ? `${m['start.suggested']()} · ${exampleMeta(example)}`
+                        : exampleMeta(example)
+                    }
+                  />
+                ))}
+              </ChoiceRowGroup>
+            )}
+            {start.failed && <InlineError title={m['system.error']()} />}
+          </Question>
+          <OwnSong signedIn={signedIn} />
+        </div>
+      </div>
+      {chosen && (
+        <StartBar
+          example={chosen}
+          level={answers.level}
+          starting={start.pending}
+          onStart={() => start.run(chosen)}
+        />
       )}
-      {step === 'level' && (
-        <LevelStep onPick={(picked) => go({ ...search, step: 'screen', level: picked })} />
-      )}
-      {step === 'screen' && <ScreenStep onDone={() => go({ ...search, step: 'song' })} />}
-    </StepFrame>
+    </FocusShell>
+  )
+}
+
+function Question({
+  id,
+  title,
+  children,
+}: {
+  id: string
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-4">
+      <h2 id={id} className="text-title">
+        {title}
+      </h2>
+      {children}
+    </section>
   )
 }
 
 /**
- * The onboarding shell around one step (27 §1, §3.3): a 64 px bar with Back, the step dots and
- * Skip as ghost text, then one centred column (each step sets its width). Back leaves onboarding from step 1 (Home, or
- * the library when signed in); Skip goes to adding a song of one's own (27 §2), through creating
- * an account when signed out.
+ * The one primary action, kept in reach at the bottom of the screen with what it will do: the
+ * song, the part and the bars it loops at the starting speed (wrapping on phones, never cut off).
  */
-export function StepFrame({
-  step,
-  signedIn,
-  onBack,
-  children,
+function StartBar({
+  example,
+  level,
+  starting,
+  onStart,
 }: {
-  step: number
-  signedIn: boolean
-  onBack?: (() => void) | undefined
-  children: React.ReactNode
+  example: ExampleSong
+  level: LevelName
+  starting: boolean
+  onStart: () => void
 }) {
-  const back = (
-    <>
-      <ChevronLeftIcon aria-hidden />
-      {m['start.back']()}
-    </>
-  )
-  const ghost = buttonVariants({ variant: 'ghost', size: 'sm' })
+  const bars = `${example.loop.start_bar + 1}–${example.loop.end_bar + 1}`
   return (
-    <div data-density="browse" className="flex min-h-dvh flex-col">
-      <SkipLink />
-      <header className="sticky top-0 z-(--z-sticky) bg-background pt-[env(safe-area-inset-top)]">
-        <div className="grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-2 sm:px-4 lg:px-6">
-          <div className="justify-self-start">
-            {onBack ? (
-              <Button variant="ghost" size="sm" onClick={onBack}>
-                {back}
-              </Button>
-            ) : (
-              <Link to={signedIn ? '/library' : '/'} className={ghost}>
-                {back}
-              </Link>
-            )}
-          </div>
-          <StepDots
-            step={step}
-            total={STEP_COUNT}
-            text={m['start.step']({ step: String(step), total: String(STEP_COUNT) })}
-            label={m['start.progress']()}
-          />
-          <div className="justify-self-end">
-            {signedIn ? (
-              <Link to="/library" search={{ add: 'file' }} className={ghost}>
-                {m['start.skip']()}
-              </Link>
-            ) : (
-              <Link to="/auth/sign-up" search={{ next: '/library?add=file' }} className={ghost}>
-                {m['start.skip']()}
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-      <SystemBanners />
-      <main
-        id="main"
-        tabIndex={-1}
-        className="flex flex-1 flex-col pb-[env(safe-area-inset-bottom)]"
-      >
-        <div className="mx-auto flex w-full max-w-onboarding flex-col items-center gap-8 px-4 pt-8 pb-12 sm:px-6 sm:pt-16 sm:pb-20">
-          {children}
-        </div>
-      </main>
-      {signedIn && <PaletteLauncher />}
+    <div
+      data-slot="start-bar"
+      className="sticky bottom-0 z-(--z-sticky) mt-auto border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
+    >
+      <div className="mx-auto flex w-full max-w-library items-center gap-4 px-4 py-3 sm:px-6">
+        <p className="flex min-w-0 flex-1 flex-col text-body-sm text-muted-foreground">
+          <span className="text-label text-foreground sm:truncate">{example.title}</span>
+          <span className="sm:truncate">
+            {m['start.plan']({
+              part: partOf(example),
+              bars,
+              speed: formatPercent(startingSpeed(example, level)),
+            })}
+          </span>
+        </p>
+        <Button variant="primary" size="lg" loading={starting} onClick={onStart}>
+          {m['start.start']()}
+        </Button>
+      </div>
     </div>
   )
 }
 
-// The answers to a question: one column of rows under it, as wide as a form.
-const CHOICES = 'flex w-full max-w-md flex-col gap-3'
-
-function InstrumentStep({ onPick }: { onPick: (instrument: InstrumentName) => void }) {
-  const coming = m['start.instrument_coming']()
-  return (
-    <>
-      <StepTitle>{m['start.instrument_title']()}</StepTitle>
-      <div className={CHOICES}>
-        <ChoiceCard
-          icon={<GuitarIcon />}
-          title={m['instrument.guitar']()}
-          onClick={() => onPick('guitar')}
-        />
-        <ChoiceCard
-          icon={<BassIcon />}
-          title={m['instrument.bass']()}
-          onClick={() => onPick('bass')}
-        />
-        <ChoiceCard
-          icon={<PianoIcon />}
-          title={m['instrument.piano']()}
-          description={coming}
-          unavailable
-        />
-        <ChoiceCard
-          icon={<DrumIcon />}
-          title={m['instrument.drums']()}
-          description={coming}
-          unavailable
-        />
-        <ChoiceCard
-          icon={<Music2Icon />}
-          title={m['instrument.other']()}
-          onClick={() => onPick('other')}
-        />
-      </div>
-    </>
-  )
-}
-
-function LevelStep({ onPick }: { onPick: (level: LevelName) => void }) {
-  return (
-    <>
-      <StepTitle>{m['start.level_title']()}</StepTitle>
-      <div className={CHOICES}>
-        <ChoiceCard
-          title={m['settings.level_just_started']()}
-          onClick={() => onPick('just_started')}
-        />
-        <ChoiceCard title={m['settings.level_few_songs']()} onClick={() => onPick('few_songs')} />
-        <ChoiceCard title={m['settings.level_returning']()} onClick={() => onPick('returning')} />
-      </div>
-    </>
-  )
-}
-
-/** A step's question, centred: 32 px on phones, 44 px from `sm`. */
-export function StepTitle({ children }: { children: React.ReactNode }) {
-  return <h1 className="max-w-2xl text-center text-2xl text-balance sm:text-3xl">{children}</h1>
-}
-
-// Chord names are notation, not copy: the same in every language.
-const SAMPLE = ['Am', 'F'] as const
-
-// "0 2 2 1 0" up the strings (an A minor shape), string 0 being the top line of six.
-const SAMPLE_TAB = [
-  { fret: '0', string: 4 },
-  { fret: '2', string: 3 },
-  { fret: '2', string: 2 },
-  { fret: '1', string: 1 },
-  { fret: '0', string: 0 },
-] as const
-
-// Tab string spacing follows the digit (26 §6.3: about 0.92 of the digit size).
-const STRING_GAP_EM = 0.92
-
-const DISTANCES: { value: Distance; title: () => string; hint: () => string }[] = [
-  {
-    value: 'desk',
-    title: () => m['settings.distance_desk'](),
-    hint: () => m['start.screen_desk_hint'](),
-  },
-  {
-    value: 'stand',
-    title: () => m['settings.distance_stand'](),
-    hint: () => m['start.screen_stand_hint'](),
-  },
-  {
-    value: 'floor',
-    title: () => m['settings.distance_floor'](),
-    hint: () => m['start.screen_floor_hint'](),
-  },
-]
-
-// Where's your screen? (27 §3.3, 26 §6.3): choosing a card applies its distance preset at once and
-// the Reading size slider its calibration, so the sample is read at the size practice will use.
-// "Skip for now" puts back what was there before.
-function ScreenStep({ onDone }: { onDone: () => void }) {
-  const distance = useDisplay((s) => s.distance)
-  const calibration = useDisplay((s) => s.calibration)
-  const update = useDisplay((s) => s.update)
-  const before = useRef({ distance, calibration })
-  const sampleId = useId()
-  const sizeId = useId()
-  return (
-    <>
-      <div className="flex flex-col items-center gap-3">
-        <StepTitle>{m['start.screen_title']()}</StepTitle>
-        <p className="max-w-xl text-center text-lead text-pretty text-muted-foreground">
-          {m['start.screen_hint']()}
-        </p>
-      </div>
-      <RadioCardGroup
-        value={distance ?? null}
-        onValueChange={(value) => update({ distance: value as Distance })}
-        aria-label={m['start.screen_title']()}
-        className="w-full max-w-3xl sm:grid-cols-3"
-      >
-        {DISTANCES.map((d) => (
-          <RadioCard
-            key={d.value}
-            value={d.value}
-            title={d.title()}
-            description={d.hint()}
-            media={<DistanceIllustration distance={d.value} />}
-          />
-        ))}
-      </RadioCardGroup>
-      <section
-        aria-labelledby={sampleId}
-        className="flex w-full max-w-3xl flex-wrap items-center gap-8 rounded-xl border border-border bg-card p-6"
-      >
-        <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-3">
-          <h2 id={sampleId} className="text-lg">
-            {m['start.read_title']()}
-          </h2>
-          <p className="text-sm text-muted-foreground">{m['start.read_hint']()}</p>
-          <div className="flex max-w-90 flex-col gap-2">
-            <div className="flex items-baseline justify-between gap-3">
-              <Label id={sizeId}>{m['settings.calibration']()}</Label>
-              <span className="text-sm font-medium text-muted-foreground tabular-nums">
-                {formatPercent(calibration * 100)}
-              </span>
-            </div>
-            <Slider
-              aria-labelledby={sizeId}
-              thumbLabels={[m['settings.calibration']()]}
-              min={0.8}
-              max={1.4}
-              step={0.1}
-              largeStep={0.2}
-              value={calibration}
-              onValueChange={(value) => update({ calibration: Number(value) })}
-            />
-          </div>
-        </div>
-        <ReadingSample />
-      </section>
-      <div className="flex flex-wrap justify-center gap-3">
-        <Button variant="primary" size="lg" onClick={onDone}>
-          {m['start.continue']()}
-        </Button>
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={() => {
-            update(before.current)
-            onDone()
-          }}
-        >
-          {m['start.skip_for_now']()}
-        </Button>
-      </div>
-    </>
-  )
+/**
+ * Opens the chosen example in practice. A visitor practises it on the device with the guide
+ * (?guide); a signed-in learner gets it as a song in their library first. Either way the starting
+ * speed becomes this device's default for new songs too (13 §1).
+ */
+function useStart({
+  signedIn,
+  instrument,
+  level,
+}: {
+  signedIn: boolean
+  instrument: InstrumentName
+  level: LevelName
+}) {
+  const navigate = useNavigate()
+  const claim = useMutation({
+    mutationFn: (example: ExampleSong) =>
+      client.examples.claim({
+        id: example.id,
+        instrument,
+        level,
+        loops: [],
+        sessions: [],
+        attempts: [],
+        corrections: [],
+      }),
+    onSuccess: ({ song_id }, example) =>
+      navigate({
+        to: '/songs/$songId/practice',
+        params: { songId: song_id },
+        search: examplePractice(example, instrument, level),
+      }),
+  })
+  return {
+    pending: claim.isPending,
+    failed: claim.isError,
+    run: (example: ExampleSong) => {
+      usePracticeDefaults.getState().update({ speedPct: startingSpeed(example, level) })
+      if (signedIn) {
+        claim.mutate(example)
+        return
+      }
+      void navigate({
+        to: '/songs/$songId/practice',
+        params: { songId: example.song.id },
+        search: { ...examplePractice(example, instrument, level), guide: true },
+      })
+    },
+  }
 }
 
 /**
- * The live sample (27 §3.3): chords at the chord-sheet size × 1.6 and a bar of tab at the tab
- * size, both following the distance preset and the Reading size as they change.
+ * A song of one's own: Add song on its file, link or record tab, where the part picker follows.
+ * Songs are analysed on Splitune's workers and kept in an account, so a visitor creates one first.
  */
-function ReadingSample() {
+function OwnSong({ signedIn }: { signedIn: boolean }) {
   return (
-    <div className="flex min-w-0 flex-[1_1_20rem] flex-wrap items-end justify-center gap-10 p-2.5">
-      <div className="text-read-chord-sheet">
-        <div className="flex gap-6.5 font-reading text-[1.6em] leading-none">
-          {SAMPLE.map((chord) => (
-            <span key={chord}>{chord}</span>
-          ))}
-        </div>
-      </div>
-      <span
-        role="img"
-        aria-label={m['start.sample_tab']()}
-        className="relative block h-[4.6em] w-[min(9em,100%)] font-mono text-read-tab tabular-nums"
-      >
-        {Array.from({ length: 6 }, (_, line) => (
-          <span
-            // biome-ignore lint/suspicious/noArrayIndexKey: the six string lines never reorder
-            key={line}
-            className="absolute inset-x-0 h-px bg-staff"
-            style={{ top: `${line * STRING_GAP_EM}em` }}
+    <div className="flex flex-col gap-2">
+      <ListGroup title={m['start.own_title']()}>
+        {SOURCES.map((source) => (
+          <ListRow
+            key={source.value}
+            media={source.icon}
+            title={source.title()}
+            meta={source.hint()}
+            render={
+              signedIn ? (
+                <Link to="/library" search={{ add: source.value }} />
+              ) : (
+                <Link to="/auth/sign-up" search={{ next: `/library?add=${source.value}` }} />
+              )
+            }
           />
         ))}
-        {SAMPLE_TAB.map((note, i) => (
-          <span
-            key={note.string}
-            className="absolute -translate-1/2 rounded-sm bg-card px-0.75 leading-none"
-            style={{ left: `${12 + i * 20}%`, top: `${note.string * STRING_GAP_EM}em` }}
-          >
-            {note.fret}
-          </span>
-        ))}
-      </span>
+      </ListGroup>
+      {!signedIn && (
+        <p className="text-caption text-muted-foreground">{m['start.own_account']()}</p>
+      )}
     </div>
   )
 }

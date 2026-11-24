@@ -7,31 +7,27 @@ import { Switch } from '@/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { type SaveState, useSaveState } from './use-save-state'
 
-// The parts every settings section is built from (27 §3.9; Settings-Account, -Display, -Pedal):
-// a page title, sections set apart by whitespace, each a heading over rows divided by hairlines
-// (`SettingRows`), with the label (and its hint) on the left and the control on the right, wrapping
-// under it on narrow screens. Each field saves on its own and says so next to its label (no global
-// save).
+// The parts every settings section is built from (s47 direction §6, 27 §3.9): a page title and
+// its one line, then groups set apart by space and one hairline, each a heading over plain rows
+// divided by hairlines (`SettingRows`), the label (and its hint) on the left and the control on
+// the right, wrapping under it on narrow screens. Nothing is boxed. Each field saves on its own and
+// says so next to its label (no global save).
 
 export function SettingsPage({
   title,
-  badge,
   intro,
   children,
 }: {
   title: string
-  badge?: React.ReactNode
+  /** One line under the title: what the page is for, or where it is stored. */
   intro?: string
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-12">
-      <div className="flex flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="flex-1 text-2xl">{title}</h1>
-          {badge}
-        </div>
-        {intro && <p className="text-base text-muted-foreground">{intro}</p>}
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-heading">{title}</h1>
+        {intro && <p className="text-body-sm text-muted-foreground">{intro}</p>}
       </div>
       {children}
     </div>
@@ -58,16 +54,16 @@ export function SettingSection({
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn('flex scroll-mt-24 flex-col gap-3', className)}
+      className={cn('flex scroll-mt-24 flex-col gap-2', className)}
     >
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h2 id={`${id}-title`} className="flex-1 text-lg">
+      <div className="flex flex-col gap-0.5">
+        <div className="flex min-h-6 flex-wrap items-center gap-2.5">
+          <h2 id={`${id}-title`} className="flex-1 text-label-sm text-muted-foreground">
             {title}
           </h2>
           {aside}
         </div>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        {description && <p className="text-body-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
     </section>
@@ -85,7 +81,7 @@ export function SettingRows({
   return (
     <div
       className={cn(
-        'flex flex-col divide-y divide-border border-y border-border *:py-4',
+        'flex flex-col divide-y divide-border border-t border-border *:py-3',
         className,
       )}
     >
@@ -111,11 +107,11 @@ function LabelColumn({
   state: SaveState
 }) {
   const text = htmlFor ? (
-    <label id={labelId} htmlFor={htmlFor} className="text-base">
+    <label id={labelId} htmlFor={htmlFor} className="text-label">
       {label}
     </label>
   ) : (
-    <span id={labelId} className="text-base">
+    <span id={labelId} className="text-label">
       {label}
     </span>
   )
@@ -131,7 +127,7 @@ function LabelColumn({
         />
       </div>
       {hint && (
-        <span id={hintId} className="text-sm text-muted-foreground">
+        <span id={hintId} className="text-body-sm text-muted-foreground">
           {hint}
         </span>
       )}

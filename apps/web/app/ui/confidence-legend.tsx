@@ -1,14 +1,18 @@
 import { lazy, Suspense, useId } from 'react'
 import { cn } from '@/lib/utils'
+import { Kbd } from '@/ui/kbd'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import { Switch } from '@/ui/switch'
 
-// Doc 26 §5, §12.2: "Auto-transcribed — may contain errors (v{model})", the key to the marks (Sure,
-// Probably, Unsure, Edited by you, each drawn as the notation draws it), how often notes are marked
-// unsure in words ("About 1 in 8 notes in this song are marked unsure") and the "Show uncertainty"
-// switch; with uncertainty hidden the key goes too. On the practice screen ConfidenceLegendPopover keeps it one tap away behind the dashed
-// chip "? Auto-transcribed · 6 unsure" (a secondary practice control, 48 box; the "?" alone below
-// `md`); the popover's contents load on first open (12 §10 route budget).
+// Doc 26 §5, §12.2, s47 direction §4: "Auto-transcribed — may contain errors (v{model})", the
+// key to the marks, each drawn as the notation draws it with an ink digit (Sure: plain; Probably:
+// a dotted box in --conf-medium-edge; Unsure: a dashed box and a "?" in --conf-low-edge; Edited by
+// you: a 2 px underline in --edited), how often notes are marked unsure in words ("About 1 in 8
+// notes in this song are marked unsure") and the "Show uncertainty" switch; with uncertainty
+// hidden the key goes too. No card of its own: it sits in a popover, a panel or the key row. On
+// the practice screen ConfidenceLegendPopover keeps it one tap away behind the chip "[?] 6 unsure"
+// (a 48 px target; the "?" box alone below `md`) with its key cap; the popover's contents load on
+// first open (12 §10 route budget).
 
 const LegendPanel = lazy(() =>
   import('./confidence-legend-panel').then((module) => ({ default: module.ConfidenceLegendPanel })),
@@ -33,7 +37,23 @@ type ConfidenceLegendProps = {
 }
 
 const sample =
-  'inline-grid min-w-6 place-items-center rounded-xs px-1 font-reading-mono text-sm leading-6 font-semibold'
+  'inline-grid h-6 min-w-6 place-items-center rounded-media border-[1.5px] border-transparent px-1 font-reading-mono text-label-sm text-ink tabular-nums'
+
+/** The unsure mark as a sample: an ink digit in a dashed box, the "?" beside it. */
+function UnsureSample({ digit }: { digit: string }) {
+  return (
+    <span
+      aria-hidden
+      data-slot="legend-unsure"
+      className={cn(sample, 'relative border-dashed border-conf-low-edge')}
+    >
+      {digit}
+      <span className="absolute -top-2 -right-2.5 font-sans text-caption font-medium text-conf-low-edge">
+        ?
+      </span>
+    </span>
+  )
+}
 
 function ConfidenceLegend({
   text,
@@ -48,16 +68,16 @@ function ConfidenceLegend({
     <div
       data-slot="confidence-legend"
       className={cn(
-        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground',
+        'inline-flex w-fit flex-wrap items-center gap-x-4 gap-y-2 text-body-sm text-foreground',
         className,
       )}
     >
-      <span className="font-medium">{text}</span>
+      <span className="text-label-sm">{text}</span>
       {showUncertainty && (
         <span className="inline-flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground">
           {labels.high && (
             <span className="inline-flex items-center gap-2">
-              <span aria-hidden className={cn(sample, 'text-ink')}>
+              <span aria-hidden data-slot="legend-sure" className={sample}>
                 5
               </span>
               {labels.high}
@@ -66,34 +86,26 @@ function ConfidenceLegend({
           <span className="inline-flex items-center gap-2">
             <span
               aria-hidden
-              className={cn(
-                sample,
-                'text-ink',
-                'border-[1.5px] border-dashed border-conf-medium-edge',
-              )}
+              data-slot="legend-probably"
+              className={cn(sample, 'border-dotted border-conf-medium-edge')}
             >
               5
             </span>
             {labels.medium}
           </span>
           <span className="inline-flex items-center gap-2">
-            <span
-              aria-hidden
-              className={cn(
-                sample,
-                'relative',
-                'border-[1.5px] border-dashed border-conf-low text-conf-low',
-              )}
-            >
-              3<sup className="absolute -top-2 -right-2 font-sans text-2xs font-semibold">?</sup>
-            </span>
+            <UnsureSample digit="3" />
             {labels.low}
           </span>
           {labels.edited && (
             <span className="inline-flex items-center gap-2">
               <span
                 aria-hidden
-                className={cn(sample, 'text-edited underline decoration-2 underline-offset-3')}
+                data-slot="legend-edited"
+                className={cn(
+                  sample,
+                  'underline decoration-edited decoration-2 underline-offset-3',
+                )}
               >
                 2
               </span>
@@ -115,11 +127,14 @@ function ConfidenceLegend({
 
 function ConfidenceLegendPopover({
   buttonLabel,
+  shortcut,
   className,
   ...legend
 }: Omit<ConfidenceLegendProps, 'className'> & {
-  /** Catalogue `practice.legend_short`, e.g. "Auto-transcribed · 6 unsure". */
+  /** Catalogue `practice.legend_short`, e.g. "6 unsure". */
   buttonLabel: string
+  /** The key that shows or hides the marks ("U"), printed as a key cap on fine pointers. */
+  shortcut?: string | undefined
   className?: string
 }) {
   return (
@@ -129,18 +144,28 @@ function ConfidenceLegendPopover({
           <button
             type="button"
             data-slot="confidence-legend-chip"
+            aria-keyshortcuts={shortcut}
             className={cn(
-              'group/legend inline-flex min-h-target-practice-2 min-w-target-practice-2 shrink-0 items-center justify-center',
+              'group/legend inline-flex min-h-target-practice min-w-target-practice shrink-0 items-center justify-center rounded-full focus-visible:outline-offset-[-6px]',
               className,
             )}
           />
         }
       >
-        <span className="inline-flex h-7.5 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors duration-(--duration-fast) group-hover/legend:bg-muted group-hover/legend:text-foreground group-aria-expanded/legend:bg-muted">
-          <span aria-hidden className="font-mono font-semibold text-unsure">
+        <span className="inline-flex h-8 items-center gap-2 rounded-full px-2.5 text-label-sm whitespace-nowrap text-muted-foreground inset-ring inset-ring-transparent transition-[color,background-color,box-shadow] duration-(--duration-fast) ease-standard group-hover/legend:bg-hover group-hover/legend:text-foreground group-aria-expanded/legend:text-foreground group-aria-expanded/legend:inset-ring-[1.5px] group-aria-expanded/legend:inset-ring-selected">
+          <span
+            aria-hidden
+            data-slot="legend-chip-mark"
+            className="inline-grid size-4.5 place-items-center rounded-media border-[1.5px] border-dashed border-conf-low-edge text-caption font-medium text-conf-low-edge"
+          >
             ?
           </span>
           <span className="max-md:sr-only">{buttonLabel}</span>
+          {shortcut && (
+            <Kbd aria-hidden className="pointer-coarse:hidden">
+              {shortcut}
+            </Kbd>
+          )}
         </span>
       </PopoverTrigger>
       <Suspense fallback={null}>

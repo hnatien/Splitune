@@ -1,37 +1,98 @@
+import { useRouterState } from '@tanstack/react-router'
 import { KeyboardIcon, RotateCcwIcon } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
 import { PedalIcon } from '@/ui/icons'
 import { Kbd, KbdGroup } from '@/ui/kbd'
+import { ListGroup, ListRow } from '@/ui/list-row'
 import { actionLabel, keyLabel } from '../practice/input-mapper'
 import { useKeys } from '../practice/keys-store'
-import { ACTIONS, DEFAULT_KEYS, keyOf, resolveKey } from '../practice/model/keymap'
+import {
+  ACTIONS,
+  DEFAULT_KEYS,
+  keyOf,
+  LOOP_BARS,
+  resolveKey,
+  SPEED_KEYS,
+} from '../practice/model/keymap'
 import { SettingRows, SettingSection, SettingsPage, SwitchSetting } from './setting-row'
 
 // Settings → Keyboard & pedal (27 §3.9, Settings-Pedal's Keys part, 12 §8): the intro, the pedal
-// setup card (its wizard is s43's), the Single-key shortcuts switch (WCAG 2.1.4; s35's keys store),
-// the Keys table (Action · Keys · Pedal · learn, in 12 §8 order), a test area that names the action
-// a key or pedal triggers, and Reset to the defaults.
+// line, the test area first (a learner setting up a pedal tries it straight away), the
+// Single-key shortcuts switch (WCAG 2.1.4; s35's keys store), then every action as a hairline row
+// (its keys and its learned pedal under the name, "Learn this pedal" beside it; the prompt shows
+// in the row being learned, so it stays next to the control at any width), the fixed keys that
+// can't be learned (as the practice shortcuts list names them) and Reset. Reached from a practice
+// "Set it up" link (`/settings/keyboard#pedal`), the left pedal's Learn button takes focus.
+
+/** The hash a "Set it up" link carries to land on the left pedal's Learn button. */
+export const PEDAL_HASH = 'pedal'
 
 export function KeyboardSettings() {
+  const hash = useRouterState({ select: (state) => state.location.hash })
+  useEffect(() => {
+    if (hash === PEDAL_HASH) document.getElementById(PEDAL_HASH)?.focus()
+  }, [hash])
   return (
     <SettingsPage title={m['settings.keyboard']()} intro={m['shortcuts.settings_intro']()}>
-      <div className="flex items-center gap-4 rounded-xl bg-muted p-6">
-        <PedalIcon aria-hidden className="size-8 shrink-0 text-muted-foreground" />
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="text-lg">{m['settings.pedal_setup']()}</h2>
-          <p className="text-sm text-muted-foreground">{m['shortcuts.description']()}</p>
+      <div className="flex items-start gap-3">
+        <PedalIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="text-label">{m['settings.pedal_setup']()}</p>
+          <p className="text-body-sm text-muted-foreground">{m['shortcuts.description']()}</p>
         </div>
       </div>
+      <KeyTestArea />
       <SettingSection id="keys" title={m['shortcuts.keys']()}>
         <SettingRows>
           <SingleKeys />
         </SettingRows>
-        <KeysTable />
+        <KeysList />
       </SettingSection>
-      <KeyTestArea />
+      <MoreKeys />
+      <ResetKeys />
     </SettingsPage>
+  )
+}
+
+// The keys with no action of their own to learn a pedal for: the digit loops and speeds, the fine
+// speed step, the shortcuts list and the palette, with the practice shortcuts list's names.
+function MoreKeys() {
+  const rows = [
+    { label: m['shortcuts.loop_bars'](), keys: LOOP_BARS.map(String) },
+    { label: m['shortcuts.speed_keys'](), keys: Object.keys(SPEED_KEYS).map(keyLabel) },
+    { label: m['shortcuts.fine_speed'](), keys: ['Shift+,', 'Shift+.'].map(keyLabel) },
+    { label: m['practice.shortcuts'](), keys: ['?'] },
+    { label: m['shortcuts.palette'](), keys: [m['nav.palette_key_mac'](), m['nav.palette_key']()] },
+    {
+      label: m['shortcuts.undo'](),
+      keys: [m['shortcuts.key_undo_mac'](), m['shortcuts.key_undo']()],
+    },
+  ]
+  return (
+    <SettingSection
+      id="more-keys"
+      title={m['shortcuts.more_keys']()}
+      description={m['shortcuts.more_keys_hint']()}
+    >
+      <ListGroup>
+        {rows.map((row) => (
+          <ListRow
+            key={row.label}
+            className="hover:bg-transparent"
+            title={<span className="whitespace-normal">{row.label}</span>}
+            meta={
+              <KbdGroup className="flex-wrap">
+                {row.keys.map((key) => (
+                  <Kbd key={key}>{key}</Kbd>
+                ))}
+              </KbdGroup>
+            }
+          />
+        ))}
+      </ListGroup>
+    </SettingSection>
   )
 }
 
@@ -50,7 +111,7 @@ function SingleKeys() {
   )
 }
 
-function KeysTable() {
+function KeysList() {
   const { learned, learning, startLearning, bind, cancel } = useKeys()
   // While learning, the next key anywhere is the pedal's (captured before anything else acts).
   useEffect(() => {
@@ -67,111 +128,112 @@ function KeysTable() {
   }, [learning, bind, cancel])
   return (
     <>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-border text-sm text-muted-foreground">
-              <th scope="col" className="py-2 pr-3 font-medium">
-                {m['shortcuts.action']()}
-              </th>
-              <th scope="col" className="py-2 pr-3 font-medium">
-                {m['shortcuts.keys']()}
-              </th>
-              <th scope="col" className="py-2 pr-3 font-medium">
-                {m['shortcuts.pedal']()}
-              </th>
-              <th scope="col" className="py-2">
-                <span className="sr-only">{m['shortcuts.learn']()}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {ACTIONS.map((action) => {
-              const pedal = learned[action]
-              return (
-                <tr key={action} className="border-b border-border last:border-b-0">
-                  <th scope="row" className="py-1 pr-3 text-md font-medium">
-                    {actionLabel(action)}
-                  </th>
-                  <td className="py-1 pr-3">
+      <ListGroup>
+        {ACTIONS.map((action) => {
+          const pedal = learned[action]
+          const now = learning === action
+          return (
+            <ListRow
+              key={action}
+              data-action={action}
+              current={now}
+              // Names and the prompt wrap rather than cut off, at any width (WCAG 1.4.10).
+              title={<span className="whitespace-normal">{actionLabel(action)}</span>}
+              meta={
+                now ? (
+                  <span className="block whitespace-normal text-foreground">
+                    {m['shortcuts.learning']({ action: actionLabel(action) })}
+                  </span>
+                ) : (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <KbdGroup>
                       {DEFAULT_KEYS[action].map((key) => (
                         <Kbd key={key}>{keyLabel(key)}</Kbd>
                       ))}
                     </KbdGroup>
-                  </td>
-                  <td className="py-1 pr-3">{pedal && <Kbd>{keyLabel(pedal)}</Kbd>}</td>
-                  <td className="py-1 text-right">
-                    <Button
-                      size="sm"
-                      variant={learning === action ? 'on' : 'ghost'}
-                      aria-pressed={learning === action}
-                      aria-label={
-                        learning === action
-                          ? m['shortcuts.press_for']({ action: actionLabel(action) })
-                          : m['shortcuts.learn_for']({ action: actionLabel(action) })
-                      }
-                      onClick={() => startLearning(action)}
-                    >
-                      {learning === action ? m['shortcuts.press_pedal']() : m['shortcuts.learn']()}
-                    </Button>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p aria-live="polite" className="text-sm text-muted-foreground empty:hidden">
+                    {pedal && (
+                      <span className="inline-flex items-center gap-1.5">
+                        {m['shortcuts.pedal']()}
+                        <Kbd>{keyLabel(pedal)}</Kbd>
+                      </span>
+                    )}
+                  </span>
+                )
+              }
+              aside={
+                <Button
+                  {...(action === 'pedalLeft' ? { id: PEDAL_HASH } : {})}
+                  size="sm"
+                  variant={now ? 'selected' : 'quiet'}
+                  aria-pressed={now}
+                  aria-label={
+                    now
+                      ? m['shortcuts.press_for']({ action: actionLabel(action) })
+                      : m['shortcuts.learn_for']({ action: actionLabel(action) })
+                  }
+                  onClick={() => startLearning(action)}
+                >
+                  {now ? m['shortcuts.press_pedal']() : m['shortcuts.learn']()}
+                </Button>
+              }
+            />
+          )
+        })}
+      </ListGroup>
+      <p aria-live="polite" className="sr-only">
         {learning ? m['shortcuts.learning']({ action: actionLabel(learning) }) : ''}
       </p>
     </>
   )
 }
 
+/** A field to press keys into: it names the action each key or pedal would trigger. */
 function KeyTestArea() {
   const learned = useKeys((s) => s.learned)
   const singleKeys = useKeys((s) => s.singleKeys)
-  const reset = useKeys((s) => s.reset)
   const [last, setLast] = useState<string | null>(null)
   const resultId = useId()
   return (
-    <section className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-border-strong p-5">
-      <button
-        type="button"
-        aria-describedby={resultId}
-        onKeyDown={(event) => {
-          if (event.key === 'Tab') return
-          event.preventDefault()
-          // What the practice screen would do with it (12 §8): ↑/↓ ask for the pedal setup.
-          const result = resolveKey(event, learned, singleKeys)
-          const key = keyLabel(keyOf(event))
-          setLast(
-            result.kind === 'action'
-              ? m['shortcuts.test_result']({ key, action: actionLabel(result.action) })
-              : result.kind === 'pedal-hint'
-                ? m['shortcuts.test_result']({ key, action: m['practice.pedal_detected']() })
-                : m['shortcuts.test_none']({ key }),
-          )
-        }}
-        className="flex min-h-target min-w-0 grow basis-75 items-center gap-4 rounded-lg text-left"
-      >
-        <KeyboardIcon
-          aria-hidden
-          strokeWidth={1.8}
-          className="size-6 shrink-0 text-faint-foreground"
-        />
-        <span className="flex flex-col gap-0.5">
-          <span className="text-lg">{m['shortcuts.test_area']()}</span>
-          <span id={resultId} aria-live="polite" className="text-sm text-muted-foreground">
-            {last ?? m['shortcuts.test_hint']()}
-          </span>
+    <button
+      type="button"
+      aria-describedby={resultId}
+      onKeyDown={(event) => {
+        if (event.key === 'Tab') return
+        event.preventDefault()
+        // What the practice screen would do with it (12 §8): ↑/↓ ask for the pedal setup.
+        const result = resolveKey(event, learned, singleKeys)
+        const key = keyLabel(keyOf(event))
+        setLast(
+          result.kind === 'action'
+            ? m['shortcuts.test_result']({ key, action: actionLabel(result.action) })
+            : result.kind === 'pedal-hint'
+              ? m['shortcuts.test_result']({ key, action: m['practice.pedal_detected']() })
+              : m['shortcuts.test_none']({ key }),
+        )
+      }}
+      className="flex min-h-16 w-full items-center gap-3 rounded-field border border-dashed border-edge px-4 py-3 text-left transition-colors duration-(--duration-fast) hover:bg-hover focus-visible:border-solid focus-visible:border-foreground"
+    >
+      <KeyboardIcon
+        aria-hidden
+        strokeWidth={1.8}
+        className="size-5 shrink-0 text-muted-foreground"
+      />
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-label">{m['shortcuts.test_area']()}</span>
+        <span id={resultId} aria-live="polite" className="text-body-sm text-muted-foreground">
+          {last ?? m['shortcuts.test_hint']()}
         </span>
-      </button>
-      <Button onClick={reset}>
-        <RotateCcwIcon aria-hidden />
-        {m['shortcuts.reset']()}
-      </Button>
-    </section>
+      </span>
+    </button>
+  )
+}
+
+function ResetKeys() {
+  const reset = useKeys((s) => s.reset)
+  return (
+    <Button className="self-start" onClick={reset}>
+      <RotateCcwIcon aria-hidden />
+      {m['shortcuts.reset']()}
+    </Button>
   )
 }

@@ -1,12 +1,15 @@
 import bravuraLicence from '@coderline/alphatab/font/Bravura-OFL.txt?url'
-import { ExternalLinkIcon } from 'lucide-react'
+import { ChevronRightIcon, ExternalLinkIcon } from 'lucide-react'
 import { formatDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
+import { ListGroup, ListRow } from '@/ui/list-row'
 import { SettingSection, SettingsPage } from './setting-row'
 
-// Settings → About (27 §3.9; no mockup): the version and build date, the transcription models and
-// their versions, the font licences with their texts, the provenance register and the personal-mode
-// line. Build facts come from `buildDefines()` in vite.base.ts.
+// Settings → About (27 §3.9; no mockup): the version and build date, the font licences with their
+// texts, the provenance register, the personal-mode line, and the transcription models folded away
+// (developer provenance, not learner information: one line says how many, opening it lists each
+// with its version cut to one line, the full id on hover). Build facts come from `buildDefines()`
+// in vite.base.ts.
 
 declare const __SPLITUNE_BUILD__: {
   commit: string | null
@@ -25,63 +28,73 @@ const FONTS = [
 const REGISTER_URL = 'https://github.com/hnatien/Splitune/tree/dev/compliance/register'
 
 const LINK =
-  'inline-flex min-h-target items-center text-primary-ink underline underline-offset-4 hover:decoration-2'
-
-// A group's items, divided by hairlines like the settings rows.
-const LIST = 'flex list-none flex-col divide-y divide-border border-y border-border p-0'
+  'inline-flex min-h-target items-center gap-1.5 text-label text-foreground underline underline-offset-4 hover:decoration-2'
 
 export function AboutSettings() {
   const build = __SPLITUNE_BUILD__
   const date = formatDate(new Date(build.builtAt))
   return (
-    <SettingsPage title={m['settings.about']()}>
-      <p className="text-base">
-        {build.commit
+    <SettingsPage
+      title={m['settings.about']()}
+      intro={
+        build.commit
           ? m['settings.about_version']({ commit: build.commit, date })
-          : m['settings.about_built']({ date })}
-      </p>
-      <SettingSection id="models" title={m['settings.about_models']()}>
-        <ul className={LIST}>
-          {build.models.map((model) => (
-            <li
-              key={model.name}
-              className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-3"
-            >
-              <span className="min-w-0 text-base">{model.name}</span>
-              <span className="font-mono text-sm break-all text-muted-foreground">
-                {model.version}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </SettingSection>
+          : m['settings.about_built']({ date })
+      }
+    >
       <SettingSection id="fonts" title={m['settings.about_fonts']()}>
-        <ul className={LIST}>
+        <ListGroup>
           {FONTS.map((font) => (
-            <li
+            <ListRow
               key={font.name}
-              className="flex flex-wrap items-center justify-between gap-x-4 py-1 text-base"
-            >
-              <span>{font.name}</span>
-              <a href={font.licence} target="_blank" rel="noreferrer" className={LINK}>
-                {m['settings.about_ofl']()}
-              </a>
-            </li>
+              title={font.name}
+              aside={
+                <a href={font.licence} target="_blank" rel="noreferrer" className={LINK}>
+                  {m['settings.about_ofl']()}
+                </a>
+              }
+            />
           ))}
-        </ul>
+        </ListGroup>
       </SettingSection>
       <SettingSection id="register" title={m['settings.about_register']()}>
-        <a
-          href={REGISTER_URL}
-          target="_blank"
-          rel="noreferrer"
-          className={`${LINK} inline-flex min-h-target items-center gap-1.5 self-start text-base`}
-        >
+        <a href={REGISTER_URL} target="_blank" rel="noreferrer" className={`${LINK} self-start`}>
           {m['settings.about_register_link']()}
           <ExternalLinkIcon aria-hidden strokeWidth={1.8} className="size-4" />
         </a>
       </SettingSection>
-      <p className="text-sm text-muted-foreground">{m['settings.about_personal']()}</p>
+      <SettingSection id="models" title={m['settings.about_models']()}>
+        <details className="group/models">
+          <summary className="flex min-h-target cursor-pointer list-none items-center gap-2 rounded-field text-label text-foreground [&::-webkit-details-marker]:hidden">
+            <ChevronRightIcon
+              aria-hidden
+              strokeWidth={1.8}
+              className="size-4 shrink-0 text-muted-foreground transition-transform duration-(--duration-fast) group-open/models:rotate-90"
+            />
+            {/* The label says what pressing it does: show while closed, hide while open. */}
+            <span className="group-open/models:hidden">
+              {m['settings.about_models_show']({ count: String(build.models.length) })}
+            </span>
+            <span className="hidden group-open/models:inline">
+              {m['settings.about_models_hide']()}
+            </span>
+          </summary>
+          <ListGroup>
+            {build.models.map((model) => (
+              <ListRow
+                key={model.name}
+                title={model.name}
+                meta={
+                  <span className="font-mono" title={model.version}>
+                    {model.version}
+                  </span>
+                }
+              />
+            ))}
+          </ListGroup>
+        </details>
+      </SettingSection>
+      <p className="text-body-sm text-muted-foreground">{m['settings.about_personal']()}</p>
     </SettingsPage>
   )
 }

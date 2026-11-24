@@ -7,9 +7,9 @@ import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
 import { LevelToggle, levelLabel } from './level-toggle'
 import { usePractice } from './practice-context'
 
-// Level and capo at the chord strip's end (12 §2): one button names the level (and the capo when
-// one is set); the level toggle and, for guitar, the capo field open in a popover. Bass and drums
-// have levels but no capo. It sits on the paper, so it takes the score's ink and staff colours.
+// Level and capo (12 §2), at the end of the key row under the tab and of the strip over the
+// other papers: one quiet button names the level (and the capo when one is set); the level toggle
+// and, for guitar, the capo field open in a popover. Bass and drums have levels but no capo.
 // Stage keeps the chrome out.
 export function ScoreTools({ capo }: { capo: boolean }) {
   const { options } = usePractice()
@@ -25,8 +25,9 @@ export function ScoreTools({ capo }: { capo: boolean }) {
       <PopoverTrigger
         render={
           <Button
-            variant="outline"
-            className="ml-auto shrink-0 bg-paper text-ink inset-ring-staff hover:bg-bar-current in-data-[appearance=stage]:hidden"
+            variant="quiet"
+            size="sm"
+            className="ml-auto shrink-0 in-data-[appearance=stage]:hidden"
             aria-label={`${title}: ${summary}`}
           />
         }

@@ -2,19 +2,20 @@ import { useQuery } from '@tanstack/react-query'
 import { PIANO_HANDS, usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { track } from '@/lib/track'
-import { Badge } from '@/ui/badge'
 import { ConfidenceLegendPopover } from '@/ui/confidence-legend'
-import { Spinner } from '@/ui/spinner'
+import { Kbd } from '@/ui/kbd'
+import { Status } from '@/ui/status'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
-import { statsQuery } from '../library/queries'
+import { statsQuery, workerStatusQuery } from '../library/queries'
 import { handsLabel } from './display-options'
+import { keyLabel } from './input-mapper'
 import { isPhone, type PracticeLayout } from './layout'
 import { analysingStep, etaMinutes, oneInBand, remaining, running } from './model/getting-ready'
 import type { Screen, ViewLabel } from './model/screen'
 import { unsureSpots } from './model/view-model'
 import { useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
-import { usePracticeUi } from './practice-store'
+import { chooseView } from './practice-store'
 
 // The top bar's own controls, loaded on demand (12 §10 route budget): in the centre the view
 // switch (27 §3.7.5; piano adds Hands on desktop), or while the analysis runs the analysing badge
@@ -42,21 +43,29 @@ export function StatusControls({ layout }: { layout: PracticeLayout }) {
   )
 }
 
-// The primary badge with a spinner (27 §3.7.3): the stage being worked on of all, and the ETA
-// when every remaining stage has a typical time.
+// The analysis as a status (27 §3.7.3): a ring that fills with the stages done, the stage being
+// worked on of all, and the ETA when every remaining stage has a typical time.
 function AnalysingBadge() {
   const { data } = usePractice()
   const stats = useQuery(statsQuery)
+  const worker = useQuery(workerStatusQuery)
   const analysis = data.analysis.data
   if (!analysis) return null
   const step = analysingStep(analysis)
-  const minutes = etaMinutes(remaining(analysis, stats.data?.stages ?? []))
+  // Queued behind an offline machine: no time is promised (26 §13).
+  const queued = data.live.waitingFor !== undefined || worker.data?.online === false
+  const minutes = queued ? undefined : etaMinutes(remaining(analysis, stats.data?.stages ?? []))
   return (
-    <Badge variant="primary" className="h-7 gap-2 px-3 text-xs whitespace-nowrap">
-      <Spinner className="size-3" />
+    <Status
+      kind="working"
+      progress={step.total > 0 ? (step.current - 1) / step.total : 0}
+      data-slot="analysing"
+      // It truncates in its own column, so on a phone it never reaches the back link.
+      className="max-w-full"
+    >
       {m['practice.analysing_badge']({ done: String(step.current), total: String(step.total) })}
-      {minutes && ` · ${m['analysis.eta_inline']({ minutes })}`}
-    </Badge>
+      {minutes && <span className="max-sm:hidden"> · {m['analysis.eta_inline']({ minutes })}</span>}
+    </Status>
   )
 }
 
@@ -111,27 +120,32 @@ function ViewSwitch({
   layout: PracticeLayout
 }) {
   return (
-    <ToggleGroup
-      aria-label={m['practice.view']()}
-      size={isPhone(layout) ? 'md' : 'practice-2'}
-      value={[viewSwitch.selected]}
-      onValueChange={(next) => {
-        const view = next[0]
-        if (view === 'tab' || view === 'staff' || view === 'notes') {
-          usePracticeUi.setState({ view, forceTab: true })
-          track('view_changed', { view: view === 'tab' ? notationEvent : view })
-        } else if (view === 'chords') {
-          usePracticeUi.setState({ view: 'chords', forceTab: false })
-          track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
-        }
-      }}
-    >
-      {viewSwitch.items.map(({ value, label }) => (
-        <ToggleGroupItem key={value} value={value}>
-          {VIEW_LABEL[label]()}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <div className="flex items-center gap-1.5">
+      <ToggleGroup
+        aria-label={m['practice.view']()}
+        size={isPhone(layout) ? 'sm' : 'md'}
+        value={[viewSwitch.selected]}
+        onValueChange={(next) => {
+          const view = next[0]
+          if (view === 'tab' || view === 'staff' || view === 'notes') {
+            chooseView(view)
+            track('view_changed', { view: view === 'tab' ? notationEvent : view })
+          } else if (view === 'chords') {
+            chooseView('chords')
+            track('view_changed', { view: layout === 'phone-portrait' ? 'glance' : 'chords' })
+          }
+        }}
+      >
+        {viewSwitch.items.map(({ value, label }) => (
+          <ToggleGroupItem key={value} value={value} className="max-sm:px-2.5">
+            {VIEW_LABEL[label]()}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      <Kbd aria-hidden className="pointer-coarse:hidden max-lg:hidden">
+        {keyLabel('v')}
+      </Kbd>
+    </div>
   )
 }
 
@@ -143,7 +157,7 @@ function PianoHands() {
   return (
     <ToggleGroup
       aria-label={m['practice.hands']()}
-      size="practice-2"
+      size="md"
       value={[hands]}
       onValueChange={(next) => {
         const picked = PIANO_HANDS.find((h) => h === next[0])

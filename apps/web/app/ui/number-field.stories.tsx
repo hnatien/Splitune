@@ -1,7 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { NumberField } from './number-field.tsx'
-import { BOTH_THEMES, BOTH_THEMES_MORE_CONTRAST, DAYLIGHT, expectTargets } from './story-kit.tsx'
+import {
+  BOTH_THEMES,
+  BOTH_THEMES_MORE_CONTRAST,
+  contrast,
+  DAYLIGHT,
+  edgeOf,
+  expectFocusRing,
+  expectTargets,
+  isClear,
+  surfaceOf,
+  themeFrames,
+} from './story-kit.tsx'
 
 const meta = {
   title: 'Base/NumberField',
@@ -20,12 +31,46 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// Doc 26 §12.1 `.stepper`: a 40 px --background well with an --input edge and a mono value; each
-// step half is a 44 × 44 box (48 in practice density) around its 36 px face (V12).
-export const Default: Story = { globals: BOTH_THEMES }
+// Doc 26 §12.1 `.stepper`: a field-shaped 40 px well (10 px corners) whose only boundary is a 1 px
+// --edge (≥ 3:1), the value in tabular figures; each step half is a 44 × 44 box (48 in practice
+// density) around its 36 px face (V12).
+const well = (root: HTMLElement) =>
+  root.querySelector('[data-slot=number-field] > div > div') as HTMLElement
+
+export const Default: Story = {
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const group = well(frame)
+      await expect(getComputedStyle(group).borderTopLeftRadius).toBe('10px')
+      await expect(edgeOf(group)?.width).toBe(1)
+      await expect(contrast(edgeOf(group)?.color ?? '', surfaceOf(frame))).toBeGreaterThanOrEqual(3)
+      // The unit sits outside the value and is part of its description.
+      await expect(
+        within(frame).getByRole('textbox', { name: 'Speed' }),
+      ).toHaveAccessibleDescription('%')
+    }
+  },
+}
+
+/** Disabled: the steps and value fade to faint text, the edge stays at ≥ 3:1, nothing fills. */
 export const Disabled: Story = {
   args: { disabled: true, inputLabel: 'Speed, unavailable' },
   globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const canvas = within(frame)
+      const input = canvas.getByRole('textbox', { name: 'Speed, unavailable' })
+      await expect(input).toBeDisabled()
+      await expect(
+        contrast(edgeOf(well(frame))?.color ?? '', surfaceOf(frame)),
+      ).toBeGreaterThanOrEqual(3)
+      for (const step of canvas.getAllByRole('button')) {
+        await expect(getComputedStyle(step).opacity).toBe('1')
+        await expect(isClear(getComputedStyle(step).backgroundColor)).toBe(true)
+      }
+    }
+  },
 }
 export const Decibels: Story = {
   args: {
@@ -47,8 +92,7 @@ export const Steppers: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Faster' }))
     await expect(canvas.getByRole('textbox', { name: 'Speed' })).toHaveValue('75')
     await expectTargets(canvas.getAllByRole('button'), 44)
-    const well = canvasElement.querySelector('[data-slot=number-field] > div > div') as HTMLElement
-    await expect(well.getBoundingClientRect().height).toBe(40)
+    await expect(well(canvasElement).getBoundingClientRect().height).toBe(40)
     // The value is set in the interface face with tabular figures, so it never shifts as it changes.
     const value = getComputedStyle(canvas.getByRole('textbox'))
     await expect(value.fontFamily).toMatch(/^"?Figtree/)
@@ -61,8 +105,7 @@ export const SteppersPracticeDensity: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expectTargets(canvas.getAllByRole('button'), 48)
-    const well = canvasElement.querySelector('[data-slot=number-field] > div > div') as HTMLElement
-    await expect(well.getBoundingClientRect().height).toBe(40)
+    await expect(well(canvasElement).getBoundingClientRect().height).toBe(40)
   },
 }
 
@@ -80,7 +123,30 @@ export const Focus: Story = {
     await userEvent.tab()
     const input = within(canvasElement).getByRole('textbox', { name: 'Speed' })
     await expect(input).toHaveFocus()
-    await expect(getComputedStyle(input).outlineStyle).toBe('solid')
+    // The outline sits inside the well, so the step halves either side never clip it.
+    await expectFocusRing(input)
+    await expect(getComputedStyle(input).outlineOffset).toBe('-2px')
+    await userEvent.keyboard('{ArrowUp}')
+    await expect(input).toHaveValue('75')
+  },
+}
+
+/** On a coarse pointer the value is 16 px (`text-field`), so iOS doesn't zoom into it. */
+export const CoarsePointer: Story = {
+  globals: { pointer: 'coarse' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Speed' })
+    await expect(getComputedStyle(input).fontSize).toBe('16px')
+  },
+}
+
+/** At the bounds the step that can't go further is disabled; the value clamps. */
+export const AtTheLimit: Story = {
+  args: { defaultValue: 200 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: 'Faster' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Slower' })).toBeEnabled()
   },
 }
 export const FocusDaylight: Story = { ...Focus, globals: DAYLIGHT }

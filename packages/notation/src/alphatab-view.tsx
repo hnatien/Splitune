@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { bravuraWoff2 } from './assets.ts'
+import { renumberBars } from './bar-numbers.ts'
 import { externalMediaHandler, externalOutput, type MediaTarget } from './external-media.ts'
 import {
   type BarBox,
@@ -67,6 +68,9 @@ export interface AlphaTabViewProps {
    * scroll = one line under a fixed now-line; off = it doesn't move (reading and fixing).
    */
   layout: FollowMode
+  /** Bars in a system on Page and Off (27 §3.7.1): four where there is the width, two on a
+   * phone, so the digits never run into each other. */
+  barsPerRow?: number
   /** A 2 px line, a small block on the beat, or only the current bar's wash (12 §3). */
   playhead?: PlayheadStyle
   /** Reduced motion (26 §10): the playhead steps by beat. */
@@ -92,6 +96,8 @@ export interface AlphaTabViewProps {
   onCurrentBarChange?: (bar: number) => void
   /** Milliseconds from handing the score to alphaTab until the render finished. */
   onRendered?: (ms: number) => void
+  /** The bar buttons are in the page over the score as it is drawn now. */
+  onBarsPlaced?: () => void
   /** Smooth page turns (off under reduced motion: jumps). */
   smoothScroll?: boolean
   ref?: Ref<AlphaTabViewHandle>
@@ -114,8 +120,12 @@ const NO_BARS: ReadonlySet<number> = new Set()
 const SYSTEM_TOP_PX = 44
 const SYSTEM_BOTTOM_PX = 10
 const PADDING_PX = SYSTEM_TOP_PX + SYSTEM_BOTTOM_PX
+// The page's padding (alphaTab's default is 35 all round): the sides and the end keep it.
+const PAGE_SIDE_PX = 35
+const PAGE_TOP_PX = 4
+const PAGE_BOTTOM_PX = 35
 
-function createApi(host: HTMLElement, scroll: boolean): alphaTab.AlphaTabApi {
+function createApi(host: HTMLElement, scroll: boolean, barsPerRow: number): alphaTab.AlphaTabApi {
   const settings = new alphaTab.Settings()
   settings.core.engine = 'svg'
   settings.core.useWorkers = true
@@ -123,8 +133,11 @@ function createApi(host: HTMLElement, scroll: boolean): alphaTab.AlphaTabApi {
   settings.core.smuflFontSources = new Map([[alphaTab.FontFileFormat.Woff2, bravuraWoff2]])
   settings.core.logLevel = alphaTab.LogLevel.Warning
   settings.display.layoutMode = scroll ? alphaTab.LayoutMode.Horizontal : alphaTab.LayoutMode.Page
-  // Systems of four bars (Page) with room above each for the loop bracket (27 §3.7.1).
-  if (!scroll) settings.display.barsPerRow = 4
+  // Systems of a fixed number of bars (Page) with room above each for the loop bracket
+  // (27 §3.7.1).
+  if (!scroll) settings.display.barsPerRow = barsPerRow
+  // The page's own top padding would add a blank band above the first system's bracket room.
+  settings.display.padding = [PAGE_SIDE_PX, PAGE_TOP_PX, PAGE_SIDE_PX, PAGE_BOTTOM_PX]
   settings.display.firstSystemPaddingTop = SYSTEM_TOP_PX
   settings.display.systemPaddingTop = SYSTEM_TOP_PX
   settings.display.systemPaddingBottom = SYSTEM_BOTTOM_PX
@@ -162,6 +175,7 @@ export function AlphaTabView({
   times,
   theme,
   layout,
+  barsPerRow = 4,
   playhead = 'line',
   stepped = false,
   clock,
@@ -180,6 +194,7 @@ export function AlphaTabView({
   onNoteActivate,
   onCurrentBarChange,
   onRendered,
+  onBarsPlaced,
   smoothScroll = true,
   ref,
   className,
@@ -203,6 +218,7 @@ export function AlphaTabView({
     timeline,
     onCurrentBarChange,
     onRendered,
+    onBarsPlaced,
     smoothScroll,
     stepped,
     playhead,
@@ -213,6 +229,7 @@ export function AlphaTabView({
     timeline,
     onCurrentBarChange,
     onRendered,
+    onBarsPlaced,
     smoothScroll,
     stepped,
     playhead,
@@ -224,11 +241,12 @@ export function AlphaTabView({
   // Page and Off share alphaTab's page layout; only Scrolling needs the horizontal one.
   const scroll = layout === 'scroll'
 
-  // One API per mounted view and layout mode (alphaTab switches layout only at creation).
+  // One API per mounted view, layout mode and system width (alphaTab lays its systems out at
+  // creation).
   useEffect(() => {
     const element = host.current
     if (!element) return
-    const api = createApi(element, scroll)
+    const api = createApi(element, scroll, barsPerRow)
     apiRef.current = api
     const handler = externalMediaHandler({ duration: () => latest.current.media.duration() })
     const attach = () => {
@@ -247,9 +265,12 @@ export function AlphaTabView({
       api.destroy()
       apiRef.current = null
     }
-  }, [scroll])
+  }, [scroll, barsPerRow])
 
-  // A changed score, ink, timeline or theme re-renders; overlay-only props don't.
+  // A changed score, ink, timeline or theme re-renders; overlay-only props don't. So does a new
+  // API (layout mode, bars per system): it starts empty, and without its score the pane is blank
+  // and the playhead has no bounds to follow.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll and barsPerRow stand for the API they re-create
   useEffect(() => {
     const api = apiRef.current
     if (!api) return
@@ -264,7 +285,25 @@ export function AlphaTabView({
     setTimeline(resolved)
     renderStarted.current = performance.now()
     api.renderScore(score, [0])
-  }, [tex, noteMap, marks, times, theme])
+  }, [tex, noteMap, marks, times, theme, scroll, barsPerRow])
+
+  // Bar numbers count from the first full bar (bar-numbers.ts). alphaTab adds its SVG a chunk at
+  // a time as systems come into view, so each chunk is renumbered as it lands; a score that
+  // starts on grid bar 0 prints the right numbers already and is left alone.
+  useEffect(() => {
+    const element = host.current
+    if (!element || timeline.firstBar === 0) return
+    renumberBars(element, timeline.firstBar)
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node instanceof Element) renumberBars(node, timeline.firstBar)
+        }
+      }
+    })
+    observer.observe(element, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [timeline.firstBar])
 
   // Marks and markers follow the latest render's bounds.
   useEffect(() => {
@@ -278,6 +317,12 @@ export function AlphaTabView({
       markers: markerBoxes(lookup, score, timeline, markers),
     })
   }, [lookupVersion, noteMap, marks, markers, timeline])
+
+  // Said after the commit that put them there: a render is finished one update before its bars
+  // can be measured.
+  useEffect(() => {
+    if (overlay !== EMPTY) latest.current.onBarsPlaced?.()
+  }, [overlay])
 
   // The frame loop: push the clock, move the playhead, turn pages while playing.
   useEffect(() => {
@@ -412,6 +457,9 @@ export function AlphaTabView({
     <section
       ref={scroller}
       aria-label={labels.region}
+      // The bar that takes Tab is inside; while none does (the score is still being laid out, or
+      // the playhead is before the first bar) the region takes it, so it can always be reached.
+      tabIndex={overlay.bars.some((bar) => bar.index === focusIndex) ? undefined : 0}
       data-slot="alphatab-view"
       data-layout={layout}
       data-playhead={playhead}
@@ -436,7 +484,7 @@ export function AlphaTabView({
                 data-slot="loop-shade"
                 className={
                   armed && !inLoop
-                    ? 'absolute rounded-xs border-2 border-dashed border-score-loop-edge'
+                    ? 'absolute rounded-media border-2 border-dashed border-score-loop-edge'
                     : 'absolute bg-score-loop-fill'
                 }
                 style={boxStyle(barBody(bar))}
@@ -446,7 +494,7 @@ export function AlphaTabView({
           <div
             ref={wash}
             data-slot="current-bar"
-            className="absolute top-0 left-0 bg-bar-current will-change-transform"
+            className="absolute top-0 left-0 border-b-2 border-score-playhead bg-bar-current will-change-transform"
           />
         </div>
         <div ref={host} className="relative z-10" />
@@ -465,7 +513,7 @@ export function AlphaTabView({
                 <span
                   key={`shaky-${bar.index}-${bar.system}`}
                   data-slot="shaky-bar"
-                  className="absolute rounded-xs border-[1.5px] border-dashed border-unsure"
+                  className="absolute rounded-media border-[1.5px] border-dashed border-unsure"
                   style={boxStyle(barBody(bar))}
                 >
                   <Unsure />
@@ -492,7 +540,7 @@ export function AlphaTabView({
               <span
                 key={`8-${note.noteId}`}
                 title={note.octave === '8va' ? labels.octaveUp : labels.octaveDown}
-                className="absolute text-xs leading-none font-semibold"
+                className="absolute text-caption leading-none font-medium"
                 style={{ left: note.x + note.w, top: note.y - 10 }}
               >
                 {note.octave}
@@ -502,7 +550,7 @@ export function AlphaTabView({
           {overlay.markers.map((marker) => (
             <span
               key={`m-${marker.noteId}`}
-              className="absolute -translate-x-1/2 text-sm leading-none font-bold"
+              className="absolute -translate-x-1/2 text-body-sm leading-none font-medium"
               style={{ left: marker.x, top: marker.y + 2 }}
             >
               {marker.label}
@@ -515,7 +563,7 @@ export function AlphaTabView({
             data-style={playhead}
             className={
               playhead === 'block'
-                ? 'absolute top-0 left-0 size-3 rounded-xs bg-score-playhead will-change-transform'
+                ? 'absolute top-0 left-0 size-3 rounded-media bg-score-playhead will-change-transform'
                 : playhead === 'bar'
                   ? 'hidden'
                   : 'absolute top-0 left-0 w-0.5 rounded-full bg-score-playhead will-change-transform'
@@ -542,7 +590,7 @@ export function AlphaTabView({
               }
               onClick={() => onBarActivate(timeline.firstBar + bar.index)}
               onKeyDown={onBarKey(bar.index)}
-              className="absolute cursor-pointer rounded-sm bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+              className="absolute cursor-pointer rounded-media bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
               style={boxStyle(barBody(bar))}
             />
           ))}
@@ -557,7 +605,7 @@ export function AlphaTabView({
                 aria-label={noteLabel?.(note.noteId) ?? note.noteId}
                 aria-pressed={selectedNoteId === note.noteId}
                 onClick={() => onNoteActivate?.(note.noteId)}
-                className="absolute min-h-6 min-w-6 cursor-pointer rounded-sm bg-transparent aria-pressed:outline-2 aria-pressed:outline-ring focus-visible:outline-2 focus-visible:outline-ring"
+                className="absolute min-h-6 min-w-6 cursor-pointer rounded-media bg-transparent aria-pressed:outline-2 aria-pressed:outline-ring focus-visible:outline-2 focus-visible:outline-ring"
                 style={{
                   ...boxStyle(note),
                   left: note.x + note.w / 2,
@@ -591,13 +639,13 @@ function LoopBracket({
     <>
       <span
         data-slot="loop-bracket"
-        className="absolute h-3 rounded-t-sm border-2 border-b-0 border-score-loop-edge"
+        className="absolute h-3 rounded-t-media border-2 border-b-0 border-score-loop-edge"
         style={{ left: span.x, top: span.y - 16, width: span.w }}
       />
       {label && (
         <span
           data-slot="loop-badge"
-          className="absolute inline-flex h-5.5 items-center rounded-full bg-paper px-2 text-xs font-semibold whitespace-nowrap text-primary-ink tabular-nums inset-ring inset-ring-primary-line"
+          className="absolute inline-flex h-5.5 items-center rounded-full bg-paper px-2 text-caption font-medium whitespace-nowrap text-foreground tabular-nums inset-ring inset-ring-selected"
           style={{ left: span.x + 14, top: span.y - 38 }}
         >
           {label}
@@ -611,17 +659,18 @@ function boxStyle(box: { x: number; y: number; w: number; h: number }): CSSPrope
   return { left: box.x, top: box.y, width: box.w, height: box.h }
 }
 
-/** The superscript "?" of an unsure mark (26 §5: 10 px, 700, `--unsure`). */
+/** The superscript "?" of an unsure mark (26 §5): 12 px at 500, in the unsure hue. */
 function Unsure() {
   return (
-    <sup className="absolute -top-2.5 -right-2.5 text-2xs leading-none font-bold text-conf-low">
+    <sup className="absolute -top-3 -right-2.5 text-caption leading-none font-medium text-conf-low-edge">
       ?
     </sup>
   )
 }
 
-// Confidence marks (26 §5): Probably a 1.5 px dashed `--conf-medium-edge` box 1 px off the digit,
-// Unsure a dashed `--unsure` box with "?", a timing flag a dotted underline.
+// Confidence marks (26 §5), by shape: Probably a 1.5 px dotted `--conf-medium-edge` box 1 px off
+// the digit, Unsure a dashed box with "?" in `--conf-low-edge` (the unsure hue's only place), a
+// timing flag a dotted underline. The digit itself is always ink.
 function NoteMarks({ note }: { note: NoteBox }) {
   if (note.level === 'high' && !note.timingFlagged) return null
   const pad = 2.5
@@ -636,9 +685,9 @@ function NoteMarks({ note }: { note: NoteBox }) {
       data-slot="note-mark"
       data-confidence={note.level}
       className={[
-        'absolute rounded-xs',
-        note.level === 'medium' ? 'border-[1.5px] border-dashed border-conf-medium-edge' : '',
-        note.level === 'low' ? 'border-[1.5px] border-dashed border-conf-low' : '',
+        'absolute rounded-media',
+        note.level === 'medium' ? 'border-[1.5px] border-dotted border-conf-medium-edge' : '',
+        note.level === 'low' ? 'border-[1.5px] border-dashed border-conf-low-edge' : '',
         note.timingFlagged && note.level === 'high'
           ? 'border-b-[1.5px] border-dotted border-ink'
           : '',
@@ -662,7 +711,7 @@ function showSounding(container: HTMLElement | null, beat: CursorPosition['beat'
     const fill = document.createElement('span')
     fill.setAttribute('data-slot', 'sounding-note')
     fill.className =
-      'absolute grid place-items-center rounded-xs bg-primary font-reading-mono text-read-tab leading-none font-semibold text-primary-foreground'
+      'absolute grid place-items-center rounded-media bg-primary font-reading-mono text-read-tab leading-none font-medium text-primary-foreground'
     fill.style.left = `${box.x - 3}px`
     fill.style.top = `${box.y - 1}px`
     fill.style.width = `${box.w + 6}px`

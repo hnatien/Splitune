@@ -26,7 +26,9 @@ const PianoOptions = lazy(() =>
   import('./piano-options').then((module) => ({ default: module.PianoOptions })),
 )
 
-// ChordStrip (12 §2, §4): the top of the paper — "now → next". The current chord follows the clock
+// ChordStrip (12 §2, §4): the top of the paper over the papers that need one (the chord sheet, the
+// lanes, piano's chart and notes; the tab prints its chord names over the staff) — "now → next".
+// It clips to its own width, so a wide piano keyboard never paints over the tools panel. The current chord follows the clock
 // at the larger reading size with its guitar shape beside it; the next chords run after it as
 // plain names, confidence by ink, dashed outline and "?" (never colour alone); tap any → editor
 // sheet. Level and capo sit at the strip's end. The names that don't fit fade out at the end, so
@@ -90,7 +92,7 @@ export function ChordStrip({
     <div
       data-slot="chord-strip"
       className={cn(
-        'flex min-h-18 shrink-0 items-center gap-4 border-b border-border bg-paper px-4 py-2 text-ink motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter in-data-[distance=floor]:min-h-26',
+        'flex min-h-18 min-w-0 shrink-0 items-center gap-4 overflow-hidden border-b border-border bg-paper px-4 py-2 text-ink motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter in-data-[distance=floor]:min-h-26',
         className,
       )}
     >

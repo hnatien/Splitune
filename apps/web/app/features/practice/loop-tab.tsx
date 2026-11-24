@@ -1,12 +1,11 @@
 import type { LoopClip } from '@splitune/contracts'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeftIcon, ChevronRightIcon, EllipsisIcon, XIcon } from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon, EllipsisIcon, RepeatIcon, XIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { z } from 'zod'
 import { client, orpc } from '@/lib/api'
 import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import { Button } from '@/ui/button'
 import {
   DropdownMenu,
@@ -15,76 +14,117 @@ import {
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
 import { Input } from '@/ui/input'
+import { Kbd } from '@/ui/kbd'
 import { Label } from '@/ui/label'
+import { ListRow } from '@/ui/list-row'
 import { NumberField } from '@/ui/number-field'
-import { Switch } from '@/ui/switch'
+import { PanelSection } from '@/ui/panel'
+import { Status } from '@/ui/status'
 import { OptionSegments } from '../common/option-segments'
+import { SwitchRow } from '../common/switch-row'
 import { deleteClip, renameClip, useHiddenClips } from './clip-actions'
+import { keyLabel } from './input-mapper'
 import { LadderCard } from './ladder-card'
 import { barRange, type LoopRange, moveLoop, nudge, restSeconds } from './model/loops'
 import type { RestBetween } from './model/player-machine'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// The Loop tab (27 §3.7.4, Main.dc.html): "Bars 25–28" with the best clean pass, From bar / To bar
-// steppers (one bar per step), Next phrase · ×2 · ÷2, "Fine-tune edges" with the sixteenth-note
-// nudges, the Speed ladder (ladder-card.tsx; only with `v1.speed_trainer` on), Between repeats
-// (rest, count-in, "Ask how each pass went before the next"), Saved clips (a row per named clip
-// with Rename and Delete in its More menu), and Clear loop: sections under a heading, set apart by
-// hairlines, never a card per setting. Before the beat is found: "Bar loops
-// are ready once the beat is found." The same body opens from the loop badge's popover on tablets
-// and phones.
+// The Loop tab (27 §3.7.4; s47 direction §3, §7): the loop's bars with its best clean pass and
+// the loop switch (L); Bars (From / To steppers, the length 1 · 2 · 4 · 8 with ÷2 and ×2, moving
+// the loop by its own length with Shift ← / →, "Fine-tune edges" by sixteenths); the Speed ladder
+// (ladder-card.tsx; only with `v1.speed_trainer` on); Between repeats (rest, count-in with I, and
+// "Ask how each pass went", answered with C / N or the pedal); Saved clips as hairline rows, the
+// one playing marked by the ink edge, with Rename and Delete in its ⋯ menu; Clear loop. Sections
+// are set apart by hairlines, never boxed. Before the beat is found it says what it waits for.
 
 type Clip = z.infer<typeof LoopClip>
 
-const heading = 'text-sm font-medium text-muted-foreground'
+const LENGTHS = [1, 2, 4, 8] as const
+
+const lengthOf = (loop: LoopRange) => loop.endBar - loop.startBar + 1
 
 export function LoopTab() {
   const practice = usePractice()
-  const { player, grid, best } = practice
+  const { player, grid } = practice
   const loop = player.loop
   if (!grid) {
-    return <p className="text-sm text-muted-foreground">{m['practice.loop_needs_beats']()}</p>
+    return (
+      <div data-slot="loop-tab" className="flex flex-col gap-4">
+        <Status kind="queued">{m['practice.loop_needs_beats']()}</Status>
+        <SavedClips />
+      </div>
+    )
   }
   return (
-    <>
-      <div className="flex flex-col gap-2.5">
-        {loop ? (
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-xl">
-              {m['practice.loop_bars']({ bars: `${loop.startBar + 1}–${loop.endBar + 1}` })}
-            </h2>
-            {best !== null && (
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {m['practice.best_tempo']({ pct: String(best) })}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="text-md text-muted-foreground">{m['practice.loop_empty']()}</p>
-        )}
+    <div data-slot="loop-tab" className="flex flex-col [&>section:first-child]:pt-0">
+      <LoopHead />
+      <PanelSection title={m['practice.loop_section_bars']()}>
         <LoopBars />
-        {loop && <QuickMoves loop={loop} />}
+        {loop && <Length loop={loop} />}
+        {loop && <Move loop={loop} />}
         {loop && <FineTune loop={loop} />}
-      </div>
+      </PanelSection>
       {loop && practice.ladderEnabled && <LadderCard />}
       {loop && <BetweenRepeats loop={loop} />}
       <SavedClips />
       {loop && (
+        <PanelSection>
+          <Button
+            variant="quiet"
+            className="self-start"
+            onClick={() => {
+              practice.setLoop(null)
+              usePracticeUi.setState({ selection: { kind: 'none' } })
+              practice.send({ type: 'SET_LOOP_ON', on: false })
+            }}
+          >
+            <XIcon aria-hidden />
+            {m['practice.clear_loop']()}
+          </Button>
+        </PanelSection>
+      )}
+    </div>
+  )
+}
+
+// "Bars 25–28 · Best clean pass 70 %" and the loop switch (L), or how to make a loop.
+function LoopHead() {
+  const { player, best, send } = usePractice()
+  const loop = player.loop
+  return (
+    <section data-slot="loop-head" className="flex items-center gap-3 pb-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {loop ? (
+          <>
+            <h2 className="text-title tabular-nums">
+              {m['practice.loop_bars']({ bars: `${loop.startBar + 1}–${loop.endBar + 1}` })}
+            </h2>
+            <p className="text-body-sm text-muted-foreground tabular-nums">
+              {best !== null
+                ? m['practice.best_tempo']({ pct: String(best) })
+                : player.loopOn
+                  ? m['practice.hud_loop_on']()
+                  : m['practice.hud_loop_off']()}
+            </p>
+          </>
+        ) : (
+          <p className="text-body-sm text-muted-foreground">{m['practice.loop_empty']()}</p>
+        )}
+      </div>
+      {loop && (
         <Button
-          variant="ghost"
-          className="self-start"
-          onClick={() => {
-            practice.setLoop(null)
-            usePracticeUi.setState({ selection: { kind: 'none' } })
-            practice.send({ type: 'SET_LOOP_ON', on: false })
-          }}
+          variant={player.loopOn ? 'selected' : 'outline'}
+          size="practice"
+          aria-pressed={player.loopOn}
+          shortcut="L"
+          onClick={() => send({ type: 'SET_LOOP_ON', on: !player.loopOn })}
         >
-          <XIcon aria-hidden />
-          {m['practice.clear_loop']()}
+          <RepeatIcon aria-hidden />
+          {m['practice.loop']()}
         </Button>
       )}
-    </>
+    </section>
   )
 }
 
@@ -117,10 +157,10 @@ function LoopBars() {
     },
   ]
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-2 gap-3">
       {edges.map(({ edge, label, earlier, later, value, set }) => (
         <div key={edge} className="flex min-w-0 flex-col gap-1.5">
-          <span aria-hidden className="text-sm font-medium text-muted-foreground">
+          <span aria-hidden className="text-label-sm text-muted-foreground">
             {label}
           </span>
           <NumberField
@@ -140,41 +180,114 @@ function LoopBars() {
   )
 }
 
-// Next phrase (shift by the loop's own length), ×2 and ÷2.
-function QuickMoves({ loop }: { loop: LoopRange }) {
+// The loop's length from its first bar: 1 · 2 · 4 · 8 bars, ÷2 and ×2. The one it has is marked.
+function Length({ loop }: { loop: LoopRange }) {
   const practice = usePractice()
   const { grid } = practice
+  const titleId = useId()
   if (!grid) return null
-  const moves = [
-    { move: 'next' as const, text: m['practice.next_phrase'](), label: undefined },
-    { move: 'double' as const, text: '×2', label: m['practice.loop_double']() },
-    { move: 'half' as const, text: '÷2', label: m['practice.loop_half']() },
-  ]
+  const length = lengthOf(loop)
+  const halve = moveLoop(grid, loop, 'half')
+  const double = moveLoop(grid, loop, 'double')
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {moves.map(({ move, text, label }) => {
-        const next = moveLoop(grid, loop, move)
-        return (
-          <Button
-            key={move}
-            variant="secondary"
-            size="sm"
-            disabled={next === loop}
-            className={cn(move !== 'next' && 'tabular-nums')}
-            onClick={() => practice.setLoop(next, 'numeric')}
-          >
-            {label ? (
-              <>
-                <span aria-hidden>{text}</span>
-                <span className="sr-only">{label}</span>
-              </>
-            ) : (
-              text
-            )}
-          </Button>
-        )
-      })}
-    </div>
+    <fieldset aria-labelledby={titleId} className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+      <span id={titleId} className="text-label-sm text-muted-foreground">
+        {m['practice.loop_length']()}
+      </span>
+      <div className="flex flex-wrap items-center gap-1">
+        {LENGTHS.map((bars) => {
+          const end = Math.min(grid.lastBar, loop.startBar + bars - 1)
+          const fits = end - loop.startBar + 1 === bars
+          return (
+            <Button
+              key={bars}
+              variant={length === bars ? 'selected' : 'quiet'}
+              size="icon-practice"
+              aria-pressed={length === bars}
+              aria-label={m['practice.loop_length_named']({ bars: String(bars) })}
+              disabled={!fits}
+              className="tabular-nums"
+              onClick={() => practice.setLoop(barRange(grid, loop.startBar, end), 'numeric')}
+            >
+              {bars}
+            </Button>
+          )
+        })}
+        <span aria-hidden className="mx-1 h-6 w-px bg-border" />
+        <Button
+          variant="quiet"
+          size="icon-practice"
+          disabled={halve === loop}
+          onClick={() => practice.setLoop(halve, 'numeric')}
+        >
+          <span aria-hidden>÷2</span>
+          <span className="sr-only">{m['practice.loop_half']()}</span>
+        </Button>
+        <Button
+          variant="quiet"
+          size="icon-practice"
+          disabled={double === loop}
+          onClick={() => practice.setLoop(double, 'numeric')}
+        >
+          <span aria-hidden>×2</span>
+          <span className="sr-only">{m['practice.loop_double']()}</span>
+        </Button>
+      </div>
+    </fieldset>
+  )
+}
+
+/** The loop moved back (−1) or on (1) by its own length, inside the song (Shift ← / →). */
+function shiftedLoop(
+  grid: NonNullable<ReturnType<typeof usePractice>['grid']>,
+  loop: LoopRange,
+  direction: 1 | -1,
+): LoopRange {
+  const length = lengthOf(loop)
+  const start = Math.min(
+    Math.max(grid.firstBar, loop.startBar + direction * length),
+    Math.max(grid.firstBar, grid.lastBar - length + 1),
+  )
+  if (start === loop.startBar) return loop
+  return barRange(grid, start, Math.min(grid.lastBar, start + length - 1))
+}
+
+// Move the loop by its own length: the same as Shift ← / Shift →, with the keys on the buttons.
+function Move({ loop }: { loop: LoopRange }) {
+  const practice = usePractice()
+  const { grid } = practice
+  const titleId = useId()
+  if (!grid) return null
+  const back = shiftedLoop(grid, loop, -1)
+  const on = shiftedLoop(grid, loop, 1)
+  return (
+    <fieldset aria-labelledby={titleId} className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+      <span id={titleId} className="text-label-sm text-muted-foreground">
+        {m['practice.loop_move']()}
+      </span>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="practice"
+          shortcut={keyLabel('Shift+ArrowLeft')}
+          disabled={back === loop}
+          onClick={() => practice.setLoop(back, 'numeric')}
+        >
+          <ChevronLeftIcon aria-hidden />
+          {m['practice.loop_move_back']()}
+        </Button>
+        <Button
+          variant="outline"
+          size="practice"
+          shortcut={keyLabel('Shift+ArrowRight')}
+          disabled={on === loop}
+          onClick={() => practice.setLoop(on, 'numeric')}
+        >
+          {m['practice.next_phrase']()}
+          <ChevronRightIcon aria-hidden />
+        </Button>
+      </div>
+    </fieldset>
   )
 }
 
@@ -188,29 +301,29 @@ function FineTune({ loop }: { loop: LoopRange }) {
     { edge: 'end' as const, name: m['practice.nudge_end']() },
   ]
   return (
-    <details className="group/fine flex flex-col gap-2">
-      <summary className="flex min-h-target-practice-2 cursor-pointer items-center gap-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground">
+    <details className="group/fine flex flex-col">
+      <summary className="flex min-h-target-practice cursor-pointer list-none items-center gap-2 rounded-field text-label-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
         <ChevronRightIcon
           aria-hidden
           className="size-4 transition-transform duration-(--duration-fast) group-open/fine:rotate-90"
         />
         {m['practice.fine_tune']()}
       </summary>
-      <div className="flex flex-col gap-2 pl-6">
+      <div className="flex flex-col pl-6">
         {edges.map(({ edge, name }) => (
-          <div key={edge} className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 text-sm">{name}</span>
+          <div key={edge} className="flex min-h-target-practice items-center gap-1">
+            <span className="min-w-0 flex-1 text-body-sm">{name}</span>
             <Button
-              size="icon"
-              variant="secondary"
+              size="icon-practice"
+              variant="quiet"
               aria-label={m['practice.nudge_earlier']({ edge: name })}
               onClick={() => practice.setLoop(nudge(grid, loop, edge, -1))}
             >
               <ChevronLeftIcon aria-hidden />
             </Button>
             <Button
-              size="icon"
-              variant="secondary"
+              size="icon-practice"
+              variant="quiet"
               aria-label={m['practice.nudge_later']({ edge: name })}
               onClick={() => practice.setLoop(nudge(grid, loop, edge, 1))}
             >
@@ -218,7 +331,7 @@ function FineTune({ loop }: { loop: LoopRange }) {
             </Button>
           </div>
         ))}
-        <p className="text-sm text-muted-foreground">{m['practice.nudge_hint']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['practice.nudge_hint']()}</p>
       </div>
     </details>
   )
@@ -226,19 +339,18 @@ function FineTune({ loop }: { loop: LoopRange }) {
 
 function BetweenRepeats({ loop }: { loop: LoopRange }) {
   const practice = usePractice()
-  const { player, grid, send } = practice
+  const { player, grid, send, layers } = practice
   const passPrompt = usePracticeDefaults((s) => s.passPrompt)
   const update = usePracticeDefaults((s) => s.update)
-  const promptId = useId()
   const rests: Record<RestBetween, string> = {
     none: m['settings.rest_none'](),
     beat: m['settings.rest_beat'](),
     bar: m['settings.rest_bar'](),
   }
   return (
-    <section
+    <PanelSection
+      title={m['practice.loop_section_repeats']()}
       aria-label={m['practice.loop_section_repeats']()}
-      className="flex flex-col gap-3 border-t border-border pt-4"
     >
       <OptionSegments
         label={m['settings.rest']()}
@@ -249,17 +361,18 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
         }))}
         onChange={(rest) => {
           send({ type: 'SET_REST', rest, restSeconds: restSeconds(grid ?? null, loop, rest) })
+          // The player has the new value already; a save that fails (offline) leaves the clip's
+          // stored one, as the loop's own saves do (practice-context), never an unhandled error.
           if (practice.clip) {
-            void client.loops.update({
-              id: practice.songId,
-              loop_id: practice.clip.id,
-              rest_between: rest,
-            })
+            void client.loops
+              .update({ id: practice.songId, loop_id: practice.clip.id, rest_between: rest })
+              .catch(() => undefined)
           }
         }}
       />
       <OptionSegments
         label={m['settings.count_in']()}
+        shortcut={layers.beats ? keyLabel('i') : undefined}
         value={player.countIn ? String(player.countInBars) : '0'}
         options={['0', '1', '2'].map((value) => ({
           value,
@@ -274,32 +387,33 @@ function BetweenRepeats({ loop }: { loop: LoopRange }) {
           const bars = Number(value)
           send({ type: 'SET_COUNT_IN', on: bars > 0, ...(bars > 0 ? { bars } : {}) })
           if (practice.clip) {
-            void client.loops.update({
-              id: practice.songId,
-              loop_id: practice.clip.id,
-              count_in_bars: bars,
-            })
+            void client.loops
+              .update({ id: practice.songId, loop_id: practice.clip.id, count_in_bars: bars })
+              .catch(() => undefined)
           }
         }}
       />
-      <div className="flex min-h-target-practice-2 items-center gap-3">
-        <Switch
-          id={promptId}
-          checked={passPrompt}
-          onCheckedChange={(on) => {
-            update({ passPrompt: on })
-            send({ type: 'SET_ASSESS', on })
-          }}
-        />
-        <Label htmlFor={promptId}>{m['practice.ask_after_pass']()}</Label>
-      </div>
-    </section>
+      <SwitchRow
+        label={m['practice.ask_after_pass']()}
+        hint={
+          <>
+            <Kbd>{keyLabel('c')}</Kbd> <Kbd>{keyLabel('n')}</Kbd>{' '}
+            {m['practice.ask_after_pass_hint']()}
+          </>
+        }
+        checked={passPrompt}
+        onCheckedChange={(on) => {
+          update({ passPrompt: on })
+          send({ type: 'SET_ASSESS', on })
+        }}
+      />
+    </PanelSection>
   )
 }
 
 // Saved clips (27 §3.7.4): "Save this loop" names the loop being played; each named clip is a
-// row (the ink dot on the one playing, name, "bars 25–28 · best 80 %") that loops it as it was
-// left, with Rename and Delete in its More menu.
+// hairline row (name, "bars 25–28 · best 80 %") that loops it as it was left, the one playing
+// marked by the ink edge, with Rename and Delete in its ⋯ menu.
 function SavedClips() {
   const practice = usePractice()
   const queryClient = useQueryClient()
@@ -313,18 +427,20 @@ function SavedClips() {
   const unsaved = clip !== undefined && clip.name === null
   if (!unsaved && named.length === 0) return null
   return (
-    <section className="flex flex-col gap-1 border-t border-border pt-2">
-      <div className="flex min-h-target-practice-2 items-center justify-between gap-2">
-        <h3 className={heading}>{m['practice.clips']()}</h3>
-        {unsaved && !naming && (
-          <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>
+    <PanelSection
+      title={m['practice.clips']()}
+      action={
+        unsaved &&
+        !naming && (
+          <Button variant="quiet" size="sm" onClick={() => setNaming(true)}>
             {m['practice.save_this_loop']()}
           </Button>
-        )}
-      </div>
+        )
+      }
+    >
       {unsaved && naming && (
         <form
-          className="flex items-end gap-2 pb-2"
+          className="flex items-end gap-2"
           onSubmit={(event) => {
             event.preventDefault()
             const trimmed = name.trim()
@@ -340,44 +456,48 @@ function SavedClips() {
               })
           }}
         >
-          <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <Label htmlFor={id}>{m['practice.clip_name']()}</Label>
             <Input
               id={id}
               autoFocus
+              required
               value={name}
               maxLength={100}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary" disabled={name.trim() === ''}>
+          <Button type="submit" variant="outline">
             {m['practice.save_clip']()}
           </Button>
         </form>
       )}
-      <ul className="flex flex-col">
-        {named.map((c) => (
-          <li key={c.id} className="flex items-center gap-1">
-            {renaming === c.id ? (
-              <RenameClip
-                clip={c}
-                onDone={(next) => {
-                  setRenaming(null)
-                  if (next) renameClip(queryClient, c, next)
-                }}
-              />
+      {named.length > 0 && (
+        <ul className="m-0 flex list-none flex-col border-t border-border p-0">
+          {named.map((c) =>
+            renaming === c.id ? (
+              <li key={c.id} className="border-b border-border">
+                <RenameClip
+                  clip={c}
+                  onDone={(next) => {
+                    setRenaming(null)
+                    if (next) renameClip(queryClient, c, next)
+                  }}
+                />
+              </li>
             ) : (
               <ClipRow
+                key={c.id}
                 clip={c}
                 active={c.id === clip?.id}
                 onRename={() => setRenaming(c.id)}
                 onDelete={() => deleteClip(queryClient, c)}
               />
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
+            ),
+          )}
+        </ul>
+      )}
+    </PanelSection>
   )
 }
 
@@ -395,49 +515,45 @@ function ClipRow({
   const practice = usePractice()
   const bars = `${clip.start_bar + 1}–${clip.end_bar + 1}`
   return (
-    <>
-      <button
-        type="button"
-        aria-current={active ? 'true' : undefined}
-        className="flex min-h-target-practice-2 min-w-0 flex-1 items-center gap-3 rounded-lg px-1.5 py-2 text-left hover:bg-muted"
-        onClick={() => practice.selectClip(clip, 'clip')}
-      >
-        <span
-          aria-hidden
-          className={cn(
-            'size-2 shrink-0 rounded-full',
-            active ? 'bg-signal' : 'bg-faint-foreground',
-          )}
+    <ListRow
+      current={active}
+      className="min-h-target-practice px-0 pl-2"
+      title={clip.name}
+      meta={
+        clip.best_clean_tempo_pct === null
+          ? m['practice.clip_bars']({ bars })
+          : m['practice.clip_bars_best']({ bars, pct: String(clip.best_clean_tempo_pct) })
+      }
+      render={
+        <button
+          type="button"
+          aria-current={active ? 'true' : undefined}
+          className="text-left"
+          onClick={() => practice.selectClip(clip, 'clip')}
         />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-md font-medium">{clip.name}</span>
-          <span className="text-sm text-faint-foreground tabular-nums">
-            {clip.best_clean_tempo_pct === null
-              ? m['practice.clip_bars']({ bars })
-              : m['practice.clip_bars_best']({ bars, pct: String(clip.best_clean_tempo_pct) })}
-          </span>
-        </span>
-      </button>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={m['practice.clip_more']({ name: clip.name ?? '' })}
-            />
-          }
-        >
-          <EllipsisIcon aria-hidden />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={onRename}>{m['practice.clip_rename']()}</DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={onDelete}>
-            {m['practice.clip_delete']()}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+      }
+      aside={
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="quiet"
+                size="icon-practice"
+                aria-label={m['practice.clip_more']({ name: clip.name ?? '' })}
+              />
+            }
+          >
+            <EllipsisIcon aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={onRename}>{m['practice.clip_rename']()}</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+              {m['practice.clip_delete']()}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    />
   )
 }
 
@@ -452,7 +568,7 @@ function RenameClip({ clip, onDone }: { clip: Clip; onDone: (name: string | null
   }, [])
   return (
     <form
-      className="flex min-w-0 flex-1 items-center gap-2 py-1"
+      className="flex min-w-0 flex-wrap items-center gap-2 py-2"
       onSubmit={(event) => {
         event.preventDefault()
         onDone(name.trim() || null)
@@ -466,15 +582,15 @@ function RenameClip({ clip, onDone }: { clip: Clip; onDone: (name: string | null
       <Input
         ref={field}
         aria-label={m['practice.clip_rename_label']({ name: clip.name ?? '' })}
-        className="min-w-0 flex-1"
+        className="min-w-0 flex-1 basis-40"
         value={name}
         maxLength={100}
         onChange={(e) => setName(e.target.value)}
       />
-      <Button type="submit" variant="secondary" size="sm" disabled={name.trim() === ''}>
+      <Button type="submit" variant="outline" size="sm">
         {m['practice.clip_rename_save']()}
       </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => onDone(null)}>
+      <Button type="button" variant="quiet" size="sm" onClick={() => onDone(null)}>
         {m['common.cancel']()}
       </Button>
     </form>

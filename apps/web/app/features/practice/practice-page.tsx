@@ -1,17 +1,22 @@
-import { Link } from '@tanstack/react-router'
 import type * as React from 'react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { errorCode } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import { apiErrorMessage } from '@/lib/reasons'
-import { PedalHud } from '@/ui/pedal-hud'
-import { InlineError } from '@/ui/status-message'
+import { cn } from '@/lib/utils'
+
 import { toast } from '@/ui/toast'
 import { FocusShell } from '../shell/focus-shell'
 import { type PaletteAction, parseLoopQuery, usePaletteActions } from '../shell/palette-store'
 import { ChordStrip } from './chord-strip'
 import { useInputMapper } from './input-mapper'
-import { isPhone, type PracticeLayout, useDesktopRegions, usePracticeLayout } from './layout'
+import {
+  EDITOR_SHEET,
+  isPhone,
+  type PracticeLayout,
+  usePanelDocked,
+  usePracticeLayout,
+} from './layout'
 import { barRange } from './model/loops'
 import { hasNotation, type ViewLabel } from './model/screen'
 import { NotationPane, useScreen } from './notation-pane'
@@ -21,19 +26,15 @@ import {
   type PracticeSearch,
   usePractice,
 } from './practice-context'
-import { PracticeLoading } from './practice-loading'
-import { openTab, usePracticeUi } from './practice-store'
+import { PracticeError, PracticeLoading } from './practice-loading'
+import { openTab, showHud, usePracticeUi } from './practice-store'
 import { PracticeTimeline } from './practice-timeline'
 import { PracticeStatus } from './status-bar'
-import { TransportBar } from './transport-bar'
-import { TransportDock } from './transport-dock'
+import { Transport } from './transport'
 import { useVideoUrl } from './video-url'
 
 // Overlays and regions that aren't needed at first paint load on demand, outside the route's JS
 // budget (12 §10, D6).
-const MixerDrawer = lazy(() =>
-  import('./mixer-drawer').then((module) => ({ default: module.MixerDrawer })),
-)
 const HearChords = lazy(() =>
   import('./hear-chords').then((module) => ({ default: module.HearChords })),
 )
@@ -52,14 +53,8 @@ const PracticeBanners = lazy(() =>
 const ShortcutsOverlay = lazy(() =>
   import('./shortcuts-overlay').then((module) => ({ default: module.ShortcutsOverlay })),
 )
-const NowColumn = lazy(() =>
-  import('./now-column').then((module) => ({ default: module.NowColumn })),
-)
 const Inspector = lazy(() =>
   import('./inspector').then((module) => ({ default: module.Inspector })),
-)
-const PassPromptSheet = lazy(() =>
-  import('./pass-prompt').then((module) => ({ default: module.PassPromptSheet })),
 )
 // Fix mode (27 §3.7.4): its controller, key line and dock load when Fix is entered.
 const FixMode = lazy(() => import('./fix-mode').then((module) => ({ default: module.FixMode })))
@@ -73,12 +68,12 @@ function useOpened(open: boolean): boolean {
   return opened
 }
 
-// PracticeRoute (12 §2, 27 §3.7): the regions per layout around one provider. The page is exactly
-// the viewport: the transport sits at the bottom edge and layers fill the flexible middle as
-// artefacts land (27 §3.7.3), so nothing arriving ever moves the transport. Desktop has the five
-// regions of Main.dc.html — the song map, the Now column, the notation, the inspector and the
-// transport dock, with the pass prompt over the notation; tablets and phones keep today's
-// arrangement until s43.
+// PracticeRoute (12 §2, 27 §3.7): one structure for every layout around one provider. The page
+// is exactly the viewport. From the top: the quiet top bar, the song map, the music from edge to
+// edge, and the transport at the bottom edge, which nothing arriving ever moves (27 §3.7.3). The
+// one panel (Loop · Mix · Progress · Fix) is closed until asked for; it docks beside the music
+// from 1180 px and is a sheet above the transport on phones. Nothing floats on the notation
+// except the count-in and a URL import's video: the pass prompt lives in the transport.
 
 export function PracticePage({
   songId,
@@ -92,7 +87,8 @@ export function PracticePage({
   /** A visitor's example song (onboarding): exits to Home, no editor. */
   guest?: boolean
   fetchAudio?: FetchAudio
-  /** Extra layers inside the practice screen (onboarding's coach marks and save sheet). */
+  /** The caller's own line above the song map and its dialogs (onboarding's guide and save
+   * sheet). */
   children?: React.ReactNode
 }) {
   return (
@@ -110,17 +106,21 @@ export function PracticePage({
 function PracticeScreen({ children }: { children?: React.ReactNode }) {
   const practice = usePractice()
   const layout = usePracticeLayout()
-  const regions = useDesktopRegions()
+  const wide = usePanelDocked()
   const { song } = practice.data
   const desktop = layout === 'desktop'
-  // While the notation is empty the Getting ready cards take the width (Practice-Ready.dc.html):
-  // the inspector waits in its drawer, still opened by Tools and the loop and mix pills.
-  const empty = useScreen(layout).paper === 'placeholder'
-  const docked = regions.docked && !empty
-  useInputMapper({ desktop })
+  const screen = useScreen(layout)
+  const views = useMemo(
+    () => (screen.viewSwitch?.items ?? []).map((item) => item.value),
+    [screen.viewSwitch],
+  )
+  const editing = usePracticeUi((s) => s.editor)
+  const fixing = usePracticeUi((s) => s.fixing) && desktop
+  useInputMapper({ desktop, views })
   usePracticePalette(layout)
   useArrivals()
   useSheetFix(!desktop)
+  const transport = useTransportHeight()
 
   // The focus sink (12 §8): pedal keys reach the page, never a scroll container's defaults.
   useEffect(() => {
@@ -131,86 +131,102 @@ function PracticeScreen({ children }: { children?: React.ReactNode }) {
     return <PracticeLoading slowText={m['practice.loading']()} />
   }
   if (song.isError) {
+    // A song that is gone can't be fetched again; anything else is usually the connection.
+    const gone = errorCode(song.error) === 'not_found'
     return (
-      <FocusShell exit={practice.guest}>
-        <div className="mx-auto w-full max-w-page px-4 py-6">
-          <InlineError title={apiErrorMessage(errorCode(song.error))} />
-        </div>
-      </FocusShell>
+      <PracticeError
+        guest={practice.guest}
+        title={gone ? apiErrorMessage('not_found') : m['practice.load_failed']()}
+        description={gone ? undefined : m['practice.load_failed_hint']()}
+        onRetry={gone ? undefined : () => void song.refetch()}
+        retrying={song.isFetching}
+        retryLabel={m['common.try_again']()}
+        backLabel={practice.guest ? m['nav.exit']() : m['practice.back_to_library']()}
+      />
     )
   }
   return (
-    <FocusShell
-      fill
-      exit={practice.guest}
-      status={<PracticeStatus layout={layout} tools={desktop && !docked} />}
-    >
+    <FocusShell fill exit={practice.guest} status={<PracticeStatus layout={layout} />}>
+      {/* The caller's own line (onboarding's guide) comes first, in view and in Tab order. */}
+      {children}
       {/* Notices sit in one slim stack above the music; it takes no room when there are none. */}
-      <div className="flex shrink-0 flex-col gap-2 px-4 py-2 empty:hidden md:px-6 [&>[data-slot=banner]]:py-1.5">
+      <div className="flex shrink-0 flex-col gap-2 px-3 py-2 empty:hidden sm:px-4 [&>[data-slot=banner]]:py-1.5">
         <Suspense fallback={null}>
           <PracticeBanners />
         </Suspense>
       </div>
-      {desktop ? (
-        <DesktopRegions docked={docked} nowColumn={regions.nowColumn} roomy={regions.roomyDock} />
-      ) : (
-        <>
-          <CompactRegions layout={layout} />
-          <PracticeTimeline compact={layout === 'phone-landscape'} />
-          <TransportBar layout={layout} />
-        </>
-      )}
+      <PracticeTimeline map compact={isPhone(layout)} />
+      <div className="flex min-h-0 flex-1">
+        <Stage layout={layout} fixing={fixing} />
+        <Suspense fallback={null}>
+          <Inspector docked={desktop && wide} layout={layout} />
+        </Suspense>
+      </div>
+      <div ref={transport} className="shrink-0">
+        {fixing && editing ? (
+          <Suspense fallback={<div className="h-20 border-t border-border" />}>
+            <FixDock />
+          </Suspense>
+        ) : (
+          <Transport layout={layout} />
+        )}
+      </div>
       <Overlays layout={layout} />
-      {children}
     </FocusShell>
   )
 }
 
-// Desktop (27 §3.7.1): song map, then the Now column · notation · inspector, then the dock. Below
-// 1180 px the inspector is a drawer; below 1024 px the Now column is a strip above the notation.
-function DesktopRegions({
-  docked,
-  nowColumn,
-  roomy,
-}: {
-  docked: boolean
-  nowColumn: boolean
-  roomy: boolean
-}) {
-  const { layers, data, view } = usePractice()
-  const screen = useScreen('desktop')
+/** The transport's height as `--transport-height` on the page, for the layers that stop above it
+ * (the tools sheet and drawer are portalled out of the practice tree). */
+function useTransportHeight() {
+  // One observer per transport element, not one per render: a new observer's first report in the
+  // middle of the notation's own resizes left WebKit with undelivered notifications (an error).
+  const [element, setElement] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!element) return
+    const root = document.documentElement
+    const write = () => root.style.setProperty('--transport-height', `${element.offsetHeight}px`)
+    write()
+    const observer = new ResizeObserver(write)
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--transport-height')
+    }
+  }, [element])
+  return setElement
+}
+
+// The music: a strip where the paper needs one (the lanes' chord, the chord sheet's Now and Next,
+// piano's keyboard, the phrases), then the notation from edge to edge; on a phone's Chords view,
+// the glance view. In Fix mode a tap selects the bar or the note instead of looping (27 §3.7.4).
+function Stage({ layout, fixing }: { layout: PracticeLayout; fixing: boolean }) {
+  const { view } = usePractice()
+  const screen = useScreen(layout)
   const editing = usePracticeUi((s) => s.editor)
-  const fixing = usePracticeUi((s) => s.fixing)
-  // Guitar, bass and other parts read their chords from the Now column over the tab or Notes;
-  // piano, drums and vocals keep their strip, and the chord sheet shows its own current chord.
-  const now =
-    layers.chords &&
-    (screen.paper === 'tab' || screen.paper === 'guitar-notes') &&
-    data.instrument !== 'piano' &&
-    data.instrument !== 'drums' &&
-    data.instrument !== 'vocals'
+  const desktop = layout === 'desktop'
   // A chord, a "?", E or J / K opens the bar in the Fix tab.
   useEffect(() => {
-    if (editing) openTab('fix')
-  }, [editing])
+    if (editing && desktop) openTab('fix')
+  }, [editing, desktop])
+  // The touch editor sheet takes its room from the stage instead of lying over it, so the bar
+  // being fixed is in view above (or beside) the sheet.
+  const sheetRoom =
+    editing && !desktop
+      ? layout === 'tablet-landscape'
+        ? EDITOR_SHEET.side.stage
+        : EDITOR_SHEET.bottom.stage
+      : undefined
   return (
-    <>
-      <PracticeTimeline map />
-      <div className="flex min-h-0 flex-1">
-        {now && nowColumn && (
-          <Suspense fallback={<div className="w-66 shrink-0 border-r border-border" />}>
-            <NowColumn />
-          </Suspense>
-        )}
-        <div className="relative flex min-w-0 flex-1 flex-col">
-          {now && !nowColumn && (
-            <Suspense fallback={<div className="h-18 shrink-0 border-b border-border" />}>
-              <NowColumn strip />
-            </Suspense>
-          )}
-          {!now && screen.strip && <ChordStrip />}
+    <div className={cn('relative flex min-w-0 flex-1 flex-col', sheetRoom)}>
+      {screen.glance ? (
+        <Suspense fallback={null}>
+          <GlanceView />
+        </Suspense>
+      ) : (
+        <>
+          {screen.strip && <ChordStrip compact={isPhone(layout)} />}
           {fixing ? (
-            // Fix mode: a tap selects the bar or the note instead of looping (27 §3.7.4).
             <NotationPane
               interaction="notes"
               selectedNoteId={editing?.noteId ?? null}
@@ -221,81 +237,29 @@ function DesktopRegions({
               }}
             />
           ) : (
-            <NotationPane />
+            <NotationPane compact={screen.compactNotes} />
           )}
-          {fixing && (
-            <Suspense fallback={null}>
-              <FixKey />
-              <FixMode />
-            </Suspense>
-          )}
-          <Floating fixing={fixing} />
-        </div>
-        <Suspense
-          fallback={
-            docked ? <div className="w-95 shrink-0 border-l border-border bg-card" /> : null
-          }
-        >
-          <Inspector docked={docked} />
-        </Suspense>
-      </div>
-      {fixing && editing ? (
-        <Suspense fallback={<div className="h-20 shrink-0 border-t border-border bg-card" />}>
-          <FixDock />
-        </Suspense>
-      ) : (
-        <TransportDock roomy={roomy} />
-      )}
-    </>
-  )
-}
-
-// Tablets and phones: the chord strip over the tab (or the chord sheet; over vocals' melody, the
-// phrase strip), or the glance view on phone portrait. On phone landscape guitar's Notes take the
-// strip's room and show its chord themselves.
-function CompactRegions({ layout }: { layout: PracticeLayout }) {
-  const screen = useScreen(layout)
-  return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      {screen.glance ? (
-        <Suspense fallback={null}>
-          <GlanceView />
-        </Suspense>
-      ) : (
-        <>
-          {screen.strip && <ChordStrip compact={isPhone(layout)} />}
-          <NotationPane compact={screen.compactNotes} />
         </>
       )}
-      <Floating compact />
+      {fixing && (
+        <Suspense fallback={null}>
+          <FixKey />
+          <FixMode />
+        </Suspense>
+      )}
+      <Floating />
     </div>
   )
 }
 
-// What floats over the notation: the pass prompt (desktop), the HUD at the top right, the
-// count-in in the middle and a URL import's video at the bottom right.
-function Floating({ compact = false, fixing = false }: { compact?: boolean; fixing?: boolean }) {
-  const hud = usePracticeUi((s) => s.hud)
+// What floats over the music: the count-in in the middle and a URL import's video at the bottom
+// right. Never a prompt or a tool; the key and pedal line is in the transport.
+function Floating() {
   const videoOpen = usePracticeUi((s) => s.videoOpen)
   const video = useVideoUrl()
   return (
     <>
-      {!compact && !fixing && <PassPrompt />}
       <CountInCounter />
-      <PedalHud
-        message={hud.message}
-        sequence={hud.sequence}
-        source={hud.source}
-        action={
-          hud.setUp
-            ? (content, className) => (
-                <Link to="/settings/keyboard" tabIndex={-1} className={className}>
-                  {content}
-                </Link>
-              )
-            : undefined
-        }
-      />
       {video.data && videoOpen && (
         <Suspense fallback={null}>
           <VideoPane />
@@ -305,20 +269,7 @@ function Floating({ compact = false, fixing = false }: { compact?: boolean; fixi
   )
 }
 
-// The pass prompt (27 §3.7.1): after a pass while a loop is active; its code loads then.
-function PassPrompt() {
-  const practice = usePractice()
-  const promptPass = usePracticeUi((s) => s.promptPass)
-  if (!practice.player.loop || promptPass === 0) return null
-  return (
-    <Suspense fallback={null}>
-      <PassPromptSheet pass={promptPass} />
-    </Suspense>
-  )
-}
-
 function Overlays({ layout }: { layout: PracticeLayout }) {
-  const mixer = useOpened(usePracticeUi((s) => s.mixerOpen))
   const editor = useOpened(usePracticeUi((s) => s.editor !== null))
   const shortcuts = useOpened(usePracticeUi((s) => s.shortcutsOpen))
   const desktop = layout === 'desktop'
@@ -327,15 +278,14 @@ function Overlays({ layout }: { layout: PracticeLayout }) {
   return (
     <Suspense fallback={null}>
       {hearChords && <HearChords />}
-      {mixer && !desktop && <MixerDrawer phone={isPhone(layout)} />}
       {editor && !desktop && <EditorSheet side={layout === 'tablet-landscape'} />}
-      {shortcuts && desktop && <ShortcutsOverlay />}
+      {shortcuts && <ShortcutsOverlay />}
     </Suspense>
   )
 }
 
-// Tablets and phones have no inspector yet (s43): `?tab=fix` (the desktop editor's way back for a
-// touch device, 27 §3.8) opens the first unsure bar in the editor sheet instead.
+// Touch layouts fix a bar in the editor sheet: `?tab=fix` (the desktop editor's way back for a
+// touch device, 27 §3.8) opens the first unsure bar there instead of entering Fix mode.
 function useSheetFix(compact: boolean) {
   const { view } = usePractice()
   const wanted = usePracticeUi((s) => s.fixing)
@@ -350,10 +300,11 @@ function useSheetFix(compact: boolean) {
           ? { bar: note.bar, noteId: note.id }
           : undefined
     usePracticeUi.setState({ fixing: false, editor: first ? { kind: 'bar', ...first } : null })
+    if (!first) showHud(m['practice.hud_no_unsure']())
   }, [compact, wanted, view])
 }
 
-// The visual count-in (27 §3.7.4, 26 §10): the beat number at display size in --primary-ink in the
+// The visual count-in (27 §3.7.4, 26 §10): the beat number at display size in --foreground in the
 // middle of the notation with "Count-in · beat 3 of 4" under it — a number, not a flash, so it
 // stays under 3 changes a second at any tempo that matters, and static under reduced motion.
 function CountInCounter() {
@@ -366,9 +317,9 @@ function CountInCounter() {
     <div
       aria-hidden
       data-slot="count-in"
-      className="pointer-events-none absolute top-1/2 left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-3xl border border-border bg-card px-10 py-5 shadow-2"
+      className="pointer-events-none absolute top-1/2 left-1/2 z-(--z-hud) flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-panel border border-border bg-raised px-10 py-5 shadow-popover"
     >
-      <span className="font-display text-read-chord-current leading-none font-semibold text-primary-ink tabular-nums">
+      <span className="text-read-chord-next leading-none font-medium text-foreground tabular-nums">
         {number}
       </span>
       <span className="text-read-label text-muted-foreground">

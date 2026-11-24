@@ -1,10 +1,18 @@
 import { expect, type Page, test } from '@playwright/test'
-import { collectErrors, expectAccessible, expectNoHorizontalScroll, signIn, wav } from './helpers'
+import {
+  collectErrors,
+  expectAccessible,
+  expectNoHorizontalScroll,
+  projectContext,
+  signIn,
+  wav,
+} from './helpers'
 
 // Step 10 acceptance (prompt 10), with Add song as a dialog over the library (s34, 27 §3.6): sign
 // up with a username and a password → add a short audio file → stages progress → ready in the
-// library; a link shows its progress; delete works; an upload survives a reload mid-transfer; no
-// console (CORS) errors; axe on landing, library and Add song.
+// library (a hairline row under "Ready to practise", s47); a link shows its progress; delete
+// works; an upload survives a reload mid-transfer; no console (CORS) errors; axe on landing,
+// library and Add song.
 
 test.describe.configure({ mode: 'serial' })
 
@@ -21,6 +29,13 @@ const finished = () =>
     .or(page.getByRole('region', { name: 'Current chord', exact: true }))
     .or(page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' }))
     .first()
+
+/** The library row of the song with this title (the row's link starts with the title). */
+const songRow = (title: string) =>
+  page
+    .getByRole('main')
+    .locator('[data-slot=list-row]')
+    .filter({ has: page.getByRole('link', { name: new RegExp(`^${title}`) }) })
 
 /** The stages of the song's latest analysis, from the API (the page no longer lists them). */
 async function stageStatuses(): Promise<Record<string, string>> {
@@ -59,14 +74,26 @@ test.afterAll(async () => {
   await page.context().close()
 })
 
-test('landing page is accessible and leads to the example', async () => {
+test('landing page is accessible and leads to the example', async ({ browser }) => {
+  // A visitor is offered the example song; signed in, the same place opens the library (27 §3.1).
+  const visitor = await (await projectContext(browser)).newPage()
+  await visitor.goto('/')
+  await expect(visitor.getByRole('heading', { level: 1 })).toHaveText(
+    'Bring any song. Practise just your part.',
+  )
+  await expect(
+    visitor.getByRole('main').getByRole('link', { name: 'Try an example song' }).first(),
+  ).toHaveAttribute('href', '/start')
+  await expectAccessible(visitor)
+  await visitor.context().close()
+
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Bring any song. Practise just your part.',
   )
   await expect(
-    page.getByRole('main').getByRole('link', { name: 'Try an example song' }).first(),
-  ).toHaveAttribute('href', '/start')
+    page.getByRole('main').getByRole('link', { name: 'Open your library' }),
+  ).toHaveAttribute('href', '/library')
   await expectAccessible(page)
 })
 
@@ -103,8 +130,9 @@ test('a short file uploads, analyses and shows as ready', async () => {
     .poll(stageStatuses, { timeout: 15_000 })
     .toMatchObject({ decode: 'done', beats: 'done', finalize: 'done' })
   await page.getByRole('link', { name: 'Back to library' }).click()
-  const card = page.getByRole('article').filter({ hasText: 'Riff in A minor' })
-  await expect(card.getByText('Ready')).toBeVisible()
+  const ready = page.getByRole('region', { name: 'Ready to practise' })
+  await expect(ready.getByRole('link', { name: /^Riff in A minor/ })).toBeVisible()
+  await expect(songRow('Riff in A minor').getByText('Ready', { exact: true })).toBeVisible()
   await expectAccessible(page)
   await expectNoHorizontalScroll(page)
 })
@@ -115,10 +143,28 @@ test('a link import shows its download and analysis progress', async () => {
   await page
     .getByLabel('Link to a video or song')
     .fill('https://www.youtube.com/watch?v=h_N0-H49R6I')
+  // The mock workers finish a Lite run in about a second, so the stage list is on screen for
+  // moments: watch for its download row from before the client-side navigation to practice.
+  await page.evaluate(() => {
+    const seen = window as unknown as { downloadRow?: string }
+    const observer = new MutationObserver(() => {
+      const row = [...document.querySelectorAll('li')].find(
+        (li) =>
+          li.textContent?.includes('Downloading') &&
+          li.textContent.includes('From the link you added'),
+      )
+      if (!row) return
+      seen.downloadRow = row.textContent ?? ''
+      observer.disconnect()
+    })
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true })
+  })
   await page.getByRole('button', { name: 'Add and analyse' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
-  await expect(page.locator('li', { hasText: 'Downloading' })).toBeVisible()
   await expect(finished()).toBeVisible({ timeout: 90_000 })
+  // "Downloading · From the link you added", then its state, in Getting ready's stage list.
+  const row = await page.evaluate(() => (window as unknown as { downloadRow?: string }).downloadRow)
+  expect(row).toMatch(/Downloading.*From the link you added/)
 })
 
 test('an upload interrupted by a reload resumes instead of restarting', async () => {
@@ -181,13 +227,13 @@ test('an upload interrupted by a reload resumes instead of restarting', async ()
 
 test('delete removes the song', async () => {
   await page.goto('/library')
-  const card = page.getByRole('article').filter({ hasText: 'Riff in A minor' })
-  await card.getByRole('button', { name: 'More for Riff in A minor' }).click()
+  const row = songRow('Riff in A minor')
+  await row.getByRole('button', { name: 'More for Riff in A minor' }).click()
   await page.getByRole('menuitem', { name: 'Delete song' }).click()
   const dialog = page.getByRole('alertdialog')
   await expect(dialog).toContainText('Delete “Riff in A minor”?')
   await dialog.getByRole('button', { name: 'Delete song' }).click()
-  await expect(card).toHaveCount(0)
+  await expect(row).toHaveCount(0)
 })
 
 test('no console errors, CORS included', async () => {

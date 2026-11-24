@@ -1,16 +1,18 @@
 import type { LoopClip } from '@splitune/contracts'
-import { ChevronRightIcon, HistoryIcon, TrendingUpIcon } from 'lucide-react'
+import { HistoryIcon, TrendingUpIcon } from 'lucide-react'
 import { useId } from 'react'
 import type { z } from 'zod'
 import { barNumber, formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { Button } from '@/ui/button'
 import { Label } from '@/ui/label'
+import { ListRow } from '@/ui/list-row'
 import { NumberField } from '@/ui/number-field'
+import { PanelSection } from '@/ui/panel'
 import { ProgressChart } from '@/ui/progress-chart'
 import { Skeleton } from '@/ui/skeleton'
-import { StatCard, StatCards } from '@/ui/stat-card'
-import { Switch } from '@/ui/switch'
+import { Stat, Stats } from '@/ui/stat'
+import { SwitchRow } from '../common/switch-row'
 import { openSessionId } from './model/practice-sync'
 import {
   type ClipSession,
@@ -28,15 +30,15 @@ import { chartLabel, formatPracticeTime, sessionDate } from './progress-copy'
 import { useProgressData } from './progress-data'
 import { useWeeklyGoal } from './progress-goal'
 
-// The Progress tab (27 §3.7.4, Practice-Piano.dc.html; s39, lazy): the loop's clip ("Clip", its
-// name, its bars), the Last 30 days chart (best clean pass solid, the first clean pass of each
-// session dashed: what stuck), three stat cards, the Sessions rows, the Warm up chip on the first
-// session after a day away, and the optional Weekly goal. With no loop, the song's clips with
-// their best clean tempo; with no clean pass yet, the empty state (27 §4).
+// The Progress tab (27 §3.7.4; s39, lazy; s47 direction §6): the loop's clip (its name and bars),
+// today in three figures (first clean pass, clean passes of passes, minutes: `Stat`s, no cards),
+// the Last 30 days chart (best clean pass solid with circles, the first clean pass of each session
+// dashed with squares: what stuck, never colour alone), the sessions as hairline rows, the Warm up
+// action on the first session after a day away, and the optional Weekly goal. With no loop, the
+// song's clips as rows with their best clean tempo; with no clean pass yet, the empty state
+// (27 §4). Sections are divided by hairlines inside the one panel; nothing is boxed.
 
 type Clip = z.infer<typeof LoopClip>
-
-const heading = 'text-sm font-medium text-muted-foreground'
 
 const bars = (clip: Clip) => `${barNumber(clip.start_bar)}–${barNumber(clip.end_bar)}`
 
@@ -51,17 +53,18 @@ export function ProgressTab({ now = new Date() }: { now?: Date }) {
   const warm = warmUpClip(data, sessions, songId, now)
   const warmTarget = warm && clips.find((c) => c.id === warm.clip.loop_clip_id)
   return (
-    <>
+    <div data-slot="progress-tab" className="flex flex-col [&>section:first-child]:pt-0">
       {warmTarget && warmTarget.id !== clip?.id && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="self-start"
-          onClick={() => selectClip(warmTarget, 'clip')}
-        >
-          <HistoryIcon aria-hidden />
-          {warm.yesterday ? m['progress.warm_up']() : m['progress.warm_up_last']()}
-        </Button>
+        <PanelSection>
+          <Button
+            variant="outline"
+            className="self-start"
+            onClick={() => selectClip(warmTarget, 'clip')}
+          >
+            <HistoryIcon aria-hidden />
+            {warm.yesterday ? m['progress.warm_up']() : m['progress.warm_up_last']()}
+          </Button>
+        </PanelSection>
       )}
       {clip ? (
         <ClipProgress clip={clip} data={data} sessions={sessions} songId={songId} now={now} />
@@ -69,25 +72,30 @@ export function ProgressTab({ now = new Date() }: { now?: Date }) {
         <SongClips clips={clips} onPick={(c) => selectClip(c, 'clip')} />
       )}
       <WeeklyGoal sessions={sessions} now={now} />
-    </>
+    </div>
   )
 }
 
 function ProgressSkeleton() {
   return (
-    <div aria-hidden className="flex flex-col gap-3">
-      <Skeleton className="h-12 w-48" />
-      <Skeleton className="h-52 w-full" />
-      <Skeleton className="h-16 w-full" />
+    <div aria-hidden className="flex flex-col gap-4">
+      <Skeleton className="h-6 w-48" />
+      <div className="flex gap-8">
+        <Skeleton className="h-12 w-16" />
+        <Skeleton className="h-12 w-16" />
+        <Skeleton className="h-12 w-16" />
+      </div>
+      <Skeleton className="h-36 w-full" />
     </div>
   )
 }
 
+/** The empty state (26 §13): an icon, a line and what to do, no box. */
 function Empty() {
   return (
-    <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
-      <TrendingUpIcon aria-hidden strokeWidth={1.8} className="size-7 text-faint-foreground" />
-      <p className="text-md text-muted-foreground">{m['practice.progress_empty']()}</p>
+    <div data-slot="progress-empty" className="flex flex-col items-start gap-2 py-2">
+      <TrendingUpIcon aria-hidden strokeWidth={1.8} className="size-6 text-muted-foreground" />
+      <p className="text-body-sm text-muted-foreground">{m['practice.progress_empty']()}</p>
     </div>
   )
 }
@@ -105,6 +113,7 @@ function ClipProgress({
   songId: string
   now: Date
 }) {
+  const chartId = useId()
   const progress = data.clips.find((c) => c.loop_clip_id === clip.id)
   const bySession = progress ? clipSessions(progress, sessions) : []
   const points = chartPoints(bySession, now)
@@ -113,29 +122,40 @@ function ClipProgress({
   const start = new Date(now.getTime() - 29 * 86_400_000)
   return (
     <>
-      <div className="flex flex-col gap-0.5">
-        <span className={heading}>{m['progress.clip']()}</span>
-        <h2 className="text-xl">{clipName(clip)}</h2>
-        {clip.name !== null && (
-          <p className="text-sm text-faint-foreground">
-            {m['progress.bars']({ bars: bars(clip) })}
-          </p>
+      <PanelSection data-slot="progress-clip" className="gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-label-sm text-muted-foreground">{m['progress.clip']()}</span>
+          <h2 className="text-title">{clipName(clip)}</h2>
+          {clip.name !== null && (
+            <p className="text-body-sm text-muted-foreground tabular-nums">
+              {m['progress.bars']({ bars: bars(clip) })}
+            </p>
+          )}
+        </div>
+        {bySession.length === 0 ? (
+          <Empty />
+        ) : (
+          <Stats role="group" aria-label={m['progress.today']()} className="gap-x-6">
+            <Stat
+              value={today.cold === null ? '–' : formatPercent(today.cold)}
+              label={m['progress.cold_today']()}
+            />
+            <Stat value={`${today.clean} / ${today.passes}`} label={m['progress.clean_passes']()} />
+            <Stat value={formatPracticeTime(today.minutes)} label={m['progress.today']()} />
+          </Stats>
         )}
-      </div>
-      {bySession.length === 0 ? (
-        <Empty />
-      ) : (
+      </PanelSection>
+      {bySession.length > 0 && (
         <>
-          <section
-            aria-labelledby="progress-30"
-            className="flex flex-col gap-2.5 rounded-xl border border-border p-3.5"
+          <PanelSection
+            aria-labelledby={chartId}
+            title={<span id={chartId}>{m['progress.last_30_days']()}</span>}
+            action={
+              <span className="text-caption text-muted-foreground">
+                {m['progress.clean_speed']()}
+              </span>
+            }
           >
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 id="progress-30" className="text-md">
-                {m['progress.last_30_days']()}
-              </h3>
-              <span className="text-sm text-faint-foreground">{m['progress.clean_speed']()}</span>
-            </div>
             {points.length > 0 ? (
               <ProgressChart
                 points={points}
@@ -144,20 +164,9 @@ function ClipProgress({
                 legend={{ best: m['progress.legend_best'](), cold: m['progress.legend_cold']() }}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">{m['practice.progress_empty']()}</p>
+              <Empty />
             )}
-          </section>
-          <StatCards>
-            <StatCard
-              value={today.cold === null ? '–' : formatPercent(today.cold)}
-              label={m['progress.cold_today']()}
-            />
-            <StatCard
-              value={`${today.clean} / ${today.passes}`}
-              label={m['progress.clean_passes']()}
-            />
-            <StatCard value={formatPracticeTime(today.minutes)} label={m['progress.today']()} />
-          </StatCards>
+          </PanelSection>
           <SessionList sessions={bySession} now={now} />
         </>
       )}
@@ -165,92 +174,96 @@ function ClipProgress({
   )
 }
 
-/** 26 §12.2 SessionList: newest first, "Today · 18 min · 14 passes · best 60 %". */
+/** 26 §12.2 SessionList: newest first, "Today · 18 min · 7 passes" and the session's best. */
 function SessionList({ sessions, now }: { sessions: ClipSession[]; now: Date }) {
+  const titleId = useId()
   return (
-    <section aria-labelledby="progress-sessions" className="flex flex-col">
-      <h3 id="progress-sessions" className={`${heading} mb-1.5`}>
-        {m['progress.sessions']()}
-      </h3>
+    <PanelSection
+      aria-labelledby={titleId}
+      title={<span id={titleId}>{m['progress.sessions']()}</span>}
+      className="gap-1"
+    >
       <ul className="m-0 flex list-none flex-col p-0">
         {[...sessions].reverse().map((s) => {
           const minutes = formatPracticeTime(s.session.minutes)
           return (
-            <li key={s.session.id} className="flex items-baseline gap-2.5 py-1.5 text-sm">
-              <span className="w-24 shrink-0">{sessionDate(s.session.startedAt, now)}</span>
-              <span className="min-w-0 flex-1 text-faint-foreground tabular-nums">
-                {s.passes === 1
+            <ListRow
+              key={s.session.id}
+              data-slot="session-row"
+              className="min-h-12 px-0 last:border-b-0 hover:bg-transparent"
+              title={sessionDate(s.session.startedAt, now)}
+              meta={
+                s.passes === 1
                   ? m['progress.session_meta_one']({ minutes })
-                  : m['progress.session_meta']({ minutes, passes: String(s.passes) })}
-              </span>
-              <span className="text-right tabular-nums">
-                {s.best === null
-                  ? m['progress.no_clean']()
-                  : m['progress.clip_best']({ pct: formatPercent(s.best) })}
-              </span>
-            </li>
+                  : m['progress.session_meta']({ minutes, passes: String(s.passes) })
+              }
+              aside={
+                <span className="text-body-sm text-foreground tabular-nums">
+                  {s.best === null
+                    ? m['progress.no_clean']()
+                    : m['progress.clip_best']({ pct: formatPercent(s.best) })}
+                </span>
+              }
+            />
           )
         })}
       </ul>
-    </section>
+    </PanelSection>
   )
 }
 
 /** No loop: the song's clips with their best clean tempo; a row loops it. */
 function SongClips({ clips, onPick }: { clips: Clip[]; onPick: (clip: Clip) => void }) {
-  if (clips.length === 0) return <Empty />
+  const titleId = useId()
+  if (clips.length === 0) {
+    return (
+      <PanelSection>
+        <Empty />
+      </PanelSection>
+    )
+  }
   return (
-    <section aria-labelledby="progress-clips" className="flex flex-col gap-2">
+    <PanelSection aria-labelledby={titleId} className="gap-2">
       <div className="flex flex-col gap-0.5">
-        <h2 id="progress-clips" className="text-xl">
+        <h2 id={titleId} className="text-title">
           {m['progress.clips']()}
         </h2>
-        <p className="text-sm text-muted-foreground">{m['progress.clips_hint']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['progress.clips_hint']()}</p>
       </div>
-      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      <ul className="m-0 flex list-none flex-col border-t border-border p-0">
         {clips.map((c) => (
-          <li key={c.id}>
-            <button
-              type="button"
-              onClick={() => onPick(c)}
-              className="flex min-h-target-practice-2 w-full items-center gap-3 rounded-lg px-2 text-left transition-colors duration-(--duration-fast) hover:bg-muted focus-visible:outline-offset-0"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-md">{clipName(c)}</span>
-                {c.name !== null && (
-                  <span className="block text-sm text-faint-foreground">
-                    {m['progress.bars']({ bars: bars(c) })}
-                  </span>
-                )}
-              </span>
-              <span className="text-sm tabular-nums text-muted-foreground">
+          <ListRow
+            key={c.id}
+            className="min-h-target-practice px-0 pl-2"
+            title={clipName(c)}
+            meta={c.name !== null ? m['progress.bars']({ bars: bars(c) }) : undefined}
+            render={<button type="button" className="text-left" onClick={() => onPick(c)} />}
+            aside={
+              <span className="pr-2 text-body-sm text-muted-foreground tabular-nums">
                 {c.best_clean_tempo_pct === null
                   ? m['progress.no_clean']()
                   : m['progress.clip_best']({ pct: formatPercent(c.best_clean_tempo_pct) })}
               </span>
-              <ChevronRightIcon aria-hidden className="size-4 text-faint-foreground" />
-            </button>
-          </li>
+            }
+          />
         ))}
       </ul>
-    </section>
+    </PanelSection>
   )
 }
 
 /** Weekly goal (27 §3.7.4, §5.5): off by default, days a week, on this device; no reminders. */
 function WeeklyGoal({ sessions, now }: { sessions: SessionStats[]; now: Date }) {
-  const id = useId()
   const daysId = useId()
   const { on, days, setOn, setDays } = useWeeklyGoal()
   return (
-    <section className="mt-auto flex flex-col gap-3 border-t border-border pt-3.5">
-      <div className="flex min-h-target-practice-2 items-center gap-3">
-        <span className="flex min-w-0 flex-1 flex-col">
-          <Label htmlFor={id}>{m['progress.weekly_goal']()}</Label>
-          <span className="text-sm text-faint-foreground">{m['progress.weekly_goal_hint']()}</span>
-        </span>
-        <Switch id={id} checked={on} onCheckedChange={setOn} />
-      </div>
+    <PanelSection className="gap-2">
+      <SwitchRow
+        label={m['progress.weekly_goal']()}
+        hint={m['progress.weekly_goal_hint']()}
+        checked={on}
+        onCheckedChange={setOn}
+      />
       {on && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Label htmlFor={daysId}>{m['progress.goal_days']()}</Label>
@@ -264,7 +277,7 @@ function WeeklyGoal({ sessions, now }: { sessions: SessionStats[]; now: Date }) 
             incrementLabel={m['progress.goal_more']()}
             onValueChange={(next) => next !== null && setDays(next)}
           />
-          <p role="status" className="basis-full text-sm text-muted-foreground tabular-nums">
+          <p role="status" className="basis-full text-body-sm text-muted-foreground tabular-nums">
             {m['progress.goal_status']({
               n: String(Math.min(days, daysThisWeek(sessions, now))),
               goal: String(days),
@@ -272,6 +285,6 @@ function WeeklyGoal({ sessions, now }: { sessions: SessionStats[]; now: Date }) 
           </p>
         </div>
       )}
-    </section>
+    </PanelSection>
   )
 }

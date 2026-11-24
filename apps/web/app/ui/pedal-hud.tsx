@@ -2,12 +2,14 @@ import type * as React from 'react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
-// Doc 26 §4.7, §12.2, §13, 27 §3.7.4: confirms a key or pedal action within 100 ms as a toast-style
-// chip at the top right of the notation — "{source} · {action}" ("Key , · Speed 70 %", "Pedal ·
-// From the top of the loop") — for 1.2 s, with a polite announcement. Each press pops it in again.
-// Focus never moves and the chip ignores the pointer, except when it carries an action ("Pedal
-// detected? Set it up"): then it stays a little longer and its link can be clicked; keyboard users
-// reach the same place from the top bar's Keyboard & pedal button, so the link isn't a tab stop.
+// Doc 26 §4.7, §13, s47 direction §3, §7: confirms a key or pedal action within 100 ms with one
+// quiet line naming the source and the action ("Key 4 · Loop bars 5–8", "Right pedal · Play") on
+// --raised with a hairline, for 1.2 s, with a polite announcement. Each press pops it in again.
+// It sits in the flow where the screen puts it (the top bar or the status row), never over the
+// notation, and keeps its box while hidden so nothing moves when it shows. Focus never moves and
+// the line ignores the pointer, except when it carries an action ("Pedal detected? Set it up"):
+// then it stays a little longer and its link can be clicked; keyboard users reach the same place
+// from the top bar's Keyboard & pedal button, so the link isn't a tab stop.
 
 export const PEDAL_HUD_MS = 1200
 const ACTION_HUD_MS = 5000
@@ -16,10 +18,10 @@ type PedalHudProps = {
   /** The latest action; bump `sequence` to show the same text again. */
   message: string | null
   sequence: number
-  /** What pressed it ("Key ,", "Pedal"); shown before the action. */
+  /** What pressed it ("Key 4", "Right pedal"); shown before the action. */
   source?: string | undefined
   icon?: React.ReactNode
-  /** A link that acts on the message ("Set it up"), rendered as the whole chip. */
+  /** A link that acts on the message ("Set it up"), rendered as the whole line. */
   action?: ((content: React.ReactNode, className: string) => React.ReactNode) | undefined
   className?: string
 }
@@ -37,12 +39,19 @@ function PedalHud({ message, sequence, source, icon, action, className }: PedalH
   const content = (
     <>
       {icon}
-      {line}
+      {source && (
+        <>
+          <span className="text-muted-foreground">{source}</span>
+          <span aria-hidden className="text-faint-foreground">
+            ·
+          </span>
+        </>
+      )}
+      <span className="truncate">{message}</span>
     </>
   )
-  const chip = cn(
-    'flex items-center gap-3 rounded-full border border-border-strong bg-hud-bg px-4 py-2.5 text-md font-medium whitespace-nowrap text-hud-fg tabular-nums shadow-2 [&_svg]:size-5',
-  )
+  const chip =
+    'flex h-8 max-w-full min-w-0 items-center gap-1.5 rounded-full bg-hud-bg px-3 text-label-sm whitespace-nowrap text-hud-fg tabular-nums inset-ring inset-ring-border [&_svg]:size-4 [&_svg]:shrink-0 [&_.lucide]:stroke-[1.8]'
   return (
     <>
       <div role="status" aria-live="polite" className="sr-only">
@@ -54,16 +63,17 @@ function PedalHud({ message, sequence, source, icon, action, className }: PedalH
         data-slot="pedal-hud"
         data-visible={visible || undefined}
         className={cn(
-          'pointer-events-none absolute top-3 right-3 z-(--z-hud) opacity-0 transition-opacity duration-(--duration-fast) data-visible:opacity-100 motion-safe:animate-pop-in',
+          'pointer-events-none inline-flex h-8 min-w-0 opacity-0 transition-opacity duration-(--duration-fast) ease-exit data-visible:opacity-100 motion-safe:data-visible:animate-pop-in',
           action && 'data-visible:pointer-events-auto',
           className,
         )}
       >
-        {action && message !== null ? (
-          action(content, cn(chip, 'underline-offset-4 hover:underline'))
-        ) : (
-          <div className={chip}>{content}</div>
-        )}
+        {message !== null &&
+          (action ? (
+            action(content, cn(chip, 'underline-offset-4 hover:underline'))
+          ) : (
+            <div className={chip}>{content}</div>
+          ))}
       </div>
     </>
   )

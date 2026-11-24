@@ -9,7 +9,9 @@ import {
   BACKGROUND_HEX,
   COMPONENT_TOKENS,
   MOTION_TOKENS,
+  RAMP_STEPS,
   READING_TOKENS,
+  ROLE_STEPS,
   SEMANTIC_ROLES,
   TARGET_TOKENS,
 } from './index.ts'
@@ -21,9 +23,15 @@ const rules = loadRules()
 const tailwind = parseRules(readSource('theme.tailwind.css'))
 
 const PRIMITIVE_NAMES = new Set(primitives.flatMap((rule) => rule.decls.map(([name]) => name)))
-const SEMANTIC = new Set<string>([...SEMANTIC_ROLES, ...ALIAS_ROLES])
+const SEMANTIC = new Set<string>([...RAMP_STEPS, ...SEMANTIC_ROLES, ...ALIAS_ROLES])
 const COMPONENT = new Set<string>(COMPONENT_TOKENS)
-const ALL = [...SEMANTIC_ROLES, ...ALIAS_ROLES, ...COMPONENT_TOKENS, ...READING_TOKENS]
+const ALL = [
+  ...RAMP_STEPS,
+  ...SEMANTIC_ROLES,
+  ...ALIAS_ROLES,
+  ...COMPONENT_TOKENS,
+  ...READING_TOKENS,
+]
 
 const block = (selector: string, media: string | null = null) => {
   const rule = themes.find((r) => r.media === media && r.selectors.includes(selector))
@@ -34,8 +42,6 @@ const themeBlocks = {
   dark: block('[data-appearance="dark"]'),
   light: block('[data-appearance="light"]'),
 }
-// "No shadow" that still composes into a box-shadow list with rings (themes.css header).
-const NO_SHADOW = '0 0 0 0 transparent'
 const references = (value: string) =>
   [...value.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1] as string)
 const at = (attrs: Record<string, string>, subtree?: Record<string, string>) =>
@@ -73,9 +79,9 @@ describe('primitives (§3)', () => {
   })
 })
 
-describe.each(Object.entries(themeBlocks))('%s block', (_, decls) => {
-  it('defines every semantic role and component token, and nothing else', () => {
-    const expected = [...SEMANTIC_ROLES, ...COMPONENT_TOKENS].sort()
+describe.each(Object.entries(themeBlocks))('%s block', (appearance, decls) => {
+  it('defines the ramp, every semantic role and component token, and nothing else', () => {
+    const expected = [...RAMP_STEPS, ...SEMANTIC_ROLES, ...COMPONENT_TOKENS].sort()
     expect([...decls.keys()].filter((name) => name.startsWith('--')).sort()).toEqual(expected)
   })
 
@@ -101,76 +107,69 @@ describe.each(Object.entries(themeBlocks))('%s block', (_, decls) => {
     }
   })
 
-  it('maps the shared surfaces and neutral statuses (§4.1, §4.3, §4.8)', () => {
-    const roles = [
-      '--surface-raised',
-      '--surface-sunken',
-      '--paper',
-      '--ink',
-      '--warning',
-      '--warning-surface',
-      '--info',
-      '--info-surface',
-      '--edited',
-      '--conf-medium',
-      '--conf-medium-edge',
-      '--conf-low',
-    ]
-    expect(Object.fromEntries(roles.map((role) => [role, decls.get(role)]))).toEqual({
-      '--surface-raised': 'var(--card)',
-      '--surface-sunken': 'var(--background)',
+  it('binds the ramp to its own twelve primitives, in order (§4.1)', () => {
+    expect(RAMP_STEPS.map((step) => decls.get(step))).toEqual(
+      RAMP_STEPS.map((_, i) => `var(--${appearance}-${i + 1})`),
+    )
+  })
+
+  it('reads every ramp-backed role from the step that has its job (§4.1)', () => {
+    expect(
+      Object.fromEntries(Object.keys(ROLE_STEPS).map((role) => [role, decls.get(role)])),
+    ).toEqual(
+      Object.fromEntries(
+        Object.entries(ROLE_STEPS).map(([role, step]) => [role, `var(--gray-${step})`]),
+      ),
+    )
+  })
+
+  it('increased contrast is one ramp step further from the ground (§2)', () => {
+    for (const role of [
+      '--border',
+      '--border-strong',
+      '--edge',
+      '--faint-foreground',
+      '--muted-foreground',
+    ] as const) {
+      expect([role, ROLE_STEPS[`${role}-more`]]).toEqual([role, ROLE_STEPS[role] + 1])
+    }
+  })
+
+  it('maps the score and the confidence marks to the ink (§4.7, §5)', () => {
+    const roles = {
       '--paper': 'var(--background)',
       '--ink': 'var(--foreground)',
-      '--warning': 'var(--muted-foreground)',
-      '--warning-surface': 'var(--accent)',
-      '--info': 'var(--muted-foreground)',
-      '--info-surface': 'var(--card)',
       '--edited': 'var(--success)',
       '--conf-medium': 'var(--ink)',
       '--conf-medium-edge': 'var(--faint-foreground)',
-      '--conf-low': 'var(--unsure)',
-    })
+      '--conf-low': 'var(--ink)',
+      '--conf-low-edge': 'var(--unsure)',
+      '--bar-current': 'var(--wash)',
+      '--staff': 'var(--edge)',
+      '--playhead': 'var(--signal)',
+      '--loop-edge': 'var(--signal)',
+    }
+    expect(Object.fromEntries(Object.keys(roles).map((role) => [role, decls.get(role)]))).toEqual(
+      roles,
+    )
   })
 
   it('--scrim is translucent black (§4.7)', () => {
     expect(decls.get('--scrim')).toMatch(/^oklch\(0 0 0 \/ 0\.[57]\)$/)
-  })
-
-  it('the accent is the ink: primary text, the "now" signal and the focus ring (§4.2)', () => {
-    for (const role of ['--primary-ink', '--signal', '--ring', '--ink']) {
-      expect([role, decls.get(role)]).toEqual([role, 'var(--foreground)'])
-    }
   })
 })
 
 describe('neutral interface (§4.1)', () => {
   it('every surface, text and line role is achromatic in every context', () => {
     const NEUTRAL = [
-      '--background',
-      '--foreground',
-      '--card',
-      '--popover',
-      '--primary',
-      '--primary-foreground',
-      '--primary-hover',
-      '--secondary',
-      '--muted',
-      '--muted-foreground',
-      '--faint-foreground',
-      '--accent',
-      '--border',
-      '--border-strong',
-      '--input',
-      '--ring',
-      '--primary-ink',
-      '--primary-soft',
-      '--primary-line',
-      '--signal',
+      ...RAMP_STEPS,
+      ...Object.keys(ROLE_STEPS),
       '--bar-current',
       '--loop-fill',
       '--score-loop-fill',
       '--staff',
       '--waveform-peak',
+      '--hud-bg',
       '--scrim',
     ]
     for (const { context } of CONTEXTS) {
@@ -213,70 +212,42 @@ describe('appearance blocks (§2)', () => {
 
 describe('forced colours', () => {
   const forced = new Map(themes.find((rule) => rule.media === '(forced-colors: active)')?.decls)
-  it('maps every surface and wash to Canvas, the scrim to transparent and drops the glow', () => {
+  it('maps every surface and wash to Canvas, the state marks to Highlight and the scrim to transparent', () => {
     for (const role of [
-      '--surface-raised',
-      '--surface-sunken',
+      '--background',
+      '--panel',
+      '--raised',
+      '--hover',
+      '--wash',
+      '--pressed',
       '--success-surface',
-      '--warning-surface',
-      '--info-surface',
       '--destructive-surface',
       '--unsure-surface',
-      '--primary-soft',
       '--bar-current',
       '--loop-fill',
       '--score-loop-fill',
-      '--capsule',
+      '--hud-bg',
     ]) {
       expect([role, forced.get(role)]).toEqual([role, 'Canvas'])
     }
+    for (const role of ['--selected', '--signal', '--ring', '--primary']) {
+      expect([role, forced.get(role)]).toEqual([role, 'Highlight'])
+    }
     expect(forced.get('--scrim')).toBe('transparent')
-    expect(forced.get('--glow')).toBe(NO_SHADOW)
   })
 })
 
-describe('elevation (§4.7, §9)', () => {
-  const layers = (value: string | undefined) => (value ?? '').split(/,(?![^(]*\))/).length
-  it.each(Object.entries(themeBlocks))('%s: cards are bordered, floating layers lifted', (_, d) => {
-    expect(d.get('--elevation-1')).toBe(NO_SHADOW)
-    for (const level of ['--elevation-2', '--elevation-3']) {
-      expect([level, layers(d.get(level))]).toEqual([level, 2])
-    }
-  })
-
-  it('floating layers are a close shadow under a wide one, in black only', () => {
+describe('elevation (§9)', () => {
+  it('only popovers and dialogs cast a shadow: a close layer under a wide one, in black only', () => {
+    expect(SEMANTIC_ROLES.filter((name) => name.startsWith('--elevation-'))).toEqual([
+      '--elevation-popover',
+      '--elevation-dialog',
+    ])
     for (const d of Object.values(themeBlocks)) {
-      for (const level of ['--elevation-2', '--elevation-3']) {
+      for (const level of ['--elevation-popover', '--elevation-dialog']) {
         expect(d.get(level)).toMatch(
           /^0 2px 6px oklch\(0 0 0 \/ 0\.\d+\), 0 \d+px \d+px oklch\(0 0 0 \/ 0\.\d+\)$/,
         )
-      }
-    }
-  })
-
-  it('--glow is a 1 px ring of the ink (§4.2), dropped under increased contrast', () => {
-    expect(at({ 'data-appearance': 'dark' }).raw('--glow')).toBe('0 0 0 1px oklch(1 0 0 / 0.5)')
-    expect(at({ 'data-appearance': 'light' }).raw('--glow')).toBe(
-      '0 0 0 1px oklch(0.159 0 0 / 0.5)',
-    )
-    for (const appearance of ['dark', 'light', 'stage']) {
-      expect(at({ 'data-appearance': appearance, 'data-contrast': 'more' }).raw('--glow')).toBe(
-        NO_SHADOW,
-      )
-    }
-  })
-
-  it('the segmented capsule has its own shadow; Play has none', () => {
-    for (const appearance of ['dark', 'light', 'stage']) {
-      expect(at({ 'data-appearance': appearance }).raw('--elevation-capsule')).toBe(
-        '0 1px 2px oklch(0 0 0 / 0.12)',
-      )
-      for (const contrastMode of ['normal', 'more']) {
-        expect(
-          at({ 'data-appearance': appearance, 'data-contrast': contrastMode }).raw(
-            '--elevation-play',
-          ),
-        ).toBe(NO_SHADOW)
       }
     }
   })
@@ -323,10 +294,12 @@ describe('motion (§10)', () => {
     expect(css).toContain('--ease-standard: cubic-bezier(0.2, 0, 0, 1)')
     expect(css).toContain('--ease-enter: cubic-bezier(0, 0, 0, 1)')
     expect(css).toContain('--ease-exit: cubic-bezier(0.3, 0, 1, 1)')
-    expect(css).toContain('--ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1)')
-    // The springs start at rest and settle exactly on the end value.
-    for (const name of ['smooth', 'snappy'])
-      expect(css).toMatch(new RegExp(`--ease-${name}: linear\\(\\s*0,[\\d.,\\s]+,\\s*1\\s*\\);`))
+    // Three curves only: entering decelerates, leaving accelerates, everything else is standard.
+    expect([...css.matchAll(/--ease-([a-z]+):/g)].map((m) => m[1])).toEqual([
+      'standard',
+      'enter',
+      'exit',
+    ])
   })
 })
 
@@ -397,14 +370,13 @@ describe('increased contrast (§2, §4.1, §4.7)', () => {
         '--faint-foreground',
         '--border',
         '--border-strong',
-        '--input',
+        '--edge',
         '--staff',
         '--waveform-peak',
       ]) {
         expect([name, more.raw(name) !== normal.raw(name)]).toEqual([name, true])
         expect([name, more.raw(name)]).toEqual([name, more.raw(`${name}-more`)])
       }
-      expect(more.color('--hud-bg').alpha).toBe(1)
       expect([normal.raw('--focus-width'), more.raw('--focus-width')]).toEqual(['2px', '3px'])
     },
   )
@@ -488,7 +460,6 @@ describe('static scales', () => {
     const decls = new Map(scale?.decls)
     expect(TARGET_TOKENS.map((name) => decls.get(name))).toEqual([
       '24px',
-      '32px',
       '44px',
       '48px',
       '64px',
@@ -496,61 +467,66 @@ describe('static scales', () => {
     ])
   })
 
-  it('radius steps around the 10 px base (§9)', () => {
-    const radius = (name: string) => {
-      const value = theme(`--radius-${name}`) ?? ''
-      const m = /^calc\(var\(--radius\) ([+-]) (\d+)px\)$/.exec(value)
-      if (value === 'var(--radius)') return 10
-      if (!m) throw new Error(`--radius-${name}: ${value}`)
-      return 10 + (m[1] === '+' ? 1 : -1) * Number(m[2])
-    }
-    expect(theme('--radius')).toBe('0.625rem')
-    expect(['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl'].map(radius)).toEqual([
-      4, 6, 8, 10, 12, 14, 16, 22, 24,
+  it('radii are named by what they round (§9)', () => {
+    const px = (name: string) => Number.parseFloat(theme(`--radius-${name}`) ?? 'NaN') * 16
+    expect(['media', 'field', 'panel', 'dialog'].map(px)).toEqual([6, 10, 14, 20])
+    expect([...css.matchAll(/--radius-([a-z0-9]+):/g)].map((m) => m[1])).toEqual([
+      'media',
+      'field',
+      'panel',
+      'dialog',
     ])
   })
 
-  it('browse type scale (§6.2), px at 16 / line height px / weight', () => {
+  it('type by role (§6.2), px at 16 / line height px / weight', () => {
     const rem = (value: string | undefined) => Number.parseFloat(value ?? 'NaN') * 16
-    const STEPS: [string, number, number, number | undefined][] = [
-      ['2xs', 11, 14, 600],
-      ['xs', 12, 16, 500],
-      ['sm', 13, 18, undefined],
-      ['md', 14, 20, 500],
-      ['button-lg', 16, 22, 500],
-      ['base', 15, 22, 400],
-      ['lg', 17, 24, 500],
-      ['xl', 22, 28, 500],
-      ['2xl', 32, 38, 500],
-      ['3xl', 44, 48, 500],
-      ['4xl', 48, 52, 500],
-      ['5xl', 56, 60, 500],
+    const STEPS: [string, number, number, number][] = [
+      ['kbd', 11, 14, 500],
+      ['caption', 12, 16, 400],
+      ['label-sm', 13, 18, 500],
+      ['body-sm', 13, 18, 400],
+      ['label', 14, 20, 500],
+      ['body', 15, 22, 400],
+      ['field', 16, 22, 400],
+      ['title', 17, 24, 500],
+      ['lead', 17, 26, 400],
+      ['heading', 22, 28, 500],
+      ['readout', 28, 34, 500],
+      ['display', 32, 38, 500],
     ]
-    for (const [step, px, line, weight] of STEPS) {
-      const weightValue = theme(`--text-${step}--font-weight`)
+    for (const [step, size, line, weight] of STEPS) {
       expect([
         step,
         rem(theme(`--text-${step}`)),
         rem(theme(`--text-${step}--line-height`)),
-        weightValue === undefined ? undefined : Number(weightValue),
-      ]).toEqual([step, px, line, weight])
+        Number(theme(`--text-${step}--font-weight`)),
+      ]).toEqual([step, size, line, weight])
     }
-    expect(theme('--text-display')).toBe('clamp(2.5rem, 5.6vw, 4rem)')
+    expect(theme('--text-hero')).toBe('clamp(2.5rem, 5vw, 3.5rem)')
     // Tracking tightens with size and never passes −0.03em.
     expect(
-      ['base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', 'display'].map((step) =>
+      ['body', 'field', 'title', 'lead', 'heading', 'readout', 'display', 'hero'].map((step) =>
         theme(`--text-${step}--letter-spacing`),
       ),
     ).toEqual([
       '-0.01em',
       '-0.01em',
       '-0.01em',
+      '-0.01em',
+      '-0.01em',
+      '-0.02em',
       '-0.02em',
       '-0.03em',
-      '-0.03em',
-      '-0.03em',
-      '-0.03em',
     ])
+  })
+
+  it('nothing is set below 11 px and no size carries a weight other than 400 or 500 (§6.1)', () => {
+    const sizes = [...css.matchAll(/--text-[a-z-]+: (\d*\.?\d+)rem;/g)].map(
+      (m) => Number(m[1]) * 16,
+    )
+    expect(Math.min(...sizes)).toBe(11)
+    const weights = [...css.matchAll(/--text-[a-z-]+--font-weight: (\d+);/g)].map((m) => m[1])
+    expect([...new Set(weights)].sort()).toEqual(['400', '500'])
   })
 
   it('families (§6.1)', () => {

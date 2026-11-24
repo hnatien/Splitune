@@ -52,7 +52,7 @@ export function VideoPane({ className }: { className?: string }) {
     <figure
       data-slot="video-pane"
       className={cn(
-        'absolute right-4 bottom-4 z-(--z-sticky) m-0 aspect-video overflow-hidden rounded-xl border border-border bg-background shadow-3 motion-safe:animate-pop-in md:right-6',
+        'absolute right-4 bottom-4 z-(--z-sticky) m-0 aspect-video overflow-hidden rounded-field border border-border bg-background shadow-dialog motion-safe:animate-pop-in md:right-6',
         large ? 'w-[min(36rem,calc(100%-2rem))]' : 'w-[min(20rem,calc(100%-2rem))]',
         className,
       )}

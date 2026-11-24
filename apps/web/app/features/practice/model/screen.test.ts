@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Layers, resolveScreen, type ScreenInput } from './screen'
+import { barsPerSystem, type Layers, resolveScreen, type ScreenInput } from './screen'
 
 const NONE: Layers = {
   beats: true,
@@ -72,23 +72,50 @@ describe('the paper', () => {
 })
 
 describe('what is shown and where', () => {
-  it('opens phone portrait on the glance view and every other layout on the notation', () => {
+  it('opens every layout on the notation, a phone included', () => {
     const layers = { chords: true, tab: true }
-    expect(screen({ layers, layout: 'phone-portrait' })).toMatchObject({
+    for (const layout of [
+      'desktop',
+      'tablet-landscape',
+      'tablet-portrait',
+      'phone-landscape',
+      'phone-portrait',
+    ] as const) {
+      expect([layout, screen({ layers, layout })]).toMatchObject([
+        layout,
+        { shown: 'tab', paper: 'tab', glance: false },
+      ])
+    }
+  })
+
+  it('makes the glance view a phone portrait choice: its Chords view', () => {
+    const layers = { chords: true, tab: true }
+    expect(screen({ layers, layout: 'phone-portrait', view: 'chords' })).toMatchObject({
       shown: 'chords',
       glance: true,
       strip: false,
     })
-    expect(screen({ layers, layout: 'tablet-portrait' })).toMatchObject({
-      shown: 'tab',
-      glance: false,
-      strip: true,
-    })
+    expect(screen({ layers, layout: 'tablet-portrait', view: 'chords' }).glance).toBe(false)
     expect(screen({ layers, layout: 'phone-portrait', view: 'tab' }).glance).toBe(false)
   })
 
-  it('keeps the glance view on phone portrait while there is nothing to show yet', () => {
-    expect(screen({ layout: 'phone-portrait' })).toMatchObject({ shown: 'chords', glance: true })
+  it('never puts the glance view over Getting ready: a phone with nothing yet keeps the paper', () => {
+    expect(screen({ layout: 'phone-portrait' })).toMatchObject({
+      glance: false,
+      paper: 'placeholder',
+    })
+    // With only the tab so far there are no chords to glance at either.
+    expect(screen({ layers: { tab: true }, layout: 'phone-portrait', view: 'chords' }).glance).toBe(
+      false,
+    )
+  })
+
+  it('gives the tab no strip, because it prints its chord names over the staff', () => {
+    const layers = { chords: true, tab: true }
+    expect(screen({ layers })).toMatchObject({ paper: 'tab', strip: false })
+    // The lanes and the chord sheet do not print them, so they keep the strip.
+    expect(screen({ layers, view: 'notes' })).toMatchObject({ paper: 'guitar-notes', strip: true })
+    expect(screen({ layers, view: 'chords' })).toMatchObject({ paper: 'bar-sheet', strip: true })
   })
 
   it('shows the chords only when they exist, else the notation', () => {
@@ -109,12 +136,12 @@ describe('what is shown and where', () => {
 
   it.each([
     // [instrument, layers, chordsOnly, strip on desktop, strip on phone landscape]
-    ['guitar', { chords: true, tab: true }, false, true, true],
+    ['guitar', { chords: true, tab: true }, false, false, false],
     ['guitar', { chords: true }, false, true, true],
-    // Only the level at its end: phones leave it out, so no strip.
-    ['guitar', { tab: true }, false, true, false],
-    ['bass', { tab: true }, false, true, false],
-    ['drums', { drums: true }, false, true, false],
+    // The level and capo sit in the key row under the notation, so they bring no strip.
+    ['guitar', { tab: true }, false, false, false],
+    ['bass', { tab: true }, false, false, false],
+    ['drums', { drums: true }, false, false, false],
     // Piano without chords: only its options (the hands), which phones leave out.
     ['piano', { roll: true }, false, true, false],
     ['piano', { roll: true, chords: true }, false, true, true],
@@ -233,5 +260,31 @@ describe('the chords-only banner', () => {
   it('names the notation for analytics', () => {
     expect(screen({ layers: { tab: true } }).notationEvent).toBe('tab')
     expect(screen({ instrument: 'vocals', layers: { melody: true } }).notationEvent).toBe('notes')
+  })
+})
+
+describe('barsPerSystem', () => {
+  // 24 px is the desk's tab digit, 36 the music stand's, 54 the floor's (26 §6.3).
+  it('gives a wide desktop four bars and never more', () => {
+    expect(barsPerSystem(1440, 24)).toBe(4)
+    expect(barsPerSystem(2560, 24)).toBe(4)
+  })
+
+  it('drops bars as the pane narrows: a docked panel, an upright tablet, a phone', () => {
+    expect(barsPerSystem(1024, 24)).toBe(3)
+    // 1180 px with the 340 px tools panel docked.
+    expect(barsPerSystem(840, 24)).toBe(2)
+    expect(barsPerSystem(768, 24)).toBe(2)
+    expect(barsPerSystem(375, 24)).toBe(1)
+  })
+
+  it('gives larger reading sizes fewer, wider bars', () => {
+    expect(barsPerSystem(1440, 36)).toBe(3)
+    expect(barsPerSystem(768, 36)).toBe(1)
+    expect(barsPerSystem(1440, 54)).toBe(2)
+  })
+
+  it('never returns less than one bar, even before the pane is measured', () => {
+    expect(barsPerSystem(0, 24)).toBe(1)
   })
 })

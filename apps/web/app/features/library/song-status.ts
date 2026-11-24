@@ -1,8 +1,9 @@
 import type { LibrarySong } from '@splitune/contracts'
 import type { z } from 'zod'
 
-// The one status a library card shows (27 §3.5): Ready · Partial · Analysing n/m · Queued ·
-// Chords only · Stems expired · Failed, plus the two states before any analysis exists.
+// The one status a library row shows (27 §3.5): Ready · Partial · Analysing n/m · Queued ·
+// Chords only · Stems expired · Failed, plus the two states before any analysis exists. Rows are
+// grouped by what the song needs (s47 direction §6): getting ready, needs you, ready to practise.
 
 type Song = z.infer<typeof LibrarySong>
 
@@ -39,3 +40,22 @@ export function cardStatus(song: Song, uploading: boolean): CardStatus {
 
 export const isInProgress = (status: CardStatus) =>
   status.kind === 'queued' || status.kind === 'analysing' || status.kind === 'downloading'
+
+export type SongNeed = 'getting_ready' | 'needs_you' | 'ready'
+
+/** Which library group a song sits in: still on its way, waiting for the learner, or playable. */
+export function songNeed(status: CardStatus): SongNeed {
+  switch (status.kind) {
+    case 'uploading':
+    case 'downloading':
+    case 'queued':
+    case 'analysing':
+      return 'getting_ready'
+    case 'failed':
+    case 'stems_expired':
+    case 'upload_unfinished':
+      return 'needs_you'
+    default:
+      return 'ready'
+  }
+}

@@ -17,3 +17,8 @@ export function nextInBeats(count: number): string {
     ? m['practice.next_in_beat']()
     : m['practice.next_in_beats']({ count: String(count) })
 }
+
+/** The position readout's "26.3" for bar 26, beat 3. Before the first bar there is no bar to name
+ * (the score shows none either), so the lead-in reads as a dash, never as a bar 0. */
+export const barAndBeat = (at: { bar: number; beat: number }) =>
+  at.bar < 0 ? '–' : `${at.bar + 1}.${at.beat}`

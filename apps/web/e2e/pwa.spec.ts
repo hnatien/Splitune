@@ -55,8 +55,9 @@ test('the app installs: manifest, icons and a service worker that controls the p
 
 test('an example song played once practises offline, and the app shell opens offline', async () => {
   // Online: the visitor's way in, once, through the service worker.
-  await page.goto('/start?step=song&instrument=guitar&level=just_started')
-  const play = page.getByRole('button', { name: 'Play your part' })
+  await page.goto('/start')
+  await page.getByRole('button', { name: 'Start practising' }).click()
+  const play = page.getByRole('button', { name: 'Play', exact: true })
   await expect(play).toBeEnabled({ timeout: 90_000 })
   const practiceUrl = page.url()
   await play.click()
@@ -66,7 +67,7 @@ test('an example song played once practises offline, and the app shell opens off
   await context.setOffline(true)
   try {
     await page.reload()
-    const again = page.getByRole('button', { name: 'Play your part' })
+    const again = page.getByRole('button', { name: 'Play', exact: true })
     await expect(again).toBeEnabled({ timeout: 60_000 })
     await again.click()
     await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()

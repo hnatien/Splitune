@@ -83,6 +83,11 @@ test('music-core recomputes and redraws a capo change on a slowed tablet CPU', a
   await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
     timeout: 60_000,
   })
+  // The capo steppers are in the level and capo popover at the end of the key row (27 §3.7.1).
+  await page
+    .getByRole('button', { name: /^Level and capo/ })
+    .last()
+    .click()
   const samples: number[] = []
   for (const control of ['Capo up', 'Capo down', 'Capo up', 'Capo down', 'Capo up']) {
     // Cleared first: the next redraw sets it again (two redraws can take the same time).

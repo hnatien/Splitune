@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { plansQuery } from '@/features/billing/plans'
-import { PricingPage } from '@/features/billing/pricing-page'
+import { PricingPage, PricingUnavailable } from '@/features/billing/pricing-page'
 import { m } from '@/lib/i18n'
-import { InlineError } from '@/ui/status-message'
 
 // Pricing (27 §3.2): plans and prices from the provider (14 §3), rendered on the server. The
 // loader sits in every page's entry chunk (10 §9), so it loads the billing client when it runs.
+// Prices that fail to load stay on the page, in the marketing shell.
 export const Route = createFileRoute('/_marketing/pricing')({
   loader: async ({ context }) => {
     const billing = await import('@/features/billing/plans')
@@ -21,9 +21,11 @@ function Pricing() {
   const plans = useQuery(plansQuery)
   if (!plans.data) {
     return (
-      <div className="mx-auto w-full max-w-pricing px-4 py-12 sm:px-6">
-        {plans.isError && <InlineError title={m['plan.prices_failed']()} />}
-      </div>
+      <PricingUnavailable
+        signedIn={me !== null}
+        failed={plans.isError}
+        onRetry={() => plans.refetch()}
+      />
     )
   }
   return <PricingPage me={me} plans={plans.data} />

@@ -1,4 +1,12 @@
-import { MinusIcon, PauseIcon, PencilIcon, PlayIcon, PlusIcon, Undo2Icon } from 'lucide-react'
+import {
+  MinusIcon,
+  PauseIcon,
+  PencilIcon,
+  PlayIcon,
+  PlusIcon,
+  Redo2Icon,
+  Undo2Icon,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
@@ -10,6 +18,7 @@ import { TransportButton } from '@/ui/transport-button'
 import { barLabel, barsLabel } from './fix-cards'
 import { useFix } from './fix-store'
 import { FixSynth } from './fix-synth'
+import { keyLabel } from './input-mapper'
 import { useCorrections } from './model/corrections'
 import { FIX_LISTEN, type FixListen, listensToSynth } from './model/fix-listen'
 import { buildQueue, type Spot, spotFor, stepSpot } from './model/fix-queue'
@@ -21,11 +30,11 @@ import { chordEvents, chordVoicing, noteEvents, type SynthEvent } from './model/
 import { usePractice } from './practice-context'
 import { leaveFix, showHud, usePracticeUi } from './practice-store'
 
-// Fix mode (12 §4, 27 §3.7.4, Practice-Fix.dc.html), loaded when it is entered: the queue of unsure
-// spots and the selection J / K / E move through it; the player handed over to the selected bars
-// (they loop at the Fix dock's own speed, with nothing asked between passes) and handed back as
-// it was; the synth that plays an alternative, or the transcribed part, over that loop; the top
-// bar's pill, the key line under the notation and the Fix dock.
+// Fix mode (12 §4, 27 §3.7.4; s47 direction §7), loaded when it is entered: the queue of unsure
+// spots and the selection J / K / E (and the pedal) move through it; the player handed over to the
+// selected bars (they loop at the Fix dock's own speed, with nothing asked between passes) and
+// handed back as it was; the synth that plays an alternative, or the transcribed part, over that
+// loop; the top bar's Fixing line, the key line under the notation and the Fix dock.
 
 /** The queue and where the selection sits in it. */
 export function useFixQueue(): { queue: Spot[]; spot: Spot | undefined; position: number } {
@@ -226,39 +235,54 @@ export function FixMode({ onLeave = leaveFix }: { onLeave?: () => void }) {
   return null
 }
 
-// The top bar's centre in Fix mode: "Fixing · every change saves as you go", Undo and Done.
+// The top bar's centre in Fix mode (s47 direction §6): "Fixing · every change saves as you go"
+// as a glyph and words (never a tinted pill), then Undo and Redo side by side (⌘Z / ⇧⌘Z) and
+// Done (Esc). Done is an outline control: Play stays the screen's one filled control.
 export function FixPill({ onDone = leaveFix }: { onDone?: () => void }) {
-  const { undo } = usePractice()
+  const { undo, redo } = usePractice()
   const undoCount = useCorrections((s) => s.undo.length)
+  const redoCount = useCorrections((s) => s.redo.length)
   return (
-    <div
-      data-slot="fix-pill"
-      className="flex h-11 items-center gap-2.5 rounded-full bg-unsure-surface pr-1 pl-3.5 text-unsure"
-    >
-      <PencilIcon aria-hidden className="size-4.5 shrink-0" strokeWidth={1.8} />
-      <span className="text-md font-medium whitespace-nowrap max-lg:sr-only">
-        {m['fix.fixing']()}
+    <div data-slot="fix-pill" className="flex min-w-0 items-center gap-1">
+      <span className="flex min-w-0 items-center gap-2 pr-2 text-label text-foreground">
+        <PencilIcon aria-hidden className="size-4 shrink-0" strokeWidth={1.8} />
+        <span className="truncate max-lg:hidden">{m['fix.fixing']()}</span>
+        <span className="lg:hidden">{m['fix.fixing_short']()}</span>
       </span>
       <Button
-        size="icon-sm"
+        variant="quiet"
+        size="icon"
         aria-label={m['editor.undo']()}
+        aria-keyshortcuts="Meta+Z Control+Z"
         disabled={undoCount === 0}
         onClick={() => undo()}
       >
         <Undo2Icon aria-hidden />
       </Button>
-      <Button size="sm" variant="primary" onClick={onDone}>
+      <Button
+        variant="quiet"
+        size="icon"
+        aria-label={m['editor.redo']()}
+        aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z"
+        disabled={redoCount === 0}
+        onClick={() => redo()}
+      >
+        <Redo2Icon aria-hidden />
+      </Button>
+      <Button variant="outline" shortcut={m['fix.key_escape']()} onClick={onDone}>
         {m['fix.done']()}
       </Button>
     </div>
   )
 }
 
-// The key line under the notation in Fix mode: what the marks mean, as samples, and the keys.
-export function FixKey() {
+// The key line under the notation in Fix mode: what the marks mean, as samples drawn the way the
+// notation draws them (ink digits; unsure a dashed edge and "?", probably a dotted edge, edited an
+// underline), and the keys. The full editor adds its own: ← / → for notes and Delete.
+export function FixKey({ editor = false }: { editor?: boolean }) {
   const { music, view } = usePractice()
   const sample =
-    'inline-grid min-w-5 place-items-center rounded-xs px-0.5 font-reading-mono leading-5 font-semibold'
+    'inline-flex min-w-6 items-center justify-center rounded-media px-0.5 font-reading-mono leading-5 text-foreground'
   // How often the song's unsure marks are wrong, from their own confidences.
   const n = useMemo(() => {
     if (!music || !view) return null
@@ -268,34 +292,56 @@ export function FixKey() {
     const notes = new Set(view.notes.filter((n) => n.confidence === 'low').map((n) => n.id))
     return wrongOneIn([...low(chords, music.displayChords), ...low(notes, music.tab?.notes ?? [])])
   }, [music, view])
+  const keys: [string[], string][] = [
+    [[keyLabel('j'), keyLabel('k')], m['fix.key_keys']()],
+    [[keyLabel('y')], m['fix.key_accept']()],
+    ...(editor
+      ? ([
+          [[keyLabel('ArrowLeft'), keyLabel('ArrowRight')], m['fix.key_notes']()],
+          [[m['fix.key_delete']()], m['editor.delete_note']()],
+        ] as [string[], string][])
+      : []),
+  ]
   return (
     <div
       data-slot="fix-key"
-      className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-5 gap-y-1 bg-paper px-12 py-1 text-sm text-muted-foreground"
+      className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border bg-paper px-4 py-1 text-body-sm text-muted-foreground"
     >
       <span className="inline-flex items-center gap-2">
         <span
           aria-hidden
-          className={cn(sample, 'border-[1.5px] border-dashed border-conf-low text-conf-low')}
+          className={cn(sample, 'gap-0.5 border-[1.5px] border-dashed border-conf-low-edge')}
         >
-          3
+          3<span className="text-caption text-conf-low-edge">?</span>
         </span>
-        {m['fix.key_unsure']({ n: String(n ?? 3) })}
+        <span>{m['fix.key_unsure']({ n: String(n ?? 3) })}</span>
       </span>
       <span className="inline-flex items-center gap-2">
         <span
           aria-hidden
-          className={cn(sample, 'text-edited underline decoration-2 underline-offset-[3px]')}
+          className={cn(sample, 'border-[1.5px] border-dotted border-conf-medium-edge')}
+        >
+          5
+        </span>
+        <span>{m['practice.probably']()}</span>
+      </span>
+      <span className="inline-flex items-center gap-2">
+        <span
+          aria-hidden
+          className={cn(sample, 'underline decoration-edited decoration-2 underline-offset-4')}
         >
           7
         </span>
-        {m['practice.edited']()}
+        <span>{m['practice.edited']()}</span>
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <Kbd>J</Kbd>
-        <Kbd>K</Kbd>
-        {m['fix.key_keys']()}
-      </span>
+      {keys.map(([caps, text]) => (
+        <span key={text} className="inline-flex items-center gap-1.5 pointer-coarse:hidden">
+          {caps.map((cap) => (
+            <Kbd key={cap}>{cap}</Kbd>
+          ))}
+          <span>{text}</span>
+        </span>
+      ))}
     </div>
   )
 }
@@ -309,8 +355,10 @@ const LISTEN_LABEL: Record<FixListen, () => string> = {
   both: () => m['fix.listen_both'](),
 }
 
-// The Fix dock (27 §3.7.4; 80 px): Play for the selected bars (64, V11), what it plays, Listen to
-// (48 boxes) and the Fix speed − / + (64).
+// The Fix dock (27 §3.7.4; 80 px), in the transport's place: Play for the selected bars (the one
+// filled control, 64), what it plays, Listen to (Original · Your part · Tab synth · Both: the
+// recording against what was transcribed, the one chosen with the ink edge) and the Fix speed
+// − / + with their keys, as on the transport.
 export function FixDock() {
   const practice = usePractice()
   const { player, state, audioStatus, layers } = practice
@@ -331,7 +379,7 @@ export function FixDock() {
       role="toolbar"
       aria-label={m['practice.transport']()}
       data-slot="fix-dock"
-      className="flex h-20 shrink-0 items-center gap-3.5 border-t border-border bg-card px-5"
+      className="flex h-20 shrink-0 items-center gap-3 border-t border-border bg-background px-4"
     >
       <TransportButton
         tone="primary"
@@ -350,14 +398,18 @@ export function FixDock() {
         disabled={!ready}
         onClick={() => practice.togglePlay()}
       />
-      {bar !== undefined && endBar !== undefined && (
-        <span className="text-base font-medium whitespace-nowrap tabular-nums">
-          {many
-            ? m['fix.bars']({ bars: barsLabel(bar, endBar) })
-            : m['fix.bar_one']({ bar: barLabel(bar) })}
+      <div className="flex min-w-0 flex-col">
+        {bar !== undefined && endBar !== undefined && (
+          <span className="text-title whitespace-nowrap tabular-nums">
+            {many
+              ? m['fix.bars']({ bars: barsLabel(bar, endBar) })
+              : m['fix.bar_one']({ bar: barLabel(bar) })}
+          </span>
+        )}
+        <span className="truncate text-caption text-muted-foreground max-lg:hidden">
+          {m['fix.dock_hint']()}
         </span>
-      )}
-      <span className="min-w-0 truncate text-sm text-faint-foreground">{m['fix.dock_hint']()}</span>
+      </div>
       <div className="flex-1" />
       {choices.length > 1 && (
         <ToggleGroup
@@ -369,35 +421,39 @@ export function FixDock() {
           }}
         >
           {choices.map((choice) => (
-            <ToggleGroupItem key={choice} value={choice}>
+            <ToggleGroupItem key={choice} value={choice} className="min-h-target-practice">
               {LISTEN_LABEL[choice]()}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
       )}
-      <div className="flex items-center gap-1" data-slot="fix-speed">
-        <Button
-          variant="box"
-          size="icon-practice"
-          aria-label={m['shortcuts.slower']()}
+      <fieldset
+        aria-label={m['practice.speed']()}
+        className="m-0 flex items-center gap-1 border-0 p-0"
+        data-slot="fix-speed"
+      >
+        <TransportButton
+          tone="box"
+          icon={<MinusIcon aria-hidden />}
+          label={m['shortcuts.slower']()}
+          showLabel={false}
+          shortcut=","
           disabled={player.speedPct <= 50}
           onClick={() => speed(-5)}
-        >
-          <MinusIcon aria-hidden />
-        </Button>
-        <span aria-live="polite" className="w-16 text-center text-lg font-normal tabular-nums">
+        />
+        <span aria-live="polite" className="w-16 text-center text-title tabular-nums">
           {formatPercent(player.speedPct)}
         </span>
-        <Button
-          variant="box"
-          size="icon-practice"
-          aria-label={m['shortcuts.faster']()}
+        <TransportButton
+          tone="box"
+          icon={<PlusIcon aria-hidden />}
+          label={m['shortcuts.faster']()}
+          showLabel={false}
+          shortcut="."
           disabled={player.speedPct >= 100}
           onClick={() => speed(5)}
-        >
-          <PlusIcon aria-hidden />
-        </Button>
-      </div>
+        />
+      </fieldset>
     </div>
   )
 }

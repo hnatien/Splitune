@@ -14,6 +14,15 @@ import viteConfig from './vite.base.ts'
 // Chromium alongside; none in 3 runs at one file, 512 stories in about 190 s). Project names
 // must be unique, so WebKit's project is `storybook-webkit`; its browser keeps the name
 // `storybook (webkit)`, and `--project=storybook*` (`test:stories`) selects both.
+//
+// Playwright's WebKit build for Windows has no Web Audio (no AudioContext at all), so every story
+// that waits for the practice screen's Play button ran out its 15 s there: 237 stories, an hour.
+// PW_WEBKIT_WS_ENDPOINT runs the WebKit project in a Playwright server elsewhere, reaching this
+// machine's Vite server through Playwright's loopback tunnel; `test:stories` (scripts/stories.mjs)
+// starts one in the Linux Playwright image when the local build cannot play, and the project's
+// global setup (scripts/stories-webkit.mjs) stops a direct run that could only time out.
+const { PW_WEBKIT_WS_ENDPOINT: webkitEndpoint } = process.env
+
 const stories = (
   name: string,
   browser: 'chromium' | 'webkit',
@@ -31,10 +40,15 @@ const stories = (
     name,
     sequence: { groupOrder: order },
     ...(maxWorkers ? { maxWorkers } : {}),
+    ...(browser === 'webkit' ? { globalSetup: ['./scripts/stories-webkit.mjs'] } : {}),
     browser: {
       enabled: true,
       headless: true,
-      provider: playwright(),
+      provider: playwright(
+        browser === 'webkit' && webkitEndpoint
+          ? { connectOptions: { wsEndpoint: webkitEndpoint, exposeNetwork: '<loopback>' } }
+          : {},
+      ),
       instances: [{ browser, name: `storybook (${browser})` }],
     },
   },
@@ -43,6 +57,9 @@ const stories = (
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    // Only the import screen's hash worker imports hash-wasm, so Vite found it mid-run and reloaded
+    // every open story ("Invalid hook call") on each run; pre-bundled, it is there from the start.
+    optimizeDeps: { include: ['hash-wasm'] },
     test: {
       projects: [
         {

@@ -91,7 +91,8 @@ export function resolveScreen(input: ScreenInput): Screen {
   const { instrument, layers, view, forceTab, chordsOnly, layout } = input
   const notation = hasNotation(layers)
   const shown = shownView(input)
-  const glance = layout === 'phone-portrait' && shown === 'chords'
+  // Only where there are chords to glance at: Getting ready keeps the paper on every layout.
+  const glance = layout === 'phone-portrait' && shown === 'chords' && layers.chords
   const compactNotes = layout === 'phone-landscape' && view === 'notes'
   // Notes rather than a tab: piano's roll, vocals' melody, drums' grid.
   const notes = layers.roll || layers.melody || layers.drums
@@ -107,13 +108,17 @@ export function resolveScreen(input: ScreenInput): Screen {
           : null
   // The phrases follow the melody while it is shown.
   const phrases = layers.melody && shown === 'tab'
-  const tools = !isPhone(layout) && (scoreTools !== null || pianoOptions !== null)
+  const paper = paperFor(input)
+  // The tab prints its chord names over the staff, so it needs no strip above it; the other
+  // papers keep theirs (the lanes, the chord sheet's Now and Next, piano's keyboard, the phrases).
+  const chordStrip = layers.chords && paper !== 'tab'
+  const tools = !isPhone(layout) && pianoOptions !== null
   return {
     shown,
     glance,
-    paper: paperFor(input),
+    paper,
     compactNotes,
-    strip: !glance && !(compactNotes && shown === 'tab') && (layers.chords || phrases || tools),
+    strip: !glance && !(compactNotes && shown === 'tab') && (chordStrip || phrases || tools),
     scoreTools,
     pianoOptions,
     legend: layers.chords || notation,
@@ -140,8 +145,9 @@ const held = ({ layers, forceTab, chordsOnly }: ScreenInput) =>
   chordsOnly && layers.chords && !forceTab
 
 function shownView(input: ScreenInput) {
-  const { layers, view, layout } = input
-  const wanted = view ?? (layout === 'phone-portrait' ? 'chords' : 'tab')
+  const { layers, view } = input
+  // The notation leads on every layout; a phone's glance view is the Chords choice there.
+  const wanted = view ?? 'tab'
   if (wanted === 'chords' && layers.chords) return 'chords'
   return hasNotation(layers) && !held(input) ? 'tab' : 'chords'
 }
@@ -200,4 +206,20 @@ function viewSwitch(
   // The second notation chosen over the first: piano's and drums' Staff, guitar's Notes.
   const second = layers.roll || layers.drums ? 'staff' : 'notes'
   return { items, selected: shown === 'tab' && view === second ? second : shown }
+}
+
+/** A bar of tab needs about 11 digit heights of width before rests and fret digits start to
+ * touch: 264 px at the desk's 24 px digit, more at the stand's and the floor's reading sizes. */
+const BAR_WIDTH_IN_DIGITS = 11
+/** The score's own side margins inside its pane. */
+const SCORE_MARGIN_PX = 64
+
+/**
+ * Bars a system holds (27 §3.7.1): as many as fit legibly in the pane, one to four. It follows
+ * the pane's width, not the device, so a docked panel, a tablet upright on a stand and a larger
+ * reading size all get fewer, wider bars instead of digits that run together.
+ */
+export function barsPerSystem(paneWidth: number, digitPx: number): number {
+  const fit = Math.floor((paneWidth - SCORE_MARGIN_PX) / (digitPx * BAR_WIDTH_IN_DIGITS))
+  return Math.min(4, Math.max(1, fit))
 }

@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { LinkIcon, MicIcon, UploadIcon, XIcon } from 'lucide-react'
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { client, errorCode, errorData } from '@/lib/api'
 import { m } from '@/lib/i18n'
 import type { InstrumentName } from '@/lib/instruments'
@@ -13,8 +13,8 @@ import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/ui/dialog'
 import { DropZone } from '@/ui/drop-zone'
+import { Field, FieldLabel } from '@/ui/field'
 import { Input } from '@/ui/input'
-import { Label } from '@/ui/label'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import { PopoverContent } from '@/ui/popover-content'
 import { InlineError } from '@/ui/status-message'
@@ -25,7 +25,7 @@ import { type AddTab, rememberTab, usePendingFile } from './add-song-state'
 import { AnalysisChoice, type AnalysisKind, analysisAvailability } from './analysis-choice'
 import { FileRow } from './file-row'
 import { hashFile } from './hash'
-import { isImportableUrl, LinkPanel, type LinkRequest } from './link-panel'
+import { isImportableUrl, LINK_FIELD_ID, LinkPanel, type LinkRequest } from './link-panel'
 import { type Hand, PartPicker } from './part-picker'
 import { RecordPanel } from './record-panel'
 import { DuplicateSongError, startImport } from './upload-manager'
@@ -39,11 +39,18 @@ const titleOf = (file: File) =>
     .trim()
     .slice(0, 200) || file.name
 
+/** What stops a submit, so it can say so beside the cause and move focus there. */
+type Problem = 'no_file' | 'file' | 'duplicate' | 'link' | 'no_recording' | 'allowance'
+
 // Add song (27 §3.6; AddSong and Phone-Add): one 640 px column over the library, a full-screen
-// sheet on phones. The title with its one promise ("It opens right away"), the File · Link · Record
-// segmented control (the last one used remembered), the source, then Your part and Analysis under a
-// hairline. The primary opens Practice at once while the upload and the analysis carry on (27 §2
-// "Add a file"), and an upload keeps going after the dialog closes.
+// sheet on phones. The title with its one promise ("It opens right away"), File · Link · Record
+// as compact tabs (the last one used remembered; focus starts on the chosen tab), the source,
+// then Your part and Analysis under a hairline. The tabs stay put above the body, one scrolling
+// column whose parts keep their own height, so nothing in a tab can draw over the part rows and a
+// scroll to what a submit points at never takes the tabs out of view. The primary is never
+// disabled in advance: pressed too early it says what is missing beside it and moves focus there.
+// It opens Practice at once while the upload and the analysis carry on (27 §2 "Add a file"), and
+// an upload keeps going after the dialog closes.
 export default function AddSongDialog({
   me,
   tab: requested,
@@ -60,7 +67,9 @@ export default function AddSongDialog({
   const [instrument, setInstrument] = useState<InstrumentName>(me.primary_instrument ?? 'guitar')
   const [hand, setHand] = useState<Hand>(me.handedness)
   const available = analysisAvailability(me)
-  const [type, setType] = useState<AnalysisKind>(available.full ? 'full' : 'lite')
+  const [type, setType] = useState<AnalysisKind>(
+    available.full ? 'full' : available.lite ? 'lite' : 'full',
+  )
   const file = usePickedFile()
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
@@ -68,16 +77,20 @@ export default function AddSongDialog({
   const [link, setLink] = useState<LinkRequest>({ url: '', downloadVideo: true })
   const [allowDuplicate, setAllowDuplicate] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [attempted, setAttempted] = useState(false)
   const [failure, setFailure] = useState<string | undefined>()
   const [waitingOnline, setWaitingOnline] = useState(false)
   const [upgrade, setUpgrade] = useState<Trigger | undefined>()
   const fieldId = useId()
+  const head = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
 
   const onFile = useCallback(
     (picked: File) => {
       setTab('file')
       setAllowDuplicate(false)
       setFailure(undefined)
+      setAttempted(false)
       setTitle(titleOf(picked))
       void file.pick(picked)
     },
@@ -95,6 +108,7 @@ export default function AddSongDialog({
   const changeTab = (value: AddTab) => {
     setTab(value)
     setFailure(undefined)
+    setAttempted(false)
     rememberTab(value)
   }
 
@@ -103,17 +117,50 @@ export default function AddSongDialog({
     void client.me.update({ handedness: value }).then(() => reloadMe(queryClient))
   }
 
-  const typeAllowed = type === 'full' ? available.full : available.lite
-  const ready =
-    typeAllowed &&
-    (tab === 'file'
-      ? !file.blocked && (!file.picked?.duplicateOf || allowDuplicate)
+  const reading = tab === 'file' && file.picked?.status === 'reading'
+  const problem: Problem | undefined = !(type === 'full' ? available.full : available.lite)
+    ? 'allowance'
+    : tab === 'file'
+      ? !file.picked
+        ? 'no_file'
+        : file.blocked
+          ? 'file'
+          : file.picked.duplicateOf && !allowDuplicate
+            ? 'duplicate'
+            : undefined
       : tab === 'record'
-        ? recording !== undefined
-        : isImportableUrl(link.url))
+        ? recording
+          ? undefined
+          : 'no_recording'
+        : isImportableUrl(link.url)
+          ? undefined
+          : 'link'
+
+  /** Moves focus to what needs the learner: the field, the file's way out, the allowance. */
+  const focusProblem = (found: Problem) => {
+    const root = body.current
+    if (!root) return
+    const selector: Record<Problem, string> = {
+      link: `#${LINK_FIELD_ID}`,
+      allowance:
+        '[data-analysis] [data-slot=choice-row]:not([data-disabled]), [data-analysis] [data-slot=inline-error] button',
+      no_file: '[data-slot=drop-zone] button',
+      file: '[data-slot=file-card] [data-slot=inline-error] button',
+      duplicate: '[data-slot=file-card] [data-slot=inline-error] button',
+      no_recording: '[data-record] button',
+    }
+    const target = root.querySelector<HTMLElement>(selector[found])
+    target?.focus()
+  }
 
   const submit = async () => {
     setFailure(undefined)
+    if (problem) {
+      setAttempted(true)
+      // After the messages render, so focus lands on what they point at.
+      requestAnimationFrame(() => focusProblem(problem))
+      return
+    }
     if (!online) {
       setWaitingOnline(true)
       return
@@ -176,23 +223,28 @@ export default function AddSongDialog({
     { value: 'link', label: m['import.tab_link'](), Icon: LinkIcon },
     { value: 'record', label: m['import.tab_record'](), Icon: MicIcon },
   ]
+  const show = (kind: Problem) => attempted && problem === kind
 
   return (
     <>
       <Dialog open onOpenChange={(open) => !open && onClose()}>
         <DialogContent
           data-slot="add-song"
+          initialFocus={() =>
+            head.current?.querySelector<HTMLElement>('[data-slot=tabs-trigger][data-active]') ??
+            null
+          }
           className="flex max-h-[calc(100dvh-4rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-160 max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-h-none max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0"
         >
           <div className="flex shrink-0 items-start gap-3 px-4 pt-[calc(env(safe-area-inset-top)+--spacing(4))] sm:px-6 sm:pt-6">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <DialogTitle>{m['import.title']()}</DialogTitle>
-              <DialogDescription className="text-md">{m['import.opens_now']()}</DialogDescription>
+              <DialogDescription>{m['import.opens_now']()}</DialogDescription>
             </div>
             <DialogClose
               render={
                 <Button
-                  variant="ghost"
+                  variant="quiet"
                   size="icon"
                   aria-label={m['system.close']()}
                   className="-mt-2 -mr-2"
@@ -207,8 +259,8 @@ export default function AddSongDialog({
             onValueChange={(value) => changeTab(value as AddTab)}
             className="min-h-0 flex-1 gap-0"
           >
-            <div className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-5">
-              <TabsList look="segmented">
+            <div ref={head} className="shrink-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-5">
+              <TabsList look="pill">
                 {tabs.map(({ value, label, Icon }) => (
                   <TabsTrigger key={value} value={value}>
                     <Icon aria-hidden />
@@ -217,48 +269,51 @@ export default function AddSongDialog({
                 ))}
               </TabsList>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-4 pb-6 sm:px-6">
-              {/* The source keeps one height across tabs, so switching never jolts the settings. */}
-              <div className="flex flex-col sm:min-h-48">
-                <TabsContent value="file" className="flex flex-col gap-4">
-                  {file.picked ? (
-                    <>
-                      <FileRow
-                        picked={file.picked}
-                        onRemove={() => {
-                          file.clear()
-                          setTitle('')
-                        }}
-                        onImportAnyway={() => setAllowDuplicate(true)}
-                      />
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="flex flex-col gap-1.5">
-                          <Label htmlFor={`${fieldId}-title`}>{m['import.title_label']()}</Label>
-                          <Input
-                            id={`${fieldId}-title`}
-                            value={title}
-                            maxLength={200}
-                            onChange={(event) => setTitle(event.target.value)}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          <Label htmlFor={`${fieldId}-artist`}>
-                            {m['import.artist_label']()}{' '}
-                            <span className="font-medium text-faint-foreground">
-                              {m['import.optional']()}
-                            </span>
-                          </Label>
-                          <Input
-                            id={`${fieldId}-artist`}
-                            value={artist}
-                            maxLength={200}
-                            placeholder={m['import.artist_placeholder']()}
-                            onChange={(event) => setArtist(event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
+            <div
+              ref={body}
+              data-slot="add-song-body"
+              className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6"
+            >
+              <TabsContent value="file" className="flex flex-col gap-4">
+                {file.picked ? (
+                  <>
+                    <FileRow
+                      picked={file.picked}
+                      onRemove={() => {
+                        file.clear()
+                        setTitle('')
+                      }}
+                      onImportAnyway={() => setAllowDuplicate(true)}
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor={`${fieldId}-title`}>
+                          {m['import.title_label']()}
+                        </FieldLabel>
+                        <Input
+                          id={`${fieldId}-title`}
+                          value={title}
+                          maxLength={200}
+                          onChange={(event) => setTitle(event.target.value)}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor={`${fieldId}-artist`}>
+                          {m['import.artist_label']()}{' '}
+                          <span className="text-faint-foreground">{m['import.optional']()}</span>
+                        </FieldLabel>
+                        <Input
+                          id={`${fieldId}-artist`}
+                          value={artist}
+                          maxLength={200}
+                          placeholder={m['import.artist_placeholder']()}
+                          onChange={(event) => setArtist(event.target.value)}
+                        />
+                      </Field>
+                    </div>
+                  </>
+                ) : (
+                  <>
                     <DropZone
                       prompt={m['import.drop_prompt']()}
                       chooseLabel={m['import.choose_file']()}
@@ -268,15 +323,17 @@ export default function AddSongDialog({
                       onFiles={([picked]) => picked && onFile(picked)}
                       className="min-h-48 py-8"
                     />
-                  )}
-                </TabsContent>
-                <TabsContent value="link">
-                  <LinkPanel value={link} onChange={setLink} />
-                </TabsContent>
-                <TabsContent value="record">
-                  <RecordPanel onRecording={setRecording} />
-                </TabsContent>
-              </div>
+                    {show('no_file') && <InlineError title={m['import.need_file']()} />}
+                  </>
+                )}
+              </TabsContent>
+              <TabsContent value="link">
+                <LinkPanel value={link} onChange={setLink} checked={show('link')} />
+              </TabsContent>
+              <TabsContent value="record" data-record className="flex flex-col gap-4">
+                <RecordPanel onRecording={setRecording} onUseTab={changeTab} />
+                {show('no_recording') && <InlineError title={m['import.need_recording']()} />}
+              </TabsContent>
               <div className="mt-6 flex flex-col gap-5 border-t border-border pt-4">
                 <PartPicker
                   instrument={instrument}
@@ -284,7 +341,7 @@ export default function AddSongDialog({
                   hand={hand}
                   onHandChange={changeHand}
                 />
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   <AnalysisChoice
                     me={me}
                     type={type}
@@ -320,19 +377,18 @@ export default function AddSongDialog({
               </PopoverTrigger>
               <PopoverContent
                 aria-label={m['import.works_best']()}
-                className="flex w-80 flex-col gap-2 text-sm"
+                className="flex flex-col gap-2 text-body-sm"
               >
                 <p>{m['import.works_best_with']()}</p>
                 <p className="text-muted-foreground">{m['import.has_trouble_with']()}</p>
               </PopoverContent>
             </Popover>
-            <DialogClose render={<Button className="max-sm:hidden" />}>
+            <DialogClose render={<Button variant="quiet" className="max-sm:hidden" />}>
               {m['common.cancel']()}
             </DialogClose>
             <Button
               variant="primary"
-              disabled={!ready}
-              loading={submitting}
+              loading={submitting || reading}
               onClick={submit}
               className="max-sm:w-full max-sm:[--face:3rem]"
             >

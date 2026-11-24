@@ -4,13 +4,10 @@ import type { z } from 'zod'
 import { analytics } from '@/lib/analytics'
 import { formatDuration } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { StepDots } from '@/ui/step-dots'
 import type { ExampleSong } from './examples'
 
-// Pieces the onboarding steps share: the step count and dots, the onboarding answers, the
-// example's summary card and the funnel event each step sends (16 §2).
-
-export const STEP_COUNT = 5
+// Pieces /start and the guide share: the onboarding answers, how an example song is named and
+// the funnel event each step sends (16 §2).
 
 export interface Answers {
   instrument: z.infer<typeof Instrument> | null
@@ -23,29 +20,16 @@ const PART_LABEL = {
   bass_line: () => m['start.part_bass_line'](),
 }
 
-export function StepHeading({ step }: { step: number }) {
-  return (
-    <StepDots
-      step={step}
-      total={STEP_COUNT}
-      text={m['start.step']({ step: String(step), total: String(STEP_COUNT) })}
-      label={m['start.progress']()}
-    />
-  )
+/** "guitar riff", "bass line". */
+export function partOf(example: ExampleSong): string {
+  return PART_LABEL[example.part]()
 }
 
-/** The example's card: title, then artist · part · length. */
-export function SongSummary({ example }: { example: ExampleSong }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4">
-      <span className="text-lg font-medium">{example.title}</span>
-      <span className="text-sm text-muted-foreground">
-        {[example.artist, PART_LABEL[example.part](), formatDuration(example.duration_s)]
-          .filter(Boolean)
-          .join(' · ')}
-      </span>
-    </div>
-  )
+/** The example's meta line: artist · part · length. */
+export function exampleMeta(example: ExampleSong): string {
+  return [example.artist, partOf(example), formatDuration(example.duration_s)]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 export function useStepViewed(

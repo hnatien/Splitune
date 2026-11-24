@@ -4,6 +4,7 @@ import {
   expectAccessible,
   expectNoHorizontalScroll,
   openExample,
+  passQuestion,
   projectContext,
   signIn,
   wav,
@@ -64,33 +65,49 @@ async function expectMode(page: Page, mode: Mode) {
   await expect(root).toHaveAttribute('data-contrast', mode.moreContrast ? 'more' : 'normal')
 }
 
-/** The accessible name (or text) of the focused element; empty when nothing is focused. */
+/** The accessible name (or text) of the focused element; empty when nothing is focused. A
+ * transport control's printed key cap is aria-hidden beside its name, so it is left out. */
 const focusedName = (page: Page) =>
   page.evaluate(() => {
     const el = document.activeElement
     if (!(el instanceof HTMLElement) || el === document.body) return ''
-    return (el.getAttribute('aria-label') ?? el.innerText ?? '').trim()
+    const label = el.getAttribute('aria-label')
+    if (label !== null) return label.trim()
+    const named = el.cloneNode(true) as HTMLElement
+    for (const hidden of named.querySelectorAll('[aria-hidden=true]')) hidden.remove()
+    return (named.textContent ?? '').trim()
   })
 
 /**
  * Moves focus with Tab alone until the focused element's accessible name matches. Safari on macOS
  * tabs between fields only; Option-Tab reaches every control (as Tab does with "Press Tab to
  * highlight each item"), and Playwright's WebKit on macOS behaves the same.
+ *
+ * After the page's last control Firefox hands focus to its own toolbar, which a learner tabs
+ * through and back into the page, and which Playwright cannot reach: focus stays where it was.
+ * From there the search walks back with Shift+Tab, still by keyboard alone.
  */
 async function tabTo(page: Page, name: RegExp, limit = 60) {
-  const key =
+  let key =
     page.context().browser()?.browserType().name() === 'webkit' && process.platform === 'darwin'
       ? 'Alt+Tab'
       : 'Tab'
   for (let i = 0; i < limit; i++) {
     await page.keyboard.press(key)
     if (name.test(await focusedName(page))) return page.locator(':focus')
+    const moved = await page.evaluate(() => {
+      const seen = window as unknown as { tabToLast?: Element | null }
+      const same = seen.tabToLast === document.activeElement
+      seen.tabToLast = document.activeElement
+      return !same
+    })
+    if (!moved && !key.startsWith('Shift+')) key = `Shift+${key}`
   }
   throw new Error(`Tab never reached ${name}`)
 }
 
-// The dock's Mix pill is named by its preset (27 §3.7.1), "Mix" before the stems.
-const MIX_PILL = /^(Your part loud|Minus-one|Original|Mix)\b/
+// The transport's Tools button names the mix in play (27 §3.7.1), "Tools" before the stems.
+const TOOLS = /^(Tools|Your part loud|Minus-one|Rhythm only|Original)\b/
 
 test.describe('axe in every appearance', () => {
   test.describe.configure({ mode: 'serial' })
@@ -107,8 +124,17 @@ test.describe('axe in every appearance', () => {
     await page
       .locator('input[type=file]')
       .setInputFiles({ name: 'Axe check.wav', mimeType: 'audio/wav', buffer: wav(3) })
+    // The page hears that its upload is complete before it is closed. Closed sooner (the server
+    // has the analysis first on a slow link), the next page finishes the upload again and the
+    // API's expected 409 lands in its console.
+    const completed = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/v1\/uploads\/[^/]+\/complete$/.test(new URL(response.url()).pathname),
+    )
     await page.getByRole('button', { name: 'Start practising' }).click()
     await expect(page).toHaveURL(/\/practice/)
+    await completed
     await expect
       .poll(
         async () =>
@@ -224,23 +250,20 @@ test.describe('keyboard and pedal only', () => {
 
     // Onboarding by Tab and Enter.
     await page.goto('/start')
-    await expect(page.getByRole('heading', { name: 'What do you play?' })).toBeVisible()
-    await (await tabTo(page, /^Guitar$/)).press('Enter')
-    await expect(page.getByRole('heading', { name: /level|How long/i }).first()).toBeVisible()
-    await (await tabTo(page, /^Just started/)).press('Enter')
-    await expect(page.getByRole('heading', { name: "Where's your screen?" })).toBeVisible()
-    await (await tabTo(page, /^Skip for now$/)).press('Enter')
-    const card = page.getByRole('dialog', { name: 'Your first song' })
-    await expect(card.getByRole('button', { name: 'Play your part' })).toBeEnabled({
+    await expect(page.getByRole('heading', { level: 1, name: 'Your first song' })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /^Guitar/ })).toBeChecked()
+    await (await tabTo(page, /^Start practising/)).press('Enter')
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled({
       timeout: 90_000,
     })
-    await (await tabTo(page, /^Play your part$/)).press('Enter')
+    await (await tabTo(page, /^Play$/)).press('Enter')
 
     // The suggested loop at 70 %; from here the keys a page-turner pedal sends (12 §8).
     const badge = page.getByRole('button', { name: /^Loop · bars \d+–\d+/ })
-    await expect(badge).toHaveText(/pass 1/, { timeout: 60_000 })
+    await expect(passQuestion(page, 1)).toBeVisible({ timeout: 60_000 })
     await page.keyboard.press('c')
-    await expect(page.getByText(/Best clean pass: 70\s%/).first()).toBeVisible()
+    // Every key is confirmed in words beside the music (27 §3.7.4).
+    await expect(page.getByText('Key C · Felt clean').first()).toBeVisible()
     await page.keyboard.press('n')
     // Faster is '.' (12 §8): ↑/↓ are the pedal's keys and never change speed.
     await page.keyboard.press('.')
@@ -273,9 +296,8 @@ test.describe('keyboard and pedal only', () => {
     await page.keyboard.press('l')
     await expect(page.getByText('Loop on').first()).toBeVisible()
 
-    // The mixer opens from the keyboard: on desktop it is the inspector's Mix tab, which the
-    // dock's Mix pill (named by its preset) opens (27 §3.7.1).
-    await (await tabTo(page, MIX_PILL, 120)).press('Enter')
+    // The mixer opens from the keyboard: X opens the tools panel on its Mix tab (27 §3.7.6).
+    await page.keyboard.press('x')
     await expect(page.getByRole('tab', { name: /^Mix/ })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     expect(errors).toEqual([])
@@ -301,7 +323,9 @@ test.describe('reduced motion', () => {
     ).toEqual([0, 0, 0])
     await play.click()
     await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: MIX_PILL }).click()
+    // Tools opens the closed tools panel; the mixer is its Mix tab (27 §3.7.1).
+    await page.getByRole('button', { name: TOOLS }).click()
+    await page.getByRole('tab', { name: /^Mix/ }).click()
     await expect(page.getByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     // CSS animations and transitions all end at once (26 §10); the score cursor moves by script.
     const running = await page.evaluate(() =>

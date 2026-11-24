@@ -91,10 +91,8 @@ async function main() {
     result.unsupportedPage = true
     // Onboarding to a slowed loop of the example song: AudioWorklet, WASM SIMD, decode, alphaTab.
     await page.goto(`${APP}/start`)
-    await page.getByRole('button', { name: 'Guitar', exact: true }).click()
-    await page.getByRole('button', { name: 'Just started' }).click()
-    await page.getByRole('button', { name: 'Skip' }).click()
-    const play = page.getByRole('button', { name: 'Play your part' })
+    await page.getByRole('button', { name: 'Start practising' }).click()
+    const play = page.getByRole('button', { name: 'Play', exact: true })
     const audioError = page.getByText("We couldn't load the audio for this song.")
     await until(
       async () => (await play.isEnabled().catch(() => false)) || (await audioError.isVisible()),

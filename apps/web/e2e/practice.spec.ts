@@ -1,42 +1,41 @@
 import { expect, type Page, test } from '@playwright/test'
-import { collectErrors, expectAccessible, signIn, wav } from './helpers'
+import { collectErrors, expectAccessible, passQuestion, signIn, wav } from './helpers'
 
 // Step 12 acceptance (prompt 12): the practice screen with the mock-mode artefacts (the contracts'
 // 8-bar Am–F–C–G fixture at 100 BPM) and the real audio engine. Desktop and tablet projects run
-// the practice journey; phones check the glance view. Timings are attached to the test results.
+// the practice journey; phones check the glance view (their Chords view). Every layout opens on
+// the tab (s47). Timings are attached to the test results.
 
 test.describe.configure({ mode: 'serial' })
 
 let page: Page
 let errors: string[]
 let songUrl = ''
-let mobile = false // a phone: the glance view instead of the tab (practice/layout.ts)
-let desktop = true // a fine pointer: the five regions (27 §3.7.1); touch keeps today's layout
+let mobile = false // a phone: two transport rows and the glance view for Chords (practice/layout.ts)
+let desktop = true // a fine pointer: the tools panel docks from 1180 px (27 §3.7.1)
 
 const transport = () => page.getByRole('toolbar', { name: 'Playback' })
 const loopBadge = () => page.getByRole('button', { name: /^(Loop ·|No loop)/ })
 const speedReadout = () => page.getByRole('button', { name: /^Speed: / })
-// Desktop: the dock's mix pill names the preset (or "Mix") and opens the Mix tab; touch: the
-// transport's Mix button opens the mixer drawer.
-const mixControl = () =>
-  transport().getByRole('button', { name: /^(Mix|Your part loud|Minus-one|Original)\b/ })
-// Desktop edits in Fix mode (the inspector's Fix tab); touch in the editor sheet.
+// The transport's Tools button names the mix in play ("Your part loud") or "Tools" before the
+// stems; it opens the tools panel, where the Mix tab holds the mixer.
+const mixControl = () => transport().getByRole('button', { name: MIX_NAME })
+const MIX_NAME = /^(Tools|Your part loud|Minus-one|Rhythm only|Original)\b/
+// Once the stems are in, the Tools button names the mix instead of "Tools".
+const MIXED = /^(Your part loud|Minus-one|Rhythm only|Original)\b/
+async function openMix() {
+  await mixControl().click()
+  await page.getByRole('tab', { name: /^Mix/ }).click()
+}
+// Desktop edits in Fix mode (the tools panel's Fix tab); touch in the editor sheet.
 const editorScope = () =>
   desktop ? page.getByRole('tabpanel') : page.getByRole('dialog', { name: 'Edit this bar' })
-// Desktop opens the loop's first bar from the keyboard (restart, then E edits the playing bar,
-// 12 §8): its chord list is only the next few chords. Touch taps the chord in the strip.
-async function editChord(chord: RegExp) {
-  if (desktop) {
-    await page.locator('#main').focus()
-    await page.keyboard.press('PageUp')
-    await page.keyboard.press('e')
-    return
-  }
-  await page
-    .getByRole('list', { name: 'Chords' })
-    .getByRole('button', { name: chord })
-    .first()
-    .click()
+// From the keyboard on every layout (restart, then E edits the playing bar, 12 §8): the tab
+// carries its chord names over the staff, so there is no strip of chords to tap.
+async function editChord() {
+  await page.locator('#main').focus()
+  await page.keyboard.press('PageUp')
+  await page.keyboard.press('e')
 }
 // Editor note buttons: "A2 · string 5, fret 0" (a low-confidence one adds a hidden "?").
 const NOTE = /· string \d, fret \d+$/
@@ -74,12 +73,10 @@ async function ready() {
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled({
     timeout: 90_000,
   })
-  if (!mobile) {
-    await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
-      timeout: 60_000,
-    })
-    await expect(mixControl()).toBeEnabled()
-  }
+  await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
+    timeout: 60_000,
+  })
+  await expect(mixControl()).toBeEnabled()
 }
 
 test('a song opens in practice and fills in as its analysis lands', async () => {
@@ -130,19 +127,21 @@ test('play, loop bars 3–4 with a count-in, 70 %, felt clean by keyboard, mix a
   await page.keyboard.press('Space')
   await expect(page.locator('[data-slot=count-in]')).toBeVisible()
   await expect(page.locator('[data-slot=count-in]')).toBeHidden({ timeout: 10_000 })
-  // Bars 3–4 last 4.8 s at 100 %, 6.9 s at 70 %.
-  await expect(loopBadge()).toHaveAccessibleName('Loop · bars 3–4, pass 1', { timeout: 20_000 })
+  // Bars 3–4 last 4.8 s at 100 %, 6.9 s at 70 %: then the transport asks how the pass went.
+  await expect(passQuestion(page, 1)).toHaveAccessibleName(/^Pass 1 at 70\s%/, {
+    timeout: 20_000,
+  })
 
   const synced = page.waitForResponse(
     (r) => r.url().includes('/v1/practice/sync') && r.request().method() === 'POST' && r.ok(),
   )
   await page.keyboard.press('c')
-  await expect(page.getByText(/Best clean pass: 70\s%/)).toBeVisible()
+  await expect(page.getByText('Key C · Felt clean').first()).toBeVisible()
   await synced
   await page.keyboard.press('Space')
 
-  // Mix: the Minus-one preset (a radio card, 27 §3.7.4).
-  await mixControl().click()
+  // Mix: the Minus-one preset (27 §3.7.4).
+  await openMix()
   await page.getByRole('radio', { name: /^Minus-one/ }).click()
   await expect(page.getByRole('radio', { name: /^Minus-one/ })).toHaveAttribute(
     'aria-checked',
@@ -155,7 +154,7 @@ test('play, loop bars 3–4 with a count-in, 70 %, felt clean by keyboard, mix a
   const corrections = page.waitForResponse(
     (r) => /\/v1\/artefacts\/.+\/corrections/.test(r.url()) && r.request().method() === 'POST',
   )
-  await editChord(/^F/)
+  await editChord()
   const editor = editorScope()
   await expect(editor.getByLabel('Type a chord')).toBeVisible()
   await editor.getByLabel('Type a chord').fill('Dm')
@@ -171,11 +170,11 @@ test('play, loop bars 3–4 with a count-in, 70 %, felt clean by keyboard, mix a
   await expect(page.getByText('Thanks — this helps').first()).toBeVisible()
   const edited = await noteName(selected)
   await page.keyboard.press('Escape')
-  await expect(
-    desktop
-      ? page.locator('[data-slot=now-chord]')
-      : page.getByRole('list', { name: 'Chords' }).getByRole('button', { name: /^Dm/ }).first(),
-  ).toHaveText(/^Dm/)
+  // The chord sheet (Chords) shows the edit; then back to the tab.
+  const view = page.getByRole('group', { name: 'View' })
+  await view.getByRole('button', { name: 'Chords' }).click()
+  await expect(page.locator('[data-slot=sheet-chord]', { hasText: /^Dm/ }).first()).toBeVisible()
+  await view.getByRole('button', { name: 'Tab' }).click()
 
   // Resume state is a debounced PATCH of the whole player_state.
   const songId = songUrl.split('/')[2] ?? ''
@@ -198,13 +197,13 @@ test('play, loop bars 3–4 with a count-in, 70 %, felt clean by keyboard, mix a
   await ready()
   await expect(loopBadge()).toHaveAccessibleName(/^Loop · bars 3–4/)
   await expect(speedReadout()).toHaveAccessibleName(/70\s%/)
-  await mixControl().click()
+  await openMix()
   await expect(page.getByRole('radio', { name: /^Minus-one/ })).toHaveAttribute(
     'aria-checked',
     'true',
   )
   await page.keyboard.press('Escape')
-  await editChord(/^Dm/)
+  await editChord()
   await expect(editorScope().getByRole('button', { name: edited })).toBeVisible()
   await page.keyboard.press('Escape')
 
@@ -274,8 +273,7 @@ test('a capo change recomputes and redraws the tab', async ({ browserName }, inf
   test.skip(mobile, 'desktop control')
   const notation = page.locator('[data-slot=notation]')
   const previous = await notation.getAttribute('data-update-ms')
-  // The capo is in the level and capo popover (the Now column's card on desktop, the chord strip's
-  // end on touch).
+  // The capo is in the level and capo popover at the end of the key row under the tab.
   await page
     .getByRole('button', { name: /^Level and capo/ })
     .last()
@@ -318,9 +316,10 @@ test('on the desktop editor, a chord and a note edit persist', async () => {
   test.skip(mobile, 'the editor is desktop-first')
   await page.goto(`${songUrl.replace(/\/practice$/, '/edit')}`)
   if (test.info().project.use.hasTouch) {
-    // Touch devices edit in practice's editor sheet (27 §3.8), covered above. The tab loads before
-    // the next test navigates (WebKit reports cancelled worker and font loads as errors).
-    await expect(page).toHaveURL(new RegExp(`${songUrl}$`))
+    // Touch devices edit in practice's editor sheet (27 §3.8), covered above: /edit sends them
+    // to practice on its Fix tab. The tab loads before the next test navigates (WebKit reports
+    // cancelled worker and font loads as errors).
+    await expect(page).toHaveURL(new RegExp(`${songUrl}\\?tab=fix$`))
     await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
       timeout: 60_000,
     })
@@ -411,7 +410,12 @@ test('layers appear one by one without moving the transport', async () => {
   boxes.push(await box())
 
   released = ['beats', 'stems']
-  await expect(mixControl()).toBeEnabled({ timeout: 30_000 })
+  // What works now marks the mixer ready on every layout; where the transport has room for a
+  // label (a fine pointer), Tools names the mix too. Stacked under 1024 px it stays "Tools".
+  await expect(
+    page.locator('[data-slot=list-row]', { hasText: 'Mixer: your part loud or muted' }),
+  ).toContainText('Ready to use', { timeout: 30_000 })
+  if (desktop) await expect(mixControl()).toHaveAccessibleName(MIXED)
   boxes.push(await box())
 
   released = ['beats', 'stems', 'chords']
@@ -430,16 +434,73 @@ test('layers appear one by one without moving the transport', async () => {
 
 test('on a phone the glance view shows the chord, bar and speed', async () => {
   test.skip(!mobile, 'phones only')
+  const view = page.getByRole('group', { name: 'View' })
+  await view.getByRole('button', { name: 'Chords' }).click()
   const glance = page.getByRole('region', { name: 'Current chord', exact: true })
   await expect(glance).toBeVisible()
   await page.getByRole('button', { name: 'Play', exact: true }).click()
-  await expect(glance.getByText(/^Bar \d+\.\d$/)).toBeVisible({ timeout: 15_000 })
+  await expect(glance.getByText(/^Now · bar \d+\.\d$/)).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Pause', exact: true }).click()
-  await page.getByRole('group', { name: 'View' }).getByRole('button', { name: 'Tab' }).click()
+  await view.getByRole('button', { name: 'Tab' }).click()
   await expect(page.getByRole('region', { name: 'Tab', exact: true })).toBeVisible({
     timeout: 30_000,
   })
   await expectAccessible(page)
+})
+
+// The music leads (26 §1.2, s47 direction §2): on a ready song the notation takes at least 70 % of
+// a 1440 × 900 viewport and 55 % of a 375 × 812 one, and the transport keeps every control whole,
+// side by side and at least 44 px, with nothing past its edge.
+test('the notation leads and the transport fits', async ({ browserName }, info) => {
+  const size = mobile ? { width: 375, height: 812 } : desktop ? { width: 1440, height: 900 } : null
+  test.skip(size === null, 'measured on the desktop and phone projects')
+  if (!size) return
+  await page.setViewportSize(size)
+  // The tab on every layout; the phone test before this one may have left Chords as the
+  // song's stored view.
+  await page.goto(`${songUrl}?view=tab`)
+  await ready()
+  const notation = await page.locator('[data-slot=notation]').boundingBox()
+  const share = (notation?.height ?? 0) / size.height
+  info.annotations.push({
+    type: `notation share at ${size.width}×${size.height} (${browserName})`,
+    description: `${(share * 100).toFixed(1)} %`,
+  })
+  expect(share).toBeGreaterThanOrEqual(mobile ? 0.55 : 0.7)
+
+  const bar = transport()
+  expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  const edge = await bar.boundingBox()
+  const controls = await bar.locator('button, [role=slider]').evaluateAll((elements) =>
+    elements
+      .filter((el) => (el as HTMLElement).offsetParent !== null)
+      .map((el) => {
+        const r = el.getBoundingClientRect()
+        return {
+          name: el.getAttribute('aria-label') ?? el.textContent ?? '',
+          left: r.left,
+          top: r.top,
+          right: r.right,
+          bottom: r.bottom,
+        }
+      }),
+  )
+  expect(controls.length).toBeGreaterThan(0)
+  for (const c of controls) {
+    expect(c.right - c.left, c.name).toBeGreaterThanOrEqual(44)
+    expect(c.bottom - c.top, c.name).toBeGreaterThanOrEqual(44)
+    expect(c.left, c.name).toBeGreaterThanOrEqual((edge?.x ?? 0) - 0.5)
+    expect(c.right, c.name).toBeLessThanOrEqual((edge?.x ?? 0) + (edge?.width ?? 0) + 0.5)
+    expect(c.right, c.name).toBeLessThanOrEqual(size.width + 0.5)
+  }
+  for (const [i, a] of controls.entries()) {
+    for (const b of controls.slice(i + 1)) {
+      const overlap =
+        Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+        Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1
+      expect(overlap, `${a.name} / ${b.name}`).toBe(false)
+    }
+  }
 })
 
 test('no console errors', async () => {

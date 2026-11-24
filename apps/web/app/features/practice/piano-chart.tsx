@@ -17,10 +17,11 @@ import { usePracticeUi } from './practice-store'
 // line (about a second of look-ahead and more) is always in view. Reduced motion steps the
 // playhead by beat and jumps the lines. Bars are buttons: tap A then B loops them.
 
-const ink: Record<ConfidenceLevel, string> = {
-  high: 'text-ink',
-  medium: 'text-conf-medium',
-  low: 'text-conf-low',
+// Confidence is the edge, never the ink (26 §5): every chord name stays ink.
+const edge: Record<ConfidenceLevel, string> = {
+  high: '',
+  medium: 'border-dotted border-conf-medium-edge',
+  low: 'border-dashed border-conf-low-edge',
 }
 
 export function PianoChart({
@@ -120,7 +121,7 @@ export function PianoChart({
           {/* The name is the bar's own text: "Bar 3, A♭maj7, B♭7, unsure"; a bar that carries a
               chord on names it for screen readers only. */}
           {first || loop?.startBar === n ? (
-            <span className="absolute top-1.5 left-2 font-reading text-read-bar-number text-conf-medium tabular-nums">
+            <span className="absolute top-1.5 left-2 font-reading text-read-bar-number text-muted-foreground tabular-nums">
               <span className="sr-only">{m['practice.bar_prefix']()} </span>
               {number}
             </span>
@@ -128,7 +129,7 @@ export function PianoChart({
             <span className="sr-only">{`${m['practice.bar_prefix']()} ${number}`}</span>
           )}
           {item.noChord && (
-            <span className="absolute top-[24%] left-3 font-reading text-read-chord-sheet leading-none font-bold text-conf-medium">
+            <span className="absolute top-[24%] left-3 font-reading text-read-chord-sheet leading-none font-medium text-muted-foreground">
               <span className="sr-only">, {m['practice.no_chord']()}</span>
               <span aria-hidden>{m['practice.no_chord_short']()}</span>
             </span>
@@ -144,16 +145,16 @@ export function PianoChart({
                 <span aria-hidden style={{ flexBasis: `${(beat / item.beats) * 100}%` }} />
                 <span
                   data-slot="chart-chord"
+                  data-confidence={chord.confidence}
                   className={cn(
-                    'shrink-0 font-reading text-read-chord-sheet leading-none font-bold',
-                    ink[chord.confidence],
-                    uncertain && 'border-b-2 border-dashed border-current pb-0.5',
+                    '-mt-1 shrink-0 rounded-media border-[1.5px] border-transparent px-1 py-0.5 font-reading text-read-chord-sheet leading-none font-medium text-ink',
+                    uncertain && edge[chord.confidence],
                   )}
                 >
                   <span className="sr-only">, </span>
                   <ChordSymbol name={chord.name} />
                   {uncertain && chord.confidence === 'low' && (
-                    <sup aria-hidden className="ml-0.5 text-[0.55em]">
+                    <sup aria-hidden className="ml-0.5 text-[0.45em] text-conf-low-edge">
                       ?
                     </sup>
                   )}
@@ -175,7 +176,7 @@ export function PianoChart({
                 // biome-ignore lint/suspicious/noArrayIndexKey: beats are positional
                 key={beat}
                 className={cn(
-                  'flex-1 text-center font-reading text-read-chord leading-none font-bold transition-colors duration-(--duration-fast)',
+                  'flex-1 text-center font-reading text-read-chord leading-none font-medium transition-colors duration-(--duration-fast)',
                   current && beat === at.beat ? 'text-ink' : 'text-staff',
                 )}
               >
@@ -183,6 +184,13 @@ export function PianoChart({
               </span>
             ))}
           </span>
+          {current && (
+            <span
+              aria-hidden
+              data-slot="bar-now"
+              className="absolute inset-x-0 bottom-0 h-0.5 bg-score-playhead"
+            />
+          )}
           {current && (
             <span
               ref={cursor}

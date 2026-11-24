@@ -4,6 +4,7 @@ import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
+import { PanelSection } from '@/ui/panel'
 import { Popover } from '@/ui/popover'
 import { PopoverContent } from '@/ui/popover-content'
 import { LadderChip, LadderIcon, SpeedLadder } from '@/ui/speed-ladder'
@@ -19,8 +20,8 @@ import {
 } from './model/ladder'
 import { usePractice } from './practice-context'
 
-// The Speed ladder section of the Loop tab (27 §3.7.4, Main.dc.html; 12 §5), set off by a hairline
-// rather than a card: the switch, the rungs
+// The Speed ladder section of the Loop tab (27 §3.7.4, Main.dc.html; 12 §5), a panel section set
+// off by a hairline rather than a card: the switch, the rungs
 // from start to goal, what the next clean pass does, and a chip per setting that opens its
 // stepper (Start, Goal, Step, clean passes; More: back down after misses, count-in before each
 // pass, at the goal). Every number is the learner's to change: the ladder is a default, not a
@@ -149,7 +150,7 @@ function MoreChip({
               next !== null && onChange({ drop_after_misses: Math.round(next) })
             }
           />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-body-sm text-muted-foreground">
             {misses === 0
               ? m['ladder.back_down_off']()
               : misses === 1
@@ -157,7 +158,7 @@ function MoreChip({
                 : m['ladder.back_down_hint']({ misses: String(misses) })}
           </p>
         </div>
-        <div className="flex min-h-target-practice-2 items-center gap-3">
+        <div className="flex min-h-target-practice items-center gap-3">
           <Switch
             id={countInId}
             checked={settings.count_in_each_pass}
@@ -191,14 +192,10 @@ export function LadderCard() {
     if (settings) practice.setLadder(withSetting(settings, patch))
   }
   return (
-    <section
-      aria-labelledby={titleId}
-      data-slot="ladder-card"
-      className="flex flex-col gap-3 border-t border-border pt-3"
-    >
-      <div className="flex min-h-target-practice-2 items-center gap-2.5">
-        <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-primary-ink" />
-        <h3 id={titleId} className="min-w-0 flex-1 text-lg">
+    <PanelSection aria-labelledby={titleId} data-slot="ladder-card">
+      <div className="flex min-h-target-practice items-center gap-2.5">
+        <LadderIcon aria-hidden strokeWidth={1.8} className="size-5 text-muted-foreground" />
+        <h3 id={titleId} className="min-w-0 flex-1 text-label">
           {m['ladder.title']()}
         </h3>
         <Switch
@@ -219,10 +216,10 @@ export function LadderCard() {
       {settings && view ? (
         <>
           <SpeedLadder rungs={view.rungs} current={view.current} label={ladderLabel(view)} />
-          <p className="text-sm text-muted-foreground tabular-nums">
+          <p className="text-body-sm text-muted-foreground tabular-nums">
             {summary(settings, view, view.speedPct)}
           </p>
-          <div className="-my-2 flex flex-wrap gap-x-1.5">
+          <div className="-my-1 flex flex-wrap gap-x-1">
             <StepperChip
               chip={m['ladder.chip_start']({ speed: formatPercent(settings.start_pct) })}
               label={m['ladder.start']()}
@@ -278,8 +275,8 @@ export function LadderCard() {
           </div>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">{m['ladder.off_hint']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['ladder.off_hint']()}</p>
       )}
-    </section>
+    </PanelSection>
   )
 }

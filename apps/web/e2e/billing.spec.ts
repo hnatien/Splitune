@@ -28,6 +28,8 @@ async function importLink(type: 'Full' | 'Lite') {
   await page.getByRole('radio', { name: new RegExp(`^${type}`) }).check()
   await page.getByRole('button', { name: 'Add and analyse' }).click()
   await expect(page).toHaveURL(/\/songs\/[0-9a-f-]+\/practice/)
+  // Practice has opened (WebKit lets the next goto race the route's own settling otherwise).
+  await expect(page.getByRole('toolbar', { name: 'Playback' })).toBeVisible()
   const songId = new URL(page.url()).pathname.split('/')[2] as string
   songs.push(songId)
   return songId
@@ -96,10 +98,9 @@ test.afterAll(async () => {
 test('billing: pricing shows Free and Plus without card fields or dark patterns', async () => {
   await page.goto('/pricing')
   await expect(page.getByText('Demo mode — no real charges. Payments are simulated.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Monthly' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  // The billing period is two equal choice rows, monthly chosen (23 §5).
+  await expect(page.getByRole('radio', { name: /Monthly/ })).toBeChecked()
+  await expect(page.getByRole('radio', { name: /Yearly/ })).not.toBeChecked()
   await expect(page.getByText('$9.99 a month')).toBeVisible()
   await expect(page.getByText('$79.99 a year')).toBeVisible()
   await expect(page.getByText(/most popular/i)).toHaveCount(0)
@@ -133,14 +134,21 @@ test('billing: the Lite allowance runs out with its exact limit and reset date',
   // Nothing can start: Full is Plus' and Lite is used up (`/import` opens Add song on File).
   await page.getByRole('tab', { name: 'Link' }).click()
   await expect(page.getByRole('radio', { name: /^Lite/ })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Add and analyse' })).toBeDisabled()
+  // The submit is never disabled in advance: pressed, it starts nothing and the reason stays.
+  await page.getByRole('button', { name: 'Add and analyse' }).click()
+  await expect(page.getByRole('tab', { name: 'Link' })).toBeVisible()
+  await expect(
+    page.getByText(/You've used this month's 5 Lite analyses\. They reset on \d+ \w+/),
+  ).toBeVisible()
+  await expect(page).not.toHaveURL(/\/practice/)
 })
 
 test('billing: a declined payment changes nothing, a successful one upgrades to Plus', async () => {
   await page.getByRole('button', { name: 'See Plus' }).first().click()
   await expect(page.getByRole('heading', { name: 'Plus gives you' })).toBeVisible()
   await expect(page.getByRole('radio', { name: /Monthly/ })).toBeChecked()
-  await expectNoCardInputs(page, '[data-slot=drawer-popup]')
+  // A dialog on wide screens, a bottom sheet on phones: both are role=dialog, over Add song's.
+  await expectNoCardInputs(page, page.getByRole('dialog', { name: 'Plus gives you' }))
   await expectAccessible(page)
   await page.getByRole('button', { name: 'Continue to checkout' }).click()
 

@@ -2,52 +2,50 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { Kbd } from '@/ui/kbd'
 import { Spinner } from '@/ui/spinner'
 
 // Doc 26 §12.1. Every button is a pill. Each size paints its face (`--face` tall) and pads the
-// border box out to the target with a transparent border (§8, V12: 44 browse, 48 practice density);
-// the edge is an inset ring on the face and focus sits 2 px off the face. Primary is the ink itself
-// (white on black, black on white); secondary is a quiet fill with no edge. Disabled is a muted
-// face, faint text and a ≥ 3:1 edge, never an opacity fade.
+// border box out to the target with a transparent border (§8: 44 browse, 48 practice density); the
+// edge is an inset ring on the face and focus sits 2 px off the face. One `primary` per view: the
+// ink itself. `outline` is the everyday button, `quiet` the one that recedes into the chrome, and
+// `selected` an "on" state drawn as the 1.5 px ink edge (never a grey fill). Disabled keeps a
+// ≥ 3:1 edge and faint text on no fill, never an opacity fade.
 const buttonStyles = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full border-(length:--pad) border-transparent bg-clip-padding font-medium whitespace-nowrap inset-ring transition-[color,background-color,box-shadow,filter,transform] duration-(--duration-base) ease-standard select-none [--pad:calc((max(var(--control-size),var(--face))-var(--face))/2)] focus-visible:outline-offset-[calc(2px-var(--pad))] active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:bg-muted disabled:text-faint-foreground disabled:inset-ring-input aria-disabled:pointer-events-none aria-disabled:bg-muted aria-disabled:text-faint-foreground aria-disabled:inset-ring-input aria-invalid:inset-ring-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 [&_.lucide]:stroke-[1.8]",
+  "group/button relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full border-(length:--pad) border-transparent bg-clip-padding font-medium whitespace-nowrap inset-ring transition-[color,background-color,box-shadow,transform] duration-(--duration-fast) ease-standard select-none [--pad:calc((max(var(--control-size),var(--face))-var(--face))/2)] focus-visible:outline-offset-[calc(2px-var(--pad))] active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:not-data-loading:bg-transparent disabled:not-data-loading:text-faint-foreground disabled:not-data-loading:inset-ring-transparent disabled:not-data-loading:outline-1 disabled:not-data-loading:-outline-offset-(--pad) disabled:not-data-loading:outline-dashed disabled:not-data-loading:outline-edge aria-disabled:pointer-events-none aria-disabled:not-data-loading:bg-transparent aria-disabled:not-data-loading:text-faint-foreground aria-disabled:not-data-loading:inset-ring-transparent aria-disabled:not-data-loading:outline-1 aria-disabled:not-data-loading:-outline-offset-(--pad) aria-disabled:not-data-loading:outline-dashed aria-disabled:not-data-loading:outline-edge aria-invalid:inset-ring-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 [&_.lucide]:stroke-[1.8]",
   {
     variants: {
       variant: {
         primary:
           'bg-primary text-primary-foreground inset-ring-transparent hover:bg-primary-hover aria-expanded:bg-primary-hover',
-        secondary:
-          'bg-muted text-foreground inset-ring-transparent hover:bg-accent aria-expanded:bg-accent',
-        quiet: 'text-foreground inset-ring-border-strong hover:bg-muted aria-expanded:bg-muted',
-        outline: 'text-foreground inset-ring-border-strong hover:bg-muted aria-expanded:bg-muted',
-        ghost:
-          'text-muted-foreground inset-ring-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
-        box: 'bg-card text-muted-foreground inset-ring-border-strong hover:bg-muted hover:text-foreground',
-        on: 'bg-primary-soft text-primary-ink inset-ring-primary-line',
+        outline:
+          'text-foreground inset-ring-border-strong hover:bg-hover hover:inset-ring-edge aria-expanded:bg-hover aria-expanded:inset-ring-edge',
+        quiet:
+          'text-muted-foreground inset-ring-transparent hover:bg-hover hover:text-foreground aria-expanded:bg-hover aria-expanded:text-foreground',
+        selected: 'text-foreground inset-ring-[1.5px] inset-ring-selected hover:bg-hover',
         destructive: 'text-destructive inset-ring-destructive hover:bg-destructive-surface',
         destructiveSolid:
           'bg-destructive text-destructive-foreground inset-ring-transparent hover:brightness-106',
-        link: 'text-primary-ink underline underline-offset-4 inset-ring-transparent hover:decoration-2 disabled:bg-transparent disabled:inset-ring-transparent',
+        link: 'text-foreground underline underline-offset-4 inset-ring-transparent hover:decoration-2 disabled:inset-ring-transparent',
       },
       size: {
-        sm: 'min-h-[max(var(--control-size),var(--face))] px-3.5 text-sm font-medium [--face:2rem] [&_svg:not([class*=size-])]:size-4',
-        md: 'min-h-[max(var(--control-size),var(--face))] px-4.5 text-md [--face:2.5rem]',
-        lg: 'min-h-[max(var(--control-size),var(--face))] px-6 text-button-lg [--face:3rem]',
-        xl: 'min-h-14 px-7 text-button-lg [--face:3.5rem]',
-        'practice-2':
-          'min-h-target-practice-2 px-5.5 text-md [--face:3rem] [&_svg:not([class*=size-])]:size-6',
+        sm: 'min-h-[max(var(--control-size),var(--face))] px-3.5 text-label-sm [--face:2.25rem] [&_svg:not([class*=size-])]:size-4',
+        md: 'min-h-[max(var(--control-size),var(--face))] px-4.5 text-label [--face:2.5rem]',
+        lg: 'min-h-[max(var(--control-size),var(--face))] px-6 text-title [--face:3rem]',
+        xl: 'min-h-14 px-7 text-title [--face:3.5rem]',
         practice:
-          'min-h-target-practice px-7 text-lg [--face:4rem] [&_svg:not([class*=size-])]:size-6',
+          'min-h-target-practice px-5 text-label [--face:3rem] [&_svg:not([class*=size-])]:size-5',
+        play: 'min-h-target-play px-7 text-title [--face:4rem] [&_svg:not([class*=size-])]:size-6',
         'icon-sm':
-          'size-[max(var(--control-size),var(--face))] [--face:2rem] [&_svg:not([class*=size-])]:size-4',
+          'size-[max(var(--control-size),var(--face))] [--face:2.25rem] [&_svg:not([class*=size-])]:size-4',
         icon: 'size-[max(var(--control-size),var(--face))] [--face:2.5rem]',
-        'icon-practice-2': 'size-13 [--face:3.25rem] [&_svg:not([class*=size-])]:size-6',
-        'icon-practice': 'size-target-practice [--face:4rem] [&_svg:not([class*=size-])]:size-6',
+        'icon-practice': 'size-target-practice [--face:3rem] [&_svg:not([class*=size-])]:size-5',
+        'icon-play': 'size-target-play [--face:4rem] [&_svg:not([class*=size-])]:size-7',
       },
       block: { true: 'w-full' },
     },
     defaultVariants: {
-      variant: 'secondary',
+      variant: 'outline',
       size: 'md',
     },
   },
@@ -66,8 +64,10 @@ export const SPINNER_DELAY_MS = 300
 
 type ButtonProps = ButtonPrimitive.Props &
   VariantProps<typeof buttonStyles> & {
-    /** Keeps the width, blocks presses and shows a spinner after 300 ms. */
+    /** Blocks presses, keeps the label and shows a spinner beside it after 300 ms. */
     loading?: boolean
+    /** The key that does the same thing, shown as a key cap after the label (26 §12.1). */
+    shortcut?: string
     /** Added to the accessible name while disabled ("Unavailable", 26 §12.3). */
     unavailableLabel?: string
   }
@@ -78,6 +78,7 @@ function Button({
   size,
   block,
   loading = false,
+  shortcut,
   unavailableLabel,
   children,
   ...props
@@ -95,6 +96,8 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
+      data-variant={variant ?? 'outline'}
+      aria-keyshortcuts={shortcut}
       data-loading={loading || undefined}
       aria-busy={loading || undefined}
       focusableWhenDisabled={loading}
@@ -106,21 +109,18 @@ function Button({
       {...props}
       disabled={props.disabled || loading}
     >
-      <span
-        className={cn(
-          'inline-flex items-center justify-center gap-[inherit]',
-          showSpinner && 'opacity-0',
-        )}
-      >
-        {children}
-        {props.disabled && !loading && unavailableLabel && (
-          <span className="sr-only">, {unavailableLabel}</span>
-        )}
-      </span>
-      {showSpinner && (
-        <span className="absolute inset-0 grid place-items-center">
-          <Spinner aria-hidden />
-        </span>
+      {showSpinner && <Spinner aria-hidden />}
+      {children}
+      {shortcut && (
+        <Kbd
+          aria-hidden
+          className="pointer-coarse:hidden group-data-[variant=primary]/button:border-primary-foreground group-data-[variant=primary]/button:text-primary-foreground"
+        >
+          {shortcut}
+        </Kbd>
+      )}
+      {props.disabled && !loading && unavailableLabel && (
+        <span className="sr-only">, {unavailableLabel}</span>
       )}
     </ButtonPrimitive>
   )

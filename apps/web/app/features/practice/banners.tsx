@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { client } from '@/lib/api'
 import { m } from '@/lib/i18n'
-import { isFallback, stageFailureMessage } from '@/lib/reasons'
+import { isFallback, type StageFailure, stageFailureMessage } from '@/lib/reasons'
 import { track } from '@/lib/track'
 import { useOnline } from '@/lib/use-online'
 import { Button } from '@/ui/button'
@@ -11,10 +11,12 @@ import { useRecommendedView, useScreen } from './notation-pane'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
-// Practice banners (27 §3.7.3, §3.11, §5.6), card-style StatusMessage banners: the chords-only
+// Practice banners (27 §3.7.3, §3.11, §5.6), each one quiet line above the music (a glyph, the
+// words and at most one everyday button, never a tinted bar, and never a second filled control
+// beside Play): the chords-only
 // fallback with "Show tab anyway", the rough-part banner ("Your part didn't separate cleanly, so
 // the tab may be rougher." · Show chords instead), stage fallbacks ("Stems are unavailable right
-// now…"), stems removed after 180 days unused with "Re-create stems", "Playback paused by another
+// now…"; for separation, what's ready in plain words with Try again), stems removed after 180 days unused with "Re-create stems", "Playback paused by another
 // app or a call." with Tap to resume, the audio that couldn't load, and once per device, where the
 // screen can't be kept on, the screen tip from the first play (24 §3). The evening "Try Stage" hint
 // is retired (26 §2): Dark is already the default.
@@ -91,7 +93,7 @@ export function PracticeBanners() {
           }
           actions={
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => {
                 usePracticeUi.setState({ forceTab: true })
@@ -103,9 +105,13 @@ export function PracticeBanners() {
           }
         />
       )}
-      {failures.map((failure) => (
-        <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
-      ))}
+      {failures.map((failure) =>
+        stemsFailed(failure) ? (
+          <StemsUnavailable key={failure.stage} />
+        ) : (
+          <Banner key={failure.stage} tone="warning" title={stageFailureMessage(failure)} />
+        ),
+      )}
       {data.stemsExpired && <StemsExpired />}
       {roughPart && (
         <Banner
@@ -113,7 +119,7 @@ export function PracticeBanners() {
           title={m['practice.rough_part']()}
           actions={
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => {
                 usePracticeUi.setState({ view: 'chords', forceTab: false })
@@ -131,7 +137,7 @@ export function PracticeBanners() {
           tone="info"
           title={m['practice.interrupted']()}
           actions={
-            <Button variant="primary" size="sm" onClick={() => togglePlay()}>
+            <Button variant="outline" size="sm" onClick={() => togglePlay()}>
               {m['practice.tap_to_resume']()}
             </Button>
           }
@@ -154,35 +160,54 @@ export function PracticeBanners() {
   )
 }
 
+// Separation failed and the pipeline went on without stems (06 §6), the case reasons.ts names
+// stems_unavailable.
+const stemsFailed = ({ stage, fallback }: StageFailure) =>
+  fallback === 'stems_unavailable' ||
+  (fallback === undefined && (stage === 'separate' || stage === 'stem_post'))
+
 // A re-run of the analysis re-creates the stems; it uses no allowance (the API's rerun).
-function StemsExpired() {
+function Rerun({ label }: { label: string }) {
   const { data } = usePractice()
   const [busy, setBusy] = useState(false)
   const analysisId = data.analysis.data?.id
+  if (!analysisId) return null
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      loading={busy}
+      onClick={async () => {
+        setBusy(true)
+        try {
+          await client.analyses.rerun({ id: analysisId })
+          await data.song.refetch()
+        } finally {
+          setBusy(false)
+        }
+      }}
+    >
+      {label}
+    </Button>
+  )
+}
+
+function StemsUnavailable() {
+  return (
+    <Banner
+      tone="warning"
+      title={m['practice.stems_unavailable']()}
+      actions={<Rerun label={m['common.try_again']()} />}
+    />
+  )
+}
+
+function StemsExpired() {
   return (
     <Banner
       tone="info"
       title={m['practice.stems_expired']()}
-      actions={
-        analysisId && (
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={busy}
-            onClick={async () => {
-              setBusy(true)
-              try {
-                await client.analyses.rerun({ id: analysisId })
-                await data.song.refetch()
-              } finally {
-                setBusy(false)
-              }
-            }}
-          >
-            {m['library.recreate_stems']()}
-          </Button>
-        )
-      }
+      actions={<Rerun label={m['library.recreate_stems']()} />}
     />
   )
 }

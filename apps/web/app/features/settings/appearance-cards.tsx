@@ -1,31 +1,28 @@
-import { Radio as RadioPrimitive } from '@base-ui/react/radio'
-import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group'
-import { useId } from 'react'
-import { cn } from '@/lib/utils'
+import { ChoiceRow, ChoiceRowGroup } from '@/ui/choice-row'
 
-// The three appearance cards (26 §2, D2; Settings-Display): a themed miniature over the name and
-// its hint. Each miniature is a subtree carrying `data-appearance`, so it paints that theme's own
-// tokens (never raw colours); "Follow my device" shows both halves. Checked = the radio-card edge
-// (1 px --signal border + 1 px inset ring, 26 §12.3), so the state never rests on colour alone.
+// The three appearances (26 §2, D2; Settings-Display) as choice rows (26 §12.1): a small themed
+// swatch, the name and its hint; the chosen row has the ink edge and a check. Each swatch is a
+// subtree carrying `data-appearance`, so it paints that theme's own tokens (never raw colours);
+// "Follow my device" shows both halves.
 
 type Choice = 'dark' | 'light' | 'system'
 
-// Sample data in a decorative miniature, not copy (27 "Mockups").
-const MINIATURE_CHORD = 'C'
-
-function Miniature({ appearance }: { appearance: 'dark' | 'light' }) {
+function Swatch({ appearance }: { appearance: Choice }) {
+  const half = (theme: 'dark' | 'light') => (
+    <span data-appearance={theme} className="flex flex-1 items-center bg-background px-1.5">
+      <span className="h-0.5 w-full rounded-full bg-foreground" />
+    </span>
+  )
   return (
-    <span
-      data-appearance={appearance}
-      className="flex h-full flex-1 items-center gap-2.5 bg-background px-3.5 text-foreground"
-    >
-      <span className="text-3xl font-medium">{MINIATURE_CHORD}</span>
-      <span className="flex h-10 flex-1 flex-col justify-between">
-        {[0, 1, 2, 3, 4].map((line) => (
-          <span key={line} className="h-px bg-staff" />
-        ))}
-      </span>
-      <span className="size-4.5 rounded-full bg-primary" />
+    <span aria-hidden className="flex h-8 w-12 overflow-hidden rounded-media border border-edge">
+      {appearance === 'system' ? (
+        <>
+          {half('dark')}
+          {half('light')}
+        </>
+      ) : (
+        half(appearance)
+      )}
     </span>
   )
 }
@@ -42,56 +39,20 @@ export function AppearanceCards({
   onChange: (value: Choice) => unknown
 }) {
   return (
-    <RadioGroupPrimitive
+    <ChoiceRowGroup
       aria-label={label}
       value={value}
       onValueChange={(next) => void onChange(next as Choice)}
-      className="grid grid-cols-[repeat(auto-fit,minmax(min(13.75rem,100%),1fr))] gap-3"
     >
       {options.map((option) => (
-        <AppearanceCard key={option.value} {...option} />
+        <ChoiceRow
+          key={option.value}
+          value={option.value}
+          icon={<Swatch appearance={option.value} />}
+          label={option.label}
+          description={option.hint}
+        />
       ))}
-    </RadioGroupPrimitive>
-  )
-}
-
-function AppearanceCard({ value, label, hint }: { value: Choice; label: string; hint: string }) {
-  const labelId = useId()
-  const hintId = useId()
-  return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: Base UI's Radio renders the control inside
-    <label
-      className={cn(
-        'flex cursor-pointer flex-col gap-3 rounded-xl border border-border p-3 transition-colors duration-(--duration-fast) pointer-fine:hover:bg-muted contrast-more:border-input',
-        'has-data-checked:border-signal has-data-checked:inset-ring has-data-checked:inset-ring-signal',
-        'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring',
-        'forced-colors:has-data-checked:outline-2 forced-colors:has-data-checked:outline-solid',
-      )}
-    >
-      <span aria-hidden className="flex h-21 overflow-hidden rounded-md border border-border">
-        {value === 'system' ? (
-          <>
-            <span data-appearance="dark" className="flex-1 bg-background" />
-            <span data-appearance="light" className="flex-1 bg-background" />
-          </>
-        ) : (
-          <Miniature appearance={value} />
-        )}
-      </span>
-      <RadioPrimitive.Root
-        value={value}
-        aria-labelledby={labelId}
-        aria-describedby={hintId}
-        className="sr-only"
-      />
-      <span className="flex min-w-0 flex-col">
-        <span id={labelId} className="text-base font-medium">
-          {label}
-        </span>
-        <span id={hintId} className="text-sm text-muted-foreground">
-          {hint}
-        </span>
-      </span>
-    </label>
+    </ChoiceRowGroup>
   )
 }

@@ -2,6 +2,7 @@ import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
+/** A floating layer (s47 direction §4): --raised, one hairline, 14 px corners, --elevation-popover. */
 function PopoverContent({
   className,
   align = 'center',
@@ -23,7 +24,7 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            'flex w-80 max-w-[calc(100vw-2rem)] origin-(--transform-origin) flex-col gap-3 rounded-3xl border border-border bg-popover p-4 text-sm text-popover-foreground shadow-2 duration-(--duration-base) data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
+            'flex w-80 max-w-[calc(100vw-2rem)] origin-(--transform-origin) flex-col gap-3 rounded-panel border border-border bg-raised p-4 text-body-sm text-foreground shadow-popover duration-(--duration-base) data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
             className,
           )}
           {...props}
@@ -43,7 +44,7 @@ function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
   return (
     <PopoverPrimitive.Title
       data-slot="popover-title"
-      className={cn('text-lg', className)}
+      className={cn('text-title', className)}
       {...props}
     />
   )

@@ -65,6 +65,8 @@ test('passes on a loop show on the Progress tab with the cold pass and today’s
     await synced
   }
 
+  // The tools panel is closed until asked for: X opens it (on Mix), then its Progress tab.
+  await page.keyboard.press('x')
   await page.getByRole('tab', { name: 'Progress' }).click()
   const panel = page.getByRole('tabpanel')
   await expect(panel.getByRole('heading', { name: 'Bars 3–4' })).toBeVisible()
@@ -73,8 +75,10 @@ test('passes on a loop show on the Progress tab with the cold pass and today’s
       name: 'Best clean speed 70 percent in one session. First clean pass 70 percent.',
     }),
   ).toBeVisible()
-  await expect(panel.locator('dd', { hasText: /^70\s%$/ })).toBeVisible()
-  await expect(panel.locator('dd', { hasText: '2 / 3' })).toBeVisible()
+  // Today's figures (Stat: the figure over its label).
+  const today = panel.getByRole('group', { name: 'Today' })
+  await expect(today.locator('[data-slot=stat]', { hasText: /^70\s%/ })).toBeVisible()
+  await expect(today.locator('[data-slot=stat]', { hasText: /^2 \/ 3/ })).toBeVisible()
   const sessions = panel.getByRole('region', { name: 'Sessions' }).getByRole('listitem')
   await expect(sessions).toHaveCount(1)
   await expect(sessions.first()).toContainText(/^Today.*3 passes.*best 70\s%$/)
@@ -83,7 +87,7 @@ test('passes on a loop show on the Progress tab with the cold pass and today’s
 test('the library picks up the clip, today’s first clean pass and this week', async () => {
   await page.goto('/library')
   const lead = page.getByRole('region', { name: 'Pick up where you left off' })
-  await expect(lead.getByRole('heading', { level: 1, name: 'Progress riff' })).toBeVisible()
+  await expect(lead.getByRole('heading', { level: 2, name: 'Progress riff' })).toBeVisible()
   await expect(lead).toContainText(/bars 3–4 · today, \d+\smin/)
   await expect(lead.getByText(/^Today's first clean pass: 70\s%$/)).toBeVisible()
   await expect(lead.getByText(/^Best clean 70\s%$/)).toBeVisible()

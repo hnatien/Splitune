@@ -1,10 +1,12 @@
 import { chordShapes, transposeChord } from '@splitune/music-core'
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { usePracticeDefaults } from '@/lib/display-store'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { ChordSymbol } from '@/ui/chord-chip'
 import { ChordShape } from './chord-shape'
 import type { Paper } from './model/screen'
-import { chordsInBar } from './model/view-model'
+import { type ChordModel, chordsInBar } from './model/view-model'
 import { PianoChart } from './piano-chart'
 import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
@@ -73,6 +75,7 @@ function BarSheet({
 }) {
   const { grid, view, player, audio, data, options } = usePractice()
   const selection = usePracticeUi((s) => s.selection)
+  const showUncertainty = usePracticeDefaults((s) => s.showUncertainty)
   const [current, setCurrent] = useState<number | null>(null)
   useEffect(() => {
     if (!grid) return
@@ -95,7 +98,7 @@ function BarSheet({
       aria-label={m['practice.chord_sheet']()}
       data-slot="chord-sheet"
       className={cn(
-        'min-h-0 flex-1 overflow-y-auto bg-paper px-4 py-4 text-ink motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter',
+        '@container min-h-0 flex-1 overflow-y-auto bg-paper px-3 py-4 text-ink sm:px-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-(--duration-base) motion-safe:ease-enter',
         className,
       )}
     >
@@ -111,47 +114,76 @@ function BarSheet({
                   capo={options.capo}
                 />
                 <span aria-hidden className="font-reading text-read-label">
-                  {chord.name}
+                  <ChordSymbol name={chord.name} />
                 </span>
               </li>
             ) : null,
           )}
         </ul>
       )}
-      <ol className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
+      <ol className="grid grid-cols-2 gap-y-3 border-r border-staff @2xl:grid-cols-4">
         {grid.bars.map((bar) => {
           const chords = chordsInBar(view.chords, grid, bar)
-          const inLoop =
-            player.loop !== null && bar >= player.loop.startBar && bar <= player.loop.endBar
+          const loop = player.loop
+          const inLoop = loop !== null && bar >= loop.startBar && bar <= loop.endBar
           const armed = selection.kind === 'armed' && selection.bar === bar
+          const now = current === bar
           return (
-            <li key={bar}>
+            <li key={bar} className="min-w-0">
               <button
                 type="button"
                 data-slot="bar-target"
                 data-bar={bar}
                 aria-pressed={inLoop}
-                aria-current={current === bar ? 'true' : undefined}
+                aria-current={now ? 'true' : undefined}
                 onClick={() => onBarActivate(bar)}
                 className={cn(
-                  'flex min-h-24 w-full flex-col items-start gap-1 rounded-xl border-l-2 bg-transparent px-3 py-2 text-left',
-                  inLoop ? 'border-score-loop-edge bg-score-loop-fill' : 'border-staff',
-                  armed && 'outline-2 outline-dashed outline-score-loop-edge',
-                  current === bar && 'border-b-2 border-b-ink bg-bar-current',
+                  'relative flex min-h-24 w-full flex-col items-start gap-2 border-l border-staff bg-transparent px-3 pt-2 pb-3 text-left transition-colors duration-(--duration-fast) hover:bg-hover',
+                  // The loop is a band with an ink line along its top and ink at its ends; the
+                  // bar playing has the wash with a 2 px ink line under it (26 §4.5).
+                  inLoop && 'border-t-2 border-t-score-loop-edge bg-score-loop-fill',
+                  loop?.startBar === bar && 'border-l-2 border-l-score-loop-edge',
+                  now && 'bg-bar-current',
+                  armed && 'outline-2 -outline-offset-2 outline-score-loop-edge outline-dashed',
                 )}
               >
-                <span className="font-reading text-read-bar-number tabular-nums">
+                {now && (
+                  <span
+                    aria-hidden
+                    data-slot="bar-now"
+                    className="absolute inset-x-0 bottom-0 h-0.5 bg-score-playhead"
+                  />
+                )}
+                {loop?.endBar === bar && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 right-0 w-0.5 bg-score-loop-edge"
+                  />
+                )}
+                <span className="flex w-full items-baseline justify-between gap-2 font-reading text-read-bar-number text-muted-foreground tabular-nums">
                   {bar < 0 ? (
                     m['practice.pickup']()
                   ) : (
-                    <>
+                    <span>
                       <span className="sr-only">{m['practice.bar_prefix']()} </span>
                       {bar + 1}
-                    </>
+                    </span>
+                  )}
+                  {loop?.startBar === bar && (
+                    <span aria-hidden className="text-label-sm text-foreground">
+                      {m['practice.loop']()}
+                    </span>
                   )}
                 </span>
-                <span className="font-reading text-read-chord">
-                  {chords.map((c) => c.name).join('  ') || m['practice.no_chord']()}
+                <span className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-reading text-read-chord-sheet leading-none font-medium">
+                  {chords.length === 0
+                    ? m['practice.no_chord_short']()
+                    : chords.map((chord) => (
+                        <SheetChord key={chord.id} chord={chord} marks={showUncertainty} />
+                      ))}
+                  {chords.length === 0 && (
+                    <span className="sr-only">{m['practice.no_chord']()}</span>
+                  )}
                 </span>
               </button>
             </li>
@@ -159,5 +191,35 @@ function BarSheet({
         })}
       </ol>
     </section>
+  )
+}
+
+// A chord on the sheet (26 §5): always ink and set as charts print it (♭ and ♯, the quality
+// raised); "probably" adds a dotted edge, "unsure" a dashed edge and a "?", both named for screen
+// readers; with the marks hidden it is plain ink.
+function SheetChord({ chord, marks }: { chord: ChordModel; marks: boolean }) {
+  const mark = marks && chord.confidence !== 'high'
+  return (
+    <span
+      data-slot="sheet-chord"
+      data-confidence={chord.confidence}
+      className={cn(
+        'inline-flex items-baseline rounded-media border-[1.5px] border-transparent px-1 py-0.5',
+        mark && chord.confidence === 'medium' && 'border-dotted border-conf-medium-edge',
+        mark && chord.confidence === 'low' && 'border-dashed border-conf-low-edge',
+      )}
+    >
+      <ChordSymbol name={chord.name} />
+      {mark && chord.confidence === 'low' && (
+        <sup aria-hidden className="ml-0.5 text-[0.45em] text-conf-low-edge">
+          ?
+        </sup>
+      )}
+      {mark && (
+        <span className="sr-only">
+          , {chord.confidence === 'low' ? m['practice.unsure']() : m['practice.probably']()}
+        </span>
+      )}
+    </span>
   )
 }

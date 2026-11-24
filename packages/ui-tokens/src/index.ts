@@ -15,89 +15,105 @@ export type Density = (typeof DENSITIES)[number]
 export const DISTANCES = ['desk', 'stand', 'floor'] as const
 export type Distance = (typeof DISTANCES)[number]
 
-/** Tier 2: shadcn roles plus Splitune roles (§3), defined in every appearance. */
+/** The neutral ramp (§4.1): twelve steps numbered by job, bound per appearance. */
+export const RAMP_STEPS = [
+  '--gray-1',
+  '--gray-2',
+  '--gray-3',
+  '--gray-4',
+  '--gray-5',
+  '--gray-6',
+  '--gray-7',
+  '--gray-8',
+  '--gray-9',
+  '--gray-10',
+  '--gray-11',
+  '--gray-12',
+] as const
+
+/**
+ * The job of each ramp step (§4.1): which roles read it. It is the same table in Dark and Light;
+ * tokens.test.ts holds the CSS to it and Foundations draws it.
+ */
+export const ROLE_STEPS = {
+  '--background': 1,
+  '--primary-foreground': 1,
+  '--destructive-foreground': 1,
+  '--panel': 2,
+  '--raised': 3,
+  '--hover': 4,
+  '--wash': 4,
+  '--pressed': 5,
+  '--border': 6,
+  '--border-strong': 7,
+  '--border-more': 7,
+  '--edge': 8,
+  '--border-strong-more': 8,
+  '--faint-foreground': 9,
+  '--edge-more': 9,
+  '--muted-foreground': 10,
+  '--faint-foreground-more': 10,
+  '--primary-hover': 11,
+  '--muted-foreground-more': 11,
+  '--foreground': 12,
+  '--primary': 12,
+  '--selected': 12,
+  '--signal': 12,
+  '--ring': 12,
+} as const
+
+/** Tier 2: the semantic roles (§3), defined in every appearance. */
 export const SEMANTIC_ROLES = [
   '--background',
+  '--panel',
+  '--raised',
+  '--hover',
+  '--wash',
+  '--pressed',
+  '--border',
+  '--border-strong',
+  '--edge',
+  '--faint-foreground',
+  '--muted-foreground',
+  '--primary-hover',
   '--foreground',
-  '--card',
-  '--card-foreground',
-  '--popover',
-  '--popover-foreground',
   '--primary',
   '--primary-foreground',
-  '--primary-hover',
-  '--secondary',
-  '--secondary-foreground',
-  '--muted',
-  '--muted-foreground',
-  '--accent',
-  '--accent-foreground',
+  '--selected',
+  '--signal',
+  '--ring',
+  '--border-more',
+  '--border-strong-more',
+  '--edge-more',
+  '--faint-foreground-more',
+  '--muted-foreground-more',
   '--destructive',
   '--destructive-foreground',
-  '--border',
-  '--input',
-  '--ring',
-  '--faint-foreground',
-  '--border-strong',
-  '--primary-ink',
-  '--primary-soft',
-  '--primary-line',
-  '--signal',
+  '--destructive-surface',
+  '--success',
+  '--success-surface',
   '--unsure',
   '--unsure-surface',
-  '--success',
-  '--warning',
-  '--info',
   '--edited',
-  '--surface-raised',
-  '--surface-sunken',
-  '--success-surface',
-  '--warning-surface',
-  '--info-surface',
-  '--destructive-surface',
   '--paper',
   '--ink',
   '--conf-medium',
   '--conf-medium-edge',
   '--conf-low',
+  '--conf-low-edge',
   '--stem-guitar',
   '--stem-bass',
   '--stem-drums',
   '--stem-vocals',
   '--stem-keys',
   '--stem-other',
-  '--muted-foreground-more',
-  '--faint-foreground-more',
-  '--border-more',
-  '--border-strong-more',
-  '--input-more',
-  '--elevation-1',
-  '--elevation-2',
-  '--elevation-3',
-  '--elevation-capsule',
-  '--elevation-play',
-  '--glow',
+  '--elevation-popover',
+  '--elevation-dialog',
   '--read-scale',
 ] as const
 
 /** Tier 2 aliases shared by every appearance. */
-export const ALIAS_ROLES = [
-  '--stem-mix',
-  '--chart-1',
-  '--chart-2',
-  '--chart-3',
-  '--chart-4',
-  '--chart-5',
-  '--sidebar',
-  '--sidebar-foreground',
-  '--sidebar-primary',
-  '--sidebar-primary-foreground',
-  '--sidebar-accent',
-  '--sidebar-accent-foreground',
-  '--sidebar-border',
-  '--sidebar-ring',
-  '--focus-width',
-] as const
+export const ALIAS_ROLES = ['--stem-mix', '--focus-width'] as const
 
 /** Tier 3: component tokens (§4.7), defined in every appearance. */
 export const COMPONENT_TOKENS = [
@@ -131,9 +147,7 @@ export const COMPONENT_TOKENS = [
   '--melody-vocals',
   '--tile-foreground',
   '--scrim',
-  '--capsule',
   '--hud-bg',
-  '--hud-bg-more',
   '--hud-fg',
 ] as const
 
@@ -150,10 +164,9 @@ export const READING_TOKENS = [
 
 export const TARGET_TOKENS = [
   '--target-min',
-  '--target-sm',
   '--target',
-  '--target-practice-2',
   '--target-practice',
+  '--target-play',
   '--target-stand',
 ] as const
 
@@ -166,6 +179,7 @@ export const MOTION_TOKENS = [
 ] as const
 
 export type TokenName =
+  | (typeof RAMP_STEPS)[number]
   | (typeof SEMANTIC_ROLES)[number]
   | (typeof ALIAS_ROLES)[number]
   | (typeof COMPONENT_TOKENS)[number]
@@ -173,89 +187,109 @@ export type TokenName =
   | (typeof TARGET_TOKENS)[number]
   | (typeof MOTION_TOKENS)[number]
   | '--control-size'
-  | '--radius'
 
 /**
  * Contrast pairs checked in every appearance × contrast context (doc 26 §4.6, 28 §3):
- * [foreground, background, WCAG minimum]. Every background is opaque; the translucent
- * --primary-soft is tested by compositing in contrast.test.ts. The token tests enforce them;
- * Foundations shows them live.
+ * [foreground, background, WCAG minimum]. Every background is opaque. The token tests enforce
+ * them; Foundations shows them live.
  */
 export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
-  // §4.6 baseline
+  // Text on every surface it sits on: ink and secondary text at 7:1 on the page, 4.5:1 elsewhere
   ['--foreground', '--background', 7],
-  ['--muted-foreground', '--card', 4.5],
+  ['--foreground', '--panel', 7],
+  ['--foreground', '--raised', 7],
+  ['--foreground', '--hover', 7],
+  ['--foreground', '--pressed', 4.5],
+  ['--muted-foreground', '--background', 7],
+  ['--muted-foreground', '--panel', 4.5],
+  ['--muted-foreground', '--raised', 4.5],
+  ['--muted-foreground', '--hover', 4.5],
+  ['--faint-foreground', '--background', 4.5],
+  ['--faint-foreground', '--panel', 4.5],
+  ['--faint-foreground', '--raised', 4.5],
+  ['--faint-foreground', '--hover', 4.5],
+  // The filled ink control, and an inverted "on" toggle against what it sits on
   ['--primary-foreground', '--primary', 4.5],
   ['--primary-foreground', '--primary-hover', 4.5],
+  ['--primary', '--background', 3],
+  ['--primary', '--panel', 3],
+  ['--primary', '--raised', 3],
+  // A control's only boundary
+  ['--edge', '--background', 3],
+  ['--edge', '--panel', 3],
+  ['--edge', '--raised', 3],
+  ['--edge', '--hover', 3],
+  // Selected and current (an ink edge or line), focus, and "now"
+  ['--selected', '--background', 3],
+  ['--selected', '--panel', 3],
+  ['--selected', '--raised', 3],
+  ['--selected', '--hover', 3],
+  ['--selected', '--wash', 3],
   ['--ring', '--background', 3],
-  ['--input', '--card', 3],
-  ['--destructive', '--card', 4.5],
-  ['--success', '--card', 4.5],
-  ['--warning', '--card', 4.5],
-  ['--info', '--card', 4.5],
-  ['--ink', '--paper', 7],
-  ['--conf-medium', '--paper', 4.5],
-  ['--conf-low', '--paper', 4.5],
-  ['--score-loop-edge', '--paper', 3],
-  ['--score-playhead', '--paper', 3],
-  ['--staff', '--paper', 3],
-  ['--staff', '--score-loop-fill', 3],
-  ['--stem-guitar', '--card', 3],
-  ['--stem-bass', '--card', 3],
-  ['--stem-drums', '--card', 3],
-  ['--stem-vocals', '--card', 3],
-  ['--stem-keys', '--card', 3],
-  ['--stem-other', '--card', 3],
-  ['--stem-mix', '--card', 3],
-  // Every *-foreground on its surface, and text on the other surfaces it sits on
-  ['--foreground', '--card', 7],
-  ['--foreground', '--muted', 4.5],
-  ['--foreground', '--accent', 4.5],
-  ['--card-foreground', '--card', 4.5],
-  ['--popover-foreground', '--popover', 4.5],
-  ['--secondary-foreground', '--secondary', 4.5],
-  ['--accent-foreground', '--accent', 4.5],
-  ['--sidebar-foreground', '--sidebar', 4.5],
-  ['--sidebar-primary-foreground', '--sidebar-primary', 4.5],
-  ['--sidebar-accent-foreground', '--sidebar-accent', 4.5],
-  ['--muted-foreground', '--background', 4.5],
-  ['--muted-foreground', '--muted', 4.5],
-  ['--faint-foreground', '--background', 4.5],
-  ['--faint-foreground', '--card', 4.5],
-  ['--faint-foreground', '--muted', 4.5],
-  ['--faint-foreground', '--accent', 4.5],
-  // The ink as accent text is --primary-ink; --primary is a fill (its text is --primary-foreground)
-  ['--primary-ink', '--background', 4.5],
-  ['--primary-ink', '--card', 4.5],
-  ['--primary-ink', '--accent', 4.5],
-  ['--input', '--background', 3],
-  ['--input', '--muted', 3],
-  ['--ring', '--card', 3],
-  ['--ring', '--muted', 3],
-  // "Now" as a mark (playhead, loop edges, tab underline, beat dot, fills), and its hairline
+  ['--ring', '--panel', 3],
+  ['--ring', '--raised', 3],
+  ['--ring', '--hover', 3],
+  ['--ring', '--pressed', 3],
   ['--signal', '--background', 3],
-  ['--signal', '--card', 3],
-  ['--signal', '--muted', 3],
-  ['--signal', '--accent', 3],
+  ['--signal', '--panel', 3],
+  ['--signal', '--raised', 3],
+  ['--signal', '--wash', 3],
   ['--signal', '--bar-current', 3],
   ['--signal', '--score-loop-fill', 3],
-  ['--primary-line', '--background', 3],
-  ['--primary-line', '--card', 3],
+  // Status: its colour on the surfaces it sits on and on its own tint
   ['--destructive', '--background', 4.5],
+  ['--destructive', '--panel', 4.5],
+  ['--destructive', '--raised', 4.5],
+  ['--destructive', '--destructive-surface', 4.5],
   ['--destructive-foreground', '--destructive', 4.5],
-  ['--unsure', '--card', 4.5],
-  ['--edited', '--paper', 4.5],
-  ['--conf-medium-edge', '--paper', 3],
-  // Score: digits over the loop band and the current bar, staff on the current bar
-  ['--ink', '--score-loop-fill', 7],
-  ['--conf-low', '--score-loop-fill', 4.5],
-  ['--ink', '--bar-current', 7],
-  ['--conf-low', '--bar-current', 4.5],
-  ['--conf-low', '--unsure-surface', 4.5],
-  ['--staff', '--bar-current', 3],
-  ['--staff', '--card', 3],
-  ['--staff', '--unsure-surface', 3],
+  ['--foreground', '--destructive-surface', 4.5],
+  ['--success', '--background', 4.5],
+  ['--success', '--panel', 4.5],
+  ['--success', '--raised', 4.5],
+  ['--success', '--success-surface', 4.5],
+  ['--foreground', '--success-surface', 4.5],
+  ['--unsure', '--background', 4.5],
+  ['--unsure', '--panel', 4.5],
+  ['--unsure', '--raised', 4.5],
+  ['--unsure', '--unsure-surface', 4.5],
   ['--foreground', '--unsure-surface', 4.5],
+  // Score: every digit is ink; an unsure note's box and "?" carry the unsure hue (§5)
+  ['--ink', '--paper', 7],
+  ['--ink', '--score-loop-fill', 7],
+  ['--ink', '--bar-current', 7],
+  ['--conf-medium', '--paper', 7],
+  ['--conf-medium', '--score-loop-fill', 7],
+  ['--conf-low', '--paper', 7],
+  ['--conf-low', '--bar-current', 7],
+  ['--conf-low', '--unsure-surface', 4.5],
+  ['--conf-medium-edge', '--paper', 3],
+  ['--conf-low-edge', '--paper', 4.5],
+  ['--conf-low-edge', '--bar-current', 4.5],
+  ['--conf-low-edge', '--score-loop-fill', 4.5],
+  ['--edited', '--paper', 4.5],
+  ['--score-loop-edge', '--paper', 3],
+  ['--score-playhead', '--paper', 3],
+  ['--score-playhead', '--bar-current', 3],
+  ['--staff', '--paper', 3],
+  ['--staff', '--score-loop-fill', 3],
+  ['--staff', '--bar-current', 3],
+  ['--staff', '--raised', 3],
+  ['--staff', '--unsure-surface', 3],
+  // Stems: the rule beside a stem's name, on the panel and on a sheet
+  ['--stem-guitar', '--panel', 3],
+  ['--stem-bass', '--panel', 3],
+  ['--stem-drums', '--panel', 3],
+  ['--stem-vocals', '--panel', 3],
+  ['--stem-keys', '--panel', 3],
+  ['--stem-other', '--panel', 3],
+  ['--stem-mix', '--panel', 3],
+  ['--stem-guitar', '--raised', 3],
+  ['--stem-bass', '--raised', 3],
+  ['--stem-drums', '--raised', 3],
+  ['--stem-vocals', '--raised', 3],
+  ['--stem-keys', '--raised', 3],
+  ['--stem-other', '--raised', 3],
+  ['--stem-mix', '--raised', 3],
   // Keyboard diagram: hands against both key colours, their letters on them
   ['--key-black', '--key-white', 3],
   ['--key-left', '--key-white', 3],
@@ -265,54 +299,40 @@ export const CONTRAST_PAIRS: [TokenName, TokenName, number][] = [
   ['--key-left-fg', '--key-left', 4.5],
   ['--key-right-fg', '--key-right', 4.5],
   ['--staff', '--key-white', 3],
-  // Falling notes: bar numbers over the loop band (notes are outlined in --staff or --ink)
-  ['--conf-medium', '--score-loop-fill', 4.5],
   // Guitar and bass Notes: sustain tails and finger rings on the paper and the loop band (the
   // note heads are outlined in --ink; their tint is tested in contrast.test.ts)
   ['--fret-guitar', '--paper', 3],
   ['--fret-guitar', '--score-loop-fill', 3],
   ['--fret-bass', '--paper', 3],
   ['--fret-bass', '--score-loop-fill', 3],
-  // Vocal Melody: the note being sung and the rail's pitch now on the paper and the loop band (note
-  // outlines are --ink; their tint is tested in contrast.test.ts)
+  // Vocal Melody: the note being sung and the rail's pitch now on the paper and the loop band
   ['--melody-vocals', '--paper', 3],
   ['--melody-vocals', '--score-loop-fill', 3],
-  // Stem tiles: their letters on every stem colour
+  // Stem marks: their letters on every stem colour
   ['--tile-foreground', '--stem-guitar', 4.5],
   ['--tile-foreground', '--stem-bass', 4.5],
   ['--tile-foreground', '--stem-drums', 4.5],
   ['--tile-foreground', '--stem-vocals', 4.5],
   ['--tile-foreground', '--stem-keys', 4.5],
   ['--tile-foreground', '--stem-other', 4.5],
-  // Timeline chrome
-  ['--loop-edge', '--card', 3],
-  ['--playhead', '--card', 3],
+  // Song map
+  ['--loop-edge', '--background', 3],
+  ['--loop-edge', '--panel', 3],
+  ['--playhead', '--background', 3],
   ['--playhead', '--loop-fill', 3],
   ['--foreground', '--loop-fill', 4.5],
   ['--waveform-peak', '--background', 3],
-  ['--waveform-peak', '--card', 3],
-  ['--waveform-rms', '--card', 3],
+  ['--waveform-peak', '--panel', 3],
+  ['--waveform-peak', '--loop-fill', 3],
+  ['--waveform-rms', '--background', 3],
+  ['--waveform-loop', '--loop-fill', 3],
+  // Beats
+  ['--beat-now', '--background', 3],
+  ['--beat-done', '--background', 3],
+  ['--beat-slot', '--background', 3],
+  ['--beat-slot', '--panel', 3],
   // PedalHud
   ['--hud-fg', '--hud-bg', 4.5],
-  // Segmented control: the pressed item's label on its capsule
-  ['--foreground', '--capsule', 4.5],
-  // Surfaces and status surfaces (§4.8): text on raised and sunken, status colour on its own tint
-  ['--foreground', '--surface-raised', 4.5],
-  ['--foreground', '--surface-sunken', 4.5],
-  ['--muted-foreground', '--surface-raised', 4.5],
-  ['--muted-foreground', '--surface-sunken', 4.5],
-  ['--primary-ink', '--surface-raised', 4.5],
-  ['--input', '--surface-raised', 3],
-  ['--input', '--surface-sunken', 3],
-  ['--foreground', '--success-surface', 4.5],
-  ['--foreground', '--warning-surface', 4.5],
-  ['--foreground', '--info-surface', 4.5],
-  ['--foreground', '--destructive-surface', 4.5],
-  ['--success', '--success-surface', 4.5],
-  ['--warning', '--warning-surface', 4.5],
-  ['--info', '--info-surface', 4.5],
-  ['--destructive', '--destructive-surface', 4.5],
-  ['--unsure', '--unsure-surface', 4.5],
 ]
 
 /** Stems in mixer order after "Your part"; each has a fixed colour token and a second cue (§4.4). */
@@ -328,17 +348,23 @@ export const STEMS = {
 export type StemKind = keyof typeof STEMS
 
 /**
- * Confidence encoding (§5): never colour alone. Outline → glyph → colour: "Probably" keeps the ink
- * and adds a dashed outline (--conf-medium-edge); "Unsure" adds the "?" and the unsure blue.
- * Bands come from docs/specs/05-analysis-schema.md.
+ * Confidence encoding (§5): shape first, colour last. Every digit and chord name stays ink.
+ * "Probably" adds a dotted outline in --conf-medium-edge; "Unsure" adds a dashed outline and a "?"
+ * in --conf-low-edge, the only place the unsure hue appears. Bands come from
+ * docs/specs/05-analysis-schema.md.
  */
 export const CONFIDENCE = {
-  high: { ink: '--ink', outline: 'none', glyph: null },
-  medium: { ink: '--conf-medium', outline: 'dashed', glyph: null },
-  low: { ink: '--conf-low', outline: 'dashed', glyph: '?' },
+  high: { ink: '--ink', outline: 'none', edge: null, glyph: null },
+  medium: { ink: '--conf-medium', outline: 'dotted', edge: '--conf-medium-edge', glyph: null },
+  low: { ink: '--conf-low', outline: 'dashed', edge: '--conf-low-edge', glyph: '?' },
 } as const satisfies Record<
   string,
-  { ink: TokenName; outline: 'none' | 'dashed'; glyph: string | null }
+  {
+    ink: TokenName
+    outline: 'none' | 'dotted' | 'dashed'
+    edge: TokenName | null
+    glyph: string | null
+  }
 >
 export type ConfidenceLevel = keyof typeof CONFIDENCE
 
@@ -387,4 +413,4 @@ export function readColor(name: TokenName, element: Element = document.documentE
  * the web app manifest and `<meta name="theme-color">` (§11). Keyed by appearance id;
  * tokens.test.ts checks them against the CSS.
  */
-export const BACKGROUND_HEX = { light: '#fff', dark: '#000' } as const
+export const BACKGROUND_HEX = { light: '#fbfbfb', dark: '#0f0f0f' } as const

@@ -9,6 +9,10 @@
 // - `outline-none`/`outline-hidden` in a class list without a `focus-visible:outline-*` (or
 //   `focus-visible:after:outline-*`) replacement in the same list, and CSS `outline: none|0`.
 // - One-off durations, delays and easings (use the --duration-*/--ease-* tokens).
+// - Utilities and tokens the s47 system retired (`bg-card`, `text-sm`, `rounded-lg`, `shadow-2`,
+//   `var(--muted)`…): the theme no longer defines them, so they'd silently produce nothing.
+// - Font weights other than 400 and 500 (`font-semibold`, `font-[650]`): Figtree is set at two
+//   weights (26 §6.1).
 //
 // Raw-value rules (28 §3 "Raw values", step s33), on apps/web/app/ui/** by default:
 // - Arbitrary colours: a Tailwind colour utility with an arbitrary value that is a colour literal
@@ -53,6 +57,67 @@ const OUTLINE_REMOVED = /(?<![\w-])(?:[\w-]+:)*outline-(?:none|hidden)(?![\w-])/
 const OUTLINE_REPLACED =
   /(?<![\w-])focus-visible:(?:after:|before:)?-?outline-(?!none|hidden)[\w(-]/
 const CSS_OUTLINE_NONE = /outline\s*:\s*(?:none|0)\s*[;}]/g
+// What the s47 system retired, each with the name that took over its job (26 §3, §6.2, §9).
+const RETIRED_ROLES = {
+  card: 'raised',
+  'card-foreground': 'foreground',
+  popover: 'raised',
+  'popover-foreground': 'foreground',
+  muted: 'panel',
+  accent: 'hover plus an ink edge',
+  'accent-foreground': 'foreground',
+  secondary: 'hover',
+  'secondary-foreground': 'foreground',
+  input: 'edge',
+  capsule: 'an ink edge (no selected fill)',
+  'primary-soft': 'wash under an ink line',
+  'primary-line': 'selected',
+  'primary-ink': 'foreground',
+  'surface-raised': 'raised',
+  'surface-sunken': 'panel',
+  warning: 'muted-foreground with a glyph',
+  'warning-surface': 'panel',
+  info: 'muted-foreground with a glyph',
+  'info-surface': 'panel',
+}
+const RETIRED_TEXT = {
+  '2xs': 'kbd',
+  xs: 'caption',
+  sm: 'body-sm or label-sm',
+  md: 'label',
+  base: 'body',
+  'button-lg': 'title',
+  lg: 'title',
+  xl: 'heading',
+  '2xl': 'display',
+  '3xl': 'hero',
+  '4xl': 'hero',
+  '5xl': 'hero',
+}
+const longestFirst = (names) =>
+  Object.keys(names)
+    .sort((a, b) => b.length - a.length)
+    .join('|')
+const RETIRED_ROLE_UTILITY = new RegExp(
+  `(?<![\\w-])(?:[\\w-]+:)*(bg|text|border(?:-[xytrblse])?|ring|ring-offset|inset-ring|outline|fill|stroke|from|via|to|decoration|caret|divide|placeholder)-(${longestFirst(RETIRED_ROLES)})(?![\\w-])`,
+  'g',
+)
+const RETIRED_TEXT_UTILITY = new RegExp(
+  `(?<![\\w-])(?:[\\w-]+:)*text-(${longestFirst(RETIRED_TEXT)})(?![\\w-])`,
+  'g',
+)
+const RETIRED_RADIUS_UTILITY =
+  /(?<![\w-])(?:[\w-]+:)*rounded(?:-(?:[tblrse]|tl|tr|bl|br|ss|se|es|ee))?-(?:xs|sm|md|lg|xl|2xl|3xl|4xl|5xl)(?![\w-])/g
+const RETIRED_SHADOW_UTILITY =
+  /(?<![\w-])(?:[\w-]+:)*shadow-(?:1|2|3|2xs|xs|sm|md|lg|xl|2xl|glow|capsule|play)(?![\w-])/g
+const RETIRED_OTHER_UTILITY =
+  /(?<![\w-])(?:[\w-]+:)*(?:ease-(?:spring|smooth|snappy)|[\w-]*target-(?:sm|practice-2))(?![\w-])/g
+const RETIRED_VARIABLE = new RegExp(
+  `(?<![\\w-])--(?:${longestFirst(RETIRED_ROLES)}|glow|radius|elevation-(?:1|2|3|capsule|play)|ease-(?:spring|smooth|snappy)|target-(?:sm|practice-2)|chart-\\d|sidebar[\\w-]*)(?![\\w-])`,
+  'g',
+)
+const WEIGHT_UTILITY =
+  /(?<![\w-])(?:[\w-]+:)*font-(?:thin|extralight|light|semibold|bold|extrabold|black|\[\d+\])(?![\w-])/g
 const MOTION =
   /(?<![\w-])(?:[\w-]+:)*(?:(?:duration|delay)-(?:(?!0(?![\w-]))\d+|\[[^\]]*\d+m?s[^\]]*\])|ease-(?:in|out|in-out|linear|\[[^\]]*\])|\[transition:[^\]]*\d+m?s[^\]]*\])(?![\w-])/g
 
@@ -118,6 +183,37 @@ export function checkBase(file, text) {
       )
     }
   }
+  const at = (index, message) => violations.push(`${file}:${lineOf(text, index)}: ${message}`)
+  for (const match of text.matchAll(RETIRED_ROLE_UTILITY)) {
+    at(
+      match.index,
+      `retired colour ${match[0]} — use ${match[1]}-… ${RETIRED_ROLES[match[2]]} (26 §3)`,
+    )
+  }
+  for (const match of text.matchAll(RETIRED_TEXT_UTILITY)) {
+    at(match.index, `retired size ${match[0]} — use text-${RETIRED_TEXT[match[1]]} (26 §6.2)`)
+  }
+  for (const match of text.matchAll(RETIRED_RADIUS_UTILITY)) {
+    at(
+      match.index,
+      `retired radius ${match[0]} — use rounded-media, -field, -panel, -dialog or -full (26 §9)`,
+    )
+  }
+  for (const match of text.matchAll(RETIRED_SHADOW_UTILITY)) {
+    at(match.index, `retired shadow ${match[0]} — use shadow-popover or shadow-dialog (26 §9)`)
+  }
+  for (const match of text.matchAll(RETIRED_OTHER_UTILITY)) {
+    at(match.index, `retired utility ${match[0]} — see 26 §8 and §10`)
+  }
+  for (const match of text.matchAll(RETIRED_VARIABLE)) {
+    at(match.index, `retired token ${match[0]} — see the role table in 26 §3`)
+  }
+  for (const match of text.matchAll(WEIGHT_UTILITY)) {
+    at(
+      match.index,
+      `weight ${match[0]} — Figtree is set at font-normal and font-medium only (26 §6.1)`,
+    )
+  }
   for (const match of text.matchAll(PALETTE)) {
     violations.push(
       `${file}:${lineOf(text, match.index)}: palette class ${match[0]} — use a semantic colour`,
@@ -155,7 +251,10 @@ export function checkRawValues(file, text) {
     for (const match of text.matchAll(RADIUS_UTILITY)) {
       const value = match[1] ?? ''
       if (value !== 'inherit' && !fromTokens(value))
-        at(match.index, `arbitrary radius ${match[0]} — use the rounded-* scale (26 §9)`)
+        at(
+          match.index,
+          `arbitrary radius ${match[0]} — use rounded-media, -field, -panel, -dialog or -full (26 §9)`,
+        )
     }
     for (const match of text.matchAll(FONT_SIZE_UTILITY)) {
       const value = match[1] ?? ''
@@ -167,7 +266,10 @@ export function checkRawValues(file, text) {
     for (const match of text.matchAll(SHADOW_UTILITY)) {
       const value = match[1] ?? ''
       if (!tokenOnly(value) && !COLOUR_VALUE.test(value))
-        at(match.index, `arbitrary shadow ${match[0]} — use shadow-1…3 or --glow (26 §9)`)
+        at(
+          match.index,
+          `arbitrary shadow ${match[0]} — use shadow-popover or shadow-dialog (26 §9)`,
+        )
     }
     for (const { index, body } of styleProps(text)) {
       for (const match of body.matchAll(STYLE_COLOUR)) {
@@ -198,7 +300,10 @@ export function checkRawValues(file, text) {
           at(match.index, `font size ${value} — use a text-* token (26 §6)`)
       } else if (property === 'box-shadow') {
         if (!tokenOnly(value) && value !== 'none')
-          at(match.index, `box-shadow ${value} — use --elevation-* or --glow (26 §9)`)
+          at(
+            match.index,
+            `box-shadow ${value} — use --elevation-popover or --elevation-dialog (26 §9)`,
+          )
       } else if (COLOUR_VALUE.test(` ${value}`)) {
         at(match.index, `colour ${property}: ${value} — use a token`)
       }
@@ -262,7 +367,7 @@ function main() {
     process.exit(1)
   }
   console.log(
-    `check-ui-tokens: ${files.length} files, no raw colours, palette classes, bare outline-none or one-off motion; ${rawValueFiles} files in ${rawValueScope.join(', ')} with no arbitrary colours, radii, font sizes, shadows or style-prop colours.`,
+    `check-ui-tokens: ${files.length} files, no raw colours, palette classes, retired tokens, weights beyond 400/500, bare outline-none or one-off motion; ${rawValueFiles} files in ${rawValueScope.join(', ')} with no arbitrary colours, radii, font sizes, shadows or style-prop colours.`,
   )
 }
 

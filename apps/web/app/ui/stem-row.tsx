@@ -1,21 +1,22 @@
-import { Toggle as TogglePrimitive } from '@base-ui/react/toggle'
 import type { StemKind } from '@splitune/ui-tokens'
-import { TriangleAlertIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/ui/badge'
 import { NumberField } from '@/ui/number-field'
 import { Popover, PopoverTrigger } from '@/ui/popover'
 import { PopoverContent } from '@/ui/popover-content'
 import { Skeleton } from '@/ui/skeleton'
 import { Slider } from '@/ui/slider'
+import { Status } from '@/ui/status'
+import { Toggle } from '@/ui/toggle'
 import { WithTooltip } from '@/ui/tooltip'
 
-// Doc 26 §4.4, §12.2 (Practice-Mix.dc.html): one row per stem — a 6 × 34 colour rule (colour is
-// never the only cue: the name is always there), the name with "Your part" and "Rough" badges, M/S
-// painted as 32 px circles inside 48 × 48 boxes (on = ink fill, off = outlined), and the fader in the stem's
-// colour with its dB readout (mono 13; "solo" while soloed, "muted" while muted, §12.3). A tap on
-// the fader's track sets it and the readout opens a stepper, so nothing needs a drag (WCAG 2.5.7).
-// `StemToggle` is the same M/S button; the phone Tools sheet paints it at 44 in its 48 box.
+// Doc 26 §4.4, §12.2, s47 direction §6: one row per stem. A 4 px rule in the stem's colour runs
+// beside its name (colour is never the only cue: the name is always there), "Your part" and
+// "Rough" as plain labels after it, then M and S as inverted 48 px letter toggles (on = the ink
+// fill, off = a hairline circle) and under them the fader with its readout. The readout says the
+// state in words as well as the level: "+6 dB", "Muted", "Not heard" (another stem is soloed),
+// "−6 dB · solo". A stem that isn't heard dims its name and readout to faint text, never by
+// opacity. A tap on the fader's track sets it and the readout opens a stepper, so nothing needs a
+// drag (WCAG 2.5.7). `StemToggle` is the same M/S toggle, for the phone Tools sheet.
 
 const STEM_RULE: Record<StemKind, string> = {
   guitar: 'bg-stem-guitar',
@@ -27,6 +28,7 @@ const STEM_RULE: Record<StemKind, string> = {
   mix: 'bg-stem-mix',
 }
 
+/** The fader's fill in the stem's colour, for faders that stand apart from their row's rule. */
 const STEM_FILL: Record<StemKind, string> = {
   guitar: '[&_[data-slot=slider-range]]:bg-stem-guitar',
   bass: '[&_[data-slot=slider-range]]:bg-stem-bass',
@@ -57,6 +59,8 @@ type StemRowProps = {
   onSoloedChange: (soloed: boolean) => void
   gainDb: number
   onGainChange: (db: number) => void
+  /** Another stem is soloed, so this one isn't heard: dims the row and says so. */
+  notHeard?: boolean
   /** "Your part" tag text; set only on the learner's part. */
   yourPart?: string | undefined
   /** Rough-stem warning: short label ("Rough") and the reason (catalogue `practice.rough_stem`). */
@@ -67,56 +71,64 @@ type StemRowProps = {
     volume: string
     decrease: string
     increase: string
-    /** The readout while muted. */
+    /** The readout while muted ("Muted"). */
     muted?: string
-    /** The readout while soloed. */
+    /** Added to the level while soloed ("solo": "−6 dB · solo"). */
     soloed?: string
+    /** The readout while another stem is soloed ("Not heard"). */
+    notHeard?: string
   }
   className?: string
 }
-
-// The painted face and the focus ring hugging it (inset by the transparent padding around it).
-const FACE = {
-  row: { box: 'focus-visible:outline-offset-[-6px]', face: 'size-8 text-xs' },
-  tools: { box: 'focus-visible:outline-offset-0', face: 'size-11 text-sm' },
-} as const
 
 function StemToggle({
   pressed,
   onPressedChange,
   label,
   children,
-  size = 'row',
+  className,
 }: {
   pressed: boolean
   onPressedChange: (pressed: boolean) => void
   label: string
   children: string
-  /** Painted size inside the 48 box: 32 in a stem row, 44 in the phone Tools sheet. */
-  size?: keyof typeof FACE
+  /** Kept for the screens: the row and the phone Tools sheet both paint the full 48 px circle. */
+  size?: 'row' | 'tools'
+  className?: string
 }) {
   return (
-    <TogglePrimitive
+    <Toggle
+      variant="invert"
+      size="practice"
       pressed={pressed}
       onPressedChange={onPressedChange}
       aria-label={label}
       data-slot="stem-ms"
-      className={cn(
-        'group/ms inline-grid size-target-practice-2 shrink-0 place-items-center rounded-full',
-        FACE[size].box,
-      )}
+      className={cn('px-0', className)}
     >
-      <span
-        className={cn(
-          'grid place-items-center rounded-full border border-border-strong font-semibold text-muted-foreground transition-colors duration-(--duration-fast) group-hover/ms:text-foreground group-data-pressed/ms:border-transparent group-data-pressed/ms:bg-primary group-data-pressed/ms:text-primary-foreground forced-colors:group-data-pressed/ms:bg-card forced-colors:group-data-pressed/ms:border-signal',
-          FACE[size].face,
-        )}
-      >
-        {children}
-      </span>
-    </TogglePrimitive>
+      {children}
+    </Toggle>
   )
 }
+
+/** What the readout says: the level, or the state in words. Solo wins over mute. */
+export function stemReadout(
+  {
+    gainDb,
+    muted,
+    soloed,
+    notHeard,
+  }: Pick<StemRowProps, 'gainDb' | 'muted' | 'soloed' | 'notHeard'>,
+  labels: StemRowProps['labels'],
+): string {
+  if (soloed) return labels.soloed ? `${formatDb(gainDb)} · ${labels.soloed}` : formatDb(gainDb)
+  if (muted && labels.muted) return labels.muted
+  if (notHeard && labels.notHeard) return labels.notHeard
+  return formatDb(gainDb)
+}
+
+const ROW =
+  'grid grid-cols-[0.25rem_minmax(0,1fr)_auto_auto] items-center gap-x-2.5 py-1.5 pr-1 pl-1'
 
 function StemRow({
   stem,
@@ -127,60 +139,57 @@ function StemRow({
   onSoloedChange,
   gainDb,
   onGainChange,
+  notHeard = false,
   yourPart,
   rough,
   labels,
   className,
 }: StemRowProps) {
-  // Solo wins over mute (a soloed stem plays even when muted), so the readout says so first.
-  const readout =
-    soloed && labels.soloed
-      ? labels.soloed
-      : muted && labels.muted
-        ? labels.muted
-        : formatDb(gainDb)
+  const readout = stemReadout({ gainDb, muted, soloed, notHeard }, labels)
+  const quiet = (muted && !soloed) || (notHeard && !soloed)
   return (
     <div
       data-slot="stem-row"
       data-stem={stem}
-      className={cn(
-        'grid grid-cols-[0.375rem_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 px-1 py-1.5',
-        className,
-      )}
+      data-heard={quiet ? 'false' : 'true'}
+      className={cn(ROW, className)}
     >
-      <span aria-hidden className={cn('row-span-2 h-8.5 w-1.5 rounded-full', STEM_RULE[stem])} />
-      <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="truncate text-md font-medium">{name}</span>
-        {yourPart && <Badge variant="primary">{yourPart}</Badge>}
+      <span
+        aria-hidden
+        data-slot="stem-rule"
+        className={cn('row-span-2 w-1 self-stretch rounded-full', STEM_RULE[stem])}
+      />
+      <span className="flex min-w-0 items-center gap-2">
+        <span
+          className={cn('truncate text-label', quiet ? 'text-faint-foreground' : 'text-foreground')}
+        >
+          {name}
+        </span>
+        {yourPart && (
+          <span className="shrink-0 text-caption text-muted-foreground">{yourPart}</span>
+        )}
         {rough && (
           <WithTooltip label={rough.reason}>
-            <Badge variant="neutral" tabIndex={0} render={<span />}>
-              <TriangleAlertIcon aria-hidden />
+            <Status kind="attention" tabIndex={0} className="shrink-0 rounded-media">
               {rough.label}
               <span className="sr-only">: {rough.reason}</span>
-            </Badge>
+            </Status>
           </WithTooltip>
         )}
       </span>
-      <span className="row-span-2 flex gap-1">
-        <StemToggle
-          pressed={muted}
-          onPressedChange={onMutedChange}
-          label={`${labels.mute} ${name}`}
-        >
-          M
-        </StemToggle>
-        <StemToggle
-          pressed={soloed}
-          onPressedChange={onSoloedChange}
-          label={`${labels.solo} ${name}`}
-        >
-          S
-        </StemToggle>
-      </span>
-      <span className="flex min-w-0 items-center gap-2.5">
+      <StemToggle pressed={muted} onPressedChange={onMutedChange} label={`${labels.mute} ${name}`}>
+        M
+      </StemToggle>
+      <StemToggle
+        pressed={soloed}
+        onPressedChange={onSoloedChange}
+        label={`${labels.solo} ${name}`}
+      >
+        S
+      </StemToggle>
+      <span className="col-span-3 flex min-w-0 items-center gap-2">
         <Slider
-          className={cn('min-w-0 flex-1', STEM_FILL[stem])}
+          className="min-w-0 flex-1"
           value={gainDb}
           min={GAIN_RANGE.min}
           max={GAIN_RANGE.max}
@@ -191,8 +200,12 @@ function StemRow({
         />
         <Popover>
           <PopoverTrigger
+            data-slot="stem-readout"
             aria-label={`${labels.volume} ${name}: ${readout}`}
-            className="inline-flex min-h-target-practice-2 w-16 shrink-0 items-center justify-end rounded-lg px-1 text-sm text-muted-foreground tabular-nums hover:bg-muted hover:text-foreground"
+            className={cn(
+              'inline-flex min-h-target-practice w-24 shrink-0 items-center justify-end rounded-full px-2 text-body-sm whitespace-nowrap tabular-nums inset-ring inset-ring-transparent hover:bg-hover hover:text-foreground aria-expanded:inset-ring-[1.5px] aria-expanded:inset-ring-selected',
+              quiet ? 'text-faint-foreground' : 'text-muted-foreground',
+            )}
           >
             {readout}
           </PopoverTrigger>
@@ -218,20 +231,12 @@ function StemRow({
 /** Placeholder with the row's layout while stems load (no layout shift when they arrive). */
 function StemRowSkeleton({ className }: { className?: string }) {
   return (
-    <div
-      data-slot="stem-row-skeleton"
-      className={cn(
-        'grid grid-cols-[0.375rem_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 px-1 py-1.5',
-        className,
-      )}
-    >
-      <Skeleton className="row-span-2 h-8.5 w-1.5" />
+    <div data-slot="stem-row-skeleton" className={cn(ROW, className)}>
+      <Skeleton className="row-span-2 w-1 self-stretch rounded-full" />
       <Skeleton className="h-5 w-32" />
-      <span className="row-span-2 flex gap-1">
-        <Skeleton className="size-target-practice-2" />
-        <Skeleton className="size-target-practice-2" />
-      </span>
-      <Skeleton className="h-2" />
+      <Skeleton className="size-target-practice rounded-full" />
+      <Skeleton className="size-target-practice rounded-full" />
+      <Skeleton className="col-span-3 h-target-practice rounded-full" />
     </div>
   )
 }

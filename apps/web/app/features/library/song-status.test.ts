@@ -1,7 +1,7 @@
 import type { LibrarySong } from '@splitune/contracts'
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
-import { cardStatus } from './song-status'
+import { cardStatus, songNeed } from './song-status'
 
 type Song = z.infer<typeof LibrarySong>
 
@@ -62,5 +62,20 @@ describe('cardStatus', () => {
       kind: 'chords_only',
     })
     expect(cardStatus(analysis({ status: 'partial' }), false)).toEqual({ kind: 'partial' })
+  })
+})
+
+describe('songNeed', () => {
+  it('groups songs by what they need', () => {
+    for (const kind of ['uploading', 'downloading', 'queued'] as const) {
+      expect(songNeed({ kind })).toBe('getting_ready')
+    }
+    expect(songNeed({ kind: 'analysing', done: 2, total: 8 })).toBe('getting_ready')
+    for (const kind of ['failed', 'stems_expired', 'upload_unfinished'] as const) {
+      expect(songNeed({ kind })).toBe('needs_you')
+    }
+    for (const kind of ['ready', 'partial', 'chords_only'] as const) {
+      expect(songNeed({ kind })).toBe('ready')
+    }
   })
 })

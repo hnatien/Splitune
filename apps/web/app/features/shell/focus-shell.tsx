@@ -9,9 +9,10 @@ import { PaletteLauncher } from './palette-launcher'
 import { usePalette } from './palette-store'
 import { SkipLink } from './skip-link'
 
-// Focus shell (27 §1): onboarding and practice. A slim status bar (60 px) with "Back to library" and
-// the page's own status; no navigation chrome. Practice density (64/48 px targets). Signed in, ⌘K /
-// Ctrl K opens the palette, and touch screens get its button (27 §3.12).
+// Focus shell (27 §1): onboarding and practice. A quiet top bar (52 px, 48 on phones) with
+// "‹ Library" and the page's own status; no navigation chrome and no rule under the bar, so the
+// page's content starts the structure. Practice density (48 px targets, 64 for Play). Signed in,
+// ⌘K / Ctrl K opens the palette, and touch screens get its button (27 §3.12).
 export function FocusShell({
   status,
   exit = false,
@@ -31,27 +32,34 @@ export function FocusShell({
       className={fill ? 'flex h-dvh flex-col overflow-hidden' : 'flex min-h-dvh flex-col'}
     >
       <SkipLink />
-      <header className="sticky top-0 z-(--z-sticky) border-b border-border bg-background pt-[env(safe-area-inset-top)] [view-transition-name:app-header]">
-        <div className="flex min-h-15 items-center gap-3 px-4 in-data-[appearance=stage]:min-h-12">
+      <header className="sticky top-0 z-(--z-sticky) bg-background pt-[env(safe-area-inset-top)] [view-transition-name:app-header]">
+        <div className="flex min-h-13 items-center gap-2 px-2 max-sm:min-h-12 sm:px-3">
           <Link
             to={exit ? '/' : '/library'}
-            className={buttonVariants({ variant: 'ghost', className: 'max-sm:min-w-target' })}
+            className={buttonVariants({
+              variant: 'quiet',
+              size: 'sm',
+              className: fill
+                ? 'shrink-0 max-lg:min-w-target max-lg:px-0'
+                : 'shrink-0 max-sm:min-w-target max-sm:px-0',
+            })}
           >
             <ChevronLeftIcon aria-hidden />
-            {/* Icon only on phones, so the page's status keeps its room. */}
-            <span className="max-sm:sr-only">
+            {/* Icon only where the page's status needs the room: phones, and practice under 1024. */}
+            <span className={fill ? 'max-lg:sr-only' : 'max-sm:sr-only'}>
               {exit ? m['nav.exit']() : m['nav.back_to_library']()}
             </span>
           </Link>
-          <div className="flex min-w-0 flex-1 items-center gap-3">{status}</div>
+          <div className="flex min-w-0 flex-1 items-center gap-2">{status}</div>
           <UploadPill />
           {!exit && (
             <Button
-              variant="ghost"
-              size="icon-practice-2"
+              variant="quiet"
+              size="icon"
               aria-label={m['nav.search']()}
               onClick={() => usePalette.getState().setOpen(true)}
-              className="pointer-fine:hidden"
+              // Practice on a phone keeps the bar for the view tabs: search is in its ⋯ menu.
+              className={fill ? 'pointer-fine:hidden max-sm:hidden' : 'pointer-fine:hidden'}
             >
               <SearchIcon aria-hidden />
             </Button>

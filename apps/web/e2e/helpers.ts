@@ -80,12 +80,13 @@ export async function signIn(page: Page, label: string): Promise<string> {
   return username
 }
 
-// WebKit logs a fetch to the app's own API that a navigation cancels as "/localhost:3000/v1/…
-// due to access control checks." Same-origin requests can't fail CORS, so only those are dropped;
-// cross-origin ones (the bucket's presigned uploads) still count.
+// WebKit logs a fetch to the app's own origin that a navigation cancels as "/localhost:3000/v1/…
+// due to access control checks": the API, and on a slower link the DSP's wasm and the page's own
+// blob URLs too. Same-origin requests can't fail CORS, so only those are dropped; cross-origin
+// ones (the bucket's presigned uploads) still count.
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const CANCELLED_SAME_ORIGIN = new RegExp(
-  `/${escapeRegExp(new URL(APP_URL).host)}/v1/\\S* due to access control checks`,
+  `/${escapeRegExp(new URL(APP_URL).host)}/\\S* due to access control checks`,
 )
 
 /** Console errors and uncaught exceptions on the page (CORS failures show up here). */
@@ -123,6 +124,11 @@ export async function expectAccessible(page: Page) {
   return results.violations.length
 }
 
+/** The pass question that takes the loop's place in the transport after pass `pass` (27 §3.7.4):
+ * "Pass 1 at 70 % — how was it?" with Not yet and Felt clean. */
+export const passQuestion = (page: Page, pass: number) =>
+  page.getByRole('group', { name: new RegExp(`^Pass ${pass} at \\d+\\s%`) })
+
 /** Content reflows to the viewport: no horizontal scrolling (WCAG 1.4.10). */
 export async function expectNoHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -134,13 +140,13 @@ export async function expectNoHorizontalScroll(page: Page) {
 /**
  * Billing pages never render card fields, even fake ones (25 §2): no text-like input, select or
  * textarea at all, and nothing that names or autocompletes card data. `scope` limits the scan to
- * part of the page (the upgrade sheet over the import screen). Returns how many form controls it
- * found (radios only).
+ * part of the page (the upgrade sheet over Add song, whose dialog is open under it). Returns how
+ * many form controls it found (radios only).
  */
-export async function expectNoCardInputs(page: Page, scope = 'body') {
-  const scan = await page.evaluate((selector) => {
-    const root = document.querySelector(selector) ?? document.body
-    const controls = [...root.querySelectorAll('input, select, textarea')]
+export async function expectNoCardInputs(page: Page, scope: string | Locator = 'body') {
+  const root = typeof scope === 'string' ? page.locator(scope).first() : scope
+  const scan = await root.evaluate((element) => {
+    const controls = [...element.querySelectorAll('input, select, textarea')]
     const textLike = controls.filter(
       (el) =>
         !(el instanceof HTMLInputElement && ['radio', 'checkbox', 'hidden'].includes(el.type)),
@@ -156,12 +162,12 @@ export async function expectNoCardInputs(page: Page, scope = 'body') {
       textLike: textLike.map((el) => el.outerHTML.slice(0, 120)),
       cardish: cardish.map((el) => el.outerHTML.slice(0, 120)),
     }
-  }, scope)
+  })
   expect(scan.textLike).toEqual([])
   expect(scan.cardish).toEqual([])
   test.info().annotations.push({
     type: 'card-input scan',
-    description: `${new URL(page.url()).pathname} ${scope}: ${scan.controls} form controls, 0 card or text inputs`,
+    description: `${new URL(page.url()).pathname} ${String(scope)}: ${scan.controls} form controls, 0 card or text inputs`,
   })
   return scan.controls
 }
@@ -189,17 +195,14 @@ export async function projectContext(
 }
 
 /**
- * Onboarding's way into the example song without signing in (13 §1): instrument, level, skip the
- * screen step. Returns the card's "Play your part" once the audio is decoded.
+ * Onboarding's way into the example song without signing in (13 §1): /start with its defaults
+ * (guitar, just started, the suggested song), then "Start practising". Returns the practice
+ * screen's Play once the audio is decoded.
  */
 export async function openExample(page: Page) {
   await page.goto('/start')
-  await page.getByRole('button', { name: 'Guitar', exact: true }).click()
-  await page.getByRole('button', { name: 'Just started' }).click()
-  await page.getByRole('button', { name: 'Skip' }).click()
-  const play = page
-    .getByRole('dialog', { name: 'Your first song' })
-    .getByRole('button', { name: 'Play your part' })
+  await page.getByRole('button', { name: 'Start practising' }).click()
+  const play = page.getByRole('button', { name: 'Play', exact: true })
   await expect(play).toBeEnabled({ timeout: 90_000 })
   return play
 }

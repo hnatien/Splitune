@@ -16,7 +16,6 @@ import { formatPercent } from '@/lib/format'
 import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
 import { useHydrated } from '@/lib/use-hydrated'
-import { Badge } from '@/ui/badge'
 import type { DisplayPreferences } from '@/ui/display'
 import { Label } from '@/ui/label'
 import { NumberField } from '@/ui/number-field'
@@ -35,9 +34,10 @@ import {
 } from './setting-row'
 import { type SaveState, useSaveState } from './use-save-state'
 
-// Settings → Display & practice (27 §3.9, Settings-Display): Appearance, Reading, Motion, Practice
-// defaults and the sound delay. Stored on this device (10 §3) and applied at once through the
-// data-* attributes (26 §2); Left-handed is stored on the account, as before.
+// Settings → Display & practice (27 §3.9, Settings-Display): Appearance (choice rows with a swatch
+// of each theme), Reading, Motion, Practice defaults and the sound delay. Stored on this device
+// (10 §3, said once under the title) and applied at once through the data-* attributes (26 §2);
+// each row says "Saved" beside its own label. Left-handed is stored on the account, as before.
 //
 // `stage` (26 §2, D2) is a valid stored appearance without a card: it shows as Dark with
 // its resolved distance, and the next change to either control stores `dark` and the distance shown.
@@ -64,10 +64,7 @@ function useResolvedDistance(): Distance {
 
 export function DisplaySettings({ me }: { me: MeData }): React.ReactElement {
   return (
-    <SettingsPage
-      title={m['settings.display']()}
-      badge={<Badge variant="success">{m['settings.device_badge']()}</Badge>}
-    >
+    <SettingsPage title={m['settings.display']()} intro={m['settings.device_intro']()}>
       <Appearance />
       <Reading me={me} />
       <Motion />
@@ -202,7 +199,7 @@ function ReadingSize() {
             {m['settings.calibration']()}
           </Label>
           <SaveStatusSlot state={save.state} />
-          <span className="text-sm text-muted-foreground tabular-nums">{size}</span>
+          <span className="text-body-sm text-muted-foreground tabular-nums">{size}</span>
         </div>
         <Slider
           aria-labelledby={id}
@@ -215,7 +212,7 @@ function ReadingSize() {
           value={calibration}
           onValueChange={(value) => save.run(() => update({ calibration: Number(value) }))}
         />
-        <span id={hintId} className="text-sm text-muted-foreground">
+        <span id={hintId} className="text-body-sm text-muted-foreground">
           {m['settings.calibration_hint']()}
         </span>
       </div>
@@ -225,13 +222,10 @@ function ReadingSize() {
         aria-label={m['settings.sample_label']({ size })}
         className="flex items-center gap-5 text-foreground"
       >
-        <span aria-hidden className="text-read-chord-sheet font-semibold">
+        <span aria-hidden className="text-read-chord-sheet">
           {m['settings.sample_chord']()}
         </span>
-        <span
-          aria-hidden
-          className="font-reading text-read-tab font-semibold tracking-widest tabular-nums"
-        >
+        <span aria-hidden className="font-reading text-read-tab tracking-widest tabular-nums">
           {m['settings.sample_tab']()}
         </span>
       </div>
@@ -318,6 +312,7 @@ function PracticeDefaultsSection() {
             min={1}
             max={20}
             step={1}
+            unit={m['settings.ladder_unit']()}
             value={defaults.ladderCleanPasses}
             decrementLabel={m['ladder.fewer_passes']()}
             incrementLabel={m['ladder.more_passes']()}

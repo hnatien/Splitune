@@ -5,23 +5,41 @@ import { m } from '@/lib/i18n'
 import { Button, buttonVariants } from '@/ui/button'
 import { Skeleton } from '@/ui/skeleton'
 import { Banner, InlineError } from '@/ui/status-message'
+import { useSignedIn } from '../system/system-message'
 import { BillingCard } from './billing-card'
 import { billingClient, billingOrpc, planName, planPrice, plansQuery, useRefreshMe } from './plans'
 
-// Mock checkout (27 §3.10, 25 §2): the demo banner, the plan and its price between hairlines, and
-// three buttons that make the mock provider act — success sends the real webhook event, declined
-// and cancel create nothing. No card fields, ever.
+// Mock checkout (27 §3.10, 25 §2): the demo line, the plan and its price, and three buttons that
+// make the mock provider act, ranked by weight: success (the one filled control) sends the real
+// webhook event, declined and cancel create nothing. A declined card says so where it happened and
+// leaves the three outcomes to pick again. No card fields, ever.
 
 type Outcome = 'success' | 'declined' | 'cancel'
 
+/**
+ * The link is old or belongs to someone else: say so, and the way to start again for who is
+ * reading (Settings → Plan when signed in, sign in first when not).
+ */
 export function SessionExpired() {
+  const signedIn = useSignedIn()
   return (
     <InlineError
       title={m['billing.session_expired']()}
+      description={signedIn ? m['billing.expired_signed_in']() : m['billing.expired_signed_out']()}
       actions={
-        <Link to="/settings/plan" className={buttonVariants({ variant: 'outline' })}>
-          {m['billing.go_billing']()}
-        </Link>
+        signedIn ? (
+          <Link to="/settings/plan" className={buttonVariants({ variant: 'outline' })}>
+            {m['billing.go_billing']()}
+          </Link>
+        ) : (
+          <Link
+            to="/auth/sign-in"
+            search={{ next: '/settings/plan' }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            {m['nav.sign_in']()}
+          </Link>
+        )
       }
     />
   )
@@ -56,7 +74,7 @@ export function MockCheckout({ session }: { session: string }) {
       setPending(undefined)
     }
   }
-  const button = (outcome: Outcome, label: string, variant: 'primary' | 'secondary' | 'ghost') => (
+  const button = (outcome: Outcome, label: string, variant: 'primary' | 'outline' | 'quiet') => (
     <Button
       variant={variant}
       size="lg"
@@ -72,7 +90,7 @@ export function MockCheckout({ session }: { session: string }) {
   return (
     <>
       <Banner tone="info" title={m['billing.demo']()} />
-      <h1 className="text-2xl">{m['billing.checkout_title']()}</h1>
+      <h1 className="pt-6 text-display">{m['billing.checkout_title']()}</h1>
       {details.isError ? (
         <SessionExpired />
       ) : details.data && plan ? (
@@ -84,18 +102,14 @@ export function MockCheckout({ session }: { session: string }) {
           {declined && (
             <InlineError
               title={m['billing.declined']()}
-              actions={
-                <Button variant="outline" onClick={() => setDeclined(false)}>
-                  {m['common.try_again']()}
-                </Button>
-              }
+              description={m['billing.declined_next']()}
             />
           )}
           {failed && <InlineError title={m['billing.action_failed']()} />}
           <div className="flex flex-col gap-2">
             {button('success', m['billing.simulate_success'](), 'primary')}
-            {button('declined', m['billing.simulate_declined'](), 'secondary')}
-            {button('cancel', m['common.cancel'](), 'ghost')}
+            {button('declined', m['billing.simulate_declined'](), 'outline')}
+            {button('cancel', m['common.cancel'](), 'quiet')}
           </div>
         </BillingCard>
       ) : plans.isError ? (
@@ -109,9 +123,10 @@ export function MockCheckout({ session }: { session: string }) {
         />
       ) : (
         <div className="flex flex-col gap-3" aria-hidden>
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-12" />
-          <Skeleton className="h-12" />
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="mt-6 h-12 rounded-full" />
+          <Skeleton className="h-12 rounded-full" />
         </div>
       )}
     </>

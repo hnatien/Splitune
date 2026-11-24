@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { m } from '@/lib/i18n'
 import { AppStory } from '../../../.storybook/app.tsx'
 import { useMixerPrefs } from './mixer-prefs'
 import { PracticePage } from './practice-page'
@@ -31,6 +32,7 @@ const VIEWPORTS = {
     styles: { width: '1180px', height: '820px' },
     type: 'desktop',
   },
+  tablet768: { name: 'Tablet 768', styles: { width: '768px', height: '1024px' }, type: 'tablet' },
   phone390: { name: 'Phone 390', styles: { width: '390px', height: '844px' }, type: 'mobile' },
 }
 const meta = {
@@ -52,9 +54,23 @@ const mixTab =
     </AppStory>
   )
 
+/** `?tab=mix` opens the panel on Mix (27 §3.7.1): the transport's Tools (X) shows it open. */
+const openTools = async (canvasElement: HTMLElement) => {
+  const canvas = within(canvasElement)
+  await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
+    timeout: 20_000,
+  })
+  const tools = canvas
+    .getByRole('toolbar', { name: 'Playback' })
+    .querySelector<HTMLElement>('[aria-keyshortcuts="X"]')
+  if (!tools) throw new Error('No Tools in the transport')
+  await expect(tools).toHaveAttribute('aria-pressed', 'true')
+}
+
 /** The Mix tab's panel once the stems play through the mixer. */
 const mixPanel = async (canvasElement: HTMLElement) => {
   const canvas = within(canvasElement)
+  await openTools(canvasElement)
   const panel = await canvas.findByRole('tabpanel', undefined, { timeout: 20_000 })
   await within(panel).findByRole('radiogroup', { name: 'Mix' }, { timeout: 20_000 })
   return { canvas, panel: within(panel), element: panel }
@@ -126,8 +142,8 @@ export const TwoStemsFallback: Story = {
     const { panel, element } = await mixPanel(canvasElement)
     expect(rowNames(element)).toEqual(['Guitar', 'Band'])
     await expect(panel.getAllByRole('radio')).toHaveLength(3)
-    const pill = within(canvasElement).getByRole('button', { name: /2 stems/ })
-    await expect(pill).toBeVisible()
+    // The Band is the mix-minus: no Rhythm only without bass and drums of their own.
+    await expect(panel.queryByRole('radio', { name: /^Rhythm only/ })).toBeNull()
   },
 }
 export const TwoStemsFallbackLight: Story = {
@@ -135,18 +151,30 @@ export const TwoStemsFallbackLight: Story = {
   globals: { appearance: 'light' },
 }
 
-/** Solo: S filled, "solo" in the readout and its name; the tab gets its changed-mix dot. */
+/** Solo: S filled, "solo" in the readout and its name, the other rows "Not heard" and dimmed; the
+ * tab gets its changed-mix dot. */
 export const Soloed: Story = {
   render: mixTab({ stems: SIX_STEMS }),
   play: async ({ canvasElement }) => {
-    const { canvas, panel } = await mixPanel(canvasElement)
+    const { canvas, panel, element } = await mixPanel(canvasElement)
     await expect(canvas.queryByRole('tab', { name: /Mix changed/ })).toBeNull()
     await userEvent.click(panel.getByRole('button', { name: 'Solo Bass' }))
     await expect(panel.getByRole('button', { name: 'Solo Bass' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    await expect(panel.getByRole('button', { name: 'Volume Bass: solo' })).toHaveTextContent('solo')
+    await expect(panel.getByRole('button', { name: /^Volume Bass: .+ · solo$/ })).toBeVisible()
+    // Every other stem says it isn't heard and dims: solo reads by more than the filled S.
+    await expect(panel.getByRole('button', { name: 'Volume Guitar: Not heard' })).toBeVisible()
+    const rows = [...element.querySelectorAll<HTMLElement>('[data-slot=stem-row]')]
+    expect(rows.map((row) => row.getAttribute('data-heard'))).toEqual([
+      'false',
+      'false',
+      'true',
+      'false',
+      'false',
+      'false',
+    ])
     await expect(canvas.getByRole('tab', { name: /Mix changed/ })).toBeVisible()
   },
 }
@@ -246,18 +274,81 @@ export const UseAsDefault: Story = {
   },
 }
 
+/** The stems were removed: the tab says so with the expired glyph and keeps the helpers and the
+ * master volume, which don't need them. */
+export const StemsExpired: Story = {
+  render: mixTab({ stemsPurged: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await openTools(canvasElement)
+    const panel = within(await canvas.findByRole('tabpanel', undefined, { timeout: 20_000 }))
+    const status = await panel.findByText(m['practice.stems_expired']())
+    await expect(status.closest('[data-slot=status]')).toHaveAttribute('data-kind', 'expired')
+    await expect(panel.queryByRole('radiogroup', { name: 'Mix' })).toBeNull()
+    await expect(panel.queryByText(m['practice.mix_wait']())).toBeNull()
+    await expect(panel.getByRole('switch', { name: 'Click' })).toBeVisible()
+  },
+}
+export const StemsExpiredLight: Story = { ...StemsExpired, globals: { appearance: 'light' } }
+
+/** The master volume (this device) in the tab: mute and a fader, so every layout reaches it. */
+export const MasterVolume: Story = {
+  render: mixTab({ stems: SIX_STEMS }),
+  play: async ({ canvasElement }) => {
+    const { panel } = await mixPanel(canvasElement)
+    const volume = panel.getByRole('slider', { name: 'Volume' })
+    await expect(volume).toBeVisible()
+    const mute = panel.getByRole('button', { name: m['practice.mute']() })
+    await userEvent.click(mute)
+    await expect(mute).toHaveAttribute('aria-pressed', 'true')
+    await expect(volume).toHaveAttribute('aria-valuenow', '0')
+    await userEvent.click(mute)
+    await expect(volume).not.toHaveAttribute('aria-valuenow', '0')
+  },
+}
+export const MasterVolumeLight: Story = { ...MasterVolume, globals: { appearance: 'light' } }
+
+/** A tablet (768, touch): the tools are a drawer between the top bar and the transport, so the
+ * transport's loop and speed stay in reach while the mixer is open. */
+export const TabletDrawer: Story = {
+  beforeEach: () => coarse({ '(orientation: landscape)': false }),
+  render: mixTab({ stems: SIX_STEMS }),
+  globals: { viewport: { value: 'tablet768' } },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await openTools(canvasElement)
+    const sheet = await body.findByRole('dialog', { name: m['practice.tools_label']() })
+    await within(sheet).findByRole('radiogroup', { name: 'Mix' }, { timeout: 20_000 })
+    const transport = within(canvasElement).getByRole('toolbar', { name: 'Playback' })
+    // Once the sheet has slid in, it stops above the transport.
+    await waitFor(() =>
+      expect(sheet.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        transport.getBoundingClientRect().top + 2,
+      ),
+    )
+    await expect(within(sheet).getByRole('button', { name: 'Solo Bass' })).toBeVisible()
+  },
+}
+export const TabletDrawerLight: Story = {
+  ...TabletDrawer,
+  globals: { appearance: 'light', viewport: { value: 'tablet768' } },
+}
+
 // The phone layout as its feature queries report it: portrait, ≤ 640 wide.
 const phone = () => coarse({ '(max-width: 640px)': true, '(orientation: landscape)': false })
 
+/** Tools, then its Mix tab: the phone's one sheet above the transport (s47 direction §2). */
 const openPhoneMix = async (canvasElement: HTMLElement) => {
   const canvas = within(canvasElement)
-  const button = await canvas.findByRole('button', { name: 'Mix' }, { timeout: 20_000 })
-  await waitFor(() => expect(button).toBeEnabled(), { timeout: 20_000 })
-  await userEvent.click(button)
+  await waitFor(() => expect(canvas.getByRole('button', { name: 'Play' })).toBeEnabled(), {
+    timeout: 20_000,
+  })
+  await userEvent.click(canvas.getByRole('button', { name: m['practice.tools']() }))
   const body = within(canvasElement.ownerDocument.body)
-  const sheet = await body.findByRole('dialog', { name: 'Mix' }, { timeout: 10_000 })
+  const sheet = await body.findByRole('dialog', { name: m['practice.tools_label']() })
+  await userEvent.click(within(sheet).getByRole('tab', { name: /^Mix/ }))
   await within(sheet).findByRole('group', { name: 'Mix' }, { timeout: 10_000 })
-  return within(sheet)
+  return { sheet: within(sheet), element: sheet }
 }
 
 const phoneScreen =
@@ -268,21 +359,39 @@ const phoneScreen =
     </AppStory>
   )
 
-/** The phone mini-mixer: preset chips, your part and the Band with an M painted 44, All 6 stems. */
+/** The phone mini-mixer in the Tools sheet: preset pills, your part and the Band each with M and
+ * S as 48 px letter toggles, the click one switch away, All 6 stems. The sheet stops above the
+ * transport. */
 export const PhoneMiniMixer: Story = {
   beforeEach: phone,
   render: phoneScreen({ stems: SIX_STEMS }),
   globals: { viewport: { value: 'phone390' } },
   play: async ({ canvasElement }) => {
-    const sheet = await openPhoneMix(canvasElement)
+    const { sheet, element } = await openPhoneMix(canvasElement)
+    const transport = within(canvasElement).getByRole('toolbar', { name: 'Playback' })
+    // Once the sheet has slid in, it stops above the transport.
+    await waitFor(() =>
+      expect(element.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        transport.getBoundingClientRect().top + 2,
+      ),
+    )
     await expect(sheet.getByRole('button', { name: 'Rhythm only' })).toBeVisible()
     await expect(sheet.getByRole('slider', { name: 'Volume Guitar · your part' })).toBeVisible()
+    await expect(sheet.getByRole('switch', { name: 'Click' })).toBeVisible()
     const mute = sheet.getByRole('button', { name: 'Mute Band' })
     const box = mute.getBoundingClientRect()
     expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(48)
     await userEvent.click(mute)
     await expect(mute).toHaveAttribute('aria-pressed', 'true')
     await expect(sheet.getByText('· muted')).toBeVisible()
+    await userEvent.click(mute)
+    // Solo your part: the Band says it isn't heard and dims, beside the filled S.
+    await userEvent.click(sheet.getByRole('button', { name: 'Solo Guitar · your part' }))
+    await expect(sheet.getByText('· Not heard')).toBeVisible()
+    const band = element.querySelectorAll('[data-slot=mini-mixer-row]')[1] as HTMLElement
+    await expect(band).toHaveAttribute('data-heard', 'false')
+    await userEvent.click(sheet.getByRole('button', { name: 'Solo Guitar · your part' }))
+    await userEvent.click(sheet.getByRole('button', { name: 'Mute Band' }))
     await userEvent.click(sheet.getByRole('button', { name: 'All 6 stems' }))
     await expect(await sheet.findByRole('radiogroup', { name: 'Mix' })).toBeVisible()
     await expect(sheet.getByRole('button', { name: 'Mute Drums' })).toHaveAttribute(
@@ -306,7 +415,7 @@ export const PhoneMiniMixerFallback: Story = {
   render: phoneScreen({ stems: TWO_STEMS }),
   globals: { viewport: { value: 'phone390' } },
   play: async ({ canvasElement }) => {
-    const sheet = await openPhoneMix(canvasElement)
+    const { sheet } = await openPhoneMix(canvasElement)
     await expect(sheet.queryByRole('button', { name: 'Rhythm only' })).toBeNull()
     await userEvent.click(sheet.getByRole('button', { name: 'Minus-one' }))
     await expect(sheet.getByRole('button', { name: 'Minus-one' })).toHaveAttribute(

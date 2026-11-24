@@ -1,26 +1,19 @@
-import {
-  CheckIcon,
-  DrumIcon,
-  FileAudioIcon,
-  GuitarIcon,
-  LinkIcon,
-  type LucideIcon,
-  MicIcon,
-  UploadIcon,
-} from 'lucide-react'
+import { FileAudioIcon, LinkIcon, MicIcon, UploadIcon } from 'lucide-react'
 import { m } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ChordChip } from '@/ui/chord-chip'
-import { LoopBadge } from '@/ui/loop-badge'
-import { PassControl } from '@/ui/pass-control'
 import { Progress, ProgressLabel, ProgressValue } from '@/ui/progress'
-import { SpeedControl } from '@/ui/speed-control'
-import { Still, TabStill } from './product-still'
+import { Status } from '@/ui/status'
+import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs'
+import { ReadingTab, StillTransport } from './practice-still'
+import { Still } from './product-still'
 
 // How it works (27 §3.2): one picture of the app per step, following the same 8-bar Am–F–C–G riff
-// as Home's stills from upload to a clean pass. The pictures are still (26 §10).
-
-const noop = () => undefined
+// as Home's practice picture from upload to a rated pass. Every word in a picture is HTML at its
+// own type role, and the drawings (waveforms, beats) carry no text, so nothing shrinks below
+// 11 px when a picture narrows to a phone; the tab shows fewer bars instead (ReadingTab). Each
+// picture is one image with a text alternative that says what it shows. The pictures are still
+// (26 §10).
 
 // Peaks for a positional waveform, 0–1. Deterministic so stories and visual tests never change.
 type Shape = (i: number) => number
@@ -33,291 +26,233 @@ const SHAPES = {
   vocals: (i) => (i % 32 < 22 ? 0.25 + 0.5 * Math.abs(Math.sin(i * 0.31)) : 0.05),
 } satisfies Record<string, Shape>
 
-function Peaks({
-  bins,
-  x,
-  width,
-  y,
-  amplitude,
-  shape,
-  className,
-}: {
-  bins: number
-  x: number
-  width: number
-  y: number
-  amplitude: number
-  shape: Shape
-  className: string
-}) {
-  const step = width / bins
+/** A waveform as bars, stretched to its box; no text, so its width never matters. */
+function Peaks({ bins, shape, className }: { bins: number; shape: Shape; className: string }) {
   return (
-    <g className={className}>
+    <svg
+      aria-hidden
+      viewBox={`0 0 ${bins} 40`}
+      preserveAspectRatio="none"
+      className={cn('block h-10 w-full', className)}
+    >
       {Array.from({ length: bins }, (_, i) => {
-        const h = Math.max(2, shape(i) * amplitude * 2)
+        const h = Math.max(2, shape(i) * 36)
         return (
-          <rect
-            // biome-ignore lint/suspicious/noArrayIndexKey: bins are positional and never reorder
-            key={i}
-            x={x + i * step + step * 0.2}
-            y={y - h / 2}
-            width={step * 0.6}
-            height={h}
-            rx={Math.min(1.5, step * 0.3)}
-          />
-        )
-      })}
-    </g>
-  )
-}
-
-/** Step 1: the file is uploaded and its waveform read. */
-function ImportScene() {
-  const sources: { icon: LucideIcon; label: string; chosen: boolean }[] = [
-    { icon: UploadIcon, label: m['how.scene_upload'](), chosen: true },
-    { icon: MicIcon, label: m['how.scene_record'](), chosen: false },
-    { icon: LinkIcon, label: m['how.scene_link'](), chosen: false },
-  ]
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-3 gap-2">
-        {sources.map(({ icon: Icon, label, chosen }) => (
-          <span
-            key={label}
-            className={cn(
-              'flex min-w-0 items-center justify-center gap-2 rounded-full px-2 py-2 text-sm font-medium',
-              chosen ? 'bg-primary-soft text-foreground' : 'text-muted-foreground',
-            )}
-          >
-            <Icon aria-hidden className="size-4 shrink-0" />
-            <span className="truncate">{label}</span>
-          </span>
-        ))}
-      </div>
-      <div className="flex flex-col gap-4 rounded-xl border border-dashed border-border-strong p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
-          <FileAudioIcon aria-hidden className="size-8 shrink-0 text-muted-foreground" />
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate font-medium">{m['how.scene_file']()}</span>
-            <span className="text-sm text-muted-foreground">{m['how.scene_file_meta']()}</span>
-          </span>
-        </div>
-        <Progress value={100} className="justify-between">
-          <ProgressLabel>{m['how.scene_uploaded']()}</ProgressLabel>
-          <ProgressValue className="text-sm text-muted-foreground tabular-nums" />
-        </Progress>
-      </div>
-      <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <svg aria-hidden viewBox="0 0 480 64" className="block h-14 w-full">
-          <line x1={0} x2={480} y1={32} y2={32} strokeWidth={1} className="stroke-border" />
-          <Peaks
-            bins={96}
-            x={0}
-            width={480}
-            y={32}
-            amplitude={28}
-            shape={SHAPES.mix}
-            className="fill-waveform-peak"
-          />
-        </svg>
-        <span className="flex items-center gap-2 text-sm font-medium">
-          <CheckIcon aria-hidden className="size-4 text-success" />
-          {m['how.scene_ready']()}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-const LANES = [
-  { stem: 'guitar', icon: GuitarIcon, name: () => m['instrument.guitar'](), y: 38 },
-  { stem: 'bass', icon: GuitarIcon, name: () => m['instrument.bass'](), y: 106 },
-  { stem: 'drums', icon: DrumIcon, name: () => m['instrument.drums'](), y: 174 },
-  { stem: 'vocals', icon: MicIcon, name: () => m['instrument.vocals'](), y: 242 },
-] as const
-const STEM_FILL = {
-  guitar: 'fill-stem-guitar',
-  bass: 'fill-stem-bass',
-  drums: 'fill-stem-drums',
-  vocals: 'fill-stem-vocals',
-} as const
-const WAVE_X = 132
-const WAVE_W = 420
-
-/** Step 2: the mix split into four stems, with guitar picked as your part. */
-function SeparateScene() {
-  return (
-    <svg aria-hidden viewBox="0 0 560 280" className="block w-full">
-      {LANES.map(({ stem, icon: Icon, name, y }) => {
-        const yours = stem === 'guitar'
-        return (
-          <g key={stem} opacity={yours ? 1 : 0.4}>
-            <Peaks
-              bins={64}
-              x={WAVE_X}
-              width={WAVE_W}
-              y={y}
-              amplitude={26}
-              shape={SHAPES[stem]}
-              className={STEM_FILL[stem]}
-            />
-            <rect x={0} y={y - 26} width={4} height={52} rx={2} className={STEM_FILL[stem]} />
-            <Icon x={14} y={y - 24} width={20} height={20} className="text-foreground" />
-            <text x={40} y={y - 8} className="fill-foreground text-lg font-medium">
-              {name()}
-            </text>
-            {yours && (
-              <>
-                <rect x={12} y={y + 2} width={104} height={26} rx={13} className="fill-primary" />
-                <text
-                  x={64}
-                  y={y + 15}
-                  dy="0.35em"
-                  textAnchor="middle"
-                  className="fill-primary-foreground text-base font-medium"
-                >
-                  {m['home.still_your_part']()}
-                </text>
-                <rect
-                  x={WAVE_X - 6}
-                  y={y - 32}
-                  width={WAVE_W + 10}
-                  height={64}
-                  rx={12}
-                  strokeWidth={1.5}
-                  className="fill-none stroke-signal"
-                />
-              </>
-            )}
-          </g>
+          // biome-ignore lint/suspicious/noArrayIndexKey: bins are positional and never reorder
+          <rect key={i} x={i + 0.2} y={20 - h / 2} width={0.6} height={h} />
         )
       })}
     </svg>
   )
 }
 
-// Bars 5–8 of the riff, matching TabStill cropped to them: 8 px in, 150 px a bar.
-const CHART = { width: 610, bar: 150, left: 8 } as const
-const CHORDS = [
-  { label: 'Am', confidence: 'high' },
-  { label: 'F', confidence: 'high' },
-  { label: 'C', confidence: 'high' },
-  { label: 'G', confidence: 'low' },
-] as const
-
-function RowLabel({ children }: { children: string }) {
-  return <span className="text-sm font-medium text-muted-foreground">{children}</span>
-}
-
-/** Step 3: beats and bar lines on your part, then the chords (the unsure G marked) and the tab. */
-function TranscribeScene() {
-  const barX = (bar: number) => CHART.left + bar * CHART.bar
+/** Step 1: the file is uploaded and its waveform read. */
+function ImportScene() {
   return (
-    <div className="flex flex-col gap-3">
-      <RowLabel>{m['how.scene_beat']()}</RowLabel>
-      <svg aria-hidden viewBox={`0 0 ${CHART.width} 76`} className="block w-full">
-        <Peaks
-          bins={48}
-          x={CHART.left}
-          width={CHART.bar * 4}
-          y={44}
-          amplitude={20}
-          shape={SHAPES.guitar}
-          className="fill-stem-guitar"
-        />
-        {Array.from({ length: 16 }, (_, beat) => (
-          <line
-            // biome-ignore lint/suspicious/noArrayIndexKey: beats are positional and never reorder
-            key={beat}
-            x1={barX(beat / 4)}
-            x2={barX(beat / 4)}
-            y1={beat % 4 === 0 ? 18 : 64}
-            y2={72}
-            strokeWidth={beat % 4 === 0 ? 2 : 1.5}
-            className={beat % 4 === 0 ? 'stroke-foreground' : 'stroke-muted-foreground'}
-          />
-        ))}
-        <g className="fill-muted-foreground text-xs font-medium tabular-nums">
-          {[5, 6, 7, 8].map((bar, i) => (
-            <text key={bar} x={barX(i) + 6} y={14}>
-              {bar}
-            </text>
-          ))}
-        </g>
-      </svg>
-      <RowLabel>{m['how.scene_chords']()}</RowLabel>
-      <div className="relative h-12 rounded-xl bg-paper text-ink">
-        {CHORDS.map((chord, i) => (
-          <ChordChip
-            key={chord.label}
-            label={chord.label}
-            confidence={chord.confidence}
-            showUncertainty
-            className="absolute top-1/2 -translate-y-1/2"
-            style={{ left: `${((barX(i) + 6) / CHART.width) * 100}%` }}
-          />
-        ))}
+    <div className="flex flex-col gap-5">
+      <Tabs value="upload">
+        <TabsList look="pill">
+          <TabsTrigger value="upload">
+            <UploadIcon aria-hidden />
+            {m['how.scene_upload']()}
+          </TabsTrigger>
+          <TabsTrigger value="record">
+            <MicIcon aria-hidden />
+            {m['how.scene_record']()}
+          </TabsTrigger>
+          <TabsTrigger value="link" className="max-sm:hidden">
+            <LinkIcon aria-hidden />
+            {m['how.scene_link']()}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <div className="flex flex-col gap-4 rounded-field bg-panel p-4">
+        <div className="flex items-center gap-3">
+          <FileAudioIcon aria-hidden className="size-8 shrink-0 text-muted-foreground" />
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-label">{m['how.scene_file']()}</span>
+            <span className="text-caption text-muted-foreground tabular-nums">
+              {m['how.scene_file_meta']()}
+            </span>
+          </span>
+        </div>
+        <Progress value={100} className="justify-between">
+          <ProgressLabel>{m['how.scene_uploaded']()}</ProgressLabel>
+          <ProgressValue className="text-body-sm text-muted-foreground tabular-nums" />
+        </Progress>
       </div>
-      <RowLabel>{m['how.scene_tab']()}</RowLabel>
-      <TabStill bars={{ from: 5, to: 8 }} loop={false} playhead={null} />
+      <div className="flex flex-col gap-3">
+        <Peaks bins={96} shape={SHAPES.mix} className="fill-waveform-peak" />
+        <Status kind="ready">{m['how.scene_ready']()}</Status>
+      </div>
     </div>
   )
 }
 
-/** Step 4: bars 5–8 looped and slowed to 70 %, on the third pass, marked clean. */
-function PractiseScene() {
-  const speed = 70
+const LANES = [
+  { stem: 'guitar', name: () => m['instrument.guitar'](), rule: 'bg-stem-guitar' },
+  { stem: 'bass', name: () => m['instrument.bass'](), rule: 'bg-stem-bass' },
+  { stem: 'drums', name: () => m['instrument.drums'](), rule: 'bg-stem-drums' },
+  { stem: 'vocals', name: () => m['instrument.vocals'](), rule: 'bg-stem-vocals' },
+] as const
+
+/**
+ * Step 2: the mix split into four stems. Each stem's hue is a 4 px rule beside its name; the part
+ * you picked has the ink edge, the words "Your part" and its waveform in its hue, the others grey.
+ */
+function SeparateScene() {
   return (
-    <div className="flex flex-col gap-4">
-      <TabStill bars={{ from: 4, to: 8 }} />
-      <div className="flex flex-wrap items-center gap-3">
-        <LoopBadge state="active">{m['how.scene_loop']({ pass: '3' })}</LoopBadge>
-        <SpeedControl
-          value={speed}
-          bpm={100}
-          onValueChange={noop}
-          labels={{
-            speed: m['home.still_speed'](),
-            decrease: m['home.still_speed'](),
-            increase: m['home.still_speed'](),
-            presets: m['home.still_speed'](),
-          }}
-        />
+    <ul className="flex flex-col gap-1">
+      {LANES.map(({ stem, name, rule }) => {
+        const yours = stem === 'guitar'
+        return (
+          <li
+            key={stem}
+            className={cn(
+              'grid grid-cols-[7rem_1fr] items-center gap-3 rounded-field py-2 pr-3 pl-2 sm:grid-cols-[9rem_1fr]',
+              yours && 'inset-ring-[1.5px] inset-ring-selected',
+            )}
+          >
+            <span className="flex items-center gap-2.5">
+              <span aria-hidden className={cn('h-9 w-1 shrink-0 rounded-full', rule)} />
+              <span className="flex min-w-0 flex-col">
+                <span className={cn('text-label', !yours && 'text-muted-foreground')}>
+                  {name()}
+                </span>
+                {yours && (
+                  <span className="text-caption text-muted-foreground">
+                    {m['mixer.your_part']()}
+                  </span>
+                )}
+              </span>
+            </span>
+            <Peaks
+              bins={64}
+              shape={SHAPES[stem]}
+              className={yours ? 'fill-stem-guitar' : 'fill-waveform-peak'}
+            />
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+const CHORDS = [
+  { bar: 5, label: 'Am', confidence: 'high' },
+  { bar: 6, label: 'F', confidence: 'high' },
+  { bar: 7, label: 'C', confidence: 'high' },
+  { bar: 8, label: 'G', confidence: 'low' },
+] as const
+
+function RowLabel({ children }: { children: string }) {
+  return <span className="text-label-sm text-muted-foreground">{children}</span>
+}
+
+/** The beat over bars of your part: a long stroke on each downbeat, a short one on each beat. */
+function Beats({ bars, className }: { bars: number; className?: string }) {
+  const width = bars * 40
+  return (
+    <svg
+      aria-hidden
+      viewBox={`0 0 ${width} 40`}
+      preserveAspectRatio="none"
+      className={cn('block h-10 w-full', className)}
+    >
+      {Array.from({ length: bars * 4 }, (_, beat) => {
+        const x = beat * 10 + 0.5
+        const down = beat % 4 === 0
+        return (
+          <rect
+            // biome-ignore lint/suspicious/noArrayIndexKey: beats are positional and never reorder
+            key={beat}
+            x={x}
+            y={down ? 2 : 24}
+            width={down ? 0.6 : 0.4}
+            height={down ? 38 : 16}
+            className={down ? 'fill-foreground' : 'fill-muted-foreground'}
+          />
+        )
+      })}
+    </svg>
+  )
+}
+
+/** Step 3: the beat on your part, the chords (the unsure G marked) and the tab under them. */
+function TranscribeScene() {
+  return (
+    <div className="flex flex-col gap-3">
+      <RowLabel>{m['how.scene_beat']()}</RowLabel>
+      <Beats bars={2} className="sm:hidden" />
+      <Beats bars={4} className="max-sm:hidden" />
+      <RowLabel>{m['how.scene_chords']()}</RowLabel>
+      <div className="grid grid-cols-2 rounded-field bg-paper px-2 py-2 text-ink sm:grid-cols-4">
+        {CHORDS.map((chord) => (
+          <span key={chord.bar} className={cn('flex', chord.bar < 7 && 'max-sm:hidden')}>
+            <ChordChip label={chord.label} confidence={chord.confidence} showUncertainty />
+          </span>
+        ))}
       </div>
-      <PassControl
-        labels={{
-          prompt: m['practice.pass_rate'](),
-          clean: m['practice.felt_clean'](),
-          notYet: m['practice.not_yet'](),
-        }}
-        best={m['practice.best_tempo']({ pct: String(speed) })}
-        onClean={noop}
-        onNotYet={noop}
-      />
+      <RowLabel>{m['how.scene_tab']()}</RowLabel>
+      <ReadingTab loop={false} playhead={null} />
     </div>
+  )
+}
+
+/** Step 4: bars 5–8 looped and slowed to 70 %, the pass prompt in the transport. */
+function PractiseScene() {
+  return (
+    <>
+      <div className="p-3 sm:p-4 md:p-6">
+        <ReadingTab />
+      </div>
+      <StillTransport after="pass" />
+    </>
   )
 }
 
 const SCENES = [
-  { title: () => m['how.scene_1_title'](), Scene: ImportScene },
-  { title: () => m['how.scene_2_title'](), Scene: SeparateScene },
-  { title: () => m['how.scene_3_title'](), Scene: TranscribeScene },
-  { title: () => m['how.scene_4_title'](), Scene: PractiseScene },
+  { title: () => m['how.scene_1_title'](), alt: () => m['how.scene_1_alt'](), Scene: ImportScene },
+  {
+    title: () => m['how.scene_2_title'](),
+    alt: () => m['how.scene_2_alt'](),
+    Scene: SeparateScene,
+  },
+  {
+    title: () => m['how.scene_3_title'](),
+    alt: () => m['how.scene_3_alt'](),
+    Scene: TranscribeScene,
+  },
+  {
+    title: () => m['how.scene_4_title'](),
+    alt: () => m['how.scene_4_alt'](),
+    Scene: PractiseScene,
+    flush: true,
+  },
 ] as const
 
-/** The app window showing step `step` (0–3). */
+/** The app window showing step `step` (0–3), as one image with a text alternative. */
 export function HowStage({ step, className }: { step: number; className?: string }) {
   const scene = SCENES[step]
   if (!scene) return null
-  const { title, Scene } = scene
+  const { title, alt, Scene } = scene
+  // The practice picture runs its transport to the window's edges, like the app.
+  const flush = 'flush' in scene
   return (
-    <Still className={cn('rounded-xl border border-border bg-card', className)}>
+    <Still
+      label={alt()}
+      className={cn('rounded-panel border border-border bg-background', className)}
+    >
       <div className="border-b border-border px-4 py-3 md:px-6">
-        <span className="text-sm font-medium text-muted-foreground">{title()}</span>
+        <span className="text-label-sm text-muted-foreground">{title()}</span>
       </div>
-      <div className="p-4 md:p-6">
+      {flush ? (
         <Scene />
-      </div>
+      ) : (
+        <div className="p-3 sm:p-4 md:p-6">
+          <Scene />
+        </div>
+      )}
     </Still>
   )
 }

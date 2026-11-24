@@ -59,15 +59,16 @@ export interface PracticeUi {
   fixCommand: (FixCommand & { sequence: number }) | null
   /** "Show original": the transcription without the learner's edits (12 §4). */
   showOriginal: boolean
-  mixerOpen: boolean
   /** "Hear the chords" (12 §7): a soft synth plays the transcribed chords with the song. */
   hearChords: boolean
   shortcutsOpen: boolean
-  /** The inspector's open tab (desktop), and whether its drawer is open below 1180 px. */
+  /** The tools panel's tab, and whether the panel is open (docked, a drawer or a sheet). */
   tab: InspectorTab
   inspectorOpen: boolean
   /** The Display and reading popover (opened from the top bar or ⌘K). */
   displayOpen: boolean
+  /** The transport's speed panel (opened by its readout or by S, on its typed field). */
+  speedOpen: boolean
   /** The pass whose "Felt clean / Not yet" is being asked (0 = none). */
   promptPass: number
   /** The Loop button or key was used with no loop: the hint on how to pick bars shows. */
@@ -85,6 +86,8 @@ export interface PracticeUi {
   beat: { index: number; accent: boolean; countIn: boolean } | null
   /** The screen can't be kept on here (no Wake Lock, or refused): the tip shows (24 §3). */
   screenMayLock: boolean
+  /** A pedal has been pressed on this screen: the transport shows what its two sides do now. */
+  pedalSeen: boolean
 }
 
 /** The PedalHud's line (27 §3.7.4): "{source} · {action}", and "Set it up" for the pedal hint. */
@@ -104,12 +107,12 @@ export const INITIAL_UI: PracticeUi = {
   fixListen: 'original',
   fixCommand: null,
   showOriginal: false,
-  mixerOpen: false,
   hearChords: false,
   shortcutsOpen: false,
   tab: 'loop',
   inspectorOpen: false,
   displayOpen: false,
+  speedOpen: false,
   promptPass: 0,
   loopHint: false,
   hud: { message: null, sequence: 0 },
@@ -119,6 +122,7 @@ export const INITIAL_UI: PracticeUi = {
   videoLarge: false,
   beat: null,
   screenMayLock: false,
+  pedalSeen: false,
 }
 
 export const usePracticeUi = create<PracticeUi>()(() => INITIAL_UI)
@@ -158,12 +162,28 @@ export function openTab(tab: InspectorTab) {
   )
 }
 
+/** The view switch's choice (27 §3.7.5): a notation over a chords-only recommendation is "Show
+ * tab anyway"; choosing the chords takes that back. */
+export function chooseView(view: NonNullable<PracticeUi['view']>) {
+  usePracticeUi.setState(
+    view === 'chords' ? { view: 'chords', forceTab: false } : { view, forceTab: true },
+  )
+}
+
 /** Enters Fix mode (if it isn't on) with a J / K / E for it to act on. */
 export function fixCommand(command: FixCommand) {
   usePracticeUi.setState((state) => ({
     tab: 'fix',
     inspectorOpen: true,
     fixing: true,
+    fixCommand: { ...command, sequence: (state.fixCommand?.sequence ?? 0) + 1 },
+  }))
+}
+
+/** J / K for the touch editor sheet while it is open: the same command, without Fix mode (which
+ * is the tools panel's, on screens that dock it). */
+export function sheetCommand(command: FixCommand) {
+  usePracticeUi.setState((state) => ({
     fixCommand: { ...command, sequence: (state.fixCommand?.sequence ?? 0) + 1 },
   }))
 }

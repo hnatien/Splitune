@@ -4,11 +4,12 @@ import { useId } from 'react'
 import { orpc } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
 import { m } from '@/lib/i18n'
-import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { chordText } from '@/ui/chord-chip'
-import { Switch } from '@/ui/switch'
-import { barLabel, eyebrow } from './fix-cards'
+import { PanelSection } from '@/ui/panel'
+import { Status } from '@/ui/status'
+import { SwitchRow } from '../common/switch-row'
+import { barLabel } from './fix-cards'
 import { type Op, useCorrections } from './model/corrections'
 import type { ArtefactEntry } from './model/data'
 import { type Edit, revertOp, UNCONFIRM } from './model/edits'
@@ -17,9 +18,11 @@ import { usePractice } from './practice-context'
 import { usePracticeUi } from './practice-store'
 
 // EditHistory (26 §12.2, 27 §3.7.4): "Your edits" — every correction on this song, newest first,
-// as "Changed a chord · bar 12 · F → Fmaj7 · 2 days ago" with a Revert that appends its inverse
-// (the overlay is append-only), the "Show original" switch, and where the fixes go: "Your fixes
-// are saved for this song." Nothing here says the model learns from them.
+// as hairline rows "Changed a chord · bar 12 · F → Fmaj7" over when it was made, with a Revert
+// that appends its inverse (the overlay is append-only); an edit still waiting on this device
+// says so with the offline glyph. Then the "Show original" switch (hear and see the transcription
+// before the edits) and where the fixes go: "Your fixes are saved for this song." Nothing here
+// says the model learns from them.
 
 const OP_LABEL: Record<Op['op'], () => string> = {
   set_chord: () => m['history.set_chord'](),
@@ -71,7 +74,6 @@ export function EditHistory() {
   const showOriginal = usePracticeUi((s) => s.showOriginal)
   const waiting = useCorrections((s) => s.offline)
   const titleId = useId()
-  const switchId = useId()
   const records = {
     chords: useRecords(data.entry.chords),
     notes: useRecords(data.entry.notes),
@@ -100,53 +102,55 @@ export function EditHistory() {
     .sort((a, b) => b.at - a.at || b.index - a.index)
   if (rows.length === 0) return null
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-0.5" data-slot="edit-history">
-      <div className="flex items-center gap-2">
-        <h3 id={titleId} className={`${eyebrow} flex-1`}>
-          {m['edit.history']()}
-        </h3>
-        <label htmlFor={switchId} className="text-sm text-muted-foreground">
-          {m['fix.show_original']()}
-        </label>
-        <Switch
-          id={switchId}
-          checked={showOriginal}
-          onCheckedChange={(checked) => usePracticeUi.setState({ showOriginal: checked })}
-        />
-      </div>
-      <ol className="flex flex-col">
+    <PanelSection
+      aria-labelledby={titleId}
+      title={<span id={titleId}>{m['edit.history']()}</span>}
+      data-slot="edit-history"
+      className="gap-1"
+    >
+      <ol className="m-0 flex list-none flex-col p-0">
         {rows.map(({ kind, base, op, index, at, pending }) => {
           const inverse = base ? revertOp(kind, base, data.ops[kind].ops, index) : null
           const target = artefactFor(kind)
           return (
-            <li key={`${kind}-${index}`} className="flex items-center gap-2.5">
-              <span className="min-w-0 flex-1 text-sm tabular-nums">
-                {describe(op, inverse, base, grid, music?.noteNames)}
-              </span>
-              {pending && waiting ? (
-                <Badge variant="neutral">{m['fix.saved_device']()}</Badge>
-              ) : (
-                <span className="shrink-0 text-sm text-faint-foreground">
-                  {now - at < HOUR_MS ? m['fix.just_now']() : formatRelativeDate(new Date(at))}
+            <li
+              key={`${kind}-${index}`}
+              className="flex min-h-target-practice items-center gap-2 border-b border-border py-1.5"
+            >
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-body-sm tabular-nums">
+                  {describe(op, inverse, base, grid, music?.noteNames)}
                 </span>
-              )}
-              {inverse && target && !showOriginal ? (
+                {pending && waiting ? (
+                  <Status kind="offline" className="text-caption">
+                    {m['fix.saved_device']()}
+                  </Status>
+                ) : (
+                  <span className="text-caption text-muted-foreground">
+                    {now - at < HOUR_MS ? m['fix.just_now']() : formatRelativeDate(new Date(at))}
+                  </span>
+                )}
+              </span>
+              {inverse && target && !showOriginal && (
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  size="practice"
+                  variant="quiet"
                   onClick={() => edit({ kind, op: inverse, inverse: op })}
                 >
                   {m['edit.revert']()}
                 </Button>
-              ) : (
-                <span aria-hidden className="h-control" />
               )}
             </li>
           )
         })}
       </ol>
-      <p className="text-sm text-muted-foreground">{m['practice.fix_saved_note']()}</p>
-    </section>
+      <SwitchRow
+        label={m['fix.show_original']()}
+        checked={showOriginal}
+        onCheckedChange={(checked) => usePracticeUi.setState({ showOriginal: checked })}
+      />
+      <p className="text-body-sm text-muted-foreground">{m['practice.fix_saved_note']()}</p>
+    </PanelSection>
   )
 }
 

@@ -3,6 +3,9 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
+// Select (doc 26 §12.1): the trigger is a field (10 px corners, a 1 px --edge that turns to the ink
+// on hover, focus and while open; 16 px on coarse pointers so iOS doesn't zoom). The popup
+// is a floating layer like a menu, and the chosen option carries a check, never a fill.
 const Select = SelectPrimitive.Root
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
@@ -38,7 +41,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex min-h-control w-fit items-center justify-between gap-2 rounded-xl border border-input bg-background py-2 pr-3 pl-4 text-base whitespace-nowrap transition-colors select-none focus-visible:-outline-offset-1 disabled:cursor-not-allowed disabled:bg-muted disabled:text-faint-foreground aria-invalid:border-destructive data-placeholder:text-faint-foreground data-[size=sm]:text-sm *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
+        "flex min-h-control w-fit items-center justify-between gap-2 rounded-field border border-edge bg-background py-2 pr-3 pl-4 text-body whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard select-none hover:border-foreground focus-visible:border-foreground focus-visible:-outline-offset-1 data-popup-open:border-foreground pointer-coarse:text-field disabled:cursor-not-allowed disabled:border-edge disabled:bg-transparent disabled:text-faint-foreground aria-invalid:border-destructive data-placeholder:text-faint-foreground data-[size=sm]:pointer-fine:text-body-sm *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
         className,
       )}
       {...props}
@@ -59,6 +62,7 @@ function SelectContent({
   align = 'center',
   alignOffset = 0,
   alignItemWithTrigger = true,
+  'aria-label': listLabel,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -79,13 +83,14 @@ function SelectContent({
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            'relative isolate z-(--z-popover) max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-2xl bg-popover p-1 text-popover-foreground border border-border shadow-2 duration-(--duration-base) data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
+            'relative isolate z-(--z-popover) max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-panel bg-raised p-1 text-foreground border border-border shadow-popover duration-(--duration-base) data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:ease-enter data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:ease-exit data-closed:fade-out-0 data-closed:zoom-out-95',
             className,
           )}
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List>{children}</SelectPrimitive.List>
+          {/* The list is the listbox, so it carries the name (a trigger without a visible label). */}
+          <SelectPrimitive.List aria-label={listLabel}>{children}</SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
@@ -97,7 +102,7 @@ function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) 
   return (
     <SelectPrimitive.GroupLabel
       data-slot="select-label"
-      className={cn('px-3 py-2 text-xs text-faint-foreground', className)}
+      className={cn('px-3 py-2 text-caption text-faint-foreground', className)}
       {...props}
     />
   )
@@ -108,7 +113,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2 min-h-control rounded-lg py-2 pr-10 pl-3 text-md select-none focus:bg-accent focus:text-accent-foreground focus-visible:-outline-offset-2 not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:text-faint-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8] *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex w-full cursor-default items-center gap-2 min-h-control rounded-field py-2 pr-10 pl-3 text-label select-none focus:bg-hover focus:text-foreground focus-visible:-outline-offset-2 not-data-[variant=destructive]:focus:**:text-foreground data-disabled:pointer-events-none data-disabled:text-faint-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8] *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}
@@ -118,7 +123,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator
         render={
-          <span className="pointer-events-none absolute right-3 flex size-4 items-center justify-center text-primary-ink" />
+          <span className="pointer-events-none absolute right-3 flex size-4 items-center justify-center text-foreground" />
         }
       >
         <CheckIcon className="pointer-events-none" />
@@ -145,7 +150,7 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpArrow
       data-slot="select-scroll-up-button"
       className={cn(
-        "top-0 z-10 flex w-full cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-5",
+        "top-0 z-10 flex w-full cursor-default items-center justify-center bg-raised py-1 [&_svg:not([class*='size-'])]:size-5",
         className,
       )}
       {...props}
@@ -163,7 +168,7 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownArrow
       data-slot="select-scroll-down-button"
       className={cn(
-        "bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-5",
+        "bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-raised py-1 [&_svg:not([class*='size-'])]:size-5",
         className,
       )}
       {...props}

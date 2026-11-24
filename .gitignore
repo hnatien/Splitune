@@ -44,3 +44,7 @@ apps/web/app/routeTree.gen.ts
 .claude/
 .playwright-mcp/
 .impeccable/
+
+# s47 redesign evidence: bulk screenshots stay local (about 150 MB a set)
+docs/design/s47-before/
+docs/design/s47-after/

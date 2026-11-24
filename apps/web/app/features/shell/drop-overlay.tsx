@@ -1,8 +1,11 @@
+import { FileAudioIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { m } from '@/lib/i18n'
 
-// A file dragged anywhere over the app shell (27 §1): "Drop to add" over the page, and the drop
-// opens Add song with the file. Choosing a file in Add song is the non-drag path (WCAG 2.5.7).
+// A file dragged anywhere over the app shell (27 §1): the whole window becomes the drop target, a
+// raised layer with the 2 px ink edge, "Drop to add" and what it takes (formats, up to 20 min),
+// and the drop opens Add song with the file. Choosing a file in Add song is the non-drag path
+// (WCAG 2.5.7).
 export function DropOverlay({ onFile }: { onFile: (file: File) => void }) {
   const [dragging, setDragging] = useState(false)
   useEffect(() => {
@@ -44,14 +47,16 @@ export function DropOverlay({ onFile }: { onFile: (file: File) => void }) {
   return (
     <div
       data-slot="drop-overlay"
-      className="pointer-events-none fixed inset-0 z-(--z-popover) grid place-items-center bg-scrim p-4"
+      className="pointer-events-none fixed inset-0 z-(--z-popover) flex bg-scrim p-3 sm:p-4"
     >
-      <p
+      <div
         role="status"
-        className="grid min-h-56 w-full max-w-xl place-items-center rounded-4xl border-2 border-solid border-signal bg-card px-6 text-xl"
+        className="flex flex-1 animate-pop-in flex-col items-center justify-center gap-3 rounded-dialog border-2 border-selected bg-raised px-6 text-center shadow-dialog"
       >
-        {m['import.drop_here']()}
-      </p>
+        <FileAudioIcon aria-hidden strokeWidth={1.8} className="size-8 text-muted-foreground" />
+        <p className="text-heading">{m['import.drop_here']()}</p>
+        <p className="text-body-sm text-muted-foreground">{m['import.formats']()}</p>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { pcOfName } from '@splitune/music-core'
 import { Link } from '@tanstack/react-router'
-import { ALargeSmallIcon, EllipsisIcon, KeyboardIcon, PanelRightIcon } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import { ALargeSmallIcon, EllipsisIcon, KeyboardIcon } from 'lucide-react'
+import { lazy, Suspense, useState } from 'react'
 import { m } from '@/lib/i18n'
 import { instrumentLabel } from '@/lib/instruments'
 import { Button, buttonVariants } from '@/ui/button'
@@ -28,23 +28,16 @@ const FixPill = lazy(() => import('./fix-mode').then((module) => ({ default: mod
 
 const CHORDS_STAGE: string = 'chords'
 
-// The practice top bar's content (27 §3.7.1, Main.dc.html; the focus shell draws the bar, 60 px,
-// and "‹ Library"): the title (16/650) over the part line "{artist} · {part} · {key} · {bpm} BPM"
-// (the key spelled in the song's own key; "key after chords" while the chords are on the way), the
-// centred view switch — or, while the analysis runs, the analysing badge — then the legend chip,
-// Display and reading (Aa), Keyboard & pedal, Tools (the inspector's drawer below 1180 px) and More
-// (⋯). Stage keeps the controls and drops the title for screen readers, as phones do. In Fix mode
-// (§3.7.4, Practice-Fix.dc.html) the centre is the "Fixing" pill with Undo and Done, and the bar
-// keeps only Display and More beside it.
+// The practice top bar's content (27 §3.7.1; the focus shell draws the 52 px bar and "‹ Library"):
+// the title over one meta line "{artist} · {part} · {key} · {bpm} BPM" (the key spelled in the
+// song's own key; "key after chords" while the chords are on the way), the view tabs in the
+// middle — or, while the analysis runs, its status — then the unsure chip, Display and reading
+// (Aa), Keyboard & pedal and More (⋯). Everything here is quiet: no fill at rest, so the music
+// below takes the ink. Phones keep back, the view tabs, Aa and ⋯ and nothing else, so nothing
+// overlaps at 375 px; the title is read out there, as in Stage. In Fix mode (§3.7.4) the middle
+// is the "Fixing" pill with Undo and Done, and the bar keeps only Display and More beside it.
 
-export function PracticeStatus({
-  layout,
-  tools = false,
-}: {
-  layout: PracticeLayout
-  /** The inspector is a drawer here: the bar gets its "Tools" button. */
-  tools?: boolean
-}) {
+export function PracticeStatus({ layout }: { layout: PracticeLayout }) {
   const { data, songId, guest, grid, music } = usePractice()
   const song = data.song.data
   const key = music?.chords?.key
@@ -76,27 +69,29 @@ export function PracticeStatus({
         .join(' · ')
     : ''
   const phone = isPhone(layout)
-  const inspectorOpen = usePracticeUi((s) => s.inspectorOpen)
   const displayOpen = usePracticeUi((s) => s.displayOpen)
+  const [moreOpen, setMoreOpen] = useState(false)
   const fixing = usePracticeUi((s) => s.fixing) && layout === 'desktop'
   return (
     <>
-      <span aria-hidden className="h-8 w-px shrink-0 bg-border max-sm:hidden" />
-      {/* Phones keep the controls, read from the stand, whole: the title is for screen readers
-          there, as in Stage. */}
-      <div className="flex min-w-0 shrink flex-col leading-tight max-sm:sr-only in-data-[appearance=stage]:sr-only">
-        <span className="truncate text-button-lg font-medium" title={song?.title}>
+      {/* Phones keep the controls whole: the title is for screen readers there, as in Stage. */}
+      <div className="flex min-w-0 shrink flex-col max-sm:sr-only in-data-[appearance=stage]:sr-only">
+        <span className="truncate text-label" title={song?.title}>
           {song?.title}
         </span>
-        {partLine && <span className="truncate text-sm text-muted-foreground">{partLine}</span>}
+        {partLine && (
+          <span className="truncate text-caption text-muted-foreground tabular-nums">
+            {partLine}
+          </span>
+        )}
       </div>
-      <div className="flex min-w-0 flex-1 items-center justify-center gap-2 max-lg:justify-end">
+      <div className="flex flex-1 shrink-0 items-center justify-center gap-2">
         <Suspense fallback={null}>
           {fixing ? <FixPill /> : <StatusControls layout={layout} />}
         </Suspense>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {!fixing && (
+      <div className="flex shrink-0 items-center">
+        {!fixing && !phone && (
           <Suspense fallback={null}>
             <StatusLegend />
           </Suspense>
@@ -106,7 +101,7 @@ export function PracticeStatus({
           onOpenChange={(open) => usePracticeUi.setState({ displayOpen: open })}
         >
           <PopoverTrigger
-            render={<Button variant="ghost" size="icon" aria-label={m['nav.display_reading']()} />}
+            render={<Button variant="quiet" size="icon" aria-label={m['nav.display_reading']()} />}
           >
             <ALargeSmallIcon aria-hidden />
           </PopoverTrigger>
@@ -118,30 +113,24 @@ export function PracticeStatus({
           <Link
             to="/settings/keyboard"
             aria-label={m['nav.keyboard']()}
-            className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+            className={buttonVariants({ variant: 'quiet', size: 'icon' })}
           >
             <KeyboardIcon aria-hidden />
           </Link>
         )}
-        {tools && (
-          <Button
-            variant={inspectorOpen ? 'on' : 'ghost'}
-            size="practice-2"
-            aria-pressed={inspectorOpen}
-            onClick={() => usePracticeUi.setState({ inspectorOpen: !inspectorOpen })}
-          >
-            <PanelRightIcon aria-hidden />
-            {m['practice.tools']()}
-          </Button>
-        )}
-        <Popover>
+        <Popover open={moreOpen} onOpenChange={setMoreOpen}>
           <PopoverTrigger
-            render={<Button variant="ghost" size="icon" aria-label={m['practice.more']()} />}
+            render={<Button variant="quiet" size="icon" aria-label={m['practice.more']()} />}
           >
             <EllipsisIcon aria-hidden />
           </PopoverTrigger>
           <Suspense fallback={null}>
-            <MorePanel desktop={layout === 'desktop'} editor={!guest} songId={songId} />
+            <MorePanel
+              desktop={layout === 'desktop'}
+              editor={!guest}
+              songId={songId}
+              onChosen={() => setMoreOpen(false)}
+            />
           </Suspense>
         </Popover>
       </div>

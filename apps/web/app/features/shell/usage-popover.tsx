@@ -13,19 +13,18 @@ import { periodLine, planName } from '../billing/plans'
 import { UpgradeSheet } from '../billing/upgrade-sheet'
 import { usageItems, usedText } from '../settings/usage-settings'
 
-// The app bar's Usage popover: what this period's allowances have used, one compact row each
-// ("Lite analyses … 1 of 5 used", a bar, "Resets 1 Dec"), then the plan with View plan and, on
-// Free, See Plus as a compact quiet pill. Settings → Usage and Plan hold the full pages. `trigger`
-// is the bar's ghost pill or the phone bottom bar's tab; the popover opens below the first and
-// above the second.
+// Usage (the rail's row, the top bar's gauge below 1024 px): what this period's allowances have
+// used, one row each ("Lite analyses … 1 of 5 used", a bar, "Resets 1 Dec"), then the plan with
+// View plan and, on Free, See Plus. Settings → Usage and Plan hold the full pages. It opens beside
+// the rail and under the top bar, from the control that opened it.
 export function UsagePopover({
   me: initial,
   trigger,
-  side = 'bottom',
+  side,
 }: {
   me: MeData
   trigger: React.ReactElement
-  side?: 'top' | 'bottom'
+  side: 'right' | 'bottom'
 }) {
   const me = useQuery({ ...meQuery, initialData: initial }).data ?? initial
   const [open, setOpen] = useState(false)
@@ -37,49 +36,47 @@ export function UsagePopover({
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger render={trigger} />
-        <PopoverContent
-          side={side}
-          align={side === 'top' ? 'center' : 'start'}
-          // Above the phone bar, clear of its top padding as well as the tab.
-          sideOffset={side === 'top' ? 20 : 8}
-          className="gap-0 p-0"
-        >
+        <PopoverContent side={side} align="end" sideOffset={8} className="gap-0 p-0">
           <div className="flex flex-col gap-4 p-4">
-            <PopoverTitle className="text-base">{m['settings.usage_limits']()}</PopoverTitle>
+            <PopoverTitle className="text-title">{m['settings.usage_limits']()}</PopoverTitle>
             {usageItems(me).map((item) =>
               'limit' in item ? (
                 <UsageBar key={item.id} {...item} />
               ) : (
                 <div key={item.id} className="flex flex-col gap-0.5">
                   <div className="flex items-baseline justify-between gap-3">
-                    <span>{item.label}</span>
-                    <span className="text-right text-muted-foreground">{item.note}</span>
+                    <span className="text-label">{item.label}</span>
+                    <span className="text-right text-body-sm text-muted-foreground">
+                      {item.note}
+                    </span>
                   </div>
-                  {item.hint && <span className="text-xs text-faint-foreground">{item.hint}</span>}
+                  {item.hint && (
+                    <span className="text-caption text-muted-foreground">{item.hint}</span>
+                  )}
                 </div>
               ),
             )}
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-border p-4">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span>
+              <span className="text-label">
                 {plus && me.subscription
                   ? planName(me.subscription.plan)
                   : m['billing.plan_free']()}
               </span>
-              {plus && <span className="text-xs text-muted-foreground">{periodLine(me)}</span>}
+              {plus && <span className="text-caption text-muted-foreground">{periodLine(me)}</span>}
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <Link
                 to="/settings/plan"
                 onClick={close}
-                className={buttonVariants({ variant: plus ? 'secondary' : 'ghost', size: 'sm' })}
+                className={buttonVariants({ variant: 'quiet', size: 'sm' })}
               >
                 {m['settings.view_plan']()}
               </Link>
               {!plus && (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     close()
@@ -103,7 +100,7 @@ export function UsagePopover({
   )
 }
 
-/** "Lite analyses … 1 of 5 used" over a 4 px bar, the reset date under it. */
+/** "Lite analyses … 1 of 5 used" over the bar, the reset date under it. */
 function UsageBar({
   label,
   hint,
@@ -118,17 +115,11 @@ function UsageBar({
   const { value, spoken } = usedText({ used, limit, hint })
   return (
     <div className="flex flex-col gap-1.5">
-      <Meter
-        value={used}
-        min={0}
-        max={limit}
-        getAriaValueText={() => spoken}
-        className="gap-y-1.5 **:data-[slot=meter-track]:h-1"
-      >
-        <MeterLabel className="font-normal">{label}</MeterLabel>
+      <Meter value={used} min={0} max={limit} getAriaValueText={() => spoken}>
+        <MeterLabel className="text-label">{label}</MeterLabel>
         <MeterValue>{() => value}</MeterValue>
       </Meter>
-      {hint && <span className="text-xs text-faint-foreground">{hint}</span>}
+      {hint && <span className="text-caption text-muted-foreground">{hint}</span>}
     </div>
   )
 }
