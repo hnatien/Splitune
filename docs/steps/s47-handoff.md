@@ -1,5 +1,7 @@
 # Step s47 — handoff (2026-11-24)
 
+> **Closed the same day.** The verification below was run on the PC, what it found was fixed, and the results are in the s47 entry of `docs/progress-log.md` ("Verification" onwards). What follows is the note as it was handed over; its "last known results" and "open failures to expect" are superseded by that entry.
+
 For whoever continues step s47 (`docs/steps/s47-full-redesign.md`) on another machine. The redesign is built, reviewed and committed on `impl/47-full-redesign`; what is left is the final verification run and the report. Nothing is merged into `dev` and no PR is open.
 
 ## Where things stand
