@@ -132,6 +132,8 @@ function WaveformTimeline({
   const base = useRef<HTMLCanvasElement>(null)
   const played = useRef<HTMLCanvasElement>(null)
   const nowLine = useRef<HTMLDivElement>(null)
+  /** The pointer scrubbing the map, from press to release. */
+  const scrub = useRef<number | null>(null)
   const [width, setWidth] = useState(0)
   const [palette, setPalette] = useState(colors)
   const band = useRef<Band | null>(loop && { ...loop, alpha: 1 })
@@ -375,10 +377,17 @@ function WaveformTimeline({
         onPointerDown={(event) => {
           if (event.button !== 0) return
           event.currentTarget.setPointerCapture(event.pointerId)
+          scrub.current = event.pointerId
           seekAt(event, false)
         }}
         onPointerMove={(event) => {
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) seekAt(event, true)
+          if (scrub.current === event.pointerId) seekAt(event, true)
+        }}
+        onPointerUp={() => {
+          scrub.current = null
+        }}
+        onPointerCancel={() => {
+          scrub.current = null
         }}
       >
         <canvas ref={base} aria-hidden className="absolute inset-0 h-full w-full" />
