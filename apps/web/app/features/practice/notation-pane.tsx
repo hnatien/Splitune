@@ -184,17 +184,18 @@ function TabView({
   }, [grid, view])
 
   // The bar being fixed stays in view: when it is chosen, and again when the score is drawn anew
-  // or its pane changes size (the touch editor sheet takes its room from the stage).
+  // or its pane changes size (the touch editor sheet takes its room from the stage). "Drawn anew"
+  // is when the bar buttons are over the new score, not when alphaTab finishes: the buttons are
+  // what is measured, and a reveal that came before them found none and was never asked again.
   const editingBar = usePracticeUi((s) => s.editor?.bar)
-  const [rendered, setRendered] = useState(0)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `rendered` and the pane's size say when the bar may have moved
+  const [placed, setPlaced] = useState(0)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `placed` and the pane's size say when the bar may have moved
   useEffect(() => {
     if (host && editingBar !== undefined) revealBar(host, editingBar, motion.smoothScroll)
-  }, [host, editingBar, rendered, pane.width, pane.height, motion.smoothScroll])
+  }, [host, editingBar, placed, pane.width, pane.height, motion.smoothScroll])
 
   // Re-render timing after an edit or a capo/level change (12 §10: ≤150 / ≤300 ms).
   const onRendered = (renderMs: number) => {
-    setRendered((count) => count + 1)
     const started = musicState.requestedAt
     if (started === undefined) return
     const total = performance.now() - started
@@ -255,6 +256,7 @@ function TabView({
           onBarActivate={onBarActivate}
           {...(onNoteActivate ? { onNoteActivate } : {})}
           onRendered={onRendered}
+          onBarsPlaced={() => setPlaced((count) => count + 1)}
           smoothScroll={motion.smoothScroll}
         />
       </Suspense>

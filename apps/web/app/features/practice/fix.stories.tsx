@@ -583,14 +583,18 @@ export const EditorSheetPhone: Story = {
     // The bar being fixed is in view above the sheet, never under it, and the sheet has no bleed
     // over the transport's status row.
     const score = canvasElement.querySelector('[data-slot=alphatab-view]') as HTMLElement
-    const barFour = [...score.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].find(
-      (target) => /^Bar 4\b/.test(target.getAttribute('aria-label') ?? ''),
-    )
-    if (!barFour) throw new Error('No bar 4 in the score')
-    // The score scrolls smoothly, so the bar takes a moment to arrive.
+    const barFour = () => {
+      const target = [...score.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].find(
+        (candidate) => /^Bar 4\b/.test(candidate.getAttribute('aria-label') ?? ''),
+      )
+      if (!target) throw new Error('No bar 4 in the score')
+      return target
+    }
+    // The score is drawn again as the sheet takes its room and then scrolls smoothly, so the bar
+    // takes a moment to be there and to arrive.
     await waitFor(
       () => {
-        const bar = barFour.getBoundingClientRect()
+        const bar = barFour().getBoundingClientRect()
         expect(bar.top).toBeGreaterThanOrEqual(score.getBoundingClientRect().top - 1)
         expect(bar.bottom).toBeLessThanOrEqual(sheet.getBoundingClientRect().top + 1)
       },

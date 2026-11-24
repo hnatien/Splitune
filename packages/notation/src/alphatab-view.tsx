@@ -96,6 +96,8 @@ export interface AlphaTabViewProps {
   onCurrentBarChange?: (bar: number) => void
   /** Milliseconds from handing the score to alphaTab until the render finished. */
   onRendered?: (ms: number) => void
+  /** The bar buttons are in the page over the score as it is drawn now. */
+  onBarsPlaced?: () => void
   /** Smooth page turns (off under reduced motion: jumps). */
   smoothScroll?: boolean
   ref?: Ref<AlphaTabViewHandle>
@@ -192,6 +194,7 @@ export function AlphaTabView({
   onNoteActivate,
   onCurrentBarChange,
   onRendered,
+  onBarsPlaced,
   smoothScroll = true,
   ref,
   className,
@@ -215,6 +218,7 @@ export function AlphaTabView({
     timeline,
     onCurrentBarChange,
     onRendered,
+    onBarsPlaced,
     smoothScroll,
     stepped,
     playhead,
@@ -225,6 +229,7 @@ export function AlphaTabView({
     timeline,
     onCurrentBarChange,
     onRendered,
+    onBarsPlaced,
     smoothScroll,
     stepped,
     playhead,
@@ -262,7 +267,10 @@ export function AlphaTabView({
     }
   }, [scroll, barsPerRow])
 
-  // A changed score, ink, timeline or theme re-renders; overlay-only props don't.
+  // A changed score, ink, timeline or theme re-renders; overlay-only props don't. So does a new
+  // API (layout mode, bars per system): it starts empty, and without its score the pane is blank
+  // and the playhead has no bounds to follow.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll and barsPerRow stand for the API they re-create
   useEffect(() => {
     const api = apiRef.current
     if (!api) return
@@ -277,7 +285,7 @@ export function AlphaTabView({
     setTimeline(resolved)
     renderStarted.current = performance.now()
     api.renderScore(score, [0])
-  }, [tex, noteMap, marks, times, theme])
+  }, [tex, noteMap, marks, times, theme, scroll, barsPerRow])
 
   // Bar numbers count from the first full bar (bar-numbers.ts). alphaTab adds its SVG a chunk at
   // a time as systems come into view, so each chunk is renumbered as it lands; a score that
@@ -309,6 +317,12 @@ export function AlphaTabView({
       markers: markerBoxes(lookup, score, timeline, markers),
     })
   }, [lookupVersion, noteMap, marks, markers, timeline])
+
+  // Said after the commit that put them there: a render is finished one update before its bars
+  // can be measured.
+  useEffect(() => {
+    if (overlay !== EMPTY) latest.current.onBarsPlaced?.()
+  }, [overlay])
 
   // The frame loop: push the clock, move the playhead, turn pages while playing.
   useEffect(() => {

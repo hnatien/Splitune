@@ -1025,9 +1025,36 @@ export const NotSavedOffline: Story = {
 /** A stored `stage` (26 §2): Dark at no less than Music-stand sizes, × 1.25. */
 export const ReadyStage: Story = { render: screen(ALL), globals: { appearance: 'stage' } }
 
+/**
+ * At the music stand's reading size fewer bars fit a system, and fewer again beside the docked
+ * tools panel. Each count is a new alphaTab layout, and each draws the score: the bar buttons of
+ * the layout before stay over an empty pane otherwise, so the drawn systems are what is checked.
+ */
 export const ReadyAtTheStand: Story = {
   render: screen(ALL),
-  globals: { distance: 'stand' },
+  globals: { distance: 'stand', viewport: { value: 'desktop1280' } },
+  play: async ({ canvasElement }) => {
+    const canvas = await playable(canvasElement)
+    const tab = await canvas.findByRole('region', { name: 'Tab' }, { timeout: 20_000 })
+    const drawn = () => tab.querySelectorAll('[data-slot=alphatab-view] svg').length
+    const barsInFirstSystem = () => {
+      const tops = [...tab.querySelectorAll<HTMLElement>('[data-slot=bar-target]')].map(
+        (target) => target.getBoundingClientRect().top,
+      )
+      return tops.filter((top) => Math.abs(top - (tops[0] ?? 0)) < 1).length
+    }
+    await waitFor(() => expect(drawn()).toBeGreaterThan(0), { timeout: 10_000 })
+    const wide = barsInFirstSystem()
+    await userEvent.click(toolsButton(canvas))
+    await canvas.findByRole('complementary', { name: 'Practice tools' }, { timeout: 10_000 })
+    await waitFor(
+      () => {
+        expect(barsInFirstSystem()).toBeLessThan(wide)
+        expect(drawn()).toBeGreaterThan(0)
+      },
+      { timeout: 10_000 },
+    )
+  },
 }
 
 /** Many chords on the Chords view: the strip over the sheet holds the next six, fading out at its
