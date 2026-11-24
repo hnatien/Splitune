@@ -12,7 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
 export const SPEED_PRESETS = [50, 60, 70, 75, 80, 90, 100] as const
 
-const NBSP = ' '
+const NBSP = '\u00a0'
 
 export function SpeedPresets({
   value,

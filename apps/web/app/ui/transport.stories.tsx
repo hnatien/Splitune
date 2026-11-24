@@ -665,6 +665,13 @@ export const SameHeightBeforeTheBeat: Story = {
       ...canvasElement.querySelectorAll<HTMLElement>('[data-slot=speed-readout]'),
     ] as [HTMLElement, HTMLElement]
     await expect(before.getBoundingClientRect().height).toBe(after.getBoundingClientRect().height)
+    // The line under the number is held open by a no-break space: an ordinary space collapses,
+    // and the control then grows by a fraction of a pixel wherever the two lines overfill it.
+    const line = (readout: HTMLElement) =>
+      (readout.querySelector('[data-slot=speed-detail]') as HTMLElement).getBoundingClientRect()
+        .height
+    await expect(line(before)).toBeGreaterThan(0)
+    await expect(line(before)).toBe(line(after))
     await expect(before).not.toHaveTextContent(/BPM/)
     await expect(after).toHaveTextContent(/70\sBPM/)
   },

@@ -181,7 +181,7 @@ export function GettingReady({ compact = false }: { compact?: boolean }) {
         return {
           ...row,
           detail: detail(row.id, finished(state)),
-          ...(minutes ? { statusText: `~${minutes}${' '}min` } : {}),
+          ...(minutes ? { statusText: `~${minutes}\u00a0min` } : {}),
         }
       })
     : []

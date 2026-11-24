@@ -53,7 +53,7 @@ type SpeedControlProps = {
   className?: string
 }
 
-const NBSP = ' '
+const NBSP = '\u00a0'
 
 /** The readout's number counts from the old speed to the new one over the base duration. */
 function useTweened(target: number) {
