@@ -7,9 +7,17 @@ import { defineConfig, devices } from '@playwright/test'
 // The full matrix runs nightly; E2E_SMOKE=1 (`e2e:smoke`, every PR) runs the core journeys on the
 // three desktop engines (18 §1).
 export const APP_URL = 'http://localhost:3000'
-// Firefox doesn't start on macOS 27: PW_FIREFOX_WS_ENDPOINT runs it in the Linux Playwright image
-// (as the audio engine's suite does), with loopback traffic tunnelled back to this machine.
-const { PW_FIREFOX_WS_ENDPOINT: firefoxEndpoint, E2E_SMOKE } = process.env
+// Firefox doesn't start on macOS 27, and Playwright's WebKit for Windows has no Web Audio:
+// PW_FIREFOX_WS_ENDPOINT and PW_WEBKIT_WS_ENDPOINT run them in the Linux Playwright image (as the
+// audio engine's suite does), with loopback traffic tunnelled back to this machine. `e2e:linux`
+// (scripts/e2e-linux.mjs) starts that server, with the audio output Firefox needs, and sets both.
+const {
+  PW_FIREFOX_WS_ENDPOINT: firefoxEndpoint,
+  PW_WEBKIT_WS_ENDPOINT: webkitEndpoint,
+  E2E_SMOKE,
+} = process.env
+const remote = (wsEndpoint: string | undefined) =>
+  wsEndpoint ? { connectOptions: { wsEndpoint, exposeNetwork: '<loopback>' } } : {}
 const smoke = E2E_SMOKE === '1'
 // Import → analysis → practice (loop at 70 %, count-in), onboarding, delete song and account: the
 // release-gate flows of 24 §6 that aren't billing.
@@ -33,21 +41,16 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        ...(firefoxEndpoint
-          ? { connectOptions: { wsEndpoint: firefoxEndpoint, exposeNetwork: '<loopback>' } }
-          : {}),
-      },
-    },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'], ...remote(firefoxEndpoint) } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'], ...remote(webkitEndpoint) } },
     { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
-    { name: 'mobile-safari', use: { ...devices['iPhone 15'] } },
+    { name: 'mobile-safari', use: { ...devices['iPhone 15'], ...remote(webkitEndpoint) } },
     // The practice screen's primary place: a tablet on a music stand, landscape (12 §1); and
     // an Android tablet in portrait.
-    { name: 'tablet-safari', use: { ...devices['iPad Pro 11 landscape'] } },
+    {
+      name: 'tablet-safari',
+      use: { ...devices['iPad Pro 11 landscape'], ...remote(webkitEndpoint) },
+    },
     { name: 'tablet-chrome', use: { ...devices['Galaxy Tab S4'] } },
   ]
     .filter((project) => !smoke || DESKTOP.includes(project.name))
