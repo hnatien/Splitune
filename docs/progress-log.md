@@ -2964,11 +2964,11 @@ Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at
 - Reading sizes use weight 500; the palette and those sizes have had no music-stand reading test (G5). No real-device checks.
 - An intermittent alphaTab render race in the Fix stories (Half tempo, then Undo) predates this step.
 
-## 2026-11-24 — Step s48: the library as tiles (done, not merged; owner review next)
+## 2026-11-24 — Step s48: the library as tiles (done, merged into `dev`)
 
 **Instruction (owner):** "my library page feels empty. can you redesign it? give me the mockup image first. you own the codebase and the design"; then a second direction after YouTube's layout, the video's image on the tiles, the waveform kept in the lead, and "build it end to end. If the video has no image, then fallback to waveform." Step prompt: `docs/steps/s48-library-grid.md`.
 
-**Branch** `impl/48-library-grid` from `dev` (`6e2d1d7`). Not committed, pushed or merged: the owner has not asked. The working tree also holds ten files changed before this step (shell, popovers, `getting-ready.tsx`, `stage-list.tsx`), which are not part of it.
+**Branch** `impl/48-library-grid` from `dev` (`6e2d1d7`), merged into `dev` (`2914357`) with two earlier changes committed on it: the account menu (`51e5a12`) and the Getting ready stage handoff (`e72ceb0`).
 
 **Mockups first.** Static pages drawn from the real tokens, font and icons, in `apps/web/.impeccable/mocks/library/` (git-ignored): the list with a song map (A), the tile grid (B), B with the video's image, and the one the owner approved, `final-one-song.png` and `final-populated.png` (waveform in the lead, the video's image on the tiles).
 
