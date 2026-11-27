@@ -8,6 +8,7 @@ import { m } from '@/lib/i18n'
 import { INSTRUMENTS, type InstrumentName, instrumentLabel } from '@/lib/instruments'
 import { apiErrorMessage, stageFailureMessage } from '@/lib/reasons'
 import { stageLabel, stageRows } from '@/lib/stages'
+import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/ui/button'
 import {
   DropdownMenu,
@@ -48,8 +49,9 @@ const retryUpload = (songId: string) =>
 // needs the learner (the part question after tagging, a failed upload or run, the queued line
 // while the machine is offline), then "Getting your part ready" with what already works, the
 // overall bar with an honest ETA (none while the song is queued) and the stages with the artefact
-// each leaves; beside it, "What works now" as hairline rows with a status glyph and a word. No
-// cards and no box: the status sits on the paper. On a phone's glance view the compact form keeps
+// each leaves; beside it, "What works now" as hairline rows with a status glyph and a word, and the
+// way back to the library under them, so the run fits one screen. No cards and no box: the status
+// sits on the paper. On a phone's glance view the compact form keeps
 // the decisions and one status line. The polite live region announces stage milestones only.
 // Loads with the placeholder, outside the route's JS budget.
 
@@ -248,7 +250,7 @@ export function GettingReady({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="relative flex w-full flex-col items-center gap-8 px-4 pt-6 pb-8 sm:px-7 lg:flex-row lg:items-start lg:justify-center">
+    <div className="relative flex w-full flex-col items-center gap-8 px-4 pt-5 sm:px-7 lg:flex-row lg:items-start lg:justify-center">
       <div className="relative flex w-full max-w-140 flex-col gap-6">
         {notices}
         {!failed && analysis.data ? (
@@ -276,12 +278,6 @@ export function GettingReady({ compact = false }: { compact?: boolean }) {
               eta={minutes ? m['analysis.eta_inline']({ minutes }) : undefined}
               valueText={stageLabel(currentStage(analysis.data) ?? '')}
             />
-            <Link
-              to="/library"
-              className={buttonVariants({ variant: 'quiet', className: 'self-start' })}
-            >
-              {m['practice.back_to_library']()}
-            </Link>
           </section>
         ) : (
           !analysis.data &&
@@ -289,7 +285,17 @@ export function GettingReady({ compact = false }: { compact?: boolean }) {
           song.isSuccess && <InlineError tone="info" title={m['practice.not_uploaded']()} />
         )}
       </div>
-      {analysis.data && !failed && <WhatWorksNow waiting={waiting} />}
+      {analysis.data && !failed && (
+        <div className="flex w-full max-w-140 flex-col gap-4 lg:max-w-80">
+          <WhatWorksNow waiting={waiting} />
+          <Link
+            to="/library"
+            className={buttonVariants({ variant: 'quiet', className: 'self-start' })}
+          >
+            {m['practice.back_to_library']()}
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
@@ -423,11 +429,13 @@ const UNLOCK_NAME: Record<Unlock['id'], () => string> = {
 
 // What works now (27 §3.7.3): hairline rows, each with its state as a glyph and a word (Ready ·
 // Soon · Later) and when, never a tinted pill. While the machine is offline nothing turns and no
-// time is promised: what isn't ready yet is Waiting, with the queued glyph.
+// time is promised: what isn't ready yet is Waiting, with the queued glyph. A state that changes
+// after the rows first rendered pops its new glyph and word in, so a tool unlocking is seen.
 function WhatWorksNow({ waiting }: { waiting: boolean }) {
   const { data, layers, audioStatus, guest } = usePractice()
   const analysis = data.analysis.data
   const stats = useQuery({ ...statsQuery, enabled: running(analysis) && !guest })
+  const first = useRef<Map<string, string> | null>(null)
   if (!analysis) return null
   const rows = unlocks({
     analysis,
@@ -440,11 +448,14 @@ function WhatWorksNow({ waiting }: { waiting: boolean }) {
       notation: layers.tab || layers.roll || layers.melody || layers.drums,
     },
   })
+  const shown = (row: Unlock) => (row.state !== 'ready' && waiting ? 'queued' : row.state)
+  first.current ??= new Map(rows.map((row) => [row.id, shown(row)]))
+  const seen = first.current
   return (
     <ListGroup
       aria-label={m['practice.what_works_now']()}
       title={m['practice.what_works_now']()}
-      className="relative w-full max-w-140 lg:max-w-80"
+      className="relative w-full"
     >
       {rows.map((row) => (
         <ListRow
@@ -469,15 +480,22 @@ function WhatWorksNow({ waiting }: { waiting: boolean }) {
                   : m['practice.unlock_waiting']()
           }
           aside={
-            row.state === 'ready' ? (
-              <Status kind="ready">{m['practice.unlock_ready']()}</Status>
-            ) : waiting ? (
-              <Status kind="queued">{m['practice.unlock_queued']()}</Status>
-            ) : (
-              <Status kind={row.state === 'soon' ? 'working' : 'queued'}>
-                {row.state === 'soon' ? m['practice.unlock_soon']() : m['practice.unlock_later']()}
-              </Status>
-            )
+            <span
+              key={shown(row)}
+              className={cn('flex', seen.get(row.id) !== shown(row) && 'animate-pop-in')}
+            >
+              {row.state === 'ready' ? (
+                <Status kind="ready">{m['practice.unlock_ready']()}</Status>
+              ) : waiting ? (
+                <Status kind="queued">{m['practice.unlock_queued']()}</Status>
+              ) : (
+                <Status kind={row.state === 'soon' ? 'working' : 'queued'}>
+                  {row.state === 'soon'
+                    ? m['practice.unlock_soon']()
+                    : m['practice.unlock_later']()}
+                </Status>
+              )}
+            </span>
           }
         />
       ))}
