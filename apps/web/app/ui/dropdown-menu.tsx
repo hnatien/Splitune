@@ -216,6 +216,45 @@ function DropdownMenuRadioItem({
   )
 }
 
+/**
+ * A choice of a few icons in one row (the account menu's appearance): 28 px icon pills in a
+ * hairline well, the chosen one carrying the 1.5 px ink edge and ink icon like a toggle-group chip.
+ * Each segment's name is its accessible text; ↑/↓ step through them like any other item.
+ */
+function DropdownMenuSegments({ className, ...props }: MenuPrimitive.RadioGroup.Props) {
+  return (
+    <MenuPrimitive.RadioGroup
+      data-slot="dropdown-menu-segments"
+      className={cn(
+        'flex w-fit items-center gap-0.5 rounded-full bg-background p-0.5 inset-ring inset-ring-border',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSegment({
+  className,
+  label,
+  children,
+  ...props
+}: MenuPrimitive.RadioItem.Props & { label: string }) {
+  return (
+    <MenuPrimitive.RadioItem
+      data-slot="dropdown-menu-segment"
+      className={cn(
+        "grid size-7 shrink-0 cursor-default place-items-center rounded-full text-muted-foreground select-none transition-[color,background-color,box-shadow] duration-(--duration-fast) ease-standard focus:bg-hover focus:text-foreground data-checked:text-foreground data-checked:inset-ring-[1.5px] data-checked:inset-ring-selected [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_.lucide]:stroke-[1.8]",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      <span className="sr-only">{label}</span>
+    </MenuPrimitive.RadioItem>
+  )
+}
+
 function DropdownMenuSeparator({ className, ...props }: MenuPrimitive.Separator.Props) {
   return (
     <MenuPrimitive.Separator
@@ -241,6 +280,8 @@ export {
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSegment,
+  DropdownMenuSegments,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuSub,

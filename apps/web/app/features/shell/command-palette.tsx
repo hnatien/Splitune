@@ -5,12 +5,9 @@ import { useNavigate } from '@tanstack/react-router'
 import {
   KeyboardIcon,
   LogOutIcon,
-  MonitorSmartphoneIcon,
-  MoonIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
-  SunIcon,
   TypeIcon,
 } from 'lucide-react'
 import type * as React from 'react'
@@ -27,7 +24,7 @@ import { Dialog, DialogContent } from '@/ui/dialog'
 import { Kbd } from '@/ui/kbd'
 import { ADD_SONG_KEY, useOpenAddSong } from '../import/add-song-state'
 import { INSTRUMENT_ICON } from '../library/instrument-icon'
-import { APPEARANCES } from './account-menu'
+import { APPEARANCE_ICON, APPEARANCES } from './account-menu'
 import { type PaletteAction, usePalette } from './palette-store'
 import { useSignOut } from './use-sign-out'
 
@@ -37,8 +34,6 @@ type Row = PaletteAction & { group: 'songs' | 'clips' | 'actions' }
 const SONG_LIMIT = 5
 
 type SettingsPath = `/settings/${'account' | 'usage' | 'plan' | 'display' | 'keyboard' | 'about'}`
-
-const APPEARANCE_ICON = { dark: MoonIcon, light: SunIcon, system: MonitorSmartphoneIcon }
 
 /** The typed text bold in a result (27 §3.12), matched case-insensitively. */
 function Highlight({ text, query }: { text: string; query: string }) {

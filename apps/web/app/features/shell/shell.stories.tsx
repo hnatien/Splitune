@@ -15,7 +15,7 @@ import { MarketingShell } from './marketing-shell'
 import { type PaletteAction, parseLoopQuery, usePalette, usePaletteActions } from './palette-store'
 
 // The shells (27 §1): the app shell's 232 px rail from 1024 px (Library and Settings with the
-// current one marked by an ink line, Add song and Search with their keys, Recent, Usage, the
+// current one marked by an ink line, Add song and Search with their keys, Recent, the
 // processing machine and the account) and the 48 px top bar and bottom bar below it, the account
 // menu, the "Drop to add" overlay, the ⌘K palette (open, results, a registered loop action, empty,
 // offline), the marketing shell's phone Menu and the focus shell, in Dark and Light. Phone and
@@ -210,15 +210,16 @@ const appShellAs = (me: typeof ME) => () => (
 // The popover renders in a portal, outside the story's canvas.
 const screen = () => within(document.body)
 
-/** Opens Usage (the rail's row, or the top bar's gauge) and waits out the popover's entrance. */
+/** Opens Usage from the account menu and waits out the popover's entrance. */
 async function openUsage(canvasElement: HTMLElement) {
   const canvas = within(canvasElement)
-  await canvas.findAllByRole('button', { name: 'Usage' })
-  const trigger = canvas.getAllByRole('button', { name: 'Usage' }).find((button) => {
+  await canvas.findAllByRole('button', { name: /^Account/ })
+  const trigger = canvas.getAllByRole('button', { name: /^Account/ }).find((button) => {
     const box = button.getBoundingClientRect()
     return box.width > 0 && box.height > 0
   }) as HTMLElement
   await userEvent.click(trigger)
+  await userEvent.click(await screen().findByRole('menuitem', { name: 'Usage' }))
   const dialog = await screen().findByRole('dialog', { name: 'Analysis limits' })
   await Promise.all(dialog.getAnimations({ subtree: true }).map((a) => a.finished))
   return { trigger, dialog, popover: within(dialog) }
@@ -240,10 +241,12 @@ const playUsageFree: Story['play'] = async ({ canvasElement }) => {
     '/settings/plan',
   )
   await expect(popover.getByRole('button', { name: 'See Plus' })).toBeVisible()
-  // It opens beside the rail, from the row that opened it.
+  // It opens beside the rail, from the account row, and hands focus back to it on Escape.
   await expect(dialog.getBoundingClientRect().left).toBeGreaterThanOrEqual(
     trigger.getBoundingClientRect().right,
   )
+  await userEvent.keyboard('{Escape}')
+  await waitFor(() => expect(trigger).toHaveFocus())
 }
 
 export const UsagePopoverFree: Story = { render: appShell('/library'), play: playUsageFree }
@@ -265,7 +268,7 @@ export const UsagePopoverPlus: Story = {
 }
 const playUsagePhone: Story['play'] = async ({ canvasElement }) => {
   const { trigger, dialog } = await openUsage(canvasElement)
-  // Under the top bar's gauge, inside the screen.
+  // Under the top bar's account button, inside the screen.
   const box = dialog.getBoundingClientRect()
   await expect(box.top).toBeGreaterThanOrEqual(trigger.getBoundingClientRect().bottom)
   await expect(box.left).toBeGreaterThanOrEqual(0)
@@ -282,7 +285,7 @@ export const UsagePopoverPhoneDaylight: Story = {
   play: playUsagePhone,
 }
 
-// Below 1024 px: the 48 px top bar (the wordmark, search, Usage, account) and the bottom bar Library ·
+// Below 1024 px: the 48 px top bar (the wordmark, search, account) and the bottom bar Library ·
 // Add song · Settings, where Add song is a tab like the others (no filled pill competing with the
 // page's own primary) and the current tab has an ink line.
 const playPhone: Story['play'] = async ({ canvasElement }) => {
@@ -309,7 +312,7 @@ const playPhone: Story['play'] = async ({ canvasElement }) => {
   await expect(
     within(banner).getByRole('button', { name: 'Search songs, clips and actions' }),
   ).toBeVisible()
-  await expect(within(banner).getByRole('button', { name: 'Usage' })).toBeVisible()
+  await expect(within(banner).queryByRole('button', { name: 'Usage' })).toBeNull()
   await expect(within(banner).getByRole('button', { name: 'Account' })).toBeVisible()
   await expect(canvas.queryByRole('complementary', { name: 'App' })).toBeNull()
 }
@@ -327,12 +330,19 @@ export const AppTabletDaylight: Story = {
   globals: { ...TABLET, ...DAYLIGHT },
 }
 
-// The account menu (27 §1): the name and the username, Settings, Keyboard & pedal, the three
-// appearances (D2), Help and Sign out.
+// The account menu (27 §1): the name and the username, the three appearances (D2) as a row of icons
+// named for the screen reader, then Settings, Usage, Keyboard & pedal, the help pages and Sign out, each
+// led by its icon.
 const playAccountMenu: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(await within(canvasElement).findByRole('button', { name: /^Account/ }))
   const menu = within(await within(document.body).findByRole('menu'))
-  await waitFor(() => expect(menu.getByText('Help')).toBeVisible())
+  await waitFor(() => expect(menu.getByRole('menuitem', { name: 'Sign out' })).toBeVisible())
+  await expect(menu.getByRole('group', { name: 'Appearance' })).toBeVisible()
+  await expect(
+    menu
+      .getAllByRole('menuitemradio')
+      .filter((item) => item.getAttribute('aria-checked') === 'true'),
+  ).toHaveLength(1)
   // The name, never the placeholder email.
   await expect(menu.getByText('Ana', { exact: true })).toBeVisible()
   await expect(menu.queryByText(/splitune\.invalid/)).toBeNull()
@@ -341,6 +351,7 @@ const playAccountMenu: Story['play'] = async ({ canvasElement }) => {
     'Light',
     'Follow my device',
   ])
+  await expect(menu.getByRole('menuitem', { name: 'Usage' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: 'Keyboard & pedal' })).toHaveAttribute(
     'href',
     '/settings/keyboard',
