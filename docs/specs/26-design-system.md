@@ -372,6 +372,7 @@ All in `apps/web/app/ui`, each with stories in both themes (doc 28 §2).
 | **ListGroup, ListRow** | A quiet group head over hairline rows. A row is media, a title, one meta line and an aside (a Status, one action, a ⋯ menu). The row's link stretches to the whole row. The current row has a 2 px ink edge on its leading side. |
 | **Status** | A glyph and words; each state has its own glyph shape (check in a circle, a ring that fills, dashed circle, triangle, cross in a circle, lines of music, struck clock, pause, struck cloud). Hue only for ready and failed. |
 | **Stat** | A tabular figure over its label, no card. |
+| **WaveformBars** | A song's waveform as a still picture: rounded bars centred on the middle line, `--waveform-peak` for what is to come and `--waveform-played` up to where the learner got. It fills its box and can thin its levels to fewer bars for a narrow one. Decorative; the words beside it say what it shows. Used by the library's Continue block and song tiles (27 §3.5). |
 | **Transport** (`TransportButton`, `SpeedControl`, `LoopBadge`, `PassControl`) | Quiet 48 px controls with their key caps; Play is the 64 px filled circle. The pass prompt sits in the transport, never on the notation. |
 | **StemRow, MixPresetGroup** | A stem's 4 px rule beside its name, `invert` toggles S and M, a fader and a readout in words. Presets are rows with a check. |
 | **WaveformTimeline** | The song map: section chips over the waveform, the loop as an ink-edged band, the playhead a 2 px ink line. |

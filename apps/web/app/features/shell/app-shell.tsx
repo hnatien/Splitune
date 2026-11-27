@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { GaugeIcon, LibraryIcon, PlusIcon, SearchIcon, SettingsIcon } from 'lucide-react'
+import { LibraryIcon, PlusIcon, SearchIcon, SettingsIcon } from 'lucide-react'
 import type * as React from 'react'
 import { useEffect, useRef } from 'react'
 import { m } from '@/lib/i18n'
@@ -24,7 +24,6 @@ import { DropOverlay } from './drop-overlay'
 import { PaletteLauncher } from './palette-launcher'
 import { usePalette } from './palette-store'
 import { SkipLink } from './skip-link'
-import { UsagePopover } from './usage-popover'
 
 export const isCurrent = (pathname: string, section: string) =>
   pathname === section || pathname.startsWith(`${section}/`)
@@ -97,8 +96,8 @@ function useRecentSongs() {
 
 // App shell (s47 direction §6, 26 §7): from 1024 px a 232 px rail (the wordmark, Library and
 // Settings with the current one marked by an ink line, Add song and Search with their keys, the
-// songs opened last, then the upload, Usage, the processing machine and the account) beside one
-// main column, with no top bar. Below that a 48 px top bar (the wordmark, search, Usage, account;
+// songs opened last, then the upload, the processing machine and the account) beside one
+// main column, with no top bar. Below that a 48 px top bar (the wordmark, search, account;
 // the page names itself in its own h1) and the bottom bar. A file dropped anywhere opens Add song
 // with it.
 export function AppShell({ me, children }: { me: MeData; children: React.ReactNode }) {
@@ -132,16 +131,7 @@ export function AppShell({ me, children }: { me: MeData; children: React.ReactNo
             >
               <SearchIcon aria-hidden />
             </Button>
-            <UsagePopover
-              me={me}
-              side="bottom"
-              trigger={
-                <Button variant="quiet" size="icon" aria-label={m['nav.usage']()}>
-                  <GaugeIcon aria-hidden />
-                </Button>
-              }
-            />
-            <AccountMenu name={name} username={me.username} />
+            <AccountMenu me={me} name={name} username={me.username} />
           </div>
         </header>
         <SystemBanners installHint />
@@ -253,16 +243,6 @@ function Rail({
         <div className="px-1 empty:hidden">
           <UploadPill />
         </div>
-        <UsagePopover
-          me={me}
-          side="right"
-          trigger={
-            <button type="button" className={RAIL_ITEM}>
-              <GaugeIcon aria-hidden />
-              {m['nav.usage']()}
-            </button>
-          }
-        />
         {worker.data && (
           <WorkerStatus
             online={worker.data.online}
@@ -270,7 +250,7 @@ function Rail({
             className="px-3"
           />
         )}
-        <AccountMenu name={name} username={me.username} layout="rail" />
+        <AccountMenu me={me} name={name} username={me.username} layout="rail" />
       </div>
     </Panel>
   )

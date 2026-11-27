@@ -104,6 +104,20 @@ export function collectErrors(page: Page): string[] {
   return errors
 }
 
+const BLANK_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+
+/**
+ * A song added by a video link asks the video site for its still in the library (27 §3.5). The
+ * tests' video does not exist and they don't call out: answer with a blank image, which the tile
+ * treats as no still, so it shows the waveform or the instrument's drawing.
+ */
+export async function stubVideoStills(page: Page) {
+  await page.route('https://i.ytimg.com/**', (route) =>
+    route.fulfill({ contentType: 'image/png', body: Buffer.from(BLANK_PNG, 'base64') }),
+  )
+}
+
 /** No serious or critical axe violations (WCAG 2.2 AA rules) on the current page. */
 export async function expectAccessible(page: Page) {
   const results = await new AxeBuilder({ page })

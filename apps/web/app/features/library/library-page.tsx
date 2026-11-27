@@ -20,20 +20,21 @@ import {
 } from '@/ui/dropdown-menu'
 import { EmptyState } from '@/ui/empty-state'
 import { Input } from '@/ui/input'
-import { ListGroup } from '@/ui/list-row'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 import { InlineError } from '@/ui/status-message'
 import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 import { WorkerStatus } from '@/ui/worker-status'
 import { ADD_SONG_KEY, useOpenAddSong } from '../import/add-song-state'
 import { isUploading, useUploads } from '../import/upload-store'
+import { AddSongTile } from './add-song-tile'
 import { ContinueBlock } from './continue-card'
 import { useLibraryProgress } from './library-progress'
 import { LibrarySkeleton, SongsSkeleton } from './library-skeleton'
 import { type LibraryFilters, libraryQuery, workerStatusQuery } from './queries'
 import { RevisitList } from './revisit-list'
-import { SongRow } from './song-row'
+import { SongMedia } from './song-media'
 import { cardStatus, isInProgress, type SongNeed, songNeed } from './song-status'
+import { SongTile } from './song-tile'
 import { WeekStrip } from './week-strip'
 
 type Song = z.infer<typeof LibrarySong>
@@ -43,6 +44,8 @@ type StatusFilter = z.infer<typeof LibraryStatusFilter>
 export type LibrarySearch = LibraryFilters
 
 const ALL = 'all'
+/** From this many songs the list gets its toolbar: fewer fit on one screen with nothing to find. */
+const TOOLBAR_FROM = 7
 
 const GROUPS: { need: SongNeed; title: () => string }[] = [
   { need: 'getting_ready', title: () => m['library.group_getting_ready']() },
@@ -71,18 +74,20 @@ function statusLabel(status: StatusFilter | undefined): string {
   }
 }
 
-// Library (s47 direction §6, 27 §3.5): the page title, the Continue block (the page's one filled
-// control) with This week beside it, Worth a revisit, then the songs: the toolbar (instrument,
-// title search, what to show and the sort, all in the URL and each naming its current value) over
-// hairline rows grouped by what each song needs (Getting ready, Needs you, Ready to practise), 24
-// at a time. The progress parts read the practice progress (library-progress.tsx, s39).
+// Library (27 §3.5): the page title, Continue (the last song's waveform with the place the learner
+// stopped, and Resume practice, the page's one filled control), This week as one row across the
+// page, Worth a revisit, then the songs as tiles, three across from 1024 px, two from 640 px and
+// one on phones, grouped by what each song needs (Getting ready, Needs you, Ready to practise),
+// 24 at a time, closing with the tile that adds the next song. The toolbar (instrument, title
+// search, what to show and the sort, all in the URL and each naming its current value) appears
+// once there is something to find: from seven songs, or while a filter is on (one row from 1280 px). The instrument
+// choices are the instruments the library has. The progress parts read the practice progress
+// (library-progress.tsx, s39).
 export function LibraryPage({ search }: { search: LibrarySearch }) {
   const navigate = useNavigate({ from: '/library' })
   const openAddSong = useOpenAddSong()
   const online = useOnline()
   const wide = useMediaQuery('(min-width: 640px)')
-  const full = useMediaQuery('(min-width: 1024px)')
-  const layout = !wide ? 'compact' : full ? 'full' : 'wide'
   const songs = useInfiniteQuery({
     ...libraryQuery(search),
     // Rows of songs being analysed refresh themselves; the list catches status changes.
@@ -135,48 +140,62 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
     ),
   })).filter((group) => group.songs.length > 0)
 
-  const instrument = wide ? (
-    <ToggleGroup
-      aria-label={m['library.filter_instrument']()}
-      className="flex-wrap"
-      value={[search.instrument ?? ALL]}
-      onValueChange={(value) => {
-        const next = value[0] as InstrumentName | typeof ALL | undefined
-        if (next) setSearch({ instrument: next === ALL ? undefined : next })
-      }}
-    >
-      {[ALL, ...INSTRUMENTS].map((value) => (
-        <ToggleGroupItem key={value} value={value} size="sm">
-          {value === ALL ? m['library.filter_all']() : instrumentLabel(value as InstrumentName)}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  ) : (
-    <Select
-      value={search.instrument ?? ALL}
-      onValueChange={(value) =>
-        setSearch({ instrument: value === ALL ? undefined : (value as InstrumentName) })
-      }
-    >
-      <SelectTrigger aria-label={m['library.filter_instrument']()} className="min-w-0 flex-1">
-        <SelectValue>
-          {(value: string) =>
-            value === ALL
-              ? m['library.all_instruments']()
-              : instrumentLabel(value as InstrumentName)
-          }
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent aria-label={m['library.filter_instrument']()}>
-        <SelectItem value={ALL}>{m['library.all_instruments']()}</SelectItem>
-        {INSTRUMENTS.map((value) => (
-          <SelectItem key={value} value={value}>
-            {instrumentLabel(value)}
-          </SelectItem>
+  const tools = filtered || songs.hasNextPage === true || count >= TOOLBAR_FROM
+  // Every instrument while more songs can still load or a filter hides some; otherwise the ones
+  // the library has. One instrument alone is nothing to choose between.
+  const present =
+    filtered || songs.hasNextPage
+      ? INSTRUMENTS
+      : INSTRUMENTS.filter((value) => items.some((song) => song.instrument === value))
+  const choices = present.length > 1 || search.instrument ? present : []
+
+  // The tile that adds a song closes the whole list: not a page that has more to load, and not a
+  // filtered view, which shows what was asked for.
+  const closes = (index: number) => index === groups.length - 1 && !filtered && !songs.hasNextPage
+
+  const instrument =
+    choices.length === 0 ? null : wide ? (
+      <ToggleGroup
+        aria-label={m['library.filter_instrument']()}
+        className="flex-wrap"
+        value={[search.instrument ?? ALL]}
+        onValueChange={(value) => {
+          const next = value[0] as InstrumentName | typeof ALL | undefined
+          if (next) setSearch({ instrument: next === ALL ? undefined : next })
+        }}
+      >
+        {[ALL, ...choices].map((value) => (
+          <ToggleGroupItem key={value} value={value} size="sm">
+            {value === ALL ? m['library.filter_all']() : instrumentLabel(value as InstrumentName)}
+          </ToggleGroupItem>
         ))}
-      </SelectContent>
-    </Select>
-  )
+      </ToggleGroup>
+    ) : (
+      <Select
+        value={search.instrument ?? ALL}
+        onValueChange={(value) =>
+          setSearch({ instrument: value === ALL ? undefined : (value as InstrumentName) })
+        }
+      >
+        <SelectTrigger aria-label={m['library.filter_instrument']()} className="min-w-0 flex-1">
+          <SelectValue>
+            {(value: string) =>
+              value === ALL
+                ? m['library.all_instruments']()
+                : instrumentLabel(value as InstrumentName)
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent aria-label={m['library.filter_instrument']()}>
+          <SelectItem value={ALL}>{m['library.all_instruments']()}</SelectItem>
+          {choices.map((value) => (
+            <SelectItem key={value} value={value}>
+              {instrumentLabel(value)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
 
   const showMenu = (
     <DropdownMenu>
@@ -239,10 +258,11 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
       {workerOffline && <WorkerStatus online={false} text={m['analysis.queued_offline']()} />}
 
       {(lead || progress.week) && (
-        <div className="grid gap-x-12 gap-y-8 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="flex flex-col gap-8">
           {last && lead && (
             <ContinueBlock
               song={lead.summary}
+              media={<SongMedia lead song={last} bars={wide ? 96 : 48} />}
               chart={lead.chart}
               renderLink={({ className, children }) => (
                 <Link
@@ -306,10 +326,13 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
             {m['library.songs_heading']()}
           </h2>
           {/* biome-ignore lint/a11y/useSemanticElements: <search> is newer than the Safari 16.4 floor (24 §2) */}
-          <div role="search" className="flex flex-col gap-3">
+          <div
+            role="search"
+            className={tools ? 'flex flex-col gap-3 xl:flex-row xl:items-center' : 'hidden'}
+          >
             {wide && instrument}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative min-w-0 flex-1 max-sm:basis-full sm:max-w-80">
+            <div className="flex flex-wrap items-center gap-2 xl:ml-auto xl:flex-nowrap">
+              <div className="relative min-w-0 flex-1 max-sm:basis-full sm:max-w-80 xl:w-60 xl:flex-none">
                 <SearchIcon
                   aria-hidden
                   className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
@@ -356,25 +379,33 @@ export function LibraryPage({ search }: { search: LibrarySearch }) {
               action={<Button onClick={clearFilters}>{m['library.clear_filters']()}</Button>}
             />
           ) : (
-            <div className="flex flex-col gap-8">
-              {groups.map((group) => (
-                <ListGroup
+            <div className="flex flex-col gap-10">
+              {groups.map((group, index) => (
+                <section
                   key={group.need}
                   aria-label={group.title()}
                   data-need={group.need}
-                  title={group.title()}
-                  count={group.songs.length}
+                  className="flex flex-col gap-3"
                 >
-                  {group.songs.map((song) => (
-                    <SongRow
-                      key={song.id}
-                      song={song}
-                      layout={layout}
-                      workerOffline={workerOffline}
-                      unavailable={!online && cardStatus(song, false).kind !== 'ready'}
-                    />
-                  ))}
-                </ListGroup>
+                  <header className="flex items-center gap-2">
+                    <h3 className="text-label-sm text-muted-foreground">{group.title()}</h3>
+                    <span className="text-caption text-faint-foreground tabular-nums">
+                      {group.songs.length}
+                    </span>
+                  </header>
+                  <ul className="m-0 grid list-none gap-x-6 gap-y-8 p-0 sm:grid-cols-2 lg:grid-cols-3">
+                    {group.songs.map((song) => (
+                      <SongTile
+                        key={song.id}
+                        song={song}
+                        bars={48}
+                        workerOffline={workerOffline}
+                        unavailable={!online && cardStatus(song, false).kind !== 'ready'}
+                      />
+                    ))}
+                    {closes(index) && <AddSongTile wide={wide} />}
+                  </ul>
+                </section>
               ))}
             </div>
           )}

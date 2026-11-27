@@ -47,6 +47,7 @@ type LibrarySongOut = z.infer<typeof LibrarySongSchema>
 
 const toLibrarySong = (entry: LibraryEntry): LibrarySongOut => ({
   ...toSong(entry.song),
+  waveform: entry.song.waveform,
   latest_analysis: entry.latestAnalysis && {
     id: entry.latestAnalysis.id,
     type: entry.latestAnalysis.type,
@@ -177,6 +178,7 @@ export const songs = {
     if (input.instrument !== undefined) patch.instrument = input.instrument
     // The client owns the whole resume state and sends it complete (debounced).
     if (input.player_state !== undefined) patch.playerState = input.player_state
+    if (input.waveform !== undefined) patch.waveform = input.waveform
     const song =
       Object.keys(patch).length > 0
         ? await context.deps.repos.songs.update(context.userId, input.id, patch)

@@ -76,6 +76,7 @@ import type { Layers } from './model/screen'
 import { createTransport, type Hud } from './model/transport'
 import { type MusicState, useMusic } from './model/use-music'
 import { buildViewModel, type ViewModel } from './model/view-model'
+import { waveformSummary } from './model/waveform-summary'
 import { INITIAL_UI, rememberedTab, showHud, usePracticeUi } from './practice-store'
 
 // PracticeProvider (12 §2): the player machine, the audio adapter, the effective music from the
@@ -457,6 +458,14 @@ export function PracticeProvider({
   const clickDb = useMixerPrefs((s) => s.clickDb)
   useEffect(() => audio.setClickLevel(clickDb), [audio, clickDb])
   const stemsLoaded = lanes.length > 1
+  // The library's miniature of the song (27 §3.5): your part once its stem is decoded, the song
+  // before that. A visitor's example song stays on the device and has no library.
+  const mapLane = lanes.find((lane) => lane.role === 'part') ?? lanes[0]
+  useEffect(() => {
+    const waveform = mapLane && !guest ? waveformSummary(mapLane.rms) : null
+    // Not saved: the next visit sends it again.
+    if (waveform) void client.songs.update({ id: songId, waveform }).catch(() => undefined)
+  }, [mapLane, guest, songId])
   // "Hear this bar" plays the original mix (27 §3.7.4) and Fix mode what its dock's "Listen to"
   // says; then the learner's mix comes back.
   const fixing = usePracticeUi((s) => s.fixing)

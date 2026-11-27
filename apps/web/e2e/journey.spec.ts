@@ -5,12 +5,13 @@ import {
   expectNoHorizontalScroll,
   projectContext,
   signIn,
+  stubVideoStills,
   wav,
 } from './helpers'
 
 // Step 10 acceptance (prompt 10), with Add song as a dialog over the library (s34, 27 §3.6): sign
 // up with a username and a password → add a short audio file → stages progress → ready in the
-// library (a hairline row under "Ready to practise", s47); a link shows its progress; delete
+// library (a tile under "Ready to practise", s48); a link shows its progress; delete
 // works; an upload survives a reload mid-transfer; no console (CORS) errors; axe on landing,
 // library and Add song.
 
@@ -30,11 +31,11 @@ const finished = () =>
     .or(page.locator('[data-slot=progress-label]', { hasText: 'Analysis finished' }))
     .first()
 
-/** The library row of the song with this title (the row's link starts with the title). */
+/** The library tile of the song with this title (the tile's link starts with the title). */
 const songRow = (title: string) =>
   page
     .getByRole('main')
-    .locator('[data-slot=list-row]')
+    .locator('[data-slot=song-tile]')
     .filter({ has: page.getByRole('link', { name: new RegExp(`^${title}`) }) })
 
 /** The stages of the song's latest analysis, from the API (the page no longer lists them). */
@@ -65,6 +66,7 @@ test.beforeAll(async ({ browser }, info) => {
     ...(baseURL ? { baseURL } : {}),
   })
   page = await context.newPage()
+  await stubVideoStills(page)
   await signIn(page, 'journey')
   // From here on: the sign-in helper waits out the shared per-IP limit (429s it handles).
   errors = collectErrors(page)

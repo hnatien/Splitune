@@ -144,6 +144,7 @@ function song(
           },
     stems: 'available',
     best_clean: null,
+    waveform: null,
     ...patch,
   }
 }
@@ -269,7 +270,13 @@ export function detail(
 ): z.infer<typeof SongDetail> {
   const entry = LIBRARY[n - 1]
   if (!entry) throw new Error(`no library fixture ${n}`)
-  const { latest_analysis: _latest, stems: _stems, best_clean: _best, ...base } = entry
+  const {
+    latest_analysis: _latest,
+    stems: _stems,
+    best_clean: _best,
+    waveform: _waveform,
+    ...base
+  } = entry
   return { ...base, latest_analysis: run, artefacts: [], youtube: null }
 }
 

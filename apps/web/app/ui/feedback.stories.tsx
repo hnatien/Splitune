@@ -148,6 +148,58 @@ export const Stages: Story = {
 }
 export const StagesStage: Story = { render: StagesDemo, globals: { appearance: 'stage' } }
 
+function HandoffDemo() {
+  const [step, setStep] = useState(0)
+  const stages = STAGES.map((stage, index): Stage => {
+    const at = index - 2 - step
+    return at < 0
+      ? { ...stage, status: 'done', statusText: 'Done' }
+      : at === 0
+        ? { ...stage, status: 'running', statusText: '~1 min' }
+        : { ...stage, status: 'queued', statusText: 'Waiting' }
+  })
+  return (
+    <div className="flex max-w-lg flex-col gap-4">
+      <Button variant="outline" className="self-start" onClick={() => setStep((n) => n + 1)}>
+        Next stage
+      </Button>
+      <StageList stages={stages} progress={46 + step * 18} progressLabel="Analysing your song" />
+    </div>
+  )
+}
+
+/**
+ * The handoff: only the running stage opens its detail; when it finishes its tick draws itself, its
+ * detail folds and rises beside its name, and the next stage brightens, opens its detail and starts
+ * its turning ring. Stages already done when the list first rendered keep their plain tick.
+ */
+export const StagesHandoff: Story = {
+  render: HandoffDemo,
+  globals: BOTH_THEMES,
+  play: async ({ canvasElement }) => {
+    for (const frame of themeFrames(canvasElement)) {
+      const row = (label: string) => within(frame).getByText(label).closest('li') as HTMLElement
+      const detail = (label: string) => row(label).querySelector('[data-slot=stage-detail]')
+      const result = (label: string) => row(label).querySelector('[data-slot=stage-result]')
+      await expect(detail('Working out the chords')).toHaveAttribute('data-folded')
+      await expect(detail('Isolating your part')).not.toHaveAttribute('data-folded')
+      await expect(result('Reading the audio')).toHaveTextContent('3:12, stereo')
+      await expect(detail('Reading the audio')).toHaveAttribute('aria-hidden', 'true')
+      await expect(row('Reading the audio').querySelector('.lucide-circle-check-draw')).toBeNull()
+      await userEvent.click(within(frame).getByRole('button', { name: 'Next stage' }))
+      await expect(row('Isolating your part')).toHaveAttribute('data-status', 'done')
+      await expect(detail('Isolating your part')).toHaveAttribute('data-folded')
+      await expect(result('Isolating your part')).toHaveTextContent('Separating guitar')
+      await expect(
+        row('Isolating your part').querySelector('.lucide-circle-check-draw'),
+      ).not.toBeNull()
+      await expect(row('Working out the chords')).toHaveAttribute('data-status', 'running')
+      await expect(detail('Working out the chords')).not.toHaveAttribute('data-folded')
+      await expect(row('Reading the audio').querySelector('.lucide-circle-check-draw')).toBeNull()
+    }
+  },
+}
+
 /** A fallback is a triangle in grey and a failure a crossed circle in red, each with its words. */
 export const StagesWithFallback: Story = {
   render: () => (

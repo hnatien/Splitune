@@ -17,7 +17,7 @@ import {
 export type Song = typeof songs.$inferSelect
 export type NewSong = Omit<typeof songs.$inferInsert, 'id' | 'userId' | 'createdAt'>
 export type SongPatch = Partial<
-  Pick<Song, 'title' | 'artist' | 'instrument' | 'playerState' | 'lastOpenedAt'>
+  Pick<Song, 'title' | 'artist' | 'instrument' | 'playerState' | 'lastOpenedAt' | 'waveform'>
 >
 
 // Position in the library order, used as the pagination cursor.

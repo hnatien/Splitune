@@ -96,6 +96,18 @@ describe('GET /v1/songs (library)', () => {
     expect(fresh.items[0]).toMatchObject({ latest_analysis: null, stems: 'none', best_clean: null })
   })
 
+  it('keeps the waveform the practice screen sends', async () => {
+    const waveform = Array.from({ length: 96 }, (_, slice) => slice)
+    const saved = await alice.request('PATCH', `/v1/songs/${wonderwall}`, { waveform })
+    expect(saved.status).toBe(200)
+    const page = await json<Page>(await alice.request('GET', '/v1/songs?q=wonder'))
+    expect(page.items[0]).toMatchObject({ waveform })
+    const fresh = await json<Page>(await alice.request('GET', '/v1/songs?q=another'))
+    expect(fresh.items[0]).toMatchObject({ waveform: null })
+    const short = await alice.request('PATCH', `/v1/songs/${wonderwall}`, { waveform: [1, 2] })
+    expect(short.status).toBe(400)
+  })
+
   it('filters by instrument and status and sorts by title across pages', async () => {
     const titles = async (query: string) =>
       (await json<Page>(await alice.request('GET', `/v1/songs?${query}`))).items.map((s) => s.title)

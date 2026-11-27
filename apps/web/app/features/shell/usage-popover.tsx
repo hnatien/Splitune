@@ -6,37 +6,46 @@ import { m } from '@/lib/i18n'
 import { type MeData, meQuery } from '@/lib/session'
 import { Button, buttonVariants } from '@/ui/button'
 import { Meter, MeterLabel, MeterValue } from '@/ui/meter'
-import { Popover, PopoverTrigger } from '@/ui/popover'
+import { Popover } from '@/ui/popover'
 import { PopoverContent, PopoverTitle } from '@/ui/popover-content'
 import { CANCELLED_PATH } from '../billing/billing-settings'
 import { periodLine, planName } from '../billing/plans'
 import { UpgradeSheet } from '../billing/upgrade-sheet'
 import { usageItems, usedText } from '../settings/usage-settings'
 
-// Usage (the rail's row, the top bar's gauge below 1024 px): what this period's allowances have
-// used, one row each ("Lite analyses … 1 of 5 used", a bar, "Resets 1 Dec"), then the plan with
-// View plan and, on Free, See Plus. Settings → Usage and Plan hold the full pages. It opens beside
-// the rail and under the top bar, from the control that opened it.
+// Usage (the account menu's Usage row): what this period's allowances have used, one row each
+// ("Lite analyses … 1 of 5 used", a bar, "Resets 1 Dec"), then the plan with View plan and, on
+// Free, See Plus. Settings → Usage and Plan hold the full pages. It opens from the account control
+// (beside the rail, under the top bar) and hands focus back to it when it closes.
 export function UsagePopover({
   me: initial,
-  trigger,
+  anchor,
   side,
+  open,
+  onOpenChange,
 }: {
   me: MeData
-  trigger: React.ReactElement
+  anchor: React.RefObject<HTMLElement | null>
   side: 'right' | 'bottom'
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
   const me = useQuery({ ...meQuery, initialData: initial }).data ?? initial
-  const [open, setOpen] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
   const plus = me.plan !== 'free' && me.subscription !== null
-  const close = () => setOpen(false)
+  const close = () => onOpenChange(false)
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger render={trigger} />
-        <PopoverContent side={side} align="end" sideOffset={8} className="gap-0 p-0">
+      <Popover open={open} onOpenChange={onOpenChange}>
+        <PopoverContent
+          anchor={anchor}
+          finalFocus={anchor}
+          side={side}
+          align="end"
+          sideOffset={8}
+          className="gap-0 p-0"
+        >
           <div className="flex flex-col gap-4 p-4">
             <PopoverTitle className="text-title">{m['settings.usage_limits']()}</PopoverTitle>
             {usageItems(me).map((item) =>

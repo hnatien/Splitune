@@ -11,11 +11,12 @@ export type WeekDay = {
 const practisedOn = (days: WeekDay[]) =>
   m['library.week_label']({ n: String(days.filter((day) => day.minutes > 0).length) })
 
-// "This week" (27 §3.5, §5.5): the week's figures (time practised, clean passes, the biggest gain)
-// over seven day columns. A practised day is an ink bar whose height grows with its minutes (at
-// least a quarter, so a short day still shows); a day without practice is a short --edge dash.
-// Height carries the amount, not lightness, and there is never a streak count or a missed day.
-// Fed by the progress data (s39, library-progress.tsx).
+// "This week" (27 §3.5, §5.5): one row across the page between two hairlines: its name, the week's
+// figures (time practised, clean passes, the biggest gain) and, at the far end, seven day columns.
+// A practised day is an ink bar whose height grows with its minutes (at least a quarter, so a
+// short day still shows); a day without practice is a short --edge dash. Height carries the
+// amount, not lightness, and there is never a streak count or a missed day. On phones the name,
+// the figures and the days stack. Fed by the progress data (s39, library-progress.tsx).
 export function WeekStrip({
   days,
   stats,
@@ -31,21 +32,24 @@ export function WeekStrip({
     <section
       data-slot="week-strip"
       aria-labelledby="this-week"
-      className={cn('flex min-w-0 flex-col gap-4', className)}
+      className={cn(
+        'flex min-w-0 flex-wrap items-center gap-x-12 gap-y-5 border-y border-border px-2 py-5',
+        className,
+      )}
     >
-      <h2 id="this-week" className="text-label-sm text-muted-foreground">
+      <h2 id="this-week" className="w-32 text-label-sm text-muted-foreground max-sm:w-full">
         {m['library.this_week']()}
       </h2>
-      <Stats>
+      <Stats className="gap-x-10">
         {stats.map((stat) => (
           <Stat key={stat.label} value={stat.value} label={stat.label} />
         ))}
       </Stats>
-      <div role="img" aria-label={practisedOn(days)} className="flex gap-2">
+      <div role="img" aria-label={practisedOn(days)} className="flex gap-3 sm:ml-auto">
         {days.map((day, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: the seven days are positional
           <span key={index} className="flex w-6 flex-col items-center gap-1.5">
-            <span className="flex h-8 w-full items-end justify-center">
+            <span className="flex h-10 w-full items-end justify-center">
               {day.minutes > 0 ? (
                 <span
                   data-minutes={day.minutes}
