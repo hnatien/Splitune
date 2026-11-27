@@ -47,6 +47,9 @@ export const songs = pgTable(
       .$type<z.infer<typeof PlayerState>>()
       .notNull()
       .default(sql`'{}'::jsonb`),
+    // The song's waveform in miniature for the library (contracts SongWaveform); null until the
+    // practice screen has decoded the audio once.
+    waveform: jsonb('waveform').$type<number[]>(),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [

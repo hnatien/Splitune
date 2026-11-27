@@ -1,7 +1,7 @@
 import type { LibrarySong } from '@splitune/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
-import { EllipsisIcon, LockIcon } from 'lucide-react'
+import { EllipsisVerticalIcon, LockIcon } from 'lucide-react'
 import { useState } from 'react'
 import type { z } from 'zod'
 import { client, errorCode, errorData, orpc } from '@/lib/api'
@@ -20,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/dropdown-menu'
-import { ListRow } from '@/ui/list-row'
 import { Status, type StatusKind } from '@/ui/status'
 import { toast } from '@/ui/toast'
 import { UpgradeSheet } from '../billing/upgrade-sheet'
@@ -29,7 +28,8 @@ import { isUploading, uploadPercent, useUploads } from '../import/upload-store'
 import { INSTRUMENT_ICON } from './instrument-icon'
 import { statsQuery } from './queries'
 import { DeleteSongDialog, RenameSongDialog } from './song-dialogs'
-import { type CardStatus, cardStatus, isInProgress } from './song-status'
+import { SongMedia } from './song-media'
+import { type CardStatus, cardStatus, isInProgress, songNeed } from './song-status'
 
 type Song = z.infer<typeof LibrarySong>
 
@@ -139,23 +139,23 @@ function useDetail(song: Song, status: CardStatus, workerOffline: boolean): stri
   }
 }
 
-// One song in the library (s47 direction §6, 26 §12.2 ListRow): its instrument's drawing (from
-// 1024 px), the title linking to Practice across the whole row, one meta line, the status as a
-// glyph and words with the line that explains it, at most one action (Try again, Re-create stems)
-// and the ⋯ menu (Rename, Analyse again or with stems + tab, Delete). The explaining line wraps
-// in its column rather than being cut off. Below 640 px the status and its line sit under the
-// title, so the title keeps the width and only the action and ⋯ stay beside it.
-export function SongRow({
+// One song in the library (27 §3.5): a tile, the video site's shape in this system. Its picture
+// (SongMedia: the video's still, else the waveform, else the instrument's drawing) with the length
+// and how far the learner got, then the instrument's drawing, the title (which opens Practice from
+// anywhere on the tile), "{artist} · {part}", the state as a glyph and words with the line that
+// explains it (always whole, never cut off), at most one action (Try again, Re-create stems) and
+// the ⋮ menu (Rename, Analyse again or with stems + tab, Delete). A song that can't be played yet
+// carries its state on the picture instead, where the eye lands first.
+export function SongTile({
   song,
-  layout,
+  bars,
   workerOffline = false,
   unavailable = false,
 }: {
   song: Song
-  /** `compact` below 640 px, `wide` with room for the status column, `full` with the instrument's
-   * drawing. */
-  layout: 'compact' | 'wide' | 'full'
-  /** The processing machine is offline: queued rows say they start on their own. */
+  /** Waveform bars for the tile's width. */
+  bars: number
+  /** The processing machine is offline: queued songs say they start on their own. */
   workerOffline?: boolean
   /** Offline and needing the server (27 §4): "Needs connection". */
   unavailable?: boolean
@@ -247,7 +247,7 @@ export function SongRow({
           />
         }
       >
-        <EllipsisIcon aria-hidden />
+        <EllipsisVerticalIcon aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuItem onClick={() => setRenaming(true)}>
@@ -267,60 +267,50 @@ export function SongRow({
     </DropdownMenu>
   )
 
-  const meta = [
-    song.artist,
-    instrumentLabel(song.instrument),
-    song.duration_s === null ? undefined : formatDuration(song.duration_s),
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const compact = layout === 'compact'
+  const meta = [song.artist, instrumentLabel(song.instrument)].filter(Boolean).join(' · ')
+  const onPicture = unavailable || songNeed(status) !== 'ready'
   const Instrument = INSTRUMENT_ICON[song.instrument]
 
   return (
     <>
-      <ListRow
+      <li
+        data-slot="song-tile"
         data-unavailable={unavailable || undefined}
-        render={
-          <Link to="/songs/$songId/practice" params={{ songId: song.id }} title={song.title} />
-        }
-        media={layout === 'full' ? <Instrument aria-hidden className="size-5" /> : undefined}
-        title={song.title}
-        meta={
-          compact ? (
-            <>
-              <span className="block truncate">{meta}</span>
-              <span className="mt-1 flex">{state}</span>
-              {detail && (
-                <span data-slot="song-status-line" className="block whitespace-normal text-pretty">
-                  {detail}
-                </span>
+        className="group/tile relative flex min-w-0 flex-col gap-2.5"
+      >
+        <SongMedia song={song} bars={bars} chip={onPicture ? state : undefined} />
+        <div className="flex items-start gap-2.5">
+          <Instrument aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <Link
+              to="/songs/$songId/practice"
+              params={{ songId: song.id }}
+              title={song.title}
+              data-slot="song-tile-title"
+              className="line-clamp-2 text-label text-foreground underline-offset-4 after:absolute after:inset-0 group-hover/tile:underline"
+            >
+              {song.title}
+            </Link>
+            <span className="truncate text-caption text-muted-foreground">
+              {meta}
+              {song.duration_s !== null && (
+                <span className="sr-only"> · {formatDuration(song.duration_s)}</span>
               )}
-            </>
-          ) : (
-            meta
-          )
-        }
-        aside={
-          <>
-            {!compact && (
-              <span className="flex w-48 flex-col items-start gap-0.5 lg:w-64 xl:w-80">
-                {state}
-                {detail && (
-                  <span
-                    data-slot="song-status-line"
-                    className="max-w-full text-pretty text-caption text-muted-foreground"
-                  >
-                    {detail}
-                  </span>
-                )}
+            </span>
+            {!onPicture && state}
+            {detail && (
+              <span
+                data-slot="song-status-line"
+                className="text-caption text-pretty text-muted-foreground tabular-nums"
+              >
+                {detail}
               </span>
             )}
-            {action}
-            {menu}
-          </>
-        }
-      />
+            {action && <div className="relative z-10 mt-1.5 flex">{action}</div>}
+          </div>
+          <div className="relative z-10 -mt-2.5 -mr-2.5 shrink-0">{menu}</div>
+        </div>
+      </li>
       <RenameSongDialog
         song={song}
         open={renaming}

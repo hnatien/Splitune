@@ -2963,3 +2963,46 @@ Branch `impl/s40b-mixer` (worktree `.claude/worktrees/s40b-mixer`) from `dev` at
 - Section chips on the phone song map wait for sections (s41b). The position readout's bar total disagrees with a score that prints a trailing bar. The Back link is a bare chevron below 1024 px in practice. About 26 low findings of the QA remain (`s47-qa.md`).
 - Reading sizes use weight 500; the palette and those sizes have had no music-stand reading test (G5). No real-device checks.
 - An intermittent alphaTab render race in the Fix stories (Half tempo, then Undo) predates this step.
+
+## 2026-11-24 — Step s48: the library as tiles (done, not merged; owner review next)
+
+**Instruction (owner):** "my library page feels empty. can you redesign it? give me the mockup image first. you own the codebase and the design"; then a second direction after YouTube's layout, the video's image on the tiles, the waveform kept in the lead, and "build it end to end. If the video has no image, then fallback to waveform." Step prompt: `docs/steps/s48-library-grid.md`.
+
+**Branch** `impl/48-library-grid` from `dev` (`6e2d1d7`). Not committed, pushed or merged: the owner has not asked. The working tree also holds ten files changed before this step (shell, popovers, `getting-ready.tsx`, `stage-list.tsx`), which are not part of it.
+
+**Mockups first.** Static pages drawn from the real tokens, font and icons, in `apps/web/.impeccable/mocks/library/` (git-ignored): the list with a song map (A), the tile grid (B), B with the video's image, and the one the owner approved, `final-one-song.png` and `final-populated.png` (waveform in the lead, the video's image on the tiles).
+
+**What was built**
+- **Continue** (`continue-card.tsx`, `song-media.tsx`): the last song's waveform in a 16:9 well with an ink line and "1:42 · you stopped here" at `player_state.position_s`, the length as a chip and an ink line along the foot; beside it the title at `text-display`, the meta line, the notes as lines, the sparkline and Resume practice at the foot of the column.
+- **This week** (`week-strip.tsx`): one row across the page between two hairlines.
+- **Songs as tiles** (`song-tile.tsx`, was `song-row.tsx`): three across from 1024 px, two from 640 px, one on phones, in the three groups. The picture is the video's still for a song added from a YouTube link (`lib/youtube.ts` reads the id from `source_url`; `i.ytimg.com` was already in the CSP), else the waveform, else the instrument's drawing. YouTube answers a missing still with a 120 px placeholder rather than an error, so that width counts as no still.
+- **The waveform is stored with the song:** `songs.waveform` (`jsonb`, migration `0016_song_waveform.sql`), `LibrarySong.waveform` and `UpdateSongInput.waveform` (`SongWaveform`: 96 integers, 0–100). The practice screen sends it once the audio is decoded (`model/waveform-summary.ts`, RMS per slice so a limited master still has a shape; your part once its stem is in). No worker or pipeline change.
+- **The last tile adds a song** (`add-song-tile.tsx`). The toolbar shows from seven songs or while a filter is on, with the instruments the library has.
+- `WaveformBars` in `app/ui` (26 §12.2). Spec 27 §3.5 and its §4 row rewritten.
+
+**Decisions (the lead's; for the owner)**
+1. **The caption "Pick up where you left off" is gone from the page**; the section keeps the name for assistive tech. The song's title is the heading.
+2. **The groups stay** (Getting ready, Needs you, Ready to practise) as heads over grids; the populated mockup showed one grid. A song that can't be played yet carries its state as a chip on its picture.
+3. **Stills only for YouTube links.** A link to another site has no still and shows the waveform. Nothing writes `youtube_refs`, so the id comes from `source_url`.
+4. **The still is colour in a black-and-white interface**: it is the song's picture, the one image the app shows that it did not make.
+5. **Migration 0016 was the number s44's prompt reserved**; s44 is deferred, and its prompt now says 0017.
+
+**Verification (on the PC, 2026-11-24)**
+- `pnpm lint`: clean (Biome, check-db-access, check-ui-tokens, ruff).
+- `pnpm contracts:check`: up to date. `pnpm --filter @splitune/db check`: migrations match the schema. `pnpm db:migrate`: applied to the local database.
+- `pnpm typecheck`: 13 of 14 packages pass; `@splitune/ml` (pyright) fails with 5 errors in `stage_notes/tests/test_guitab.py`, a file this step does not touch.
+- `pnpm --filter @splitune/{contracts,db,api,web} test`: 61, 162, 217 and 402 passed.
+- `pnpm --filter @splitune/web test:stories`: Chromium 927 of 928 on the full run; the one failure (`practice.stories` "Analysing") passed when its file was run again (`--project=storybook` practice + library: 204 of 204). WebKit, in the Linux image: one library story failed (the skeleton's column check measured tiles while they were still rising in; it now reads `offsetTop`), then `--project=storybook-webkit` library: 28 of 28; the other files passed, the practice file after one page crash and the script's retry.
+- Looked at in Storybook: the small library in Light, the populated library in Dark, a real video still beside a waveform tile, and both on a 375 px phone (no sideways scroll).
+
+**Design review (independent, from the screenshots and the code): "fix".** Taken: the toolbar is one row from 1280 px as in the mockup; the still is the 480 px image (the 320 px one was soft on dense screens); the lead's meta line no longer orphans a word on phones; the populated phone toolbar was looked at (it fits). Not taken, with the reason: dropping the "Ready" status row (26 §12.2 and the tests want every state as a glyph and words); the sparkline (it is s39's, with its text alternative); an action for "Upload not finished" (as before this step); sending a waveform from Add song (Add song opens Practice at once, which sends it). Reported, not repaired: `DESIGN.md` gives the library's width as 1260 (the token and spec 27 say 1080) and has no entry for the song picture or `WaveformBars`.
+
+**After the review fixes:** `pnpm lint` clean, web typecheck clean, web unit 402 passed, library stories in Chromium 28 of 28. In WebKit (Linux image) the library's "Filters" story then failed on every run (7 of 7): the Show menu never leaves the page, its exit animation stays "running", so the Sort menu does not open. It fails the same way with the toolbar change taken out, and a file this step does not touch (`settings.stories`, "Privacy Delete Confirm") failed in the same session after passing in the full run an hour earlier, so it looks like overlays not finishing their animations in that WebKit session rather than the library; not explained, and not checked in a real Safari.
+
+**Not done or not verified**
+- **WebKit "Filters" story open** (above).
+- **e2e not run:** port 3000 was held by another session's dev server. `journey.spec` and `billing.spec` were changed for it (the tile selector, and `stubVideoStills` so a linked song's tile does not call the video site from a test) and are type-checked only.
+- **Visual-regression baselines** not regenerated (the library baselines differ by design).
+- **Songs already in a library have no waveform** until they are opened in Practice once; until then the lead and their tiles show the instrument's drawing.
+- **Production:** nothing deployed. The migration runs by itself before a deploy (`preDeploy` in `infra/railway/railway.ts`).
+- Clips and sections on the lead's waveform (the first mockup showed clips) are not built.

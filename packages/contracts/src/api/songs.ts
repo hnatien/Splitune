@@ -81,7 +81,13 @@ export const BestClean = z.object({
   end_bar: z.number().int(),
 })
 
+// A song's waveform in miniature (27 §3.5): the loudest sample in each of 96 equal slices of the
+// song, as 0–100 of its own peak. The practice screen sends it once it has decoded the audio
+// (songs.update); null until then.
+export const SongWaveform = z.array(z.number().int().min(0).max(100)).length(96)
+
 export const LibrarySong = Song.extend({
+  waveform: SongWaveform.nullable(),
   latest_analysis: LibraryAnalysis.nullable(),
   stems: z.enum(['available', 'expired', 'none']),
   best_clean: BestClean.nullable(),
@@ -116,6 +122,7 @@ export const UpdateSongInput = z.object({
   artist: z.string().trim().min(1).max(200).nullable().optional(),
   instrument: Instrument.optional(),
   player_state: PlayerState.optional(),
+  waveform: SongWaveform.optional(),
 })
 
 export const ImportUrlInput = z.object({

@@ -27,6 +27,7 @@ const base: Song = {
   },
   stems: 'available',
   best_clean: null,
+  waveform: null,
 }
 
 const analysis = (patch: Partial<NonNullable<Song['latest_analysis']>>) => ({

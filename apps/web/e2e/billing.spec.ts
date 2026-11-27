@@ -6,6 +6,7 @@ import {
   expectNoCardInputs,
   expectNoHorizontalScroll,
   signIn,
+  stubVideoStills,
 } from './helpers'
 
 // Step 14 acceptance (prompt 14): a Free user uses the Welcome analysis → the Lite allowance → the
@@ -81,6 +82,7 @@ test.beforeAll(async ({ browser }, info) => {
     ...(baseURL ? { baseURL } : {}),
   })
   page = await context.newPage()
+  await stubVideoStills(page)
   await signIn(page, 'billing')
   // From here on: the sign-in helper waits out the shared per-IP limit (429s it handles).
   errors = collectErrors(page)

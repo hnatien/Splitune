@@ -113,6 +113,13 @@
       "when": 1794052966104,
       "tag": "0015_username_sign_in",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795536888945,
+      "tag": "0016_song_waveform",
+      "breakpoints": true
     }
   ]
 }

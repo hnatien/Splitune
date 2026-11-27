@@ -26,10 +26,12 @@ import { libraryQuery, statsQuery, workerStatusQuery } from './queries'
 import { RevisitList } from './revisit-list'
 import { WeekStrip } from './week-strip'
 
-// Library screen states (s47 direction §6, 27 §3.5, §4): the Continue block with its clip, notes
-// and sparkline beside This week, Worth a revisit, and the songs as hairline rows grouped by what
-// each needs, every status a glyph and words; phone and tablet rows, empty, no results, loading,
-// load error, offline and the worker-offline line, in Dark and Light.
+// Library screen states (27 §3.5, §4): Continue (the last song's waveform with the place the
+// learner stopped, its clip, notes and sparkline), This week as a row across the page, Worth a
+// revisit, and the songs as tiles grouped by what each needs, every status a glyph and words; a
+// tile's picture (the video's still, the waveform, the instrument's drawing), the small library
+// with no toolbar, phone and tablet, empty, no results, loading, load error, offline and the
+// worker-offline line, in Dark and Light.
 const meta = {
   title: 'Screens/Library',
   parameters: { layout: 'fullscreen' },
@@ -107,7 +109,38 @@ const SESSIONS: StorySession[] = [
 ]
 const LIBRARY_PROGRESS = storyProgress(SESSIONS)
 
-function seed(songs = LIBRARY, worker = WORKER_ONLINE, filters: LibrarySearch = {}) {
+/** A waveform for a fixture song: a quiet start, two fuller passages and a tail. */
+const waveform = (n: number) =>
+  Array.from({ length: 96 }, (_, slice) => {
+    const x = slice / 95
+    const shape =
+      0.3 + 0.35 * Math.sin(Math.PI * x) + (x > 0.3 && x < 0.45 ? 0.2 : 0) + (x > 0.7 ? 0.25 : 0)
+    const grain = 0.75 + 0.25 * Math.sin(slice * (1.7 + n * 0.37))
+    return Math.round(Math.min(1, x > 0.96 ? 0.08 : shape * grain) * 100)
+  })
+
+// What the library's pictures need, on top of the shared fixtures: the songs that were opened
+// have a waveform and the place the learner stopped; the rest show their instrument's drawing.
+const STOPPED_AT = [71, 0, 0, 150, 30, 190]
+const SONGS = LIBRARY.map((entry, index) =>
+  entry.last_opened_at === null
+    ? entry
+    : {
+        ...entry,
+        waveform: waveform(index),
+        player_state: { position_s: STOPPED_AT[index] ?? 0 },
+      },
+)
+// A song added by a video link: its tile is the video's still.
+const LINKED = {
+  ...(SONGS[3] as (typeof SONGS)[number]),
+  id: '00000000-0000-4000-8000-000000000099',
+  title: 'Big Buck Bunny theme',
+  source_kind: 'url' as const,
+  source_url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+}
+
+function seed(songs = SONGS, worker = WORKER_ONLINE, filters: LibrarySearch = {}) {
   return (client: QueryClient) => {
     client.setQueryData(
       progressQuery.queryKey,
@@ -123,7 +156,7 @@ function seed(songs = LIBRARY, worker = WORKER_ONLINE, filters: LibrarySearch = 
     const pages = { pages: [{ items: songs, next_cursor: null }], pageParams: [undefined] }
     client.setQueryData(libraryQuery(filters).queryKey, pages)
     client.setQueryData(libraryQuery({}).queryKey, {
-      pages: [{ items: filters.q || filters.instrument ? LIBRARY : songs, next_cursor: null }],
+      pages: [{ items: filters.q || filters.instrument ? SONGS : songs, next_cursor: null }],
       pageParams: [undefined],
     })
     client.setQueryData(workerStatusQuery.queryKey, worker)
@@ -150,15 +183,15 @@ const populated = () => (
 const main = (canvasElement: HTMLElement) =>
   within(canvasElement.querySelector('main') as HTMLElement)
 
-/** The titles of the rows in one group, by its name. */
+/** The titles of the tiles in one group, by its name. */
 const groupTitles = (canvasElement: HTMLElement, name: string) =>
   [
     ...within(canvasElement)
       .getByRole('region', { name })
-      .querySelectorAll('[data-slot=list-row-title]'),
+      .querySelectorAll('[data-slot=song-tile-title]'),
   ].map((title) => title.textContent)
 
-/** Each row's line that explains its state is shown whole: it wraps in its column, never cut off. */
+/** Each tile's line that explains its state is shown whole: it wraps under the title, never cut off. */
 const linesWhole = async (canvasElement: HTMLElement) => {
   const lines = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot=song-status-line]')]
   await expect(lines.length).toBeGreaterThan(3)
@@ -186,7 +219,7 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
     await expect(words.closest('[data-slot=status]')?.querySelector('svg')).not.toBeNull()
   }
   await expect(canvasElement.querySelector('[data-slot=badge]')).toBeNull()
-  // Rows are grouped by what each song needs (s47 direction §6), each group in the list's order.
+  // Tiles are grouped by what each song needs (27 §3.5), each group in the list's order.
   await expect(groupTitles(canvasElement, 'Getting ready')).toEqual([
     'Walking bass in F',
     'Campfire strumming',
@@ -201,9 +234,15 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
     'Ballad with a capo',
     expect.stringMatching(/^Indie Rock/),
   ])
-  // Continue: the most recently opened song, its clip and bars, what it works towards and the
-  // 30-day sparkline (27 §3.5), with no box around it.
-  const lead = within(canvas.getByRole('region', { name: 'Pick up where you left off' }))
+  // Continue: the most recently opened song, its waveform with the place the learner stopped,
+  // its clip and bars, what it works towards and the 30-day sparkline (27 §3.5), with no box.
+  const continueBlock = canvas.getByRole('region', { name: 'Pick up where you left off' })
+  const lead = within(continueBlock)
+  const map = continueBlock.querySelector('[data-slot=song-media]') as HTMLElement
+  await expect(map).toHaveAttribute('data-shows', 'waveform')
+  await expect(map.querySelectorAll('[data-slot=waveform-bars] > span')).toHaveLength(96)
+  await expect(lead.getByText('1:11 · you stopped here')).toBeVisible()
+  await expect(continueBlock.querySelector('img')).toBeNull()
   await expect(lead.getByRole('heading', { level: 2, name: 'Riff in A minor' })).toBeVisible()
   await expect(lead.getByText('Chorus riff', { selector: 'strong' })).toBeVisible()
   await expect(lead.getByText(/bars 17–20 · yesterday, 24\smin$/)).toBeVisible()
@@ -244,7 +283,32 @@ const playPopulated: Story['play'] = async ({ canvasElement }) => {
   await expect(
     canvas.getByRole('button', { name: 'Re-create stems: Old practice take' }),
   ).toBeVisible()
-  // The whole row opens Practice; its own controls are 44 px targets above it.
+  // A tile's picture: the waveform once the song has been opened, with the length and how far
+  // the learner got; the instrument's drawing before that. A song that isn't playable carries its
+  // state on the picture.
+  const tile = (title: RegExp) =>
+    canvas.getByRole('link', { name: title }).closest('[data-slot=song-tile]') as HTMLElement
+  const ballad = tile(/^Ballad with a capo/)
+  const picture = ballad.querySelector('[data-slot=song-media]') as HTMLElement
+  await expect(picture).toHaveAttribute('data-shows', 'waveform')
+  await expect(within(picture).getByText('3:34')).toBeVisible()
+  await expect(within(picture).queryByText('Chords only')).toBeNull()
+  const walking = tile(/^Walking bass in F/)
+  const waiting = walking.querySelector('[data-slot=song-media]') as HTMLElement
+  await expect(waiting).toHaveAttribute('data-shows', 'drawing')
+  await expect(within(waiting).getByText('Analysing 3/8')).toBeVisible()
+  // Three tiles share a row from 1024 px.
+  const ready = [
+    ...canvas.getByRole('region', { name: 'Ready to practise' }).querySelectorAll('li'),
+  ].map((item) => item.getBoundingClientRect().top)
+  await expect(new Set(ready.slice(0, 3)).size).toBe(1)
+  // The list closes with the tile that adds the next song, which is not a second filled control.
+  const add = canvas.getByRole('button', { name: /^Add a song/ })
+  await expect(add).toHaveAttribute('aria-keyshortcuts', 'A')
+  await expect(add.closest('ul')).toBe(
+    canvas.getByRole('link', { name: /^Indie Rock/ }).closest('ul'),
+  )
+  // The whole tile opens Practice; its own controls are 44 px targets above it.
   const riff = canvas.getByRole('link', { name: /^Riff in A minor/ })
   await expect(riff).toHaveAttribute('href', `/songs/${songId(1)}/practice`)
   await expectTargets(canvas.getAllByRole('button', { name: /^More for / }))
@@ -279,18 +343,15 @@ export const PopulatedDaylightIncreasedContrast: Story = {
   globals: { ...DAYLIGHT, contrast: 'more' },
 }
 
-// Phones (27 §3.5 Phone): the status sits under the title, so titles keep the row's width and
-// never share it with the status; the instrument filter is a menu; no revisit rows.
+// Phones (27 §3.5 Phone): one tile per row at the screen's width; the instrument filter is a menu;
+// no revisit rows.
 const playPhone: Story['play'] = async ({ canvasElement }) => {
   const canvas = main(canvasElement)
   const walking = await canvas.findByRole('link', { name: /^Walking bass in F/ })
-  const row = walking.closest('[data-slot=list-row]') as HTMLElement
-  const title = row.querySelector('[data-slot=list-row-title]') as HTMLElement
-  const status = within(row).getByText('Analysing 3/8')
-  await expect(status.getBoundingClientRect().top).toBeGreaterThan(
-    title.getBoundingClientRect().bottom - 1,
-  )
-  await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth)
+  const row = walking.closest('[data-slot=song-tile]') as HTMLElement
+  await expect(within(row).getByText('Analysing 3/8')).toBeVisible()
+  await expect(row.getBoundingClientRect().width).toBeGreaterThan(window.innerWidth - 40)
+  await expect(walking.scrollWidth).toBeLessThanOrEqual(walking.clientWidth)
   await settled(await canvas.findByText(/This didn't use an analysis\./))
   await linesWhole(canvasElement)
   await expect(canvas.getByRole('region', { name: 'Pick up where you left off' })).toBeVisible()
@@ -311,16 +372,20 @@ export const PopulatedPhoneDaylight: Story = {
   globals: { ...PHONE, ...DAYLIGHT },
 }
 
-// Tablet: no rail, the status column beside the title.
+// Tablet: no rail, two tiles to a row.
 export const PopulatedTablet: Story = {
   render: populated,
   globals: TABLET,
   play: async ({ canvasElement }) => {
     const canvas = main(canvasElement)
     const row = (await canvas.findByRole('link', { name: /^Walking bass in F/ })).closest(
-      '[data-slot=list-row]',
+      '[data-slot=song-tile]',
     ) as HTMLElement
     await expect(within(row).getByText('Analysing 3/8')).toBeVisible()
+    const tops = [...(row.parentElement as HTMLElement).children].map(
+      (item) => item.getBoundingClientRect().top,
+    )
+    await expect(tops[0]).toBe(tops[1])
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
   },
 }
@@ -379,7 +444,7 @@ export const Filters: Story = {
 
 export const WorkerOffline: Story = {
   render: () => (
-    <AppStory path="/library" seed={seed(LIBRARY, WORKER_OFFLINE)}>
+    <AppStory path="/library" seed={seed(SONGS, WORKER_OFFLINE)}>
       <Screen />
     </AppStory>
   ),
@@ -453,8 +518,8 @@ export const NoResults: Story = {
   },
 }
 
-// The skeleton is the final layout: the title, the Continue block with This week beside it, the
-// instrument chips (from 640 px), the toolbar, a group head and hairline rows.
+// The skeleton is the final layout: the title, Continue (the waveform well beside its words),
+// This week as its row, a group head and tiles in the songs' grid.
 const loading = () => (
   <AppStory path="/library">
     <AppShell me={ME}>
@@ -470,14 +535,81 @@ const playLoading: Story['play'] = async ({ canvasElement }) => {
   const root = canvasElement.querySelector('main') as HTMLElement
   const week = root.querySelector('[data-slot=week-skeleton]') as HTMLElement
   await expect(week.querySelectorAll('[data-slot=skeleton]').length).toBeGreaterThan(7)
-  const chips = root.querySelector('[data-slot=chips-skeleton]') as HTMLElement
-  await expect(chips.offsetParent !== null).toBe(window.innerWidth >= 640)
-  // A group head over the rows, as the loaded list has.
-  await expect(list.previousElementSibling).toHaveClass('border-b')
+  await expect(root.querySelector('[data-slot=continue-skeleton]')).not.toBeNull()
+  // A group head over the tiles, as the loaded list has, and the grid's columns for this width.
+  await expect(list.previousElementSibling?.querySelector('[data-slot=skeleton]')).not.toBeNull()
+  // offsetTop: the tiles rise in (26 §10), and a transform under way moves their rectangles.
+  const tops = [...list.children].map((item) => (item as HTMLElement).offsetTop)
+  const columns = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1
+  await expect(new Set(tops.slice(0, columns)).size).toBe(1)
+  await expect(tops[columns]).toBeGreaterThan(tops[0] as number)
 }
 export const Loading: Story = { render: loading, play: playLoading }
 export const LoadingDaylight: Story = { render: loading, play: playLoading, globals: DAYLIGHT }
 export const LoadingPhone: Story = { render: loading, play: playLoading, globals: PHONE }
+
+// A library that fits on one screen (27 §3.5): no toolbar, since there is nothing to find, and
+// the tile that adds the next song right beside the songs.
+const few = () => (
+  <AppStory path="/library" seed={seed(SONGS.slice(0, 1))}>
+    <Screen />
+  </AppStory>
+)
+const playFew: Story['play'] = async ({ canvasElement }) => {
+  const canvas = main(canvasElement)
+  await expect(await canvas.findByRole('link', { name: 'Riff in A minor' })).toBeVisible()
+  await expect(canvas.queryByRole('search')).toBeNull()
+  await expect(canvas.queryByRole('searchbox')).toBeNull()
+  await expect(canvas.queryByRole('group', { name: 'Instrument' })).toBeNull()
+  await expect(canvas.getByRole('region', { name: 'Pick up where you left off' })).toBeVisible()
+  await expect(canvas.getByRole('region', { name: 'This week' })).toBeVisible()
+  const add = canvas.getByRole('button', { name: /^Add a song/ })
+  await expect(add).toBeVisible()
+  await expect(within(add).getByText(/paste a link, or record it\.$/)).toBeVisible()
+  await expect(canvas.getByRole('link', { name: 'Resume practice' })).toBeVisible()
+}
+export const Few: Story = { render: few, play: playFew }
+export const FewDaylight: Story = { render: few, play: playFew, globals: DAYLIGHT }
+export const FewPhone: Story = { render: few, play: playFew, globals: PHONE }
+
+// A song added by a video link shows the video's still. When the still can't be had (offline, a
+// video that has gone), the tile falls back to the song's waveform.
+const linked = () => (
+  <AppStory path="/library" seed={seed([SONGS[0] as (typeof SONGS)[number], LINKED])}>
+    <Screen />
+  </AppStory>
+)
+const linkedPicture = async (canvasElement: HTMLElement) => {
+  const tile = (
+    await main(canvasElement).findByRole('link', { name: 'Big Buck Bunny theme' })
+  ).closest('[data-slot=song-tile]') as HTMLElement
+  return tile.querySelector('[data-slot=song-media]') as HTMLElement
+}
+export const VideoStill: Story = {
+  render: linked,
+  play: async ({ canvasElement }) => {
+    const picture = await linkedPicture(canvasElement)
+    const still = picture.querySelector('img')
+    // The still is decorative, and it comes from the one image host the CSP allows. Without a
+    // network (the test run) it has already given way to the waveform.
+    if (still) {
+      await expect(still).toHaveAttribute('alt', '')
+      await expect(still).toHaveAttribute('src', 'https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg')
+    } else await expect(picture).toHaveAttribute('data-shows', 'waveform')
+    await expect(within(picture).getByText('3:34')).toBeVisible()
+  },
+}
+export const VideoStillDaylight: Story = { ...VideoStill, globals: DAYLIGHT }
+export const VideoStillGone: Story = {
+  render: linked,
+  play: async ({ canvasElement }) => {
+    const picture = await linkedPicture(canvasElement)
+    picture.querySelector('img')?.dispatchEvent(new Event('error'))
+    await waitFor(() => expect(picture).toHaveAttribute('data-shows', 'waveform'))
+    await expect(picture.querySelector('img')).toBeNull()
+    await expect(within(picture).getByText('3:34')).toBeVisible()
+  },
+}
 
 // Nothing seeded: the list request fails against Storybook's server.
 export const LoadError: Story = {
@@ -497,7 +629,7 @@ export const LoadError: Story = {
   },
 }
 
-// Offline (27 §4): cached rows stay; the ones that need the server say so.
+// Offline (27 §4): cached songs stay; the ones that need the server say so.
 const goOffline = () => {
   const online = Object.getOwnPropertyDescriptor(Navigator.prototype, 'onLine')
   Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false })
